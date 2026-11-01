@@ -29,6 +29,20 @@ HiddenServicePort 9878 127.0.0.1:9878
 # ── Forgejo (eastgate furnace → public through Tor) ──
 HiddenServicePort 3000 192.168.4.194:3000
 
+# ── SMTP (Tower Atomic mail — neutron carries the bag) ──
+# :25   → SMTP inbound (songbird relay accepts)
+# :587  → SMTP submission (authenticated outbound)
+# :993  → IMAPS (nestgate maildir read)
+HiddenServicePort 25 127.0.0.1:2525
+HiddenServicePort 587 127.0.0.1:5870
+HiddenServicePort 993 127.0.0.1:9930
+
+# ── swarmVine gossip (epidemic mesh propagation) ──
+HiddenServicePort 7800 127.0.0.1:7800
+
+# ── barraCuda GPU compute (Neural API) ──
+HiddenServicePort 5591 127.0.0.1:55919
+
 SocksPort 9050
 
 Log notice file C:\Users\mokke\Desktop\Gaia\engine\tor\tor.log
