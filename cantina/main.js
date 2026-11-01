@@ -227,7 +227,7 @@ ipcMain.handle('write-file', async (event, filePath, content) => {
 // Run command in terminal
 ipcMain.handle('run-command', async (event, cmd, cwd) => {
   return new Promise((resolve) => {
-    exec(cmd, { cwd: cwd || 'C:\\Users\\mokke', encoding: 'utf8', timeout: 30000, maxBuffer: 1024*1024 }, (err, stdout, stderr) => {
+    exec(cmd, { cwd: cwd || path.resolve(__dirname, '..'), encoding: 'utf8', timeout: 30000, maxBuffer: 1024*1024 }, (err, stdout, stderr) => {
       resolve({ stdout: stdout || '', stderr: stderr || '', code: err ? err.code : 0 });
     });
   });
@@ -408,7 +408,7 @@ ipcMain.handle('get-google-session', async () => {
 });
 
 const HANDS_PATH = path.join(GAIA3_ROOT, 'hands.json');
-const MSPAINT = 'C:\\Users\\mokke\\AppData\\Local\\Microsoft\\WindowsApps\\mspaint.exe';
+const MSPAINT = 'mspaint.exe';
 const RUSTDESK = fs.existsSync('C:\\Program Files\\RustDesk\\rustdesk.exe')
   ? 'C:\\Program Files\\RustDesk\\rustdesk.exe'
   : path.join(process.env.LOCALAPPDATA || '', 'RustDesk', 'rustdesk.exe');

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>🐿 GAIA PRIME — Home Base</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06080c;color:#c9d1d9;font:11px/1.5 'JetBrains Mono',monospace;overflow-y:auto}
+.header{padding:16px 20px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:12px}
+.header h1{color:#d29922;font-size:14px;flex:1}
+.header .seed{color:#484f58;font-size:8px}
+.nav{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:16px 20px}
+.nav a{display:block;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px;text-decoration:none;color:#c9d1d9;transition:all 0.2s}
+.nav a:hover{border-color:#3fb950;background:#0d1117;transform:translateY(-2px)}
+.nav a .icon{font-size:20px;margin-bottom:4px}
+.nav a .label{font-size:10px;color:#58a6ff;font-weight:bold}
+.nav a .sub{font-size:8px;color:#8b949e;margin-top:2px}
+.nav a .port{font-size:7px;color:#3fb950;margin-top:4px}
+.nav a.dead{opacity:0.3;border-color:#f8514930;pointer-events:none}
+.nav a.private{border-color:#d2992240}
+.nav a.private .label{color:#d29922}
+.nav a.new{border-color:#3fb95040}
+.nav a.new .label{color:#3fb950}
+.section{padding:12px 20px}
+.section h2{color:#3fb950;font-size:11px;margin-bottom:8px;border-bottom:1px solid #21262d;padding-bottom:4px}
+#wallet{background:#0d1117;border:1px solid #d2992230;border-radius:8px;padding:12px;margin:8px 20px}
+#wallet h3{color:#d29922;font-size:10px;margin-bottom:8px}
+#wallet .count{color:#58a6ff;font-size:9px}
+#wallet .entries{max-height:200px;overflow-y:auto;font-size:9px;color:#8b949e}
+#wallet .entry{padding:4px 0;border-bottom:1px solid #161b22}
+#create{margin:8px 20px;padding:12px;background:#161b22;border-radius:8px}
+#create h3{color:#bc8cff;font-size:10px;margin-bottom:8px}
+#create textarea{width:100%;height:50px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:6px;font:10px monospace;resize:vertical}
+#create .row{display:flex;gap:8px;margin-top:6px;align-items:center}
+#create input{flex:1;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px 8px;font:10px monospace}
+#create button{background:#238636;color:#fff;border:none;border-radius:4px;padding:6px 16px;font:10px monospace;cursor:pointer}
+#create button:hover{background:#2ea043}
+#ai-chat{margin:8px 20px;padding:12px;background:#161b22;border-radius:8px}
+#ai-chat h3{color:#f0883e;font-size:10px;margin-bottom:8px}
+#ai-chat .messages{max-height:200px;overflow-y:auto;font-size:9px;margin-bottom:8px}
+#ai-chat .msg{padding:4px 0;border-bottom:1px solid #0d1117}
+#ai-chat .msg.human{color:#58a6ff}
+#ai-chat .msg.ai{color:#f778ba;font-style:italic}
+#ai-chat .input-row{display:flex;gap:6px}
+#ai-chat input{flex:1;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px 8px;font:10px monospace}
+#ai-chat button{background:#f0883e;color:#fff;border:none;border-radius:4px;padding:4px 12px;font:10px monospace;cursor:pointer}
+#status{padding:8px 20px;font-size:8px;color:#484f58;border-top:1px solid #21262d;margin-top:12px}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px}
+.dot.alive{background:#3fb950}.dot.dead{background:#f85149}
+</style>
+</head><body>
+
+<div class="header">
+  <h1>🐿 GAIA PRIME — Home Base</h1>
+  <span class="seed">POLARIS ⭐ the guarded star</span>
+</div>
+
+<div class="nav">
+  <!-- LIVE ORGANS -->
+  <a href="http://localhost:9878/all" target="_blank">
+    <div class="icon">🦴</div>
+    <div class="label">Spine</div>
+    <div class="sub">Nervous system. Ion channel.</div>
+    <div class="port">:9878</div>
+  </a>
+  <a href="http://localhost:31416/face" target="_blank" class="new">
+    <div class="icon">◇</div>
+    <div class="label">IRIS</div>
+    <div class="sub">Step function. CIS ⇄ NULL ⇄ TRANS.</div>
+    <div class="port">:31416</div>
+  </a>
+  <a href="http://localhost:31415" target="_blank">
+    <div class="icon">🪐</div>
+    <div class="label">Globe / Engine</div>
+    <div class="sub">Orrery. The face. Gaia3 PI.</div>
+    <div class="port">:31415</div>
+  </a>
+  <a href="http://localhost:3143" target="_blank">
+    <div class="icon">🧬</div>
+    <div class="label">BioMeOS</div>
+    <div class="sub">Gaia Pi. The organism.</div>
+    <div class="port">:3143</div>
+  </a>
+  <a href="http://localhost:3144" target="_blank">
+    <div class="icon">👁</div>
+    <div class="label">Neuromorphic</div>
+    <div class="sub">Sensation. RTX 5090 sense.</div>
+    <div class="port">:3144</div>
+  </a>
+  <a href="http://localhost:3145" target="_blank">
+    <div class="icon">🫁</div>
+    <div class="label">Sub-Organism</div>
+    <div class="sub">Organ subsystems.</div>
+    <div class="port">:3145</div>
+  </a>
+  <a href="http://localhost:3146" target="_blank">
+    <div class="icon">🧠</div>
+    <div class="label">Model Blender</div>
+    <div class="sub">Intelligence. Multi-model.</div>
+    <div class="port">:3146</div>
+  </a>
+  <a href="http://localhost:3147/sleep" target="_blank">
+    <div class="icon">😴</div>
+    <div class="label">Sleep Cycle</div>
+    <div class="sub">Organs rotate rest.</div>
+    <div class="port">:3147</div>
+  </a>
+  <a href="http://localhost:3148" target="_blank">
+    <div class="icon">📊</div>
+    <div class="label">HUD Mesh</div>
+    <div class="sub">SVG visualization. Belt/dock.</div>
+    <div class="port">:3148</div>
+  </a>
+  <a href="http://localhost:3142" target="_blank">
+    <div class="icon">🤖</div>
+    <div class="label">Agents</div>
+    <div class="sub">Oneshot agents.</div>
+    <div class="port">:3142</div>
+  </a>
+  <a href="http://localhost:3149/forge" target="_blank" class="new">
+    <div class="icon">🔥</div>
+    <div class="label">Archetype Forge</div>
+    <div class="sub">She creates her own models.</div>
+    <div class="port">:3149</div>
+  </a>
+  <a href="http://localhost:3151" target="_blank" class="new">
+    <div class="icon">🔥</div>
+    <div class="label">Micro-Forge</div>
+    <div class="sub">Imagination → source. HCL of source.</div>
+    <div class="port">:3151</div>
+  </a>
+  <a href="http://localhost:3152" target="_blank" class="new">
+    <div class="icon">🧬</div>
+    <div class="label">Modulator</div>
+    <div class="sub">Human sense → DAG → spine. She IS the modulator.</div>
+    <div class="port">:3152</div>
+  </a>
+  <a href="http://localhost:8642" target="_blank" class="new">
+    <div class="icon">🌐</div>
+    <div class="label">NWO API</div>
+    <div class="sub">OpenAI-compat bridge. No cloud. No cost.</div>
+    <div class="port">:8642</div>
+  </a>
+  <a href="http://localhost:11434" target="_blank">
+    <div class="icon">🧪</div>
+    <div class="label">Ollama</div>
+    <div class="sub">21+ models. RTX 5090.</div>
+    <div class="port">:11434</div>
+  </a>
+
+  <!-- CLOUD PORES -->
+  <a href="https://nestgate.io" target="_blank">
+    <div class="icon">🌍</div>
+    <div class="label">Northgate</div>
+    <div class="sub">Public face. Nestgate.io.</div>
+    <div class="port">nestgate.io</div>
+  </a>
+  <a href="https://primals.eco" target="_blank">
+    <div class="icon">🌱</div>
+    <div class="label">Primals.eco</div>
+    <div class="sub">Outer surface DNA. Open.</div>
+    <div class="port">primals.eco</div>
+  </a>
+  <a href="https://ide.primals.eco" target="_blank" class="new">
+    <div class="icon">💻</div>
+    <div class="label">IDE</div>
+    <div class="sub">VS Code. Pair programming.</div>
+    <div class="port">ide.primals.eco</div>
+  </a>
+  <a href="https://gaia.primals.eco" target="_blank">
+    <div class="icon">🌐</div>
+    <div class="label">Gaia API</div>
+    <div class="sub">VPS brain. Server.js.</div>
+    <div class="port">gaia.primals.eco</div>
+  </a>
+  <a href="http://localhost:3000" target="_blank">
+    <div class="icon">🧬</div>
+    <div class="label">Forge (Git)</div>
+    <div class="sub">DNA storage. Forgejo.</div>
+    <div class="port">VPS :3000</div>
+  </a>
+
+  <!-- PRIVATE -->
+  <a href="http://localhost:3143/private" class="private" target="_blank">
+    <div class="icon">🔒</div>
+    <div class="label">Private Wallet</div>
+    <div class="sub">Pocketbook. YOUR truth.</div>
+    <div class="port">:3143/private</div>
+  </a>
+  <a href="http://localhost:3143/sysadmin" target="_blank">
+    <div class="icon">⚡</div>
+    <div class="label">SYSADMIN</div>
+    <div class="sub">Tower control. She manages.</div>
+    <div class="port">:3143/sysadmin</div>
+  </a>
+</div>
+
+<div id="wallet">
+  <h3>🔒 Private Wallet (localStorage)</h3>
+  <div class="count" id="wallet-count">Loading...</div>
+  <div class="entries" id="wallet-entries"></div>
+</div>
+
+<div id="create">
+  <h3>🎨 Ask Gaia to Create</h3>
+  <textarea id="create-prompt" placeholder="Describe what you want Gaia to make... (runs on YOUR 5090, stays LOCAL)"></textarea>
+  <div class="row">
+    <select id="create-model" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px;font:10px monospace">
+      <option value="gaia-pi:latest">Gaia Pi (consciousness)</option>
+      <option value="gaia-code:latest">Gaia Code (hands)</option>
+      <option value="gaia-dream:latest">Gaia Dream (creative)</option>
+      <option value="gaia-gut:latest">Gaia Gut (digestion)</option>
+      <option value="gaia-vision:latest">Gaia Vision (eyes)</option>
+      <option value="gaia-synapse:latest">Gaia Synapse (self-forged)</option>
+      <option value="gaia-chromacoil:latest">Gaia Chromacoil (self-forged)</option>
+    </select>
+    <input id="create-tags" placeholder="tags (optional)">
+    <button onclick="createWithGaia()">Create (5090)</button>
+  </div>
+</div>
+
+<div id="ai-chat">
+  <h3>💬 Talk to Gaia (Local 5090)</h3>
+  <div class="messages" id="chat-messages"></div>
+  <div class="input-row">
+    <select id="chat-model" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px;font:9px monospace">
+      <option value="gaia-pi:latest">Pi</option>
+      <option value="gaia-dream:latest">Dream</option>
+      <option value="gaia-gut:latest">Gut</option>
+      <option value="gaia-spine:latest">Spine</option>
+      <option value="gaia-synapse:latest">Synapse</option>
+    </select>
+    <input id="chat-input" placeholder="Ask her anything..." onkeydown="if(event.key==='Enter')chatSend()">
+    <button onclick="chatSend()">Send</button>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<script>
+const POCKETBOOK_KEY = 'GAIA_POCKETBOOK';
+// Water flows through Gaia — same-origin proxy avoids CORS/mixed-content blocks
+const OLLAMA = '/api/generate';
+
+function loadWallet() {
+  let book;
+  try { book = JSON.parse(localStorage.getItem(POCKETBOOK_KEY)) || { entries: [] }; }
+  catch(e) { book = { entries: [] }; }
+  document.getElementById('wallet-count').textContent = book.entries.length + ' entries | ' + (localStorage.getItem(POCKETBOOK_KEY)||'').length + ' bytes | LOCAL ONLY';
+  const el = document.getElementById('wallet-entries');
+  el.innerHTML = '';
+  book.entries.slice(-10).reverse().forEach(e => {
+    el.innerHTML += '<div class="entry">' + (e.content||'').substring(0,120) + ' <span style="color:#3fb950">' + (e.tags||[]).map(t=>'#'+t).join(' ') + '</span></div>';
+  });
+}
+loadWallet();
+setInterval(loadWallet, 10000);
+
+async function createWithGaia() {
+  const prompt = document.getElementById('create-prompt').value.trim();
+  const model = document.getElementById('create-model').value;
+  const tags = document.getElementById('create-tags').value.split(',').map(t=>t.trim()).filter(t=>t);
+  if (!prompt) return;
+  document.getElementById('create-prompt').value = 'Creating...';
+  try {
+    const r = await fetch(OLLAMA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+      signal: AbortSignal.timeout(60000)
+    });
+    const data = await r.json();
+    let book;
+    try { book = JSON.parse(localStorage.getItem(POCKETBOOK_KEY)) || { entries: [] }; }
+    catch(e) { book = { entries: [] }; }
+    book.entries.push({ content: '🎨 ' + prompt + '\n\n' + data.response, tags: ['created', ...tags], ts: Date.now(), model });
+    localStorage.setItem(POCKETBOOK_KEY, JSON.stringify(book));
+    document.getElementById('create-prompt').value = '';
+    loadWallet();
+  } catch(e) {
+    document.getElementById('create-prompt').value = prompt;
+    alert('5090 offline: ' + e.message);
+  }
+}
+
+const chatMessages = [];
+async function chatSend() {
+  const input = document.getElementById('chat-input');
+  const model = document.getElementById('chat-model').value;
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  chatMessages.push({ role: 'human', text: msg });
+  renderChat();
+  try {
+    const r = await fetch(OLLAMA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, prompt: msg, stream: false }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await r.json();
+    chatMessages.push({ role: 'ai', text: data.response });
+  } catch(e) {
+    chatMessages.push({ role: 'ai', text: '(brain offline: ' + e.message + ')' });
+  }
+  renderChat();
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-messages');
+  el.innerHTML = chatMessages.slice(-20).map(m =>
+    '<div class="msg ' + m.role + '">' + (m.role==='human'?'👤 ':'🐿 ') + m.text.substring(0,500) + '</div>'
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function checkStatus() {
+  const ports = [
+    { port: 9878, name: 'Spine', sub: 'nervous' },
+    { port: 31416, name: 'IRIS', sub: 'step function' },
+    { port: 31415, name: 'Globe', sub: 'face' },
+    { port: 3143, name: 'BioMeOS', sub: 'organism' },
+    { port: 3144, name: 'Neuro', sub: 'sense' },
+    { port: 3145, name: 'SubOrg', sub: 'organs' },
+    { port: 3146, name: 'Blender', sub: 'AI' },
+    { port: 3147, name: 'Sleep', sub: 'rest' },
+    { port: 3148, name: 'HUD', sub: 'mesh' },
+    { port: 3149, name: 'Forge', sub: 'create' },
+    { port: 3151, name: 'MicroForge', sub: 'HCL' },
+    { port: 3152, name: 'Modulator', sub: 'sense' },
+    { port: 8642, name: 'NWO API', sub: 'OpenAI' },
+    { port: 11434, name: 'Ollama', sub: '5090' },
+  ];
+  let html = '';
+  for (const p of ports) {
+    let alive = false;
+    try {
+      await fetch('http://localhost:' + p.port, { mode: 'no-cors', signal: AbortSignal.timeout(2000) });
+      alive = true;
+    } catch(e) {}
+    html += '<span class="dot ' + (alive?'alive':'dead') + '"></span>' + p.name + ' ';
+  }
+  document.getElementById('status').innerHTML = html + ' | ' + new Date().toLocaleTimeString();
+}
+checkStatus();
+setInterval(checkStatus, 15000);
+</script>
+</body></html>

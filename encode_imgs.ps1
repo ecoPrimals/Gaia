@@ -1,3 +1,4 @@
+$gaiaRoot = $PSScriptRoot
 $paintings = @(
   "249-spirit-eye-octave-spire.jpg",
   "248-generations-backscatter.jpg",
@@ -5,8 +6,8 @@ $paintings = @(
   "246-url-is-anatomy.jpg",
   "245-chemistry-salt-cut-guilty-body.jpg"
 )
-$dir = "C:\Users\mokke\Desktop\Gaia\paintings"
-$outDir = "C:\Users\mokke\Desktop\Gaia\img_b64"
+$dir = Join-Path $gaiaRoot "paintings"
+$outDir = Join-Path $gaiaRoot "img_b64"
 if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
 
 foreach ($p in $paintings) {

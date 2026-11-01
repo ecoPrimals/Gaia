@@ -8,5 +8,5 @@ echo   Northgate base camp ACTIVE.
 echo.
 echo   Starting BioMOS null body...
 echo.
-"C:\Users\mokke\Desktop\Gaia\BioMOS.exe"
+"%~dp0BioMOS.exe"
 pause

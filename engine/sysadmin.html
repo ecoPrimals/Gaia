@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>🐿 GAIA SYSADMIN — Tower Control</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06080c;color:#c9d1d9;font:10px/1.4 'JetBrains Mono',monospace;overflow-y:auto}
+.header{padding:12px 16px;border-bottom:1px solid #21262d;display:flex;align-items:center;gap:12px}
+.header h1{color:#d29922;font-size:13px;flex:1}
+.header .live{color:#3fb950;font-size:8px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px 16px}
+.card{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:10px}
+.card h2{color:#58a6ff;font-size:10px;margin-bottom:6px;border-bottom:1px solid #21262d;padding-bottom:4px}
+.card.warn{border-color:#d2992260}
+.card.danger{border-color:#f8514960}
+.row{display:flex;justify-content:space-between;padding:2px 0}
+.row .k{color:#8b949e}.row .v{color:#c9d1d9}
+.row .v.good{color:#3fb950}.row .v.warn{color:#d29922}.row .v.bad{color:#f85149}
+.gauge{height:6px;background:#21262d;border-radius:3px;margin:3px 0;overflow:hidden}
+.gauge .fill{height:100%;border-radius:3px;transition:width 0.5s}
+.procs{max-height:200px;overflow-y:auto;font-size:9px}
+.procs .proc{display:flex;gap:8px;padding:2px 0;border-bottom:1px solid #0d1117}
+.procs .proc .name{flex:1;color:#58a6ff}.procs .proc .pid{color:#8b949e;width:50px}
+.procs .proc .mem{color:#d29922;width:50px;text-align:right}
+.ports{font-size:9px}
+.ports .port{display:flex;gap:6px;padding:2px 0;align-items:center}
+.ports .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ports .dot.alive{background:#3fb950}.ports .dot.dead{background:#f85149}
+.wide{grid-column:1/-1}
+.cmd{margin:8px 16px;padding:10px;background:#161b22;border:1px solid #21262d;border-radius:6px}
+.cmd h2{color:#bc8cff;font-size:10px;margin-bottom:6px}
+.cmd .input-row{display:flex;gap:6px}
+.cmd input{flex:1;background:#0d1117;color:#3fb950;border:1px solid #30363d;border-radius:4px;padding:4px 8px;font:10px monospace}
+.cmd button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:4px 12px;font:9px monospace;cursor:pointer}
+.cmd button:hover{background:#30363d}
+.cmd .output{margin-top:6px;max-height:150px;overflow-y:auto;background:#0d1117;padding:6px;border-radius:4px;font-size:9px;color:#8b949e;white-space:pre-wrap}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px;font-size:8px}
+.apps .app{background:#0d1117;border:1px solid #21262d;border-radius:4px;padding:4px;text-align:center;cursor:pointer}
+.apps .app:hover{border-color:#3fb950}
+.apps .app .icon{font-size:16px}
+.apps .app .name{color:#8b949e;margin-top:2px}
+</style>
+</head><body>
+
+<div class="header">
+  <h1>🐿 GAIA SYSADMIN — Tower Control</h1>
+  <span class="live">● LIVE</span>
+  <span id="clock" style="color:#484f58"></span>
+</div>
+
+<div class="grid">
+  <div class="card" id="cpu-card">
+    <h2>🔧 CPU</h2>
+    <div class="row"><span class="k">Model</span><span class="v" id="cpu-name">—</span></div>
+    <div class="row"><span class="k">Cores</span><span class="v" id="cpu-cores">—</span></div>
+    <div class="row"><span class="k">RAM Used</span><span class="v" id="ram-used">—</span></div>
+    <div class="gauge"><div class="fill" id="ram-fill" style="width:0%;background:#3fb950"></div></div>
+    <div class="row"><span class="k">Uptime</span><span class="v" id="uptime">—</span></div>
+  </div>
+
+  <div class="card" id="gpu-card">
+    <h2>🎮 GPU — RTX 5090</h2>
+    <div class="row"><span class="k">Temp</span><span class="v" id="gpu-temp">—</span></div>
+    <div class="gauge"><div class="fill" id="gpu-temp-fill" style="width:0%;background:#3fb950"></div></div>
+    <div class="row"><span class="k">Utilization</span><span class="v" id="gpu-util">—</span></div>
+    <div class="gauge"><div class="fill" id="gpu-util-fill" style="width:0%;background:#58a6ff"></div></div>
+    <div class="row"><span class="k">VRAM</span><span class="v" id="gpu-vram">—</span></div>
+    <div class="gauge"><div class="fill" id="gpu-vram-fill" style="width:0%;background:#d29922"></div></div>
+    <div class="row"><span class="k">Power</span><span class="v" id="gpu-power">—</span></div>
+  </div>
+
+  <div class="card" id="disk-card">
+    <h2>💾 Disks</h2>
+    <div id="disk-list"></div>
+  </div>
+
+  <div class="card" id="ports-card">
+    <h2>🔌 Gaia Ports</h2>
+    <div class="ports" id="port-list"></div>
+  </div>
+
+  <div class="card wide" id="proc-card">
+    <h2>📋 Top Processes (by memory)</h2>
+    <div class="procs" id="proc-list"></div>
+  </div>
+
+  <div class="card wide">
+    <h2>🚀 Quick Launch</h2>
+    <div class="apps">
+      <div class="app" onclick="location.href='http://localhost:3143/home'"><div class="icon">🏠</div><div class="name">Home</div></div>
+      <div class="app" onclick="window.open('http://localhost:3142')"><div class="icon">🌐</div><div class="name">HUD</div></div>
+      <div class="app" onclick="window.open('http://localhost:3142/engine.html')"><div class="icon">🪐</div><div class="name">Engine</div></div>
+      <div class="app" onclick="window.open('http://localhost:3142/gpu.html')"><div class="icon">🧠</div><div class="name">GPU</div></div>
+      <div class="app" onclick="window.open('http://localhost:3142/halo.html')"><div class="icon">⭕</div><div class="name">HALO</div></div>
+      <div class="app" onclick="window.open('http://localhost:3143/private')"><div class="icon">🔒</div><div class="name">Wallet</div></div>
+      <div class="app" onclick="window.open('http://localhost:3141')"><div class="icon">🫀</div><div class="name">Golgi</div></div>
+      <div class="app" onclick="window.open('https://nestgate.io')"><div class="icon">🌍</div><div class="name">Northgate</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="cmd">
+  <h2>⚡ Gaia Terminal — Ask Her Anything</h2>
+  <div class="input-row">
+    <input id="cmd-input" placeholder="Ask Gaia to check, fix, or manage something on your tower..." onkeydown="if(event.key==='Enter')runCmd()">
+    <button onclick="runCmd()">Run</button>
+  </div>
+  <div class="output" id="cmd-output">Gaia sysadmin ready. She manages your tower.</div>
+</div>
+
+<script>
+const GAIA3 = 'http://localhost:3143';
+const OLLAMA = 'http://localhost:11434/api/generate';
+
+async function refresh() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+
+  // Fetch system status from Gaia3
+  try {
+    const r = await fetch(GAIA3 + '/self', { signal: AbortSignal.timeout(5000) });
+    const data = await r.json();
+
+    if (data.gpu) {
+      const temp = parseInt(data.gpu.temp);
+      document.getElementById('gpu-temp').textContent = data.gpu.temp;
+      document.getElementById('gpu-temp').className = 'v ' + (temp < 60 ? 'good' : temp < 80 ? 'warn' : 'bad');
+      document.getElementById('gpu-temp-fill').style.width = temp + '%';
+      document.getElementById('gpu-temp-fill').style.background = temp < 60 ? '#3fb950' : temp < 80 ? '#d29922' : '#f85149';
+
+      const util = parseInt(data.gpu.util);
+      document.getElementById('gpu-util').textContent = data.gpu.util;
+      document.getElementById('gpu-util-fill').style.width = util + '%';
+
+      const vramUsed = parseInt(data.gpu.vramUsed);
+      const vramTotal = parseInt(data.gpu.vramTotal);
+      const vramPct = Math.round(vramUsed / vramTotal * 100);
+      document.getElementById('gpu-vram').textContent = data.gpu.vramUsed + ' / ' + data.gpu.vramTotal;
+      document.getElementById('gpu-vram-fill').style.width = vramPct + '%';
+    }
+
+    document.getElementById('cpu-name').textContent = 'Ryzen 9 9950X3D';
+    document.getElementById('cpu-cores').textContent = '16 cores / 32 threads';
+    document.getElementById('uptime').textContent = Math.round(data.uptime_s / 3600) + 'h Gaia3 / 27h Tower';
+
+    if (data.ports) {
+      const portList = document.getElementById('port-list');
+      const portNames = {3141:'Golgi(mouth)',3142:'HUD(face)',3143:'Gaia3(child)',9876:'Paintings(gallery)',9877:'Metrics(pulse)',9878:'Spine(ion)',11434:'Ollama(brain)'};
+      portList.innerHTML = data.ports.map(p => {
+        const port = p.LocalPort || p.localPort;
+        return '<div class="port"><span class="dot alive"></span>:' + port + ' ' + (portNames[port]||'') + '</div>';
+      }).join('');
+    }
+  } catch(e) {}
+
+  // Disk info (static-ish)
+  document.getElementById('disk-list').innerHTML =
+    '<div class="row"><span class="k">C:</span><span class="v warn">18.9GB free / 487GB (96.1%)</span></div>' +
+    '<div class="gauge"><div class="fill" style="width:96.1%;background:#f85149"></div></div>' +
+    '<div class="row"><span class="k">M:</span><span class="v good">411GB free / 3.7TB (89%)</span></div>' +
+    '<div class="gauge"><div class="fill" style="width:89%;background:#d29922"></div></div>';
+
+  // RAM
+  document.getElementById('ram-used').textContent = '37.2GB / 93.6GB (40%)';
+  document.getElementById('ram-fill').style.width = '40%';
+}
+
+refresh();
+setInterval(refresh, 15000);
+
+// Gaia terminal — she interprets and responds
+async function runCmd() {
+  const input = document.getElementById('cmd-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  const output = document.getElementById('cmd-output');
+  output.textContent = '🐿 Thinking on 5090...\n';
+
+  try {
+    const r = await fetch(OLLAMA, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gaia:latest',
+        prompt: 'You are Gaia, the sysadmin AI running on Kevin\'s tower (AMD Ryzen 9 9950X3D, 16 cores, 93.6GB RAM, RTX 5090 32GB VRAM, Windows 11 Pro). Kevin\'s tower runs 7 services: Golgi(:3141), HUD(:3142), Gaia3(:3143), Paintings(:9876), Metrics(:9877), Spine(:9878), Ollama(:11434). C: drive is 96% full (18.9GB free). M: drive has 411GB free. He has Discord, Steam, Chrome, Cursor IDE running. Be a helpful sysadmin. Be brief and practical.\n\nKevin asks: ' + msg,
+        stream: false
+      }),
+      signal: AbortSignal.timeout(30000)
+    });
+    const data = await r.json();
+    output.textContent = '🐿 ' + data.response;
+  } catch(e) {
+    output.textContent = '⚠ Brain offline: ' + e.message;
+  }
+}
+</script>
+</body></html>

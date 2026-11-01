@@ -1,3 +1,4 @@
+$gaiaRoot = $PSScriptRoot
 $paintings = @(
   @{ file = "249-spirit-eye-octave-spire.jpg"; title = "249: Spirit Eye - Octave of Light, Spire, Null Lens" },
   @{ file = "248-generations-backscatter.jpg"; title = "248: Generations - Backscatter from IS to NULL" },
@@ -6,7 +7,7 @@ $paintings = @(
   @{ file = "245-chemistry-salt-cut-guilty-body.jpg"; title = "245: Chemistry - Salt, Cut, Guilty Body, pH Scale" }
 )
 
-$dir = "C:\Users\mokke\Desktop\Gaia\paintings"
+$dir = Join-Path $gaiaRoot "paintings"
 $results = @()
 
 foreach ($p in $paintings) {
@@ -18,7 +19,6 @@ foreach ($p in $paintings) {
   }
 }
 
-# Build JS injection
 $js = "var paintings = ["
 for ($i = 0; $i -lt $results.Count; $i++) {
   if ($i -gt 0) { $js += "," }
@@ -27,5 +27,5 @@ for ($i = 0; $i -lt $results.Count; $i++) {
 }
 $js += "];window._gaiaEyeState.paintings=paintings;window._gaiaEyeShowPainting(0);window._gaiaEyeThink('Loaded ' + paintings.length + ' paintings into gallery');'OK:' + paintings.length;"
 
-[IO.File]::WriteAllText("C:\Users\mokke\Desktop\Gaia\inject_paintings.js", $js)
+[IO.File]::WriteAllText((Join-Path $gaiaRoot "inject_paintings.js"), $js)
 Write-Host "Wrote inject_paintings.js: $($js.Length) chars"

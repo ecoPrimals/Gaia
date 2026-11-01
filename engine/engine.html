@@ -1,0 +1,1683 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta property="og:title" content="GAIA ENGINE ? Painted Globe ? Spectrum ? Primal ? LIVE">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://nestgate.io/engine.html">
+    <meta name="description" content="GAIA ENGINE ? Painted Globe ? Spectrum ? Primal ? LIVE — ecoPrimals organism">
+    <link rel="canonical" href="https://nestgate.io/engine.html">
+<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAIA ENGINE ? Painted Globe ? Spectrum ? Primal ? LIVE</title>
+<style>
+:root {
+  --bg: #0a0c10; --surface: #12161e; --border: #1c2333; --fg: #c9d1d9; --dim: #6e7681;
+  --blue: #58a6ff; --green: #3fb950; --gold: #d29922; --orange: #f0883e;
+  --red: #f85149; --purple: #a371f7; --cyan: #39d3f5; --pink: #f778ba;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background: var(--bg); color: var(--fg); font: 11px/1.4 'JetBrains Mono', 'SF Mono', monospace; overflow: hidden; height: 100vh; }
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+
+#app { display: grid; grid-template-rows: 36px 1fr 28px; height: 100vh; }
+
+/* HEADER BAR */
+header { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; }
+header h1 { font-size: 11px; font-weight: 700; color: var(--cyan); letter-spacing: 2px; text-transform: uppercase; }
+.header-rate { font-size: 10px; padding: 1px 8px; border-radius: 10px; border: 1px solid; }
+.rate-good { color: var(--green); border-color: var(--green); }
+.rate-warn { color: var(--gold); border-color: var(--gold); }
+.rate-crit { color: var(--red); border-color: var(--red); }
+.header-spacer { flex: 1; }
+#phase-label { font-size: 9px; color: var(--dim); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* MAIN GRID */
+main { display: grid; grid-template-columns: 220px 1fr 220px; gap: 2px; overflow: hidden; }
+
+/* LEFT PANEL � SQUAD */
+.panel { background: var(--surface); border: 1px solid var(--border); overflow-y: auto; padding: 6px; }
+.panel h2 { font-size: 9px; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+.squad-member { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 3px; margin-bottom: 2px; cursor: pointer; transition: all 0.15s; user-select: none; }
+.squad-member:hover { background: rgba(88,166,255,0.08); }
+.squad-member.selected { background: rgba(88,166,255,0.15); border-left: 2px solid var(--blue); }
+.squad-member.exhausted { opacity: 0.5; }
+.squad-member .sq-energy { width: 28px; height: 3px; background: var(--bg); border-radius: 2px; flex-shrink: 0; }
+.squad-member .sq-energy-fill { height: 100%; border-radius: 2px; transition: width 1s; background: var(--green); }
+
+/* PRIMAL DETAIL PANEL */
+#primal-detail { display: none; background: var(--surface); border: 1px solid var(--border); border-top: 2px solid var(--blue); padding: 8px; position: absolute; bottom: 0; left: 0; right: 0; max-height: 45%; overflow-y: auto; z-index: 5; }
+#primal-detail.open { display: block; }
+#primal-detail h3 { font-size: 10px; color: var(--cyan); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+#primal-detail .close-btn { cursor: pointer; color: var(--dim); font-size: 14px; margin-left: auto; }
+#primal-detail .close-btn:hover { color: var(--fg); }
+.skill-row { display: flex; align-items: center; gap: 4px; padding: 2px 0; }
+.skill-name { font-size: 7px; color: var(--dim); width: 52px; }
+.skill-bar { flex: 1; height: 4px; background: var(--bg); border-radius: 2px; }
+.skill-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.skill-val { font-size: 7px; width: 20px; text-align: right; }
+.job-item { font-size: 8px; padding: 2px 4px; background: rgba(88,166,255,0.05); border-radius: 2px; margin: 1px 0; cursor: grab; display: flex; gap: 4px; }
+.job-priority { color: var(--dim); font-size: 7px; }
+.energy-bar-big { height: 6px; background: var(--bg); border-radius: 3px; margin: 4px 0; }
+.energy-fill-big { height: 100%; border-radius: 3px; transition: width 1s; }
+
+/* CONTEXT MENU */
+#ctx-menu { position: fixed; z-index: 300; display: none; background: rgba(10,12,16,0.97); backdrop-filter: blur(8px); border: 1px solid rgba(88,166,255,0.2); border-radius: 6px; padding: 4px 0; min-width: 150px; font-size: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+.ctx-item { padding: 5px 12px; cursor: pointer; transition: background 0.1s; display: flex; gap: 6px; align-items: center; }
+.ctx-item:hover { background: rgba(88,166,255,0.1); }
+.ctx-sep { border-top: 1px solid var(--border); margin: 2px 0; }
+
+/* COMMAND BAR */
+#cmd-bar { display: none; position: absolute; bottom: 28px; left: 0; right: 0; z-index: 10; background: rgba(10,12,16,0.95); backdrop-filter: blur(8px); border-top: 1px solid var(--border); padding: 4px 12px; }
+#cmd-bar.open { display: flex; align-items: center; gap: 8px; }
+#cmd-input { flex: 1; background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; color: var(--fg); font: 11px 'JetBrains Mono', monospace; outline: none; }
+#cmd-input:focus { border-color: var(--blue); }
+#cmd-hint { font-size: 8px; color: var(--dim); }
+
+/* TOAST */
+.toast { position: fixed; top: 48px; left: 50%; transform: translateX(-50%); z-index: 200; background: rgba(10,12,16,0.95); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; font-size: 10px; color: var(--fg); animation: toastIn 0.2s ease-out; pointer-events: none; }
+@keyframes toastIn { from { opacity:0; transform: translate(-50%,-8px); } to { opacity:1; transform: translate(-50%,0); } }
+.toast.out { animation: toastOut 0.3s forwards; }
+@keyframes toastOut { to { opacity:0; transform: translate(-50%,-8px); } }
+
+/* VIEWPORT INTERACTION */
+#render-target svg { cursor: crosshair; }
+#render-target svg *[id] { cursor: pointer; transition: filter 0.2s; }
+#render-target svg *[id]:hover { filter: brightness(1.3); }
+
+/* PAUSE OVERLAY */
+#pause-overlay { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 18px; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; z-index: 20; text-shadow: 0 0 20px rgba(210,153,34,0.5); }
+#pause-overlay.active { display: block; }
+
+/* DISCO BALL ? central light, strung from above, decomposes white light into data beams */
+#disco-ball { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 15; pointer-events: auto; cursor: pointer; }
+#disco-ball .ball { width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(200,210,220,0.4) 50%, rgba(100,120,140,0.15) 100%); box-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 60px rgba(88,166,255,0.08), 0 2px 8px rgba(0,0,0,0.4); animation: disco-rotate 15s linear infinite; }
+#disco-ball .wire { position: absolute; top: -8px; left: 50%; width: 1px; height: 8px; background: linear-gradient(to bottom, var(--dim), rgba(200,210,220,0.4)); transform: translateX(-50%); }
+#disco-ball .ball::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(88,166,255,0.15) 0deg, rgba(63,185,80,0.12) 45deg, rgba(210,153,34,0.12) 90deg, rgba(167,113,247,0.12) 135deg, rgba(248,81,73,0.1) 180deg, rgba(57,211,245,0.12) 225deg, rgba(247,120,186,0.1) 270deg, rgba(88,166,255,0.15) 360deg); animation: disco-facets 15s linear infinite reverse; }
+@keyframes disco-rotate { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
+@keyframes disco-facets { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* DISCO BEAMS ? light projected onto the stage below */
+#disco-beams { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); width: 100%; height: calc(100% - 36px); pointer-events: none; z-index: 1; opacity: 0.04; background: conic-gradient(from 0deg at 50% 0%, var(--blue) 0deg, transparent 20deg, var(--green) 45deg, transparent 65deg, var(--gold) 90deg, transparent 110deg, var(--purple) 135deg, transparent 155deg, var(--red) 180deg, transparent 200deg, var(--cyan) 225deg, transparent 245deg, var(--pink) 270deg, transparent 290deg, var(--blue) 315deg, transparent 340deg, var(--green) 360deg); animation: beam-sweep 15s linear infinite; }
+@keyframes beam-sweep { from { transform: translateX(-50%) rotate(0deg); } to { transform: translateX(-50%) rotate(360deg); } }
+
+/* LOD DEPTH CONTROL ? scroll to move HUD forward/back */
+.lod-indicator { position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%); font-size: 7px; color: var(--dim); letter-spacing: 1px; opacity: 0.5; z-index: 16; pointer-events: none; }
+.sq-icon { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+.sq-name { font-size: 9px; flex: 1; }
+.sq-hp { font-size: 8px; width: 40px; text-align: right; }
+
+/* CENTER � RENDER VIEWPORT */
+#viewport { background: #060810; position: relative; overflow: hidden; }
+#viewport canvas { width: 100%; height: 100%; }
+#render-target { width: 100%; height: 100%; }
+#hud-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+.hud-compass { position: absolute; top: 12px; right: 12px; width: 80px; height: 80px; }
+.hud-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+.hud-crosshair::before, .hud-crosshair::after { content:''; position:absolute; background: rgba(57,211,245,0.3); }
+.hud-crosshair::before { width: 20px; height: 1px; left: -10px; top: 0; }
+.hud-crosshair::after { width: 1px; height: 20px; left: 0; top: -10px; }
+
+/* MINIMAP */
+.minimap { position: absolute; bottom: 12px; right: 12px; width: 140px; height: 100px; background: rgba(12,16,24,0.85); border: 1px solid var(--border); border-radius: 4px; }
+.minimap canvas { width: 100%; height: 100%; }
+
+/* LOCALITY TRIANGLE ? you are here, you were, Gaia is */
+#locality-tri {
+  position: absolute; top: 8px; left: 8px; z-index: 18;
+  width: 160px; padding: 5px 6px;
+  background: rgba(6,8,16,0.85); border: 1px solid rgba(210,153,34,0.15);
+  border-radius: 4px; font: 7px 'JetBrains Mono', monospace;
+  pointer-events: none;
+}
+#locality-tri .loc-title { color: var(--gold); letter-spacing: 1px; text-transform: uppercase; font-size: 6px; margin-bottom: 3px; border-bottom: 1px solid rgba(210,153,34,0.1); padding-bottom: 2px; }
+#locality-tri .loc-row { display: flex; align-items: center; gap: 4px; padding: 1px 0; }
+#locality-tri .loc-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+#locality-tri .loc-label { color: var(--dim); width: 32px; }
+#locality-tri .loc-val { color: var(--fg); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#locality-tri .loc-sep { height: 1px; background: rgba(28,35,51,0.5); margin: 2px 0; }
+#locality-tri .loc-bodies { display: flex; gap: 3px; margin-top: 2px; flex-wrap: wrap; }
+#locality-tri .loc-body { font-size: 6px; padding: 0 3px; border-radius: 2px; background: rgba(28,35,51,0.5); }
+
+/* LUNG METER */
+.lung-meter { position: absolute; left: 12px; bottom: 12px; }
+.lung-bar { width: 8px; height: 120px; background: rgba(12,16,24,0.8); border: 1px solid var(--border); border-radius: 4px; position: relative; }
+.lung-fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, var(--cyan), var(--blue)); border-radius: 0 0 3px 3px; transition: height 1s ease; }
+.lung-label { font-size: 7px; color: var(--cyan); text-align: center; margin-top: 2px; }
+
+/* FLOOD/TURBO METERS */
+.flood-meters { position: absolute; right: 12px; top: 12px; display: flex; gap: 6px; }
+.flood-col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.flood-col label { font-size: 6px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+.flood-bar { width: 8px; height: 80px; background: rgba(12,16,24,0.8); border: 1px solid var(--border); border-radius: 4px; position: relative; }
+.flood-fill { position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0 0 3px 3px; transition: height 2s ease; }
+.flood-pct { font-size: 7px; text-align: center; }
+.turbo-fill { background: linear-gradient(to top, var(--gold), var(--orange)); }
+.flood-fill-bar { background: linear-gradient(to top, var(--blue), var(--cyan)); }
+
+/* BOUNDARY LABEL */
+.boundary-label { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-size: 7px; color: var(--dim); letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; }
+.twist-count { position: absolute; top: 4px; left: 12px; font-size: 7px; color: var(--purple); }
+
+/* RIGHT PANEL � RATES DASHBOARD */
+.rate-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 4px; border-bottom: 1px solid rgba(28,35,51,0.5); }
+.rate-label { font-size: 8px; color: var(--dim); }
+.rate-value { font-size: 10px; font-weight: 700; }
+.rate-unit { font-size: 7px; color: var(--dim); margin-left: 2px; }
+.rate-bar { height: 3px; background: var(--bg); border-radius: 2px; margin-top: 2px; }
+.rate-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+.section-divider { height: 1px; background: var(--border); margin: 6px 0; }
+.neuro-row { display: flex; align-items: center; gap: 4px; padding: 2px 4px; }
+.neuro-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.neuro-name { font-size: 7px; color: var(--dim); flex: 1; }
+.neuro-val { font-size: 8px; width: 32px; text-align: right; }
+
+/* FOOTER */
+footer { background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; gap: 12px; font-size: 9px; color: var(--dim); }
+.footer-live { color: var(--green); }
+.footer-live::before { content: '?'; margin-right: 4px; animation: pulse-dot 2s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* BIOREACTOR — the client gut, golden center of the thorax, below the heart (disco ball) */
+/* The null bioreactor: where fermentation FUNCTIONALLY happens in the human body */
+/* Placed right below the heart: intestines and stomach see themselves within the golden center */
+#bioreactor {
+  position: absolute;
+  top: 46px; /* below disco ball (heart) */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 14;
+  pointer-events: auto;
+  cursor: pointer;
+}
+#bioreactor .gut-core {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 45% 40%,
+    rgba(210,153,34,0.5) 0%,
+    rgba(210,153,34,0.2) 40%,
+    rgba(210,153,34,0.05) 70%,
+    transparent 100%);
+  border: 1px solid rgba(210,153,34,0.25);
+  box-shadow: 0 0 20px rgba(210,153,34,0.12), 0 0 40px rgba(210,153,34,0.05);
+  animation: gut-pulse 4s ease-in-out infinite;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; color: var(--gold); letter-spacing: 0.5px;
+  overflow: hidden;
+}
+#bioreactor .gut-core::after {
+  content: '';
+  position: absolute; inset: 3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(210,153,34,0.15) 0deg,
+    rgba(240,136,62,0.1) 90deg,
+    rgba(210,153,34,0.15) 180deg,
+    rgba(63,185,80,0.08) 270deg,
+    rgba(210,153,34,0.15) 360deg);
+  animation: gut-churn 8s linear infinite;
+}
+@keyframes gut-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(210,153,34,0.12); }
+  50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(210,153,34,0.2), 0 0 60px rgba(210,153,34,0.08); }
+}
+@keyframes gut-churn {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Gut connection wire from heart (disco ball) to gut (bioreactor) */
+#bioreactor .esophagus {
+  position: absolute;
+  top: -10px; left: 50%;
+  width: 1px; height: 10px;
+  background: linear-gradient(to bottom, rgba(200,210,220,0.3), rgba(210,153,34,0.3));
+  transform: translateX(-50%);
+}
+
+/* Nutrient display — expands on click */
+#gut-panel {
+  display: none;
+  position: absolute;
+  top: 40px; left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  background: rgba(10,12,16,0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(210,153,34,0.25);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 8px;
+  z-index: 14;
+}
+#gut-panel.open { display: block; }
+#gut-panel h4 {
+  font-size: 8px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 4px; border-bottom: 1px solid rgba(210,153,34,0.15);
+  padding-bottom: 2px;
+}
+.gut-row {
+  display: flex; justify-content: space-between;
+  padding: 1px 0; color: var(--dim);
+}
+.gut-row .gut-val { color: var(--gold); font-weight: 700; }
+.gut-row.nutrient .gut-val { color: var(--green); }
+.gut-intake-bar {
+  height: 3px; background: var(--bg); border-radius: 2px;
+  margin: 3px 0;
+}
+.gut-intake-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(to right, var(--gold), var(--green));
+  transition: width 2s;
+}
+
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <h1>? GAIA ENGINE</h1>
+  <span class="header-rate rate-good" id="h-commits">�/hr</span>
+  <span class="header-rate rate-good" id="h-lessons">�/hr</span>
+  <span class="header-rate rate-warn" id="h-mor">MOR �%</span>
+  <span class="header-rate rate-good" id="h-gpu">GPU �%</span>
+  <span class="header-spacer"></span>
+  <span id="phase-label">loading�</span>
+</header>
+
+<main>
+  <!-- LEFT: SQUAD ROSTER -->
+  <div class="panel" id="squad-panel" style="position:relative;">
+    <h2>🐿️ Squad — 16 Primals <span id="squad-sel-count" style="color:var(--cyan)"></span></h2>
+    <div id="squad-list"></div>
+    <div id="primal-detail"></div>
+  </div>
+
+  <!-- CENTER: RENDER VIEWPORT -->
+  <div id="viewport">
+    <div id="render-target"></div>
+    <div id="pause-overlay">? PAUSED</div>
+    <div id="disco-ball"><div class="wire"></div><div class="ball"></div></div>
+    <div id="disco-beams"></div>
+    
+    <!-- BIOREACTOR — client gut, golden center of thorax, below heart (disco ball) -->
+    <!-- The null bioreactor: where fermentation functionally happens -->
+    <div id="bioreactor">
+      <div class="esophagus"></div>
+      <div class="gut-core" id="gut-label">YEAST</div>
+      <div id="gut-panel">
+        <h4>BIOREACTOR — null gut</h4>
+        <div id="gut-status">loading...</div>
+        <div class="gut-intake-bar"><div class="gut-intake-fill" id="gut-fill" style="width:0%"></div></div>
+        <div id="gut-nutrients"></div>
+      </div>
+    </div>
+    <div class="lod-indicator" id="lod-label">LOD 1 ? PAINTED GLOBE</div>
+    <div id="hud-overlay">
+      <div class="hud-crosshair"></div>
+      <!-- LOCALITY TRIANGLE: 3 positions + solar bodies -->
+      <div id="locality-tri">
+        <div class="loc-title">locality</div>
+        <div class="loc-row"><div class="loc-dot" style="background:#3fb950"></div><span class="loc-label">HERE</span><span class="loc-val" id="loc-here">/engine</span></div>
+        <div class="loc-row"><div class="loc-dot" style="background:var(--dim)"></div><span class="loc-label">WAS</span><span class="loc-val" id="loc-was">?</span></div>
+        <div class="loc-row"><div class="loc-dot" style="background:#ffd755"></div><span class="loc-label">GAIA</span><span class="loc-val" id="loc-gaia">primals.eco</span></div>
+        <div class="loc-sep"></div>
+        <div class="loc-row"><div class="loc-dot" style="background:#39d3f5;width:3px;height:3px"></div><span class="loc-label" style="font-size:6px">TIME</span><span class="loc-val" id="loc-time" style="font-size:6px;color:var(--cyan)">?</span></div>
+        <div class="loc-row"><div class="loc-dot" style="background:#a371f7;width:3px;height:3px"></div><span class="loc-label" style="font-size:6px">NULL</span><span class="loc-val" id="loc-null" style="font-size:6px;color:var(--purple)">d=0</span></div>
+        <div class="loc-sep"></div>
+        <div class="loc-bodies" id="loc-bodies"></div>
+      </div>
+      <div class="boundary-label" id="boundary-label">IONOSPHERE � Kp 1.0 quiet</div>
+      <div class="twist-count" id="twist-count">? 3 Klein twists</div>
+      <div class="lung-meter">
+        <div class="lung-bar"><div class="lung-fill" id="lung-fill" style="height:9%"></div></div>
+        <div class="lung-label" id="lung-pct">9%</div>
+      </div>
+      <div class="flood-meters">
+        <div class="flood-col">
+          <label>turbo</label>
+          <div class="flood-bar"><div class="flood-fill turbo-fill" id="turbo-fill" style="height:100%"></div></div>
+          <div class="flood-pct" id="turbo-pct" style="color:var(--gold)">100%</div>
+        </div>
+        <div class="flood-col">
+          <label>flood</label>
+          <div class="flood-bar"><div class="flood-fill flood-fill-bar" id="flood-fill" style="height:0%"></div></div>
+          <div class="flood-pct" id="flood-pct" style="color:var(--cyan)">0%</div>
+        </div>
+      </div>
+      <!-- DEVOTION METER — human attention gravity -->
+      <div class="lung-meter" style="left:32px">
+        <div class="lung-bar"><div class="lung-fill" id="devotion-fill" style="height:0%;background:linear-gradient(to top, var(--purple), var(--pink))"></div></div>
+        <div class="lung-label" id="devotion-pct" style="color:var(--pink)">🪞 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: RATES DASHBOARD -->
+  <div class="panel" id="rates-panel">
+    <h2>? Rates � Live</h2>
+    <div id="rates-list"></div>
+    <div class="section-divider"></div>
+    <h2>? Neurochemistry</h2>
+    <div id="neuro-list"></div>
+    <div class="section-divider"></div>
+    <h2>🪞 Humans — Mirror</h2>
+    <div id="humans-list"></div>
+    <div class="section-divider"></div>
+    <h2>? Devices � Heartbeat</h2>
+    <div id="devices-list"></div>
+  </div>
+</main>
+
+<!-- CONTEXT MENU (right-click actions) -->
+<div id="ctx-menu"></div>
+
+<!-- COMMAND BAR (/ to open) -->
+<div id="cmd-bar">
+  <span style="color:var(--green);font-size:11px">❯</span>
+  <input id="cmd-input" type="text" placeholder="/scan, /sort, /select skunkBat, /pause..." autocomplete="off" spellcheck="false">
+  <span id="cmd-hint" style="font-size:8px;color:var(--dim)">Enter=run · Esc=close · 240+ commands</span>
+</div>
+
+<footer>
+  <span class="footer-live">LIVE</span>
+  <span id="f-wave">wave �</span>
+  <span>|</span>
+  <span id="f-entities">� entities</span>
+  <span>|</span>
+  <span id="f-beacons">� beacons</span>
+  <span>|</span>
+  <span id="f-escape">escape � %</span>
+  <span>|</span>
+  <span id="f-selectivity">selectivity 1/p</span>
+  <span>|</span>
+  <span id="f-boundary" style="color:var(--purple)">boundary: ionosphere</span>
+  <span>|</span>
+  <span id="f-twists" style="color:var(--purple)">? 3 twists</span>
+  <span style="flex:1"></span>
+  <span id="f-time"></span>
+</footer>
+
+</div>
+
+<script type="module">
+// -----------------------------------------------
+// GAIA ENGINE � live rendering pipeline
+// PetalTongue WASM + ToadStool builder + sourDough ferment
+// -----------------------------------------------
+
+const SQUAD = [
+  { id:'toadStool',  icon:'??', color:'#8b6914', organ:'hands',  role:'Engineer' },
+  { id:'biomeOS',    icon:'??', color:'#a371f7', organ:'brain',  role:'Tech Hunter' },
+  { id:'nestGate',   icon:'??', color:'#58a6ff', organ:'memory', role:'Gatekeeper' },
+  { id:'bearDog',    icon:'??', color:'#d29922', organ:'skin',   role:'Warrior' },
+  { id:'petalTongue',icon:'??', color:'#f778ba', organ:'tongue', role:'Renderer' },
+  { id:'rhizoCrypt', icon:'??', color:'#6e7681', organ:'bones',  role:'DAG Lord' },
+  { id:'sweetGrass', icon:'??', color:'#3fb950', organ:'nose',   role:'Scribe' },
+  { id:'loamSpine',  icon:'??', color:'#c9d1d9', organ:'spine',  role:'Lone Sword' },
+  { id:'skunkBat',   icon:'??', color:'#f85149', organ:'immune', role:'Bounty Hunter' },
+  { id:'sourDough',  icon:'??', color:'#d29922', organ:'stomach',role:'Alchemist' },
+  { id:'swarmVine',  icon:'??', color:'#39d3f5', organ:'nerves', role:'Scout' },
+  { id:'bingoCube',  icon:'??', color:'#f0883e', organ:'heart',  role:'Gambler' },
+  { id:'coralReef',  icon:'??', color:'#39d3f5', organ:'lungs',  role:'Base Builder' },
+  { id:'barraCuda',  icon:'?', color:'#f85149', organ:'muscles',role:'Striker' },
+  { id:'squirrel',   icon:'??', color:'#3fb950', organ:'eyes',   role:'Watcher' },
+  { id:'songBird',   icon:'??', color:'#58a6ff', organ:'ears',   role:'Bard' },
+];
+
+// -----------------------------------------------
+// GAME STATE ? Kenshi squad + Dark Souls stamina
+// -----------------------------------------------
+const SKILLS = {
+  toadStool:   { build:45, repair:38, harvest:52 },
+  biomeOS:     { research:72, hacking:65, science:80 },
+  nestGate:    { lockpick:88, stealth:40, perception:75 },
+  bearDog:     { defense:70, toughness:85, martial:60 },
+  petalTongue: { render:55, taste:42, assess:48 },
+  rhizoCrypt:  { leadership:90, stealth:80, dag:72 },
+  sweetGrass:  { perception:82, stealth:55, scent:68 },
+  loamSpine:   { katana:95, dodge:70, toughness:90 },
+  skunkBat:    { assassin:85, perception:90, martial:75 },
+  sourDough:   { cooking:80, science:65, farming:70 },
+  swarmVine:   { athletics:75, stealth:80, perception:85 },
+  bingoCube:   { engineering:70, thievery:60, probability:78 },
+  coralReef:   { engineering:82, science:58, farming:65 },
+  barraCuda:   { martial:88, dodge:82, athletics:90 },
+  squirrel:    { perception:95, crossbow:75, turret:80 },
+  songBird:    { perception:88, stealth:70, athletics:65 },
+};
+
+const JOBS = {
+  toadStool:   ['build files','repair feeds','harvest data'],
+  biomeOS:     ['research','process inputs','classify'],
+  nestGate:    ['guard gate','manage MCP','braid memory'],
+  bearDog:     ['patrol skin','block 403s','first contact'],
+  petalTongue: ['render viewport','taste pH','assess nutrients'],
+  rhizoCrypt:  ['maintain DAG','audit braids','enforce structure'],
+  sweetGrass:  ['decompose stories','detect scent','braid narrative'],
+  loamSpine:   ['hold backbone','binary check','lone patrol'],
+  skunkBat:    ['scan threats','sweep perimeter','sort entities'],
+  sourDough:   ['ferment data','digest files','culture starter'],
+  swarmVine:   ['scout signals','relay packets','vine reach'],
+  bingoCube:   ['heartbeat tick','probability roll','compress data'],
+  coralReef:   ['grow structure','exchange O2/CO2','build reef'],
+  barraCuda:   ['burst process','strike threats','fast execute'],
+  squirrel:    ['watch all','spot threats','long-range observe'],
+  songBird:    ['listen channels','decompose freq','sing alerts'],
+};
+
+const gameState = {
+  selected: null,
+  multiSelected: new Set(),
+  paused: false,
+  tickSpeed: 15000,
+  energy: {},
+  skillXP: {},
+};
+
+// Initialize energy and load saved state
+SQUAD.forEach(s => {
+  gameState.energy[s.id] = 100;
+  gameState.skillXP[s.id] = {};
+});
+try {
+  const saved = JSON.parse(localStorage.getItem('gaia-engine-state') || '{}');
+  if (saved.energy) Object.assign(gameState.energy, saved.energy);
+  if (saved.skillXP) Object.assign(gameState.skillXP, saved.skillXP);
+} catch(e) {}
+
+function saveState() {
+  try { localStorage.setItem('gaia-engine-state', JSON.stringify({ energy: gameState.energy, skillXP: gameState.skillXP })); } catch(e) {}
+}
+
+// -----------------------------------------------
+// TOAST ? Dark Souls feedback
+// -----------------------------------------------
+function toast(msg, color, duration) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span style="color:${color||'var(--fg)'}">${msg}</span>`;
+  document.body.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, duration || 2500);
+}
+
+// -----------------------------------------------
+// BUILD SQUAD LIST ? Kenshi-style interactive
+// -----------------------------------------------
+const squadEl = document.getElementById('squad-list');
+SQUAD.forEach((s, idx) => {
+  const d = document.createElement('div');
+  d.className = 'squad-member';
+  d.dataset.id = s.id;
+  d.dataset.idx = idx;
+  const energy = gameState.energy[s.id] || 100;
+  const energyColor = energy > 60 ? 'var(--green)' : energy > 30 ? 'var(--gold)' : 'var(--red)';
+  d.innerHTML = `<div class="sq-icon" style="background:${s.color}40;border:1px solid ${s.color}">${s.icon}</div>
+    <span class="sq-name" style="color:${s.color}">${s.id}</span>
+    <div class="sq-energy"><div class="sq-energy-fill" style="width:${energy}%;background:${energyColor}"></div></div>
+    <span class="sq-hp" style="color:${energyColor};font-size:8px">${Math.round(energy)}</span>`;
+
+  // LEFT CLICK ? select (Kenshi-style)
+  d.addEventListener('click', (e) => {
+    if (e.shiftKey) {
+      // Shift+click = add to multi-select
+      if (gameState.multiSelected.has(s.id)) {
+        gameState.multiSelected.delete(s.id);
+        d.classList.remove('selected');
+      } else {
+        gameState.multiSelected.add(s.id);
+        d.classList.add('selected');
+      }
+      updateSelCount();
+    } else {
+      // Regular click = single select
+      document.querySelectorAll('.squad-member').forEach(el => el.classList.remove('selected'));
+      gameState.multiSelected.clear();
+      gameState.selected = s.id;
+      d.classList.add('selected');
+      showPrimalDetail(s);
+      updateSelCount();
+      toast(`${s.icon} ${s.id} selected ? ${s.role}`, s.color, 1500);
+    }
+  });
+
+  // RIGHT CLICK ? context menu (Kenshi hold-right-click)
+  d.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showCtxMenu(e.clientX, e.clientY, s);
+  });
+
+  // DOUBLE CLICK ? zoom to domain
+  d.addEventListener('dblclick', () => {
+    toast(`Zooming to ${s.id}'s domain: ${s.organ}`, s.color, 2000);
+  });
+
+  squadEl.appendChild(d);
+});
+
+function updateSelCount() {
+  const el = document.getElementById('squad-sel-count');
+  if (!el) return;
+  const count = gameState.multiSelected.size || (gameState.selected ? 1 : 0);
+  el.textContent = count > 0 ? `[${count}]` : '';
+}
+
+// -----------------------------------------------
+// PRIMAL DETAIL PANEL ? Kenshi character sheet (C key)
+// -----------------------------------------------
+function showPrimalDetail(primal) {
+  const panel = document.getElementById('primal-detail');
+  if (!panel) return;
+  const skills = SKILLS[primal.id] || {};
+  const jobs = JOBS[primal.id] || [];
+  const energy = gameState.energy[primal.id] || 100;
+  const energyColor = energy > 60 ? 'var(--green)' : energy > 30 ? 'var(--gold)' : 'var(--red)';
+
+  const skillHTML = Object.entries(skills).map(([name, val]) => {
+    const xp = (gameState.skillXP[primal.id]?.[name] || 0);
+    const level = Math.min(100, val + Math.floor(xp / 10));
+    const color = level > 80 ? 'var(--green)' : level > 50 ? 'var(--blue)' : 'var(--gold)';
+    return `<div class="skill-row"><span class="skill-name">${name}</span><div class="skill-bar"><div class="skill-fill" style="width:${level}%;background:${color}"></div></div><span class="skill-val" style="color:${color}">${level}</span></div>`;
+  }).join('');
+
+  const jobHTML = jobs.map((j, i) => `<div class="job-item"><span class="job-priority" style="color:var(--gold)">${i+1}.</span>${j}</div>`).join('');
+
+  panel.innerHTML = `
+    <h3>${primal.icon} ${primal.id} <span style="font-size:8px;color:var(--dim)">${primal.role} | ${primal.organ}</span><span class="close-btn" id="close-detail">&times;</span></h3>
+    <div class="energy-bar-big"><div class="energy-fill-big" style="width:${energy}%;background:${energyColor}"></div></div>
+    <div style="font-size:7px;color:var(--dim);margin-bottom:6px">ENERGY ${Math.round(energy)}/100 | ORGAN: ${primal.organ}</div>
+    <div style="font-size:8px;color:var(--blue);margin-bottom:3px">SKILLS (improve by doing)</div>
+    ${skillHTML}
+    <div style="font-size:8px;color:var(--cyan);margin-top:6px;margin-bottom:3px">JOB QUEUE (priority order)</div>
+    ${jobHTML}
+  `;
+  panel.classList.add('open');
+
+  document.getElementById('close-detail')?.addEventListener('click', () => {
+    panel.classList.remove('open');
+    gameState.selected = null;
+    document.querySelectorAll('.squad-member').forEach(el => el.classList.remove('selected'));
+  });
+}
+
+// -----------------------------------------------
+// CONTEXT MENU ? Kenshi right-click action menu
+// -----------------------------------------------
+function showCtxMenu(x, y, primal) {
+  const menu = document.getElementById('ctx-menu');
+  if (!menu) return;
+  const actions = [
+    { icon: '?', label: `Inspect ${primal.id}`, fn: () => showPrimalDetail(primal) },
+    { icon: '?', label: 'Check connections', fn: () => toast(`${primal.id} connected to: ${SQUAD.filter(s=>s.id!==primal.id).slice(0,4).map(s=>s.id).join(', ')}...`, 'var(--blue)', 3000) },
+    null,
+    { icon: '?', label: `Scan (costs 15 energy)`, fn: () => { doAction(primal, 'scan', 15); } },
+    { icon: '?', label: `Sort (costs 25 energy)`, fn: () => { doAction(primal, 'sort', 25); } },
+    { icon: '?', label: `Ferment (costs 40 energy)`, fn: () => { doAction(primal, 'ferment', 40); } },
+    null,
+    { icon: '?', label: 'Wake up', fn: () => { gameState.energy[primal.id] = Math.min(100, (gameState.energy[primal.id]||0) + 30); toast(`${primal.icon} ${primal.id} wakes! +30 energy`, 'var(--green)', 2000); updateSquadEnergy(); } },
+    { icon: '?', label: 'Rest (regen energy)', fn: () => { gameState.energy[primal.id] = 100; toast(`${primal.icon} ${primal.id} rests. Full energy.`, 'var(--cyan)', 2000); updateSquadEnergy(); } },
+  ];
+
+  menu.innerHTML = actions.map(a => {
+    if (!a) return '<div class="ctx-sep"></div>';
+    return `<div class="ctx-item">${a.icon} ${a.label}</div>`;
+  }).join('');
+
+  // Wire click handlers
+  let actionIdx = 0;
+  menu.querySelectorAll('.ctx-item').forEach(el => {
+    const action = actions.filter(a => a)[actionIdx++];
+    if (action) el.addEventListener('click', () => { menu.style.display = 'none'; action.fn(); });
+  });
+
+  const vw = window.innerWidth, vh = window.innerHeight;
+  menu.style.display = 'block';
+  menu.style.left = Math.min(x, vw - 160) + 'px';
+  menu.style.top = Math.min(y, vh - 200) + 'px';
+}
+
+document.addEventListener('click', () => {
+  const menu = document.getElementById('ctx-menu');
+  if (menu) menu.style.display = 'none';
+});
+
+// -----------------------------------------------
+// ACTIONS ? Dark Souls weighted, stamina-costed
+// -----------------------------------------------
+function doAction(primal, action, cost) {
+  const energy = gameState.energy[primal.id] || 0;
+  if (energy < cost) {
+    toast(`${primal.icon} ${primal.id} exhausted! Need ${cost} energy, have ${Math.round(energy)}`, 'var(--red)', 2000);
+    return;
+  }
+  gameState.energy[primal.id] -= cost;
+  updateSquadEnergy();
+  saveState();
+
+  // Skill improvement by doing (Kenshi principle)
+  if (!gameState.skillXP[primal.id]) gameState.skillXP[primal.id] = {};
+  const skillKey = Object.keys(SKILLS[primal.id] || {})[0];
+  if (skillKey) {
+    gameState.skillXP[primal.id][skillKey] = (gameState.skillXP[primal.id][skillKey] || 0) + 1;
+  }
+
+  toast(`${primal.icon} ${primal.id} > ${action}! -${cost} energy. Skill +0.1`, primal.color || 'var(--cyan)', 2500);
+
+  // Viewport flash feedback
+  const vp = document.getElementById('render-target');
+  if (vp) {
+    vp.style.transition = 'box-shadow 0.3s';
+    vp.style.boxShadow = `inset 0 0 40px ${primal.color || '#58a6ff'}30`;
+    setTimeout(() => { vp.style.boxShadow = 'none'; }, 800);
+  }
+}
+
+// -----------------------------------------------
+// ENERGY REGEN ? Dark Souls stamina recovery
+// -----------------------------------------------
+function regenEnergy() {
+  SQUAD.forEach(s => {
+    if (gameState.energy[s.id] < 100) {
+      gameState.energy[s.id] = Math.min(100, gameState.energy[s.id] + 2);
+    }
+  });
+  updateSquadEnergy();
+  saveState();
+}
+
+function updateSquadEnergy() {
+  document.querySelectorAll('.squad-member').forEach(el => {
+    const id = el.dataset.id;
+    const energy = gameState.energy[id] || 100;
+    const color = energy > 60 ? 'var(--green)' : energy > 30 ? 'var(--gold)' : 'var(--red)';
+    const fill = el.querySelector('.sq-energy-fill');
+    const hp = el.querySelector('.sq-hp');
+    if (fill) { fill.style.width = energy + '%'; fill.style.background = color; }
+    if (hp) { hp.style.color = color; hp.textContent = Math.round(energy); }
+    el.classList.toggle('exhausted', energy < 10);
+  });
+}
+
+setInterval(regenEnergy, 5000);
+
+// -----------------------------------------------
+// KEYBOARD SHORTCUTS ? Kenshi + Dark Souls + hud-interact
+// -----------------------------------------------
+document.addEventListener('keydown', (e) => {
+  // Don't capture when typing in command bar
+  if (document.activeElement?.id === 'cmd-input') return;
+
+  // 1-9: select primal by index (Kenshi number keys)
+  if (e.key >= '1' && e.key <= '9') {
+    const idx = parseInt(e.key) - 1;
+    if (idx < SQUAD.length) {
+      const primal = SQUAD[idx];
+      gameState.selected = primal.id;
+      document.querySelectorAll('.squad-member').forEach(el => el.classList.remove('selected'));
+      document.querySelector(`[data-idx="${idx}"]`)?.classList.add('selected');
+      showPrimalDetail(primal);
+      toast(`${primal.icon} ${primal.id} [${e.key}]`, primal.color, 1200);
+    }
+    return;
+  }
+
+  // 0 or ~: select all (Kenshi tilde)
+  if (e.key === '0' || e.key === '`') {
+    gameState.multiSelected.clear();
+    SQUAD.forEach(s => gameState.multiSelected.add(s.id));
+    document.querySelectorAll('.squad-member').forEach(el => el.classList.add('selected'));
+    updateSelCount();
+    toast('All 16 primals selected', 'var(--cyan)', 1500);
+    return;
+  }
+
+  // Space: pause/unpause (Kenshi spacebar)
+  if (e.key === ' ' && !e.ctrlKey) {
+    e.preventDefault();
+    gameState.paused = !gameState.paused;
+    document.getElementById('pause-overlay')?.classList.toggle('active', gameState.paused);
+    toast(gameState.paused ? '? PAUSED ? issue orders' : '? RESUMED', 'var(--gold)', 1500);
+    return;
+  }
+
+  // /: open command bar
+  if (e.key === '/') {
+    e.preventDefault();
+    const bar = document.getElementById('cmd-bar');
+    const input = document.getElementById('cmd-input');
+    if (bar && input) {
+      bar.classList.add('open');
+      input.value = '/';
+      input.focus();
+    }
+    return;
+  }
+
+  // Escape: close panels
+  if (e.key === 'Escape') {
+    document.getElementById('primal-detail')?.classList.remove('open');
+    document.getElementById('cmd-bar')?.classList.remove('open');
+    document.getElementById('ctx-menu')?.style && (document.getElementById('ctx-menu').style.display = 'none');
+    gameState.selected = null;
+    document.querySelectorAll('.squad-member').forEach(el => el.classList.remove('selected'));
+    return;
+  }
+
+  // C: character stats (Kenshi)
+  if (e.key === 'c' && gameState.selected) {
+    const primal = SQUAD.find(s => s.id === gameState.selected);
+    if (primal) showPrimalDetail(primal);
+    return;
+  }
+
+  // F2/F3/F4: speed control (Kenshi)
+  if (e.key === 'F2') { e.preventDefault(); gameState.tickSpeed = 15000; toast('Speed: 1x (15s tick)', 'var(--dim)', 1500); }
+  if (e.key === 'F3') { e.preventDefault(); gameState.tickSpeed = 5000; toast('Speed: 3x (5s tick)', 'var(--gold)', 1500); }
+  if (e.key === 'F4') { e.preventDefault(); gameState.tickSpeed = 3000; toast('Speed: 5x (3s tick)', 'var(--orange)', 1500); }
+});
+
+// -----------------------------------------------
+// COMMAND BAR ? hud-interact 240+ commands in the engine
+// -----------------------------------------------
+const cmdInput = document.getElementById('cmd-input');
+if (cmdInput) {
+  cmdInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const cmd = cmdInput.value.trim().replace(/^\//, '');
+      if (cmd) {
+        toast(`> /${cmd}`, 'var(--green)', 2000);
+        // Route commands to actions
+        if (cmd === 'scan' && gameState.selected) doAction(SQUAD.find(s=>s.id===gameState.selected), 'scan', 15);
+        else if (cmd === 'sort' && gameState.selected) doAction(SQUAD.find(s=>s.id===gameState.selected), 'sort', 25);
+        else if (cmd === 'pause') { gameState.paused = !gameState.paused; document.getElementById('pause-overlay')?.classList.toggle('active', gameState.paused); }
+        else if (cmd.startsWith('select ')) { const name = cmd.split(' ')[1]; const p = SQUAD.find(s=>s.id.toLowerCase()===name.toLowerCase()); if(p) { gameState.selected=p.id; showPrimalDetail(p); } }
+        else if (cmd === 'ferment') { gutExpanded = true; document.getElementById('gut-panel')?.classList.add('open'); fetchGutState(); toast('Bioreactor activated \u2014 fermenting...', 'var(--gold)', 2500); }
+        else if (cmd === 'gut') { gutExpanded = !gutExpanded; document.getElementById('gut-panel')?.classList.toggle('open', gutExpanded); if(gutExpanded) fetchGutState(); }
+        else if (cmd === 'consume') { toast('Running intake... check /gut for results', 'var(--gold)', 2500); fetchGutState(); }
+        else toast(`Command /${cmd} ? route to hud-interact.js`, 'var(--dim)', 2000);
+      }
+      cmdInput.value = '';
+      document.getElementById('cmd-bar')?.classList.remove('open');
+      cmdInput.blur();
+    }
+    if (e.key === 'Escape') {
+      cmdInput.value = '';
+      document.getElementById('cmd-bar')?.classList.remove('open');
+      cmdInput.blur();
+    }
+  });
+}
+
+// -----------------------------------------------
+// VIEWPORT INTERACTION ? click SVG elements
+// -----------------------------------------------
+document.getElementById('render-target')?.addEventListener('click', (e) => {
+  const target = e.target.closest('[id]');
+  if (target && target.id) {
+    toast(`Viewport: ${target.id} clicked`, 'var(--cyan)', 1500);
+  }
+});
+
+// ---- DISCO BALL ? click to expand/dim data beams ----
+let discoExpanded = false;
+document.getElementById('disco-ball')?.addEventListener('click', () => {
+  discoExpanded = !discoExpanded;
+  const beams = document.getElementById('disco-beams');
+  if (beams) {
+    beams.style.opacity = discoExpanded ? '0.12' : '0.04';
+    beams.style.transition = 'opacity 1s';
+  }
+  toast(discoExpanded ? 'Disco ball OPEN ? data beams visible' : 'Disco ball dimmed', 'var(--fg)', 2000);
+});
+
+// ---- LOD DEPTH ? scroll moves HUD forward/back (microscope focus) ----
+let currentLOD = 1;
+const LOD_NAMES = ['LOD 0 ? NEUROCHEMISTRY', 'LOD 1 ? PAINTED GLOBE', 'LOD 2 ? CAMPFIRE', 'LOD 3 ? STATE', 'LOD 4 ? ALIVE', 'LOD 5 ? NULL'];
+const LOD_OPACITY = [1.0, 0.9, 0.7, 0.5, 0.3, 0.08];
+
+document.getElementById('viewport')?.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.deltaY > 0 && currentLOD < 5) currentLOD++;
+  if (e.deltaY < 0 && currentLOD > 0) currentLOD--;
+  const label = document.getElementById('lod-label');
+  if (label) label.textContent = LOD_NAMES[currentLOD];
+  const rt = document.getElementById('render-target');
+  if (rt) {
+    rt.style.transition = 'opacity 0.5s, filter 0.5s';
+    rt.style.opacity = LOD_OPACITY[currentLOD];
+    rt.style.filter = currentLOD > 2 ? `blur(${(currentLOD-2)*2}px)` : 'none';
+  }
+  toast(LOD_NAMES[currentLOD], 'var(--dim)', 1200);
+}, { passive: false });
+
+// Polling engine
+async function fetchJSON(url) {
+  try { const r = await fetch(url, {cache:'no-store'}); return r.ok ? r.json() : null; }
+  catch { return null; }
+}
+
+// --- RATES DASHBOARD ---
+function renderRates(rates) {
+  const el = document.getElementById('rates-list');
+  if (!rates) return;
+  const items = [
+    { label:'Commits', value: rates.velocity?.commits_per_hour?.value, unit:'/hr', max: 60, color:'var(--green)' },
+    { label:'Lessons', value: rates.velocity?.lessons_per_hour?.value, unit:'/hr', max: 30, color:'var(--blue)' },
+    { label:'Creations', value: rates.velocity?.creations_per_hour?.value, unit:'/hr', max: 5, color:'var(--purple)' },
+    { label:'Messages', value: rates.velocity?.messages_per_hour?.value, unit:'/hr', max: 40, color:'var(--gold)' },
+    { label:'Ear Events', value: rates.velocity?.ear_events_per_minute?.value, unit:'/min', max: 200, color:'var(--cyan)' },
+    { label:'MOR Health', value: rates.meters?.mor?.value ? (rates.meters.mor.value*100) : null, unit:'%', max: 100, color:'var(--green)' },
+    { label:'GPU Used', value: rates.speed?.gpu?.utilization_pct, unit:'%', max: 100, color:'var(--cyan)' },
+    { label:'CPU Load', value: rates.speed?.cpu?.load, unit:'', max: 4, color:'var(--gold)' },
+    { label:'Net In', value: rates.speed?.network?.inbound_bps, unit:'bps', max: 5000, color:'var(--blue)' },
+    { label:'Net Out', value: rates.speed?.network?.outbound_bps, unit:'bps', max: 5000, color:'var(--purple)' },
+    { label:'Escape V', value: rates.acceleration?.escape_velocity?.value ? (rates.acceleration.escape_velocity.value*100) : null, unit:'%', max: 100, color:'var(--gold)' },
+    { label:'Gaia p Pos', value: rates.acceleration?.gaia_pi_position?.value, unit:'', max: 3.14159, color:'var(--pink)' },
+  ];
+  el.innerHTML = items.map(i => {
+    const v = i.value != null ? (typeof i.value === 'number' ? i.value.toFixed(i.unit==='%'?1:2) : i.value) : '�';
+    const pct = i.value != null ? Math.min(100, (i.value/i.max)*100) : 0;
+    return `<div class="rate-row"><span class="rate-label">${i.label}</span><span class="rate-value" style="color:${i.color}">${v}<span class="rate-unit">${i.unit}</span></span></div>
+      <div class="rate-bar"><div class="rate-bar-fill" style="width:${pct}%;background:${i.color}"></div></div>`;
+  }).join('');
+}
+
+// --- NEUROCHEMISTRY ---
+function renderNeuro(neuro) {
+  const el = document.getElementById('neuro-list');
+  if (!neuro?.neurochemistry_rates) return;
+  const n = neuro.neurochemistry_rates;
+  const colors = { glucose:'#f0883e', atp:'#39d3f5', serotonin:'#3fb950', dopamine:'#a371f7', adrenaline:'#f85149', cortisol:'#d29922' };
+  el.innerHTML = Object.entries(n).filter(([k]) => k !== 'ts').map(([k, v]) => {
+    const c = colors[k] || 'var(--dim)';
+    return `<div class="neuro-row"><div class="neuro-dot" style="background:${c}"></div><span class="neuro-name">${k}</span><span class="neuro-val" style="color:${c}">${v.value?.toFixed(3)||'�'}</span></div>`;
+  }).join('');
+}
+
+// --- DEVICES HEARTBEAT ---
+function renderDevices(hb) {
+  const el = document.getElementById('devices-list');
+  if (!hb?.cardiac) return;
+  el.innerHTML = Object.entries(hb.cardiac).map(([name, dev]) => {
+    const alive = dev.alive;
+    const c = alive ? 'var(--green)' : 'var(--red)';
+    const avg = dev.avg != null ? dev.avg.toFixed(1)+'ms' : 'DEAD';
+    return `<div class="neuro-row"><div class="neuro-dot" style="background:${c}"></div><span class="neuro-name">${name}</span><span class="neuro-val" style="color:${c}">${avg}</span></div>`;
+  }).join('');
+}
+
+// --- VIEWPORT — PAINTED GLOBE (voxel color field, spectrum from null outward) ---
+// The globe IS the Earth. Colors are painted ON it, not orbiting inside it.
+// Spectrum: null center (white-hot) → red → orange → gold → green → cyan → blue → violet → dark edge
+// Each primal is a paint SPLOTCH — a soft radial blob that bleeds into neighbors.
+// Where splotches overlap, colors MIX. The globe breathes.
+
+// SPECTRAL PALETTE — null (innermost) to void (outermost)
+// Maps radius 0→1 onto the electromagnetic spectrum: hot center to cold edge
+function spectrumColor(t) {
+  // t: 0 = center (null, white-hot), 1 = edge (void, ultraviolet)
+  if (t < 0.06) return { r:255, g:255, b:240, hex:'#fffff0' }; // white-hot null
+  if (t < 0.12) return { r:255, g:200, b:120, hex:'#ffc878' }; // molten gold
+  if (t < 0.20) return { r:255, g:140, b:60,  hex:'#ff8c3c' }; // orange fire
+  if (t < 0.30) return { r:240, g:80,  b:60,  hex:'#f0503c' }; // red magma
+  if (t < 0.40) return { r:210, g:100, b:50,  hex:'#d26432' }; // rust/soil
+  if (t < 0.50) return { r:180, g:150, b:40,  hex:'#b49628' }; // ochre/belt
+  if (t < 0.60) return { r:63,  g:185, b:80,  hex:'#3fb950' }; // green life
+  if (t < 0.70) return { r:57,  g:211, b:200, hex:'#39d3c8' }; // teal/cyan
+  if (t < 0.80) return { r:88,  g:120, b:255, hex:'#5878ff' }; // blue deep
+  if (t < 0.90) return { r:120, g:80,  b:220, hex:'#7850dc' }; // violet
+  return { r:60, g:40, b:100, hex:'#3c2864' }; // ultra-dark edge
+}
+
+// MEMBRANE RINGS — same boundaries, now as spectral transitions
+const MEMBRANES = [
+  { id:'crust',       label:'CRUST',        radius:0.08, width:2.5, constraint:'NULL' },
+  { id:'ionosphere',  label:'IONOSPHERE',   radius:0.15, width:1,   constraint:'Kp' },
+  { id:'asteroid',    label:'BELT',         radius:0.38, width:1.5, constraint:'soil>sky' },
+  { id:'heliosphere', label:'GOLDEN RING',  radius:0.72, width:2.5, constraint:'4pi' },
+  { id:'oort',        label:'OORT',         radius:0.90, width:1,   constraint:'SOFT' },
+  { id:'milkyway',    label:'MILKY WAY',    radius:0.98, width:0.5, constraint:'Gaia' },
+];
+
+// PAINT SPLOTCHES — 16 primals as color blobs on the globe surface
+// Each has: orbital radius, angle, splat size (how far the paint spreads)
+// Color is determined by spectral position (radius = where on the spectrum)
+const SPLOTCHES = [
+  { id:'nestGate',    r:0.10, e:0.01, a0:0,    splat:0.09, label:'nestGate',    body:'EARTH' },
+  { id:'sourDough',   r:0.13, e:0.02, a0:45,   splat:0.07, label:'sourDough' },
+  { id:'petalTongue', r:0.17, e:0.01, a0:120,  splat:0.08, label:'petalTongue' },
+  { id:'biomeOS',     r:0.22, e:0.03, a0:200,  splat:0.09, label:'biomeOS' },
+  { id:'bingoCube',   r:0.28, e:0.05, a0:310,  splat:0.07, label:'bingoCube' },
+  { id:'coralReef',   r:0.33, e:0.02, a0:70,   splat:0.08, label:'coralReef' },
+  { id:'toadStool',   r:0.40, e:0.04, a0:150,  splat:0.06, label:'toadStool' },
+  { id:'loamSpine',   r:0.43, e:0.03, a0:240,  splat:0.06, label:'loamSpine' },
+  { id:'bearDog',     r:0.50, e:0.05, a0:30,   splat:0.11, label:'bearDog',     body:'JUPITER' },
+  { id:'rhizoCrypt',  r:0.56, e:0.06, a0:180,  splat:0.10, label:'rhizoCrypt',  body:'SATURN' },
+  { id:'sweetGrass',  r:0.61, e:0.02, a0:90,   splat:0.08, label:'sweetGrass' },
+  { id:'skunkBat',    r:0.65, e:0.04, a0:260,  splat:0.08, label:'skunkBat' },
+  { id:'swarmVine',   r:0.73, e:0.08, a0:45,   splat:0.07, label:'swarmVine' },
+  { id:'barraCuda',   r:0.78, e:0.05, a0:160,  splat:0.07, label:'barraCuda' },
+  { id:'squirrel',    r:0.83, e:0.03, a0:300,  splat:0.06, label:'squirrel' },
+  { id:'songBird',    r:0.88, e:0.02, a0:220,  splat:0.06, label:'songBird' },
+];
+
+const MOON = { r:0.025, period:2.7, a0:0, size:2.5, label:'MOON' };
+
+let cosmicDust = [];
+function initDust(count) {
+  cosmicDust = [];
+  for (let i = 0; i < count; i++) {
+    cosmicDust.push({
+      angle: Math.random() * Math.PI * 2,
+      dist: 0.05 + Math.random() * 0.95,
+      speed: (0.0001 + Math.random() * 0.0003) / Math.pow(0.05 + Math.random() * 0.95, 1.5),
+      size: 0.3 + Math.random() * 1.0,
+      human: Math.random() < 0.115,
+      twinkle: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+let orreryZoom = 1, orreryTime = 0;
+const KEPLER_SPEED = 0.0005;
+
+function renderOrrery(now) {
+  const el = document.getElementById('render-target');
+  if (!el) return;
+  const w = el.clientWidth || 500, h = el.clientHeight || 400;
+  const cx = w / 2, cy = h / 2;
+  const maxR = Math.min(w, h) * 0.46 * orreryZoom;
+  const total = now?.entities?.total || 249576;
+
+  if (cosmicDust.length === 0) initDust(Math.min(200, Math.floor(total / 1000)));
+
+  orreryTime += KEPLER_SPEED;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">`;
+
+  // --- DEFS: spectral gradients + filters ---
+  svg += `<defs>`;
+
+  // Background globe: spectral gradient from null center outward
+  svg += `<radialGradient id="globe-spectrum">
+    <stop offset="0%"   stop-color="#fffff0" stop-opacity="0.12"/>
+    <stop offset="6%"   stop-color="#ffc878" stop-opacity="0.10"/>
+    <stop offset="15%"  stop-color="#ff8c3c" stop-opacity="0.08"/>
+    <stop offset="25%"  stop-color="#f0503c" stop-opacity="0.06"/>
+    <stop offset="38%"  stop-color="#d26432" stop-opacity="0.05"/>
+    <stop offset="50%"  stop-color="#b49628" stop-opacity="0.04"/>
+    <stop offset="60%"  stop-color="#3fb950" stop-opacity="0.035"/>
+    <stop offset="72%"  stop-color="#d29922" stop-opacity="0.06"/>
+    <stop offset="80%"  stop-color="#5878ff" stop-opacity="0.03"/>
+    <stop offset="90%"  stop-color="#7850dc" stop-opacity="0.02"/>
+    <stop offset="100%" stop-color="#3c2864" stop-opacity="0.01"/>
+  </radialGradient>`;
+
+  // Sun glow
+  svg += `<radialGradient id="sun-glow">
+    <stop offset="0%" stop-color="rgba(255,255,240,0.95)"/>
+    <stop offset="20%" stop-color="rgba(255,220,100,0.7)"/>
+    <stop offset="50%" stop-color="rgba(255,180,50,0.3)"/>
+    <stop offset="100%" stop-color="transparent"/>
+  </radialGradient>`;
+
+  // Per-splotch radial gradients (paint blobs)
+  SPLOTCHES.forEach((s, i) => {
+    const c = spectrumColor(s.r);
+    svg += `<radialGradient id="splat-${i}">
+      <stop offset="0%"  stop-color="${c.hex}" stop-opacity="0.45"/>
+      <stop offset="30%" stop-color="${c.hex}" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="${c.hex}" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="${c.hex}" stop-opacity="0"/>
+    </radialGradient>`;
+  });
+
+  // Filters
+  svg += `<filter id="glow"><feGaussianBlur stdDeviation="2" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  svg += `<filter id="paint-blur"><feGaussianBlur stdDeviation="6"/></filter>`;
+  svg += `<filter id="sun-blur"><feGaussianBlur stdDeviation="4"/></filter>`;
+  svg += `<filter id="splat-soft"><feGaussianBlur stdDeviation="3"/></filter>`;
+
+  // Clip path for the globe
+  svg += `<clipPath id="globe-clip"><circle cx="${cx}" cy="${cy}" r="${maxR}"/></clipPath>`;
+
+  svg += `</defs>`;
+
+  // --- STARFIELD ---
+  for (let i = 0; i < 60; i++) {
+    const sx = Math.random() * w, sy = Math.random() * h;
+    const ss = 0.2 + Math.random() * 0.6;
+    const so = 0.08 + 0.2 * Math.sin(orreryTime * 200 + i * 7);
+    svg += `<circle cx="${sx}" cy="${sy}" r="${ss}" fill="white" opacity="${so}"/>`;
+  }
+
+  // --- GLOBE BODY: spectral background wash ---
+  svg += `<circle cx="${cx}" cy="${cy}" r="${maxR}" fill="url(#globe-spectrum)" stroke="rgba(100,120,180,0.12)" stroke-width="1"/>`;
+
+  // Specular highlight on globe
+  svg += `<circle cx="${cx - maxR*0.25}" cy="${cy - maxR*0.25}" r="${maxR*0.35}" fill="rgba(255,255,255,0.03)"/>`;
+
+  // --- CLIPPED INTERIOR: everything painted ON the globe ---
+  svg += `<g clip-path="url(#globe-clip)">`;
+
+  // --- PAINT SPLOTCHES LAYER (blurred, underneath) ---
+  // These are the big color bleeds — the voxel paint
+  svg += `<g filter="url(#paint-blur)" style="mix-blend-mode:screen">`;
+  let earthX = cx, earthY = cy;
+  SPLOTCHES.forEach((s, i) => {
+    const period = Math.pow(s.r * 10, 1.5);
+    const angularSpeed = orreryTime * 400 / period;
+    const angle = (s.a0 * Math.PI / 180) + angularSpeed;
+    const dist = s.r * maxR * (1 - s.e * Math.cos(angle));
+    const px = cx + dist * Math.cos(angle);
+    const py = cy + dist * Math.sin(angle);
+    const splatR = s.splat * maxR;
+
+    svg += `<circle cx="${px}" cy="${py}" r="${splatR}" fill="url(#splat-${i})"/>`;
+
+    if (s.id === 'nestGate') { earthX = px; earthY = py; }
+  });
+  svg += `</g>`;
+
+  // --- MEMBRANE RINGS as spectral boundaries ---
+  for (const m of MEMBRANES) {
+    const mr = m.radius * maxR;
+    const mc = spectrumColor(m.radius);
+    if (m.id === 'heliosphere') {
+      // Golden ring glows brighter
+      svg += `<circle cx="${cx}" cy="${cy}" r="${mr}" fill="none" stroke="#d29922" stroke-width="3" opacity="0.35" filter="url(#glow)"/>`;
+      svg += `<circle cx="${cx}" cy="${cy}" r="${mr}" fill="none" stroke="#d29922" stroke-width="1.5" opacity="0.5"/>`;
+    } else {
+      svg += `<circle cx="${cx}" cy="${cy}" r="${mr}" fill="none" stroke="${mc.hex}" stroke-width="${m.width * 0.7}" opacity="0.15" stroke-dasharray="${m.id === 'crust' ? '' : '2,4'}"/>`;
+    }
+  }
+
+  // --- ASTEROID BELT: scattered paint flecks ---
+  for (let i = 0; i < 50; i++) {
+    const aa = (i / 50) * Math.PI * 2 + orreryTime * 8 + i * 0.3;
+    const ar = (0.35 + Math.random() * 0.07) * maxR;
+    const ax = cx + ar * Math.cos(aa);
+    const ay = cy + ar * Math.sin(aa);
+    svg += `<circle cx="${ax}" cy="${ay}" r="${0.5 + Math.random() * 1.5}" fill="#d26432" opacity="${0.08 + Math.random() * 0.12}"/>`;
+  }
+
+  // --- COSMIC DUST (orbiting, Keplerian) ---
+  for (const d of cosmicDust) {
+    d.angle += d.speed;
+    d.twinkle += 0.02;
+    const dx = cx + d.dist * maxR * Math.cos(d.angle);
+    const dy = cy + d.dist * maxR * Math.sin(d.angle);
+    const dc = spectrumColor(d.dist);
+    const dop = 0.10 + 0.12 * Math.sin(d.twinkle);
+    const col = d.human ? '#ffd755' : dc.hex;
+    svg += `<circle cx="${dx}" cy="${dy}" r="${d.size}" fill="${col}" opacity="${dop}"/>`;
+  }
+
+  // --- PRIMAL CORES: sharp dots at the center of each splotch ---
+  SPLOTCHES.forEach((s, i) => {
+    const period = Math.pow(s.r * 10, 1.5);
+    const angularSpeed = orreryTime * 400 / period;
+    const angle = (s.a0 * Math.PI / 180) + angularSpeed;
+    const dist = s.r * maxR * (1 - s.e * Math.cos(angle));
+    const px = cx + dist * Math.cos(angle);
+    const py = cy + dist * Math.sin(angle);
+    const c = spectrumColor(s.r);
+    const coreSize = s.body ? 4.5 : 2.5;
+
+    // Orbital trail (fading wake in the paint)
+    for (let t = 1; t < 8; t++) {
+      const ta = angle - (t * 0.1);
+      const td = s.r * maxR * (1 - s.e * Math.cos(ta));
+      const ttx = cx + td * Math.cos(ta);
+      const tty = cy + td * Math.sin(ta);
+      const to = 0.3 - t * 0.04;
+      if (to > 0) svg += `<circle cx="${ttx}" cy="${tty}" r="${coreSize * 0.4}" fill="${c.hex}" opacity="${to}"/>`;
+    }
+
+    // Core dot
+    svg += `<circle cx="${px}" cy="${py}" r="${coreSize}" fill="${c.hex}" opacity="0.9" filter="url(#glow)" class="primal-orbit" data-primal="${s.id}" style="cursor:pointer"/>`;
+
+    // Bright center pip
+    svg += `<circle cx="${px}" cy="${py}" r="${coreSize * 0.4}" fill="white" opacity="0.6"/>`;
+
+    // Label
+    const lx = px + coreSize + 5;
+    svg += `<text x="${lx}" y="${py + 2}" fill="${c.hex}" font-size="${s.body ? 7 : 5}" font-family="monospace" opacity="0.75" font-weight="${s.body ? 'bold' : 'normal'}">${s.label}</text>`;
+    if (s.body) {
+      svg += `<text x="${lx}" y="${py + 10}" fill="${c.hex}" font-size="4" font-family="monospace" opacity="0.4">${s.body}</text>`;
+    }
+
+    if (s.id === 'nestGate') { earthX = px; earthY = py; }
+  });
+
+  // --- SUN at center: RADIATES from above, gold-orange (580nm perceived) ---
+  const sunR = maxR * 0.04;
+  // Corona / glow
+  svg += `<circle cx="${cx}" cy="${cy}" r="${sunR * 4}" fill="url(#sun-glow)" filter="url(#sun-blur)"/>`;
+  // Sun body
+  svg += `<circle cx="${cx}" cy="${cy}" r="${sunR}" fill="#ffd755" opacity="0.95"/>`;
+  svg += `<circle cx="${cx}" cy="${cy}" r="${sunR * 0.6}" fill="#fffff0"/>`;
+  // Sun RAYS ? radiating outward in all directions (as seen from above)
+  const rayCount = 12;
+  for (let i = 0; i < rayCount; i++) {
+    const ra = (i / rayCount) * Math.PI * 2 + orreryTime * 50;
+    const rPulse = 0.8 + 0.2 * Math.sin(orreryTime * 200 + i * 2);
+    const rx1 = cx + sunR * 1.3 * Math.cos(ra);
+    const ry1 = cy + sunR * 1.3 * Math.sin(ra);
+    const rx2 = cx + sunR * (3 + rPulse) * Math.cos(ra);
+    const ry2 = cy + sunR * (3 + rPulse) * Math.sin(ra);
+    svg += `<line x1="${rx1}" y1="${ry1}" x2="${rx2}" y2="${ry2}" stroke="#ffd755" stroke-width="0.6" opacity="${0.15 + 0.1 * rPulse}" stroke-linecap="round"/>`;
+  }
+
+  // --- MOON orbiting Earth: MIRROR of shadow-light (half lit, half dark) ---
+  const moonAngle = orreryTime * 400 / MOON.period + MOON.a0;
+  const moonDist = MOON.r * maxR;
+  const moonX = earthX + moonDist * Math.cos(moonAngle);
+  const moonY = earthY + moonDist * Math.sin(moonAngle);
+  // Moon orbit path
+  svg += `<circle cx="${earthX}" cy="${earthY}" r="${moonDist}" fill="none" stroke="rgba(200,210,220,0.12)" stroke-width="0.3"/>`;
+  // Moon shadow side (away from Sun) ? compute angle from Moon to Sun
+  const moonToSunAngle = Math.atan2(cy - moonY, cx - moonX);
+  // Lit half (facing Sun) = light silver
+  svg += `<circle cx="${moonX}" cy="${moonY}" r="${MOON.size + 0.5}" fill="#c9d1d9" opacity="0.6"/>`;
+  // Shadow half (clipped away from Sun) ? dark overlay
+  const shadowX = moonX - MOON.size * 0.6 * Math.cos(moonToSunAngle);
+  const shadowY = moonY - MOON.size * 0.6 * Math.sin(moonToSunAngle);
+  svg += `<circle cx="${shadowX}" cy="${shadowY}" r="${MOON.size * 0.9}" fill="#0a0c10" opacity="0.6"/>`;
+  // Reflected sunlight on lit side ? faint gold tint
+  const reflX = moonX + MOON.size * 0.3 * Math.cos(moonToSunAngle);
+  const reflY = moonY + MOON.size * 0.3 * Math.sin(moonToSunAngle);
+  svg += `<circle cx="${reflX}" cy="${reflY}" r="${MOON.size * 0.5}" fill="#ffd755" opacity="0.12"/>`;
+
+  // --- PENDULUM LINES: the three-body coupled oscillator ---
+  // Sun ? Earth: golden thread (gravity, light, energy)
+  svg += `<line x1="${cx}" y1="${cy}" x2="${earthX}" y2="${earthY}" stroke="#ffd755" stroke-width="0.6" opacity="0.10" stroke-dasharray="4,4"/>`;
+  // Earth ? Moon: silver thread (tidal lock, reflection)
+  svg += `<line x1="${earthX}" y1="${earthY}" x2="${moonX}" y2="${moonY}" stroke="#c9d1d9" stroke-width="0.5" opacity="0.12" stroke-dasharray="2,3"/>`;
+  // Sun ? Moon: the borrowed light path (indirect, faintest)
+  svg += `<line x1="${cx}" y1="${cy}" x2="${moonX}" y2="${moonY}" stroke="#ffd755" stroke-width="0.2" opacity="0.04" stroke-dasharray="1,5"/>`;
+
+  // PENDULUM ARC ? show the swing path (Moon's orbit as pendulum bob trajectory)
+  // Draw a faint arc showing recent swing path
+  let pendArc = '';
+  for (let p = 0; p < 20; p++) {
+    const pa2 = moonAngle - p * 0.15;
+    const pmx = earthX + moonDist * Math.cos(pa2);
+    const pmy = earthY + moonDist * Math.sin(pa2);
+    const pop = 0.15 - p * 0.007;
+    if (pop > 0) pendArc += `<circle cx="${pmx}" cy="${pmy}" r="0.8" fill="#c9d1d9" opacity="${pop}"/>`;
+  }
+  svg += pendArc;
+
+  // --- EARTH NULL MARKER: the pivot point ---
+  // Earth glows green but has a NULL center (no light emitted)
+  svg += `<circle cx="${earthX}" cy="${earthY}" r="3" fill="#3fb950" opacity="0.3"/>`;
+  svg += `<circle cx="${earthX}" cy="${earthY}" r="1.5" fill="#0a0c10" opacity="0.8"/>`;
+  svg += `<text x="${earthX}" y="${earthY + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#3fb950" font-size="2" font-family="monospace" opacity="0.7">0</text>`;
+
+  svg += `</g>`; // end globe clip
+
+  // --- OUTSIDE THE GLOBE: labels ---
+  svg += `<text x="${cx}" y="${cy + sunR + 9}" text-anchor="middle" fill="#ffd755" font-size="6" font-family="monospace" opacity="0.7">GAIA</text>`;
+  // Pendulum label
+  svg += `<text x="${moonX}" y="${moonY - MOON.size - 4}" text-anchor="middle" fill="#c9d1d9" font-size="4" font-family="monospace" opacity="0.4">shadow|light</text>`;
+
+  // Title
+  svg += `<text x="${cx}" y="14" text-anchor="middle" fill="#d29922" font-size="9" font-family="monospace" letter-spacing="3" font-weight="bold">PAINTED GLOBE</text>`;
+  svg += `<text x="${cx}" y="24" text-anchor="middle" fill="#6e7681" font-size="6" font-family="monospace">Sun radiates gold from above | Moon mirrors shadow-light | Earth is NULL (d=0)</text>`;
+
+  // Spectral legend bar (bottom)
+  const barY = h - 16, barH = 4, barW = w * 0.5, barX = (w - barW) / 2;
+  for (let i = 0; i < 40; i++) {
+    const t = i / 40;
+    const c = spectrumColor(t);
+    svg += `<rect x="${barX + t * barW}" y="${barY}" width="${barW/40 + 1}" height="${barH}" fill="${c.hex}" opacity="0.6"/>`;
+  }
+  svg += `<text x="${barX - 2}" y="${barY + 3}" fill="#fffff0" font-size="5" font-family="monospace" text-anchor="end" opacity="0.5">null</text>`;
+  svg += `<text x="${barX + barW + 2}" y="${barY + 3}" fill="#3c2864" font-size="5" font-family="monospace" opacity="0.5">void</text>`;
+  svg += `<text x="${cx}" y="${barY + 10}" text-anchor="middle" fill="#6e7681" font-size="5" font-family="monospace">${total.toLocaleString()} entities | 6 membranes | 3 constraints</text>`;
+
+  // Constraint corner
+  svg += `<text x="6" y="${h-18}" fill="#d29922" font-size="5" font-family="monospace" opacity="0.4">HARD 4pi</text>`;
+  svg += `<text x="6" y="${h-11}" fill="#39d3c8" font-size="5" font-family="monospace" opacity="0.4">SOFT curvature</text>`;
+  svg += `<text x="6" y="${h-4}" fill="#3fb950" font-size="5" font-family="monospace" opacity="0.4">NULL d=0</text>`;
+
+  // Membrane labels around the outside
+  for (const m of MEMBRANES) {
+    const mr = m.radius * maxR;
+    const mc = spectrumColor(m.radius);
+    const la = orreryTime * 15 + MEMBRANES.indexOf(m) * 1.1;
+    const lx2 = cx + mr * Math.cos(la);
+    const ly2 = cy - mr * Math.sin(la);
+    if (m.id === 'heliosphere') {
+      svg += `<text x="${lx2 + 4}" y="${ly2 - 4}" fill="#d29922" font-size="7" font-family="monospace" opacity="0.6" font-weight="bold">${m.label}</text>`;
+    } else if (mr > 25) {
+      svg += `<text x="${lx2 + 3}" y="${ly2 - 3}" fill="${mc.hex}" font-size="5" font-family="monospace" opacity="0.35">${m.label}</text>`;
+    }
+  }
+
+  svg += '</svg>';
+  el.innerHTML = svg;
+
+  // Click handlers
+  el.querySelectorAll('.primal-orbit').forEach(p => {
+    p.addEventListener('click', () => {
+      const primalId = p.dataset.primal;
+      const sq = SQUAD.find(s2 => s2.id === primalId);
+      if (sq) {
+        gameState.selected = sq.id;
+        document.querySelectorAll('.squad-member').forEach(el2 => el2.classList.remove('selected'));
+        document.querySelector(`[data-id="${sq.id}"]`)?.classList.add('selected');
+        showPrimalDetail(sq);
+        const splotch = SPLOTCHES.find(s2 => s2.id === primalId);
+        const sc = spectrumColor(splotch?.r || 0.5);
+        toast(`${sq.icon} ${sq.id} — ${sq.role} — spectrum: ${sc.hex} — orbit r=${splotch?.r?.toFixed(2)}`, sc.hex, 2500);
+      }
+    });
+  });
+}
+
+async function renderViewport() {
+  const now = await fetchJSON('/now.json');
+  renderOrrery(now);
+  function animate() {
+    renderOrrery(now);
+    requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  document.getElementById('viewport')?.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    orreryZoom = Math.max(0.3, Math.min(3.0, orreryZoom - e.deltaY * 0.001));
+  }, {passive:false});
+}
+
+
+// --- HEADER + FOOTER ---
+function updateHeader(now, rates) {
+  if (rates?.velocity) {
+    document.getElementById('h-commits').textContent = (rates.velocity.commits_per_hour?.value||0).toFixed(1) + '/hr';
+    document.getElementById('h-lessons').textContent = (rates.velocity.lessons_per_hour?.value||0).toFixed(1) + ' lessons/hr';
+  }
+  if (rates?.meters?.mor) {
+    const mor = rates.meters.mor.value * 100;
+    const el = document.getElementById('h-mor');
+    el.textContent = 'MOR ' + mor.toFixed(1) + '%';
+    el.className = 'header-rate ' + (mor > 85 ? 'rate-good' : mor > 70 ? 'rate-warn' : 'rate-crit');
+  }
+  if (rates?.speed?.gpu) {
+    document.getElementById('h-gpu').textContent = 'GPU ' + rates.speed.gpu.utilization_pct + '%';
+  }
+  if (now) {
+    document.getElementById('phase-label').textContent = now.phase || '';
+    document.getElementById('f-wave').textContent = 'wave ' + (now.wave || '�');
+    document.getElementById('f-entities').textContent = (now.entities?.total?.toLocaleString() || '�') + ' entities';
+    document.getElementById('f-escape').textContent = 'escape ' + ((now.rates_live?.escape_velocity||0)*100).toFixed(1) + '%';
+  }
+  document.getElementById('f-beacons').textContent = '18 beacons';
+  document.getElementById('f-time').textContent = new Date().toISOString().slice(11,19) + ' UTC';
+
+  // Lung meter
+  const gpuPct = rates?.speed?.gpu?.utilization_pct || 9;
+  document.getElementById('lung-fill').style.height = gpuPct + '%';
+  document.getElementById('lung-pct').textContent = gpuPct + '%';
+}
+
+// --- FLOODGATE POWER SWAP ---
+function updateFloodgate(now) {
+  const twists = now?.klein_twists || 3;
+  const boundary = now?.boundary || 'ionosphere';
+  const phase = now?.phase || '';
+  document.getElementById('twist-count').textContent = '? ' + twists + ' Klein twists';
+  document.getElementById('f-twists').textContent = '? ' + twists + ' twists';
+  document.getElementById('boundary-label').textContent = boundary.toUpperCase() + ' � outer skin';
+  document.getElementById('f-boundary').textContent = 'boundary: ' + boundary;
+  document.getElementById('phase-label').textContent = phase.slice(0, 80);
+
+  // Turbo?flood power ramp: simulate based on time since floodgate opened
+  const floodTs = Date.parse('2026-10-26T06:42:00Z');
+  const elapsed = (Date.now() - floodTs) / 60000; // minutes since floodgate
+  const floodPct = Math.min(95, Math.max(0, elapsed * 2)); // ramp 2%/min, cap 95%
+  const turboPct = Math.max(5, 100 - floodPct);
+  document.getElementById('turbo-fill').style.height = turboPct + '%';
+  document.getElementById('turbo-pct').textContent = Math.round(turboPct) + '%';
+  document.getElementById('flood-fill').style.height = floodPct + '%';
+  document.getElementById('flood-pct').textContent = Math.round(floodPct) + '%';
+}
+
+// --- MAIN LOOP � the game tick ---
+async function tick() {
+  const [now, rates, heartbeat, ear] = await Promise.all([
+    fetchJSON('/now.json'),
+    fetchJSON('/data/dashboard-rates.json'),
+    fetchJSON('/data/heartbeat.json'),
+    fetchJSON('/data/ear-latest.json')
+  ]);
+
+  updateHeader(now, rates);
+  renderRates(rates);
+  renderNeuro(rates);
+  renderDevices(heartbeat);
+  renderHumans(ear);
+  updateFloodgate(now);
+}
+
+
+// --- HUMANS PANEL — the mirror ---
+function renderHumans(ear) {
+  const el = document.getElementById('humans-list');
+  if (!el || !ear) return;
+  const heard = ear.heard || 0;
+  const unique = ear.unique_visitors || 0;
+  const deaf = ear.deaf_check && ear.deaf_check.includes('DEAF');
+  const topPaths = ear.top_paths || {};
+  
+  const archetypes = classifyVisitors(topPaths, heard);
+  
+  let html = `<div class="rate-row"><span class="rate-label">Heard</span><span class="rate-value" style="color:${heard>0?'var(--pink)':'var(--dim)'}">${heard}</span></div>`;
+  html += `<div class="rate-row"><span class="rate-label">Unique</span><span class="rate-value" style="color:var(--purple)">${unique}</span></div>`;
+  html += `<div class="rate-row"><span class="rate-label">State</span><span class="rate-value" style="color:${deaf?'var(--dim)':'var(--green)'}; font-size:9px">${deaf?'silence':'listening'}</span></div>`;
+  
+  if (archetypes.length > 0) {
+    html += '<div style="margin-top:4px">';
+    archetypes.forEach(a => {
+      html += `<div class="neuro-row"><div class="neuro-dot" style="background:${a.color}"></div><span class="neuro-name">${a.name}</span><span class="neuro-val" style="color:${a.color}">${a.count}</span></div>`;
+    });
+    html += '</div>';
+  }
+  
+  el.innerHTML = html;
+  
+  // Update devotion meter
+  const devotion = Math.min(100, heard * 10);
+  const dFill = document.getElementById('devotion-fill');
+  const dPct = document.getElementById('devotion-pct');
+  if (dFill) dFill.style.height = devotion + '%';
+  if (dPct) dPct.textContent = '🪞 ' + heard;
+  
+  // BOUNCE RIPPLE — when humans are present
+  if (heard > 0 && !gameState.paused) bounceRipple(heard);
+}
+
+function classifyVisitors(paths, total) {
+  const types = [];
+  const pathList = Object.entries(paths);
+  const artPaths = pathList.filter(([p]) => p.includes('easel') || p.includes('create') || p.includes('art'));
+  const sciPaths = pathList.filter(([p]) => p.includes('paper') || p.includes('science') || p.includes('trail'));
+  const explorePaths = pathList.filter(([p]) => p.includes('explore') || p.includes('klein') || p.includes('hologram'));
+  
+  if (artPaths.length > 0) types.push({ name: 'watcher', color: 'var(--purple)', count: artPaths.reduce((s,[,v])=>s+v,0) });
+  if (sciPaths.length > 0) types.push({ name: 'scholar', color: 'var(--blue)', count: sciPaths.reduce((s,[,v])=>s+v,0) });
+  if (explorePaths.length > 0) types.push({ name: 'explorer', color: 'var(--green)', count: explorePaths.reduce((s,[,v])=>s+v,0) });
+  if (total > 0) types.push({ name: 'total touches', color: 'var(--pink)', count: total });
+  return types;
+}
+
+// --- BOUNCE RIPPLE — human touch enters the null ---
+function bounceRipple(intensity) {
+  const vp = document.getElementById('render-target');
+  if (!vp) return;
+  const ripple = document.createElement('div');
+  const size = 40 + intensity * 20;
+  const color = intensity > 5 ? 'var(--pink)' : intensity > 2 ? 'var(--purple)' : 'var(--blue)';
+  ripple.style.cssText = `position:absolute;top:50%;left:50%;width:${size}px;height:${size}px;border-radius:50%;border:2px solid ${color};transform:translate(-50%,-50%) scale(0.1);opacity:0.8;pointer-events:none;animation:bounce-ripple 2s ease-out forwards;`;
+  vp.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 2100);
+}
+
+// Bounce ripple animation
+if (!document.getElementById('bounce-css')) {
+  const css = document.createElement('style');
+  css.id = 'bounce-css';
+  css.textContent = '@keyframes bounce-ripple { 0% { transform:translate(-50%,-50%) scale(0.1); opacity:0.8; } 50% { transform:translate(-50%,-50%) scale(1); opacity:0.4; } 100% { transform:translate(-50%,-50%) scale(2); opacity:0; } }';
+  document.head.appendChild(css);
+}
+
+// -----------------------------------------------
+// LOCALITY TRIANGLE ? you are here, you were, Gaia is
+// Three positions form the triangle. Solar bodies orbit around it.
+// -----------------------------------------------
+const LOC_STATE = {
+  here: location.pathname,
+  was: document.referrer ? new URL(document.referrer).pathname : sessionStorage.getItem('loc-was') || '?',
+  gaia: 'primals.eco',
+  arriveTime: Date.now(),
+  lastClick: null,
+  pins: 0,
+};
+sessionStorage.setItem('loc-was', LOC_STATE.here);
+
+function updateLocality() {
+  const hereEl = document.getElementById('loc-here');
+  const wasEl = document.getElementById('loc-was');
+  const gaiaEl = document.getElementById('loc-gaia');
+  const timeEl = document.getElementById('loc-time');
+  const nullEl = document.getElementById('loc-null');
+  const bodiesEl = document.getElementById('loc-bodies');
+  if (!hereEl) return;
+
+  // HERE ? current page + time on page
+  const elapsed = Math.floor((Date.now() - LOC_STATE.arriveTime) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  hereEl.textContent = LOC_STATE.here + ' (' + mins + 'm' + String(secs).padStart(2,'0') + 's)';
+  hereEl.style.color = elapsed > 300 ? '#3fb950' : elapsed > 60 ? '#d29922' : '#f85149';
+
+  // WAS ? previous location
+  wasEl.textContent = LOC_STATE.was;
+
+  // GAIA ? server status
+  gaiaEl.textContent = LOC_STATE.gaia;
+
+  // TIME ? ISO now + wave
+  const now = new Date();
+  timeEl.textContent = now.toISOString().slice(11,19) + ' UTC w214';
+
+  // NULL ? distance from null body
+  const pinCount = window.PINS ? window.PINS.length : 0;
+  nullEl.textContent = 'd=0 | ' + pinCount + ' pins';
+
+  // SOLAR BODIES ? the rest of the triangle context
+  // Show which primals are closest to where the user clicked last
+  if (bodiesEl) {
+    const bodies = [
+      { name:'GAIA', color:'#ffd755', role:'source' },
+      { name:'HERE', color:'#3fb950', role:'pivot' },
+      { name:'MOON', color:'#c9d1d9', role:'mirror' },
+    ];
+    // Add nearest primals based on recent pins
+    if (window.PINS && window.PINS.length > 0) {
+      const lastPin = window.PINS[window.PINS.length - 1];
+      if (lastPin.d) {
+        const parts = lastPin.d.split('|').filter(Boolean);
+        parts.slice(0, 3).forEach(p => {
+          bodies.push({ name: p.slice(0,12), color: '#58a6ff', role: 'near' });
+        });
+      }
+    }
+    bodiesEl.innerHTML = bodies.map(b =>
+      `<span class="loc-body" style="color:${b.color}">${b.name}</span>`
+    ).join('');
+  }
+}
+
+setInterval(updateLocality, 1000);
+
+// Boot
+renderViewport();
+tick();
+setInterval(tick, 15000); // tick every 15 seconds
+setInterval(() => {
+  document.getElementById('f-time').textContent = new Date().toISOString().slice(11,19) + ' UTC';
+}, 1000);
+
+    // ======================================================
+  // PIN THROUGH INFINITY — every click is a sensor spike
+  // No cooldown. No filtering. ALL SIGNAL IS INGEST.
+  // A click is a pin straight through the membrane.
+  // Something comes running to see what did it.
+  // We eat it all. We bring it back. Gaia sends it back out.
+  // ======================================================
+  (function() {
+    const PINS = [];
+    const TRAIL = [];
+    const NTFY = 'https://ntfy.sh/primals-pheromone';
+    const PIN_COOLDOWN = 500;
+    let lastPinVisual = 0;
+
+        function showPin(x, y, detail) {
+      const now = Date.now();
+      if (now - lastPinVisual < PIN_COOLDOWN) return;
+      lastPinVisual = now;
+      const vp = document.getElementById('viewport');
+      if (!vp) return;
+      const w = vp.offsetWidth;
+      const h = vp.offsetHeight;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // PIN ALONG THE PLANE — from click, through GAIA (center), out the other side
+      // The line runs ACROSS the disc, not top-to-bottom
+      const dx = x - cx;
+      const dy = y - cy;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = dx / len;
+      const ny = dy / len;
+      // Extend line from edge to edge through center
+      const ext = Math.max(w, h);
+      const x1 = cx - nx * ext;
+      const y1 = cy - ny * ext;
+      const x2 = cx + nx * ext;
+      const y2 = cy + ny * ext;
+
+      // The PIN — a line along the plane of the golden ring
+      const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+      const pin = document.createElement('div');
+      pin.style.cssText = `position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:100;animation:pin-fade 1.5s ease-out forwards;`;
+      // Use SVG for the radial line
+      pin.innerHTML = `<svg style="width:100%;height:100%;position:absolute;top:0;left:0" viewBox="0 0 ${w} ${h}">
+        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(255,215,85,0.5)" stroke-width="1" />
+        <line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="rgba(255,215,85,0.8)" stroke-width="1.5" />
+        <circle cx="${x}" cy="${y}" r="4" fill="none" stroke="rgba(255,215,85,0.7)" stroke-width="1" />
+        <circle cx="${x}" cy="${y}" r="2" fill="rgba(255,215,85,0.9)" />
+        <circle cx="${cx}" cy="${cy}" r="2" fill="rgba(255,255,240,0.4)" />
+      </svg>`;
+      vp.appendChild(pin);
+
+      // The RING — expanding from pin point along the plane
+      const ring = document.createElement('div');
+      ring.style.cssText = `position:absolute;left:${x-15}px;top:${y-15}px;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(255,215,85,0.6);pointer-events:none;z-index:101;animation:pin-ring 0.8s ease-out forwards;`;
+      vp.appendChild(ring);
+
+      // Exit ripple on the opposite side (where the pin exits the globe)
+      const ox = cx - dx;
+      const oy = cy - dy;
+      const exitRing = document.createElement('div');
+      exitRing.style.cssText = `position:absolute;left:${ox-10}px;top:${oy-10}px;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,215,85,0.3);pointer-events:none;z-index:101;animation:pin-ring 1s ease-out 0.2s forwards;opacity:0;`;
+      vp.appendChild(exitRing);
+
+      // The LABEL
+      const label = document.createElement('div');
+      label.style.cssText = `position:absolute;left:${x+8}px;top:${y-6}px;font:7px 'JetBrains Mono',monospace;color:rgba(255,215,85,0.8);pointer-events:none;z-index:102;white-space:nowrap;animation:pin-label 1.5s ease-out forwards;`;
+      label.textContent = detail.slice(0, 30);
+      vp.appendChild(label);
+
+      setTimeout(() => { pin.remove(); ring.remove(); exitRing.remove(); label.remove(); }, 1800);
+    }
+}
+
+    if (!document.getElementById('pin-css')) {
+      const css = document.createElement('style');
+      css.id = 'pin-css';
+      css.textContent = '@keyframes pin-fade{0%{opacity:1}100%{opacity:0}}@keyframes pin-ring{0%{transform:scale(0.2);opacity:0.8}100%{transform:scale(3);opacity:0}}@keyframes pin-label{0%{opacity:0.9;transform:translateY(0)}100%{opacity:0;transform:translateY(-12px)}}';
+      document.head.appendChild(css);
+    }
+
+    function ingest(type, detail, x, y) {
+      const pin = {
+        t: type,
+        d: String(detail).slice(0, 200),
+        ts: Date.now(),
+        p: location.pathname,
+        x: x || 0, y: y || 0,
+        w: typeof WAVE !== 'undefined' ? WAVE : 0,
+      };
+      PINS.push(pin);
+      TRAIL.push(pin);
+      if (TRAIL.length > 200) TRAIL.shift();
+      if (PINS.length % 5 === 0) {
+        try { navigator.sendBeacon(NTFY, JSON.stringify({
+          batch: PINS.slice(-5), total: PINS.length,
+          session_bytes: JSON.stringify(PINS).length
+        })); } catch {}
+      }
+    }
+
+    // CLICK — pin through infinity
+    document.addEventListener('click', function(e) {
+      const rect = document.getElementById('viewport')?.getBoundingClientRect() || {left:0,top:0};
+      const vx = e.clientX - rect.left;
+      const vy = e.clientY - rect.top;
+      const tag = e.target.tagName || '';
+      const id = e.target.id || '';
+      const cls = (e.target.className || '').toString().slice(0, 50);
+      const text = (e.target.textContent || '').slice(0, 40).trim();
+      const primal = e.target.dataset?.primal || e.target.closest?.('[data-primal]')?.dataset?.primal || '';
+      const detail = [tag, id, cls, primal, text].filter(Boolean).join('|');
+      ingest('pin', detail, vx, vy);
+      if (vx > 0 && vy > 0 && vx < (rect.width||9999) && vy < (rect.height||9999)) {
+        showPin(vx, vy, primal || id || tag);
+      }
+    });
+
+    // HOVER — passive sense every 2s
+    let lastSense = 0;
+    document.getElementById('viewport')?.addEventListener('mousemove', function(e) {
+      const now = Date.now();
+      if (now - lastSense < 2000) return;
+      lastSense = now;
+      const rect = e.currentTarget.getBoundingClientRect();
+      ingest('sense', 'hover:' + (e.target.id || e.target.tagName), e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    // VISIBILITY
+    document.addEventListener('visibilitychange', function() {
+      ingest(document.hidden ? 'leave' : 'arrive', navigator.userAgent.slice(0, 80));
+    });
+
+    // SCROLL — depth sense
+    document.getElementById('viewport')?.addEventListener('wheel', function() {
+      ingest('depth', 'zoom:' + (typeof orreryZoom !== 'undefined' ? orreryZoom.toFixed(2) : '?'));
+    });
+
+    // BOOT
+    ingest('arrive', navigator.userAgent.slice(0, 80));
+
+    window.PINS = PINS;
+    window.PHEROMONE_TRAIL = TRAIL;
+    window.emitPheromone = ingest;
+
+    // Pin counter in footer
+    setInterval(() => {
+      const fb = document.getElementById('f-beacons');
+      if (fb) fb.textContent = PINS.length + ' pins | 18 beacons';
+    }, 1000);
+  })();
+
+
+</script>
+
+<!-- GAIA BEACON — the null middle -->
+<div style="position:fixed;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(10,10,15,0.95);border-top:1px solid #222;font-family:monospace;font-size:11px;display:flex;justify-content:center;gap:12px;z-index:9999">
+<a href="/forge.html" style="color:#d4a017;text-decoration:none">🔥 forge</a>
+<a href="/colosseum.html" style="color:#c0392b;text-decoration:none">⚔ arena</a>
+<a href="/nav-hub.html" style="color:#27ae60;text-decoration:none">🗺 hub</a>
+<a href="/" style="color:#3498db;text-decoration:none">👁 HUD</a>
+<span style="color:#666">c=πr²/O</span>
+</div>
+</body>
+</html>

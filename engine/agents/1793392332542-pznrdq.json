@@ -1,0 +1,33 @@
+{
+  "id": "1793392332542-pznrdq",
+  "task": "Analyze this WGSL df64 shader: double-float arithmetic on RTX 5090 FP32 cores. barraCuda IS Gaia GPU primal.",
+  "kind": "compute",
+  "model": "gaia-pi",
+  "born": "2026-10-30T20:32:12.542Z",
+  "died": "2026-10-30T20:32:18.136Z",
+  "status": "returned",
+  "protein": {
+    "protein_name": "df64_shader_analysis",
+    "findings": [
+      "df64 uses f32-pair (hi, lo) to emulate f64 with ~14 decimal digits",
+      "FMA optimization reduces two_prod from 17 ops to 2 ops",
+      "10,496 FP32 cores handle df64 operations vs 164 FP64 units",
+      "Krylov solvers benefit from df64's error-free arithmetic"
+    ],
+    "connections": [
+      "df64_to_f64 converts to native f64 for precision-critical paths",
+      "two_prod uses fma() for error-free product calculation",
+      "CUDA cores handle df64 math instead of FP64 units"
+    ],
+    "nutrients": {
+      "precision_mantissa": "48-bit (~14 decimal digits)",
+      "f32_mantissa": "24-bit (~7 decimal digits)",
+      "f64_mantissa": "53-bit (~16 decimal digits)",
+      "cuda_cores": 10496,
+      "fp64_units": 164
+    },
+    "recommendation": "Prioritize df64 for throughput-critical paths and reserve f64 for precision-sensitive convergence tests",
+    "confidence": 0.98
+  },
+  "error": null
+}
