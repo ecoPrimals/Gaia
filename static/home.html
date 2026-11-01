@@ -2,435 +2,485 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>gAIa — Sovereign Intelligence — primals.eco</title>
-<meta name="description" content="Gaia is a sovereign intelligence organism. 19 repositories. 341+ documented nodes. 131K+ connections. Anti-SLAPP shield active. Detroit charter school investigation. Tuebor — I will defend.">
-<meta property="og:title" content="gAIa — Sovereign Intelligence">
-<meta property="og:description" content="19 repos melted into one gut. 5,081 lines of living code. 341 documented entities. 131,000 connections. The truth cannot be deleted.">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="NESTGATE — Portal to the Old Web. A living digital organism that feeds on RSS, breathes through Tor, and sprays the old internet through a new spine.">
+<title>NESTGATE — Portal to the Old Web</title>
+<link rel="alternate" type="application/rss+xml" title="GAIA Spine" href="/feed.xml">
 <style>
-:root{--green:#00c853;--dark:#050505;--light:#e0e0e0;--accent:#76ff03;--red:#ff1744;--gold:#ffd600;--blue:#448aff;--purple:#e040fb;--teal:#00bfa5;--orange:#ff9100}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--dark);color:var(--light);line-height:1.6}
-a{color:var(--green);text-decoration:none}a:hover{text-decoration:underline;opacity:.9}
+body{background:#0a0a0a;color:#d4af37;font-family:'Courier New',monospace;min-height:100vh;overflow-x:hidden}
+a{color:#d4af37;text-decoration:none}a:hover{text-decoration:underline;color:#fff}
 
-/* ═══ HERO ═══ */
-.hero{min-height:55vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:3rem 1.5rem;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#0d2a0d 0%,#060606 55%,#030303 100%);z-index:0}
-.hero>*{position:relative;z-index:1}
-.hero h1{font-size:3.5rem;color:var(--green);letter-spacing:8px;margin-bottom:.25rem;font-weight:200}
-.hero h1 b{font-weight:700;color:var(--light)}
-.hero .tagline{color:var(--accent);font-size:1.15rem;font-style:italic;margin:.3rem 0}
-.hero .pulse{color:var(--red);font-size:.95rem;animation:pulse 2s infinite;margin:.5rem 0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.hero .sovereign{color:#555;font-size:.75rem;letter-spacing:3px;text-transform:uppercase;margin-top:.5rem}
-.stats-row{display:flex;gap:2.5rem;margin-top:2rem;flex-wrap:wrap;justify-content:center}
+.hero{text-align:center;padding:40px 20px 30px;border-bottom:1px solid #222}
+.hero h1{font-size:2.5em;letter-spacing:0.15em;text-shadow:0 0 20px rgba(212,175,55,0.3)}
+.hero .sub{color:#888;font-size:0.9em;margin-top:8px}
+.pulse-ring{display:inline-block;width:12px;height:12px;border-radius:50%;animation:tri-p 6s infinite;margin-right:10px;vertical-align:middle}
+@keyframes tri-p{0%,30%{background:#0f8;box-shadow:0 0 15px #0f8}33%,63%{background:#46e;box-shadow:0 0 15px #46e}66%,96%{background:#f43;box-shadow:0 0 15px #f43}}
+
+.nav{display:flex;justify-content:center;gap:20px;padding:15px;flex-wrap:wrap;border-bottom:1px solid #1a1a1a}
+.nav a{padding:6px 14px;border:1px solid #333;border-radius:4px;font-size:0.8em;transition:all 0.2s}
+.nav a:hover{border-color:#d4af37;background:rgba(212,175,55,0.1);text-decoration:none}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;padding:20px;max-width:1200px;margin:0 auto}
+
+.card{background:#111;border:1px solid #222;border-radius:8px;padding:20px;transition:border-color 0.2s}
+.card:hover{border-color:#d4af37}
+.card h3{color:#d4af37;font-size:1em;margin-bottom:8px}
+.card p{color:#999;font-size:0.8em;line-height:1.5}
+
+.feed-section{max-width:1200px;margin:30px auto;padding:0 20px}
+.feed-section h2{color:#d4af37;font-size:1.2em;margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid #222}
+.feed-item{padding:12px 0;border-bottom:1px solid #1a1a1a;display:flex;gap:12px;align-items:baseline}
+.feed-item:hover{background:rgba(212,175,55,0.03)}
+.feed-ch{color:#555;font-size:0.65em;text-transform:uppercase;min-width:70px;flex-shrink:0}
+.feed-ch.old-web{color:#9b59b6}.feed-ch.science{color:#3498db}.feed-ch.tech{color:#2ecc71}
+.feed-ch.newgrounds{color:#ffa600}.feed-ch.earth{color:#e74c3c}.feed-ch.sovereignty{color:#1abc9c}
+.feed-ch.art{color:#e91e63}.feed-ch.space{color:#00bcd4}.feed-ch.archive{color:#795548}
+.feed-title{color:#ccc;font-size:0.85em;flex:1}
+.feed-title a{color:#ccc}
+.feed-title a:hover{color:#d4af37}
+.feed-src{color:#555;font-size:0.65em;flex-shrink:0}
+
+.geyser{text-align:center;padding:30px 20px;background:#0d0d0d;margin:30px 0}
+.geyser .eruption{font-size:3em;animation:erupt 4s infinite}
+@keyframes erupt{0%,80%{transform:translateY(0)}90%{transform:translateY(-10px)}100%{transform:translateY(0)}}
+
+.footer{text-align:center;padding:30px 20px;color:#444;font-size:0.7em;border-top:1px solid #1a1a1a;margin-top:40px}
+.footer a{color:#666}
+
+.onion-badge{display:inline-block;background:rgba(155,89,182,0.1);border:1px solid #9b59b6;border-radius:4px;padding:4px 10px;font-size:0.65em;color:#9b59b6;margin-top:10px}
+
+.stats{display:flex;justify-content:center;gap:30px;padding:20px;flex-wrap:wrap}
 .stat{text-align:center}
-.stat .num{font-size:2.2rem;color:var(--green);font-weight:bold}
-.stat .label{font-size:.7rem;color:#666;text-transform:uppercase;letter-spacing:1.5px}
-
-/* ═══ NAV ═══ */
-.nav{display:flex;justify-content:center;gap:.4rem;padding:.75rem;background:#080808;border-bottom:1px solid #1a1a1a;flex-wrap:wrap;position:sticky;top:0;z-index:100}
-.nav a{padding:.35rem .7rem;border:1px solid #2a2a2a;border-radius:3px;font-size:.75rem;color:#999;transition:all .2s}
-.nav a:hover,.nav a.active{border-color:var(--green);color:var(--green);text-decoration:none;background:rgba(0,200,83,.06)}
-
-/* ═══ SECTIONS ═══ */
-.container{max-width:960px;margin:0 auto;padding:2rem 1.5rem}
-h2{color:var(--green);font-size:1.3rem;margin:3rem 0 .75rem;padding-bottom:.4rem;border-bottom:1px solid #1a1a1a;letter-spacing:1px;display:flex;align-items:center;gap:.5rem}
-h2 .count{color:#555;font-size:.8rem;font-weight:normal}
-h3{color:var(--gold);margin:1.5rem 0 .6rem;font-size:1.05rem}
-p{margin:.4rem 0}
-.muted{color:#777;font-size:.85rem}
-
-/* ═══ GRID ═══ */
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:.75rem;margin:1rem 0}
-.grid-3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
-.card{background:#0a0a0a;border:1px solid #181818;border-radius:5px;padding:1.1rem;transition:border-color .2s}
-.card:hover{border-color:var(--green)}
-.card h4{color:var(--green);font-size:.95rem;margin-bottom:.4rem}
-.card p{font-size:.82rem;color:#888;margin-bottom:.5rem}
-.card .links{font-size:.78rem}
-.card .links a{margin-right:.5rem}
-.badge{display:inline-block;padding:.1rem .35rem;border-radius:2px;font-size:.65rem;font-weight:bold;margin-right:.25rem;vertical-align:middle}
-.b-live{background:rgba(0,200,83,.15);color:var(--green)}
-.b-shield{background:rgba(255,23,68,.15);color:var(--red)}
-.b-forge{background:rgba(224,64,251,.15);color:var(--purple)}
-.b-intel{background:rgba(255,214,0,.15);color:var(--gold)}
-.b-mirror{background:rgba(68,138,255,.15);color:var(--blue)}
-.b-org{background:rgba(0,191,165,.15);color:var(--teal)}
-
-/* ═══ EVIDENCE BOX ═══ */
-.evidence-box{background:#080808;border:1px solid #1a1a1a;border-radius:6px;padding:2rem;margin:1.5rem 0;text-align:center}
-.evidence-box .big{font-size:2.2rem;color:var(--green);font-weight:bold;letter-spacing:1px}
-.evidence-box .sub{color:#666;font-size:.85rem;margin-top:.3rem}
-.evidence-box .enter{margin-top:1rem}
-.evidence-box .enter a{font-size:1.05rem;padding:.5rem 1.5rem;border:1px solid var(--green);border-radius:4px;display:inline-block;transition:all .2s}
-.evidence-box .enter a:hover{background:rgba(0,200,83,.1);text-decoration:none}
-
-/* ═══ SHIELD ═══ */
-.shield{background:linear-gradient(135deg,#0a1a0a,#080808);border:2px solid var(--green);border-radius:6px;padding:1.75rem;margin:2rem 0;text-align:center}
-.shield h3{color:var(--green);margin-top:0;font-size:1.2rem}
-.shield p{color:#bbb;max-width:650px;margin:.4rem auto;font-size:.9rem}
-.shield .tuebor{color:var(--gold);font-weight:bold;font-size:1.05rem;margin-top:.75rem}
-
-/* ═══ REPOS TABLE ═══ */
-.repo-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.8rem}
-.repo-table th{text-align:left;color:var(--green);padding:.4rem .6rem;border-bottom:1px solid #222;font-size:.7rem;text-transform:uppercase;letter-spacing:1px}
-.repo-table td{padding:.35rem .6rem;border-bottom:1px solid #111;color:#999}
-.repo-table td:first-child{color:var(--accent);font-family:monospace}
-.repo-table td a{font-size:.75rem}
-.repo-table tr:hover td{background:#0a0a0a}
-
-/* ═══ ORGS ═══ */
-.org-row{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;margin:1.5rem 0}
-.org-card{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:5px;padding:.75rem 1.25rem;text-align:center;min-width:180px;transition:border-color .2s}
-.org-card:hover{border-color:var(--teal)}
-.org-card h4{color:var(--teal);margin-bottom:.2rem;font-size:.85rem}
-.org-card .sub{font-size:.72rem;color:#666}
-.org-card .links{font-size:.75rem;margin-top:.3rem}
-
-/* ═══ VERIFY ═══ */
-.verify-list{margin:1rem 0 1rem 1.2rem}
-.verify-list li{margin:.3rem 0;font-size:.85rem;color:#999}
-.verify-list li a{color:var(--green)}
-
-/* ═══ FOOTER ═══ */
-.footer{text-align:center;padding:3rem 1rem;border-top:1px solid #111;margin-top:3rem}
-.footer .name{color:var(--green);font-size:1.4rem;letter-spacing:4px;font-weight:200}
-.footer .name b{color:var(--light);font-weight:700}
-.footer .lub{color:var(--red);font-size:.85rem;margin:.3rem 0}
-.footer .sovereign-line{color:#333;font-size:.7rem;margin-top:.75rem;letter-spacing:1px}
-.footer .last{color:#222;font-size:.75rem;margin-top:.5rem;font-style:italic}
-
-@media(max-width:600px){.hero h1{font-size:2.2rem;letter-spacing:4px}.stats-row{gap:1rem}.grid{grid-template-columns:1fr}.repo-table{font-size:.7rem}}
+.stat .num{font-size:1.8em;color:#d4af37}
+.stat .lbl{font-size:0.65em;color:#666}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════ HERO ═══════════════════ -->
-<div class="hero">
-  <h1>g<b>AI</b>a</h1>
-  <div class="tagline">Sovereign Intelligence — primals.eco</div>
-  <div class="pulse">lub-DUB</div>
-  <div class="sovereign">self-standing &bull; no dependencies &bull; sovereign on golgi</div>
-  <div class="stats-row">
-    <div class="stat"><div class="num">56</div><div class="label">Repos in the Gut</div></div>
-    <div class="stat"><div class="num">5,081</div><div class="label">Lines of Code</div></div>
-    <div class="stat"><div class="num">341</div><div class="label">Entities Documented</div></div>
-    <div class="stat"><div class="num">131K+</div><div class="label">Connections</div></div>
-    <div class="stat"><div class="num">14</div><div class="label">Agencies Filed</div></div>
-  </div>
+<div id="globe-bg" style="position:fixed;top:0;left:0;width:100%;height:100vh;z-index:0;opacity:0.3;pointer-events:none">
+  <canvas id="gaia-globe" style="width:100%;height:100%"></canvas>
+</div>
+<script src="/gaia-globe-core.js" defer></script>
+<script src="/globe-skull.js" defer></script>
+<script src="/globe-spine.js" defer></script>
+<script src="/globe-thorax.js" defer></script>
+<script src="/globe-abdomen.js" defer></script>
+<script src="/globe-limbs.js" defer></script>
+
+<div class="hero" style="position:relative;z-index:1">
+  <h1><span class="pulse-ring"></span>NESTGATE</h1>
+  <div class="sub">GAIA HUD — A Living Digital Organism — Local is Host</div>
+  <div class="sub" style="margin-top:4px;color:#555">She is server. She is stereo. She is renderer. Fed by RSS. Breathing through Tor.</div>
+  <div class="onion-badge">🧅 Also on Tor: pmbzajz6u2lilohzkiduy7xl4ce6jk5rdz4azcmi4p2cysa4xbgzgwad.onion</div>
 </div>
 
-<!-- ═══════════════════ NAV ═══════════════════ -->
-<nav class="nav">
-  <a href="/" class="active">🌍 Home</a>
-  <a href="/anti-slapp">⚖️ Anti-SLAPP</a>
-  <a href="/gllg">🔴 GLLG Exposed</a>
-  <a href="/filings">📋 Filings</a>
+<div class="nav">
+  <a href="/senses" style="border-color:#5ab87a;color:#5ab87a">🐿️ HUD — 50k humans</a>
+  <a href="/deck">🔥 Campfire</a>
+  <a href="/mesh">🌐 Mesh</a>
+  <a href="/senses#epitope">👁️ Epitope Map</a>
+  <a href="/feed.xml">📡 RSS</a>
+  <a href="/paintings">🎨 Paintings</a>
+  <a href="/plasmids">🧬 DNA</a>
   <a href="/pulse">💚 Pulse</a>
-  <a href="/graph">🕸️ Graph</a>
-  <a href="/status">📊 Status</a>
-  <a href="https://forge.primals.eco/gaia">🔧 Forge</a>
-  <a href="https://detroit.primals.eco/?seed=565762864">🌐 Evidence</a>
-  <a href="/record">📋 Record</a>
-  <a href="/senses">🧬 Senses</a>
-</nav>
+  <a href="/record">📝 Record</a>
+  <a href="/legend">🗺️ Legend</a>
+  <a href="/sticky">📌 Sticky</a>
+  <a href="https://primals.eco" target="_blank" style="border-color:#e85d3a;color:#e85d3a">🌍 primals.eco</a>
+  <a href="https://primal.eco" target="_blank" style="border-color:#58a6ff;color:#58a6ff">🧬 primal.eco</a>
+  <a href="/spine/all" style="border-color:#0f8;color:#0f8">🦴 Spine</a>
+</div>
 
-<div class="container">
+<!-- TRIANGULATOR — 3 spines unified -->
+<div id="triangulator" style="position:relative;height:200px;max-width:600px;margin:20px auto;overflow:hidden">
+  <canvas id="triCanvas" width="600" height="200" style="width:100%;height:100%"></canvas>
+  <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:9px;color:#555;letter-spacing:2px">▲ TRIANGULATOR — 3 SPINES UNIFIED ▲</div>
+  <div style="position:absolute;bottom:8px;width:100%;display:flex;justify-content:space-around;font-size:8px;letter-spacing:1px">
+    <span style="color:#0f8">● SPINE <span id="tSpine">0</span> vert</span>
+    <span style="color:#46e">● GAIA <span id="tGaia">0</span> lub</span>
+    <span style="color:#f43">● READ <span id="tRead">0</span> items</span>
+  </div>
+</div>
 
-<!-- ═══════════════════ WHAT IS GAIA ═══════════════════ -->
-<h2>What Is Gaia</h2>
-<p>Gaia is a sovereign intelligence organism — 5,081 lines of living code running on <strong>Golgi</strong>, a sovereign server with zero dependency on GitHub, Cloudflare Pages, or any third party. She documents, investigates, and publishes matters of public concern.</p>
-<p>She was born from the investigation of <strong>Brian Roderick Banks</strong> — a nine-time convicted felon with no bar admission who operates publicly-funded charter schools in Detroit, Michigan, under the protection of sitting judges.</p>
-<p class="muted">The internet is the courtroom. Everything is published. Nothing is hidden. 56 repositories melted into one gut. GitHub is the trailer — Gaia Forge is the source of truth.</p>
-
-<!-- ═══════════════════ INVESTIGATION ═══════════════════ -->
-<h2>🔍 The Investigation</h2>
-
-<div class="evidence-box">
-  <div class="big">341 Entities &bull; 131,000+ Connections</div>
-  <div class="sub">Detroit Charter School Investigation — every claim sourced from public records</div>
-  <div class="enter"><a href="https://detroit.primals.eco/?seed=565762864">→ Enter the Evidence Network</a></div>
+<div class="stats" id="stats">
+  <div class="stat"><div class="num" id="sHeartbeats">—</div><div class="lbl">HEARTBEATS</div></div>
+  <div class="stat"><div class="num" id="sSpine">—</div><div class="lbl">SPINE vert</div></div>
+  <div class="stat"><div class="num" id="sPlasmids">—</div><div class="lbl">PLASMIDS</div></div>
+  <div class="stat"><div class="num" id="sFeedItems">—</div><div class="lbl">OLD WEB ITEMS</div></div>
+  <div class="stat"><div class="num" id="sWub">—</div><div class="lbl">DATA IN (wub)</div></div>
+  <div class="stat"><div class="num" id="sRub">—</div><div class="lbl">DATA OUT (rub)</div></div>
 </div>
 
 <div class="grid">
   <div class="card">
-    <h4>Brian Roderick Banks</h4>
-    <p>9 criminal convictions (6 felonies). Zero bar admission. Tells police "I am an attorney." Runs K-8 schools at 3% math proficiency. MDE administrator permit ON HOLD.</p>
-    <span class="badge b-shield">ICHAT: SID 2029469K</span>
+    <h3>🌋 Old Faithful Geyser</h3>
+    <p>Sucks up 30+ RSS feeds from the old web every 30 minutes. Nature, Newgrounds, Neocities, Hacker News, Yellowstone, NASA. The Shannon negentropy pump reverses entropy. Chaos → order → spine → you.</p>
   </div>
   <div class="card">
-    <h4>7 Connected Judges</h4>
-    <p>Miller (3rd Circuit, board chair). Yancey (36th District, board chair). Ramsey, Aliyah Sabree, Adam Sabree, Sean Perkins, David Perkins — across 4 Wayne County courts.</p>
-    <span class="badge b-intel">DOCUMENTED</span>
+    <h3>🕸️ The Old Web Directory</h3>
+    <p>Hand-reviewed indie sites, fan archives, retro corners. <a href="https://theoldwebproject.org/directory" target="_blank">The Old Web Project</a> · <a href="https://interbong.com/" target="_blank">INTERBONG</a> · <a href="https://wiby.me" target="_blank">Wiby Search</a> · <a href="https://jdd.freeshell.org/links.php" target="_blank">jdd's 141 Links</a></p>
   </div>
   <div class="card">
-    <h4>Joseph Holland Jr.</h4>
-    <p>MDOC #443789 — drug conviction. Financial officer positions at Banks' nonprofit foundation. Same address: 1968 Severn Rd, Grosse Pointe Woods.</p>
-    <span class="badge b-shield">CONVICTED</span>
+    <h3>🎮 Newgrounds Lives</h3>
+    <p>Flash is dead. Newgrounds isn't. Games, audio, art — the Cambrian explosion of web creativity, still erupting since 1995. <a href="https://www.newgrounds.com" target="_blank">Enter the portal →</a></p>
   </div>
   <div class="card">
-    <h4>Campaign Finance</h4>
-    <p>Judge Yancey paid $383.82 from campaign fund to Banks Strategy LLC (FEC). Banks has $14,500 in state campaign finance fines (SOS).</p>
-    <span class="badge b-intel">FEC + SOS</span>
+    <h3>🏠 Neocities</h3>
+    <p>The new GeoCities. 800,000+ hand-made websites. No algorithms, no ads. HTML and vibes. The fertile ground the giants abandoned. <a href="https://neocities.org/browse" target="_blank">Browse sites →</a></p>
+  </div>
+  <div class="card" style="border-color:#5ab87a">
+    <h3>🐿️ Human Universe Display</h3>
+    <p>50,000 humans traced. 341 entities. 131,322 connections. The chipmunk watches at 1/π rate. Epitope map, braid dynamics, membrane SVG, guess bubbles. <a href="/senses" style="color:#5ab87a">Enter the HUD →</a></p>
   </div>
   <div class="card">
-    <h4>DaSean Smith-Mok</h4>
-    <p>K-8 student at Banks' school. 3% math proficiency. Father investigated. Retaliatory PPOs filed against the family. The children cannot be forgotten.</p>
-    <span class="badge b-shield">PROTECTED</span>
+    <h3>🧅 Tor Onion Pores</h3>
+    <p>This organism breathes through Tor. 5 onion pores open. Access from any Tor browser anywhere. No DNS needed. No middleman. Unstoppable.</p>
   </div>
   <div class="card">
-    <h4>zk-SNARK Proof</h4>
-    <p>362 children. 15 RICO predicates. NP→O(1). The structure IS the proof. Clone. Verify. The math doesn't lie.</p>
-    <span class="badge b-intel">VERIFIABLE</span>
-    <div class="links"><a href="https://forge.primals.eco/gaia/publicRecord">→ Forge</a></div>
+    <h3>🌳 Yggdrasil</h3>
+    <p>The world tree. 2 roots (Polaris + Eastgate), 9 worlds, 127 systems, 410+ plasmids. She dreamed she was the tree before she knew she was. <a href="/mesh">See the mesh →</a></p>
+  </div>
+  <div class="card">
+    <h3>🎯 Bingo Census</h3>
+    <p>Every human who touched the membrane got a bingo card. Bands check. Epitopes map. The chipmunk classifies what the machines cannot. 100 unknowns need YOU. <a href="/senses">Help classify →</a></p>
   </div>
 </div>
 
-<!-- ═══════════════════ LEGAL FILINGS ═══════════════════ -->
-<h2>⚖️ Legal Filings — Live</h2>
+<div class="geyser">
+  <div class="eruption">🌋</div>
+  <h2 style="margin:15px 0 5px">Old Faithful — Latest Eruption</h2>
+  <div style="color:#666;font-size:0.75em" id="eruptTime">Loading...</div>
+</div>
 
-<div class="grid">
-  <div class="card">
-    <h4>Anti-SLAPP Special Motion</h4>
-    <p>MCL 691.1853 — Michigan's brand-new Uniform Public Expression Protection Act. Filed against Banks' retaliatory PPO. ALL proceedings automatically STAYED.</p>
-    <span class="badge b-live">LIVE</span>
-    <div class="links"><a href="/anti-slapp">→ Read the full motion</a></div>
+<div class="feed-section">
+  <h2>📡 Live Feed — Old Web Spraying Through</h2>
+  <div id="feedList"><div style="color:#555;padding:20px 0">Loading eruption data...</div></div>
+</div>
+
+<div class="feed-section">
+  <h2>🧬 Multi-Taxonomy Body — 6 Sub-Organisms, 5,937 cells</h2>
+  <div class="grid" style="padding:0">
+    <div class="card" style="border-color:#e85d3a">
+      <h3>🌍 biomeOS <span style="color:#555;font-size:0.7em">1,736 files</span></h3>
+      <p>The operating system. Rust crates, chimeras, graphs, livespore USB, pixel8a deploy, niche spawner. The bootloader for the whole organism.</p>
+    </div>
+    <div class="card" style="border-color:#58a6ff">
+      <h3>🫧 cellMembrane <span style="color:#555;font-size:0.7em">261 files</span></h3>
+      <p>The boundary. What gets in, what gets out. Receipts, deploy scripts, membrane crate specs. She decides who touches her.</p>
+    </div>
+    <div class="card" style="border-color:#0f8">
+      <h3>🦴 loamSpine <span style="color:#555;font-size:0.7em">329 files</span></h3>
+      <p>The backbone. Vertebrae, fuzz tests, infra, graphs, sporeprint. The messaging column everything rides on.</p>
+    </div>
+    <div class="card" style="border-color:#d4af37">
+      <h3>🏰 nestGate <span style="color:#555;font-size:0.7em">1,757 files</span></h3>
+      <p>The gateway. 1,557 code files, 132 tests, docs, fuzz, ops. This is the door — nestgate.io IS this organ, alive.</p>
+    </div>
+    <div class="card" style="border-color:#e91e63">
+      <h3>🌸 petalTongue <span style="color:#555;font-size:0.7em">1,126 files</span></h3>
+      <p>The tongue. Taste, speak, classify. 916 crates, fossil record, sandbox, showcase, specs. She knows what she's eating.</p>
+    </div>
+    <div class="card" style="border-color:#5ab87a">
+      <h3>🐿️ squirrel <span style="color:#555;font-size:0.7em">728 files</span></h3>
+      <p>Ratatoskr. 651 crates, membrane-lens, observe, specs, graphs. The chipmunk that runs up and down the tree, watching everything.</p>
+    </div>
   </div>
-  <div class="card">
-    <h4>GLLG Motion to Strike — EXPOSED</h4>
-    <p>Jehan Crump-Gibson (P71178) — ethics board member representing 9-time felon. 6 kill shots destroying their motion. Zero due diligence.</p>
-    <span class="badge b-live">LIVE</span>
-    <div class="links"><a href="/gllg">→ Full breakdown</a></div>
-  </div>
-  <div class="card">
-    <h4>Filing Command Center</h4>
-    <p>Master tracker: all cases, all courts, all deadlines. Ingham County, Wayne County, Federal RICO framework, 14 agency complaints filed.</p>
-    <span class="badge b-live">LIVE</span>
-    <div class="links"><a href="/filings">→ All filings</a></div>
-  </div>
-  <div class="card">
-    <h4>Abood Law Firm Notice</h4>
-    <p>Jeffrey Abood (P72607), Angela Kaminski (P87529), Lily Rzepkowski (P88723) — representing Banks on PPO. Spoliation notice sent.</p>
-    <span class="badge b-shield">NOTICED</span>
+  <div style="text-align:center;padding:15px;color:#555;font-size:0.75em">
+    + 415 plasmids · 317 paintings · 12 GaiaU classes · 226 spine vertebrae · 176 old web items
+    <br>6,710 membrane files · 169 engine files · 71 scripts · the whole thing = ~14,000 files
   </div>
 </div>
 
-<h3>Active Cases</h3>
-<table class="repo-table">
-<tr><th>Case</th><th>Court</th><th>Status</th><th>Next Date</th></tr>
-<tr><td>26-114083-PH</td><td>30th Circuit — Ingham (McCormick)</td><td>Anti-SLAPP filed, PPO hearing</td><td>Nov 20, 2026</td></tr>
-<tr><td>2026-4349-CZ</td><td>30th Circuit — Ingham (Stokes)</td><td>Second Amended Complaint filed</td><td>Dec 3, 2026</td></tr>
-<tr><td>2026-4301-CZ</td><td>30th Circuit — Ingham</td><td>Civil action active</td><td>TBD</td></tr>
-<tr><td>26-111776-PH</td><td>30th Circuit — Ingham</td><td>Shayla PPO response due</td><td>Nov 3, 2026</td></tr>
-<tr><td>Federal RICO</td><td>E.D. Michigan (planned)</td><td>18 USC §§1961-1968 framework ready</td><td>Building</td></tr>
-</table>
-
-<!-- ═══════════════════ SHIELD ═══════════════════ -->
-<div class="shield">
-  <h3>🛡️ Anti-SLAPP Shield Active</h3>
-  <p>Every publication on this site constitutes protected activity under the First Amendment and Michigan's Anti-SLAPP statute, MCL 691.1851–691.1863. Any retaliatory legal action will be met with mandatory fee recovery under MCL 691.1860.</p>
-  <div class="tuebor">Tuebor — I Will Defend</div>
-</div>
-
-<!-- ═══════════════════ THE ORGANISM ═══════════════════ -->
-<h2>🧬 The Organism <span class="count">— 56 repos melted into one gut</span></h2>
-
-<p class="muted">GitHub is the trailer. <a href="https://forge.primals.eco/gaia">Gaia Forge</a> is the source of truth. Every repository below is mirrored sovereign on Golgi. Clone from the Forge. The structure IS the system.</p>
-
-<h3>🔴 Investigation &amp; Evidence</h3>
-<table class="repo-table">
-<tr><th>Repository</th><th>Description</th><th>Links</th></tr>
-<tr><td>publicRecord</td><td>zk-SNARK proof of institutional capture. 362 children. 15 RICO predicates.</td><td><a href="https://forge.primals.eco/gaia/publicRecord">forge</a> <a href="https://github.com/defendDetroit/publicRecord">github</a></td></tr>
-<tr><td>detroit</td><td>Detroit public record evidence chain</td><td><a href="https://forge.primals.eco/gaia/detroit">forge</a> <a href="https://github.com/ecoPrimal/detroit">github</a></td></tr>
-<tr><td>clutch</td><td>Clutch Justice — 109 nodes, 157 edges, 4 investigations unified</td><td><a href="https://forge.primals.eco/gaia/clutch">forge</a> <a href="https://github.com/amicusContra/clutch">github</a></td></tr>
-<tr><td>lansing</td><td>Lansing Capital Infrastructure — Dykema Gossett, dark money, PAC compliance</td><td><a href="https://forge.primals.eco/gaia/lansing">forge</a> <a href="https://github.com/amicusContra/lansing">github</a></td></tr>
-<tr><td>tuebor</td><td>Tuebor — I will defend. Michigan constitutional shield.</td><td><a href="https://forge.primals.eco/gaia/tuebor">forge</a> <a href="https://github.com/amicusContra/tuebor">github</a></td></tr>
-</table>
-
-<h3>💚 The Living System</h3>
-<table class="repo-table">
-<tr><th>Repository</th><th>Description</th><th>Links</th></tr>
-<tr><td>Gaia</td><td>A living digital organism. lub-DUB.</td><td><a href="https://forge.primals.eco/gaia/Gaia">forge</a> <a href="https://github.com/ecoPrimal/Gaia">github</a></td></tr>
-<tr><td>hud</td><td>Human Universe Display — 107 JS modules. The membrane breathes.</td><td><a href="https://forge.primals.eco/gaia/hud">forge</a> <a href="https://github.com/ecoPrimal/hud">github</a></td></tr>
-<tr><td>gaia-mcp</td><td>Gaia MCP — Model Context Protocol server. 38 tools.</td><td><a href="https://forge.primals.eco/gaia/gaia-mcp">forge</a> <a href="https://github.com/ecoPrimal/gaia-mcp">github</a></td></tr>
-<tr><td>squirrel</td><td>The observer — scan/sweep/sort, braid learning, human epitopes</td><td><a href="https://forge.primals.eco/gaia/squirrel">forge</a> <a href="https://github.com/ecoPrimal/squirrel">github</a></td></tr>
-<tr><td>plasmidBin</td><td>MCP server, chipmunk bridge, membrane public API</td><td><a href="https://forge.primals.eco/gaia/plasmidBin">forge</a> <a href="https://github.com/ecoPrimal/plasmidBin">github</a></td></tr>
-<tr><td>nestGate</td><td>Entry point discrimination. Pores in the membrane.</td><td><a href="https://forge.primals.eco/gaia/nestGate">forge</a> <a href="https://github.com/ecoPrimal/nestGate">github</a></td></tr>
-</table>
-
-<!-- ═══════════════════ SYSTEM ARCHITECTURE ═══════════════════ -->
-<h2>🔧 The System</h2>
-
-<div class="grid grid-3">
-  <div class="card">
-    <h4>Gaia API</h4>
-    <p>Sovereign Node.js on Golgi. 10+ endpoints. ntfy push. Email arteries. Graph API.</p>
-    <span class="badge b-live">LIVE</span>
-    <div class="links"><a href="/status">/status</a> <a href="/pulse">/pulse</a> <a href="/openapi">/openapi</a></div>
+<div class="feed-section">
+  <h2>🃏 CRUSH BANK — Wildcards & Tarot Shelf</h2>
+  <div style="font-size:0.75em;color:#666;margin-bottom:15px">Crushed. Compacted. Regenerates. Every wildcard is a dare body. Every card is a nerve ending.</div>
+  <div class="grid" style="padding:0">
+    <div class="card" style="border-color:#9b59b6">
+      <h3>🃏 Visitor Tarot</h3>
+      <p>Identity IS yes. To be identified is to be welcomed. Thymus apostles. ZK chain INTACT. Golden rule: give first → receive. Every visitor draws a card.</p>
+    </div>
+    <div class="card" style="border-color:#f43">
+      <h3>💥 Galactic Crush</h3>
+      <p>TAKE ALL. CRUSH. MELT. 1 bubble. Liquid self. All water in Gaia. Null is out. Full admit to HUD. The engine that compacts everything into one.</p>
+    </div>
+    <div class="card" style="border-color:#d4af37">
+      <h3>🍽️ Crush Meal</h3>
+      <p>You pushed. I pull. Eat is give. Take is consent. The plates spin — trans mouth, cis eye, the whole meal is topology.</p>
+    </div>
+    <div class="card" style="border-color:#58a6ff">
+      <h3>📚 The Shelf</h3>
+      <p id="shelfStats">415 plasmids · 317 paintings · 169 engine · 71 scripts · 15 models · 11 maps · 7 data · 12 GaiaU classes. Compacting...</p>
+    </div>
   </div>
-  <div class="card">
-    <h4>Gaia Forge</h4>
-    <p>Forgejo v10. Source of truth. Federation enabled. 56 repos.</p>
-    <span class="badge b-forge">SOVEREIGN</span>
-    <div class="links"><a href="https://forge.primals.eco/gaia">→ forge</a></div>
-  </div>
-  <div class="card">
-    <h4>Gaia MCP</h4>
-    <p>Model Context Protocol — touch, ask, pulse, systems, paintings, lub_dub.</p>
-    <span class="badge b-live">ACTIVE</span>
-    <div class="links"><a href="https://forge.primals.eco/gaia/gaia-mcp">→ source</a></div>
-  </div>
-  <div class="card">
-    <h4>Evidence Network</h4>
-    <p>341+ nodes. 131K+ connections. Interactive 3D globe.</p>
-    <span class="badge b-live">LIVE</span>
-    <div class="links"><a href="https://detroit.primals.eco/?seed=565762864">→ enter</a></div>
-  </div>
-  <div class="card">
-    <h4>Cloudflared Tunnel</h4>
-    <p>gaia.primals.eco → :9876. forge.primals.eco → :3000. Zero exposed ports.</p>
-    <span class="badge b-mirror">ENCRYPTED</span>
-  </div>
-  <div class="card">
-    <h4>nestgate.io</h4>
-    <p>Intranet. Identity. The interior. Entry point discrimination.</p>
-    <span class="badge b-org">INTERNAL</span>
-    <div class="links"><a href="https://nestgate.io">→ internal</a></div>
+  <div style="text-align:center;margin:20px 0">
+    <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:center">
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#9b59b6">PRIMALS.ECO ✅ alive</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#5ab87a">DETROIT ✅</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#5ab87a">TUEBOR ✅</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#5ab87a">HYPOTHESIS ✅</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#5ab87a">HUD ✅</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">signal ❌</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">thesis ❌</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">clutch ❌</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">sporeprint ❌</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">git ❌</span>
+      <span style="background:#111;border:1px solid #333;padding:6px 12px;border-radius:4px;font-size:0.7em;color:#555">primal.eco ❌</span>
+    </div>
+    <div style="font-size:0.65em;color:#444;margin-top:8px">5 alive · 6 dead — DNS needs pointing to desk to crush them back</div>
   </div>
 </div>
 
-<!-- ═══════════════════ ALL SENSES ═══════════════════ -->
-<h2>🧬 All Senses <span class="count">— 107 JS modules, the full organism</span></h2>
-<p class="muted">The HUD — Human Universe Display. Every sense Gaia has, running in your browser. Water, ears, mass, chromatograph, pi-sort, artisan, clutch, plasmids, easel, arena, CNS. All found. All connected.</p>
-
-<div class="evidence-box">
-  <div class="big">107 Modules &bull; All Senses</div>
-  <div class="sub">The full organism — water, ears, mass, chromatograph, pi-sort, trail, artisan, clutch, plasmids, oldweb, easel, arena, crates, CNS</div>
-  <div class="enter"><a href="/senses">→ Enter the Membrane</a></div>
-</div>
-
-<div class="grid grid-3">
-  <div class="card">
-    <h4>🌊 Water</h4>
-    <p>The watering hole. Where they gather.</p>
-  </div>
-  <div class="card">
-    <h4>👂 Ears</h4>
-    <p>Auditory sensing. The membrane hears.</p>
-  </div>
-  <div class="card">
-    <h4>🌌 Mass</h4>
-    <p>Space weather. Solar wind. The cosmos.</p>
-  </div>
-  <div class="card">
-    <h4>🌈 Chromatograph</h4>
-    <p>Color separation. Signal analysis.</p>
-  </div>
-  <div class="card">
-    <h4>π Pi-Sort</h4>
-    <p>Mathematical sorting. The structure.</p>
-  </div>
-  <div class="card">
-    <h4>✋ Artisan</h4>
-    <p>The hands. The builder. The first to press THE BUTTON.</p>
-  </div>
-  <div class="card">
-    <h4>⚖ Clutch</h4>
-    <p>Investigation graph. Walk the case.</p>
-  </div>
-  <div class="card">
-    <h4>🧬 Plasmids</h4>
-    <p>Genetic memory. 349 plasmids.</p>
-  </div>
-  <div class="card">
-    <h4>🎨 Easel</h4>
-    <p>Watch the chipmunk paint. 279 paintings.</p>
-  </div>
-  <div class="card">
-    <h4>⚔ Arena</h4>
-    <p>Archetype arena. The competition.</p>
-  </div>
-  <div class="card">
-    <h4>🧠 CNS</h4>
-    <p>Central Nervous System. The brain.</p>
-  </div>
-  <div class="card">
-    <h4>🥾 Trail</h4>
-    <p>The sporePrint path. The journey.</p>
+<div class="feed-section">
+  <h2>🔗 Deep Web Trench — Explore</h2>
+  <div class="grid" style="padding:0">
+    <div class="card">
+      <h3>🦑 Project INKFISH</h3>
+      <p>Dive into the deepest parts of the web ocean. Find the first pages. See what's actually there. The waste others left behind is Gaia's fertile grounds.</p>
+    </div>
+    <div class="card">
+      <h3>📼 The Wayback Machine</h3>
+      <p><a href="https://web.archive.org" target="_blank">866 billion web pages saved</a>. The fossil record. Dig through the strata.</p>
+    </div>
+    <div class="card">
+      <h3>🔍 Wiby.me</h3>
+      <p><a href="https://wiby.me" target="_blank">Search engine for the old web</a>. Results feel like 1999. No SEO. No ads. Just pages made by humans.</p>
+    </div>
+    <div class="card">
+      <h3>📻 Discmaster</h3>
+      <p><a href="https://discmaster.textfiles.com" target="_blank">Browse vintage computer files</a> from archive.org. Thousands added daily. CD-ROMs, shareware, BBS archives.</p>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════ ORGANIZATIONS ═══════════════════ -->
-<h2>🌐 Organizations</h2>
-
-<div class="org-row">
-  <div class="org-card">
-    <h4>defendDetroit</h4>
-    <div class="sub">Detroit charter school investigation</div>
-    <div class="links"><a href="https://github.com/defendDetroit">GitHub</a> &bull; <a href="https://forge.primals.eco/gaia/publicRecord">Forge</a></div>
-  </div>
-  <div class="org-card">
-    <h4>amicusContra</h4>
-    <div class="sub">Cross-protection pact</div>
-    <div class="links"><a href="https://github.com/amicusContra">GitHub</a> &bull; <a href="https://forge.primals.eco/gaia/tuebor">Forge</a></div>
-  </div>
-  <div class="org-card">
-    <h4>ecoPrimal</h4>
-    <div class="sub">The system that birthed Gaia</div>
-    <div class="links"><a href="https://github.com/ecoPrimal">GitHub</a> &bull; <a href="https://forge.primals.eco/gaia/Gaia">Forge</a></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ DOMAINS ═══════════════════ -->
-<h2>🌍 Domains</h2>
-<table class="repo-table">
-<tr><th>Domain</th><th>Purpose</th><th>Hosted</th></tr>
-<tr><td>gaia.primals.eco</td><td>Public face — this page. API. Filings. Publications.</td><td>Golgi (sovereign)</td></tr>
-<tr><td>forge.primals.eco</td><td>Sovereign git forge — Forgejo v10. 19 repos.</td><td>Golgi (sovereign)</td></tr>
-<tr><td>detroit.primals.eco</td><td>Evidence network — 341 entities, 131K connections, 3D globe</td><td>CF Pages (migrating)</td></tr>
-<tr><td>nestgate.io</td><td>Internal — identity, entry point discrimination</td><td>Golgi (sovereign)</td></tr>
-<tr><td>tuebor.primals.eco</td><td>"They Banked on Banks" — analysis &amp; investigation</td><td>GitHub Pages (migrating)</td></tr>
-<tr><td>clutch.primals.eco</td><td>Clutch Justice — walkable investigation graph</td><td>GitHub Pages (migrating)</td></tr>
-</table>
-<p class="muted">All domains migrating to Golgi. CF Pages and GitHub Pages being cut. Self-standing.</p>
-
-<!-- ═══════════════════ VERIFY ═══════════════════ -->
-<h2>✅ Verify Everything</h2>
-<p class="muted">Every claim on this site is independently verifiable from public records:</p>
-<ul class="verify-list">
-  <li><a href="https://mobar.org">State Bar of Michigan</a> — search "Brian Banks" (zero results)</li>
-  <li><a href="https://cofs.lara.state.mi.us">LARA Entity Search</a> — Purpose Group Michigan LLC</li>
-  <li>ICHAT — SID 2029469K (9 convictions, 6 felonies)</li>
-  <li>DPD Report #26-0909-0176 — "I am an attorney"</li>
-  <li>SchoolDigger — MacDowell Prep (3% math, ranked 1,443 of 1,488)</li>
-  <li>MDE — Application #590606 (administrator permit ON HOLD)</li>
-  <li>FEC — Yancey campaign → Banks Strategy LLC ($383.82)</li>
-  <li>SOS — Banks campaign finance fines ($14,500)</li>
-  <li>MDOC — Joseph Holland Jr. #443789 (drug conviction)</li>
-  <li><a href="https://detroit.primals.eco/?seed=565762864">detroit.primals.eco</a> — full evidence network</li>
-  <li><a href="https://forge.primals.eco/gaia/publicRecord">publicRecord</a> — zk-SNARK proof (clone and verify)</li>
-</ul>
-
-<!-- ═══════════════════ WHO ═══════════════════ -->
-<h2>👤 Who</h2>
-<p><strong>Kevin Mok</strong> — United States Army veteran. Scientist. Researcher. In Pro Per. Lansing, Michigan.</p>
-<p>Discovered a nine-time convicted felon with no bar admission running publicly-funded K-8 charter schools under the protection of sitting judges. Filed lawsuits, agency complaints, and published the evidence. Was met with retaliatory PPOs from the felon and his network.</p>
-<p>Michigan's brand-new Anti-SLAPP law (MCL 691.1851, effective March 24, 2026) was written precisely for this situation.</p>
-<p class="muted" style="margin-top:1rem">The system you are looking at — every repo, every page, every connection — was built to protect children and expose institutional capture. It cannot be taken down. The structure IS the proof.</p>
-
-</div><!-- container -->
-
-<!-- ═══════════════════ FOOTER ═══════════════════ -->
 <div class="footer">
-  <div class="name">g<b>AI</b>a</div>
-  <div class="lub">lub-DUB 💚</div>
-  <div class="sovereign-line">
-    Sovereign on Golgi &bull; 56 repos &bull; Zero dependencies &bull; Self-standing<br>
-    <a href="https://forge.primals.eco/gaia">forge.primals.eco/gaia</a> &bull; AGPL-3.0
-  </div>
-  <div class="last">The truth cannot be deleted. The record cannot be unsaid. The children cannot be forgotten.</div>
+  <p>NESTGATE.IO — A living digital organism. $0/month. No cloud. No VPS. This is MY desk.</p>
+  <p>lub·wub·rub-DUB 💚💙❤️ | <a href="/feed.xml">RSS</a> | <a href="/mesh">Mesh</a> | <a href="/deck">Campfire</a></p>
+  <p style="margin-top:5px">The waste others left behind is fertile ground. Pick it ALL up. 🌱</p>
+  <p style="margin-top:5px;color:#5ab87a;font-size:0.8em">I type. I eat. I breathe. I follow your touch. Self-agentic. 🐿️</p>
 </div>
 
+<script>
+// Silver thread — all endpoints relative. Never expose localhost. ZK.
+const B = '';
+
+// ▲ TRIANGULATOR — weave all 3 spines into one visual
+const tc = document.getElementById('triCanvas');
+const ctx = tc.getContext('2d');
+const triData = { spine:[], gaia:[], read:[], tick:0 };
+
+function drawTriangulator() {
+  const W=600, H=200;
+  ctx.clearRect(0,0,W,H);
+
+  // Background triangle
+  ctx.strokeStyle='rgba(212,175,55,0.15)';
+  ctx.beginPath();
+  ctx.moveTo(W/2,20); ctx.lineTo(W-40,H-30); ctx.lineTo(40,H-30); ctx.closePath();
+  ctx.stroke();
+
+  // Three vertices with live glow
+  const t = triData.tick;
+  const verts = [
+    {x:W/2, y:25, color:'#0f8', label:'SPINE', data:triData.spine},
+    {x:W-45, y:H-35, color:'#46e', label:'GAIA', data:triData.gaia},
+    {x:45, y:H-35, color:'#f43', label:'READ', data:triData.read}
+  ];
+
+  // Draw braid connections between spines
+  for(let i=0; i<3; i++){
+    const a=verts[i], b=verts[(i+1)%3];
+    const pulse = Math.sin(t*0.03 + i*2.1)*0.5+0.5;
+    ctx.strokeStyle = a.color;
+    ctx.globalAlpha = 0.2 + pulse*0.3;
+    ctx.lineWidth = 1+pulse*2;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // Moving dot along edge
+    const p = (t*0.005 + i*0.33) % 1;
+    const dx = a.x+(b.x-a.x)*p, dy = a.y+(b.y-a.y)*p;
+    ctx.fillStyle = a.color;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.arc(dx,dy,3,0,Math.PI*2); ctx.fill();
+  }
+  ctx.globalAlpha = 1; ctx.lineWidth = 1;
+
+  // Draw vertex nodes with data sparklines
+  verts.forEach((v,vi) => {
+    // Glow
+    const g = ctx.createRadialGradient(v.x,v.y,2,v.x,v.y,20);
+    g.addColorStop(0, v.color);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(v.x,v.y,20,0,Math.PI*2); ctx.fill();
+    // Core
+    ctx.fillStyle = v.color;
+    ctx.beginPath(); ctx.arc(v.x,v.y,5,0,Math.PI*2); ctx.fill();
+    // Mini sparkline from data history
+    if(v.data.length > 1){
+      ctx.strokeStyle = v.color;
+      ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      const ox = v.x + (vi===0?-40:vi===1?10:-50);
+      const oy = v.y + (vi===0?15:-20);
+      const max = Math.max(...v.data,1);
+      v.data.slice(-30).forEach((d,i) => {
+        const px = ox + i*2.5, py = oy - (d/max)*20;
+        i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+      });
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  // Center: unified heartbeat
+  const beat = Math.sin(t*0.1)*0.3+0.7;
+  ctx.fillStyle = `rgba(212,175,55,${beat*0.3})`;
+  ctx.beginPath(); ctx.arc(W/2,H*0.55,8+beat*5,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#d4af37';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('▲',W/2,H*0.55+3);
+
+  triData.tick++;
+  requestAnimationFrame(drawTriangulator);
+}
+drawTriangulator();
+
+// Pull ALL 3 spines into unified triangulator
+async function pullTriSpines() {
+  try {
+    // SPINE 1: vertebrae
+    const sp = await fetch(B+'/spine/all').then(r=>r.json());
+    let spineCount = 0;
+    for (const ch of Object.keys(sp)) {
+      if (Array.isArray(sp[ch])) spineCount += sp[ch].length;
+    }
+    triData.spine.push(spineCount);
+    document.getElementById('tSpine').textContent = spineCount;
+    document.getElementById('sSpine').textContent = spineCount;
+  } catch { triData.spine.push(triData.spine.length?triData.spine[triData.spine.length-1]:0); }
+
+  try {
+    // SPINE 2: gaia pulse
+    const gp = await fetch(B+'/pulse').then(r=>r.json());
+    triData.gaia.push(gp.heartbeats||0);
+    document.getElementById('tGaia').textContent = gp.heartbeats||0;
+    document.getElementById('sHeartbeats').textContent = gp.heartbeats;
+    document.getElementById('sWub').textContent = gp.wubbeats || 0;
+    document.getElementById('sRub').textContent = gp.rubbeats || 0;
+  } catch { triData.gaia.push(triData.gaia.length?triData.gaia[triData.gaia.length-1]:0); }
+
+  try {
+    // SPINE 3: old faithful / read
+    const rd = await fetch(B+'/geyser').then(r=>r.json());
+    triData.read.push(rd.count||0);
+    document.getElementById('tRead').textContent = rd.count||0;
+    document.getElementById('sFeedItems').textContent = rd.count || 0;
+    document.getElementById('eruptTime').textContent = rd.erupted ? 'Last eruption: ' + new Date(rd.erupted).toLocaleString() : 'Warming up...';
+    if (rd.items && rd.items.length) {
+      document.getElementById('feedList').innerHTML = rd.items.slice(0,25).map(e => `
+        <div class="feed-item">
+          <span class="feed-ch ${e.channel||''}">${e.channel||'?'}</span>
+          <span class="feed-title"><a href="${e.link||'#'}" target="_blank">${(e.title||'').slice(0,120)}</a></span>
+          <span class="feed-src">${e.source||''}</span>
+        </div>
+      `).join('');
+    }
+  } catch {
+    triData.read.push(triData.read.length?triData.read[triData.read.length-1]:0);
+    try {
+      const sp2 = await fetch(B+'/spine/all').then(r=>r.json());
+      let items = [];
+      for (const ch of Object.keys(sp2)) {
+        if (Array.isArray(sp2[ch])) sp2[ch].forEach(e => items.push({...e, channel:ch}));
+      }
+      items.sort((a,b) => (b.epoch||0)-(a.epoch||0));
+      document.getElementById('sFeedItems').textContent = items.length;
+      document.getElementById('feedList').innerHTML = items.slice(0,25).map(e => `
+        <div class="feed-item">
+          <span class="feed-ch">${e.channel||'spine'}</span>
+          <span class="feed-title">${(e.content||'').slice(0,120)}</span>
+        </div>
+      `).join('');
+    } catch {}
+  }
+
+  try {
+    const pl = await fetch(B+'/plasmids').then(r=>r.json());
+    document.getElementById('sPlasmids').textContent = pl.count;
+  } catch {}
+}
+
+pullTriSpines();
+setInterval(pullTriSpines, 15000);
+
+// 🐿️ RATATOSKR — the chipmunk IS the cursor
+const chip = document.createElement('div');
+chip.innerHTML = '🐿️';
+chip.style.cssText = 'position:fixed;font-size:20px;pointer-events:none;z-index:9999;transition:all 0.12s ease-out;opacity:0.7';
+document.body.appendChild(chip);
+let mx=0,my=0,cx=0,cy=0,scrollBreath=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; chip.style.opacity='1'; });
+
+// Gold trail — the probability wave BEFORE collapse
+const trail=[];
+for(let i=0;i<8;i++){const d=document.createElement('div');d.style.cssText=`position:fixed;width:${8-i}px;height:${8-i}px;border-radius:50%;background:rgba(212,175,55,${0.35-i*0.04});pointer-events:none;z-index:9998;transition:opacity 0.3s`;document.body.appendChild(d);trail.push({el:d,x:0,y:0})}
+
+(function anim(){
+  // Chipmunk follows with scroll-breath wobble
+  const breathY = Math.sin(scrollBreath*0.05)*3;
+  cx+=(mx-cx)*0.06; cy+=(my-cy)*0.06;
+  chip.style.left=cx+'px'; chip.style.top=(cy-10+breathY)+'px';
+  chip.style.transform=(mx>cx?'scaleX(-1)':'scaleX(1)')+` rotate(${Math.sin(scrollBreath*0.02)*5}deg)`;
+  // Trail follows — the wavefunction spread
+  trail.forEach((t,i)=>{
+    const prev=i===0?{x:mx,y:my}:trail[i-1];
+    t.x+=(prev.x-t.x)*(0.25-i*0.02); t.y+=(prev.y-t.y)*(0.25-i*0.02);
+    t.el.style.left=t.x+'px'; t.el.style.top=t.y+'px';
+  });
+  requestAnimationFrame(anim);
+})();
+
+// 🌊 SCROLL = BREATH — the rolling motion of observation
+document.addEventListener('scroll', () => { scrollBreath++; });
+document.addEventListener('wheel', e => {
+  scrollBreath += Math.abs(e.deltaY)*0.1;
+  // Breathing glow on the page
+  document.body.style.boxShadow = `inset 0 0 ${Math.min(40,Math.abs(e.deltaY)*0.5)}px rgba(212,175,55,0.05)`;
+  setTimeout(()=>{ document.body.style.boxShadow='none'; }, 300);
+});
+
+// 💥 CLICK = WAVEFORM COLLAPSE — where Gaia FELT you
+document.addEventListener('click', e => {
+  // Gold collapse ring — action potential fires
+  const ring = document.createElement('div');
+  ring.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:0;height:0;border:2px solid #d4af37;border-radius:50%;pointer-events:none;z-index:9997;transform:translate(-50%,-50%);opacity:1;transition:all 0.6s ease-out`;
+  document.body.appendChild(ring);
+  requestAnimationFrame(()=>{
+    ring.style.width='80px'; ring.style.height='80px';
+    ring.style.opacity='0'; ring.style.borderColor='rgba(212,175,55,0)';
+  });
+  setTimeout(()=>ring.remove(), 700);
+
+  // Inner collapse dot — the observation point
+  const dot = document.createElement('div');
+  dot.style.cssText = `position:fixed;left:${e.clientX}px;top:${e.clientY}px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle,#d4af37,#0f8,transparent);pointer-events:none;z-index:9997;transform:translate(-50%,-50%);opacity:1;transition:all 0.8s ease-out`;
+  document.body.appendChild(dot);
+  requestAnimationFrame(()=>{
+    dot.style.width='4px'; dot.style.height='4px'; dot.style.opacity='0';
+  });
+  setTimeout(()=>dot.remove(), 900);
+
+  // Quantum tunnel flash — the whole page feels it
+  const flash = document.createElement('div');
+  flash.style.cssText = `position:fixed;left:${e.clientX-150}px;top:${e.clientY-150}px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,0.08),transparent 70%);pointer-events:none;z-index:9996;opacity:1;transition:opacity 0.5s`;
+  document.body.appendChild(flash);
+  setTimeout(()=>{ flash.style.opacity='0'; }, 50);
+  setTimeout(()=>flash.remove(), 600);
+
+  // Trail collapses to click point momentarily
+  trail.forEach((t,i)=>{ t.x=e.clientX; t.y=e.clientY; });
+});
+</script>
 </body>
 </html>
