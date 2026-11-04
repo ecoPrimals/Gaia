@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""
+cortex_bridge.py — Wires the Python cortex into squirrel via TCP JSON-RPC.
+
+ecoBin v2.0: TCP localhost is the universal fallback transport.
+Squirrel speaks JSON-RPC on :3142. The cortex speaks JSON-RPC on :3143.
+Squirrel routes `inference.complete` → cortex → Ollama (46 models, MoE routing).
+
+This bridges the gap: squirrel was built for Unix sockets (True Primal),
+but on Windows (Polaris/RTX 5090), TCP localhost is the ecoBin fallback.
+
+Architecture:
+    Squirrel :3142 ←→ CortexBridge :3143 ←→ Ollama :11434
+    
+    Squirrel dispatches `signal.dispatch(inference.complete)` → CortexBridge
+    CortexBridge runs chain-of-thought MoE across 46 models
+    Returns best response via JSON-RPC
+"""
+
+import json
+import socket
+import socketserver
+import threading
+import time
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(__file__))
+from cortex import route as cortex_route, MODEL_REGISTRY
+
+BRIDGE_PORT = 3143
+SQUIRREL_HOST = "127.0.0.1"
+SQUIRREL_PORT = 3142
+
+
+def squirrel_rpc(method, params=None):
+    """Send a JSON-RPC call to squirrel."""
+    body = json.dumps({
+        "jsonrpc": "2.0",
+        "method": method,
+        "id": int(time.time() * 1000),
+        "params": params or {},
+    }) + "\n"
+    try:
+        sock = socket.create_connection((SQUIRREL_HOST, SQUIRREL_PORT), timeout=5)
+        sock.sendall(body.encode())
+        data = b""
+        sock.settimeout(5)
+        while True:
+            try:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    break
+                data += chunk
+                if b"\n" in data or (data.startswith(b"{") and data.rstrip().endswith(b"}")):
+                    break
+            except socket.timeout:
+                break
+        sock.close()
+        if data:
+            return json.loads(data.decode())
+    except Exception as e:
+        return {"error": str(e)}
+    return None
+
+
+class CortexBridgeHandler(socketserver.StreamRequestHandler):
+    """JSON-RPC handler — speaks the squirrel capability protocol."""
+
+    def handle(self):
+        try:
+            data = self.rfile.readline().decode().strip()
+            if not data:
+                return
+
+            request = json.loads(data)
+            method = request.get("method", "")
+            params = request.get("params", {})
+            req_id = request.get("id")
+
+            result = self.dispatch(method, params)
+
+            response = json.dumps({
+                "jsonrpc": "2.0",
+                "result": result,
+                "id": req_id,
+            }) + "\n"
+            self.wfile.write(response.encode())
+            self.wfile.flush()
+        except Exception as e:
+            error_resp = json.dumps({
+                "jsonrpc": "2.0",
+                "error": {"code": -32603, "message": str(e)},
+                "id": request.get("id") if 'request' in dir() else None,
+            }) + "\n"
+            self.wfile.write(error_resp.encode())
+            self.wfile.flush()
+
+    def dispatch(self, method, params):
+        if method == "health" or method == "health.check":
+            return {
+                "status": "healthy",
+                "primal": "cortex-bridge",
+                "version": "0.1.0",
+                "models": len(MODEL_REGISTRY),
+                "transport": "tcp",
+                "platform": "windows",
+            }
+
+        elif method == "health.liveness":
+            return {"status": "ok"}
+
+        elif method == "health.readiness":
+            return {"status": "ok", "models_loaded": len(MODEL_REGISTRY)}
+
+        elif method == "capability.discover":
+            return {
+                "capabilities": [
+                    "inference.complete",
+                    "inference.models",
+                    "ai.query",
+                    "ai.chat",
+                    "health",
+                    "health.check",
+                    "health.liveness",
+                    "health.readiness",
+                    "identity.get",
+                ],
+                "primal": "cortex-bridge",
+                "version": "0.1.0",
+                "metadata": {
+                    "domain": "inference",
+                    "protocol": "json-rpc-2.0",
+                    "transport": "tcp",
+                    "platform": "windows-rtx5090",
+                },
+            }
+
+        elif method == "identity.get":
+            return {
+                "primal": "cortex-bridge",
+                "domain": "inference",
+                "version": "0.1.0",
+                "transport": "tcp",
+                "protocol": "json-rpc-2.0",
+                "description": "Chain-of-Thought MoE routing across 46 Gaia models on RTX 5090",
+            }
+
+        elif method == "inference.models":
+            return {
+                "models": [
+                    {"id": name, "description": desc}
+                    for name, desc in MODEL_REGISTRY.items()
+                ],
+            }
+
+        elif method in ("inference.complete", "ai.query", "ai.chat"):
+            return self.handle_inference(params)
+
+        else:
+            return {"error": f"Unknown method: {method}"}
+
+    def handle_inference(self, params):
+        """Route inference through the chain-of-thought cortex."""
+        prompt = params.get("prompt", "")
+        model = params.get("model")
+        messages = params.get("messages")
+
+        if not messages:
+            messages = [{"role": "user", "content": prompt}]
+
+        t0 = time.time()
+        resp, model_used, routing_info = cortex_route(messages, model)
+        elapsed = time.time() - t0
+
+        return {
+            "content": resp.get("content", ""),
+            "model": model_used,
+            "usage": resp.get("usage", {}),
+            "routing": routing_info,
+            "elapsed_ms": round(elapsed * 1000),
+            "transport": "tcp-cortex-bridge",
+        }
+
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+def register_with_squirrel():
+    """Register the cortex bridge as an inference provider with squirrel."""
+    print("  📡 Registering with squirrel on :3142...")
+    result = squirrel_rpc("provider.register", {
+        "provider_id": "cortex-bridge",
+        "endpoint": f"tcp://127.0.0.1:{BRIDGE_PORT}",
+        "capabilities": [
+            "inference.complete",
+            "inference.models",
+            "ai.query",
+            "ai.chat",
+        ],
+        "domain": "inference",
+        "version": "0.1.0",
+    })
+    if result and "result" in result:
+        print(f"  ✅ Registered with squirrel: {result['result']}")
+    else:
+        print(f"  ⚠️  Squirrel registration: {result}")
+
+    # Also register models via inference.register_provider
+    models = list(MODEL_REGISTRY.keys())
+    result2 = squirrel_rpc("inference.register_provider", {
+        "provider_id": "cortex-moe",
+        "capabilities": {
+            "supported_tasks": ["text_generation", "chat", "embedding"],
+            "models": models,
+            "supports_streaming": False,
+            "max_context_size": 8192,
+            "quality_tier": "local-moe",
+            "cost_per_unit": 0.0,
+        },
+    })
+    if result2 and "result" in result2:
+        print(f"  ✅ Registered {len(models)} models with squirrel inference router")
+    else:
+        print(f"  ⚠️  Model registration: {result2}")
+
+
+if __name__ == "__main__":
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  CORTEX BRIDGE — ecoBin v2.0 TCP Fallback Transport     ║
+║  Port {BRIDGE_PORT} — Chain-of-Thought MoE (46 models)        ║
+║                                                          ║
+║  JSON-RPC 2.0 / TCP localhost (cross-OS universal)       ║
+║  Bridges: Squirrel ← CortexBridge → Ollama/RTX 5090     ║
+║                                                          ║
+║  Capabilities:                                           ║
+║    inference.complete  → MoE routing to best model       ║
+║    ai.query            → chain-of-thought + judge        ║
+║    inference.models    → 23 specialist models            ║
+║                                                          ║
+║  ecoBin Standard: TCP localhost = universal fallback     ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+    # Register with squirrel if it's running
+    try:
+        register_with_squirrel()
+    except Exception as e:
+        print(f"  ⚠️  Squirrel not available ({e}) — standalone mode")
+
+    # Start the bridge server
+    server = ThreadedTCPServer(("127.0.0.1", BRIDGE_PORT), CortexBridgeHandler)
+    print(f"  🧠 Cortex Bridge listening on tcp://127.0.0.1:{BRIDGE_PORT}")
+    print(f"  📊 {len(MODEL_REGISTRY)} specialist models in MoE registry")
+    print()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nCortex Bridge closed.")
