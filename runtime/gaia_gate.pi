@@ -889,10 +889,9 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-def _start_webpi():
+    def _start_webpi():
         try:
-            spec=importlib.util.spec_from_file_location("webpi",os.path.join(os.path.dirname(__file__),"webpi.py"))
-            webpi=importlib.util.module_from_spec(spec); spec.loader.exec_module(webpi)
+            webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
             ThreadedServer(("0.0.0.0",WEB_PORT),webpi.WebPIHandler).serve_forever()
         except Exception as e: print(f"  ⚠️ WebPI: {e}")
@@ -920,8 +919,7 @@ def _start_webpi():
     threading.Thread(target=_start_pi_gate,daemon=True).start()
     def _start_pi_data():
         try:
-            spec=importlib.util.spec_from_file_location("webpi2",os.path.join(os.path.dirname(__file__),"webpi.py"))
-            webpi2=importlib.util.module_from_spec(spec); spec.loader.exec_module(webpi2)
+            webpi2=_load("webpi2","webpi.pi")
             webpi2._thymus_memory=visitor_memory; webpi2._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
             ThreadedServer(("0.0.0.0",5926),webpi2.WebPIHandler).serve_forever()
             print(f"  π DATA :5926")
