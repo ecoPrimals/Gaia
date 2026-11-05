@@ -129,8 +129,8 @@ const C = (function chipmunk() {
     if (bananaPhase !== 'idle') return;
     bananaPhase = 'asking';
     const bubble = $('guess-bubble');
-    $('guess-text').innerHTML = `<span class="good" style="font-size:16px">🍌</span><br><br><span style="font-size:14px">ARE YOU A BANANA?</span><br><br><span class="dim">type your answer below</span>`;
-    $('guess-btns').innerHTML = `<input type="text" id="banana-input" placeholder="..." autocomplete="off" style="background:rgba(22,27,34,0.9);border:1px solid rgba(48,54,61,0.6);color:#c9d1d9;padding:8px 14px;font-family:inherit;font-size:12px;border-radius:8px;width:160px;outline:none;margin-right:8px"><button class="yes" onclick="C.bananaAnswer()">🍌</button>`;
+    $('guess-text').innerHTML = `<span class="good" style="font-size:24px">🍌</span><br><br><span style="font-size:16px;color:#f0c832;letter-spacing:2px">ARE YOU A BANANA?</span><br><br><span class="dim" style="font-size:10px">sszsSzssZSzsSZzszszsZSzszsZ</span>`;
+    $('guess-btns').innerHTML = `<input type="text" id="banana-input" placeholder="..." autocomplete="off"><button class="yes" onclick="C.bananaAnswer()" style="font-size:16px;padding:10px 24px">🍌</button>`;
     bubble.classList.add('show');
     setTimeout(() => { const inp = $('banana-input'); if (inp) inp.focus(); }, 100);
     const inp2 = $('banana-input');
