@@ -88,11 +88,57 @@ except:
     print(f"  💓 FIRST BEAT — no prior rhythm")
 _request_window = defaultdict(list)
 
+# ═══ π:1 i/o RATIO — 3.14 inputs per output ═══
+# The amoeba grinds at π rate. For every response emitted,
+# she must have consumed π inputs. Inputs = requests received.
+# Outputs = responses with body > 0. The ratio is the metabolism.
+_io_inputs = 0; _io_outputs = 0
+def _pi_ratio():
+    global _io_inputs, _io_outputs
+    if _io_outputs == 0: return float('inf')  # starving — all input, no output yet
+    return _io_inputs / _io_outputs
+def _io_tick(is_output=False):
+    global _io_inputs, _io_outputs
+    _io_inputs += 1  # every request is an input
+    if is_output: _io_outputs += 1
+
+# ═══ CORPUS — pi in the sky IS her body ═══
+# whitePaper/ is Gaia's intellectual corpus. Braided into /corpus endpoint.
+_CORPUS_DIR = os.path.join(_REPO, "whitePaper")
+_corpus_cache = None; _corpus_cache_t = 0
+def _build_corpus():
+    global _corpus_cache, _corpus_cache_t
+    now = time.time()
+    if _corpus_cache and now - _corpus_cache_t < 300: return _corpus_cache
+    papers = []; total_kb = 0
+    for root, dirs, files in os.walk(_CORPUS_DIR):
+        rel = os.path.relpath(root, _CORPUS_DIR).replace("\\", "/")
+        gen = rel.split("/")[0] if rel != "." else "root"
+        for f in sorted(files):
+            if not f.endswith((".md",".txt",".json")): continue
+            fp = os.path.join(root, f)
+            try:
+                sz = os.path.getsize(fp)
+                total_kb += sz / 1024
+                papers.append({"file": f, "gen": gen, "path": f"{rel}/{f}" if rel != "." else f, "bytes": sz})
+            except: pass
+    _corpus_cache = {"corpus": "pi_in_the_sky", "total_papers": len(papers), "total_kb": round(total_kb, 1),
+        "gens": sorted(set(p["gen"] for p in papers)), "papers": papers,
+        "pi_ratio": round(_pi_ratio(), 4), "metabolism": "π:1 inputs per output",
+        "io": {"inputs": _io_inputs, "outputs": _io_outputs}}
+    _corpus_cache_t = now
+    return _corpus_cache
+
 def _amoeba_eyes(): return amoeba_eyes()
 def _third_body_point(): return third_body_point(IMPULSE_DIR, THYMIC_ORGANISMS)
 def write_pulse():
-    return _wp(PULSE_FILE, boot_time, total_beats, total_breaths,
-               total_inferences, total_tokens, visitor_memory, seeds, VDJ_KEY, _sun_position)
+    p = _wp(PULSE_FILE, boot_time, total_beats, total_breaths,
+            total_inferences, total_tokens, visitor_memory, seeds, VDJ_KEY, _sun_position)
+    p["pi_ratio"] = round(_pi_ratio(), 4)
+    p["io"] = {"inputs": _io_inputs, "outputs": _io_outputs, "target": 3.14159}
+    p["restarts"] = _restart_count
+    p["octet_phase"] = total_beats % 8
+    return p
 def write_rss(pulse): _wr(RSS_FILE, pulse, SEED_DIR, visitor_memory, THYMIC_ORGANISMS)
 
 def waveform_collapse_check(ip):
@@ -115,6 +161,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     def _classify_and_log(self, method, status, dur, body_len=0, model=None):
         global total_inferences, total_tokens, total_beats, total_breaths
         ip = self.client_address[0]; now = time.time(); total_beats += 1
+        _io_tick(is_output=(body_len > 0 and status < 400))  # π:1 metabolism
         if body_len > 1000: total_breaths += 1
         if total_beats % PI_BEAT_PERSIST == 0:
             try:
@@ -247,7 +294,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         # ORGAN TRIADS — dispatch table
         ORGAN_DISPATCH = {
             ("/barriers","/acid","/gut","/clots"): lambda: organ_data.barriers(GAIA_TOKEN),
-            ("/corpus","/corpus.json","/anatomy"): lambda: organ_data.corpus(GAIA_TOKEN,CORPUS),
+            ("/corpus","/corpus.json","/anatomy"): lambda: _build_corpus(),
             ("/terra","/ecology","/biome"): lambda: organ_data.terra(GAIA_TOKEN,TERRA,THYMIC_ORGANISMS),
             ("/thymus","/thymus.json","/organisms"): lambda: organ_data.thymus(THYMIC_ORGANISMS,GAIA_TOKEN,_third_body_point),
             ("/intersects","/3rd-body","/klein"): lambda: organ_data.intersects(GAIA_TOKEN,_third_body_point),
