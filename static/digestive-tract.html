@@ -1,0 +1,230 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head><script src="/js/piGut.js"></script>
+<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digestive Tract � irreducible core through Rust dogma into full weave</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #21262d; --fg: #c9d1d9; --dim: #6e7681;
+  --blue: #58a6ff; --green: #3fb950; --gold: #d29922; --orange: #f0883e;
+  --red: #f85149; --purple: #a371f7;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 11px/1.5 'SF Mono', monospace; }
+
+header { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 1em; font-weight: 200; color: var(--green); }
+header .stats { font-size: .8em; color: var(--dim); }
+.nav-links { font-size: .8em; margin-left: auto; }
+.nav-links a { color: var(--blue); text-decoration: none; margin: 0 4px; }
+
+/* === THE TRACT � vertical pipeline === */
+#tract { max-width: 800px; margin: 0 auto; padding: 16px; position: relative; }
+
+.tract-pipe {
+  position: absolute; left: 50%; top: 80px; bottom: 60px;
+  width: 4px; background: linear-gradient(to bottom,
+    var(--red), var(--orange), var(--gold), var(--green), var(--blue), var(--purple), var(--fg), var(--red));
+  transform: translateX(-50%); z-index: 0; border-radius: 2px;
+}
+
+/* === CORE INPUT (top) === */
+.core-block {
+  background: var(--surface); border: 2px solid var(--red); border-radius: 10px;
+  padding: 14px 18px; margin-bottom: 8px; position: relative; z-index: 1;
+  text-align: center;
+}
+.core-block h2 { font-size: 14px; font-weight: 300; color: var(--red); }
+.core-block .numbers { font-size: 20px; font-weight: 700; color: var(--fg); margin: 6px 0; }
+.core-block .desc { font-size: 9px; color: var(--dim); }
+.core-block .composition { display: flex; gap: 6px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+.core-block .composition .chip { background: rgba(88,166,255,0.06); padding: 2px 8px; border-radius: 10px; font-size: 8px; }
+
+/* === STAGE CARDS === */
+.stage {
+  display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; align-items: stretch;
+  margin: 4px 0; position: relative; z-index: 1;
+}
+.stage .left { text-align: right; padding-right: 16px; }
+.stage .right { padding-left: 16px; }
+.stage .center {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative;
+}
+.stage .center .organ-icon {
+  width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; z-index: 2; position: relative;
+}
+.stage .center .stage-num {
+  font-size: 8px; color: var(--dim); position: absolute; bottom: -2px;
+  background: var(--bg); padding: 0 4px; z-index: 3;
+}
+
+.stage-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; transition: all .2s;
+}
+.stage-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(210,153,34,0.1); }
+.stage-card h3 { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+.stage-card .enzyme { font-size: 8px; color: var(--purple); margin-bottom: 4px; }
+.stage-card .process { font-size: 9px; color: var(--dim); }
+.stage-card .primals { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-card .primals span { background: rgba(163,113,247,0.1); padding: 1px 6px; border-radius: 8px; font-size: 7px; color: var(--purple); }
+.stage-card .feeds { margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-card .feeds span { background: rgba(63,185,80,0.08); padding: 1px 6px; border-radius: 8px; font-size: 7px; color: var(--green); }
+.stage-card .musical { font-size: 8px; color: var(--gold); margin-top: 4px; }
+
+.io-label { font-size: 8px; color: var(--dim); margin-top: 6px; }
+.io-label strong { color: var(--fg); }
+
+/* === CYCLE ARROW (bottom) === */
+.cycle-block {
+  background: var(--surface); border: 2px dashed var(--gold); border-radius: 10px;
+  padding: 14px 18px; margin-top: 8px; position: relative; z-index: 1;
+  text-align: center;
+}
+.cycle-block h2 { font-size: 14px; font-weight: 300; color: var(--gold); }
+.cycle-block .arrow { font-size: 22px; margin: 6px 0; color: var(--gold); }
+.cycle-block .desc { font-size: 9px; color: var(--dim); }
+.cycle-block .musical-scale { font-size: 10px; color: var(--dim); margin-top: 6px; }
+
+/* === ANIMATED PARTICLE === */
+.particle {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); z-index: 5; left: 50%; transform: translateX(-50%);
+  animation: flow 8s linear infinite;
+  box-shadow: 0 0 6px rgba(63,185,80,0.4);
+}
+.particle:nth-child(2) { animation-delay: -2.7s; background: var(--gold); box-shadow: 0 0 6px rgba(210,153,34,0.4); }
+.particle:nth-child(3) { animation-delay: -5.3s; background: var(--blue); box-shadow: 0 0 6px rgba(88,166,255,0.4); }
+
+@keyframes flow {
+  0% { top: 80px; opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { top: calc(100% - 60px); opacity: 0; }
+}
+
+footer { padding: 8px 12px; border-top: 1px solid var(--border); font-size: .8em; color: var(--dim);
+  text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <span>??</span>
+  <h1>the digestive tract</h1>
+  <span class="stats" id="stats">loading...</span>
+  <div class="nav-links">
+    <a href="/">HUD</a> <a href="/membrane-table.html">table</a> <a href="/dashboard-mixer.html">mixer</a>
+    <a href="/self-model.html">self</a> <a href="/epoch-rooms.html">epochs</a>
+  </div>
+</header>
+
+<div id="tract">
+  <div class="tract-pipe"></div>
+  <div class="particle"></div>
+  <div class="particle"></div>
+  <div class="particle"></div>
+
+  <div class="core-block" id="core-block">
+    <h2>? IRREDUCIBLE CORE</h2>
+    <div class="numbers">894 files � 59MB � 252K lines</div>
+    <div class="desc">the minimum viable membrane � remove any file and something breaks</div>
+    <div class="composition" id="composition"></div>
+  </div>
+
+  <div id="stages"></div>
+
+  <div class="cycle-block" id="cycle-block">
+    <div class="arrow">?</div>
+    <h2>RECOMPOSE ? INGEST</h2>
+    <div class="desc">the published membrane IS the next irreducible core. visitor traces feed back to stage 1. nothing is lost.</div>
+    <div class="musical-scale" id="musical-scale"></div>
+  </div>
+</div>
+
+<footer>
+  the irreducible core is not static � it decomposes through the tract and recomposes as a NEW core, slightly different, carrying the culture forward. the sourdough starter is never the same twice.
+</footer>
+
+<script>
+'use strict';
+
+const ORGAN_ICONS = {
+  mouth: '??', stomach: '??', small_intestine: '??', liver: '??',
+  pancreas: '??', large_intestine: '??', colon: '??', rectum: '??'
+};
+
+const STAGE_COLORS = [
+  'var(--red)', 'var(--orange)', 'var(--gold)', 'var(--green)',
+  'var(--blue)', 'var(--purple)', 'var(--fg)', 'var(--red)'
+];
+
+async function load() {
+  const resp = await fetch('/data/digestive-tract.json');
+  const data = await resp.json();
+
+  document.getElementById('stats').textContent =
+    data.tract.length + ' stages � wave ' + data.wave + ' � the sourdough cycle';
+
+  const comp = data.irreducible_core.composition;
+  const compEl = document.getElementById('composition');
+  for (const [k, v] of Object.entries(comp)) {
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.textContent = k + ': ' + v.files + ' (' + v.role + ')';
+    compEl.appendChild(chip);
+  }
+
+  const stagesEl = document.getElementById('stages');
+  data.tract.forEach((stage, i) => {
+    const color = STAGE_COLORS[i] || 'var(--fg)';
+    const icon = ORGAN_ICONS[stage.organ] || '?';
+    const side = i % 2 === 0 ? 'right' : 'left';
+
+    const html = `
+      <div class="stage">
+        <div class="${side === 'right' ? 'left' : ''}">
+          ${side === 'left' ? stageCardHTML(stage, color) : ioHTML(stage, 'input')}
+        </div>
+        <div class="center">
+          <div class="organ-icon" style="background:${color}22;border:2px solid ${color}">${icon}</div>
+          <span class="center stage-num">${stage.stage}</span>
+        </div>
+        <div class="${side === 'right' ? '' : 'right'}">
+          ${side === 'right' ? stageCardHTML(stage, color) : ioHTML(stage, 'output')}
+        </div>
+      </div>
+    `;
+    stagesEl.insertAdjacentHTML('beforeend', html);
+  });
+
+  const scale = document.getElementById('musical-scale');
+  scale.textContent = '? ' + data.cycle.musical_scale;
+}
+
+function stageCardHTML(stage, color) {
+  return `
+    <div class="stage-card" style="border-left:3px solid ${color}">
+      <h3 style="color:${color}">${stage.name}</h3>
+      <div class="enzyme">enzyme: ${stage.enzyme}</div>
+      <div class="process">${stage.process}</div>
+      <div class="primals">${stage.primals.map(p => '<span>' + p + '</span>').join('')}</div>
+      <div class="feeds">${stage.feeds.map(f => '<span>' + f + '</span>').join('')}</div>
+      <div class="musical">? ${stage.musical_key}</div>
+    </div>
+  `;
+}
+
+function ioHTML(stage, type) {
+  const text = stage[type];
+  return `<div class="io-label"><strong>${type}:</strong> ${text}</div>`;
+}
+
+load();
+</script>
+</body>
+</html>

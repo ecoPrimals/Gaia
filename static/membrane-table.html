@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head><script src="/js/piGut.js"></script>
+<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Periodic Table of the Membrane � Mendeleev bricks</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #21262d; --fg: #c9d1d9; --dim: #6e7681;
+  --blue: #58a6ff; --green: #3fb950; --gold: #d29922; --orange: #f0883e;
+  --red: #f85149; --purple: #a371f7;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 11px/1.4 'SF Mono', monospace; overflow-x: hidden; }
+
+#app { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh; }
+
+header { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+header h1 { font-size: 1em; font-weight: 200; color: var(--gold); }
+header .stats { font-size: .8em; color: var(--dim); }
+
+.controls { padding: 6px 12px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+.controls button { background: var(--surface); border: 1px solid var(--border); color: var(--dim);
+  font: 10px monospace; padding: 2px 10px; border-radius: 12px; cursor: pointer; transition: all .2s; }
+.controls button.active { border-color: var(--gold); color: var(--gold); background: rgba(210,153,34,0.08); }
+.controls button:hover { border-color: var(--gold); }
+.controls .view-btns { display: flex; gap: 4px; }
+.controls .sort-btns { display: flex; gap: 4px; margin-left: auto; }
+.controls label { color: var(--dim); font-size: 9px; align-self: center; }
+.nav-links { font-size: .8em; margin-left: 8px; }
+.nav-links a { color: var(--blue); text-decoration: none; margin: 0 4px; }
+
+/* === PERIODIC TABLE GRID === */
+#table-view { padding: 12px; overflow: auto; }
+
+.period-table {
+  display: grid;
+  grid-template-columns: 30px repeat(8, 1fr);
+  gap: 3px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.period-label {
+  writing-mode: vertical-rl; text-orientation: mixed;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: var(--dim); padding: 4px 0;
+  border-right: 1px solid var(--border);
+}
+
+.group-header {
+  text-align: center; font-size: 8px; color: var(--dim);
+  padding: 4px; border-bottom: 1px solid var(--border);
+}
+
+/* === ELEMENT CARD (brick) === */
+.el-card {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 4px 5px; border-radius: 4px; cursor: pointer;
+  transition: all .2s; position: relative; min-height: 54px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.el-card:hover { border-color: var(--gold); transform: scale(1.08); z-index: 10;
+  box-shadow: 0 2px 12px rgba(210,153,34,0.15); }
+.el-card.solid { border-left: 2px solid var(--fg); }
+.el-card.liquid { border-left: 2px solid var(--blue); }
+.el-card.gas { border-left: 2px solid var(--purple); }
+.el-card.dead { border-left: 2px solid #484f58; opacity: 0.4; }
+
+.el-card .z { font-size: 7px; color: var(--dim); }
+.el-card .sym { font-size: 16px; font-weight: 700; line-height: 1.1; }
+.el-card .name { font-size: 7px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.el-card .mass { font-size: 6px; color: var(--dim); position: absolute; top: 3px; right: 4px; }
+.el-card .musical { font-size: 7px; position: absolute; bottom: 3px; right: 4px; }
+
+/* period colors */
+.el-card[data-period="1"] .sym { color: var(--red); }
+.el-card[data-period="2"] .sym { color: var(--orange); }
+.el-card[data-period="3"] .sym { color: var(--gold); }
+.el-card[data-period="4"] .sym { color: var(--green); }
+.el-card[data-period="5"] .sym { color: var(--blue); }
+.el-card[data-period="6"] .sym { color: var(--purple); }
+.el-card[data-period="7"] .sym { color: var(--fg); }
+
+/* === CARD VIEW (sorted list) === */
+#card-view { display: none; padding: 12px; overflow: auto; }
+#card-view.active { display: block; }
+#table-view.active { display: block; }
+#table-view { display: none; }
+
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px; max-width: 1400px; margin: 0 auto;
+}
+
+.big-card {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 8px; border-radius: 6px; cursor: pointer; transition: all .2s;
+}
+.big-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(210,153,34,0.15); }
+.big-card .top { display: flex; justify-content: space-between; align-items: baseline; }
+.big-card .z { font-size: 9px; color: var(--dim); }
+.big-card .sym { font-size: 22px; font-weight: 700; }
+.big-card .name { font-size: 9px; color: var(--dim); margin-top: 2px; }
+.big-card .desc { font-size: 8px; color: var(--dim); margin-top: 4px; opacity: 0.7; }
+.big-card .meta { font-size: 7px; color: var(--dim); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.big-card .meta span { background: rgba(88,166,255,0.06); padding: 1px 5px; border-radius: 8px; }
+
+.big-card[data-period="1"] .sym { color: var(--red); }
+.big-card[data-period="2"] .sym { color: var(--orange); }
+.big-card[data-period="3"] .sym { color: var(--gold); }
+.big-card[data-period="4"] .sym { color: var(--green); }
+.big-card[data-period="5"] .sym { color: var(--blue); }
+.big-card[data-period="6"] .sym { color: var(--purple); }
+.big-card[data-period="7"] .sym { color: var(--fg); }
+
+/* === DETAIL MODAL === */
+#detail {
+  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7); z-index: 100;
+  justify-content: center; align-items: center;
+}
+#detail.open { display: flex; }
+#detail .card {
+  background: var(--surface); border: 1px solid var(--gold); border-radius: 10px;
+  padding: 20px 24px; max-width: 360px; width: 90%; position: relative;
+}
+#detail .card .close { position: absolute; top: 8px; right: 12px; cursor: pointer; color: var(--dim); font-size: 16px; }
+#detail .card .z-sym { display: flex; align-items: baseline; gap: 8px; }
+#detail .card .z-sym .z { font-size: 12px; color: var(--dim); }
+#detail .card .z-sym .sym { font-size: 36px; font-weight: 700; }
+#detail .card .full-name { font-size: 14px; margin-top: 4px; }
+#detail .card .desc { font-size: 11px; color: var(--dim); margin-top: 6px; }
+#detail .card .props { margin-top: 12px; font-size: 10px; }
+#detail .card .props div { margin: 3px 0; display: flex; gap: 8px; }
+#detail .card .props .label { color: var(--dim); min-width: 60px; }
+#detail .card .props .value { color: var(--fg); }
+#detail .card .musical-note { margin-top: 10px; text-align: center; font-size: 24px; }
+
+/* === LEGEND === */
+.legend { padding: 6px 12px; border-top: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; font-size: 8px; color: var(--dim); }
+.legend .item { display: flex; align-items: center; gap: 4px; }
+.legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+footer { padding: 6px 12px; border-top: 1px solid var(--border); font-size: .8em; color: var(--dim);
+  display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <span>?</span>
+    <h1>periodic table of the membrane</h1>
+    <span class="stats" id="stats">loading...</span>
+    <div class="nav-links">
+      <a href="/">HUD</a> <a href="/dashboard-mixer.html">mixer</a> <a href="/self-model.html">self</a>
+      <a href="/epoch-rooms.html">epochs</a> <a href="https://nestgate.io/ide.html">desk</a>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="view-btns">
+      <button class="active" data-view="table">? table</button>
+      <button data-view="cards">?? cards</button>
+    </div>
+    <label>sort:</label>
+    <div class="sort-btns">
+      <button class="active" data-sort="Z">Z#</button>
+      <button data-sort="mass">mass</button>
+      <button data-sort="period">period</button>
+      <button data-sort="group">group</button>
+      <button data-sort="state">state</button>
+      <button data-sort="musical">?</button>
+      <button data-sort="name">A?Z</button>
+      <button data-sort="locale">locale</button>
+    </div>
+  </div>
+
+  <div id="table-view" class="active"></div>
+  <div id="card-view"></div>
+
+  <div class="legend" id="legend"></div>
+
+  <footer>
+    <span id="foot-status">loading elements...</span>
+    <span>Mendeleev bricks � solid until we outgrow them</span>
+  </footer>
+</div>
+
+<div id="detail">
+  <div class="card">
+    <span class="close" onclick="closeDetail()">?</span>
+    <div class="z-sym"><span class="z"></span><span class="sym"></span></div>
+    <div class="full-name"></div>
+    <div class="desc"></div>
+    <div class="props"></div>
+    <div class="musical-note"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+let elements = [];
+let currentSort = 'Z';
+let currentView = 'table';
+const PERIOD_NAMES = {};
+const GROUP_NAMES = {};
+const STATES_LEGEND = {};
+
+async function load() {
+  const resp = await fetch('/data/membrane-elements.json');
+  const data = await resp.json();
+  elements = data.elements;
+
+  Object.entries(data.periods).forEach(([k, v]) => { PERIOD_NAMES[k] = v; });
+  Object.entries(data.groups).forEach(([k, v]) => { GROUP_NAMES[k] = v; });
+  Object.entries(data.states_legend).forEach(([k, v]) => { STATES_LEGEND[k] = v; });
+
+  document.getElementById('stats').textContent =
+    elements.length + ' elements � ' +
+    elements.filter(e => e.state !== 'dead').length + ' alive � ' +
+    elements.filter(e => e.state === 'dead').length + ' ghosts � wave ' + data.wave;
+  document.getElementById('foot-status').textContent =
+    elements.length + ' Mendeleev bricks loaded';
+
+  renderLegend();
+  renderTable();
+  renderCards();
+}
+
+function renderLegend() {
+  const leg = document.getElementById('legend');
+  let html = '<strong>periods:</strong> ';
+  for (let p = 1; p <= 7; p++) {
+    const c = PERIOD_NAMES[p] ? PERIOD_NAMES[p].color : '#888';
+    html += `<span class="item"><span class="swatch" style="background:${c}"></span>${p}: ${PERIOD_NAMES[p]?.name || ''}</span>`;
+  }
+  html += ' &nbsp; <strong>states:</strong> ';
+  for (const [k, v] of Object.entries(STATES_LEGEND)) {
+    html += `<span class="item"><span class="swatch" style="background:${v.color}"></span>${v.symbol} ${k}</span>`;
+  }
+  html += ' &nbsp; <strong>groups:</strong> ';
+  for (let g = 1; g <= 8; g++) {
+    html += `<span class="item">${GROUP_NAMES[g]?.symbol || ''} ${g}:${GROUP_NAMES[g]?.name || ''}</span>`;
+  }
+  leg.innerHTML = html;
+}
+
+function renderTable() {
+  const container = document.getElementById('table-view');
+
+  let html = '<div class="period-table">';
+  html += '<div></div>';
+  for (let g = 1; g <= 8; g++) {
+    html += `<div class="group-header">${GROUP_NAMES[g]?.symbol || ''} ${g}<br><span style="font-size:7px;color:var(--dim)">${GROUP_NAMES[g]?.name || ''}</span></div>`;
+  }
+
+  for (let p = 1; p <= 7; p++) {
+    const pInfo = PERIOD_NAMES[p];
+    html += `<div class="period-label" style="color:${pInfo?.color || '#888'}">${p} ${pInfo?.name || ''}</div>`;
+
+    for (let g = 1; g <= 8; g++) {
+      const cell = elements.filter(e => e.period === p && e.group === g);
+      if (cell.length === 0) {
+        html += '<div></div>';
+      } else {
+        html += '<div style="display:flex;flex-direction:column;gap:2px">';
+        for (const el of cell) {
+          html += elementCard(el);
+        }
+        html += '</div>';
+      }
+    }
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function elementCard(el) {
+  return `<div class="el-card ${el.state}" data-period="${el.period}" data-z="${el.Z}" onclick="showDetail(${el.Z})">
+    <span class="z">${el.Z}</span>
+    <span class="sym">${el.sym}</span>
+    <span class="name">${el.name}</span>
+    <span class="mass">${el.mass > 0 ? (el.mass >= 1000 ? Math.round(el.mass / 1000) + 'K' : el.mass) : '�'}</span>
+    <span class="musical">${el.musical}</span>
+  </div>`;
+}
+
+function renderCards() {
+  const container = document.getElementById('card-view');
+  const sorted = [...elements];
+
+  if (currentSort === 'Z') sorted.sort((a, b) => a.Z - b.Z);
+  else if (currentSort === 'mass') sorted.sort((a, b) => b.mass - a.mass);
+  else if (currentSort === 'period') sorted.sort((a, b) => a.period - b.period || a.group - b.group);
+  else if (currentSort === 'group') sorted.sort((a, b) => a.group - b.group || a.period - b.period);
+  else if (currentSort === 'state') {
+    const order = { solid: 0, liquid: 1, gas: 2, dead: 3 };
+    sorted.sort((a, b) => (order[a.state] ?? 9) - (order[b.state] ?? 9));
+  }
+  else if (currentSort === 'musical') sorted.sort((a, b) => (a.musical || 'Z').localeCompare(b.musical || 'Z'));
+  else if (currentSort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+  else if (currentSort === 'locale') sorted.sort((a, b) => a.locale.localeCompare(b.locale));
+
+  let html = '<div class="card-grid">';
+  for (const el of sorted) {
+    html += `<div class="big-card ${el.state}" data-period="${el.period}" onclick="showDetail(${el.Z})">
+      <div class="top"><span class="z">${el.Z}</span><span class="sym">${el.sym}</span></div>
+      <div class="name">${el.name}</div>
+      <div class="desc">${el.desc}</div>
+      <div class="meta">
+        <span>P${el.period}</span><span>G${el.group}</span><span>${el.state}</span>
+        <span>${el.musical}</span><span>${el.locale}</span>
+        <span>${el.mass > 0 ? (el.mass >= 1000 ? Math.round(el.mass / 1000) + 'K' : el.mass + 'B') : '�'}</span>
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function showDetail(z) {
+  const el = elements.find(e => e.Z === z);
+  if (!el) return;
+  const d = document.getElementById('detail');
+  d.querySelector('.z').textContent = '#' + el.Z;
+  d.querySelector('.sym').textContent = el.sym;
+  d.querySelector('.sym').style.color = PERIOD_NAMES[el.period]?.color || '#ccc';
+  d.querySelector('.full-name').textContent = el.name;
+  d.querySelector('.desc').textContent = el.desc;
+
+  const pInfo = PERIOD_NAMES[el.period] || {};
+  const gInfo = GROUP_NAMES[el.group] || {};
+
+  d.querySelector('.props').innerHTML = `
+    <div><span class="label">period</span><span class="value" style="color:${pInfo.color || '#ccc'}">${el.period}: ${pInfo.name || ''} � ${pInfo.desc || ''}</span></div>
+    <div><span class="label">group</span><span class="value">${gInfo.symbol || ''} ${el.group}: ${gInfo.name || ''} � ${gInfo.desc || ''}</span></div>
+    <div><span class="label">state</span><span class="value">${STATES_LEGEND[el.state]?.symbol || ''} ${el.state} � ${STATES_LEGEND[el.state]?.meaning || ''}</span></div>
+    <div><span class="label">mass</span><span class="value">${el.mass > 0 ? el.mass.toLocaleString() + ' bytes' : '�'}</span></div>
+    <div><span class="label">musical</span><span class="value">${el.musical}</span></div>
+    <div><span class="label">locale</span><span class="value">${el.locale}</span></div>
+    <div><span class="label">era</span><span class="value">${el.era}</span></div>
+    <div><span class="label">type</span><span class="value">${el.type}</span></div>
+  `;
+  d.querySelector('.musical-note').textContent = el.musical !== '�' ? '? ' + el.musical : '';
+  d.classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail').classList.remove('open');
+}
+
+document.getElementById('detail').addEventListener('click', e => {
+  if (e.target === document.getElementById('detail')) closeDetail();
+});
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+document.querySelector('.view-btns').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-view]');
+  if (!btn) return;
+  currentView = btn.dataset.view;
+  document.querySelectorAll('.view-btns button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('table-view').classList.toggle('active', currentView === 'table');
+  document.getElementById('card-view').classList.toggle('active', currentView === 'cards');
+});
+
+document.querySelector('.sort-btns').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-sort]');
+  if (!btn) return;
+  currentSort = btn.dataset.sort;
+  document.querySelectorAll('.sort-btns button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+});
+
+load();
+</script>
+</body>
+</html>
