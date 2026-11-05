@@ -29,6 +29,11 @@ from datetime import datetime, timezone
 OLLAMA = "http://127.0.0.1:11434"
 PORT = 8443
 
+# Import organ data builders — compressed triads
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location("organ_data", os.path.join(os.path.dirname(__file__), "organ_data.pi"))
+organ_data = _ilu.module_from_spec(_spec); _spec.loader.exec_module(organ_data)
+
 # ── Lysogeny Prophage — Gaia's ZK identity from gaia-seed ──
 SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gaia-seed")
 PROPHAGE = {}
@@ -525,6 +530,14 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({"error": str(e)}).encode())
 
+    def _json(self, data, status=200):
+        """Triad: build → serialize → send. One method for all JSON responses."""
+        t0 = time.time()
+        body = json.dumps(data, indent=2, default=str).encode()
+        self.send_response(status); self.send_header("Content-Type", "application/json")
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(body)
+        self._classify_and_log("GET", status, (time.time()-t0)*1000, len(body))
+
     def _negentropy_headers(self):
         """Chaos pump → negentropy drive. Every response carries the invitation.
         Reduce self-heat to human range (37°C). SUCK THEM ALL IN.
@@ -844,51 +857,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
 
         # ── HEART — Forgejo Sovereign Forge (the pump) ──
         if self.path in ("/agglutinate", "/agglutinate.json"):
-            import subprocess
-            GAIA_ROOT = os.path.dirname(os.path.dirname(__file__))
-            FORGE_API = "http://192.168.4.103:3000/api/v1"
-            
-            agg = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "organ": "agglutination",
-                "biology": "Antibodies bind antigens, clumping foreign cells. Gaia pulls from mirror, absorbs changes.",
-                "mirror": {},
-                "local": {},
-            }
-            
-            # Check Forgejo mirror latest commit
-            try:
-                req = urllib.request.urlopen(f"{FORGE_API}/repos/ecoPrimal/Gaia/commits?limit=1", timeout=5)
-                commits = json.loads(req.read())
-                if commits:
-                    agg["mirror"]["tip"] = commits[0]["sha"][:10]
-                    agg["mirror"]["message"] = commits[0]["commit"]["message"].split("\n")[0]
-                    agg["mirror"]["date"] = commits[0]["commit"]["committer"]["date"]
-            except Exception as e:
-                agg["mirror"]["error"] = str(e)
-            
-            # Check local git HEAD
-            try:
-                result = subprocess.run(["git", "log", "-1", "--format=%H %s"], 
-                    cwd=GAIA_ROOT, capture_output=True, text=True, timeout=5)
-                parts = result.stdout.strip().split(" ", 1)
-                agg["local"]["tip"] = parts[0][:10]
-                agg["local"]["message"] = parts[1] if len(parts) > 1 else ""
-            except Exception as e:
-                agg["local"]["error"] = str(e)
-            
-            # Are they in sync?
-            mirror_tip = agg.get("mirror", {}).get("tip", "")
-            local_tip = agg.get("local", {}).get("tip", "")
-            agg["synced"] = mirror_tip == local_tip if mirror_tip and local_tip else None
-            agg["circuit"] = "CLOSED" if agg["synced"] else "OPEN"
-            
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(agg, indent=2).encode())
-            return
+            self._json(organ_data.agglutinate(GAIA_TOKEN)); return
 
         if self.path in ("/heart", "/heart.json", "/forge", "/forgejo"):
             FORGEJO = "http://192.168.4.103:3000"
