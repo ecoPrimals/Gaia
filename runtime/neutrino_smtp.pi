@@ -1,68 +1,230 @@
 #!/usr/bin/env python3
-"""neutrino_smtp.pi — Gaia's sovereign mail. Mail is electron transfer. SMTP is oxidation-reduction."""
-import socket, threading, email.utils, time
+"""neutrino_smtp.pi — Gaia's sovereign mail with STARTTLS.
+Mail is electron transfer. SMTP is oxidation-reduction. TLS is the membrane."""
+import socket, ssl, threading, email.utils, time, json, hashlib
 from pathlib import Path
 
 MAIL_ROOT = Path(__file__).parent.parent / "mail"
+PONY_ROOT = Path(__file__).parent.parent / "data" / "neutron"
 LOCAL_DOMAINS = ["primals.eco", "gaia.primals.eco", "nestgate.io"]
 HOSTNAME = "mail.primals.eco"
-SMTP_PORT = 2525
+SMTP_PORT = 25
+
+# TLS: Let's Encrypt certs for primals.eco (valid until Jan 2027)
+LE_CERT = "/home/eastgate/.config/letsencrypt/live/primals.eco/fullchain.pem"
+LE_KEY  = "/home/eastgate/.config/letsencrypt/live/primals.eco/privkey.pem"
+
+# Fallback: bearDog self-signed
+SELF_CERT = "/opt/Gaia/certs/gaia-server.pem"
+SELF_KEY  = "/opt/Gaia/certs/gaia-server-key.pem"
+
+def _build_tls_context():
+    """Build TLS context for STARTTLS. Try LE first, fallback to self-signed."""
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+    try:
+        ctx.load_cert_chain(LE_CERT, LE_KEY)
+        print(f"  🔐 STARTTLS: Let's Encrypt cert loaded (primals.eco)")
+    except Exception as e1:
+        try:
+            ctx.load_cert_chain(SELF_CERT, SELF_KEY)
+            print(f"  🔐 STARTTLS: Self-signed cert loaded (fallback)")
+        except Exception as e2:
+            print(f"  ⚠️ STARTTLS: No certs available — LE:{e1}, Self:{e2}")
+            return None
+    return ctx
+
+TLS_CTX = None
+
 
 class NeutrinoSMTP:
     def __init__(self, conn, addr):
         self.conn, self.addr = conn, addr
         self.mail_from, self.rcpt_to = "", []
-    def send(self, msg): self.conn.sendall((msg + "\r\n").encode())
+        self.tls_active = False
+
+    def send(self, msg):
+        self.conn.sendall((msg + "\r\n").encode())
+
     def recv_line(self):
         data = b""
         while not data.endswith(b"\r\n"):
             chunk = self.conn.recv(1)
-            if not chunk: return None
+            if not chunk:
+                return None
             data += chunk
         return data.decode("utf-8", errors="replace").strip()
+
     def handle(self):
+        global TLS_CTX
         self.send(f"220 {HOSTNAME} ESMTP Gaia Neutrino")
-        state = "init"
         while True:
             line = self.recv_line()
-            if line is None: break
+            if line is None:
+                break
             cmd = line.upper()
+
             if cmd.startswith("EHLO") or cmd.startswith("HELO"):
-                self.send(f"250-{HOSTNAME}"); self.send("250-SIZE 26214400"); self.send("250-8BITMIME"); self.send("250 OK"); state = "ready"
+                self.send(f"250-{HOSTNAME}")
+                self.send("250-SIZE 26214400")
+                self.send("250-8BITMIME")
+                if TLS_CTX and not self.tls_active:
+                    self.send("250-STARTTLS")
+                self.send("250 OK")
+
+            elif cmd == "STARTTLS":
+                if not TLS_CTX:
+                    self.send("454 TLS not available")
+                    continue
+                if self.tls_active:
+                    self.send("503 TLS already active")
+                    continue
+                self.send("220 Ready to start TLS")
+                try:
+                    self.conn = TLS_CTX.wrap_socket(self.conn, server_side=True)
+                    self.tls_active = True
+                    self.mail_from, self.rcpt_to = "", []
+                    print(f"  🔐 STARTTLS: Active for {self.addr[0]}")
+                except ssl.SSLError as e:
+                    print(f"  ⚠️ STARTTLS handshake failed from {self.addr[0]}: {e}")
+                    break
+
             elif cmd.startswith("MAIL FROM:"):
-                self.mail_from = line[10:].strip().strip("<>"); self.send("250 OK"); state = "mail"
+                self.mail_from = line[10:].strip().strip("<>")
+                self.send("250 OK")
+
             elif cmd.startswith("RCPT TO:"):
-                addr = line[8:].strip().strip("<>"); domain = addr.split("@")[-1] if "@" in addr else ""
-                if domain.lower() not in [d.lower() for d in LOCAL_DOMAINS]: self.send("550 Relay denied"); continue
-                self.rcpt_to.append(addr); self.send("250 OK"); state = "rcpt"
+                addr = line[8:].strip().strip("<>")
+                domain = addr.split("@")[-1] if "@" in addr else ""
+                if domain.lower() not in [d.lower() for d in LOCAL_DOMAINS]:
+                    self.send("550 Relay denied")
+                    continue
+                self.rcpt_to.append(addr)
+                self.send("250 OK")
+
             elif cmd == "DATA":
-                if not self.rcpt_to: self.send("503 Need RCPT TO"); continue
-                self.send("354 Start mail"); data_lines = []
+                if not self.rcpt_to:
+                    self.send("503 Need RCPT TO")
+                    continue
+                self.send("354 Start mail")
+                data_lines = []
                 while True:
                     dline = self.recv_line()
-                    if dline is None or dline == ".": break
+                    if dline is None or dline == ".":
+                        break
                     data_lines.append(dline)
+
+                full_body = "\r\n".join(data_lines)
+                tls_tag = " (TLS)" if self.tls_active else " (plaintext)"
+
                 for rcpt in self.rcpt_to:
                     maildir = MAIL_ROOT / rcpt.replace("@", "_at_")
-                    for sub in ("new", "cur", "tmp"): (maildir / sub).mkdir(parents=True, exist_ok=True)
-                    ts = int(time.time()); fname = f"{ts}.{id(self):x}@{HOSTNAME}"
-                    full_msg = f"Received: from {self.addr[0]} by {HOSTNAME}; {email.utils.formatdate()}\r\n" + "\r\n".join(data_lines)
-                    tmp_path = maildir / "tmp" / fname; new_path = maildir / "new" / fname
-                    tmp_path.write_text(full_msg, encoding="utf-8"); tmp_path.rename(new_path)
-                    print(f"  📧 NEUTRINO: {self.mail_from} → {rcpt} ({len(full_msg)} bytes)")
-                self.send("250 OK"); self.mail_from, self.rcpt_to, state = "", [], "ready"
-            elif cmd == "QUIT": self.send(f"221 {HOSTNAME}"); break
-            elif cmd == "RSET": self.mail_from, self.rcpt_to, state = "", [], "ready"; self.send("250 OK")
-            elif cmd == "NOOP": self.send("250 OK")
-            elif cmd == "VRFY": self.send("252 Cannot VRFY")
-            else: self.send("500 Command not recognized")
+                    for sub in ("new", "cur", "tmp"):
+                        (maildir / sub).mkdir(parents=True, exist_ok=True)
+                    ts = int(time.time())
+                    fname = f"{ts}.{id(self):x}@{HOSTNAME}"
+                    received = f"Received: from {self.addr[0]} by {HOSTNAME}{tls_tag}; {email.utils.formatdate()}"
+                    full_msg = received + "\r\n" + full_body
+                    tmp_path = maildir / "tmp" / fname
+                    new_path = maildir / "new" / fname
+                    tmp_path.write_text(full_msg, encoding="utf-8")
+                    tmp_path.rename(new_path)
+                    print(f"  📧 NEUTRINO: {self.mail_from} → {rcpt}{tls_tag} ({len(full_msg)} bytes)")
+
+                    # Pony Express — log to neutron for inter-gate relay
+                    _pony_log(self.mail_from, rcpt, full_msg, self.tls_active)
+
+                self.send("250 OK")
+                self.mail_from, self.rcpt_to = "", []
+
+            elif cmd == "QUIT":
+                self.send(f"221 {HOSTNAME}")
+                break
+            elif cmd == "RSET":
+                self.mail_from, self.rcpt_to = "", []
+                self.send("250 OK")
+            elif cmd == "NOOP":
+                self.send("250 OK")
+            elif cmd == "VRFY":
+                self.send("252 Cannot VRFY")
+            else:
+                self.send("500 Command not recognized")
+
         self.conn.close()
 
+
+def _pony_log(mail_from, rcpt_to, body, tls):
+    """Log each delivery to pony-express for inter-gate relay."""
+    try:
+        PONY_ROOT.mkdir(parents=True, exist_ok=True)
+        ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        msg_hash = hashlib.blake2b(body.encode(), digest_size=16).hexdigest()
+        entry = {
+            "ts": ts,
+            "type": "mail-delivery",
+            "from": mail_from,
+            "to": rcpt_to,
+            "tls": tls,
+            "size": len(body),
+            "blake2b": msg_hash,
+        }
+        with open(PONY_ROOT / "mail-log.jsonl", "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        print(f"  ⚠️ Pony log error: {e}")
+
+
 def start(port=SMTP_PORT):
+    global TLS_CTX
+    TLS_CTX = _build_tls_context()
+
+    # Main SMTP on specified port (25)
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind(("0.0.0.0", port)); srv.listen(5)
-    print(f"  📧 Neutrino SMTP :{port} — gaia@primals.eco")
+    srv.bind(("0.0.0.0", port))
+    srv.listen(5)
+    tls_status = "STARTTLS ready" if TLS_CTX else "plaintext only"
+    print(f"  📧 Neutrino SMTP :{port} — {HOSTNAME} ({tls_status})")
+
+    # Also listen on :465 (SMTPS — implicit TLS)
+    if TLS_CTX:
+        def _smtps_listener():
+            smtps = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            smtps.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                smtps.bind(("0.0.0.0", 465))
+                smtps.listen(5)
+                print(f"  📧 Neutrino SMTPS :465 — implicit TLS")
+                while True:
+                    conn, addr = smtps.accept()
+                    try:
+                        tls_conn = TLS_CTX.wrap_socket(conn, server_side=True)
+                        handler = NeutrinoSMTP(tls_conn, addr)
+                        handler.tls_active = True
+                        threading.Thread(target=handler.handle, daemon=True).start()
+                    except ssl.SSLError as e:
+                        print(f"  ⚠️ SMTPS handshake failed from {addr[0]}: {e}")
+                        conn.close()
+            except OSError as e:
+                print(f"  ⚠️ SMTPS :465 bind failed: {e}")
+        threading.Thread(target=_smtps_listener, daemon=True).start()
+
+    # Also listen on :587 (submission with STARTTLS)
+    def _submission_listener():
+        sub = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sub.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sub.bind(("0.0.0.0", 587))
+            sub.listen(5)
+            print(f"  📧 Neutrino Submission :587 — STARTTLS")
+            while True:
+                conn, addr = sub.accept()
+                threading.Thread(target=NeutrinoSMTP(conn, addr).handle, daemon=True).start()
+        except OSError as e:
+            print(f"  ⚠️ Submission :587 bind failed: {e}")
+    threading.Thread(target=_submission_listener, daemon=True).start()
+
+    # Main loop on :25
     while True:
         conn, addr = srv.accept()
         threading.Thread(target=NeutrinoSMTP(conn, addr).handle, daemon=True).start()
