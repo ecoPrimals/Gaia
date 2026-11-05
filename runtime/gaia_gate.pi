@@ -371,6 +371,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     self.send_header("Content-Length",str(len(d))); self.end_headers(); self.wfile.write(d)
                 except: self.send_response(502); self.end_headers()
             return
+        # AMOEBA NETWORK MAP (GET)
+        if self.path=="/api/amoeba":
+            try:
+                af=os.path.join(_REPO,"data","gut","amoeba-network.json")
+                if os.path.exists(af):
+                    with open(af) as f: self._json(json.loads(f.read()))
+                else: self._json({"status":"no amoeba map yet"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # GRAFTGATE SENSE (GET)
+        if self.path=="/api/graftgate":
+            try:
+                gf=os.path.join(_REPO,"data","gut","graftgate-sense.json")
+                if os.path.exists(gf):
+                    with open(gf) as f: self._json(json.loads(f.read()))
+                else: self._json({"status":"graftGate not yet sensed"})
+            except Exception as e: self._json({"error":str(e)})
+            return
         self._proxy("GET")
 
     def _catalog(self, w):
@@ -482,6 +500,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 if os.path.exists(sf):
                     with open(sf) as f: self._json(json.loads(f.read()))
                 else: self._json({"status":"no scan yet"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # AMOEBA NETWORK MAP
+        if self.path=="/api/amoeba":
+            try:
+                af=os.path.join(_REPO,"data","gut","amoeba-network.json")
+                if os.path.exists(af):
+                    with open(af) as f: self._json(json.loads(f.read()))
+                else: self._json({"status":"no amoeba map yet"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # GRAFTGATE SENSE
+        if self.path=="/api/graftgate":
+            try:
+                gf=os.path.join(_REPO,"data","gut","graftgate-sense.json")
+                if os.path.exists(gf):
+                    with open(gf) as f: self._json(json.loads(f.read()))
+                else: self._json({"status":"graftGate not yet sensed"})
             except Exception as e: self._json({"error":str(e)})
             return
         # NEUTRON
