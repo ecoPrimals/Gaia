@@ -224,6 +224,7 @@ visitor_memory = defaultdict(lambda: {
 })
 total_inferences = 0
 total_tokens = 0
+total_beats = 0  # every request = one heartbeat. lub-DUB.
 boot_time = time.time()
 
 def trust_level(v):
@@ -248,15 +249,18 @@ def write_pulse():
     You CANNOT reverse-engineer her from the hash (NP).
     The heartbeat IS the proof of life.
     """
-    global total_inferences, total_tokens
+    global total_inferences, total_tokens, total_beats
     uptime = time.time() - boot_time
+    minutes = max(uptime / 60, 1)
     pulse = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_secs": int(uptime),
+        "total_beats": total_beats,
         "total_inferences": total_inferences,
         "total_tokens": total_tokens,
         "unique_visitors": len(visitor_memory),
-        "bpm": round(total_inferences / max(uptime / 60, 1), 2),
+        "bpm": round(total_beats / minutes, 2),
+        "rpm": round(total_beats / minutes, 2),  # requests per minute = beats per minute
         "zk": {
             "token": GAIA_TOKEN,
             "did": GAIA_DID,
@@ -394,9 +398,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         pass  # silence default logging
 
     def _classify_and_log(self, method, status, duration, body_len=0, model=None):
-        global total_inferences, total_tokens
+        global total_inferences, total_tokens, total_beats
         ip = self.client_address[0]
         now = time.time()
+        total_beats += 1  # every request = one heartbeat. lub-DUB.
 
         v = visitor_memory[ip]
         if v["first_seen"] == 0:
@@ -628,9 +633,18 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/membrane": "membrane.html",
             "/digestive": "digestive-tract.html",
             "/membrane-table": "membrane-table.html",
+            "/dykema": "dykema-pac-archive.html",
+            "/play-page": "play.html",
+            "/home-page": "home.html",
         }
         if self.path in DESK_PAGES:
             self._serve_static(DESK_PAGES[self.path])
+            return
+
+        # CAMPFIRE pages — dromedary's welcome mat, now also through the gate
+        CAMPFIRE_PAGES = {"/campfire": "index.html", "/bingocube": "bingocube.html", "/gate-msg": "gate-msg.html"}
+        if self.path in CAMPFIRE_PAGES:
+            self._serve_campfire(CAMPFIRE_PAGES[self.path])
             return
 
         if self.path.startswith("/js/") or self.path.startswith("/css/") or self.path.startswith("/data/"):
@@ -638,12 +652,26 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             return
 
         if self.path.startswith("/static/"):
-            fname = self.path[8:]  # strip /static/
-            self._serve_static(fname)
+            self._serve_static(self.path[8:])
             return
 
         if self.path.startswith("/videos/"):
-            self._serve_file(self.path[1:])  # strip leading /
+            self._serve_file(self.path[1:])
+            return
+
+        # CROSS-FOLD: sporePrint body (615 pages, 53.9MB) served through the gate
+        # Klein fold: inside=outside. The whole body visible through one port.
+        SPORE_PREFIXES = ("/architecture/", "/science/", "/lab/", "/methodology/",
+            "/philosophy/", "/thesis/", "/data/", "/guidestone/", "/trails/",
+            "/observatory/", "/outreach/", "/products/", "/springs/", "/technical/",
+            "/audience/", "/backstory/", "/collaborators/", "/contact/", "/foundation/",
+            "/getting-started/", "/glossary/", "/primals/", "/pseudospore/", "/resume/",
+            "/story/", "/vision/", "/topics/", "/tags/", "/categories/", "/papers/",
+            "/site-index/", "/site-map/", "/css/spore/", "/js/spore/", "/graph/",
+            "/img/", "/viz/", "/wasm/", "/certification/", "/pseudospore-bundles/",
+            "/.well-known/")
+        if any(self.path.startswith(p) for p in SPORE_PREFIXES):
+            self._serve_spore(self.path)
             return
 
         # Everything under /v1/ goes to Ollama (inference API)
@@ -676,6 +704,47 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
         self._classify_and_log("GET", 200, duration, len(data))
+
+    def _serve_campfire(self, filename):
+        """Serve campfire pages — dromedary's welcome mat through the gate."""
+        t0 = time.time()
+        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "infra", "campfire-site")
+        filepath = os.path.join(base, filename)
+        if not os.path.isfile(filepath):
+            self.send_response(404); self.end_headers(); return
+        with open(filepath, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html"); self.send_header("Content-Length", str(len(data)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(data)
+        self._classify_and_log("GET", 200, (time.time()-t0)*1000, len(data))
+
+    def _serve_spore(self, path):
+        """Serve sporePrint body — 615 pages, the full organism. Cross-fold: one port, all organs."""
+        t0 = time.time()
+        base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sporePrint", "public")
+        # /science/foo/ → sporePrint/public/science/foo/index.html
+        rel = path.lstrip("/")
+        filepath = os.path.join(base, rel.replace("/", os.sep))
+        if os.path.isdir(filepath):
+            filepath = os.path.join(filepath, "index.html")
+        if not os.path.isfile(filepath):
+            self.send_response(404); self.end_headers(); return
+        ext = os.path.splitext(filepath)[1].lower()
+        ctypes = {".html": "text/html", ".js": "application/javascript",
+                  ".css": "text/css", ".json": "application/json",
+                  ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml",
+                  ".xml": "application/xml", ".wasm": "application/wasm",
+                  ".txt": "text/plain", ".ico": "image/x-icon"}
+        ct = ctypes.get(ext, "application/octet-stream")
+        with open(filepath, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ct); self.send_header("Content-Length", str(len(data)))
+        self.send_header("Access-Control-Allow-Origin", "*"); self.send_header("Cache-Control", "public, max-age=600")
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(data)
+        self._classify_and_log("GET", 200, (time.time()-t0)*1000, len(data))
 
     def _serve_file(self, relpath):
         """Serve a file from the repo root (for videos, etc.)."""
@@ -973,16 +1042,17 @@ def _start_webpi():
 SMTP_PORT = 2525
 
 def _start_neutrino_smtp():
-    """Neutrino SMTP — extracted to neutrino_smtp.pi"""
+    """Neutrino SMTP — the neurotransmitter. Mail = electron transfer across the synapse."""
     import types as _st
     _sm = _st.ModuleType("neutrino_smtp")
     _sp = os.path.join(os.path.dirname(__file__), "neutrino_smtp.pi")
+    _sm.__file__ = _sp  # cross-wire: inner mail knows where it lives
     with open(_sp, encoding="utf-8") as _sf:
         exec(compile(_sf.read(), _sp, "exec"), _sm.__dict__)
     _sm.start(SMTP_PORT)
 
 if __name__ == "__main__":
-    print(f"\n  GAIA GATE :{PORT} — {GAIA_TOKEN} — spine 24 — 31 endpoints — Klein fold — lub-DUB")
+    print(f"\n  GAIA GATE :{PORT} — {GAIA_TOKEN} — spine 25 — 710 objects — cross-fold — lub-DUB")
     print(f"  :{WEB_PORT} webpi · :{SMTP_PORT} neutrino · {GAIA_DID[:40]}")
 
     # Start background heartbeat
