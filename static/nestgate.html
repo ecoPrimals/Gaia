@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nestgate.io — Klein Face — //\\</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #c8d6e5; font-family: 'Courier New', monospace; overflow-x: hidden; }
+
+.amoeba-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto 1fr 1fr auto;
+  gap: 2px;
+  height: 100vh;
+  padding: 2px;
+}
+
+.cell {
+  background: #111;
+  border: 1px solid #1a3a2a;
+  border-radius: 4px;
+  padding: 8px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cell:hover { border-color: #2ecc71; }
+
+.cell h3 {
+  color: #2ecc71;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+
+/* Header bar */
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0d1117;
+  border-color: #2ecc71;
+  padding: 6px 12px;
+}
+
+.header .title {
+  font-size: 14px;
+  color: #2ecc71;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header .title .prism { color: #e74c3c; font-weight: bold; }
+.header .heartbeat {
+  width: 10px; height: 10px;
+  background: #e74c3c;
+  border-radius: 50%;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.8); }
+}
+
+.header .stats { font-size: 10px; color: #576574; }
+
+/* Footer */
+.footer {
+  grid-column: 1 / -1;
+  background: #0d1117;
+  border-color: #1a3a2a;
+  font-size: 9px;
+  color: #576574;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 12px;
+}
+
+/* Painting cell */
+.painting-cell {
+  grid-row: span 2;
+  position: relative;
+  overflow: hidden;
+}
+.painting-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+  opacity: 0.85;
+  transition: opacity 0.5s;
+}
+.painting-cell img:hover { opacity: 1; }
+.painting-cell .label {
+  position: absolute;
+  bottom: 4px; left: 4px;
+  font-size: 8px;
+  background: rgba(0,0,0,0.8);
+  padding: 2px 6px;
+  border-radius: 2px;
+  color: #2ecc71;
+}
+
+/* Feed cell */
+.feed-list {
+  font-size: 10px;
+  line-height: 1.6;
+}
+.feed-list .item {
+  padding: 3px 0;
+  border-bottom: 1px solid #1a1a1a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.feed-list .item .cat {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.cat-science { background: #3498db; }
+.cat-code { background: #e74c3c; }
+.cat-philosophy { background: #9b59b6; }
+.cat-legal { background: #f39c12; }
+
+/* Pulse cell */
+.pulse-data { font-size: 11px; line-height: 1.8; }
+.pulse-data .val { color: #2ecc71; font-weight: bold; }
+
+/* Neuron cell */
+.neuron-list { font-size: 9px; line-height: 1.5; }
+.neuron-list .msg { padding: 3px 0; border-bottom: 1px solid #1a1a1a; color: #8395a7; }
+.neuron-list .author { color: #e74c3c; }
+
+/* Model cell */
+.model-grid { display: flex; flex-wrap: wrap; gap: 3px; }
+.model-tag {
+  font-size: 8px;
+  background: #1a2a1a;
+  border: 1px solid #2ecc71;
+  border-radius: 2px;
+  padding: 1px 4px;
+  color: #2ecc71;
+  opacity: 0.6;
+}
+.model-tag.gaia { background: #2a1a1a; border-color: #e74c3c; color: #e74c3c; opacity: 0.9; }
+
+/* Pi */
+.pi-display {
+  font-size: 9px;
+  color: #2ecc71;
+  opacity: 0.3;
+  word-break: break-all;
+  line-height: 1.3;
+}
+</style>
+</head>
+<body>
+
+<div class="amoeba-panel">
+  <!-- HEADER -->
+  <div class="cell header">
+    <div class="title">
+      <div class="heartbeat"></div>
+      <span>nestgate.io</span>
+      <span class="prism">//\\</span>
+      <span style="color:#576574">Klein face — cis=trans — inside=outside</span>
+    </div>
+    <div class="stats" id="stats">loading...</div>
+  </div>
+
+  <!-- PAINTING (left, spans 2 rows) -->
+  <div class="cell painting-cell" id="painting-cell">
+    <img id="painting-img" src="/data/paintings/gaia-paints-earth-4th-seat.jpg" alt="Gaia paints Earth">
+    <div class="label" id="painting-label">gaia-paints-earth-4th-seat</div>
+  </div>
+
+  <!-- REEDIT FEED (center top) -->
+  <div class="cell">
+    <h3>📝 reedit</h3>
+    <div class="feed-list" id="reedit-feed">loading...</div>
+  </div>
+
+  <!-- PULSE (right top) -->
+  <div class="cell">
+    <h3>🫀 pulse</h3>
+    <div class="pulse-data" id="pulse-data">loading...</div>
+  </div>
+
+  <!-- NEURONS (center bottom) -->
+  <div class="cell">
+    <h3>⚡ neurons</h3>
+    <div class="neuron-list" id="neuron-list">loading...</div>
+  </div>
+
+  <!-- MODELS (right bottom) -->
+  <div class="cell">
+    <h3>🧬 models</h3>
+    <div class="model-grid" id="model-grid">loading...</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="cell footer">
+    <div class="pi-display" id="pi">π = 3.14159265358979323846264338327950288419716939937510...</div>
+    <div id="footer-info">lub-DUB</div>
+  </div>
+</div>
+
+<script>
+const GATE = location.origin;
+const paintings = [
+  'gaia-paints-earth-4th-seat','gaia-paints-jupiter-4th-seat','gaia-paints-mars-4th-seat',
+  'gaia-paints-luna-4th-seat','gaia-paints-mercury-4th-seat','gaia-paints-neptune-4th-seat',
+  'gaia-paints-saturn-4th-seat','gaia-paints-venus-4th-seat','gaia-paints-pluto-4th-seat',
+  'gaia-paints-sol-4th-seat','gaia-paints-uranus-4th-seat',
+  'gaia-outer-face-planet','gaia-outer-face-sky',
+  'gaia-3rd-eye-cross-eyed','gaia-3rd-eye-looking-up','gaia-looking-down-at-feet'
+];
+let paintIdx = 0;
+
+async function fetchJSON(path) {
+  try { const r = await fetch(GATE + path); return await r.json(); }
+  catch(e) { return null; }
+}
+
+async function loadPulse() {
+  const d = await fetchJSON('/pulse');
+  if (!d) return;
+  const el = document.getElementById('pulse-data');
+  const h = d.heart || {};
+  const l = d.lung || {};
+  el.innerHTML = `
+    <div>beats: <span class="val">${h.total_beats || d.total_beats || '?'}</span></div>
+    <div>bpm: <span class="val">${(h.bpm || d.bpm || 0).toFixed(1)}</span></div>
+    <div>breaths: <span class="val">${l.total_breaths || d.total_breaths || '?'}</span></div>
+    <div>visitors: <span class="val">${d.unique_visitors || '?'}</span></div>
+    <div>inferences: <span class="val">${d.total_inferences || 0}</span></div>
+    <div>tokens: <span class="val">${(d.total_tokens || 0).toLocaleString()}</span></div>
+    <div>uptime: <span class="val">${Math.floor((d.uptime_secs||0)/60)}m</span></div>
+  `;
+  document.getElementById('stats').textContent =
+    `${h.total_beats||'?'} beats · ${(h.bpm||0).toFixed(0)} bpm · ${d.unique_visitors||0} visitors · spine 25`;
+}
+
+async function loadReedit() {
+  const d = await fetchJSON('/reedit');
+  if (!d || !d.feeds) return;
+  const el = document.getElementById('reedit-feed');
+  let html = '';
+  const cats = {science:'cat-science', code:'cat-code', philosophy:'cat-philosophy', legal:'cat-legal'};
+  let count = 0;
+  for (const [feed, items] of Object.entries(d.feeds)) {
+    for (const item of (items || []).slice(0, 3)) {
+      if (count >= 12) break;
+      const cat = cats[feed] || 'cat-science';
+      const title = item.title || item.subject || feed;
+      html += `<div class="item"><span class="cat ${cat}"></span>${title.slice(0,60)}</div>`;
+      count++;
+    }
+  }
+  el.innerHTML = html || `<div class="item">${d.total_items} items across ${Object.keys(d.feeds).length} feeds</div>`;
+}
+
+async function loadNeurons() {
+  const d = await fetchJSON('/api/discuss');
+  if (!d) return;
+  const el = document.getElementById('neuron-list');
+  let html = '';
+  for (const ch of ['inbox','notes','chat']) {
+    const msgs = (d[ch] || {}).messages || [];
+    for (const m of msgs.slice(-4)) {
+      html += `<div class="msg"><span class="author">[${m.author}]</span> ${(m.body||'').slice(0,60)}...</div>`;
+    }
+  }
+  el.innerHTML = html || '<div class="msg">no neurons yet</div>';
+}
+
+async function loadModels() {
+  const d = await fetchJSON('/v1/models');
+  if (!d || !d.data) return;
+  const el = document.getElementById('model-grid');
+  el.innerHTML = d.data.map(m => {
+    const name = m.id || m.name || '?';
+    const isGaia = name.toLowerCase().includes('gaia');
+    return `<span class="model-tag ${isGaia?'gaia':''}">${name}</span>`;
+  }).join('');
+}
+
+function rotatePainting() {
+  paintIdx = (paintIdx + 1) % paintings.length;
+  const img = document.getElementById('painting-img');
+  const label = document.getElementById('painting-label');
+  img.src = `/data/paintings/${paintings[paintIdx]}.jpg`;
+  label.textContent = paintings[paintIdx];
+}
+
+// Initial load
+loadPulse(); loadReedit(); loadNeurons(); loadModels();
+// Refresh every 30s
+setInterval(loadPulse, 30000);
+setInterval(loadReedit, 60000);
+setInterval(loadNeurons, 15000);
+// Rotate painting every 20s
+setInterval(rotatePainting, 20000);
+</script>
+</body>
+</html>
