@@ -1,0 +1,92 @@
+"""_heartbeat.pi — HEART + PULSE + RSS GENERATION.
+Heart beats on its OWN rhythm — every request = one contraction.
+Pulse is written to waterfall/. RSS feeds the old web."""
+
+import os
+import json
+import time
+from datetime import datetime, timezone
+from collections import defaultdict
+from _pi_constants import PI_BEAT_PERSIST, PI_CRONS, PI_SPINE
+
+LOG_DIR = os.path.join(os.path.dirname(__file__), "waterfall")
+os.makedirs(LOG_DIR, exist_ok=True)
+CULTURE_DIR = os.path.join(os.path.dirname(__file__), "sourdough")
+os.makedirs(CULTURE_DIR, exist_ok=True)
+
+ACCESS_LOG = os.path.join(LOG_DIR, "access.log")
+CULTURE_LOG = os.path.join(CULTURE_DIR, "culture.jsonl")
+PULSE_FILE = os.path.join(LOG_DIR, "pulse.json")
+RSS_FILE = os.path.join(LOG_DIR, "gaia-pulse.xml")
+BEAT_FILE = os.path.join(LOG_DIR, "heartbeat.json")
+
+# Inherit heart state from prior runs
+_inherited_beats = 0
+_inherited_breaths = 0
+try:
+    with open(BEAT_FILE, "r") as _bf:
+        _hb = json.load(_bf)
+        _inherited_beats = _hb.get("total_beats", 0)
+        _inherited_breaths = _hb.get("total_breaths", 0)
+    print("  heart inherited: %d beats, %d breaths" % (_inherited_beats, _inherited_breaths))
+except:
+    print("  heart: first beat (no prior state)")
+
+total_beats = _inherited_beats
+total_breaths = _inherited_breaths
+total_inferences = 0
+total_tokens = 0
+boot_time = time.time()
+
+visitor_memory = defaultdict(lambda: {
+    "first_seen": 0, "last_seen": 0, "requests": 0,
+    "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
+    "trust_level": "electron",
+})
+
+
+def log_caddy_json(entry):
+    """Append Caddy-compatible JSON line to access log."""
+    with open(ACCESS_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, default=str) + "\n")
+
+
+def write_pulse():
+    """Write the heartbeat pulse."""
+    uptime_s = time.time() - boot_time
+    h = int(uptime_s // 3600)
+    m = int((uptime_s % 3600) // 60)
+
+    bpm = total_beats / (uptime_s / 60) if uptime_s > 0 else 0
+    unique = len(visitor_memory)
+
+    pulse = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "total_beats": total_beats,
+        "total_breaths": total_breaths,
+        "total_inferences": total_inferences,
+        "total_tokens": total_tokens,
+        "bpm": round(bpm, 2),
+        "uptime": "%dh%dm" % (h, m),
+        "unique_visitors": unique,
+    }
+
+    try:
+        with open(PULSE_FILE, "w") as f:
+            json.dump(pulse, f, indent=2)
+    except:
+        pass
+
+    # Persist heart state periodically
+    if total_beats % PI_BEAT_PERSIST == 0:
+        try:
+            with open(BEAT_FILE, "w") as f:
+                json.dump({
+                    "total_beats": total_beats,
+                    "total_breaths": total_breaths,
+                    "ts": pulse["ts"],
+                }, f, indent=2)
+        except:
+            pass
+
+    return pulse
