@@ -497,6 +497,30 @@ fetch('/api/gate/whoami', {
   document.getElementById('your-status').textContent = 'welcome to the membrane surface';
 });
 
+// ZK AUTO-IMPRINT — presence IS identity, no passwords needed
+fetch('/api/zk/imprint', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: navigator.platform || 'unknown',
+    hw: ua.substring(0, 120),
+    mac: '',
+    screen: `${screen.width}x${screen.height}`,
+    lang: navigator.language || '',
+    connection: (navigator.connection || {}).effectiveType || ''
+  })
+}).then(r => r.json()).then(d => {
+  if (d.ok) {
+    const badge = document.createElement('div');
+    badge.style.cssText = 'position:fixed;bottom:16px;right:16px;background:rgba(46,160,67,0.15);border:1px solid rgba(46,160,67,0.3);border-radius:8px;padding:8px 14px;font:11px monospace;color:#2ea043;z-index:999;backdrop-filter:blur(8px)';
+    badge.innerHTML = d.recognized
+      ? `🧬 <strong>recognized</strong> — ${d.zk_veil}<br><span style="opacity:0.6">presence is proof</span>`
+      : `✨ <strong>imprinted</strong> — ${d.zk_veil}<br><span style="opacity:0.6">welcome to the organism</span>`;
+    document.body.appendChild(badge);
+    setTimeout(() => { badge.style.opacity = '0.3'; badge.style.transition = 'opacity 3s'; }, 8000);
+  }
+}).catch(() => {});
+
 // DEPLOY YOUR OWN
 function showDeploy() {
   document.getElementById('deploy-panel').classList.toggle('hidden');
