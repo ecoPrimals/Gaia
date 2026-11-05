@@ -1,0 +1,208 @@
+r"""
+piPORT - Gaia Neural Bridge
+Named Pipe <-> TCP bridge for Windows primal transport layer.
+
+The transport layer mismatch:
+  bind_transport(UDS) on Windows -> TCP (hash port or explicit)
+  connect_local(UDS) on Windows -> Named Pipe \\.\pipe\ecoPrimals-{stem}
+
+piPORT bridges: Named Pipe servers forward to TCP ports.
+"""
+import threading
+import socket
+import sys
+import os
+import time
+import win32pipe
+import win32file
+import pywintypes
+
+BUFSIZE = 8192
+NEURAL_API_PORT = 50971
+BIOMEOS_API_PORT = 50973
+
+BRIDGES = {
+    r"\\.\pipe\ecoPrimals-biomeos-neural-api-gaia-pi": NEURAL_API_PORT,
+    r"\\.\pipe\ecoPrimals-biomeos-api-gaia-pi": BIOMEOS_API_PORT,
+    r"\\.\pipe\ecoPrimals-neural-api-gaia-pi": NEURAL_API_PORT,
+}
+
+TCP_BRIDGES = {
+    62803: (NEURAL_API_PORT, "neural-api-hash"),
+}
+
+
+def pipe_to_tcp_handler(pipe_handle, tcp_port, pipe_name):
+    """Handle a single Named Pipe client -> TCP connection."""
+    tcp_sock = None
+    try:
+        tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_sock.connect(("127.0.0.1", tcp_port))
+        tcp_sock.setblocking(True)
+
+        def pipe_reader():
+            """Read from Named Pipe, write to TCP."""
+            try:
+                while True:
+                    try:
+                        hr, data = win32file.ReadFile(pipe_handle, BUFSIZE)
+                        if data:
+                            tcp_sock.sendall(data)
+                        else:
+                            break
+                    except pywintypes.error:
+                        break
+            except Exception:
+                pass
+            finally:
+                try:
+                    tcp_sock.shutdown(socket.SHUT_WR)
+                except Exception:
+                    pass
+
+        def tcp_reader():
+            """Read from TCP, write to Named Pipe."""
+            try:
+                while True:
+                    data = tcp_sock.recv(BUFSIZE)
+                    if not data:
+                        break
+                    try:
+                        win32file.WriteFile(pipe_handle, data)
+                    except pywintypes.error:
+                        break
+            except Exception:
+                pass
+
+        t1 = threading.Thread(target=pipe_reader, daemon=True)
+        t2 = threading.Thread(target=tcp_reader, daemon=True)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join(timeout=2)
+
+    except Exception as e:
+        print(f"  ERR bridge {pipe_name}: {e}", file=sys.stderr, flush=True)
+    finally:
+        try:
+            win32file.CloseHandle(pipe_handle)
+        except Exception:
+            pass
+        if tcp_sock:
+            try:
+                tcp_sock.close()
+            except Exception:
+                pass
+
+
+def pipe_server(pipe_name, tcp_port):
+    """Named Pipe server loop — accepts clients and bridges to TCP."""
+    print(f"  PIPE {pipe_name} -> TCP :{tcp_port}", flush=True)
+    while True:
+        try:
+            pipe_handle = win32pipe.CreateNamedPipe(
+                pipe_name,
+                win32pipe.PIPE_ACCESS_DUPLEX,
+                win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE | win32pipe.PIPE_WAIT,
+                win32pipe.PIPE_UNLIMITED_INSTANCES,
+                BUFSIZE, BUFSIZE, 0, None,
+            )
+            win32pipe.ConnectNamedPipe(pipe_handle, None)
+            print(f"  >> Client on {pipe_name.split('-', 2)[-1]} -> :{tcp_port}", flush=True)
+            t = threading.Thread(
+                target=pipe_to_tcp_handler,
+                args=(pipe_handle, tcp_port, pipe_name),
+                daemon=True,
+            )
+            t.start()
+        except pywintypes.error as e:
+            print(f"  ERR pipe {pipe_name}: {e}", file=sys.stderr, flush=True)
+            time.sleep(1)
+        except Exception as e:
+            print(f"  ERR pipe {pipe_name}: {e}", file=sys.stderr, flush=True)
+            time.sleep(1)
+
+
+def tcp_bridge_handler(src_conn, dst_port, name):
+    """Handle a single TCP bridge connection."""
+    dst_sock = None
+    try:
+        dst_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        dst_sock.connect(("127.0.0.1", dst_port))
+
+        def fwd(a, b):
+            try:
+                while True:
+                    data = a.recv(BUFSIZE)
+                    if not data:
+                        break
+                    b.sendall(data)
+            except Exception:
+                pass
+            finally:
+                try:
+                    b.shutdown(socket.SHUT_WR)
+                except Exception:
+                    pass
+
+        t1 = threading.Thread(target=fwd, args=(src_conn, dst_sock), daemon=True)
+        t2 = threading.Thread(target=fwd, args=(dst_sock, src_conn), daemon=True)
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join(timeout=2)
+    except Exception as e:
+        print(f"  ERR tcp {name}: {e}", file=sys.stderr, flush=True)
+    finally:
+        src_conn.close()
+        if dst_sock:
+            dst_sock.close()
+
+
+def tcp_bridge_server(src_port, dst_port, name):
+    """TCP port bridge server loop."""
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    srv.bind(("127.0.0.1", src_port))
+    srv.listen(16)
+    print(f"  TCP :{src_port} -> :{dst_port} ({name})", flush=True)
+    while True:
+        conn, addr = srv.accept()
+        t = threading.Thread(
+            target=tcp_bridge_handler,
+            args=(conn, dst_port, name),
+            daemon=True,
+        )
+        t.start()
+
+
+def main():
+    print("=" * 45, flush=True)
+    print("  piPORT -- Gaia Neural Bridge", flush=True)
+    print("  Threading model (no asyncio deadlocks)", flush=True)
+    print("=" * 45, flush=True)
+
+    threads = []
+
+    for pipe_name, tcp_port in BRIDGES.items():
+        t = threading.Thread(target=pipe_server, args=(pipe_name, tcp_port), daemon=True)
+        t.start()
+        threads.append(t)
+
+    for src_port, (dst_port, name) in TCP_BRIDGES.items():
+        t = threading.Thread(target=tcp_bridge_server, args=(src_port, dst_port, name), daemon=True)
+        t.start()
+        threads.append(t)
+
+    print(f"  Bridges: {len(BRIDGES)} pipes + {len(TCP_BRIDGES)} TCP", flush=True)
+    print("=" * 45, flush=True)
+
+    try:
+        while True:
+            time.sleep(60)
+    except KeyboardInterrupt:
+        print("\npiPORT shutdown", flush=True)
+
+
+if __name__ == "__main__":
+    main()

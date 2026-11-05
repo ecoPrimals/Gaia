@@ -1,0 +1,109 @@
+{
+  "type": "amoeba-deployment-map",
+  "version": "1.0",
+  "timestamp": "2026-11-04T23:50:00Z",
+  "token": "GAIA:6ed3c05161da5055",
+  "title": "AMOEBA Schwann Cell Deployment — Every Relay Gets Eyes",
+  "relay": {
+    "primary": "192.168.4.103 (eastGate Pi — hbbs/hbbr running, ALL 4 ports OPEN)",
+    "ports": {
+      "21115": "NAT test",
+      "21116": "rendezvous/relay TCP",
+      "21117": "relay",
+      "21118": "relay"
+    }
+  },
+  "gates": {
+    "northGate": {
+      "ip": "192.168.4.147",
+      "identity": "POLARIS — RTX 5090, 56 models, brain",
+      "rustdesk_id": "1871544996",
+      "amoeba": "DEPLOYED",
+      "schwann_status": "MYELINATED",
+      "ssh": "N/A (we are HERE)",
+      "ports_open": [8080, 8443],
+      "notes": "RustDesk 1.5.1, NVENC h265, direct-server=Y, relay=Pi"
+    },
+    "eastGate_pi": {
+      "ip": "192.168.4.103",
+      "also_seen_as": ["192.168.4.244", "10.13.37.5"],
+      "identity": "Gaia Pi — AMD Ryzen 7 5700X, 64GB, RTX 4070, 19 primals",
+      "rustdesk_id": "UNKNOWN — need to discover",
+      "amoeba": "RELAY RUNNING (hbbs/hbbr on all 4 ports)",
+      "schwann_status": "IS THE RELAY — the node of Ranvier itself",
+      "ssh": "LOCKED (key not authorized)",
+      "ports_open": [22, 80, 443, 8080, 21115, 21116, 21117, 21118],
+      "services": ["gaia-inference:11434", "ollama:11436", "gaia-web:8080", "tor", "dromedary:80/443", "hbbs/hbbr"],
+      "notes": "This IS the organism's body. Serves web, runs inference, runs relay. 36,339 files, 20 mushrooms, 33 cron jobs."
+    },
+    "eastGate_router": {
+      "ip": "192.168.4.1",
+      "identity": "GL-MT6000 — perimeter firewall, NAT, port forward",
+      "amoeba": "NOT APPLICABLE (router)",
+      "schwann_status": "OUTER MEMBRANE (not myelinable)",
+      "ssh": "OPEN but password auth (credentials: root / ExoticPanda714!!)",
+      "ports_open": [22, 8080, 8443],
+      "notes": "WebFig on :8080. MikroTik at .2 is L2 bridge."
+    },
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "identity": "Build foreman — bearDog, songBird, swarmVine, petalTongue, dnsmasq, mongod",
+      "rustdesk_id": "UNKNOWN — need to install",
+      "amoeba": "NOT DEPLOYED",
+      "schwann_status": "BARE AXON — unmyelinated, needs Schwann cells",
+      "ssh": "LOCKED (key not authorized, 1-2 months)",
+      "ports_open": [22],
+      "state_from_pi": "DORMANT",
+      "services_from_pi": ["beardog", "songbird", "swarmvine", "petaltongue", "dnsmasq", "mongod"],
+      "ram_gb": 27,
+      "disk_pct": 16,
+      "notes": "LOCKED OUT. SSH key rejected for all users (root, mokke, gaia, pi, ubuntu, admin, deploy). Has bearDog + songBird + swarmVine running! These are the primals AMOEBA needs. WireGuard mesh to eastGate is LIVE."
+    },
+    "ironGate": {
+      "ip": "192.168.4.237",
+      "identity": "Game server — esotericWebb NUCLEUS, colocated with westGate NAS",
+      "rustdesk_id": "UNKNOWN — need to install",
+      "amoeba": "NOT DEPLOYED",
+      "schwann_status": "BARE AXON — unmyelinated",
+      "ssh": "LOCKED (publickey only, key rejected)",
+      "ports_open": [22, 8080],
+      "state_from_pi": "alive but SSH locked",
+      "notes": "esotericWebb running on :8080. westGate ZFS NAS (58.5 TB) colocated."
+    },
+    "southGate": {
+      "ip": "192.168.4.148",
+      "identity": "Portable gate",
+      "amoeba": "NOT DEPLOYED",
+      "schwann_status": "BARE AXON",
+      "ssh": "LOCKED (publickey only, key rejected)",
+      "ports_open": [22],
+      "state_from_pi": "alive but SSH locked"
+    },
+    "graftGate": {
+      "ip": "192.168.4.107",
+      "identity": "Mac Mini",
+      "amoeba": "NOT DEPLOYED",
+      "schwann_status": "BARE AXON",
+      "state_from_pi": "alive but SSH locked"
+    },
+    "blueGate": {
+      "ip": "192.168.4.210",
+      "identity": "Windows SSH",
+      "amoeba": "NOT DEPLOYED",
+      "schwann_status": "BARE AXON",
+      "state_from_pi": "dead"
+    }
+  },
+  "diagnosis": {
+    "problem": "SSH keys from POLARIS are not authorized on ANY gate except eastGate Pi (via WireGuard only). The id_ed25519_vps key was likely rotated on the Pi at some point and POLARIS was never updated, or the Pi changed its authorized_keys.",
+    "root_cause": "Key rotation or authorized_keys change on eastGate Pi. sporeGate trusts eastGate's key but not POLARIS's key. northGate (POLARIS) was rebuilt or re-provisioned and never had its new key distributed.",
+    "solution_amoeba": "Deploy AMOEBA (RustDesk) on eastGate Pi first (it already runs hbbs/hbbr, just need the client). Pi can then SSH to sporeGate (WG mesh LIVE). Install AMOEBA on sporeGate FROM the Pi. Then we can see into sporeGate via RustDesk.",
+    "solution_ssh": "Alternative: Copy POLARIS's id_ed25519_vps.pub to the Pi via the web interface or via the hbbs/hbbr that's already running, then SSH in normally."
+  },
+  "critical_discovery": {
+    "sporeGate_runs": ["bearDog (crypto)", "songBird (mesh)", "swarmVine (gossip)", "petalTongue (viz)", "dnsmasq (DNS)", "mongod (DB)"],
+    "sporeGate_is": "The build foreman that compiles and signs all primals. It has the primals AMOEBA needs most (swarmVine + songBird + bearDog). It IS the nervous system hub.",
+    "wg_mesh_live": "sporeGate ↔ eastGate WireGuard is LIVE. eastGate can reach sporeGate via WG even if POLARIS can't SSH directly.",
+    "path_in": "POLARIS → RustDesk → Pi relay → Pi SSH → sporeGate (via WG 10.13.37.2)"
+  }
+}

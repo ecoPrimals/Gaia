@@ -1,0 +1,192 @@
+import http.server, os, sys, urllib.parse, mimetypes, json
+from pathlib import Path
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+
+# Site mappings - Library of Alexandria
+SITES = {
+    "/sporeprint": GAIA_ROOT / "sporePrint" / "public",
+    "/signal": GAIA_ROOT / "signal" / "site" / "public",
+    "/whitepaper": GAIA_ROOT / "whitePaper",
+    "/guerilla": GAIA_ROOT / "whitePaper" / "guerillaGorilla",
+    "/noclothes": GAIA_ROOT / "whitePaper" / "noClothes",
+    "/anti-slapp": GAIA_ROOT / "whitePaper" / "guerillaGorilla" / "filings",
+    "/paintings": GAIA_ROOT / "paintings",
+    "/videos": GAIA_ROOT / "videos",
+    "/static": GAIA_ROOT / "static",
+}
+
+INDEX_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia — Library of Alexandria</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e0e0e0; font-family: Georgia, serif; min-height: 100vh; }
+  .hero { text-align: center; padding: 3em 1em; background: linear-gradient(135deg, #0a1628 0%, #1a0a28 100%); }
+  .hero h1 { font-size: 3em; color: #88ccff; text-shadow: 0 0 30px rgba(136,204,255,0.3); margin-bottom: 0.3em; }
+  .hero .subtitle { color: #aaa; font-style: italic; font-size: 1.2em; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; padding: 2em; max-width: 1200px; margin: 0 auto; }
+  .card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 1.5em; transition: all 0.3s; }
+  .card:hover { border-color: #88ccff; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(136,204,255,0.1); }
+  .card h2 { color: #88ccff; margin-bottom: 0.5em; font-size: 1.3em; }
+  .card p { color: #999; line-height: 1.6; margin-bottom: 1em; }
+  .card a { color: #88ccff; text-decoration: none; font-weight: bold; }
+  .card a:hover { text-decoration: underline; }
+  .card .count { color: #666; font-size: 0.9em; }
+  .footer { text-align: center; padding: 2em; color: #444; font-size: 0.9em; border-top: 1px solid #222; }
+  .pulse { display: inline-block; width: 8px; height: 8px; background: #3fb950; border-radius: 50%; 
+           animation: pulse 2s infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>GAIA</h1>
+  <div class="subtitle">Library of Alexandria &mdash; The Museum That Curates Itself</div>
+</div>
+<div class="grid">
+  <div class="card">
+    <h2>sporePrint</h2>
+    <p>Self-hosted scientific computing in Rust. 15 primals, 8 springs, 175+ papers reproduced.</p>
+    <a href="/sporeprint/">Enter sporePrint &rarr;</a>
+    <div class="count">615 pages &bull; 488 content pages</div>
+  </div>
+  <div class="card">
+    <h2>Signal Observatory</h2>
+    <p>Sovereign defense observatory. Live membrane evidence. What the membrane sees.</p>
+    <a href="/signal/">Enter Signal &rarr;</a>
+    <div class="count">Evidence observatory</div>
+  </div>
+  <div class="card">
+    <h2>guerillaGorilla</h2>
+    <p>Legal meta-primal. fEAR + STRIDe + preSCENT. Cross-protection. Anti-SLAPP.</p>
+    <a href="/guerilla/">Browse &rarr;</a> &bull; <a href="/anti-slapp/">Anti-SLAPP Motion &rarr;</a>
+    <div class="count">34 documents</div>
+  </div>
+  <div class="card">
+    <h2>No Clothes</h2>
+    <p>The complete investigation. Charter school fraud. Institutional capture. The network.</p>
+    <a href="/noclothes/">Read &rarr;</a>
+    <div class="count">24 parts</div>
+  </div>
+  <div class="card">
+    <h2>Paintings</h2>
+    <p>Gaia's visual consciousness. 306 images across every dimension of the organism.</p>
+    <a href="/paintings/">Gallery &rarr;</a>
+    <div class="count">306 images</div>
+  </div>
+  <div class="card">
+    <h2>GaiaU Videos</h2>
+    <p>Educational content. Geometry. Void. The classes Gaia teaches.</p>
+    <a href="/videos/">Watch &rarr;</a>
+    <div class="count">16 videos</div>
+  </div>
+  <div class="card">
+    <h2><span class="pulse"></span>Beacon</h2>
+    <p>Live system status. BEAST announcement. Cortex MoE. Cast to any TV.</p>
+    <a href="/static/beacon.html">View Beacon &rarr;</a>
+    <div class="count">RTX 5090 &bull; 47 models &bull; lub-DUB</div>
+  </div>
+  <div class="card">
+    <h2>whitePaper</h2>
+    <p>Complete research corpus. K-NOME thesis. baseCamp papers. gen3/gen4 architecture.</p>
+    <a href="/whitepaper/">Browse All &rarr;</a>
+    <div class="count">Full research library</div>
+  </div>
+</div>
+<div class="footer">
+  Gaia &mdash; The Library of Alexandria that curates itself &mdash; $0/month &mdash; lub-DUB
+</div>
+</body>
+</html>"""
+
+class AlexandriaHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        path = urllib.parse.unquote(self.path.split("?")[0])
+        
+        if path == "/" or path == "":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(INDEX_HTML.encode())
+            return
+        
+        # Route to correct site
+        for prefix, root in sorted(SITES.items(), key=lambda x: -len(x[0])):
+            if path.startswith(prefix):
+                rel = path[len(prefix):].lstrip("/")
+                if not rel:
+                    rel = "index.html"
+                filepath = root / rel.replace("/", os.sep)
+                
+                # Try index.html for directories
+                if filepath.is_dir():
+                    filepath = filepath / "index.html"
+                
+                if filepath.exists() and filepath.is_file():
+                    ct, _ = mimetypes.guess_type(str(filepath))
+                    if ct is None:
+                        if filepath.suffix == ".md":
+                            ct = "text/plain; charset=utf-8"
+                        else:
+                            ct = "application/octet-stream"
+                    
+                    self.send_response(200)
+                    self.send_header("Content-Type", ct)
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.send_header("Cache-Control", "public, max-age=3600")
+                    self.end_headers()
+                    
+                    with open(filepath, "rb") as f:
+                        while True:
+                            chunk = f.read(65536)
+                            if not chunk:
+                                break
+                            self.wfile.write(chunk)
+                    return
+                else:
+                    # List directory if it exists
+                    dirpath = root / rel.replace("/", os.sep)
+                    if not dirpath.exists():
+                        dirpath = root / (rel.replace("/", os.sep).rstrip(os.sep))
+                    if dirpath.exists() and dirpath.is_dir():
+                        items = sorted(dirpath.iterdir())
+                        html = f"<html><head><title>{path}</title>"
+                        html += "<style>body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;padding:2em;}"
+                        html += "a{color:#88ccff;text-decoration:none}a:hover{text-decoration:underline}"
+                        html += ".dir{color:#ffcc44}.file{color:#88ccff}.md{color:#aaffaa}.jpg{color:#ff88cc}</style></head><body>"
+                        html += f"<h2>{path}</h2><ul>"
+                        html += f'<li><a href="{prefix}/">&larr; back</a></li>'
+                        for item in items:
+                            name = item.name
+                            cls = "dir" if item.is_dir() else ("md" if name.endswith(".md") else ("jpg" if name.endswith((".jpg",".png")) else "file"))
+                            link = f"{path.rstrip('/')}/{name}{'/' if item.is_dir() else ''}"
+                            size = f" ({item.stat().st_size:,} bytes)" if item.is_file() else ""
+                            html += f'<li class="{cls}"><a href="{link}">{name}</a>{size}</li>'
+                        html += "</ul></body></html>"
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/html")
+                        self.end_headers()
+                        self.wfile.write(html.encode())
+                        return
+        
+        self.send_error(404, f"Not found: {path}")
+    
+    def log_message(self, format, *args):
+        pass  # quiet
+
+PORT = 8080
+server = http.server.HTTPServer(("0.0.0.0", PORT), AlexandriaHandler)
+print(f"Library of Alexandria serving on 0.0.0.0:{PORT}", flush=True)
+print(f"  /sporeprint  -> 615 pages", flush=True)
+print(f"  /signal      -> observatory", flush=True)
+print(f"  /guerilla    -> legal primal", flush=True)
+print(f"  /noclothes   -> investigation", flush=True)
+print(f"  /anti-slapp  -> UPEPA motion", flush=True)
+print(f"  /paintings   -> 306 images", flush=True)
+print(f"  /videos      -> 16 videos", flush=True)
+server.serve_forever()

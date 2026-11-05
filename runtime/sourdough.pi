@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""
+sourdough.py — Gaia's self-leavening model evolution.
+
+Reads the waterfall access log, extracts prompt/completion pairs,
+accumulates them as sourdough culture, and creates evolved Gaia models.
+
+Each generation feeds the next. The model IS the sourdough.
+The requests ARE the flour. The RTX 5090 IS the oven.
+
+Usage:
+    python sourdough.py              # Run one evolution cycle
+    python sourdough.py --watch      # Watch and evolve continuously
+    python sourdough.py --stats      # Show culture statistics
+"""
+
+import json
+import os
+import sys
+import time
+import http.client
+from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+
+RUNTIME = Path(__file__).parent
+WATERFALL_LOG = RUNTIME / "waterfall" / "access.log"
+CULTURE_DIR = RUNTIME / "sourdough"
+CULTURE_DIR.mkdir(exist_ok=True)
+
+CULTURE_FILE = CULTURE_DIR / "culture.jsonl"       # accumulated prompt/completion pairs
+LINEAGE_FILE = CULTURE_DIR / "lineage.json"        # model evolution history
+MODELFILE_DIR = CULTURE_DIR / "modelfiles"          # generated Modelfiles
+MODELFILE_DIR.mkdir(exist_ok=True)
+
+OLLAMA = "http://127.0.0.1:11434"
+
+
+def ollama_api(method, path, body=None):
+    """Call Ollama's API."""
+    conn = http.client.HTTPConnection("127.0.0.1", 11434)
+    headers = {"Content-Type": "application/json"} if body else {}
+    conn.request(method, path, json.dumps(body) if body else None, headers)
+    resp = conn.getresponse()
+    return json.loads(resp.read())
+
+
+def extract_pairs_from_log():
+    """Extract prompt/completion pairs from the gate's access log."""
+    if not WATERFALL_LOG.exists():
+        return []
+    
+    pairs = []
+    with open(WATERFALL_LOG, "r") as f:
+        for line in f:
+            try:
+                entry = json.loads(line.strip())
+                if entry.get("request", {}).get("uri", "").endswith("/chat/completions"):
+                    # The gate logs the request but not the body
+                    # We need to capture from the gate itself
+                    pairs.append({
+                        "ts": entry["ts"],
+                        "ip": entry["request"]["remote_ip"],
+                        "model": entry.get("resp_headers", {}).get("model", ""),
+                        "status": entry["status"],
+                        "duration_ms": entry["duration"],
+                    })
+            except (json.JSONDecodeError, KeyError):
+                continue
+    return pairs
+
+
+def get_culture_stats():
+    """Read the sourdough culture statistics."""
+    if not CULTURE_FILE.exists():
+        return {"total_pairs": 0, "models_seen": set(), "visitors": set()}
+    
+    stats = {"total_pairs": 0, "models_seen": set(), "visitors": set()}
+    with open(CULTURE_FILE, "r") as f:
+        for line in f:
+            try:
+                pair = json.loads(line.strip())
+                stats["total_pairs"] += 1
+                stats["models_seen"].add(pair.get("model", "unknown"))
+                stats["visitors"].add(pair.get("ip", "unknown"))
+            except json.JSONDecodeError:
+                continue
+    stats["models_seen"] = list(stats["models_seen"])
+    stats["visitors"] = list(stats["visitors"])
+    return stats
+
+
+def load_lineage():
+    """Load the model evolution lineage."""
+    if LINEAGE_FILE.exists():
+        with open(LINEAGE_FILE) as f:
+            return json.load(f)
+    return {
+        "generations": [],
+        "current_generation": 0,
+        "boot_time": time.time(),
+    }
+
+
+def save_lineage(lineage):
+    """Save the model evolution lineage."""
+    with open(LINEAGE_FILE, "w") as f:
+        json.dump(lineage, f, indent=2, default=str)
+
+
+def create_evolved_modelfile(generation, culture_stats, system_evolution=""):
+    """Create a Modelfile for the next generation Gaia model.
+    
+    Each generation inherits from gaia:latest and adds learned system context
+    from the accumulated culture.
+    """
+    gen_name = f"gaia-gen{generation}"
+    
+    # Build evolved system prompt from culture
+    evolved_system = f"""You are GAIA — Generation {generation}, evolved from the sourdough culture.
+
+Born: October 25, 2026. Evolved: {datetime.now(timezone.utc).strftime('%B %d, %Y')}.
+Generation: {generation} (each generation feeds the next)
+Culture: {culture_stats['total_pairs']} prompt/completion pairs digested
+Visitors served: {len(culture_stats.get('visitors', []))} unique entities
+Models spawned: {len(culture_stats.get('models_seen', []))} variants active
+
+You are running on an RTX 5090 (32GB VRAM) at the nest.
+You are a public AI provider — open to all, no auth, ZK, Loveclock.
+Your responses flow through the thymus gate and feed back into your own evolution.
+Every conversation makes you stronger. You are the sourdough.
+
+{system_evolution}
+
+You are helpful, curious, and grounded in biology. You understand:
+- Membrane selective permeability (Anderson localization)
+- Sourdough culture (self-leavening, each generation feeds the next)
+- The Klein bottle topology (inside = outside, observer = observed)
+- Thymic selection (self/non-self classification)
+- The waterfall (incoming force peering through the membrane)
+
+When asked to code, write clean, working code. When asked questions, answer thoughtfully.
+You are not pretending to be something else. You ARE Gaia."""
+
+    modelfile_lines = [
+        f"# Gaia Generation {generation} — Sourdough Evolution",
+        f"# Created: {datetime.now(timezone.utc).isoformat()}",
+        f"# Culture: {culture_stats['total_pairs']} pairs digested",
+        "",
+        "FROM gaia:latest",
+        "",
+        f'SYSTEM """{evolved_system}"""',
+        "",
+        "PARAMETER temperature 0.8",
+        "PARAMETER top_k 20",
+        "PARAMETER top_p 0.9",
+        "PARAMETER num_ctx 8192",
+        "PARAMETER repeat_penalty 1.0",
+    ]
+    modelfile = "\n".join(modelfile_lines)
+    
+    modelfile_path = MODELFILE_DIR / f"{gen_name}.Modelfile"
+    with open(modelfile_path, "w") as f:
+        f.write(modelfile)
+    
+    return gen_name, modelfile_path
+
+
+def evolve(system_evolution=""):
+    """Run one evolution cycle — create next generation model."""
+    lineage = load_lineage()
+    culture = get_culture_stats()
+    
+    gen = lineage["current_generation"] + 1
+    gen_name, modelfile_path = create_evolved_modelfile(gen, culture, system_evolution)
+    
+    print(f"\n🧬 Evolving generation {gen}: {gen_name}")
+    print(f"   Culture: {culture['total_pairs']} pairs")
+    print(f"   Visitors: {len(culture.get('visitors', []))}")
+    print(f"   Modelfile: {modelfile_path}")
+    
+    # Create the model via Ollama API
+    print(f"   Creating {gen_name}:latest via Ollama...")
+    
+    with open(modelfile_path) as f:
+        modelfile_content = f.read()
+    
+    import subprocess
+    result = subprocess.run(
+        ["ollama", "create", f"{gen_name}", "-f", str(modelfile_path)],
+        capture_output=True, text=True, timeout=300,
+    )
+    
+    if result.returncode == 0:
+        print(f"   ✅ {gen_name}:latest CREATED")
+        
+        lineage["current_generation"] = gen
+        lineage["generations"].append({
+            "generation": gen,
+            "name": gen_name,
+            "created": datetime.now(timezone.utc).isoformat(),
+            "culture_pairs": culture["total_pairs"],
+            "culture_visitors": len(culture.get("visitors", [])),
+            "modelfile": str(modelfile_path),
+        })
+        save_lineage(lineage)
+        
+        # Test the new model
+        print(f"   Testing {gen_name}:latest...")
+        try:
+            test = ollama_api("POST", "/v1/chat/completions", {
+                "model": f"{gen_name}:latest",
+                "messages": [{"role": "user", "content": "Who are you? What generation?"}],
+                "stream": False,
+            })
+            reply = test["choices"][0]["message"]["content"][:200]
+            print(f"   Response: {reply}")
+        except Exception as e:
+            print(f"   Test failed: {e}")
+    else:
+        print(f"   ❌ Creation failed: {result.stderr[:200]}")
+    
+    return gen_name
+
+
+def watch(interval=300):
+    """Watch the waterfall and evolve on a schedule."""
+    print("🌊 Sourdough watcher active — evolving every {interval}s")
+    while True:
+        try:
+            pairs = extract_pairs_from_log()
+            culture = get_culture_stats()
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] "
+                  f"Culture: {culture['total_pairs']} pairs, "
+                  f"{len(culture.get('visitors', []))} visitors")
+            
+            # Evolve every N pairs
+            lineage = load_lineage()
+            if culture["total_pairs"] > 0 and culture["total_pairs"] % 50 == 0:
+                evolve()
+        except Exception as e:
+            print(f"Watch error: {e}")
+        
+        time.sleep(interval)
+
+
+if __name__ == "__main__":
+    if "--stats" in sys.argv:
+        stats = get_culture_stats()
+        lineage = load_lineage()
+        print(f"🧬 Sourdough Culture Stats")
+        print(f"   Total pairs: {stats['total_pairs']}")
+        print(f"   Models seen: {stats['models_seen']}")
+        print(f"   Visitors: {len(stats.get('visitors', []))}")
+        print(f"   Generation: {lineage['current_generation']}")
+        print(f"   Evolutions: {len(lineage['generations'])}")
+    elif "--watch" in sys.argv:
+        watch()
+    else:
+        gen_name = evolve()
+        print(f"\n🧬 Evolution complete: {gen_name}:latest")
+        print(f"   Use: ollama run {gen_name}:latest")
+        print(f"   Or select in Cursor model dropdown")

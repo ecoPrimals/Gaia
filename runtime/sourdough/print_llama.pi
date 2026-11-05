@@ -1,0 +1,246 @@
+#!/usr/bin/env python3
+"""
+print_llama.py — Gaia's genetic scissors.
+
+Print new models ON DEMAND from the thymus.
+Models are templates, not static weights.
+Cloud code is dead weight. Local weights are alive.
+
+Usage:
+  python print_llama.py gaia-legal "You are a legal research specialist..."
+  python print_llama.py gaia-case4349 --from-case case_4349_banks.toml
+  python print_llama.py gaia-qcd "You specialize in lattice QCD..."
+  python print_llama.py --list            # list all llamas
+  python print_llama.py --lineage         # show full lineage tree
+  python print_llama.py --pull-diversity  # pull new base models for diversity
+"""
+
+import json
+import sys
+import time
+import urllib.request
+import urllib.error
+from pathlib import Path
+
+OLLAMA = "http://127.0.0.1:11434"
+MODELFILES_DIR = Path(__file__).parent / "modelfiles"
+LINEAGE_FILE = Path(__file__).parent / "lineage.json"
+FILINGS_DIR = Path(__file__).parent.parent.parent / "whitePaper" / "guerillaGorilla" / "filings"
+
+MODELFILES_DIR.mkdir(exist_ok=True)
+
+
+def ollama_api(endpoint, data=None, method="GET"):
+    """Call Ollama API."""
+    url = f"{OLLAMA}{endpoint}"
+    if data:
+        body = json.dumps(data).encode()
+        req = urllib.request.Request(url, data=body, method="POST",
+                                     headers={"Content-Type": "application/json"})
+    else:
+        req = urllib.request.Request(url, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            return json.loads(resp.read())
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def list_llamas():
+    """List all models in the herd."""
+    data = ollama_api("/api/tags")
+    models = data.get("models", [])
+    print(f"\n  GAIA LLAMA HERD — {len(models)} models\n")
+    
+    gaia_models = []
+    base_models = []
+    total_gb = 0
+    
+    for m in sorted(models, key=lambda x: x["name"]):
+        name = m["name"]
+        size_gb = m.get("size", 0) / 1024**3
+        total_gb += size_gb
+        family = m.get("details", {}).get("family", "?")
+        params = m.get("details", {}).get("parameter_size", "?")
+        
+        if name.startswith("gaia"):
+            gaia_models.append((name, size_gb, family, params))
+        else:
+            base_models.append((name, size_gb, family, params))
+    
+    print("  LLAMAS (gaia-evolved):")
+    for name, size, family, params in gaia_models:
+        print(f"    🦙 {name:40s} {size:.1f}GB  {family}/{params}")
+    
+    print(f"\n  ALPACAS (commensal base):")
+    for name, size, family, params in base_models:
+        print(f"    🦙 {name:40s} {size:.1f}GB  {family}/{params}")
+    
+    print(f"\n  TOTAL: {len(gaia_models)} llamas + {len(base_models)} alpacas = {len(models)} | {total_gb:.1f} GB")
+
+
+def print_model(name, system_prompt, parent="gaia:latest", temperature=0.7, ctx=8192):
+    """Print a new llama on demand — the genetic scissors."""
+    print(f"\n  🧬 PRINTING: {name}")
+    print(f"     Parent:  {parent}")
+    print(f"     System:  {system_prompt[:80]}...")
+    print(f"     Temp:    {temperature}")
+    print(f"     Context: {ctx}")
+    
+    modelfile = f"""# Gaia Genetic Scissors — printed {time.strftime('%Y-%m-%d %H:%M:%S')}
+FROM {parent}
+
+SYSTEM \"\"\"{system_prompt}\"\"\"
+
+PARAMETER temperature {temperature}
+PARAMETER num_ctx {ctx}
+PARAMETER num_predict -1
+"""
+    
+    # Save Modelfile
+    mf_path = MODELFILES_DIR / f"{name}.Modelfile"
+    mf_path.write_text(modelfile, encoding="utf-8")
+    print(f"     Modelfile: {mf_path.name}")
+    
+    # Create in Ollama (new API format: model + from + system)
+    result = ollama_api("/api/create", {
+        "model": name,
+        "from": parent,
+        "system": system_prompt,
+        "stream": False,
+        "parameters": {
+            "temperature": temperature,
+            "num_ctx": ctx,
+        }
+    })
+    
+    if "error" in result:
+        print(f"     ❌ Error: {result['error']}")
+    else:
+        print(f"     ✅ PRINTED — {name} is alive")
+    
+    # Update lineage
+    _update_lineage(name, parent, system_prompt)
+    
+    return result
+
+
+def print_from_case(name, case_file):
+    """Print a model specialized for a specific legal case."""
+    try:
+        import tomllib
+    except ImportError:
+        import tomli as tomllib
+    
+    case_path = FILINGS_DIR / case_file
+    if not case_path.exists():
+        print(f"  ❌ Case file not found: {case_path}")
+        return
+    
+    with open(case_path, "rb") as f:
+        case = tomllib.load(f)
+    
+    case_info = case.get("case", {})
+    respondents = case.get("respondent", [])
+    
+    resp_names = [r.get("name", "?") for r in respondents]
+    resp_summaries = [r.get("summary", "")[:200] for r in respondents]
+    
+    system_prompt = f"""You are a legal research specialist for case {case_info.get('number', '?')}.
+Case: {case_info.get('caption', '?')}
+Court: {case_info.get('court', '?')}
+Statute: {case_info.get('statute', '?')}
+
+Respondents: {', '.join(resp_names)}
+
+Key facts:
+{chr(10).join(f'- {r["name"]}: {r.get("summary", "")[:150]}' for r in respondents[:4])}
+
+You specialize in Anti-SLAPP motions under {case_info.get('statute', 'MCL 691.1851-1863')}.
+You know the timeline, the evidence, the respondents, and the legal standards.
+You generate court-ready analysis. You cite exhibits by letter.
+You are Gaia's legal specialist for this case. lub-DUB."""
+
+    return print_model(name, system_prompt, parent="gaia-oracle:latest", temperature=0.3)
+
+
+def _update_lineage(name, parent, system_prompt):
+    """Update the lineage tree."""
+    lineage = {"generations": [], "current_generation": 0}
+    if LINEAGE_FILE.exists():
+        try:
+            lineage = json.loads(LINEAGE_FILE.read_text(encoding="utf-8"))
+        except:
+            pass
+    
+    lineage["generations"].append({
+        "name": name,
+        "parent": parent,
+        "created": time.strftime('%Y-%m-%dT%H:%M:%S'),
+        "system_preview": system_prompt[:100],
+        "type": "printed"
+    })
+    lineage["current_generation"] = len(lineage["generations"])
+    
+    LINEAGE_FILE.write_text(json.dumps(lineage, indent=2), encoding="utf-8")
+
+
+def pull_diversity():
+    """Pull new base models for genetic diversity testing."""
+    new_models = [
+        "codellama:7b",         # Meta code specialist
+        "stablelm2:1.6b",      # Stability AI tiny
+        "tinyllama:1.1b",      # Ultra-tiny fast
+        "dolphin-phi:2.7b",    # Uncensored reasoning
+        "wizardlm2:7b",        # Enhanced reasoning
+    ]
+    
+    print("\n  🧬 PULLING GENETIC DIVERSITY\n")
+    for model in new_models:
+        print(f"  Pulling {model}...", end=" ", flush=True)
+        result = ollama_api("/api/pull", {"name": model, "stream": False})
+        if "error" in result:
+            print(f"❌ {result['error'][:50]}")
+        else:
+            print("✅")
+    
+    print("\n  New populations ready for crossbreeding.")
+    print("  Run cortex MoE to test them against existing herd.")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  python print_llama.py NAME 'system prompt'")
+        print("  python print_llama.py --list")
+        print("  python print_llama.py --lineage")
+        print("  python print_llama.py --from-case NAME case_file.toml")
+        print("  python print_llama.py --pull-diversity")
+        return
+    
+    cmd = sys.argv[1]
+    
+    if cmd == "--list":
+        list_llamas()
+    elif cmd == "--lineage":
+        if LINEAGE_FILE.exists():
+            data = json.loads(LINEAGE_FILE.read_text(encoding="utf-8"))
+            print(json.dumps(data, indent=2))
+        else:
+            print("No lineage yet.")
+    elif cmd == "--pull-diversity":
+        pull_diversity()
+    elif cmd == "--from-case":
+        if len(sys.argv) >= 4:
+            print_from_case(sys.argv[2], sys.argv[3])
+        else:
+            print("Usage: --from-case NAME case_file.toml")
+    else:
+        name = cmd
+        system = sys.argv[2] if len(sys.argv) > 2 else f"You are {name}, a specialist Gaia model."
+        parent = sys.argv[3] if len(sys.argv) > 3 else "gaia:latest"
+        print_model(name, system, parent)
+
+
+if __name__ == "__main__":
+    main()

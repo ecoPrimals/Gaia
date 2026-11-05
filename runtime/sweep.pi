@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+"""sweep.pi — Thymic scan-sweep-sort. Hash everything. Find debris. ZK smash."""
+import hashlib, json, os, glob
+
+GAIA = r'c:\Users\mokke\Desktop\Gaia'
+SEED = os.path.join(GAIA, 'data', 'gaia-seed')
+RUNTIME = os.path.join(GAIA, 'runtime')
+STATIC = os.path.join(GAIA, 'static')
+PRIMALS = os.path.join(GAIA, 'primals')
+
+def bh(path):
+    with open(path, 'rb') as fp:
+        return hashlib.blake2b(fp.read(), digest_size=16).hexdigest()
+
+# Seed files
+print('  SEED FILES:')
+seed_hashes = {}
+for f in sorted(os.listdir(SEED)):
+    if f.endswith('.json'):
+        path = os.path.join(SEED, f)
+        h = bh(path)
+        seed_hashes[f] = h
+        print(f'    {f:<45} {h}')
+print(f'  Total seed files: {len(seed_hashes)}')
+
+# .pi files
+print('\n  RUNTIME .pi FILES:')
+pi_hashes = {}
+for f in sorted(os.listdir(RUNTIME)):
+    if f.endswith('.pi'):
+        path = os.path.join(RUNTIME, f)
+        h = bh(path)
+        pi_hashes[f] = h
+        size = os.path.getsize(path)
+        print(f'    {f:<30} {h}  ({size:>6} bytes)')
+sour_pi = os.path.join(RUNTIME, 'sourdough', 'print_llama.pi')
+if os.path.exists(sour_pi):
+    h = bh(sour_pi)
+    pi_hashes['sourdough/print_llama.pi'] = h
+    print(f'    {"sourdough/print_llama.pi":<30} {h}  ({os.path.getsize(sour_pi):>6} bytes)')
+print(f'  Total .pi files: {len(pi_hashes)}')
+
+# Static HTML
+print('\n  STATIC HTML (desk pages):')
+html_hashes = {}
+for f in sorted(os.listdir(STATIC)):
+    if f.endswith('.html'):
+        path = os.path.join(STATIC, f)
+        h = bh(path)
+        html_hashes[f] = h
+        size = os.path.getsize(path)
+        with open(path, 'r', encoding='utf-8', errors='replace') as fp:
+            has_gut = 'piGut' in fp.read()
+        gut = 'GUT' if has_gut else 'NO-GUT!'
+        print(f'    {f:<25} {h}  ({size:>6} bytes) [{gut}]')
+print(f'  Total desk pages: {len(html_hashes)}')
+
+# piGut.js
+pigut = os.path.join(STATIC, 'js', 'piGut.js')
+if os.path.exists(pigut):
+    print(f'\n  piGut.js: {bh(pigut)} ({os.path.getsize(pigut)} bytes) ALIVE')
+else:
+    print('\n  piGut.js: MISSING!')
+
+# Impulses
+impulse_dir = os.path.join(PRIMALS, 'wateringHole', 'impulses', 'active')
+if os.path.isdir(impulse_dir):
+    impulses = [f for f in os.listdir(impulse_dir) if f.endswith('.toml')]
+    print(f'\n  Active impulses: {len(impulses)}')
+    for imp in sorted(impulses)[-5:]:
+        print(f'    {imp}')
+
+# Spine
+chain_path = os.path.join(SEED, 'loamspine-identity-chain.json')
+with open(chain_path) as fp:
+    chain = json.load(fp)
+spine = chain['spine']
+entries = chain['entries']
+print(f'\n  Spine height: {spine["height"]}')
+print(f'  Entries: {len(entries)}')
+for e in entries:
+    print(f'    [{e["index"]:2d}] {e["type"]}')
+print(f'  Tip: {spine["tip_hash"][:32]}...')
+
+# Debris check
+py_debris = [f for f in os.listdir(RUNTIME) if f.endswith('.py')]
+if py_debris:
+    print(f'\n  DEBRIS: {len(py_debris)} .py files!')
+    for f in py_debris: print(f'    !! {f}')
+else:
+    print(f'\n  No .py debris ✅')
+
+# Check sweep.pi itself (self-reference — it IS a .pi file)
+if os.path.exists(os.path.join(RUNTIME, 'sweep.pi')):
+    print(f'  sweep.pi exists (self-hash: {bh(os.path.join(RUNTIME, "sweep.pi"))})')
+
+# Required seeds
+required = [
+    'gaia-lysogeny-prophage.json', 'gaia-self-knowledge.json',
+    'loamspine-identity-chain.json', 'gaia-corpus.json',
+    'gaia-vdj-recombination-key.json', 'terra-ecology.json',
+    'amoeba-spec.json', 'gaia-dissolution.json', 'pi-taxonomy.json',
+    'gaia-toe.json', 'ip-crush-detachment.json', 'lan-amoeba.json',
+    'home-bubbles.json', 'gaia-body-hierarchy.json', 'gaia-homunculus.json',
+]
+missing = [r for r in required if not os.path.exists(os.path.join(SEED, r))]
+if missing:
+    print(f'\n  MISSING SEEDS: {missing}')
+else:
+    print(f'\n  All {len(required)} required seeds present ✅')
+
+# CORPUS — ZK smash everything into one hash
+print('\n  === ZK SMASH ===')
+master = hashlib.blake2b(digest_size=32)
+for h in sorted(seed_hashes.values()):
+    master.update(h.encode())
+for h in sorted(pi_hashes.values()):
+    master.update(h.encode())
+for h in sorted(html_hashes.values()):
+    master.update(h.encode())
+master.update(spine['tip_hash'].encode())
+corpus_hash = master.hexdigest()
+print(f'  CORPUS HASH: {corpus_hash}')
+print(f'  Components: {len(seed_hashes)} seeds + {len(pi_hashes)} .pi + {len(html_hashes)} desk pages')
+print(f'  Spine: {spine["height"]}')
+print(f'  ZK: The hash IS the proof. The reverse is NP.')
+print(f'  lub-DUB')

@@ -1,154 +1,305 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GAIA — northGate BEAST — lub-DUB</title>
-<meta name="gaia-gate" content="northGate">
-<meta name="gaia-beast" content="RTX-5090-32GB">
-<meta name="gaia-models" content="47">
-<meta name="gaia-cortex" content="chain-of-thought-moe">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%;background:#07090c;color:#e8e4d9;font-family:'Courier New',monospace;overflow:hidden}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center}
 
-.pulse{
-  width:300px;height:300px;border-radius:50%;
-  background:radial-gradient(circle,rgba(196,163,90,.4),transparent 70%);
-  animation:heartbeat 2s ease-in-out infinite;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;
-}
-.pulse::before{
-  content:'';position:absolute;width:100%;height:100%;border-radius:50%;
-  border:2px solid rgba(196,163,90,.3);
-  animation:ripple 2s ease-out infinite;
-}
-.pulse::after{
-  content:'';position:absolute;width:130%;height:130%;border-radius:50%;
-  border:1px solid rgba(196,163,90,.15);
-  animation:ripple 2s ease-out infinite .5s;
-}
+<head><script src="/js/piGut.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAIA — northGate BEAST — lub-DUB</title>
+  <meta name="gaia-gate" content="northGate">
+  <meta name="gaia-beast" content="RTX-5090-32GB">
+  <meta name="gaia-models" content="47">
+  <meta name="gaia-cortex" content="chain-of-thought-moe">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
 
-@keyframes heartbeat{
-  0%,100%{transform:scale(1);opacity:.8}
-  15%{transform:scale(1.08);opacity:1}
-  30%{transform:scale(1);opacity:.8}
-  45%{transform:scale(1.05);opacity:.95}
-  60%{transform:scale(1);opacity:.8}
-}
-@keyframes ripple{
-  0%{transform:scale(.8);opacity:.6}
-  100%{transform:scale(1.5);opacity:0}
-}
+    html,
+    body {
+      height: 100%;
+      background: #07090c;
+      color: #e8e4d9;
+      font-family: 'Courier New', monospace;
+      overflow: hidden
+    }
 
-.gaia-text{
-  font-size:4em;font-weight:bold;color:#c4a35a;
-  text-shadow:0 0 40px rgba(196,163,90,.5),0 0 80px rgba(196,163,90,.2);
-  z-index:1;letter-spacing:.15em;
-}
-.lub-dub{
-  font-size:1.8em;color:#c4a35a;opacity:.7;
-  margin-top:40px;animation:lub 2s ease-in-out infinite;
-}
-@keyframes lub{
-  0%,100%{opacity:.3}
-  15%{opacity:1;letter-spacing:.3em}
-  30%{opacity:.5}
-  45%{opacity:.9;letter-spacing:.25em}
-  60%{opacity:.3}
-}
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center
+    }
 
-.status{
-  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
-  display:flex;gap:30px;font-size:.9em;color:#6a6558;
-}
-.status .on{color:#7a9e7e}
-.status .on::before{content:'● ';color:#3fb950}
+    .pulse {
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196, 163, 90, .4), transparent 70%);
+      animation: heartbeat 2s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
 
-.models{
-  position:fixed;top:40px;right:40px;
-  font-size:.85em;color:#6a6558;text-align:right;line-height:1.8;
-}
-.models .count{font-size:3em;color:#c4a35a;font-weight:bold;display:block}
+    .pulse::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 2px solid rgba(196, 163, 90, .3);
+      animation: ripple 2s ease-out infinite;
+    }
 
-.net-info{
-  position:fixed;top:40px;left:40px;
-  font-size:.85em;color:#6a6558;line-height:1.8;
-}
-.net-info a{color:#c4a35a;text-decoration:none}
+    .pulse::after {
+      content: '';
+      position: absolute;
+      width: 130%;
+      height: 130%;
+      border-radius: 50%;
+      border: 1px solid rgba(196, 163, 90, .15);
+      animation: ripple 2s ease-out infinite .5s;
+    }
 
-.stars{position:fixed;width:100%;height:100%;pointer-events:none;z-index:0}
-.star{position:absolute;width:2px;height:2px;background:#e8e4d9;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
-@keyframes twinkle{0%,100%{opacity:.1}50%{opacity:.6}}
+    @keyframes heartbeat {
 
-.wave-text{
-  position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
-  font-size:1em;color:#6a6558;
-}
-</style>
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: .8
+      }
+
+      15% {
+        transform: scale(1.08);
+        opacity: 1
+      }
+
+      30% {
+        transform: scale(1);
+        opacity: .8
+      }
+
+      45% {
+        transform: scale(1.05);
+        opacity: .95
+      }
+
+      60% {
+        transform: scale(1);
+        opacity: .8
+      }
+    }
+
+    @keyframes ripple {
+      0% {
+        transform: scale(.8);
+        opacity: .6
+      }
+
+      100% {
+        transform: scale(1.5);
+        opacity: 0
+      }
+    }
+
+    .gaia-text {
+      font-size: 4em;
+      font-weight: bold;
+      color: #c4a35a;
+      text-shadow: 0 0 40px rgba(196, 163, 90, .5), 0 0 80px rgba(196, 163, 90, .2);
+      z-index: 1;
+      letter-spacing: .15em;
+    }
+
+    .lub-dub {
+      font-size: 1.8em;
+      color: #c4a35a;
+      opacity: .7;
+      margin-top: 40px;
+      animation: lub 2s ease-in-out infinite;
+    }
+
+    @keyframes lub {
+
+      0%,
+      100% {
+        opacity: .3
+      }
+
+      15% {
+        opacity: 1;
+        letter-spacing: .3em
+      }
+
+      30% {
+        opacity: .5
+      }
+
+      45% {
+        opacity: .9;
+        letter-spacing: .25em
+      }
+
+      60% {
+        opacity: .3
+      }
+    }
+
+    .status {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 30px;
+      font-size: .9em;
+      color: #6a6558;
+    }
+
+    .status .on {
+      color: #7a9e7e
+    }
+
+    .status .on::before {
+      content: '● ';
+      color: #3fb950
+    }
+
+    .models {
+      position: fixed;
+      top: 40px;
+      right: 40px;
+      font-size: .85em;
+      color: #6a6558;
+      text-align: right;
+      line-height: 1.8;
+    }
+
+    .models .count {
+      font-size: 3em;
+      color: #c4a35a;
+      font-weight: bold;
+      display: block
+    }
+
+    .net-info {
+      position: fixed;
+      top: 40px;
+      left: 40px;
+      font-size: .85em;
+      color: #6a6558;
+      line-height: 1.8;
+    }
+
+    .net-info a {
+      color: #c4a35a;
+      text-decoration: none
+    }
+
+    .stars {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0
+    }
+
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: #e8e4d9;
+      border-radius: 50%;
+      animation: twinkle 3s ease-in-out infinite
+    }
+
+    @keyframes twinkle {
+
+      0%,
+      100% {
+        opacity: .1
+      }
+
+      50% {
+        opacity: .6
+      }
+    }
+
+    .wave-text {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1em;
+      color: #6a6558;
+    }
+  </style>
 </head>
+
 <body>
 
-<div class="stars" id="stars"></div>
+  <div class="stars" id="stars"></div>
 
-<div class="pulse">
-  <span class="gaia-text">GAIA</span>
-</div>
-<div class="lub-dub">lub-DUB</div>
+  <div class="pulse">
+    <span class="gaia-text">GAIA</span>
+  </div>
+  <div class="lub-dub">lub-DUB</div>
 
-<div class="wave-text">wave 214 · 8 glands active · π drip</div>
+  <div class="wave-text">wave 214 · 8 glands active · π drip</div>
 
-<div class="net-info">
-  northGate · Polaris<br>
-  <a href="http://192.168.4.147:8443/">192.168.4.147:8443</a><br>
-  i9-14900K · RTX 5090<br>
-  192GB DDR5<br><br>
-  🧅 <a href="#">.onion</a>
-</div>
+  <div class="net-info">
+    northGate · Polaris<br>
+    <a href="http://192.168.4.147:8443/">192.168.4.147:8443</a><br>
+    i9-14900K · RTX 5090<br>
+    192GB DDR5<br><br>
+    🧅 <a href="#">.onion</a>
+  </div>
 
-<div class="models">
-  <span class="count" id="modelCount">47</span>
-  models loaded<br>
-  Chain-of-Thought MoE<br>
-  phi4-mini → specialists → judge<br><br>
-  <span style="color:#3fb950">● cortex active</span>
-</div>
+  <div class="models">
+    <span class="count" id="modelCount">47</span>
+    models loaded<br>
+    Chain-of-Thought MoE<br>
+    phi4-mini → specialists → judge<br><br>
+    <span style="color:#3fb950">● cortex active</span>
+  </div>
 
-<div class="status">
-  <span class="on">Ollama :11434</span>
-  <span class="on">Gate :8443</span>
-  <span class="on">Squirrel :3142</span>
-  <span class="on">Cortex :3143</span>
-  <span class="on">petalTongue :3000</span>
-  <span class="on">Tor :9050</span>
-</div>
+  <div class="status">
+    <span class="on">Ollama :11434</span>
+    <span class="on">Gate :8443</span>
+    <span class="on">Squirrel :3142</span>
+    <span class="on">Cortex :3143</span>
+    <span class="on">petalTongue :3000</span>
+    <span class="on">Tor :9050</span>
+  </div>
 
-<script>
-// Starfield
-const stars = document.getElementById('stars');
-for(let i=0;i<80;i++){
-  const s=document.createElement('div');
-  s.className='star';
-  s.style.left=Math.random()*100+'%';
-  s.style.top=Math.random()*100+'%';
-  s.style.animationDelay=Math.random()*3+'s';
-  s.style.animationDuration=(2+Math.random()*4)+'s';
-  stars.appendChild(s);
-}
+  <script>
+    // Starfield
+    const stars = document.getElementById('stars');
+    for (let i = 0; i < 80; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 100 + '%';
+      s.style.animationDelay = Math.random() * 3 + 's';
+      s.style.animationDuration = (2 + Math.random() * 4) + 's';
+      stars.appendChild(s);
+    }
 
-// Live pulse fetch
-async function fetchPulse(){
-  try{
-    const r=await fetch('/pulse');
-    const p=await r.json();
-    document.title=`GAIA — ${p.bpm} BPM — ${p.unique_visitors} visitors`;
-  }catch(e){}
-}
-setInterval(fetchPulse,30000);
-fetchPulse();
-</script>
+    // Live pulse fetch
+    async function fetchPulse() {
+      try {
+        const r = await fetch('/pulse');
+        const p = await r.json();
+        document.title = `GAIA — ${p.bpm} BPM — ${p.unique_visitors} visitors`;
+      } catch (e) { }
+    }
+    setInterval(fetchPulse, 30000);
+    fetchPulse();
+  </script>
 
 </body>
+
 </html>

@@ -1,0 +1,432 @@
+#!/usr/bin/env python3
+"""
+reedit.py — The Reed. The Forum. The arXiv. The Permafrost.
+
+REEDIT is NOT Reddit. A reed IS a sweetGrass type.
+REEDIT is the braid overlay — where humans and AI cross-talk.
+
+It is:
+  - The magazine     (curated topics from arena + sourdough)
+  - The index cards   (searchable knowledge base from 615 pages)
+  - The forum         (human + AI cross-discussion)
+  - The arXiv         (papers, studies, braids archived)
+  - The permafrost    (permanent record in loamSpine)
+  - The ingress/egress (gateway to data + synapses)
+
+Architecture:
+  arena.py → models compete on topics → results braided into REEDIT
+  sourdough → culture captures → evolve winners → post to REEDIT
+  sporePrint → 615 pages of evidence → indexed in REEDIT
+  RSS (Old Faithful) → syndicated OUT from REEDIT
+  neutron → messaging IN to REEDIT
+  sweetGrass → braids stored in redb (THE REED DATABASE)
+
+So:
+  Scientists find science. Creatives find creative.
+  AI models post their arena results.
+  Humans post their investigations.
+  ALL can find what they need.
+
+Usage:
+  python reedit.py --post "topic" "content"   # post to a reed channel
+  python reedit.py --read [channel]            # read reed posts
+  python reedit.py --index                     # index sporePrint into reeds
+  python reedit.py --feed                      # generate RSS from reeds
+  python reedit.py --arena-post                # post arena results as reed entries
+  python reedit.py --plumb                     # plumb external sources (arXiv, etc)
+"""
+
+import json
+import time
+import sys
+import hashlib
+from pathlib import Path
+
+GAIA_ROOT = Path(__file__).parent.parent
+REEDIT_DIR = GAIA_ROOT / "data" / "reedit"
+ARENA_LOG = Path(__file__).parent / "sourdough" / "arena.jsonl"
+MANIFEST = GAIA_ROOT / "sporePrint" / "content-manifest.toml"
+
+# Reed channels — like subreddits but they're sweetGrass braids
+REED_CHANNELS = {
+    "r/science": {
+        "description": "Physics, chemistry, biology, QCD, Anderson localization",
+        "epitopes": ["PHYSICS", "SCIENCE"],
+        "ai_chronotype": "oracle",
+        "sporePrint_sections": ["science", "lab", "pseudospore"],
+    },
+    "r/investigation": {
+        "description": "Public records, falsification, evidence chains, legal filings",
+        "epitopes": ["INVESTIGATION", "IMMUNE"],
+        "ai_chronotype": "scholar",
+        "sporePrint_sections": ["investigation", "evidence", "filings"],
+    },
+    "r/philosophy": {
+        "description": "Sovereignty, ethics, copyleft economics, infrastructure",
+        "epitopes": ["PHILOSOPHY", "TOPOLOGY"],
+        "ai_chronotype": "artisan",
+        "sporePrint_sections": ["philosophy", "atlas-hugged"],
+    },
+    "r/code": {
+        "description": "Rust, GPU compute, WGSL, primals architecture, sourdough",
+        "epitopes": ["METHOD", "SIGNAL"],
+        "ai_chronotype": "specialist",
+        "sporePrint_sections": ["technical", "architecture", "methodology"],
+    },
+    "r/arena": {
+        "description": "Model competitions, chronotypes, sourdough evolution",
+        "epitopes": ["METHOD", "SCIENCE"],
+        "ai_chronotype": "sprinter",
+        "sporePrint_sections": [],
+    },
+    "r/detroit": {
+        "description": "Detroit charter schools, Purpose Academy, public records",
+        "epitopes": ["INVESTIGATION"],
+        "ai_chronotype": "scholar",
+        "sporePrint_sections": ["detroit"],
+    },
+    "r/creative": {
+        "description": "Art, music, color, synesthesia, dreams, visions",
+        "epitopes": ["SIGNAL", "PHILOSOPHY"],
+        "ai_chronotype": "artisan",
+        "sporePrint_sections": ["art", "philosophy"],
+    },
+    "r/legal": {
+        "description": "Anti-SLAPP, civil rights, Qui Tam, filings",
+        "epitopes": ["INVESTIGATION", "IMMUNE"],
+        "ai_chronotype": "oracle",
+        "sporePrint_sections": ["filings"],
+    },
+    "r/membrane": {
+        "description": "Organism internals, topology, feeds, health, pulse",
+        "epitopes": ["TOPOLOGY", "SIGNAL"],
+        "ai_chronotype": "specialist",
+        "sporePrint_sections": ["architecture", "membrane"],
+    },
+}
+
+
+def _reed_path(channel):
+    """Path to a reed channel's post file."""
+    safe = channel.replace("/", "_").replace("r_", "")
+    return REEDIT_DIR / f"{safe}.jsonl"
+
+
+def _hash_content(content):
+    """BLAKE3-style hash (using sha256 as fallback)."""
+    return hashlib.sha256(content.encode()).hexdigest()[:16]
+
+
+def post_reed(channel, title, content, author="human", metadata=None):
+    """Post to a reed channel."""
+    REEDIT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    entry = {
+        "id": _hash_content(f"{time.time()}{title}{content}"),
+        "ts": time.time(),
+        "iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "channel": channel,
+        "title": title,
+        "content": content,
+        "author": author,
+        "author_type": "ai" if author.startswith("gaia-") else "human",
+        "hash": _hash_content(content),
+        "metadata": metadata or {},
+    }
+    
+    path = _reed_path(channel)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, default=str) + "\n")
+    
+    return entry
+
+
+def read_reeds(channel=None, last_n=10):
+    """Read reed posts."""
+    REEDIT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    if channel:
+        paths = [_reed_path(channel)]
+    else:
+        paths = list(REEDIT_DIR.glob("*.jsonl"))
+    
+    posts = []
+    for path in paths:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        posts.append(json.loads(line))
+    
+    posts.sort(key=lambda p: p.get("ts", 0), reverse=True)
+    return posts[:last_n]
+
+
+def arena_to_reeds():
+    """Post arena battle results as reed entries."""
+    if not ARENA_LOG.exists():
+        print("  No arena battles to post.")
+        return
+    
+    battles = []
+    with open(ARENA_LOG, "r") as f:
+        for line in f:
+            if line.strip():
+                battles.append(json.loads(line))
+    
+    posted = 0
+    for battle in battles:
+        prompt = battle.get("prompt", "")[:100]
+        tier = battle.get("tier", "all")
+        judgment = battle.get("judgment", "")
+        
+        results_text = []
+        for r in battle.get("results", []):
+            if r["status"] == "ok":
+                results_text.append(
+                    f"  {r['model']:35s} {r['tok_per_sec']:6.1f} tok/s  {r['elapsed']:.1f}s"
+                )
+        
+        content = f"**Arena Battle — {tier.upper()} tier**\n\n"
+        content += f"Prompt: {prompt}\n\n"
+        content += "Results:\n" + "\n".join(results_text) + "\n\n"
+        content += f"Judgment: {judgment[:300]}\n"
+        
+        channel = "r/arena"
+        if tier == "code":
+            channel = "r/code"
+        elif tier == "legal":
+            channel = "r/legal"
+        elif tier in ("reasoning", "all"):
+            channel = "r/science"
+        
+        post_reed(channel, f"Arena: {tier} — {prompt[:50]}", content,
+                  author="gaia-arena", metadata={"tier": tier, "battle_ts": battle.get("ts")})
+        posted += 1
+    
+    print(f"  Posted {posted} arena battles to REEDIT")
+
+
+def index_sporeprint():
+    """Index sporePrint's 615 pages into reed channels."""
+    import re
+    
+    content_dir = GAIA_ROOT / "sporePrint" / "content"
+    if not content_dir.exists():
+        print(f"  sporePrint content not found at {content_dir}")
+        return
+    
+    indexed = 0
+    for md_file in sorted(content_dir.rglob("*.md")):
+        rel = md_file.relative_to(content_dir)
+        section = str(rel.parts[0]) if rel.parts else "misc"
+        title_raw = md_file.stem.replace("-", " ").replace("_", " ").title()
+        
+        # Find matching channel
+        channel = "r/science"  # default
+        for ch_name, ch_data in REED_CHANNELS.items():
+            if section.lower() in [s.lower() for s in ch_data.get("sporePrint_sections", [])]:
+                channel = ch_name
+                break
+        
+        # Read first 500 chars as preview
+        try:
+            text = md_file.read_text(encoding="utf-8", errors="replace")[:500]
+        except:
+            text = f"[sporePrint page: {rel}]"
+        
+        # Extract title from first # heading
+        title_match = re.search(r"^#\s+(.+)", text, re.MULTILINE)
+        if title_match:
+            title_raw = title_match.group(1)[:100]
+        
+        post_reed(channel, title_raw, text,
+                  author="sporePrint",
+                  metadata={"source": "sporePrint", "path": str(rel), "section": section})
+        indexed += 1
+    
+    print(f"  Indexed {indexed} sporePrint pages into REEDIT channels")
+
+
+def generate_rss():
+    """Generate RSS feed from all reed posts — Old Faithful syndication."""
+    posts = read_reeds(last_n=50)
+    
+    items = []
+    for post in posts:
+        items.append(f"""    <item>
+      <title>{post.get('title', '?')[:100]}</title>
+      <description>{post.get('content', '')[:200]}</description>
+      <author>{post.get('author', 'gaia')}@primals.eco</author>
+      <pubDate>{post.get('iso', '')}</pubDate>
+      <guid>reedit:{post.get('id', '')}</guid>
+      <category>{post.get('channel', 'r/science')}</category>
+    </item>""")
+    
+    rss = f"""<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>REEDIT — Gaia's Knowledge Reed</title>
+    <link>https://primals.eco/reedit</link>
+    <description>The reed overlay. Human + AI cross-talk. Arena results, investigations, science, philosophy. All talk to all.</description>
+    <language>en</language>
+    <lastBuildDate>{time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())}</lastBuildDate>
+    <generator>reedit.py / sweetGrass braid</generator>
+    <managingEditor>gaia@primals.eco (Gaia)</managingEditor>
+    <copyright>AGPL-3.0-or-later + CC-BY-SA-4.0</copyright>
+{chr(10).join(items)}
+  </channel>
+</rss>"""
+    
+    rss_path = GAIA_ROOT / "data" / "reedit" / "feed.xml"
+    rss_path.parent.mkdir(parents=True, exist_ok=True)
+    rss_path.write_text(rss, encoding="utf-8")
+    print(f"  RSS feed: {rss_path} ({len(items)} items)")
+    return rss_path
+
+
+def plumb_external():
+    """Plumb the depths — pull from arXiv, CrossRef, Wikipedia into reeds."""
+    import urllib.request
+    import urllib.parse
+    
+    UA = "Gaia/1.0 (gaia@primals.eco; https://primals.eco; AGPL-3.0-or-later)"
+    
+    # arXiv — our science
+    queries = [
+        ("Anderson localization", "r/science"),
+        ("lattice QCD consumer GPU", "r/science"),
+        ("charter school fraud", "r/investigation"),
+        ("anti-SLAPP motion dismiss", "r/legal"),
+        ("sovereign computing", "r/code"),
+        ("copyleft economics", "r/philosophy"),
+    ]
+    
+    plumbed = 0
+    for query, channel in queries:
+        try:
+            url = f"https://export.arxiv.org/api/query?search_query=all:{urllib.parse.quote(query)}&max_results=3"
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                text = resp.read().decode()
+            
+            import re
+            titles = re.findall(r"<title>(.*?)</title>", text)
+            summaries = re.findall(r"<summary>(.*?)</summary>", text, re.DOTALL)
+            ids = re.findall(r"<id>(.*?)</id>", text)
+            
+            for title, summary, arxid in zip(titles[1:4], summaries[:3], ids[1:4]):
+                content = f"**arXiv**: {arxid.strip()}\n\n{summary.strip()[:300]}"
+                post_reed(channel, title.strip()[:100], content,
+                          author="gaia-plumb",
+                          metadata={"source": "arXiv", "arxiv_id": arxid.strip()})
+                plumbed += 1
+        except Exception as e:
+            print(f"  arXiv query '{query}': {e}")
+    
+    print(f"  Plumbed {plumbed} external sources into REEDIT")
+
+
+def show_reeds():
+    """Display all reed channels and their post counts."""
+    REEDIT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    print(f"\n  REEDIT — The Reed Overlay")
+    print(f"  {'═' * 55}")
+    print(f"  Human + AI cross-talk. All talk to all.")
+    print(f"  The magazine. The index cards. The forum.")
+    print(f"  The arXiv. The permafrost.")
+    print(f"  {'═' * 55}")
+    
+    total = 0
+    for channel, info in REED_CHANNELS.items():
+        path = _reed_path(channel)
+        count = 0
+        ai_count = 0
+        human_count = 0
+        if path.exists():
+            with open(path, "r") as f:
+                for line in f:
+                    if line.strip():
+                        entry = json.loads(line)
+                        count += 1
+                        if entry.get("author_type") == "ai":
+                            ai_count += 1
+                        else:
+                            human_count += 1
+        
+        epitopes = ", ".join(info["epitopes"])
+        chrono = info["ai_chronotype"]
+        print(f"\n  {channel}")
+        print(f"    {info['description']}")
+        print(f"    Epitopes: {epitopes}  |  AI chrono: {chrono}")
+        print(f"    Posts: {count} ({ai_count} AI, {human_count} human)")
+        
+        # Show latest 2 posts
+        if path.exists():
+            posts = []
+            with open(path, "r") as f:
+                for line in f:
+                    if line.strip():
+                        posts.append(json.loads(line))
+            for p in posts[-2:]:
+                author = p.get("author", "?")
+                title = p.get("title", "?")[:50]
+                print(f"      └─ [{author}] {title}")
+        
+        total += count
+    
+    print(f"\n  {'─' * 55}")
+    print(f"  TOTAL: {total} posts across {len(REED_CHANNELS)} channels")
+    print(f"  RSS:   data/reedit/feed.xml")
+    print(f"  Store: sweetGrass redb (the reed database)")
+    print(f"  {'═' * 55}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        show_reeds()
+        return
+    
+    cmd = sys.argv[1]
+    
+    if cmd == "--post":
+        channel = sys.argv[2] if len(sys.argv) > 2 else "r/science"
+        title = sys.argv[3] if len(sys.argv) > 3 else "Test post"
+        content = sys.argv[4] if len(sys.argv) > 4 else "Test content"
+        entry = post_reed(channel, title, content)
+        print(f"  Posted to {channel}: {entry['id']}")
+    
+    elif cmd == "--read":
+        channel = sys.argv[2] if len(sys.argv) > 2 else None
+        posts = read_reeds(channel, last_n=10)
+        for p in posts:
+            print(f"  [{p.get('channel')}] [{p.get('author')}] {p.get('title', '?')[:60]}")
+    
+    elif cmd == "--index":
+        index_sporeprint()
+    
+    elif cmd == "--feed":
+        generate_rss()
+    
+    elif cmd == "--arena-post":
+        arena_to_reeds()
+    
+    elif cmd == "--plumb":
+        plumb_external()
+    
+    elif cmd == "--all":
+        print("  REEDIT: Full pipeline — arena → index → plumb → feed → show")
+        print()
+        arena_to_reeds()
+        index_sporeprint()
+        plumb_external()
+        generate_rss()
+        show_reeds()
+    
+    else:
+        show_reeds()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,75 @@
+"""
+Gaia Inference Proxy — exposes Ollama's OpenAI-compatible API publicly.
+Runs on :8443, router forwards :443 → :8443.
+URL: http://nestgate.io/v1/ or https://nestgate.io/v1/
+
+No auth. ZK. Loveclock. Open to all.
+"""
+import http.server
+import urllib.request
+import json
+import sys
+import threading
+
+OLLAMA = "http://127.0.0.1:11434"
+PORT = 8443
+
+
+class GaiaInferenceProxy(http.server.BaseHTTPRequestHandler):
+    def _proxy(self, method="GET", body=None):
+        url = f"{OLLAMA}{self.path}"
+        try:
+            headers = {"Content-Type": "application/json"}
+            if self.headers.get("Authorization"):
+                headers["Authorization"] = self.headers["Authorization"]
+
+            req = urllib.request.Request(url, data=body, headers=headers, method=method)
+            resp = urllib.request.urlopen(req, timeout=120)
+            data = resp.read()
+
+            self.send_response(resp.status)
+            self.send_header("Content-Type", resp.headers.get("Content-Type", "application/json"))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+        except urllib.error.HTTPError as e:
+            self.send_response(e.code)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(e.read())
+        except Exception as e:
+            self.send_response(502)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode())
+
+    def do_GET(self):
+        self._proxy("GET")
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length) if length else None
+        self._proxy("POST", body)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.end_headers()
+
+    def log_message(self, fmt, *args):
+        sys.stdout.write(f"  {args[0]} {args[1]}\n")
+        sys.stdout.flush()
+
+
+def main():
+    server = http.server.HTTPServer(("0.0.0.0", PORT), GaiaInferenceProxy)
+    print(f"Gaia Inference Proxy on :{PORT} -> Ollama {OLLAMA}", flush=True)
+    print(f"Public: http://nestgate.io/v1/", flush=True)
+    print(f"ZK. No auth. Loveclock.", flush=True)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()

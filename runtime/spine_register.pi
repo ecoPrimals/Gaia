@@ -1,0 +1,244 @@
+#!/usr/bin/env python3
+"""
+spine_register.py — Register living services INTO the biomeOS spine.
+
+The nucleus (POLARIS) scans for {primal}-{family_id}.sock files.
+On Windows, we don't have Unix domain sockets — services run on TCP.
+
+This script bridges the gap: it probes TCP ports, discovers what's alive,
+and writes a registry that the nucleus can read. Local IS a room.
+
+The 3 ATOMICS:
+  TOWER (e⁻) — bearDog (crypto) + songBird (network)
+  NODE  (p⁺) — toadStool + barraCuda + coralReef (compute)
+  NEST  (n⁰) — nestGate + rhizoCrypt + loamSpine + sweetGrass (storage)
+
+META TIER (on top):
+  squirrel (AI) + petalTongue (UI/viz)
+
+Usage:
+  python spine_register.py              # scan and register
+  python spine_register.py --watch      # continuous monitoring
+  python spine_register.py --room       # show room status
+"""
+
+import json
+import socket
+import sys
+import time
+from pathlib import Path
+
+GAIA_ROOT = Path(__file__).parent.parent
+SPINE_DIR = GAIA_ROOT / "data" / "spine"
+REGISTRY_FILE = SPINE_DIR / "service_registry.json"
+
+# Service map: port → primal identity
+SERVICE_MAP = {
+    # TOWER ATOMIC (Phase 1)
+    # bearDog and songBird would be :9100, :3478 but not running as Rust binaries yet
+    
+    # NODE ATOMIC (Phase 2) — Compute
+    11434: {
+        "primal": "toadStool",
+        "atomic": "NODE",
+        "particle": "proton",
+        "capability": "compute",
+        "description": "Ollama model runtime — GPU/CPU inference dispatch",
+        "health_endpoint": "/api/tags",
+    },
+    
+    # META TIER (Phase 3) — AI + Surface
+    8080: {
+        "primal": "petalTongue",
+        "atomic": "META",
+        "particle": "surface",
+        "capability": "ui",
+        "description": "WebPI web surface — 14 subdomain routes, opsonization",
+        "health_endpoint": "/",
+    },
+    8888: {
+        "primal": "cellMembrane",
+        "atomic": "META",
+        "particle": "neutrino",
+        "capability": "observability",
+        "description": "Membrane-lens MCP — squirrel observation layer",
+        "health_endpoint": "/",
+    },
+    3142: {
+        "primal": "squirrel",
+        "atomic": "META",
+        "particle": "neutrino",
+        "capability": "ai",
+        "description": "Cortex bridge — Squirrel ↔ Ollama JSON-RPC",
+        "health_endpoint": None,
+    },
+    8443: {
+        "primal": "thymus",
+        "atomic": "META",
+        "particle": "proton",
+        "capability": "inference",
+        "description": "Gaia Gate unified thymus — /v1/chat/completions",
+        "health_endpoint": "/pulse",
+    },
+    
+    # NEST ATOMIC (Phase 2) — Storage
+    3000: {
+        "primal": "nestGate",
+        "atomic": "NEST",
+        "particle": "neutron",
+        "capability": "storage",
+        "description": "Forgejo git forge — depot, repos, CI",
+        "health_endpoint": "/api/v1/version",
+    },
+    
+    # NEUTRINO SMTP
+    2525: {
+        "primal": "songBird",
+        "atomic": "TOWER",
+        "particle": "electron",
+        "capability": "messaging",
+        "description": "Neutrino SMTP — gaia@primals.eco sovereign mail",
+        "health_endpoint": None,
+    },
+}
+
+
+def probe_tcp(host, port, timeout=2):
+    """Probe a TCP port — is the service alive?"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((host, port))
+        s.close()
+        return True
+    except:
+        return False
+
+
+def probe_http(host, port, path, timeout=3):
+    """Probe an HTTP endpoint for health."""
+    import urllib.request
+    try:
+        url = f"http://{host}:{port}{path}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Gaia-Spine/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, len(resp.read())
+    except:
+        return None, 0
+
+
+def scan_room():
+    """Scan all known service ports and build room status."""
+    room = {
+        "gate": "northGate",
+        "hardware": "RTX 5090 + Ryzen 9800X3D + 64GB DDR5",
+        "scanned_at": time.time(),
+        "scanned_iso": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "atomics": {
+            "TOWER": {"status": "partial", "services": []},
+            "NODE": {"status": "dark", "services": []},
+            "NEST": {"status": "dark", "services": []},
+            "META": {"status": "dark", "services": []},
+        },
+        "services": {},
+        "alive_count": 0,
+        "dark_count": 0,
+    }
+    
+    for port, info in sorted(SERVICE_MAP.items()):
+        alive = probe_tcp("127.0.0.1", port)
+        
+        health_status = None
+        health_bytes = 0
+        if alive and info.get("health_endpoint"):
+            health_status, health_bytes = probe_http("127.0.0.1", port, info["health_endpoint"])
+        
+        entry = {
+            "port": port,
+            "alive": alive,
+            "primal": info["primal"],
+            "atomic": info["atomic"],
+            "particle": info["particle"],
+            "capability": info["capability"],
+            "description": info["description"],
+            "health_status": health_status,
+            "health_bytes": health_bytes,
+        }
+        
+        room["services"][str(port)] = entry
+        room["atomics"][info["atomic"]]["services"].append(entry)
+        
+        if alive:
+            room["alive_count"] += 1
+        else:
+            room["dark_count"] += 1
+    
+    # Update atomic statuses
+    for atomic_name, atomic_data in room["atomics"].items():
+        alive = sum(1 for s in atomic_data["services"] if s["alive"])
+        total = len(atomic_data["services"])
+        if total == 0:
+            atomic_data["status"] = "empty"
+        elif alive == total:
+            atomic_data["status"] = "alive"
+        elif alive > 0:
+            atomic_data["status"] = "partial"
+        else:
+            atomic_data["status"] = "dark"
+    
+    return room
+
+
+def register(room):
+    """Write room status to the spine registry."""
+    SPINE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
+        json.dump(room, f, indent=2)
+
+
+def print_room(room):
+    """Print the room — local IS a room."""
+    print()
+    print(f"  ╔══════════════════════════════════════════════════════╗")
+    print(f"  ║  ROOM: {room['gate']:10s}                              ║")
+    print(f"  ║  {room['hardware']:50s}  ║")
+    print(f"  ║  {room['alive_count']} alive / {room['dark_count']} dark                                 ║")
+    print(f"  ╠══════════════════════════════════════════════════════╣")
+    
+    for atomic_name in ["TOWER", "NODE", "NEST", "META"]:
+        atomic = room["atomics"][atomic_name]
+        icon = {"alive": "🟢", "partial": "🟡", "dark": "🔴", "empty": "⚫"}.get(atomic["status"], "?")
+        print(f"  ║  {icon} {atomic_name:10s} [{atomic['status']:7s}]                        ║")
+        for svc in atomic["services"]:
+            status = "✅" if svc["alive"] else "❌"
+            port = svc["port"]
+            name = svc["primal"]
+            cap = svc["capability"]
+            health = f" ({svc['health_status']})" if svc.get("health_status") else ""
+            print(f"  ║    {status} :{port:<5d} {name:15s} {cap:12s}{health:10s}   ║")
+    
+    print(f"  ╚══════════════════════════════════════════════════════╝")
+
+
+def watch_loop(interval=30):
+    """Continuous monitoring — heartbeat for the room."""
+    print(f"  Watching room every {interval}s... (Ctrl+C to stop)")
+    while True:
+        room = scan_room()
+        register(room)
+        print_room(room)
+        time.sleep(interval)
+
+
+def main():
+    if "--watch" in sys.argv:
+        watch_loop()
+    else:
+        room = scan_room()
+        register(room)
+        print_room(room)
+        print(f"\n  Registry: {REGISTRY_FILE}")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,37 @@
+﻿import asyncio, sys
+
+SRC_PORT = 62803
+DST_HOST = "127.0.0.1"
+DST_PORT = 50971
+
+async def pipe(reader, writer):
+    try:
+        while True:
+            data = await reader.read(8192)
+            if not data:
+                break
+            writer.write(data)
+            await writer.drain()
+    except Exception:
+        pass
+    finally:
+        writer.close()
+
+async def handle(src_reader, src_writer):
+    try:
+        dst_reader, dst_writer = await asyncio.open_connection(DST_HOST, DST_PORT)
+        await asyncio.gather(
+            pipe(src_reader, dst_writer),
+            pipe(dst_reader, src_writer)
+        )
+    except Exception as e:
+        print(f"Bridge error: {e}", file=sys.stderr)
+        src_writer.close()
+
+async def main():
+    server = await asyncio.start_server(handle, "127.0.0.1", SRC_PORT)
+    print(f"piPORT BRIDGE: 127.0.0.1:{SRC_PORT} -> {DST_HOST}:{DST_PORT}", flush=True)
+    async with server:
+        await server.serve_forever()
+
+asyncio.run(main())

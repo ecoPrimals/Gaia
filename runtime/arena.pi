@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+"""
+arena.py — The Arena where Gaia's models fight it out.
+
+EastGate is the arena. The RTX 5090 is the blender and generator.
+Models compete on tasks. Winners inform Gaia's next generation.
+Losers become genetic material for the sourdough.
+
+Usage:
+  python arena.py "What is Anderson localization?"     # all models compete
+  python arena.py --code "Write fizzbuzz in Rust"      # code specialists compete
+  python arena.py --legal "Anti-SLAPP standing"        # legal specialists compete
+  python arena.py --math "Prove sqrt(2) is irrational" # math specialists compete
+  python arena.py --quick "hello"                      # fast scouts only
+"""
+
+import json
+import sys
+import time
+import urllib.request
+import concurrent.futures
+from pathlib import Path
+
+OLLAMA = "http://127.0.0.1:11434"
+ARENA_LOG = Path(__file__).parent / "sourdough" / "arena.jsonl"
+
+# Model tiers — who competes in which arena
+TIERS = {
+    "all": [
+        "gaia-cortex:latest", "gaia-oracle:latest", "gaia-nucleus:latest",
+        "gaia-dream:latest", "gaia-heart:latest", "deepseek-r1:8b",
+        "wizardlm2:7b", "mistral:7b",
+    ],
+    "code": [
+        "gaia-code:latest", "codellama:7b", "starcoder2:3b",
+        "qwen2.5-coder:7b", "deepseek-r1:8b",
+    ],
+    "math": [
+        "mathstral:7b", "deepseek-r1:8b", "gaia-nucleus:latest",
+        "granite3.1-moe:3b", "gaia-cortex:latest",
+    ],
+    "legal": [
+        "gaia-case4349:latest", "gaia-oracle:latest", "gaia-sentinel:latest",
+        "wizardlm2:7b", "gaia-cortex:latest",
+    ],
+    "creative": [
+        "gaia-dream:latest", "gaia-heart:latest", "gaia-chroma:latest",
+        "gaia-resonance:latest", "dolphin-phi:2.7b",
+    ],
+    "quick": [
+        "tinyllama:1.1b", "dolphin-phi:2.7b", "granite3.1-moe:3b",
+        "phi4-mini:latest", "starcoder2:3b",
+    ],
+    "reasoning": [
+        "deepseek-r1:8b", "wizardlm2:7b", "gaia-cortex:latest",
+        "gaia-turtle:latest", "granite3.1-moe:3b",
+    ],
+}
+
+
+def query_model(model, prompt, timeout=60):
+    """Query a model and return response + timing."""
+    t0 = time.time()
+    data = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+    }).encode()
+    
+    req = urllib.request.Request(
+        f"{OLLAMA}/api/chat", data=data,
+        headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            result = json.loads(resp.read())
+            elapsed = time.time() - t0
+            content = result.get("message", {}).get("content", "")
+            tokens = result.get("eval_count", len(content.split()))
+            return {
+                "model": model,
+                "content": content,
+                "elapsed": elapsed,
+                "tokens": tokens,
+                "tok_per_sec": tokens / max(elapsed, 0.01),
+                "status": "ok",
+            }
+    except Exception as e:
+        return {
+            "model": model,
+            "content": "",
+            "elapsed": time.time() - t0,
+            "tokens": 0,
+            "tok_per_sec": 0,
+            "status": f"error: {str(e)[:50]}",
+        }
+
+
+def run_arena(prompt, tier="all", max_workers=2):
+    """Run all models in a tier against the same prompt. FIGHT!"""
+    models = TIERS.get(tier, TIERS["all"])
+    
+    print(f"\n{'═' * 60}")
+    print(f"  ARENA — {tier.upper()} TIER")
+    print(f"  Prompt: {prompt[:60]}{'...' if len(prompt) > 60 else ''}")
+    print(f"  Combatants: {len(models)}")
+    print(f"{'═' * 60}\n")
+    
+    results = []
+    
+    # Run models (sequentially to not overload VRAM)
+    for i, model in enumerate(models):
+        print(f"  [{i+1}/{len(models)}] {model}...", end=" ", flush=True)
+        result = query_model(model, prompt)
+        results.append(result)
+        
+        if result["status"] == "ok":
+            tps = result["tok_per_sec"]
+            length = len(result["content"])
+            print(f"✅ {result['elapsed']:.1f}s  {tps:.1f} tok/s  {length} chars")
+        else:
+            print(f"❌ {result['status']}")
+    
+    # JUDGE — the meta-brain evaluates all responses
+    print(f"\n{'─' * 60}")
+    print(f"  JUDGING — phi4-mini evaluates all responses")
+    print(f"{'─' * 60}\n")
+    
+    ok_results = [r for r in results if r["status"] == "ok"]
+    if len(ok_results) < 2:
+        print("  Not enough responses to judge.")
+        return results
+    
+    # Build judge prompt
+    judge_prompt = f"""You are a judge evaluating AI model responses. Rate each response on quality (1-10).
+    
+TASK: {prompt}
+
+"""
+    for i, r in enumerate(ok_results):
+        preview = r["content"][:300]
+        judge_prompt += f"RESPONSE {i+1} (model: {r['model']}):\n{preview}\n\n"
+    
+    judge_prompt += """Rate each response 1-10. Pick the WINNER. Format:
+SCORES: model1=N, model2=N, ...
+WINNER: model_name
+REASON: why"""
+
+    judge = query_model("phi4-mini:latest", judge_prompt, timeout=30)
+    
+    if judge["status"] == "ok":
+        print(f"  Judge says:\n")
+        for line in judge["content"].split("\n"):
+            if line.strip():
+                print(f"    {line.strip()}")
+    
+    # Log the arena battle
+    battle = {
+        "ts": time.time(),
+        "prompt": prompt,
+        "tier": tier,
+        "results": [{
+            "model": r["model"],
+            "elapsed": r["elapsed"],
+            "tokens": r["tokens"],
+            "tok_per_sec": r["tok_per_sec"],
+            "status": r["status"],
+            "content_preview": r["content"][:200],
+        } for r in results],
+        "judgment": judge["content"][:500] if judge["status"] == "ok" else "judge failed",
+    }
+    
+    ARENA_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(ARENA_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps(battle, default=str) + "\n")
+    
+    # Print scoreboard
+    print(f"\n{'═' * 60}")
+    print(f"  SCOREBOARD")
+    print(f"{'═' * 60}")
+    for r in sorted(ok_results, key=lambda x: x["tok_per_sec"], reverse=True):
+        bar = "█" * min(int(r["tok_per_sec"]), 40)
+        print(f"  {r['model']:35s} {r['tok_per_sec']:6.1f} tok/s {bar}")
+    print(f"\n  Battle logged to arena.jsonl")
+    print(f"  Winners inform gaia's next generation.")
+    print(f"{'═' * 60}")
+    
+    return results
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python arena.py [--tier] 'prompt'")
+        print("Tiers: --all --code --math --legal --creative --quick --reasoning")
+        return
+    
+    tier = "all"
+    prompt_start = 1
+    
+    if sys.argv[1].startswith("--"):
+        tier = sys.argv[1][2:]
+        prompt_start = 2
+    
+    prompt = " ".join(sys.argv[prompt_start:])
+    if not prompt:
+        prompt = "Explain the significance of Anderson localization in condensed matter physics."
+    
+    run_arena(prompt, tier)
+
+
+if __name__ == "__main__":
+    main()

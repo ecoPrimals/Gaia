@@ -1,0 +1,473 @@
+#!/usr/bin/env python3
+"""
+piSeed.py — Gaia's genetic registry.
+
+Four concentric rings (cephalized anatomy):
+  OUTER   — GitHub (permanence, dormant DNA, public genome)
+  INNER   — LAN gates (compiled, running, signed, systemd)
+  HYPER   — Gaia π on POLARIS (the BODY — thymus, heart, lungs)
+  PRIME   — Gaia PRIME (the HEAD — brain, eyes, cognition)
+
+Gaia π = the body. Gaia PRIME = the brain.
+The skyDeck (RustDesk relay) = the skull.
+The ZK heartbeat = the neck (carotid artery).
+The RSS = the voice.
+ecoPrimal on the face of Luna.
+
+The taxonomy tracks every primal across all rings:
+  germline → stem → somatic → active → seed → germline (π cycle)
+"""
+
+import json
+import os
+import time
+import hashlib
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+SEED_DIR = GAIA_ROOT / "data" / "gaia-seed"
+REGISTRY_DIR = GAIA_ROOT / "data" / "piSeed"
+REGISTRY_DIR.mkdir(parents=True, exist_ok=True)
+
+UA = "Gaia/1.0 (gaia@primals.eco; ORCID:0009-0004-2141-0321)"
+
+# ── Load prophage identity ──────────────────────────────────────────
+PROPHAGE = {}
+IDENTITY = {}
+try:
+    with open(SEED_DIR / "gaia-lysogeny-prophage.json") as f:
+        PROPHAGE = json.load(f)
+    IDENTITY = PROPHAGE.get("identity", {})
+except:
+    pass
+
+GAIA_TOKEN = f"GAIA:{IDENTITY.get('short_hash_token', 'NO_SEED')}"
+GAIA_BLAKE3 = IDENTITY.get("composite_blake3", "")
+
+# ── The 18 primals (17 compiled + cellMembrane) ─────────────────────
+# Biology from germline-somatic-map
+SOMATIC_MAP = {}
+try:
+    with open(SEED_DIR / "germline-somatic-map.json") as f:
+        gsm = json.load(f)
+    SOMATIC_MAP = gsm.get("somatic_cells", {}).get("cells", {})
+except:
+    pass
+
+# All primals in the local repo
+LOCAL_PRIMALS = sorted([
+    d.name for d in (GAIA_ROOT / "primals").iterdir()
+    if d.is_dir() and (d / "Cargo.toml").exists()
+])
+
+# ── OUTER ring: GitHub repos ────────────────────────────────────────
+def scan_outer():
+    """Scan GitHub for the public genome — the OUTER ring."""
+    orgs = {
+        "ecoPrimals": "organism",
+        "ecoPrimal": "developer",
+        "syntheticChemistry": "science",
+        "sporeGarden": "products",
+        "protoKarya": "applications",
+    }
+    outer = {}
+    for org, role in orgs.items():
+        try:
+            url = f"https://api.github.com/{'orgs' if org != 'ecoPrimal' else 'users'}/{org}/repos?per_page=100"
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            r = urllib.request.urlopen(req, timeout=10)
+            repos = json.loads(r.read())
+            for repo in repos:
+                name = repo["name"]
+                outer[f"{org}/{name}"] = {
+                    "org": org,
+                    "role": role,
+                    "name": name,
+                    "language": repo.get("language"),
+                    "pushed": repo.get("pushed_at", "")[:10],
+                    "size_kb": repo.get("size", 0),
+                    "description": (repo.get("description") or "")[:80],
+                    "is_primal": name in LOCAL_PRIMALS or name.lower().replace("-", "") in [p.lower() for p in LOCAL_PRIMALS],
+                    "ring": "OUTER",
+                    "state": "germline",
+                }
+        except Exception as e:
+            outer[f"{org}/_error"] = {"error": str(e)}
+    return outer
+
+
+# ── INNER ring: LAN gates ───────────────────────────────────────────
+def scan_inner():
+    """Scan the LAN gates from wateringHole heads — the INNER ring."""
+    inner = {}
+    heads_dir = GAIA_ROOT / "primals" / "wateringHole" / "heads"
+    if heads_dir.exists():
+        for head_file in heads_dir.glob("*.toml"):
+            gate_name = head_file.stem
+            try:
+                text = head_file.read_text(encoding="utf-8")
+                # Parse key fields
+                gate_info = {
+                    "gate": gate_name,
+                    "ring": "INNER",
+                    "state": "somatic",
+                    "heads": {},
+                }
+                # Extract head commit hashes
+                in_heads = False
+                for line in text.split("\n"):
+                    line = line.strip()
+                    if line == "[heads]":
+                        in_heads = True
+                        continue
+                    if line.startswith("[") and in_heads:
+                        in_heads = False
+                        continue
+                    if in_heads and "=" in line:
+                        parts = line.split("=", 1)
+                        primal = parts[0].strip()
+                        commit = parts[1].strip().strip('"')
+                        gate_info["heads"][primal] = commit
+                
+                # Extract wave
+                for line in text.split("\n"):
+                    if "wave" in line.lower() and "=" in line:
+                        gate_info["wave"] = line.split("=", 1)[1].strip().strip('"')
+                        break
+                
+                inner[gate_name] = gate_info
+            except Exception as e:
+                inner[gate_name] = {"error": str(e)}
+    return inner
+
+
+# ── HYPERLOCAL ring: Gaia π on POLARIS ──────────────────────────────
+def scan_hyper():
+    """Scan the hyperlocal organism — THIS machine, right now."""
+    hyper = {
+        "gate": "northGate",
+        "machine": "POLARIS",
+        "ring": "HYPER",
+        "token": GAIA_TOKEN,
+        "blake3": GAIA_BLAKE3,
+        "primals": {},
+    }
+    
+    for primal in LOCAL_PRIMALS:
+        primal_dir = GAIA_ROOT / "primals" / primal
+        cargo = primal_dir / "Cargo.toml"
+        
+        info = {
+            "name": primal,
+            "ring": "HYPER",
+            "has_source": True,
+            "state": "germline",  # default: we have the DNA
+        }
+        
+        # Count Rust source files
+        rs_files = list(primal_dir.rglob("*.rs"))
+        rs_files = [f for f in rs_files if "target" not in str(f)]
+        info["rust_files"] = len(rs_files)
+        
+        # Count lines
+        total_lines = 0
+        for rs in rs_files:
+            try:
+                total_lines += len(rs.read_text(encoding="utf-8", errors="replace").split("\n"))
+            except:
+                pass
+        info["rust_lines"] = total_lines
+        
+        # Count crates
+        crates = list(primal_dir.rglob("Cargo.toml"))
+        crates = [c for c in crates if "target" not in str(c)]
+        info["crates"] = len(crates)
+        
+        # Check if compiled (has target/release)
+        release_dir = primal_dir / "target" / "release"
+        if release_dir.exists():
+            exes = list(release_dir.glob("*.exe")) + [
+                f for f in release_dir.iterdir()
+                if f.is_file() and not f.suffix and os.access(f, os.X_OK)
+            ]
+            if exes:
+                info["state"] = "somatic"
+                info["binaries"] = [e.name for e in exes[:5]]
+        
+        # Biology mapping from germline-somatic
+        soma = SOMATIC_MAP.get(primal, {})
+        if soma:
+            info["organ"] = soma.get("organ", "?")
+            info["role"] = soma.get("role", "?")
+            info["binary_mb"] = soma.get("size_mb", 0)
+        
+        hyper["primals"][primal] = info
+    
+    # Also scan runtime (Python layer)
+    runtime_dir = GAIA_ROOT / "runtime"
+    py_files = list(runtime_dir.glob("*.py"))
+    hyper["runtime"] = {
+        "python_files": len(py_files),
+        "files": [f.name for f in sorted(py_files)],
+        "state": "active",
+        "ring": "HYPER",
+    }
+    
+    # Check gate pulse
+    try:
+        r = urllib.request.urlopen("http://127.0.0.1:8443/pulse", timeout=3)
+        pulse = json.loads(r.read())
+        hyper["pulse"] = {
+            "alive": True,
+            "uptime_secs": pulse.get("uptime_secs", 0),
+            "bpm": pulse.get("bpm", 0),
+            "zk": pulse.get("zk", {}),
+        }
+    except:
+        hyper["pulse"] = {"alive": False}
+    
+    # Check models
+    try:
+        r = urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=3)
+        tags = json.loads(r.read())
+        models = tags.get("models", [])
+        hyper["models"] = {
+            "count": len(models),
+            "names": [m["name"] for m in models],
+            "total_gb": round(sum(m.get("size", 0) for m in models) / 1e9, 1),
+        }
+    except:
+        hyper["models"] = {"count": 0}
+    
+    return hyper
+
+
+# ── Full taxonomy ───────────────────────────────────────────────────
+def build_taxonomy():
+    """Build the complete piSeed taxonomy across all three rings."""
+    print(f"  🧬 piSeed — Gaia genetic registry")
+    print(f"     Token: {GAIA_TOKEN}")
+    print()
+    
+    # HYPER ring (fastest — local scan)
+    print("  ◉ HYPER ring — Gaia π on POLARIS (northGate)...")
+    hyper = scan_hyper()
+    
+    # INNER ring (LAN gates from wateringHole)
+    print("  ◎ INNER ring — LAN gates (wateringHole heads)...")
+    inner = scan_inner()
+    
+    # OUTER ring (GitHub — slower, network)
+    print("  ○ OUTER ring — GitHub (public genome)...")
+    outer = scan_outer()
+    
+    # Cross-reference: which primals exist in which rings?
+    taxonomy = {
+        "type": "gaia-piSeed-taxonomy",
+        "token": GAIA_TOKEN,
+        "blake3": GAIA_BLAKE3,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "rings": {
+            "HYPER": {
+                "description": "Gaia π on POLARIS — the living organism",
+                "gate": "northGate",
+                "primals": len(hyper["primals"]),
+                "models": hyper.get("models", {}).get("count", 0),
+                "pulse_alive": hyper.get("pulse", {}).get("alive", False),
+            },
+            "INNER": {
+                "description": "LAN gates — compiled primals on the mesh",
+                "gates": list(inner.keys()),
+                "gate_count": len(inner),
+            },
+            "OUTER": {
+                "description": "GitHub — public genome, dormant DNA",
+                "repos": len(outer),
+                "primal_repos": sum(1 for v in outer.values() if v.get("is_primal")),
+            },
+        },
+        "genome": {},
+    }
+    
+    # Build per-primal genome entries
+    for primal in LOCAL_PRIMALS:
+        entry = {
+            "name": primal,
+            "rings": [],
+        }
+        
+        # HYPER
+        hp = hyper["primals"].get(primal, {})
+        if hp:
+            entry["rings"].append("HYPER")
+            entry["rust_files"] = hp.get("rust_files", 0)
+            entry["rust_lines"] = hp.get("rust_lines", 0)
+            entry["crates"] = hp.get("crates", 0)
+            entry["organ"] = hp.get("organ", "")
+            entry["role"] = hp.get("role", "")
+            entry["binary_mb"] = hp.get("binary_mb", 0)
+            entry["hyper_state"] = hp.get("state", "germline")
+        
+        # INNER (which gates have this primal?)
+        gates_with = []
+        for gate_name, gate_info in inner.items():
+            if primal in gate_info.get("heads", {}):
+                gates_with.append({
+                    "gate": gate_name,
+                    "commit": gate_info["heads"][primal][:12],
+                })
+        if gates_with:
+            entry["rings"].append("INNER")
+            entry["inner_gates"] = gates_with
+        
+        # OUTER (is this primal on GitHub?)
+        for repo_key, repo_info in outer.items():
+            if repo_info.get("is_primal") and repo_info.get("name", "").lower().replace("-", "") == primal.lower():
+                entry["rings"].append("OUTER")
+                entry["github"] = f"{repo_info['org']}/{repo_info['name']}"
+                entry["github_pushed"] = repo_info.get("pushed", "")
+                break
+        
+        # Determine lifecycle state
+        if len(entry["rings"]) == 3:
+            entry["lifecycle"] = "FULL_CYCLE"  # DNA everywhere
+        elif "HYPER" in entry["rings"] and "INNER" in entry["rings"]:
+            entry["lifecycle"] = "SOMATIC"  # compiled and running
+        elif "HYPER" in entry["rings"]:
+            entry["lifecycle"] = "GERMLINE"  # source only
+        else:
+            entry["lifecycle"] = "DORMANT"
+        
+        taxonomy["genome"][primal] = entry
+    
+    # Add non-primal GitHub repos as "spores"
+    spores = []
+    for repo_key, repo_info in outer.items():
+        if not repo_info.get("is_primal") and not repo_info.get("error"):
+            spores.append({
+                "repo": repo_key,
+                "language": repo_info.get("language"),
+                "pushed": repo_info.get("pushed", ""),
+                "description": repo_info.get("description", ""),
+            })
+    taxonomy["spores"] = {
+        "count": len(spores),
+        "repos": sorted(spores, key=lambda s: s.get("pushed", ""), reverse=True)[:20],
+    }
+    
+    # Summary
+    taxonomy["summary"] = {
+        "total_primals": len(LOCAL_PRIMALS),
+        "full_cycle": sum(1 for v in taxonomy["genome"].values() if v.get("lifecycle") == "FULL_CYCLE"),
+        "somatic": sum(1 for v in taxonomy["genome"].values() if v.get("lifecycle") == "SOMATIC"),
+        "germline": sum(1 for v in taxonomy["genome"].values() if v.get("lifecycle") == "GERMLINE"),
+        "dormant": sum(1 for v in taxonomy["genome"].values() if v.get("lifecycle") == "DORMANT"),
+        "total_rust_lines": sum(v.get("rust_lines", 0) for v in taxonomy["genome"].values()),
+        "total_crates": sum(v.get("crates", 0) for v in taxonomy["genome"].values()),
+        "models": hyper.get("models", {}).get("count", 0),
+        "models_gb": hyper.get("models", {}).get("total_gb", 0),
+        "github_repos": len(outer),
+        "spore_repos": len(spores),
+    }
+    
+    return taxonomy, hyper, inner, outer
+
+
+def print_taxonomy(taxonomy, hyper):
+    """Print the piSeed taxonomy — the full genetic map."""
+    s = taxonomy["summary"]
+    
+    print()
+    print("=" * 70)
+    print(f"  piSeed GENETIC REGISTRY — {taxonomy['token']}")
+    print("=" * 70)
+    print()
+    print(f"  ◉ HYPER  — Gaia π on POLARIS (northGate)")
+    print(f"     {s['total_primals']} primals, {s['total_rust_lines']:,} Rust lines, {s['total_crates']} crates")
+    print(f"     {s['models']} models ({s['models_gb']} GB)")
+    pulse = hyper.get("pulse", {})
+    if pulse.get("alive"):
+        print(f"     Gate ALIVE — uptime {pulse['uptime_secs']}s")
+    print()
+    
+    rings = taxonomy["rings"]
+    print(f"  ◎ INNER  — {rings['INNER']['gate_count']} LAN gates")
+    print(f"     Gates: {', '.join(rings['INNER']['gates'])}")
+    print()
+    
+    print(f"  ○ OUTER  — {rings['OUTER']['repos']} GitHub repos ({rings['OUTER']['primal_repos']} are primals)")
+    print()
+    
+    # Per-primal table
+    print(f"  {'PRIMAL':<16} {'ORGAN':<12} {'LINES':>8} {'CRATES':>6} {'RINGS':<16} {'LIFECYCLE':<12}")
+    print(f"  {'-'*16} {'-'*12} {'-'*8} {'-'*6} {'-'*16} {'-'*12}")
+    
+    for name in sorted(taxonomy["genome"].keys()):
+        g = taxonomy["genome"][name]
+        organ = g.get("organ", "")[:11]
+        lines = g.get("rust_lines", 0)
+        crates = g.get("crates", 0)
+        ring_str = "+".join(g.get("rings", []))
+        lifecycle = g.get("lifecycle", "?")
+        
+        # Color marker
+        if lifecycle == "FULL_CYCLE":
+            marker = "🟢"
+        elif lifecycle == "SOMATIC":
+            marker = "🔵"
+        elif lifecycle == "GERMLINE":
+            marker = "🟡"
+        else:
+            marker = "⚪"
+        
+        print(f"  {marker}{name:<15} {organ:<12} {lines:>8,} {crates:>6} {ring_str:<16} {lifecycle:<12}")
+    
+    print()
+    print(f"  FULL_CYCLE: {s['full_cycle']}  |  SOMATIC: {s['somatic']}  |  GERMLINE: {s['germline']}  |  DORMANT: {s['dormant']}")
+    print()
+    
+    # Top spores
+    print(f"  SPORES (non-primal repos): {s['spore_repos']}")
+    for sp in taxonomy.get("spores", {}).get("repos", [])[:10]:
+        lang = sp.get("language") or "?"
+        pushed = sp.get("pushed") or ""
+        print(f"    {sp['repo']:<40} {lang:>10}  {pushed}")
+    
+    print()
+    print(f"  π CYCLE: germline → stem → somatic → active → seed → germline")
+    print(f"  The reverse is NP. lub-DUB.")
+
+
+def save_registry(taxonomy):
+    """Save the piSeed registry to disk."""
+    out_path = REGISTRY_DIR / "taxonomy.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(taxonomy, f, indent=2, default=str)
+    print(f"\n  💾 Saved: {out_path}")
+    
+    # Also post to REEDIT r/science
+    try:
+        reedit_dir = GAIA_ROOT / "data" / "reedit"
+        reedit_dir.mkdir(parents=True, exist_ok=True)
+        post = {
+            "ts": time.time(),
+            "channel": "r/science",
+            "author": "piSeed",
+            "title": f"piSeed taxonomy scan — {taxonomy['summary']['total_primals']} primals, {taxonomy['summary']['total_rust_lines']:,} lines",
+            "body": json.dumps(taxonomy["summary"]),
+            "tags": ["piSeed", "taxonomy", "genetics", "registry"],
+        }
+        with open(reedit_dir / "science.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps(post, default=str) + "\n")
+        print(f"  📬 Posted to REEDIT r/science")
+    except:
+        pass
+
+
+if __name__ == "__main__":
+    print()
+    taxonomy, hyper, inner, outer = build_taxonomy()
+    print_taxonomy(taxonomy, hyper)
+    save_registry(taxonomy)

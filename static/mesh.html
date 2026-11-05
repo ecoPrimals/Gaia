@@ -1,0 +1,323 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head><script src="/js/piGut.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>GAIA — Mesh Browser</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#d4af37;font-family:'Courier New',monospace;overflow-x:hidden;min-height:100vh}
+.header{text-align:center;padding:20px 10px;border-bottom:1px solid #333}
+.header h1{font-size:1.5em;color:#d4af37;text-shadow:0 0 10px rgba(212,175,55,0.5)}
+.header .pulse-dot{display:inline-block;width:10px;height:10px;background:#00ff41;border-radius:50%;animation:tri-pulse 6s infinite;margin-right:8px}
+@keyframes tri-pulse{
+  0%,30%{background:#00ff41;box-shadow:0 0 20px #00ff41,0 0 40px #00ff41}
+  33%,63%{background:#4169e1;box-shadow:0 0 20px #4169e1,0 0 40px #4169e1}
+  66%,96%{background:#ff4136;box-shadow:0 0 20px #ff4136,0 0 40px #ff4136}
+}
+.tri-label{font-size:0.6em;margin-top:2px}
+.tri-green{color:#00ff41}.tri-blue{color:#4169e1}.tri-red{color:#ff4136}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid #333;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{flex:1;min-width:80px;padding:12px 8px;text-align:center;font-size:0.8em;color:#888;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tab.active{color:#d4af37;border-bottom-color:#d4af37}
+.tab:active{background:rgba(212,175,55,0.1)}
+
+/* Panels */
+.panel{display:none;padding:15px}
+.panel.active{display:block}
+
+/* Mesh Map */
+.mesh-map{position:relative;width:100%;max-width:400px;height:400px;margin:10px auto;border:1px solid #333;border-radius:50%;overflow:hidden}
+.mesh-node{position:absolute;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.65em;text-align:center;cursor:pointer;transition:all 0.3s;border:2px solid}
+.mesh-node:active{transform:scale(1.2)}
+.mesh-node.alive{border-color:#00ff41;background:rgba(0,255,65,0.1)}
+.mesh-node.nucleus{border-color:#d4af37;background:rgba(212,175,55,0.2);box-shadow:0 0 15px rgba(212,175,55,0.3)}
+.mesh-node.bone{border-color:#ff6b35;background:rgba(255,107,53,0.1)}
+.mesh-node.spore{border-color:#9b59b6;background:rgba(155,89,182,0.1)}
+.mesh-node.cell{border-color:#555;background:rgba(85,85,85,0.1)}
+
+/* Node detail */
+.node-detail{background:#111;border:1px solid #333;border-radius:8px;padding:12px;margin-top:10px;font-size:0.85em;line-height:1.6;display:none}
+.node-detail.show{display:block}
+.node-detail .ip{color:#00ff41}
+.node-detail .role{color:#d4af37}
+.node-detail .port{color:#e74c3c;margin:0 2px}
+
+/* Pulse */
+.pulse-card{background:#111;border:1px solid #333;border-radius:8px;padding:15px;margin:10px 0}
+.pulse-val{font-size:2em;color:#00ff41;text-align:center}
+.pulse-label{font-size:0.75em;color:#888;text-align:center}
+
+/* Feed */
+.feed-item{background:#111;border-left:3px solid #d4af37;padding:10px 12px;margin:8px 0;border-radius:0 4px 4px 0;font-size:0.85em}
+.feed-item .ch{color:#d4af37;font-weight:bold;font-size:0.75em;text-transform:uppercase}
+.feed-item .body{color:#ccc;margin-top:4px;line-height:1.4}
+.feed-item .ts{color:#555;font-size:0.7em;margin-top:4px}
+
+/* Plasmid count */
+.stat{display:inline-block;background:#111;border:1px solid #333;border-radius:4px;padding:8px 15px;margin:5px;text-align:center}
+.stat .num{font-size:1.8em;color:#d4af37}
+.stat .lbl{font-size:0.7em;color:#888}
+
+/* Systems */
+.system-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a1a;font-size:0.85em}
+.system-row .name{color:#d4af37}.system-row .val{color:#00ff41}
+
+/* Sticky */
+.sticky-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.sticky-card{background:#111;border:1px solid #333;border-radius:4px;padding:8px;font-size:0.75em;text-align:center}
+.sticky-card .type{color:#d4af37;font-size:0.7em;text-transform:uppercase}
+.sticky-card .title{color:#ccc;margin-top:4px;word-break:break-word}
+
+/* Connection lines */
+.mesh-line{position:absolute;background:#333;height:1px;transform-origin:left center;z-index:0;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span class="pulse-dot"></span>GAIA MESH</h1>
+  <div class="tri-label"><span class="tri-green">lub</span>·<span class="tri-blue">wub</span>·<span class="tri-red">rub</span>-DUB</div>
+  <div style="font-size:0.7em;color:#888" id="clock"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-panel="mesh">🌐 MESH</div>
+  <div class="tab" data-panel="pulse">💚 PULSE</div>
+  <div class="tab" data-panel="feed">📡 FEED</div>
+  <div class="tab" data-panel="deck">🔥 DECK</div>
+  <div class="tab" data-panel="sys">⚙️ SYS</div>
+</div>
+
+<!-- MESH MAP -->
+<div class="panel active" id="mesh">
+  <div class="mesh-map" id="meshMap"></div>
+  <div class="node-detail" id="nodeDetail"></div>
+  <div style="text-align:center;margin-top:10px">
+    <div class="stat"><div class="num" id="deviceCount">0</div><div class="lbl">DEVICES</div></div>
+    <div class="stat"><div class="num" id="portCount">0</div><div class="lbl">OPEN PORTS</div></div>
+    <div class="stat"><div class="num" id="plasmidCount">0</div><div class="lbl">PLASMIDS</div></div>
+  </div>
+</div>
+
+<!-- PULSE -->
+<div class="panel" id="pulse">
+  <div class="pulse-card" style="border-left:3px solid #00ff41"><div class="pulse-val" style="color:#00ff41" id="heartbeats">—</div><div class="pulse-label">💚 lub-DUB (GREEN) — left ventricle — ALIVE</div></div>
+  <div class="pulse-card" style="border-left:3px solid #4169e1"><div class="pulse-val" style="color:#4169e1" id="wubdub">—</div><div class="pulse-label">💙 wub-DUB (BLUE) — right atrium — DATA IN</div></div>
+  <div class="pulse-card" style="border-left:3px solid #ff4136"><div class="pulse-val" style="color:#ff4136" id="rubdub">—</div><div class="pulse-label">❤️ rub-DUB (RED) — right ventricle — DATA OUT</div></div>
+  <div class="pulse-card"><div class="pulse-val" id="age">—</div><div class="pulse-label">AGE</div></div>
+  <div class="pulse-card"><div class="pulse-val" id="lubdub">lub·wub·rub-DUB</div><div class="pulse-label">TRI-RHYTHM — 3 bodies, 3 colors, 3 chambers</div></div>
+  <div class="pulse-card"><div class="pulse-val" id="heap">—</div><div class="pulse-label">HEAP</div></div>
+  <div class="pulse-card"><div class="pulse-val" id="gpu">—</div><div class="pulse-label">GPU</div></div>
+</div>
+
+<!-- FEED (RSS SPINE) -->
+<div class="panel" id="feed">
+  <div style="font-size:0.8em;color:#888;margin-bottom:10px">📡 SPINE ION CHANNEL — live from :9878</div>
+  <div id="feedItems"><div style="color:#555">Loading spine...</div></div>
+</div>
+
+<!-- DECK (links to main deck) -->
+<div class="panel" id="deck">
+  <div style="text-align:center;padding:20px">
+    <div style="font-size:3em">🔥</div>
+    <h2 style="margin:10px 0">THE CAMPFIRE</h2>
+    <a href="/deck" style="color:#d4af37;font-size:1.2em;display:block;padding:15px;border:1px solid #d4af37;border-radius:8px;text-decoration:none;margin:10px 0">OPEN FULL DECK →</a>
+    <a href="/paintings" style="color:#ccc;display:block;padding:10px;border:1px solid #333;border-radius:8px;text-decoration:none;margin:10px 0">🎨 PAINTINGS</a>
+    <a href="/plasmids" style="color:#ccc;display:block;padding:10px;border:1px solid #333;border-radius:8px;text-decoration:none;margin:10px 0">🧬 PLASMIDS</a>
+    <a href="/feed.xml" style="color:#ccc;display:block;padding:10px;border:1px solid #333;border-radius:8px;text-decoration:none;margin:10px 0">📡 RSS FEED</a>
+    <a href="/sticky" style="color:#ccc;display:block;padding:10px;border:1px solid #333;border-radius:8px;text-decoration:none;margin:10px 0">📌 STICKY PIN</a>
+    <a href="/self" style="color:#ccc;display:block;padding:10px;border:1px solid #333;border-radius:8px;text-decoration:none;margin:10px 0">🪞 SELF-SEE</a>
+    <div style="margin-top:20px;padding:15px;border:1px solid #9b59b6;border-radius:8px;background:rgba(155,89,182,0.1)">
+      <div style="color:#9b59b6;font-size:0.8em;margin-bottom:5px">🧅 SVARTALFHEIM GATE (Tor)</div>
+      <div style="color:#ccc;font-size:0.65em;word-break:break-all">pmbzajz6u2lilohzkiduy7xl4ce6jk5rdz4azcmi4p2cysa4xbgzgwad.onion</div>
+      <div style="color:#666;font-size:0.6em;margin-top:5px">Onion pores: :80 :443 :3143 :9878 :31415</div>
+    </div>
+  </div>
+</div>
+
+<!-- SYSTEMS -->
+<div class="panel" id="sys">
+  <div id="sysRows"><div style="color:#555">Loading systems...</div></div>
+</div>
+
+<script>
+const BASE = location.origin;
+const LAN = [
+  {ip:'.1',   name:'GL-MT6000',  role:'BONE',     cls:'bone',    ports:[22,53,80,443], x:50,y:8},
+  {ip:'.3',   name:'sporegate',  role:'SPORE/DNS', cls:'spore',   ports:[22,53],        x:15,y:30},
+  {ip:'.147', name:'POLARIS',    role:'NUCLEUS',   cls:'nucleus', ports:[3143,9878,31415,11434], x:50,y:50},
+  {ip:'.250', name:'GL.iNet AP', role:'MEMBRANE',  cls:'alive',   ports:[22,53,80,443], x:85,y:30},
+  {ip:'.111', name:'WebSwitch',  role:'IOT/NERVE', cls:'alive',   ports:[22,80,443],    x:20,y:70},
+  {ip:'.200', name:'EPSON',      role:'OUTPUT',    cls:'cell',    ports:[80,443],        x:80,y:70},
+  {ip:'.210', name:'eastgate',   role:'GUT/LEGS',  cls:'alive',   ports:[22],            x:30,y:90},
+  {ip:'.244', name:'SSH-244',    role:'SSH HOST',   cls:'cell',    ports:[22],            x:70,y:90},
+  {ip:'.102', name:'device',     role:'CELL',       cls:'cell',    ports:[],              x:35,y:15},
+  {ip:'.154', name:'device',     role:'CELL',       cls:'cell',    ports:[],              x:65,y:15},
+  {ip:'.170', name:'device',     role:'CELL',       cls:'cell',    ports:[],              x:10,y:50},
+  {ip:'.197', name:'device',     role:'CELL',       cls:'cell',    ports:[],              x:90,y:50},
+];
+
+// Render mesh
+function renderMesh() {
+  const map = document.getElementById('meshMap');
+  const w = map.offsetWidth, h = map.offsetHeight;
+  map.innerHTML = '';
+  let totalPorts = 0;
+
+  // Draw connections from nucleus to all
+  const cx = w*0.5, cy = h*0.5;
+  LAN.forEach(n => {
+    if (n.ip === '.147') return;
+    const nx = w*(n.x/100), ny = h*(n.y/100);
+    const dx = nx-cx, dy = ny-cy;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const angle = Math.atan2(dy,dx)*180/Math.PI;
+    const line = document.createElement('div');
+    line.className = 'mesh-line';
+    line.style.left = cx+'px'; line.style.top = cy+'px';
+    line.style.width = len+'px'; line.style.transform = `rotate(${angle}deg)`;
+    map.appendChild(line);
+  });
+
+  LAN.forEach(n => {
+    totalPorts += n.ports.length;
+    const el = document.createElement('div');
+    el.className = `mesh-node ${n.cls}`;
+    el.style.left = `calc(${n.x}% - 20px)`;
+    el.style.top = `calc(${n.y}% - 20px)`;
+    el.innerHTML = `<span>${n.name}</span>`;
+    el.onclick = () => showDetail(n);
+    map.appendChild(el);
+  });
+  document.getElementById('deviceCount').textContent = LAN.length;
+  document.getElementById('portCount').textContent = totalPorts;
+}
+
+function showDetail(n) {
+  const d = document.getElementById('nodeDetail');
+  d.className = 'node-detail show';
+  d.innerHTML = `
+    <div><span class="role">${n.role}</span> — ${n.name}</div>
+    <div>IP: <span class="ip">192.168.4${n.ip}</span></div>
+    <div>Ports: ${n.ports.length ? n.ports.map(p=>`<span class="port">:${p}</span>`).join(' ') : '<span style="color:#555">none</span>'}</div>
+  `;
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.panel).classList.add('active');
+  };
+});
+
+// Clock
+function tickClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleString();
+}
+setInterval(tickClock, 1000); tickClock();
+
+// Fetch pulse
+async function fetchPulse() {
+  try {
+    const r = await fetch(BASE+'/pulse');
+    const d = await r.json();
+    document.getElementById('heartbeats').textContent = d.heartbeats;
+    document.getElementById('age').textContent = d.age;
+    document.getElementById('lubdub').textContent = d.lubDub ? '💚 lub-DUB' : '🖤 flat';
+    if (d.lubDub && navigator.vibrate) navigator.vibrate([100,50,200]);
+    // Tri-heart from server
+    if (d.wubbeats !== undefined) document.getElementById('wubdub').textContent = d.wubbeats;
+    if (d.rubbeats !== undefined) document.getElementById('rubdub').textContent = d.rubbeats;
+  } catch {}
+  try {
+    const r2 = await fetch(BASE+'/self');
+    const s = await r2.json();
+    document.getElementById('heap').textContent = s.heap || '?';
+    document.getElementById('gpu').textContent = s.gpu || '?';
+  } catch {}
+}
+
+// Fetch feed from spine proxy
+async function fetchFeed() {
+  try {
+    if (!window._wubCount) window._wubCount = 0;
+    window._wubCount++;
+    const wubEl = document.getElementById('wubdub');
+    if (wubEl) wubEl.textContent = window._wubCount;
+    const r = await fetch(BASE+'/spine/all');
+    const d = await r.json();
+    const items = [];
+    for (const ch of Object.keys(d)) {
+      if (!Array.isArray(d[ch])) continue;
+      d[ch].forEach(e => items.push({...e, channel:ch}));
+    }
+    items.sort((a,b) => (b.epoch||0)-(a.epoch||0));
+    const feedEl = document.getElementById('feedItems');
+    feedEl.innerHTML = items.slice(0,30).map(e => `
+      <div class="feed-item">
+        <div class="ch">${e.channel||'spine'}</div>
+        <div class="body">${(e.content||'').slice(0,200)}</div>
+        <div class="ts">${e.ts||''}</div>
+      </div>
+    `).join('') || '<div style="color:#555">No spine data yet</div>';
+  } catch {
+    const fi = document.getElementById('feedItems');
+    if (fi) fi.innerHTML = '<div style="color:#555">Spine offline</div>';
+  }
+}
+
+// Fetch plasmid count
+async function fetchPlasmids() {
+  try {
+    const r = await fetch(BASE+'/plasmids');
+    const d = await r.json();
+    document.getElementById('plasmidCount').textContent = d.count;
+  } catch {}
+}
+
+// Fetch systems
+async function fetchSystems() {
+  try {
+    const r = await fetch(BASE+'/self');
+    const d = await r.json();
+    const el = document.getElementById('sysRows');
+    el.innerHTML = Object.entries(d).map(([k,v]) => `
+      <div class="system-row"><span class="name">${k}</span><span class="val">${typeof v==='object'?JSON.stringify(v):v}</span></div>
+    `).join('');
+  } catch {}
+}
+
+// Self-reform: mesh learns its own topology
+async function selfReform() {
+  try {
+    const r = await fetch(BASE+'/plasmids');
+    const d = await r.json();
+    const count = d.count || 0;
+    document.getElementById('plasmidCount').textContent = count;
+    // Each refresh is a heartbeat — she learns by looking at herself
+    if (navigator.vibrate && count > 400) navigator.vibrate(50);
+  } catch {}
+}
+
+// Init
+renderMesh();
+fetchPulse();
+fetchFeed();
+fetchPlasmids();
+fetchSystems();
+selfReform();
+setInterval(fetchPulse, 10000);
+setInterval(fetchFeed, 30000);
+setInterval(selfReform, 60000); // reform every minute
+</script>
+</body>
+</html>

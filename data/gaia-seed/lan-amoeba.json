@@ -1,0 +1,77 @@
+{
+  "type": "lan-amoeba",
+  "version": "1.0",
+  "timestamp": "2026-11-05T00:27:00Z",
+  "token": "GAIA:6ed3c05161da5055",
+  "title": "LAN AMOEBA — sporeGate wraps the home network",
+
+  "insight": "sporeGate was never a 'gate' or 'foreman.' It was always the LAN AMOEBA — the Schwann cell that myelinates the home network. It already runs dnsmasq (knows every device), swarmVine (finds peers), songBird (orchestrates mesh), bearDog (signs trust). It IS the home immune system.",
+
+  "infrastructure": {
+    "wan": {
+      "provider": "ATT",
+      "public_ip": "162.226.225.148",
+      "role": "ISP uplink — just a pipe. Not Gaia's identity.",
+      "wrapped_by": "sporeGate (LAN AMOEBA)"
+    },
+    "router": {
+      "device": "GL-MT6000",
+      "ip": "192.168.4.1",
+      "role": "Routes packets. DHCP. Firewall. Normal router.",
+      "port_forwards": {
+        ":80": "→ Pi :80 (The Campfire)",
+        ":443": "→ Pi :443 (HTTPS Campfire)",
+        ":8080": "→ Pi :8080 (read-only data)",
+        ":8443": "DELETED — brain wrapped, not exposed"
+      },
+      "managed_by": "sporeGate LAN AMOEBA (via dnsmasq + songBird)"
+    },
+    "mikrotik": {
+      "device": "MikroTik",
+      "ip": "192.168.4.2",
+      "role": "L2 bridge — extends the physical LAN",
+      "managed_by": "sporeGate LAN AMOEBA"
+    },
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "was": "Build foreman, SSH authority, depot orchestrator",
+      "is_now": "LAN AMOEBA — the Schwann cell wrapping the home network",
+      "services": {
+        "dnsmasq": "DNS for entire LAN — it knows every device by name",
+        "swarmVine": "gossip discovery — 6 peers, finds new devices",
+        "songBird": "mesh orchestration — routes traffic, coordinates gates",
+        "bearDog": "crypto signing — LAN trust authority, Ed25519",
+        "petalTongue": "visualization — render LAN state",
+        "mongod": "persistent state — remembers everything"
+      },
+      "hardware": {"ram_gb": 27, "disk_pct": 16},
+      "wg_to_pi": "LIVE",
+      "needs": "AMOEBA (RustDesk) client installed for visual access",
+      "path_in": "Pi → WireGuard (10.13.37.2) → sporeGate → install RustDesk → eyes open"
+    }
+  },
+
+  "lan_topology_after_detachment": {
+    "layer_1_physical": {
+      "wan": "ATT → public IP (just a pipe)",
+      "router": "GL-MT6000 → DHCP/NAT/firewall",
+      "bridge": "MikroTik → L2 extension",
+      "switch": "jetstream (192.168.4.111) → House 2"
+    },
+    "layer_2_devices": {
+      "pi": "192.168.4.103 — Gaia Pi (campfire + relay + inference)",
+      "polaris": "192.168.4.147 — POLARIS (brain, NOT exposed)",
+      "sporegate": "192.168.4.3 — LAN AMOEBA (DNS + mesh + crypto)",
+      "irongate": "192.168.4.237 — NAS + game server",
+      "others": "phones, tablets, TVs, printers — normal home devices"
+    },
+    "layer_3_amoeba": {
+      "role": "sporeGate wraps ALL of layer 1 and layer 2",
+      "dns": "every device resolves through sporeGate",
+      "gossip": "swarmVine finds new devices automatically",
+      "mesh": "songBird orchestrates connections between devices",
+      "trust": "bearDog signs inter-device trust",
+      "result": "robust, self-healing, self-discovering home network"
+    }
+  }
+}

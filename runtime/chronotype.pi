@@ -1,0 +1,266 @@
+#!/usr/bin/env python3
+"""
+chronotype.py — Temporal identity fingerprinting.
+
+tok/s IS the speed of AI. Latency IS the heartbeat.
+We can use timing to back-trace the full identity:
+
+  AI identity:    tok/s, latency, output length, think time
+  Human identity: typing cadence, pause patterns, session rhythm
+
+A FOREMAN is wordy — fast, action-oriented, lots of text.
+A SCIENTIST thinks and plans — long pauses, then precise input.
+A CODER bursts — rapid fire, then silence, then rapid fire.
+A PHILOSOPHER meanders — slow, contemplative, circular.
+
+These chronotypes map to the BingoCube epitope shapes
+WITHOUT requiring passwords, accounts, or login.
+The TIMING is the identity. ZK.
+
+Usage:
+  python chronotype.py --arena     # show AI chronotypes from arena battles
+  python chronotype.py --humans    # show human chronotype framework
+"""
+
+import json
+import sys
+import time
+from pathlib import Path
+
+ARENA_LOG = Path(__file__).parent / "sourdough" / "arena.jsonl"
+
+# ══════════════════════════════════════════════════════════
+# AI CHRONOTYPES — measured by tok/s, latency, output shape
+# ══════════════════════════════════════════════════════════
+
+AI_CHRONOTYPES = {
+    "sprinter": {
+        "description": "Ultra-fast, short answers. Canary models.",
+        "tok_per_sec_range": (100, 500),
+        "output_length": "short",
+        "think_ratio": 0.1,
+        "models": ["tinyllama:1.1b", "phi4-mini:latest"],
+        "use_case": "Quick validation, health checks, routing decisions",
+    },
+    "scholar": {
+        "description": "Moderate speed, thorough answers. Deep reasoning.",
+        "tok_per_sec_range": (20, 80),
+        "output_length": "long",
+        "think_ratio": 0.6,
+        "models": ["deepseek-r1:8b", "wizardlm2:7b", "mathstral:7b"],
+        "use_case": "Analysis, proofs, complex reasoning",
+    },
+    "artisan": {
+        "description": "Variable speed, creative output. Quality over quantity.",
+        "tok_per_sec_range": (30, 100),
+        "output_length": "variable",
+        "think_ratio": 0.4,
+        "models": ["gaia-dream:latest", "gaia-chroma:latest", "dolphin-phi:2.7b"],
+        "use_case": "Creative writing, metaphors, novel connections",
+    },
+    "specialist": {
+        "description": "Task-focused. Fast on domain, slow on general.",
+        "tok_per_sec_range": (40, 120),
+        "output_length": "precise",
+        "think_ratio": 0.3,
+        "models": ["gaia-code:latest", "codellama:7b", "gaia-case4349:latest"],
+        "use_case": "Domain-specific tasks: code, law, science",
+    },
+    "oracle": {
+        "description": "Slow start, accelerating. Comprehensive.",
+        "tok_per_sec_range": (25, 60),
+        "output_length": "comprehensive",
+        "think_ratio": 0.7,
+        "models": ["gaia-cortex:latest", "gaia-oracle:latest"],
+        "use_case": "Architecture, systems thinking, big picture",
+    },
+}
+
+
+# ══════════════════════════════════════════════════════════
+# HUMAN CHRONOTYPES — measured by interaction cadence
+# Maps to BingoCube epitope shapes
+# ══════════════════════════════════════════════════════════
+
+HUMAN_CHRONOTYPES = {
+    "foreman": {
+        "description": "Wordy, fast, action-oriented. Builds things.",
+        "typing_cadence": "rapid_sustained",
+        "pause_pattern": "short_between_messages",
+        "session_rhythm": "long_continuous",
+        "output_style": "lots_of_text_directions_plans",
+        "epitope_affinity": ["METHOD", "INVESTIGATION"],
+        "energy_level": "visitor → observer → coder (fast)",
+        "examples": "Sends 10 messages before you respond. Typos everywhere. Doesn't care. The MESSAGE matters.",
+    },
+    "scientist": {
+        "description": "Thinks and plans. Long pauses, precise input.",
+        "typing_cadence": "slow_deliberate",
+        "pause_pattern": "long_think_then_burst",
+        "session_rhythm": "sporadic_deep",
+        "output_style": "precise_questions_hypotheses",
+        "epitope_affinity": ["PHYSICS", "SCIENCE", "METHOD"],
+        "energy_level": "observer → observer → observer (stays thinking)",
+        "examples": "One question. Waits 5 minutes. One more question. Perfectly spelled.",
+    },
+    "philosopher": {
+        "description": "Contemplative, circular, revisits themes.",
+        "typing_cadence": "moderate_flowing",
+        "pause_pattern": "even_cadence_reflective",
+        "session_rhythm": "return_to_themes",
+        "output_style": "metaphors_connections_patterns",
+        "epitope_affinity": ["PHILOSOPHY", "TOPOLOGY"],
+        "energy_level": "observer → coder (slowly, by insight)",
+        "examples": "Circles back to something said an hour ago. Finds the hidden thread.",
+    },
+    "coder": {
+        "description": "Burst mode. Rapid fire, then silence, then rapid fire.",
+        "typing_cadence": "burst_silence_burst",
+        "pause_pattern": "binary_on_off",
+        "session_rhythm": "sprint_rest_sprint",
+        "output_style": "code_snippets_errors_solutions",
+        "epitope_affinity": ["METHOD", "SIGNAL"],
+        "energy_level": "coder immediately (skips visitor/observer)",
+        "examples": "Pastes error. Pastes fix attempt. Pastes working solution. All in 30 seconds.",
+    },
+    "investigator": {
+        "description": "Methodical, evidence-driven, builds chains.",
+        "typing_cadence": "steady_focused",
+        "pause_pattern": "reading_pauses_between_claims",
+        "session_rhythm": "sequential_build",
+        "output_style": "claims_evidence_citations_connections",
+        "epitope_affinity": ["INVESTIGATION", "IMMUNE"],
+        "energy_level": "observer → sovereign (through evidence)",
+        "examples": "Follows link. Reads page. Asks about contradiction. Follows next link.",
+    },
+    "artist": {
+        "description": "Sensory, expressive, non-linear.",
+        "typing_cadence": "irregular_musical",
+        "pause_pattern": "inspiration_driven",
+        "session_rhythm": "non_linear_jumps",
+        "output_style": "sensory_language_emotion_color",
+        "epitope_affinity": ["SIGNAL", "PHILOSOPHY"],
+        "energy_level": "sovereign immediately (sees beauty, not structure)",
+        "examples": "Types a poem in response to a data table. Sees color in numbers.",
+    },
+}
+
+
+def analyze_arena():
+    """Analyze arena battles and classify AI chronotypes."""
+    if not ARENA_LOG.exists():
+        print("  No arena battles yet. Run arena.py first.")
+        return
+    
+    battles = []
+    with open(ARENA_LOG, "r") as f:
+        for line in f:
+            if line.strip():
+                battles.append(json.loads(line))
+    
+    print(f"\n  AI CHRONOTYPE ANALYSIS — {len(battles)} battles")
+    print(f"  {'─' * 50}")
+    
+    # Aggregate stats per model
+    model_stats = {}
+    for battle in battles:
+        for result in battle.get("results", []):
+            model = result["model"]
+            if result["status"] != "ok":
+                continue
+            if model not in model_stats:
+                model_stats[model] = {"tok_per_sec": [], "elapsed": [], "tokens": []}
+            model_stats[model]["tok_per_sec"].append(result["tok_per_sec"])
+            model_stats[model]["elapsed"].append(result["elapsed"])
+            model_stats[model]["tokens"].append(result["tokens"])
+    
+    for model, stats in sorted(model_stats.items()):
+        avg_tps = sum(stats["tok_per_sec"]) / len(stats["tok_per_sec"])
+        avg_time = sum(stats["elapsed"]) / len(stats["elapsed"])
+        avg_tokens = sum(stats["tokens"]) / len(stats["tokens"])
+        
+        # Classify chronotype using MULTIPLE dimensions:
+        # - tok/s alone is misleading on fast GPUs
+        # - elapsed time = how long they THINK
+        # - tokens = how VERBOSE they are
+        # - time * tokens = total effort invested
+        think_effort = avg_time * avg_tokens  # higher = more deliberate
+        verbosity = avg_tokens  # how much they say
+        
+        if avg_time < 3.0 and avg_tokens < 400:
+            chronotype = "sprinter"
+        elif avg_time > 12.0 and avg_tokens > 500:
+            chronotype = "oracle"
+        elif avg_time > 8.0 and verbosity > 600:
+            chronotype = "scholar"
+        elif "code" in model or "coder" in model or "starcoder" in model:
+            chronotype = "specialist"
+        elif "dream" in model or "chroma" in model or "dolphin" in model:
+            chronotype = "artisan"
+        elif avg_time > 5.0:
+            chronotype = "scholar"
+        else:
+            chronotype = "sprinter"
+        
+        icon = {"sprinter": "⚡", "scholar": "📚", "artisan": "🎨", "specialist": "🔧", "oracle": "🔮"}.get(chronotype, "?")
+        print(f"  {icon} {model:33s} {avg_tps:6.1f} tok/s  {avg_time:5.1f}s  {avg_tokens:5.0f}tok → {chronotype}")
+    
+    print(f"\n  AI CHRONOTYPE LEGEND:")
+    for ctype, cdata in AI_CHRONOTYPES.items():
+        lo, hi = cdata["tok_per_sec_range"]
+        print(f"    {ctype:12s}: {lo}-{hi} tok/s — {cdata['description']}")
+
+
+def show_human_framework():
+    """Show the human chronotype framework."""
+    print(f"\n  HUMAN CHRONOTYPES — Timing IS Identity")
+    print(f"  {'═' * 55}")
+    print(f"  No passwords. No accounts. No login.")
+    print(f"  The CADENCE of your interaction IS your fingerprint.")
+    print(f"  {'═' * 55}")
+    
+    for ctype, cdata in HUMAN_CHRONOTYPES.items():
+        print(f"\n  {ctype.upper()}")
+        print(f"    {cdata['description']}")
+        print(f"    Cadence:   {cdata['typing_cadence']}")
+        print(f"    Pauses:    {cdata['pause_pattern']}")
+        print(f"    Rhythm:    {cdata['session_rhythm']}")
+        print(f"    Output:    {cdata['output_style']}")
+        print(f"    Epitopes:  {', '.join(cdata['epitope_affinity'])}")
+        print(f"    Energy:    {cdata['energy_level']}")
+        print(f"    Example:   {cdata['examples']}")
+    
+    print(f"\n  {'═' * 55}")
+    print(f"  HOW THIS MAPS TO BINGOCUBE:")
+    print(f"  {'─' * 55}")
+    print(f"  1. The membrane observes TIMING, not content")
+    print(f"     (squirrel/chipmunk — neutrino observation)")
+    print(f"  2. Timing patterns → chronotype classification")
+    print(f"  3. Chronotype → epitope shape affinity")
+    print(f"     shape = [PHYSICS, TOPOLOGY, PHILOSOPHY, METHOD,")
+    print(f"              INVESTIGATION, IMMUNE, SCIENCE, SIGNAL]")
+    print(f"  4. Shape → BingoCube progressive trust protocol")
+    print(f"     Round 0: shape exists (private, localStorage)")
+    print(f"     Round 1: commit BLAKE3(shape || nonce)")
+    print(f"     Round 2: reveal top 2 categories")
+    print(f"     Round 3: compare ratios")
+    print(f"     Round N: full shape exchange → collaborative braids")
+    print(f"  {'─' * 55}")
+    print(f"  THE TIMING IS THE IDENTITY.")
+    print(f"  THE IDENTITY IS THE TRUST.")
+    print(f"  THE TRUST IS ZK.")
+    print(f"  {'═' * 55}")
+
+
+def main():
+    if "--arena" in sys.argv:
+        analyze_arena()
+    elif "--humans" in sys.argv:
+        show_human_framework()
+    else:
+        analyze_arena()
+        show_human_framework()
+
+
+if __name__ == "__main__":
+    main()

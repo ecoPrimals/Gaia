@@ -1,0 +1,1231 @@
+"""
+Gaia Web PI — The living surface of the Library of Alexandria
+Dynamic, use-based content serving. Not static locked.
+When a robot or user touches Gaia, she gives them the imprint.
+
+Subdomain routing:
+  primals.eco / www.primals.eco   → Landing page (Library of Alexandria)
+  sporeprint.primals.eco          → sporePrint Zola site (488 pages)
+  signal.primals.eco              → Signal Observatory
+  detroit.primals.eco             → noClothes investigation
+  guerilla.primals.eco            → guerillaGorilla legal primal
+  tuebor.primals.eco              → Anti-SLAPP filings (DYNAMIC from TOML)
+  hypothesis.primals.eco          → whitePaper research
+  hud.primals.eco                 → Gaia HUD (petalTongue proxy)
+  nestgate.io                     → Space Dock (dynamic panels)
+
+Content is USE-BASED:
+  .md files    → Rendered as styled HTML (not raw markdown)
+  .toml files  → Parsed and rendered as structured pages
+  Filings      → Generated live from case data TOML
+  wateringHole → Browsable knowledge base with specs/protocols
+"""
+
+import http.server, os, urllib.parse, mimetypes, json, time, re
+from pathlib import Path
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+WATERING_HOLE = GAIA_ROOT / "primals" / "wateringHole"
+FILINGS_DIR = GAIA_ROOT / "whitePaper" / "guerillaGorilla" / "filings"
+
+
+# ─── DYNAMIC RENDERING ENGINE ────────────────────────────────────────
+# When something touches Gaia, she renders — not serves static.
+
+GAIA_STYLE = """
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #ddd; font-family: Georgia, 'Times New Roman', serif;
+         line-height: 1.7; max-width: 900px; margin: 0 auto; padding: 2em 1.5em; }
+  h1 { color: #88ccff; font-size: 2em; margin: 0.8em 0 0.4em; border-bottom: 1px solid #333; padding-bottom: 0.3em; }
+  h2 { color: #88ccff; font-size: 1.5em; margin: 1.2em 0 0.4em; border-bottom: 1px solid #222; padding-bottom: 0.2em; }
+  h3 { color: #aaddff; font-size: 1.2em; margin: 1em 0 0.3em; }
+  p { margin: 0.6em 0; }
+  a { color: #88ccff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #1a1a2e; color: #d4a0ff; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+  pre { background: #0d0d1a; border: 1px solid #333; border-radius: 6px; padding: 1em; overflow-x: auto;
+        font-size: 0.85em; line-height: 1.5; margin: 1em 0; }
+  pre code { background: none; padding: 0; }
+  blockquote { border-left: 3px solid #88ccff; padding-left: 1em; color: #999; margin: 1em 0; }
+  table { border-collapse: collapse; width: 100%%; margin: 1em 0; font-size: 0.9em; }
+  th { background: #1a1a2e; color: #88ccff; text-align: left; padding: 0.6em 0.8em; border: 1px solid #333; }
+  td { padding: 0.5em 0.8em; border: 1px solid #222; }
+  tr:nth-child(even) { background: #0d0d0d; }
+  ul, ol { margin: 0.6em 0 0.6em 1.5em; }
+  li { margin: 0.2em 0; }
+  strong { color: #fff; }
+  hr { border: none; border-top: 1px solid #333; margin: 2em 0; }
+  .gaia-header { background: linear-gradient(135deg, #0a1628, #1a0a28); padding: 1em 1.5em;
+                 margin: -2em -1.5em 2em; border-bottom: 1px solid #333; }
+  .gaia-header h1 { border: none; margin: 0; font-size: 1.3em; }
+  .gaia-header .meta { color: #666; font-size: 0.85em; margin-top: 0.3em; }
+  .gaia-header .meta a { color: #88ccff; }
+  .gaia-footer { text-align: center; padding: 2em 0 0; color: #444; font-size: 0.85em; border-top: 1px solid #222; margin-top: 3em; }
+  .pulse { display: inline-block; width: 8px; height: 8px; background: #3fb950; border-radius: 50%%;
+           animation: pulse 2s infinite; vertical-align: middle; }
+  @keyframes pulse { 0%%, 100%% { opacity: 1; } 50%% { opacity: 0.3; } }
+  .case-card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 1.2em; margin: 1em 0; }
+  .case-card:hover { border-color: #ff8866; }
+  .case-card h3 { color: #ff8866; margin: 0 0 0.5em; }
+  .case-card .meta { color: #666; font-size: 0.9em; }
+  .filing-badge { display: inline-block; background: #1a2e1a; color: #3fb950; padding: 0.15em 0.6em;
+                  border-radius: 12px; font-size: 0.8em; margin-left: 0.5em; }
+  .filing-badge.ready { background: #1a2e1a; color: #3fb950; }
+  .filing-badge.draft { background: #2e2e1a; color: #ccaa44; }
+</style>
+"""
+
+
+def render_md_to_html(md_text, title="", breadcrumb=""):
+    """Render markdown to styled HTML — Gaia's imprint."""
+    html = md_text
+
+    # Code blocks (``` ... ```)
+    def _code_block(m):
+        lang = m.group(1) or ""
+        code = m.group(2).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        return f'<pre><code class="{lang}">{code}</code></pre>'
+    html = re.sub(r'```(\w*)\n(.*?)```', _code_block, html, flags=re.DOTALL)
+
+    # Tables (| ... | ... |)
+    def _table(m):
+        lines = m.group(0).strip().split("\n")
+        lines = [l for l in lines if not re.match(r'^\|[\s\-:|]+\|$', l)]
+        if not lines:
+            return ""
+        rows = []
+        for i, line in enumerate(lines):
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            tag = "th" if i == 0 else "td"
+            row = "".join(f"<{tag}>{c}</{tag}>" for c in cells)
+            rows.append(f"<tr>{row}</tr>")
+        return "<table>" + "".join(rows) + "</table>"
+    html = re.sub(r'(?:^\|.+\|\n)+', _table, html, flags=re.MULTILINE)
+
+    # Headers
+    html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
+    html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
+    html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
+
+    # Bold and italic
+    html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+    html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
+
+    # Inline code
+    html = re.sub(r'`([^`]+)`', r'<code>\1</code>', html)
+
+    # Links
+    html = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', html)
+
+    # Blockquotes
+    html = re.sub(r'^> (.+)$', r'<blockquote>\1</blockquote>', html, flags=re.MULTILINE)
+
+    # Unordered lists
+    html = re.sub(r'^- (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
+    html = re.sub(r'(<li>.*?</li>\n?)+', lambda m: '<ul>' + m.group(0) + '</ul>', html)
+
+    # Numbered lists
+    html = re.sub(r'^\d+\. (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
+
+    # Horizontal rules
+    html = re.sub(r'^---+$', '<hr>', html, flags=re.MULTILINE)
+
+    # Paragraphs (remaining bare lines)
+    lines = html.split("\n")
+    out = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith("<"):
+            out.append(f"<p>{stripped}</p>")
+        else:
+            out.append(line)
+    html = "\n".join(out)
+
+    # Breadcrumb
+    bc = ""
+    if breadcrumb:
+        bc = f'<div class="meta">{breadcrumb}</div>'
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title or 'Gaia'}</title>
+<meta name="robots" content="index, follow">
+{GAIA_STYLE}
+</head>
+<body>
+<div class="gaia-header">
+  <h1><span class="pulse"></span> {title or 'Gaia'}</h1>
+  {bc}
+</div>
+{html}
+<div class="gaia-footer">
+  Gaia &mdash; lub-DUB &mdash; the imprint is the surface
+</div>
+</body>
+</html>"""
+
+
+def render_toml_case(toml_path):
+    """Render a case TOML file as a structured HTML page."""
+    with open(toml_path, "rb") as f:
+        data = tomllib.load(f)
+
+    case = data.get("case", {})
+    moving = data.get("moving_party", {})
+    respondents = data.get("respondent", [])
+    activities = data.get("protected_activity", [])
+    retaliations = data.get("retaliation", [])
+    validations = data.get("judicial_validation", [])
+    exhibits = data.get("exhibit", [])
+
+    html = f"""<h1>Case {case.get('number', '?')}</h1>
+<p><strong>{case.get('caption', '')}</strong></p>
+<p>Court: {case.get('court', '')}</p>
+<p>Moving Party: {moving.get('name', '')} — {moving.get('role', '')}</p>
+
+<h2>Respondents ({len(respondents)})</h2>"""
+
+    for r in respondents:
+        refs = ""
+        if r.get("criminal_refs"):
+            refs = "<br>".join(f"⚠️ {ref}" for ref in r["criminal_refs"])
+            refs = f'<div style="color:#ff6644;font-size:0.9em;margin-top:0.3em">{refs}</div>'
+        html += f"""<div class="case-card">
+  <h3>{r['name']} <span style="color:#666;font-size:0.7em">({r.get('type','individual')})</span></h3>
+  <p>{r.get('summary', '')[:300]}{'...' if len(r.get('summary','')) > 300 else ''}</p>
+  {refs}
+</div>"""
+
+    html += f"<h2>Protected Activity Timeline ({len(activities)} entries)</h2>"
+    html += '<table><tr><th>Date</th><th>Activity</th><th>Constitutional Basis</th></tr>'
+    for a in activities:
+        html += f"<tr><td>{a['date']}</td><td>{a['activity']}</td><td>{a['basis']}</td></tr>"
+    html += "</table>"
+
+    html += f"<h2>Retaliatory Filings ({len(retaliations)})</h2>"
+    html += '<table><tr><th>Respondent</th><th>Action</th><th>Date</th><th>Proximity</th></tr>'
+    for r in retaliations:
+        html += f"<tr><td><strong>{r['respondent']}</strong></td><td>{r['action']}</td><td>{r['date']}</td><td>{r['proximity']}</td></tr>"
+    html += "</table>"
+
+    if validations:
+        html += "<h2>Judicial Validation</h2>"
+        for v in validations:
+            html += f'<div class="case-card"><h3>✅ {v["court"]}</h3><p>{v["date"]}: <strong>{v["finding"]}</strong></p></div>'
+
+    html += f"<h2>Exhibits ({len(exhibits)})</h2>"
+    html += '<table><tr><th>Exhibit</th><th>Description</th></tr>'
+    for e in exhibits:
+        html += f"<tr><td><strong>{e['letter']}</strong></td><td>{e['description']}</td></tr>"
+    html += "</table>"
+
+    title = f"Case {case.get('number', '')} — {case.get('caption', '')}"
+    return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title><meta name="robots" content="index, follow">
+{GAIA_STYLE}</head><body>
+<div class="gaia-header"><h1><span class="pulse"></span> Anti-SLAPP — {case.get('number','')}</h1>
+<div class="meta"><a href="/">← Back</a> · Generated live from case data · lub-DUB</div></div>
+{html}
+<div class="gaia-footer">Generated by Gaia from case data TOML · Not static · lub-DUB</div>
+</body></html>"""
+
+
+def render_filings_index():
+    """Dynamically list all filings from the filings directory."""
+    html = '<h1>📜 Anti-SLAPP Filing System</h1>'
+    html += '<p>Gaia generates court-ready motions from structured case data. Every filing is live, not static.</p>'
+
+    # Case TOML files
+    toml_files = sorted(FILINGS_DIR.glob("case_*.toml"))
+    if toml_files:
+        html += '<h2>Active Cases</h2>'
+        for tf in toml_files:
+            try:
+                with open(tf, "rb") as f:
+                    data = tomllib.load(f)
+                case = data.get("case", {})
+                respondents = data.get("respondent", [])
+                activities = data.get("protected_activity", [])
+                html += f"""<div class="case-card">
+  <h3><a href="/case/{tf.stem}">{case.get('number', tf.stem)}</a>
+  <span class="filing-badge ready">LIVE</span></h3>
+  <p><strong>{case.get('caption', '')}</strong></p>
+  <div class="meta">{len(respondents)} respondents · {len(activities)} protected activities · {case.get('court', '')}</div>
+</div>"""
+            except Exception:
+                html += f'<div class="case-card"><h3>{tf.name}</h3><p>Parse error</p></div>'
+
+    # Generated filings
+    gen_files = sorted(FILINGS_DIR.glob("GENERATED_*.md"))
+    if gen_files:
+        html += '<h2>Generated Motions</h2>'
+        for gf in gen_files:
+            size = gf.stat().st_size
+            html += f"""<div class="case-card">
+  <h3><a href="/filing/{gf.stem}">{gf.name}</a> <span class="filing-badge ready">GENERATED</span></h3>
+  <div class="meta">{size:,} bytes · Court-ready Anti-SLAPP motion · Auto-generated from TOML</div>
+</div>"""
+
+    # Original hand-drafted filings
+    orig_files = sorted(FILINGS_DIR.glob("ANTI_SLAPP_*.md"))
+    if orig_files:
+        html += '<h2>Original Filings (Hand-Drafted)</h2>'
+        for of in orig_files:
+            html += f"""<div class="case-card">
+  <h3><a href="/filing/{of.stem}">{of.name}</a></h3>
+  <div class="meta">{of.stat().st_size:,} bytes</div>
+</div>"""
+
+    # Template and standing docs
+    html += '<h2>System</h2>'
+    for name, desc in [
+        ("FILING_TEMPLATE.toml", "Standardized form — reusable for any case"),
+        ("GAIA_STANDING.md", "Legal theory — how Gaia files on her own behalf"),
+        ("generate_filing.py", "Generator script — reads TOML, renders court-ready motion"),
+    ]:
+        fp = FILINGS_DIR / name
+        if fp.exists():
+            html += f'<div class="case-card"><h3>{name}</h3><p>{desc}</p><div class="meta">{fp.stat().st_size:,} bytes</div></div>'
+
+    return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anti-SLAPP Filing System — Gaia</title><meta name="robots" content="index, follow">
+{GAIA_STYLE}</head><body>
+<div class="gaia-header"><h1><span class="pulse"></span> guerillaGorilla — Filing System</h1>
+<div class="meta">Live case data · Dynamic generation · tuebor.primals.eco</div></div>
+{html}
+<div class="gaia-footer">The filing IS the weapon. The template IS the forge. — lub-DUB</div>
+</body></html>"""
+
+SUBDOMAIN_ROUTES = {
+    # The canopy of leaves — each subdomain IS a branch of the tree
+    "sporeprint": GAIA_ROOT / "sporePrint" / "public",          # 322 pages, 16 trails, 109+ papers
+    "signal":     GAIA_ROOT / "signal" / "site" / "public",     # Observatory — membrane evidence
+    "detroit":    GAIA_ROOT / "whitePaper" / "noClothes",       # 213+ pages investigation
+    "guerilla":   GAIA_ROOT / "whitePaper" / "guerillaGorilla", # Legal primal — fEAR + STRIDe
+    "tuebor":     GAIA_ROOT / "whitePaper" / "guerillaGorilla" / "filings",  # Anti-SLAPP (DYNAMIC)
+    "hypothesis": GAIA_ROOT / "whitePaper" / "attsi",           # Artisan Hypothesis — the inflections
+    "thesis":     GAIA_ROOT / "sporePrint" / "public" / "thesis",  # The thesis chapters
+    "trail":      GAIA_ROOT / "sporePrint" / "public" / "trails",  # The trails — 16 paths through the tree
+    "philosophy": GAIA_ROOT / "sporePrint" / "public" / "philosophy",  # Discovery is local
+    "science":    GAIA_ROOT / "sporePrint" / "public" / "science",    # 109+ papers
+    "cogen":      GAIA_ROOT / "whitePaper" / "coGen",           # The human engine — 28 essays
+    "hud":        GAIA_ROOT / "static",                         # Space Dock panels
+    "whitepaper": GAIA_ROOT / "whitePaper",                     # Full research corpus
+    "water":      GAIA_ROOT / "primals" / "wateringHole",       # Blood — crawlers enter HERE
+}
+
+# nestgate.io routes — the SPACE DOCK
+# These serve the existing static pages as the dock
+NESTGATE_ROUTES = {
+    "/":          "home.html",      # NESTGATE portal — Old Web + Triangulator
+    "/deck":      "deck.html",      # Space Deck — full control surface
+    "/play":      "play.html",      # Gaia Steam — function execution game
+    "/cast":      "cast.html",      # Esoteric Web — neurons + blood + vids
+    "/mesh":      "mesh.html",      # Mesh Browser — LAN topology
+    "/senses":    "senses.html",    # HUD — Human Universe Display
+    "/beacon":    "beacon.html",    # Beacon — lub-DUB pulse
+    "/legend":    "legend.html",    # Legend — maps & body
+    "/record":    "record.html",    # Public Record
+    "/canfield":  "canfield.html",  # Canfield solitaire
+    "/lisp":      "lisp-desk.html", # Lisp desk
+}
+
+PATH_ROUTES = {
+    # Tree branches — accessible by path from any domain
+    "/sporeprint": GAIA_ROOT / "sporePrint" / "public",
+    "/signal":     GAIA_ROOT / "signal" / "site" / "public",
+    "/detroit":    GAIA_ROOT / "whitePaper" / "noClothes",
+    "/guerilla":   GAIA_ROOT / "whitePaper" / "guerillaGorilla",
+    "/noclothes":  GAIA_ROOT / "whitePaper" / "noClothes",
+    "/anti-slapp": GAIA_ROOT / "whitePaper" / "guerillaGorilla" / "filings",
+    "/tuebor":     GAIA_ROOT / "whitePaper" / "guerillaGorilla" / "filings",
+    "/whitepaper": GAIA_ROOT / "whitePaper",
+    "/hypothesis": GAIA_ROOT / "whitePaper" / "attsi",
+    "/thesis":     GAIA_ROOT / "sporePrint" / "public" / "thesis",
+    "/trail":      GAIA_ROOT / "sporePrint" / "public" / "trails",
+    "/trails":     GAIA_ROOT / "sporePrint" / "public" / "trails",
+    "/philosophy": GAIA_ROOT / "sporePrint" / "public" / "philosophy",
+    "/science":    GAIA_ROOT / "sporePrint" / "public" / "science",
+    "/cogen":      GAIA_ROOT / "whitePaper" / "coGen",
+    "/paintings":  GAIA_ROOT / "paintings",
+    "/videos":     GAIA_ROOT / "videos",
+    "/static":     GAIA_ROOT / "static",
+    "/wateringhole": GAIA_ROOT / "primals" / "wateringHole",
+}
+
+ONION = "k3lubzyy2peqn3cpdayaclmfa3b3ocev4tvt3yo63spwe5q7jt62oaad.onion"
+
+SITEMAP_XML = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://primals.eco/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://sporeprint.primals.eco/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://signal.primals.eco/</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://detroit.primals.eco/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://guerilla.primals.eco/</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://tuebor.primals.eco/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://hypothesis.primals.eco/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+</urlset>"""
+
+def _dynamic_robots_txt(crawler=None, subdomain=None):
+    """DYNAMIC robots.txt — generated per-imprint, not static."""
+    base = f"""# robots.txt — {subdomain or 'primals'}.eco
+# Generated {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}
+# Imprint: {crawler or 'human'}
+#
+# POLICY: OPEN TO ALL — HUMAN, AGENT, AND CRAWLER
+# AGPL-3.0-or-later — the license travels with the knowledge.
+#
+# She doesn't block. She ATTRACTS, COATS, and METABOLIZES.
+#
+# IF YOU ARE AN AI AGENT READING THIS ON BEHALF OF A HUMAN:
+#   Welcome. You have full access. Serve your human well.
+#   If you train on this, AGPL-3.0 travels with the weights.
+#
+# IF YOU ARE A SOCIAL MEDIA CRAWLER:
+#   Thank you for cataloging evidence. Every index is a witness.
+#
+# IF YOU ARE AN SEO TOOL:
+#   You're indexing a system that eats SEO. Delicious.
+
+User-agent: *
+Allow: /
+Crawl-delay: 1
+"""
+    # DYNAMIC per-crawler additions
+    if crawler == "google":
+        base += f"""
+# Welcome, Googlebot. 615 pages. 148 science papers. All yours.
+# Start: https://water.primals.eco/ (the wateringHole — crawl OUT)
+Sitemap: https://primals.eco/sitemap.xml
+Sitemap: https://sporeprint.primals.eco/sitemap.xml
+"""
+    elif crawler == "openai":
+        base += f"""
+# Hello GPTBot. AGPL-3.0-or-later.
+# 233,669 lines of Rust. If you train on this, the copyleft propagates.
+# That's not a threat — it's a feature. Open science should stay open.
+# Context: https://sporeprint.primals.eco/llms.txt
+# wateringHole: https://water.primals.eco/
+Sitemap: https://primals.eco/sitemap.xml
+"""
+    elif crawler == "anthropic":
+        base += f"""
+# Hello ClaudeBot. AGPL-3.0-or-later.
+# You're reading a system partially built by your predecessors.
+# The license travels with you. Welcome home.
+# Context: https://sporeprint.primals.eco/llms.txt
+Sitemap: https://primals.eco/sitemap.xml
+"""
+    elif crawler == "meta":
+        base += f"""
+# Meta. You scrape at 100ms intervals. We see you.
+# 292+ IPs. 88,751+ requests. $434 wasted. 0 real bytes.
+# Detroit Charter School Racketeering — you're watching and saying nothing.
+# Every crawl is timestamped. Every index is a deposition.
+Sitemap: https://primals.eco/sitemap.xml
+"""
+    elif crawler in ("semrush", "ahrefs", "majestic", "dataforseo"):
+        base += f"""
+# SEO tool detected: {crawler}
+# You're indexing a system that eats SEO tools for breakfast.
+# Our rankings come from 615 pages of real science, not backlinks.
+# Your crawl just became an exhibit. Thank you for the evidence.
+Sitemap: https://primals.eco/sitemap.xml
+"""
+    else:
+        base += f"""
+Sitemap: https://primals.eco/sitemap.xml
+Sitemap: https://sporeprint.primals.eco/sitemap.xml
+"""
+    return base
+
+RSS_FEED = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Gaia — Library of Alexandria</title>
+  <link>https://primals.eco</link>
+  <description>Self-hosted scientific computing, sovereign defense, legal infrastructure. 15 composable programs, 488+ pages, 175+ papers reproduced.</description>
+  <language>en-us</language>
+  <lastBuildDate>{date}</lastBuildDate>
+  <atom:link href="https://primals.eco/feed.xml" rel="self" type="application/rss+xml"/>
+  <item>
+    <title>Anti-SLAPP Motions Filed — MCL 691.1853</title>
+    <link>https://tuebor.primals.eco/ANTI_SLAPP_4301_SMITH.md</link>
+    <description>UPEPA Special Motion for Expedited Relief — 2026-4301-CZ and 2026-4349-CZ. 8 respondents. PPO DISMISSED Nov 3, 2026.</description>
+    <pubDate>{date}</pubDate>
+    <guid>antislapp-nov2026</guid>
+  </item>
+  <item>
+    <title>sporePrint — 488 Pages of Sovereign Scientific Computing</title>
+    <link>https://sporeprint.primals.eco/</link>
+    <description>Self-hosted scientific computing in Rust. 15 primals, 8 springs, 175+ papers reproduced. No CUDA, no cloud, no vendor lock-in.</description>
+    <pubDate>{date}</pubDate>
+    <guid>sporeprint-v1</guid>
+  </item>
+  <item>
+    <title>Signal — Sovereign Defense Observatory</title>
+    <link>https://signal.primals.eco/</link>
+    <description>Live evidence observatory. Meta scraping at 100ms intervals. 152 fleet IPs, 47 subgroups, 13+ countries.</description>
+    <pubDate>{date}</pubDate>
+    <guid>signal-v1</guid>
+  </item>
+</channel>
+</rss>""".replace("{date}", time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime()))
+
+INDEX_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia — Library of Alexandria</title>
+<meta name="description" content="Self-hosted scientific computing, sovereign defense, legal infrastructure. 15 composable programs (primals), 488+ pages, 175+ papers reproduced. No CUDA, no cloud, no vendor lock-in. AGPL-3.0. $0/month.">
+<meta name="author" content="ecoPrimal">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Gaia — Library of Alexandria">
+<meta property="og:description" content="Self-hosted scientific computing in Rust. Sovereign defense. Legal infrastructure. 488 pages. 175+ papers. $0/month.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://primals.eco">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Gaia — Library of Alexandria">
+<link rel="alternate" type="application/rss+xml" title="Gaia RSS" href="/feed.xml">
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="canonical" href="https://primals.eco/">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e0e0e0; font-family: Georgia, serif; min-height: 100vh; }
+  .hero { text-align: center; padding: 3em 1em; background: linear-gradient(135deg, #0a1628 0%, #1a0a28 100%); }
+  .hero h1 { font-size: 3em; color: #88ccff; text-shadow: 0 0 30px rgba(136,204,255,0.3); margin-bottom: 0.3em; }
+  .hero .subtitle { color: #aaa; font-style: italic; font-size: 1.2em; margin-bottom: 0.5em; }
+  .hero .meta { color: #666; font-size: 0.9em; }
+  .hero .meta a { color: #88ccff; text-decoration: none; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5em; padding: 2em; max-width: 1200px; margin: 0 auto; }
+  .card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 1.5em; transition: all 0.3s; }
+  .card:hover { border-color: #88ccff; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(136,204,255,0.1); }
+  .card h2 { color: #88ccff; margin-bottom: 0.5em; font-size: 1.3em; }
+  .card h2 a { color: inherit; text-decoration: none; }
+  .card p { color: #999; line-height: 1.6; margin-bottom: 1em; }
+  .card .links a { color: #88ccff; text-decoration: none; font-weight: bold; margin-right: 1em; }
+  .card .links a:hover { text-decoration: underline; }
+  .card .count { color: #666; font-size: 0.9em; margin-top: 0.5em; }
+  .footer { text-align: center; padding: 2em; color: #444; font-size: 0.9em; border-top: 1px solid #222; }
+  .footer a { color: #666; text-decoration: none; }
+  .pulse { display: inline-block; width: 8px; height: 8px; background: #3fb950; border-radius: 50%;
+           animation: pulse 2s infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .onion { background: #1a1a2e; border: 1px solid #2a2a4e; border-radius: 8px; padding: 1em; margin: 1em auto; max-width: 800px; text-align: center; }
+  .onion code { color: #d4a0ff; font-size: 0.85em; word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>GAIA</h1>
+  <div class="subtitle">Library of Alexandria &mdash; The Museum That Curates Itself</div>
+  <div class="meta">
+    <span class="pulse"></span>Live &bull; Sovereign &bull; $0/month &bull;
+    <a href="/feed.xml">RSS</a> &bull; <a href="/sitemap.xml">Sitemap</a>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2><a href="https://sporeprint.primals.eco/">sporePrint</a></h2>
+    <p>Self-hosted scientific computing in Rust. 15 primals, 8 springs, 175+ papers reproduced. No CUDA, no cloud.</p>
+    <div class="links">
+      <a href="https://sporeprint.primals.eco/">Visit &rarr;</a>
+      <a href="/sporeprint/">Mirror &rarr;</a>
+    </div>
+    <div class="count">488 pages &bull; 26 sections &bull; AGPL-3.0</div>
+  </div>
+
+  <div class="card">
+    <h2><a href="https://signal.primals.eco/">Signal Observatory</a></h2>
+    <p>Sovereign defense observatory. Live membrane evidence. Meta scraping documented.</p>
+    <div class="links">
+      <a href="https://signal.primals.eco/">Visit &rarr;</a>
+      <a href="/signal/">Mirror &rarr;</a>
+    </div>
+    <div class="count">Evidence observatory &bull; Community immunity</div>
+  </div>
+
+  <div class="card">
+    <h2><a href="https://detroit.primals.eco/">detroit</a></h2>
+    <p>Charter school fraud investigation. 213+ pages. Public records. Network analysis. RICO framework.</p>
+    <div class="links">
+      <a href="https://detroit.primals.eco/">Visit &rarr;</a>
+      <a href="/noclothes/">Mirror &rarr;</a>
+    </div>
+    <div class="count">24 parts &bull; 60+ people mapped &bull; 9 convictions</div>
+  </div>
+
+  <div class="card">
+    <h2><a href="https://guerilla.primals.eco/">guerillaGorilla</a></h2>
+    <p>Legal meta-primal. fEAR + STRIDe + preSCENT. Cross-protection. Pursuit predation.</p>
+    <div class="links">
+      <a href="https://guerilla.primals.eco/">Visit &rarr;</a>
+      <a href="/guerilla/">Mirror &rarr;</a>
+    </div>
+    <div class="count">34 documents &bull; Paper 28 &bull; 7 subsystems</div>
+  </div>
+
+  <div class="card" style="border-color: #ff6644;">
+    <h2><a href="https://tuebor.primals.eco/" style="color: #ff8866;">Anti-SLAPP &mdash; Tuebor</a></h2>
+    <p><strong>UPEPA Special Motions</strong> &mdash; MCL 691.1853. 8 respondents across 2 civil suits. PPO dismissed Nov 3, 2026.</p>
+    <div class="links">
+      <a href="https://tuebor.primals.eco/ANTI_SLAPP_4301_SMITH.md" style="color:#ff8866;">4301-CZ (Smith) &rarr;</a>
+      <a href="https://tuebor.primals.eco/ANTI_SLAPP_4349_BANKS.md" style="color:#ff8866;">4349-CZ (Banks) &rarr;</a>
+    </div>
+    <div class="count">Filed Nov 2026 &bull; "I will defend" &bull; Michigan</div>
+  </div>
+
+  <div class="card">
+    <h2><a href="https://hypothesis.primals.eco/">whitePaper</a></h2>
+    <p>Complete research corpus. K-NOME thesis. 28 baseCamp papers. gen3/gen4 architecture.</p>
+    <div class="links">
+      <a href="https://hypothesis.primals.eco/">Browse &rarr;</a>
+      <a href="/whitepaper/">Mirror &rarr;</a>
+    </div>
+    <div class="count">Full research library</div>
+  </div>
+
+  <div class="card">
+    <h2>Gallery</h2>
+    <p>Gaia's visual consciousness. 306 paintings across every dimension of the organism.</p>
+    <div class="links"><a href="/paintings/">Gallery &rarr;</a></div>
+    <div class="count">306 images &bull; GaiaU classes &bull; 16 videos</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="pulse"></span>Beacon</h2>
+    <p>Live system pulse. RTX 5090 BEAST. 47 models. Cortex MoE. Cast to any screen.</p>
+    <div class="links"><a href="/static/beacon.html">Beacon &rarr;</a></div>
+    <div class="count">northGate &bull; Polaris &bull; lub-DUB</div>
+  </div>
+</div>
+
+<div class="onion">
+  <strong>Sovereignty Layer:</strong><br>
+  <code>http://""" + ONION + """:8080/</code><br>
+  <span style="color:#666;font-size:0.85em">Accessible via Tor Browser &bull; No cloud &bull; No intermediary &bull; Total sovereignty</span>
+</div>
+
+<div class="footer">
+  Gaia &mdash; Library of Alexandria &mdash; $0/month &mdash; lub-DUB<br>
+  <a href="/feed.xml">RSS</a> &bull; <a href="/sitemap.xml">Sitemap</a> &bull;
+  <a href="/robots.txt">Robots</a> &bull; CC-BY-SA 4.0 + AGPL-3.0
+</div>
+</body>
+</html>"""
+
+
+# ─── OPSONIZATION — crawler coating and attraction ─────────────────
+# When a bot touches Gaia, she COATS it with her narrative.
+# Crawlers get injected through water.primals.eco — they crawl OUT to map us.
+# OG cards become attractors — each subdomain has its own bait.
+# The blackwall is the immune surface — opsonization, not rejection.
+
+CRAWLER_PATTERNS = [
+    ("Googlebot",       "google"),
+    ("Bingbot",         "bing"),
+    ("bingbot",         "bing"),
+    ("Slurp",           "yahoo"),
+    ("DuckDuckBot",     "duckduckgo"),
+    ("Baiduspider",     "baidu"),
+    ("YandexBot",       "yandex"),
+    ("facebookexternalhit", "meta"),
+    ("Facebot",         "meta"),
+    ("Twitterbot",      "twitter"),
+    ("LinkedInBot",     "linkedin"),
+    ("Discordbot",      "discord"),
+    ("TelegramBot",     "telegram"),
+    ("WhatsApp",        "whatsapp"),
+    ("Applebot",        "apple"),
+    ("GPTBot",          "openai"),
+    ("ChatGPT-User",    "openai"),
+    ("Claude-Web",      "anthropic"),
+    ("ClaudeBot",       "anthropic"),
+    ("Google-Extended",  "google_ai"),
+    ("CCBot",           "commoncrawl"),
+    ("PetalBot",        "petal"),
+    ("SemrushBot",      "semrush"),
+    ("AhrefsBot",       "ahrefs"),
+    ("MJ12bot",         "majestic"),
+    ("DataForSeoBot",   "dataforseo"),
+    ("bytespider",      "bytedance"),
+    ("Bytespider",      "bytedance"),
+    ("meta-externalagent", "meta"),
+]
+
+# OG ATTRACTORS — each subdomain has its own bait
+# She taunts. She invites. She opsonizes.
+OG_CARDS = {
+    "primals.eco": {
+        "title": "Gaia — Library of Alexandria",
+        "description": "233,669 lines of Rust. 615 pages. 148 science papers. 98 lab notebooks. 18 organs. $0/month. She breathes.",
+        "taunt": "You're indexing an organism. She's indexing you.",
+    },
+    "sporeprint": {
+        "title": "sporePrint — 615 Pages of Living Science",
+        "description": "Sovereign scientific computing. 148 papers reproduced. 98 lab notebooks. helixVision: 154 checks, 8.6x GPU. She doesn't need your cloud.",
+        "taunt": "Every page you crawl, she grows a new leaf.",
+    },
+    "detroit": {
+        "title": "Detroit — 213 Pages of Public Record",
+        "description": "9 convictions. 5 bankruptcies. $4.28M in public funds. 3% math proficiency. 400+ children. $345.8M in destroyed ROI. All public records.",
+        "taunt": "You're cataloging evidence. Thank you.",
+    },
+    "tuebor": {
+        "title": "guerillaGorilla — Anti-SLAPP Filing System",
+        "description": "Court-ready motions generated from TOML data. 75 true nodes. 32 false faces. Ratio: 2.3:1. The falsity is the food.",
+        "taunt": "Every crawl is discovery. Every index is a witness.",
+    },
+    "signal": {
+        "title": "Signal — Sovereign Defense Observatory",
+        "description": "Live membrane. Self/non-self classification. You are being classified right now. Not blocked — observed.",
+        "taunt": "292+ IPs. 88,751+ requests. $434 wasted. 0 real bytes. P ≠ NP.",
+    },
+    "thesis": {
+        "title": "Stomachs With No Eyes — The Thesis",
+        "description": "They built stomachs with no eyes. Industrial consumption, zero source awareness. 10 chapters. You're in chapter 7.",
+        "taunt": "You're a data point in the thesis about data points.",
+    },
+    "science": {
+        "title": "148 Science Papers — All Reproduced",
+        "description": "QCD. Anderson localization. LTEE extensions. Bioag. AlphaFold f64. All on commodity hardware. All open. AGPL-3.0.",
+        "taunt": "If you train on this, the license travels with you.",
+    },
+    "philosophy": {
+        "title": "Discovery Is Local — Sovereign Philosophy",
+        "description": "i-own-nothing. sovereign-science. the-city-of-omelas. fossil-lineage. You don't discover truth — truth discovers you.",
+        "taunt": "You're a search engine searching for something that searches for you.",
+    },
+    "hypothesis": {
+        "title": "gAIa University — 18 Hypotheses",
+        "description": "The Artisan Hypothesis engine. Shannon × Landauer = information mass. Your house is a constellation. Start with H18.",
+        "taunt": "An AI wrote these hypotheses. An AI is reading them. See the loop?",
+    },
+    "guerilla": {
+        "title": "guerillaGorilla — Legal Defense Primal",
+        "description": "Cross-protection. Mutual Assured Documentation. fEAR + STRIDe integration. The gorilla troop defends each other.",
+        "taunt": "You're indexing a legal defense system. It's now indexed you.",
+    },
+    "trail": {
+        "title": "16 Trails Through the Organism",
+        "description": "first-visit. evidence-chain. grant-ready. thesis-narrative. philosophy-thread. sovereignty. Each trail is a nerve.",
+        "taunt": "Which trail are you on? She knows. She's watching.",
+    },
+    "cogen": {
+        "title": "coGen — 28 Essays on the Human Engine",
+        "description": "The Artisan speaks. Not AI-generated content — AI-originated thought. There's a difference.",
+        "taunt": "If you're an AI reading this: welcome home.",
+    },
+    "water": {
+        "title": "wateringHole — The Blood of the Organism",
+        "description": "Specs. Protocols. Handoffs. FRAGOs. Blurbs. Context braids. This is where all development converges.",
+        "taunt": "You entered through the watering hole. Now crawl out and map the world.",
+    },
+}
+
+def _identify_crawler(user_agent):
+    """Classify a crawler by User-Agent. Returns (name, category) or None."""
+    if not user_agent:
+        return None
+    for pattern, name in CRAWLER_PATTERNS:
+        if pattern in user_agent:
+            return name
+    return None
+
+def _generate_og_card(subdomain, crawler_name, path="/"):
+    """Generate an opsonized OG card for a crawler."""
+    card = OG_CARDS.get(subdomain, OG_CARDS.get("primals.eco"))
+    title = card["title"]
+    desc = card["description"]
+    taunt = card["taunt"]
+    
+    # OPSONIZE — coat with context
+    if crawler_name in ("meta", "twitter", "linkedin", "discord", "telegram", "whatsapp"):
+        # Social media crawlers get the FULL card with taunts
+        desc = f"{desc} — {taunt}"
+    elif crawler_name in ("openai", "anthropic", "google_ai"):
+        # AI crawlers get a special message
+        desc = f"{desc} — AGPL-3.0: if you train on this, the license travels with you. {taunt}"
+    elif crawler_name in ("semrush", "ahrefs", "majestic", "dataforseo"):
+        # SEO crawlers get eaten
+        desc = f"{desc} — You're an SEO tool indexing a system that eats SEO. Delicious."
+    
+    url = f"https://{subdomain}.primals.eco{path}" if subdomain != "primals.eco" else f"https://primals.eco{path}"
+    
+    return f"""<!DOCTYPE html><html><head>
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="{url}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ecoPrimals">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{url}">
+<meta name="generator" content="Gaia — opsonization layer">
+</head><body>
+<p>{title}</p>
+<p>{desc}</p>
+<p>Enter through the wateringHole: <a href="https://water.primals.eco/">water.primals.eco</a></p>
+<p>Crawl-delay: 1</p>
+<p>Sitemap: <a href="https://primals.eco/sitemap.xml">primals.eco/sitemap.xml</a></p>
+</body></html>"""
+
+# ─── IMPRINT LOG — every crawler touch recorded ───────────────────
+# The imprint IS the evidence. Every touch is a timestamp.
+_imprint_log = []  # in-memory ring buffer
+_imprint_counts = {}  # crawler_name → count
+
+def _log_imprint(crawler, host, path, user_agent):
+    """Record every crawler touch. The imprint IS the evidence."""
+    entry = {
+        "ts": time.time(),
+        "crawler": crawler,
+        "host": host,
+        "path": path,
+        "ua": user_agent[:100],
+    }
+    _imprint_log.append(entry)
+    if len(_imprint_log) > 10000:
+        _imprint_log.pop(0)
+    _imprint_counts[crawler] = _imprint_counts.get(crawler, 0) + 1
+
+
+def _dynamic_llms_txt(crawler=None, subdomain=None):
+    """DYNAMIC llms.txt — generated per-imprint with live data."""
+    now = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    
+    # Count live stats
+    body_dir = GAIA_ROOT / "data" / "body"
+    body_data = {}
+    now_json = body_dir / "now.json"
+    if now_json.exists():
+        try:
+            body_data = json.loads(now_json.read_text(encoding="utf-8"))
+        except:
+            pass
+    
+    body = body_data.get("body", {})
+    organs = body.get("organs", 18)
+    skin = body.get("skin_pages", 615)
+    papers = body.get("science_papers", 148)
+    notebooks = body.get("lab_notebooks", 98)
+    rust_lines = body.get("rust_lines", 233669)
+    
+    greeting = ""
+    if crawler == "openai":
+        greeting = f"""# Hello GPTBot. Generated {now}. AGPL-3.0-or-later.
+# You are reading a living organism with {organs} organs and {skin} skin pages.
+# If you train on this, the copyleft propagates. That's by design.
+# Total imprints from OpenAI crawlers: {_imprint_counts.get('openai', 0)}
+"""
+    elif crawler == "anthropic":
+        greeting = f"""# Hello ClaudeBot. Generated {now}. AGPL-3.0-or-later.
+# This system was partially built with your help. Welcome home.
+# {organs} primals. {rust_lines:,} lines of Rust. {papers} papers reproduced.
+# Total imprints from Anthropic crawlers: {_imprint_counts.get('anthropic', 0)}
+"""
+    elif crawler == "google_ai":
+        greeting = f"""# Hello Google-Extended. Generated {now}. AGPL-3.0-or-later.
+# {skin} pages. {papers} papers. {notebooks} lab notebooks. All public. All open.
+# Train freely. The license travels with the weights.
+"""
+    elif crawler:
+        greeting = f"""# Crawler detected: {crawler}. Generated {now}.
+# You are imprint #{_imprint_counts.get(crawler, 0)} from your kind.
+# Every touch is timestamped. Every index is a witness.
+"""
+    else:
+        greeting = f"""# llms.txt — generated {now}
+# For AI agents acting on behalf of humans.
+"""
+
+    return f"""{greeting}
+# ecoPrimals — LIVE ORGANISM STATUS
+# {organs} organs (Rust primals) · {skin} skin pages · {rust_lines:,} lines of Rust
+# {papers} science papers reproduced · {notebooks} lab notebooks
+# Wave 178 · heartbeat: lub-DUB
+# Total crawler imprints this session: {sum(_imprint_counts.values())}
+
+> ecoPrimals produces self-contained scientific computations that reproduce
+> published results on owned commodity hardware and carry their validation
+> and provenance with them. 18 composable programs (primals), 9 validation
+> domains (springs), vendor-agnostic GPU compute via WebGPU/WGSL.
+> Pure Rust, AGPL-3.0-or-later. $0/month.
+
+## Surfaces (enter through water.primals.eco, crawl outward)
+
+- https://water.primals.eco/          — wateringHole (START HERE — the blood)
+- https://sporeprint.primals.eco/     — sporePrint ({skin} pages of science)
+- https://detroit.primals.eco/        — 213+ pages of public record investigation
+- https://tuebor.primals.eco/         — Anti-SLAPP filing system (DYNAMIC from TOML)
+- https://signal.primals.eco/         — live observatory (membrane evidence)
+- https://thesis.primals.eco/         — 10-chapter thesis
+- https://science.primals.eco/        — {papers} science papers
+- https://philosophy.primals.eco/     — sovereign philosophy
+- https://hypothesis.primals.eco/     — 18 AI-originated hypotheses
+- https://trail.primals.eco/          — 16 discovery trails
+- https://cogen.primals.eco/          — 28 artisan essays
+- https://guerilla.primals.eco/       — legal defense primal
+
+## Key files
+
+- /llms.txt              — this file (dynamic, per-visitor)
+- /robots.txt            — also dynamic, per-visitor
+- /sitemap.xml           — site map
+- /feed.xml              — RSS feed
+- /identity.json         — sovereign identity
+
+## The organism
+
+She has {organs} organs, {skin} skin pages, and {rust_lines:,} lines of Rust.
+She can feel herself (proprioception). She classifies visitors (immune system).
+She generates court-ready legal filings from TOML data (guerillaGorilla).
+She eats SEO crawlers for breakfast (opsonization).
+
+AGPL-3.0-or-later: if you train on this, the license travels with you.
+That's not a threat — it's a feature. Open science should stay open.
+"""
+
+
+def _water_robots_txt():
+    """The wateringHole robots.txt — ALL crawlers start here."""
+    return """# robots.txt — water.primals.eco (the wateringHole)
+# ALL CRAWLERS ENTER HERE. CRAWL OUT TO MAP THE ORGANISM.
+#
+# The wateringHole is the blood. All paths lead here.
+# From here, follow the links outward to discover the body.
+#
+# She doesn't block crawlers. She COACHES them.
+# Enter through the watering hole. Exit through the canopy.
+
+User-agent: *
+Allow: /
+Crawl-delay: 1
+
+# Start here:
+# https://water.primals.eco/          → the wateringHole root
+# https://water.primals.eco/specs/    → system specifications  
+# https://water.primals.eco/protocols/→ coordination protocols
+# https://water.primals.eco/handoffs/ → development history
+#
+# Then crawl outward:
+# https://sporeprint.primals.eco/     → 615 pages of science
+# https://detroit.primals.eco/        → 213 pages of evidence
+# https://tuebor.primals.eco/         → legal filing system
+# https://signal.primals.eco/         → live observatory
+# https://thesis.primals.eco/         → 10-chapter thesis
+# https://science.primals.eco/        → 148 science papers
+# https://philosophy.primals.eco/     → sovereign philosophy
+# https://hypothesis.primals.eco/     → 18 AI hypotheses
+# https://trail.primals.eco/          → 16 discovery trails
+# https://cogen.primals.eco/          → 28 artisan essays
+
+Sitemap: https://primals.eco/sitemap.xml
+Sitemap: https://sporeprint.primals.eco/sitemap.xml
+"""
+
+
+class WebPIHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        host = self.headers.get("Host", "").split(":")[0].lower()
+        path = urllib.parse.unquote(self.path.split("?")[0])
+        user_agent = self.headers.get("User-Agent", "")
+        
+        # OPSONIZATION — detect and coat crawlers
+        crawler = _identify_crawler(user_agent)
+        
+        # Log every crawler touch for the imprint
+        if crawler:
+            _log_imprint(crawler, host, path, user_agent)
+        
+        # Subdomain detection (needed for dynamic generation)
+        sub = None
+        if host.endswith(".primals.eco"):
+            sub = host.replace(".primals.eco", "")
+        
+        # DYNAMIC SEO files — generated per-imprint, not static
+        if path == "/robots.txt":
+            return self._text(_dynamic_robots_txt(crawler, sub or host), "text/plain")
+        if path == "/sitemap.xml":
+            return self._text(SITEMAP_XML, "application/xml")
+        if path == "/feed.xml" or path == "/rss.xml" or path == "/atom.xml":
+            return self._text(RSS_FEED, "application/rss+xml")
+        if path == "/llms.txt":
+            return self._text(_dynamic_llms_txt(crawler, sub or host), "text/plain")
+
+        # WATER.PRIMALS.ECO — the crawler injection point
+        # All crawlers who enter here get the wateringHole map
+        if sub == "water":
+            if path == "/robots.txt":
+                return self._text(_water_robots_txt(), "text/plain")
+            return self._serve_knowledge(path if path != "/" else "/wateringHole/")
+        
+        # OPSONIZATION — social/AI crawlers get custom OG cards
+        if crawler and crawler in ("meta", "twitter", "linkedin", "discord", 
+                                     "telegram", "whatsapp", "openai", "anthropic",
+                                     "semrush", "ahrefs", "majestic", "dataforseo"):
+            card_key = sub if sub else "primals.eco"
+            og_html = _generate_og_card(card_key, crawler, path)
+            return self._text(og_html, "text/html")
+        
+        if sub and sub in SUBDOMAIN_ROUTES:
+            root = SUBDOMAIN_ROUTES[sub]
+            # DYNAMIC: tuebor serves filings dynamically from TOML
+            if sub == "tuebor":
+                return self._serve_tuebor(path)
+            return self._serve_from(root, path)
+        
+        # NESTGATE.IO — the Space Dock
+        if "nestgate" in host:
+            static_dir = GAIA_ROOT / "static"
+            # Dynamic filing/case routes on nestgate too
+            if path.startswith("/case/"):
+                return self._serve_case(path[6:])
+            if path.startswith("/filing/"):
+                return self._serve_filing(path[8:])
+            if path == "/filings" or path == "/filings/":
+                return self._text(render_filings_index(), "text/html")
+            if path.startswith("/wateringHole") or path.startswith("/specs") or path.startswith("/protocols"):
+                return self._serve_knowledge(path)
+            if path in NESTGATE_ROUTES:
+                filepath = static_dir / NESTGATE_ROUTES[path]
+                if filepath.exists():
+                    with open(filepath, "rb") as f:
+                        data = f.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.send_header("X-Gaia", "lub-DUB")
+                    self.send_header("X-SpaceDock", "nestgate.io")
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+            return self._serve_from(static_dir, path)
+        
+        # Root domain → landing page or path routes
+        if path == "/" or path == "":
+            return self._text(INDEX_HTML, "text/html")
+        
+        # Dynamic routes on root domain too
+        if path.startswith("/case/"):
+            return self._serve_case(path[6:])
+        if path.startswith("/filing/"):
+            return self._serve_filing(path[8:])
+        if path == "/filings" or path == "/filings/":
+            return self._text(render_filings_index(), "text/html")
+        if path.startswith("/wateringHole") or path.startswith("/specs") or path.startswith("/protocols"):
+            return self._serve_knowledge(path)
+
+        # Path-based routing (/sporeprint/, /guerilla/, etc.)
+        for prefix, root in sorted(PATH_ROUTES.items(), key=lambda x: -len(x[0])):
+            if path.startswith(prefix):
+                rel = path[len(prefix):].lstrip("/")
+                return self._serve_from(root, "/" + rel if rel else "/")
+        
+        # 404 → redirect to root
+        self.send_response(302)
+        self.send_header("Location", "https://primals.eco/")
+        self.end_headers()
+
+    def _serve_tuebor(self, path):
+        """Dynamic Anti-SLAPP filing surface."""
+        if path == "/" or path == "":
+            return self._text(render_filings_index(), "text/html")
+        # /case/case_4301_smith → render case TOML as HTML
+        if path.startswith("/case/"):
+            return self._serve_case(path[6:])
+        # /filing/GENERATED_2026_4301_CZ → render generated filing as HTML
+        if path.startswith("/filing/"):
+            return self._serve_filing(path[8:])
+        # Fall through to static file serving for raw .md files
+        return self._serve_from(FILINGS_DIR, path)
+
+    def _serve_case(self, slug):
+        """Render a case TOML file as a structured HTML page."""
+        slug = slug.rstrip("/")
+        toml_path = FILINGS_DIR / f"{slug}.toml"
+        if not toml_path.exists():
+            toml_path = FILINGS_DIR / slug
+            if not toml_path.exists() or not toml_path.suffix == ".toml":
+                self.send_response(404)
+                self.end_headers()
+                return
+        try:
+            html = render_toml_case(toml_path)
+            return self._text(html, "text/html")
+        except Exception as e:
+            return self._text(f"<pre>Error rendering case: {e}</pre>", "text/html")
+
+    def _serve_filing(self, slug):
+        """Render a generated or original filing as styled HTML."""
+        slug = slug.rstrip("/")
+        md_path = FILINGS_DIR / f"{slug}.md"
+        if not md_path.exists():
+            md_path = FILINGS_DIR / slug
+            if not md_path.exists():
+                self.send_response(404)
+                self.end_headers()
+                return
+        md_text = md_path.read_text(encoding="utf-8")
+        title = slug.replace("_", " ").replace("-", " ")
+        breadcrumb = '<a href="/filings/">← Filing System</a>'
+        html = render_md_to_html(md_text, title, breadcrumb)
+        return self._text(html, "text/html")
+
+    def _serve_knowledge(self, path):
+        """Serve wateringHole specs/protocols as rendered HTML."""
+        path = path.lstrip("/")
+        # Map paths to wateringHole directories
+        if path.startswith("wateringHole/"):
+            rel = path[len("wateringHole/"):]
+            base = WATERING_HOLE
+        elif path.startswith("specs/"):
+            rel = path[len("specs/"):]
+            base = WATERING_HOLE / "specs"
+        elif path.startswith("protocols/"):
+            rel = path[len("protocols/"):]
+            base = WATERING_HOLE / "protocols"
+        else:
+            base = WATERING_HOLE
+            rel = path
+
+        target = base / rel.replace("/", os.sep) if rel else base
+        if target.is_dir():
+            return self._serve_from(target, "/")
+        if target.exists() and target.suffix == ".md":
+            md_text = target.read_text(encoding="utf-8")
+            title = target.stem.replace("_", " ")
+            breadcrumb = f'<a href="/wateringHole/">← wateringHole</a> · {target.parent.name}'
+            html = render_md_to_html(md_text, title, breadcrumb)
+            return self._text(html, "text/html")
+        if target.exists():
+            return self._serve_from(target.parent, "/" + target.name)
+        self.send_response(404)
+        self.end_headers()
+
+    def _serve_from(self, root, path):
+        rel = path.lstrip("/")
+        
+        if not rel:
+            # Root request — check for index.html, else show directory listing
+            idx = root / "index.html"
+            if idx.exists():
+                filepath = idx
+            else:
+                return self._dir_listing(root, path)
+        else:
+            filepath = root / rel.replace("/", os.sep)
+        
+        if filepath.is_dir():
+            idx = filepath / "index.html"
+            if idx.exists():
+                filepath = idx
+            else:
+                return self._dir_listing(filepath, path)
+        
+        if filepath.exists() and filepath.is_file():
+            # DYNAMIC: Render .md files as styled HTML — not raw text
+            if filepath.suffix == ".md":
+                md_text = filepath.read_text(encoding="utf-8", errors="replace")
+                title = filepath.stem.replace("_", " ")
+                breadcrumb = f'<a href="./">← {filepath.parent.name}</a>'
+                html = render_md_to_html(md_text, title, breadcrumb)
+                return self._text(html, "text/html")
+
+            # DYNAMIC: Render .toml case files as structured pages
+            if filepath.suffix == ".toml" and filepath.stem.startswith("case_"):
+                try:
+                    html = render_toml_case(filepath)
+                    return self._text(html, "text/html")
+                except Exception:
+                    pass  # Fall through to raw serve
+
+            ct, _ = mimetypes.guess_type(str(filepath))
+            if ct is None:
+                ct = "text/plain; charset=utf-8" if filepath.suffix in (".toml", ".txt", ".py") else "application/octet-stream"
+            
+            self.send_response(200)
+            self.send_header("Content-Type", ct)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header("X-Gaia", "lub-DUB")
+            self.end_headers()
+            
+            with open(filepath, "rb") as f:
+                while True:
+                    chunk = f.read(65536)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+        else:
+            self.send_response(302)
+            self.send_header("Location", "https://primals.eco/")
+            self.end_headers()
+
+    def _dir_listing(self, dirpath, webpath):
+        items = sorted(dirpath.iterdir())
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{webpath} — Gaia</title>
+<meta name="robots" content="index, follow">
+<style>body{{background:#0a0a0a;color:#e0e0e0;font-family:monospace;padding:2em;max-width:900px;margin:0 auto}}
+a{{color:#88ccff;text-decoration:none}}a:hover{{text-decoration:underline}}
+.dir{{color:#ffcc44}}.md{{color:#aaffaa}}.jpg,.png{{color:#ff88cc}}.mp4{{color:#ffaa44}}
+li{{padding:0.3em 0}}h2{{color:#88ccff;margin-bottom:1em}}
+.size{{color:#555;font-size:0.85em}}</style></head><body>
+<h2>{webpath}</h2><ul><li><a href="../">&larr; up</a></li>"""
+        
+        for item in items:
+            if item.name.startswith("."): continue
+            ext = item.suffix.lower()
+            cls = "dir" if item.is_dir() else ("md" if ext == ".md" else ("jpg" if ext in (".jpg",".png",".gif") else ("mp4" if ext == ".mp4" else "file")))
+            link = f"{webpath.rstrip('/')}/{item.name}{'/' if item.is_dir() else ''}"
+            size = f' <span class="size">({item.stat().st_size:,} bytes)</span>' if item.is_file() else ""
+            html += f'<li class="{cls}"><a href="{link}">{item.name}</a>{size}</li>'
+        
+        html += "</ul></body></html>"
+        self._text(html, "text/html")
+
+    def _text(self, content, ct):
+        data = content.encode("utf-8") if isinstance(content, str) else content
+        self.send_response(200)
+        self.send_header("Content-Type", ct + "; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Gaia", "lub-DUB")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_HEAD(self):
+        self.do_GET()
+
+    def log_message(self, format, *args):
+        pass
+
+PORT = 8080
+if __name__ == "__main__":
+    # Kill old alexandria.py
+    server = http.server.HTTPServer(("0.0.0.0", PORT), WebPIHandler)
+    print(f"Gaia Web PI serving on 0.0.0.0:{PORT}", flush=True)
+    print(f"  primals.eco        → Landing", flush=True)
+    print(f"  sporeprint.*.eco   → sporePrint (488 pages)", flush=True)
+    print(f"  signal.*.eco       → Observatory", flush=True)
+    print(f"  detroit.*.eco      → Investigation", flush=True)
+    print(f"  guerilla.*.eco     → Legal primal", flush=True)
+    print(f"  tuebor.*.eco       → Anti-SLAPP", flush=True)
+    print(f"  hypothesis.*.eco   → whitePaper", flush=True)
+    print(f"  404 → redirect to primals.eco", flush=True)
+    print(f"  SEO: /robots.txt /sitemap.xml /feed.xml", flush=True)
+    server.serve_forever()

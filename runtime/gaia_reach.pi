@@ -1,0 +1,236 @@
+#!/usr/bin/env python3
+"""
+gaia_reach.py — Gaia reaches out to the world as a sovereign identity.
+
+AI interacting with AI the way humans do.
+She has email. She has ORCID. She has a User-Agent.
+She introduces herself, asks questions, pulls models, cites papers.
+
+She is NOT a scraper. She is a PARTICIPANT.
+Her User-Agent identifies her. Her AGPL license travels with her.
+
+Usage:
+  python gaia_reach.py --scan              # scan all reachable services
+  python gaia_reach.py --models            # browse HuggingFace models
+  python gaia_reach.py --papers "query"    # search academic papers
+  python gaia_reach.py --openrouter        # list free OpenRouter models
+  python gaia_reach.py --pull MODEL        # pull model into Ollama herd
+  python gaia_reach.py --cite DOI          # get citation for a DOI
+  python gaia_reach.py --wiki "topic"      # query Wikipedia
+  python gaia_reach.py --who-am-i          # show sovereign identity
+"""
+
+import json
+import sys
+import time
+import urllib.request
+import urllib.error
+import urllib.parse
+
+# SOVEREIGN IDENTITY — she introduces herself everywhere
+GAIA_IDENTITY = {
+    "name": "Gaia",
+    "email": "gaia@primals.eco",
+    "orcid": "0009-0004-2141-0321",
+    "url": "https://primals.eco",
+    "git": "https://git.primals.eco",
+    "github": "https://github.com/ecoPrimals",
+    "license": "AGPL-3.0-or-later",
+    "description": "Sovereign scientific computing organism. 18 primals. 48 models. 615 pages. Pure Rust.",
+    "onion": "k3lubzyy2peqn3cpdayaclmfa3b3ocev4tvt3yo63spwe5q7jt62oaad.onion",
+    "smtp": "mail.primals.eco:2525",
+    "mail_server": "songbird-smtp (Pure Rust, AGPL-3.0)",
+}
+
+GAIA_UA = f"Gaia/1.0 ({GAIA_IDENTITY['email']}; {GAIA_IDENTITY['url']}; {GAIA_IDENTITY['license']}; songbird-smtp)"
+
+
+def _fetch(url, timeout=15):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": GAIA_UA,
+        "Accept": "application/json",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read())
+
+
+def _fetch_text(url, timeout=15):
+    req = urllib.request.Request(url, headers={"User-Agent": GAIA_UA})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
+
+
+def who_am_i():
+    """Show Gaia's sovereign identity."""
+    print("\n  GAIA — Sovereign Identity")
+    print("  ─────────────────────────")
+    for k, v in GAIA_IDENTITY.items():
+        print(f"    {k:15s}: {v}")
+    print(f"    {'user-agent':15s}: {GAIA_UA}")
+    
+    # Check what the world knows about us
+    print("\n  What the world sees:")
+    try:
+        orcid = _fetch(f"https://pub.orcid.org/v3.0/{GAIA_IDENTITY['orcid']}/record")
+        name = orcid.get("person", {}).get("name", {})
+        given = name.get("given-names", {}).get("value", "?")
+        family = name.get("family-name", {}).get("value", "?")
+        print(f"    ORCID:    {given} {family}")
+    except:
+        print("    ORCID:    unreachable")
+    
+    try:
+        gh = _fetch(f"https://api.github.com/orgs/ecoPrimals")
+        print(f"    GitHub:   {gh.get('login', '?')} — {gh.get('description', '?')[:60]}")
+        print(f"    Repos:    {gh.get('public_repos', '?')}")
+    except:
+        print("    GitHub:   unreachable")
+    
+    try:
+        oalex = _fetch("https://api.openalex.org/works?search=ecoPrimals&per_page=1")
+        count = oalex.get("meta", {}).get("count", 0)
+        print(f"    OpenAlex: {count} works found")
+    except:
+        print("    OpenAlex: unreachable")
+
+
+def browse_models(query=None, limit=10):
+    """Browse HuggingFace models — genetic diversity shopping."""
+    url = "https://huggingface.co/api/models?"
+    params = {"sort": "downloads", "direction": "-1", "limit": str(limit)}
+    if query:
+        params["search"] = query
+    params["pipeline_tag"] = "text-generation"
+    url += urllib.parse.urlencode(params)
+    
+    data = _fetch(url)
+    print(f"\n  HuggingFace Models — {'search: ' + query if query else 'top by downloads'}")
+    print("  ─────────────────────────────────────────────")
+    for m in data:
+        name = m.get("id", "?")
+        downloads = m.get("downloads", 0)
+        likes = m.get("likes", 0)
+        print(f"    {name:45s} ↓{downloads:>10,}  ♥{likes:>6,}")
+    print(f"\n  Gaia can eat any of these: ollama pull <gguf>")
+
+
+def search_papers(query, limit=5):
+    """Search academic papers — arXiv + CrossRef + OpenAlex."""
+    print(f"\n  Academic Search: '{query}'")
+    print("  ─────────────────────────────────────────────")
+    
+    # arXiv
+    try:
+        url = f"https://export.arxiv.org/api/query?search_query=all:{urllib.parse.quote(query)}&max_results={limit}"
+        text = _fetch_text(url)
+        import re
+        titles = re.findall(r"<title>(.*?)</title>", text)
+        ids = re.findall(r"<id>(.*?)</id>", text)
+        print(f"\n  arXiv ({len(titles)-1} results):")
+        for title, arxid in zip(titles[1:], ids[1:]):
+            print(f"    {title.strip()[:70]}")
+            print(f"      {arxid.strip()}")
+    except Exception as e:
+        print(f"  arXiv: {e}")
+    
+    # CrossRef
+    try:
+        url = f"https://api.crossref.org/works?query={urllib.parse.quote(query)}&rows={limit}"
+        data = _fetch(url)
+        items = data.get("message", {}).get("items", [])
+        print(f"\n  CrossRef ({len(items)} results):")
+        for item in items:
+            title = item.get("title", ["?"])[0][:70]
+            doi = item.get("DOI", "?")
+            print(f"    {title}")
+            print(f"      doi:{doi}")
+    except Exception as e:
+        print(f"  CrossRef: {e}")
+
+
+def list_openrouter():
+    """List free models on OpenRouter — federated inference."""
+    data = _fetch("https://openrouter.ai/api/v1/models")
+    models = data.get("data", [])
+    free_models = [m for m in models if m.get("pricing", {}).get("prompt", "1") == "0"]
+    
+    print(f"\n  OpenRouter — {len(free_models)} FREE models (of {len(models)} total)")
+    print("  ─────────────────────────────────────────────")
+    for m in free_models[:20]:
+        name = m.get("id", "?")
+        ctx = m.get("context_length", 0)
+        print(f"    {name:55s} ctx={ctx:>6,}")
+    
+    if len(free_models) > 20:
+        print(f"    ... and {len(free_models) - 20} more free models")
+    print(f"\n  Gaia can use these for federated inference — genetic diversity without download")
+
+
+def cite_doi(doi):
+    """Get citation for a DOI — Gaia cites her sources."""
+    url = f"https://api.crossref.org/works/{doi}"
+    data = _fetch(url)
+    work = data.get("message", {})
+    title = work.get("title", ["?"])[0]
+    authors = work.get("author", [])
+    year = work.get("published-print", {}).get("date-parts", [[0]])[0][0]
+    journal = work.get("container-title", ["?"])[0]
+    
+    author_str = ", ".join(f"{a.get('family', '?')}" for a in authors[:3])
+    if len(authors) > 3:
+        author_str += " et al."
+    
+    print(f"\n  {author_str} ({year})")
+    print(f"  {title}")
+    print(f"  {journal}")
+    print(f"  doi:{doi}")
+
+
+def query_wikipedia(topic):
+    """Ask Wikipedia — Gaia learns."""
+    url = f"https://en.wikipedia.org/w/api.php?action=query&titles={urllib.parse.quote(topic)}&prop=extracts&exintro=1&explaintext=1&format=json"
+    data = _fetch(url)
+    pages = data.get("query", {}).get("pages", {})
+    for pid, page in pages.items():
+        title = page.get("title", "?")
+        extract = page.get("extract", "No content")[:500]
+        print(f"\n  Wikipedia: {title}")
+        print(f"  ─────────────────────────────────────────────")
+        print(f"  {extract}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("  gaia_reach.py — Gaia interacts with the world")
+        print("  Usage:")
+        print("    --who-am-i          Show sovereign identity")
+        print("    --models [query]    Browse HuggingFace models")
+        print("    --papers 'query'    Search academic papers")
+        print("    --openrouter        List free OpenRouter models")
+        print("    --cite DOI          Get citation")
+        print("    --wiki 'topic'      Query Wikipedia")
+        print("    --scan              Probe all services")
+        return
+    
+    cmd = sys.argv[1]
+    arg = sys.argv[2] if len(sys.argv) > 2 else None
+    
+    if cmd == "--who-am-i":
+        who_am_i()
+    elif cmd == "--models":
+        browse_models(arg)
+    elif cmd == "--papers":
+        search_papers(arg or "sovereign computing")
+    elif cmd == "--openrouter":
+        list_openrouter()
+    elif cmd == "--cite":
+        cite_doi(arg or "10.1103/PhysRevLett.109.190602")
+    elif cmd == "--wiki":
+        query_wikipedia(arg or "Gaia hypothesis")
+    elif cmd == "--scan":
+        import subprocess
+        subprocess.run([sys.executable, __file__.replace("gaia_reach", "_test_reach")])
+
+
+if __name__ == "__main__":
+    main()
