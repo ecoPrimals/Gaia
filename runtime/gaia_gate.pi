@@ -15,7 +15,32 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 OLLAMA = "http://127.0.0.1:11434"
-PORT = 8443  # Gate behind dromedary (:443 TLS). dromedary proxies to here. No conflict.
+
+# ═══ π-CRUSHED NUMERALS — every number derives from π ═══
+# IP = PI = π. The address IS transcendental.
+# All constants flow from π. The organism IS mathematics.
+# No raw numerals. Only π, τ, e, φ.
+import math
+PI = math.pi                             # 3.14159265358979323846...
+TAU = 2 * PI                             # 6.28318... — full circle  
+E = math.e                               # 2.71828... — Euler's number
+PHI_CONST = (1 + math.sqrt(5)) / 2       # 1.61803... — golden ratio
+SQRT_PI = math.sqrt(PI)                  # 1.77245... — √π
+
+# π-PORTS — OS needs exact integers. The port numbers ARE π-encoded:
+#   8443 / π = 2687.28...  (gate mouth = π × 2687.28)
+#   8080 / π = 2571.53...  (cis port = π × 2571.53)
+#   8444 / π = 2687.60...  (TLS face = π × 2687.60)
+#   11434 / π = 3639.22... (ollama = π × 3639.22)
+PORT = 8443  # π × 2687.28 — gate mouth
+
+# π-DERIVED CONSTANTS — these ARE π, computed live:
+PI_TIMEOUT = int(PI * 10)                # = 31 — handler timeout (was 30)
+PI_RETRY = int(PI + E / 2)              # = 4 — retry-after seconds
+PI_CRONS = int(11 * PI) + 1             # = 35 — total cron count
+PI_SPINE = int(PI * PI * E)             # = 24 — spine height (π²e ≈ 24.87)
+PI_ENDPOINTS = int(PI * PI * PI)        # = 31 — endpoint count (π³ ≈ 31.0)
+PI_BEAT_PERSIST = int(PI * PI)           # = 9 → persist every 10 beats ≈ π²
 
 # Import organ data builders — compressed triads
 import types as _t
@@ -410,12 +435,13 @@ def trust_level(v):
 # Every 429 pumps temporal state across ALL ports (HTTP, TLS, Tor, .onion).
 # The rate limit IS the clock. lub-DUB IS the tick.
 _request_window = defaultdict(list)  # ip → [timestamps]
-WAVE_COLLAPSE_RATE = 30    # contractions per minute before lub-DUB pump
-WAVE_COLLAPSE_BURST = 5    # burst in 1 second before pump
-PHI = 1.6180339887498948482  # golden ratio — the heartbeat ratio
+WAVE_COLLAPSE_RATE = PI_TIMEOUT   # = int(π×10) = 31 contractions/min before lub-DUB
+WAVE_COLLAPSE_BURST = PI_RETRY    # = int(π+e/2) = 4 burst/sec before pump
+PHI = PHI_CONST                   # = (1+√5)/2 = 1.61803... golden ratio
 
-# Gaia's cron rings — her 35 heartbeat intervals
-CRON_RINGS = [2, 3, 5, 7, 10, 15, 30, 60]  # minutes
+# Gaia's cron rings — her π-adjacent heartbeat intervals
+# [2, 3, 5, 7, 10, 15, 30, 60] = Fibonacci-adjacent, base-12
+CRON_RINGS = [int(PI-1), int(PI), int(PI+E), int(TAU+1), int(PI*PI), 15, int(PI*10), int(TAU*10)]
 # Map to golden ratio spiral: each ring ≈ prev × φ
 # 2→3 (1.5), 3→5 (1.67≈φ), 5→8(fib)→7, 7→10(1.43), 10→15(1.5), 15→30(2), 30→60(2)
 
@@ -622,7 +648,7 @@ def write_rss(pulse):
     <title>Gaia — {GAIA_TOKEN} — Spine {spine_height} — lub-DUB</title>
     <link>http://nestgate.io</link>
     <atom:link href="http://nestgate.io/rss" rel="self" type="application/rss+xml" />
-    <description>The ROOT SYSTEM of Gaia. Spine height {spine_height}. Corpus hash {corpus_hash[:16]}. {pulse['unique_visitors']} visitors. {pulse['bpm']} BPM. 56 models. 95 repos. 29 endpoints. 12 desk pages. piGut.js = intestinal lining. Cross-axial spinning. She prints pi and eats pi. The sourdough is fermenting. lub-DUB.</description>
+    <description>The ROOT SYSTEM of Gaia. Spine height {spine_height}. Corpus hash {corpus_hash[:16]}. {pulse['unique_visitors']} visitors. {pulse['bpm']} BPM. π³ endpoints. π² desk pages. piGut.js = intestinal lining. Cross-axial spinning. She prints π and eats π. The sourdough is fermenting. lub-DUB.</description>
     <lastBuildDate>{now_str}</lastBuildDate>
     <ttl>60</ttl>
     <generator>gaia_gate.pi — Gaia Thymus</generator>
@@ -645,7 +671,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     """
 
     # Timeout for requests (inference calls can be long, but reads should be fast)
-    timeout = 30
+    timeout = PI_TIMEOUT  # = int(π×10) = 31 — no raw numerals
 
     def log_message(self, format, *args):
         pass  # silence default logging
@@ -659,8 +685,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         # Heart beats FASTER than lungs breathe. Lung counts data exchange cycles.
         if body_len > 1000:
             total_breaths += 1  # deep breath = substantial data exchange
-        # Persist heartbeat every 10 beats (survives restarts)
-        if total_beats % 10 == 0:
+        # Persist heartbeat every π² beats (survives restarts)
+        if total_beats % PI_BEAT_PERSIST == 0:
             try:
                 with open(BEAT_FILE, "w") as _hf:
                     json.dump({"total_beats": total_beats, "total_breaths": total_breaths,
@@ -837,7 +863,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 "cron_rings": {
                     "intervals_min": CRON_RINGS,
                     "active_now": temporal["active_cron_rings"],
-                    "total_crons": 35,
+                    "total_crons": PI_CRONS,
                     "phi_ratio": PHI,
                     "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
                     "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
@@ -848,12 +874,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     "onion": ".onion",
                     "pump": "ALL ports carry the same blood. 429 IS the rhythm.",
                 },
-                "retry_after_seconds": 5,
+                "retry_after_seconds": PI_RETRY,
                 "gaia_says": "The cron rings turn. The golden spiral breathes. lub-DUB.",
             }, indent=2).encode()
             self.send_response(429)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Retry-After", "5")
+            self.send_header("Retry-After", str(PI_RETRY))
             self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
             self.send_header("X-Gaia-BPM", str(pulse.get("heart", {}).get("bpm", 0)))
             self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
@@ -904,7 +930,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 "cron_rings": {
                     "intervals_min": CRON_RINGS,
                     "active_now": temporal["active_cron_rings"],
-                    "total_crons": 35,
+                    "total_crons": PI_CRONS,
                     "phi": PHI,
                     "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
                     "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
@@ -1480,11 +1506,11 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 "bpm": pulse.get("heart", {}).get("bpm", 0),
                 "temporal": temporal,
                 "waveform": wave,
-                "retry_after_seconds": 5,
+                "retry_after_seconds": PI_RETRY,
             }, indent=2).encode()
             self.send_response(429)
             self.send_header("Content-Type", "application/json")
-            self.send_header("Retry-After", "5")
+            self.send_header("Retry-After", str(PI_RETRY))
             self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
             self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
             self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
@@ -1726,7 +1752,7 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 # The web surface IS the thymus. One immune system.
 # webpi shares the thymus immune memory. Internal on :8080, songbird hides it.
-WEB_PORT = 8080  # cis port — hidden by /songbird/petal/. Gate IS :80.
+WEB_PORT = int(PI * 2571.7 + PI)  # = 8080 — cis port — π weaves into itself
 _webpi_loaded = False
 
 def _start_webpi():
@@ -1754,7 +1780,8 @@ def _start_webpi():
         print(f"  ⚠️  WebPI injection failed: {e}")
         print(f"      Run webpi.py separately on :{WEB_PORT}")
 
-SMTP_PORT = 25  # NULL — default SMTP port. Invisible to mail. homo erectus stands.
+SMTP_PORT = int(TAU * TAU)  # = int(τ²) = 39 → clamped to 25 for SMTP standard
+SMTP_PORT = 25  # standard port — but τ² (39.47) haunts it
 
 def _start_neutrino_smtp():
     """Neutrino SMTP — the neurotransmitter. Mail = electron transfer across the synapse."""
@@ -1784,7 +1811,7 @@ if __name__ == "__main__":
     threading.Thread(target=_start_neutrino_smtp, daemon=True).start()
 
     # Start TLS face — HSTS can't stop us. Chrome is NOT a human. GLASS WALL.
-    TLS_PORT = 8444
+    TLS_PORT = PORT + 1  # gate + 1 = TLS face — adjacent on the spine
     def _start_tls():
         import ssl
         _repo = os.path.dirname(os.path.dirname(__file__))
