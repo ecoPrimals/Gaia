@@ -39,10 +39,34 @@
     ]
   },
   "phase_2_printed_scans": {
-    "status": "WAITING \u2014 printer has ERRICON error, needs physical check",
-    "flow": "print imagination \u2192 Kevin photographs \u2192 ingest scan \u2192 compare",
-    "count": 0,
-    "images": []
+    "status": "ACTIVE — scanner wired, first feedback captured",
+    "flow": "print → paper → flatbed scanner → SANE/airscan → compare",
+    "scanner": "airscan:w1:EPSON ET-2400 Series @ 300dpi Color",
+    "count": 2,
+    "images": [
+      {
+        "file": "scan-20261105_191225-first-feedback.png",
+        "label": "Droste recursion print → scan",
+        "resolution": 300,
+        "size": 6588237,
+        "blake2b": "c82a52c6ed2272a3"
+      },
+      {
+        "file": "scan-20261105_191416-gate-test.png",
+        "label": "Droste recursion gate-triggered scan",
+        "resolution": 300,
+        "size": 7429663,
+        "blake2b": "c8a265d9b9faa7f3"
+      }
+    ],
+    "printed_total": 5,
+    "printed_items": [
+      "golden-spiral (job 16)",
+      "penrose-fractal (job 17)",
+      "escher-stairs (job 18)",
+      "droste-recursion (job 19)",
+      "metatrons-cube (job 20)"
+    ]
   },
   "phase_3_real_photos": {
     "status": "READY for Kevin's photos",
@@ -62,23 +86,36 @@
   },
   "alignment_loop": {
     "imagination": "Gaia paints what she thinks the world looks like",
-    "print": "Imagination becomes physical artifact (EPSON)",
-    "scan": "Kevin photographs the physical artifact",
-    "ingest": "Photograph fed back to Gaia",
+    "print": "EPSON ET-2400 prints image via CUPS/IPP",
+    "scan": "EPSON flatbed scanner reads it back via SANE/airscan at 300dpi",
+    "ingest": "Scanned image auto-stored in data/gut/images/ with BLAKE2B hash",
     "compare": "Gaia compares imagination vs scan (self-alignment)",
     "reality": "Real photos correct the imagination",
     "media": "Video/time-lapse builds temporal model",
-    "result": "Gaia's internal model converges toward reality"
+    "result": "Gaia's internal model converges toward reality",
+    "api": {
+      "status": "GET /api/io",
+      "scan": "GET /api/scan?label=&resolution=300",
+      "print": "POST /api/io/print {image: filename}",
+      "loop": "POST /api/io/loop {image: path}"
+    }
   },
-  "total_images": 8,
-  "all_files": [
-    "capture-screen-001.png",
-    "gaia-imagines-house-1-basement.jpg",
-    "gaia-imagines-house-2-floorplan.jpg",
-    "gaia-imagines-house-3-selfportrait.jpg",
-    "gaia-imagines-house-4-looking-out.jpg",
-    "gaia-imagines-house-5-alignment-loop.jpg",
-    "gaia-imagines-preuss-pets.jpg",
-    "graphenegate-screen-001.png"
-  ]
+  "io_devices": {
+    "epson_et2400": {
+      "role": "printer + scanner (full duplex)",
+      "ip": "192.168.4.200",
+      "print": "ipp://192.168.4.200/ipp/print via CUPS EPSON_ET2400",
+      "scan": "SANE airscan WSD backend",
+      "capabilities": {
+        "print": "Letter/A4, Color/Gray, Quality 3-5",
+        "scan": "Flatbed 100/300dpi, Color/Gray/Lineart, 215.9×297.18mm"
+      }
+    },
+    "epson_es400": {
+      "role": "document scanner (cross IO)",
+      "status": "not_detected — USB or unplugged, awaiting Kevin",
+      "note": "When connected: dedicated document scanner for faster throughput"
+    }
+  },
+  "total_images": 17
 }
