@@ -25,8 +25,14 @@ import time
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(__file__))
-from cortex import route as cortex_route, MODEL_REGISTRY
+import importlib.util, importlib.machinery
+_cortex_path = os.path.join(os.path.dirname(__file__), "cortex.pi")
+_loader = importlib.machinery.SourceFileLoader("cortex", _cortex_path)
+_spec = importlib.util.spec_from_file_location("cortex", _cortex_path, loader=_loader)
+_cortex = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_cortex)
+cortex_route = _cortex.route
+MODEL_REGISTRY = _cortex.MODEL_REGISTRY
 
 BRIDGE_PORT = 3143
 SQUIRREL_HOST = "127.0.0.1"
