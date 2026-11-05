@@ -308,6 +308,8 @@ def full_read():
     thermals = read_thermals()
     screen = read_screen_state()
     motion = read_motion_events()
+    cellular = read_cellular()
+    gps = read_gps()
     location = infer_location(wifi_scan, wifi)
 
     state = {
@@ -332,6 +334,8 @@ def full_read():
 
         "sensors": sensors,
         "motion": motion,
+        "cellular": cellular,
+        "gps": gps,
         "adb_transport": "WiFi" if ADB_SERIAL == ADB_WIFI else "USB",
 
         "location": location,
@@ -417,6 +421,60 @@ def run_once():
 
     save_state(state)
     return state
+
+def read_cellular():
+    """Read cell tower info — even without SIM, we see towers."""
+    raw = adb("dumpsys telephony.registry | head -10", timeout=10)
+    cell = {"sim_active": False, "towers": []}
+
+    if "OUT_OF_SERVICE" in raw:
+        cell["status"] = "emergency_only"
+    elif "IN_SERVICE" in raw:
+        cell["status"] = "active"
+        cell["sim_active"] = True
+
+    bands = re.findall(r'mBands=\[(\d+)\]', raw)
+    cell["bands"] = list(set(int(b) for b in bands))
+
+    rsrp_m = re.findall(r'rsrp=(-?\d+)', raw)
+    if rsrp_m:
+        cell["lte_rsrp"] = max(int(r) for r in rsrp_m if int(r) > -200)
+
+    rssi_m = re.findall(r'rssi=(-?\d+)', raw)
+    if rssi_m:
+        valid = [int(r) for r in rssi_m if -120 < int(r) < 0]
+        if valid:
+            cell["lte_rssi"] = max(valid)
+
+    carrier_m = re.search(r'mAlphaLong=(\S+)', raw)
+    if carrier_m and carrier_m.group(1) != "null":
+        cell["carrier"] = carrier_m.group(1)
+
+    return cell
+
+def read_gps():
+    """Read GPS location if available."""
+    raw = adb("dumpsys location | grep 'last location' | head -5")
+    gps = {"enabled": True, "fix": None}
+
+    for line in raw.split("\n"):
+        if "last location=" in line and "null" not in line:
+            loc_m = re.search(r'Location\[(.+?)\]', line)
+            if loc_m:
+                loc_str = loc_m.group(1)
+                lat_m = re.search(r'([\d.-]+),([\d.-]+)', loc_str)
+                if lat_m:
+                    gps["fix"] = {
+                        "lat": float(lat_m.group(1)),
+                        "lon": float(lat_m.group(2)),
+                    }
+                    acc_m = re.search(r'hAcc=([\d.]+)', loc_str)
+                    if acc_m:
+                        gps["fix"]["accuracy_m"] = float(acc_m.group(1))
+                    alt_m = re.search(r'alt=([\d.]+)', loc_str)
+                    if alt_m:
+                        gps["fix"]["altitude_m"] = float(alt_m.group(1))
+    return gps
 
 if __name__ == "__main__":
     if "--daemon" in sys.argv:

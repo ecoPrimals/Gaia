@@ -1,0 +1,179 @@
+{
+  "ts": "2026-11-05T18:45:00Z",
+  "wave": 222,
+  "type": "geospatial-amoeba",
+  "title": "grapheneGate as full geospatial roaming sensor — every device is a triangulator",
+
+  "current_state": {
+    "cellular": {
+      "sim": "NOT INSERTED — emergency only",
+      "carrier_visible": "Verizon Wireless (MCC=311, MNC=480)",
+      "bands_detected": [13, 66],
+      "technology": "LTE (NR available when SIM active)",
+      "lte_rsrp": -117,
+      "lte_rssi": -93,
+      "status": "EMERGENCY_ONLY — needs Mint Mobile SIM"
+    },
+    "gps": {
+      "enabled": true,
+      "fused_enabled": true,
+      "last_fix": null,
+      "location_mode": 3,
+      "note": "High accuracy mode — GPS + WiFi + cellular. No fix yet since no app has requested one."
+    },
+    "wifi": {
+      "connected": "Aperture Science",
+      "bssid": "BE:A2:C1:E8:DF:01",
+      "rssi": -16,
+      "standard": "WiFi 6 (802.11ax)",
+      "speed": "270 Mbps",
+      "visible_aps": 8
+    },
+    "bluetooth": {
+      "enabled": true,
+      "scan_mode": "CONNECTABLE",
+      "le_audio": true,
+      "bonded_devices": 0,
+      "ble_scan_ready": true
+    },
+    "adb": {
+      "usb": "44251JEKB04957 (connected)",
+      "wifi": "192.168.4.170:5555 (connected)",
+      "mode": "dual — USB primary, WiFi fallback"
+    }
+  },
+
+  "mint_mobile_plan": {
+    "action": "INSERT MINT MOBILE SIM",
+    "benefits": [
+      "Full LTE/5G data from ANYWHERE",
+      "GPS-assisted location with cellular triangulation",
+      "Phone beacons to eastGate over mobile data when off WiFi",
+      "Works on T-Mobile network (Mint is T-Mobile MVNO)",
+      "Kevin can look at his house from down the street via camera",
+      "Cell tower IDs give rough position even without GPS"
+    ],
+    "connectivity_modes": {
+      "at_home_usb": "ADB USB → full 37 sensor read every 30s",
+      "at_home_wifi": "ADB WiFi → full 37 sensor read every 30s (phone unplugged)",
+      "between_houses": "WiFi scan shows BSSID transition → house detection",
+      "away_cellular": "HTTP beacon to eastGate:8443/api/zk/imprint every 30s + GPS + camera",
+      "deep_away": "Cell tower triangulation + GPS → lat/lon to Gaia"
+    },
+    "data_flow_cellular": [
+      "1. Phone wakes every 30s",
+      "2. Reads GPS (lat/lon/altitude/accuracy)",
+      "3. Reads WiFi scan (all visible APs + RSSI)",
+      "4. Reads cell tower info (MCC/MNC/LAC/CID/RSRP)",
+      "5. POSTs beacon to https://primals.eco:8443/api/zk/imprint",
+      "6. POSTs sensor data to https://primals.eco:8443/api/neutron",
+      "7. Gaia knows EXACTLY where Kevin is in the world"
+    ]
+  },
+
+  "distance_ranging": {
+    "how_to_see_house_from_street": {
+      "method": "WiFi RSSI falloff curve",
+      "principle": "As Kevin walks away from the house, our APs fade in signal. Free-space path loss: RSSI ≈ -27.55 + 20·log₁₀(f_MHz) + 20·log₁₀(d_meters). At 2.4GHz, every 6dB drop ≈ double the distance.",
+      "example": [
+        "At AP (-16 dBm): 0-2 meters (server room)",
+        "At -30 dBm: ~5 meters (same room)",
+        "At -50 dBm: ~15 meters (across house)",
+        "At -60 dBm: ~30 meters (yard)",
+        "At -70 dBm: ~50 meters (sidewalk)",
+        "At -80 dBm: ~100 meters (down the street)",
+        "At -90 dBm: ~200 meters (edge of detection)"
+      ],
+      "plus_gps": "GPS gives exact lat/lon → overlay on map → Gaia sees the house from Kevin's perspective"
+    }
+  },
+
+  "every_device_is_a_triangulator": {
+    "principle": "Any device that broadcasts WiFi or BLE is a fixed reference point. Gaia knows where each device lives in the house. When the phone detects them, it can triangulate its own position relative to them.",
+    "fixed_beacons": [
+      {
+        "device": "VIZIO V555 TV",
+        "ssid": "VIZIOCastAudio4624",
+        "bssid": "3A:9B:D6:1F:CF:33",
+        "location": "basement",
+        "rssi_at_discovery": -47,
+        "type": "WiFi beacon (Chromecast audio)",
+        "triangulation": "RSSI to VIZIO → distance to basement"
+      },
+      {
+        "device": "Fire TV Cube",
+        "ip": "192.168.4.197",
+        "location": "living room",
+        "type": "WiFi + BLE beacon",
+        "triangulation": "RSSI to Fire TV → distance to living room"
+      },
+      {
+        "device": "EPSON Printer",
+        "mac": "D4:80:8B:1B:9F:01",
+        "ip": "192.168.4.110",
+        "location": "office/server room",
+        "rssi_at_discovery": -19,
+        "type": "WiFi beacon (always on)",
+        "triangulation": "RSSI to printer → distance to office"
+      },
+      {
+        "device": "Router AP (Aperture Science)",
+        "bssid": "BE:A2:C1:E8:DF:01",
+        "location": "server room (House 1)",
+        "type": "WiFi AP (primary)",
+        "triangulation": "RSSI to AP → distance to center of House 1"
+      },
+      {
+        "device": "Router AP (Gaia)",
+        "bssid": "82:C9:70:CF:F6:7C",
+        "location": "server room (House 1)",
+        "type": "WiFi AP (guest/open)",
+        "triangulation": "RSSI to Gaia AP → distance to center of House 1"
+      },
+      {
+        "device": "ATT neighbor router",
+        "ssid": "ATTypcbDbY",
+        "bssid": "EC:C3:02:E1:11:84",
+        "location": "neighbor's house (fixed reference)",
+        "rssi_at_discovery": -47,
+        "type": "External WiFi beacon",
+        "triangulation": "RSSI to neighbor → distance to property boundary"
+      }
+    ],
+    "wearables_as_beacons": {
+      "potential": [
+        "Apple Watch → BLE advertisement every ~1s",
+        "AirPods / earbuds → BLE when in use",
+        "Fitbit / smart band → continuous BLE",
+        "Smart ring → BLE",
+        "Any Bluetooth speaker → discoverable beacon"
+      ],
+      "how_it_works": "Wearable broadcasts BLE. grapheneGate detects RSSI. If wearable is on Kevin, they move together → confirmed Kevin position. If wearable is stationary (left on nightstand), it becomes a room beacon."
+    },
+    "neighbor_devices_as_references": {
+      "note": "Every neighbor WiFi AP is an involuntary position reference. Their signal strength is relatively constant. Changes in their RSSI relative to the phone = phone moved, not them.",
+      "visible_neighbors": [
+        "ATTypcbDbY (-47dBm) — next door",
+        "635Julia (-86dBm) — few houses away",
+        "KinderLab (-79dBm) — across street?",
+        "Da Crib (-91dBm) — far neighbor",
+        "HOME-E1EC (-87dBm) — far neighbor",
+        "ADC-V724X (-86dBm) — security camera"
+      ]
+    }
+  },
+
+  "signal_routing": {
+    "principle": "All radios are routing paths, not just connectivity. WiFi scans = spatial data. BLE = proximity data. Cellular = wide-area positioning. GPS = absolute coordinates. Together they form a continuous spatial awareness field.",
+    "routes": {
+      "wifi_scan": "spatial map of surrounding APs → relative position",
+      "wifi_rssi": "signal strength to known beacons → distance estimation",
+      "ble_scan": "proximity to wearables and smart devices → room-level",
+      "cellular_towers": "cell ID + RSRP → wide-area triangulation",
+      "gps": "lat/lon/altitude → absolute world coordinates",
+      "barometer": "atmospheric pressure → floor/elevation changes",
+      "magnetometer": "compass heading → direction facing",
+      "accelerometer": "step counting + motion type → walking/running/driving"
+    }
+  }
+}
