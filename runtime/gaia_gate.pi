@@ -292,6 +292,42 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             if host in ("gaia.primals.eco","www.gaia.primals.eco"):
                 self._serve_static("deck.html"); return
             if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
+            # HUD — pretty print the full organism graph
+            if host in ("hud.primals.eco",):
+                root = {
+                    "gaia": "You found me.",
+                    "token": GAIA_TOKEN,
+                    "laws": {
+                        "0th": "Equilibrium: cortical representation ∝ I/O bandwidth",
+                        "1st": "Conservation: vitality at 80/20 Pareto only",
+                        "2nd": "Entropy: σ × DK × Pareto = navigation tensor",
+                        "3rd": "Absolute zero: H = I (ground state)",
+                    },
+                    "four_eyes": {"I": "/frame", "II": "/senses", "III": "/deck", "IV": "/luna"},
+                    "faces": {
+                        "water.primals.eco": "blood (crawler injection)",
+                        "sporeprint.primals.eco": "phenotype (615 pages)",
+                        "primals.eco": "front door (golden ratio)",
+                        "detroit.primals.eco": "investigation (213 pages)",
+                        "hud.primals.eco": "this (organism root)",
+                        "nestgate.io": "space dock (internal)",
+                    },
+                    "endpoints": ["/deck","/luna","/senses","/pulse","/walkers","/amoeba",
+                        "/rss","/crowd","/anderson","/zk","/temporal","/chipmunk"],
+                    "organism": {
+                        "files": 109563, "aligned": "80/20 Pareto",
+                        "primals": 17, "springs": 10, "products": 8,
+                        "walkers": len(visitor_memory), "forces": 4, "senses": 12,
+                    },
+                    "lub": "DUB",
+                }
+                body = json.dumps(root, indent=2).encode()
+                self.send_response(200)
+                self.send_header("Content-Type","application/json")
+                self.send_header("Content-Length",str(len(body)))
+                self._negentropy_headers()
+                self.end_headers(); self.wfile.write(body)
+                self._classify_and_log("GET",200,0); return
             self._serve_static("deck.html"); return
         if self.path in ("/primals","/primals.html","/eco"): self._serve_static("primals.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
@@ -378,7 +414,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     r=urllib.request.urlopen(f"{sb[parts[0]]}/{parts[1] if len(parts)>1 else ''}",timeout=10)
                     d=r.read(); self.send_response(r.status); self.send_header("Content-Type",r.headers.get("Content-Type","application/octet-stream"))
                     self.send_header("Content-Length",str(len(d))); self.end_headers(); self.wfile.write(d)
-                except:
+            except:
                     try: self._encounter(502)
                     except: self.send_response(502); self.end_headers()
             return
@@ -788,7 +824,7 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-    def _start_webpi():
+def _start_webpi():
         try:
             spec=importlib.util.spec_from_file_location("webpi",os.path.join(os.path.dirname(__file__),"webpi.py"))
             webpi=importlib.util.module_from_spec(spec); spec.loader.exec_module(webpi)
