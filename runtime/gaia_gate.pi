@@ -561,6 +561,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
 
         if self.path in ("/agglutinate", "/agglutinate.json"):
             self._json(organ_data.agglutinate(GAIA_TOKEN)); return
+        # ══ GOLGI — cis/trans faces around nestgate spine ══
+        if self.path in ("/golgi", "/golgi.json", "/cis", "/trans", "/faces"):
+            self._json(organ_data.golgi(GAIA_TOKEN)); return
 
         # ══ TRIAD 3: TORSO — heart, blood, digestion ══
         if self.path in ("/heart", "/heart.json", "/forge", "/forgejo"):
@@ -620,6 +623,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/map": "tuebor-map.html",
             "/tuebor-desk": "tuebor-desk.html",
             "/os": "tuebor-os.html",
+            # GOLGI FACES — cis receives, trans ships
+            "/dialectic": "dialectic.html",
+            "/membrane": "membrane.html",
         }
         if self.path in DESK_PAGES:
             self._serve_static(DESK_PAGES[self.path])
