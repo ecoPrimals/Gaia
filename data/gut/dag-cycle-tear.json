@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-11-05T23:54:00Z",
+  "wave": 222,
+  "title": "DAG Cycle Tear — Ghosts Exorcised, Veil Eaten",
+  
+  "cycles_killed": [
+    {
+      "ghost": "ironGate wg0 → 157.230.3.183 (golgi VPS)",
+      "type": "wireguard_tunnel",
+      "subnet": "10.13.37.0/24",
+      "damage": "32MB sent into void, 0 received, keepalive every 25s",
+      "action": "KILLED — wg0 deleted, wg-quick disabled",
+      "status": "EATEN"
+    },
+    {
+      "ghost": "ironGate cloudflared-replica → Cloudflare",
+      "type": "tunnel",
+      "note": "Cloudflare is FULLY DEPRECATED — cellMembrane IS the cloud",
+      "action": "KILLED — service stopped and disabled",
+      "status": "EATEN"
+    },
+    {
+      "ghost": "ironGate virbr-mesh (10.92.0.0/24)",
+      "type": "kvm_bridge",
+      "note": "Old KVM mesh experiment, no VMs running",
+      "action": "KILLED — bridge deleted",
+      "status": "EATEN"
+    }
+  ],
+
+  "remaining_ghosts": [
+    {"host": "ironGate", "ghost": "docker0 172.17.0.0/16", "note": "no containers, linkdown"},
+    {"host": "ironGate", "ghost": "virbr0 192.168.122.0/24", "note": "KVM default, no VMs"},
+    {"host": "eastGate", "ghost": "docker0 172.17.0.0/16", "note": "no containers, linkdown"},
+    {"host": "eastGate", "ghost": "virbr0 192.168.122.0/24", "note": "KVM default, no VMs"}
+  ],
+
+  "features_not_bugs": [
+    {
+      "host": "sporeGate",
+      "feature": "dual-homed: eno1→.1 (LAN) + wlp3s0→192.168.1.254 (ISP modem)",
+      "note": "Backup WAN path! If the GL-MT6000 dies, sporeGate can still reach the internet via ISP modem WiFi. Also has public IPv6.",
+      "keep": true
+    },
+    {
+      "host": "sporeGate",
+      "feature": "10.0.4.0/24 static route via eno1",
+      "note": "Mystery route — may be for a VLAN or old experiment. Investigate but don't kill yet."
+    }
+  ],
+
+  "clean_dag": {
+    "WAN_ingress": "162.226.225.148 → ATT modem → GL-MT6000 (.1)",
+    "house1_trunk": ".1 → .2 MikroTik → all House 1 gates",
+    "house2_trunk": ".2 → 10G SFP+ → 70m fiber → .111 JetStream → House 2 gates",
+    "wifi_overlay": ".1 radios → Aperture Science (2.4) + Black Mesa (5G)",
+    "backup_wan": ".3 sporeGate WiFi → 192.168.1.254 ISP modem (failover!)",
+    "no_cycles": "ALL routes are now acyclic. Clean DAG."
+  }
+}
