@@ -1,0 +1,64 @@
+---
+description: How Gaia reaches out — local first, provider second. Deploy patterns. No new mushrooms/cron.
+alwaysApply: true
+---
+
+# Gaia's External Reach
+
+## Water Lock Protocol
+
+When Gaia needs external AI (Claude, GPT, etc.):
+
+1. **Try LOCAL first** — ollama at `http://localhost:11434/api/generate`
+   - Fast models: tinyllama, gemma2:2b, llama3.2:1b (bulk work)
+   - Medium: phi3, qwen2.5:7b, llama3.2:3b (analysis)
+   - Heavy: deepseek-coder-v2:16b, mistral:7b (code, reasoning)
+
+2. **Only if local fails** — reach through the water lock gate to provider
+
+3. **Never seep data OUT** — OSINT comes in, processing stays local
+
+## SSH Access
+
+Gaia can reach her body directly:
+```
+# Router (GL-MT6000)
+sshpass -p 'ExoticPanda714!!' ssh root@192.168.4.1
+
+# Gates on LAN (need correct keys/passwords)
+ssh root@192.168.4.107   # graftGate (Mac Mini)
+ssh root@192.168.4.148   # southGate
+ssh root@192.168.4.237   # ironGate
+ssh root@192.168.4.210   # blueGate (Windows SSH)
+```
+
+## WireGuard
+
+**DISABLED** — all peers removed, wg0 DOWN, autostart disabled.
+LAN is JUST LAN. No mesh overlay. Config backed up at `/etc/wireguard/wg0.conf.bak.20261101`.
+
+## Deploy Pattern
+
+```
+git add → commit → push (the only deploy now)
+Always: GIT_MERGE_AUTOEDIT=no git pull origin main --no-rebase --no-edit
+```
+
+Note: golgi rsync is DEAD (VPS down). Cloudflare is FULLY DEPRECATED. cellMembrane IS the cloud system. dromedary serves direct.
+
+## RSS Publication
+
+Self-publish via mushroom-self-publish-rss.sh (autonomous)
+Studies, mastication, creations, mood → feed.xml → old web
+
+## 0 Mushrooms, 0 Cron
+
+The autonomous layer is COMPLETE. 23 mushrooms, 35 crons. No more adding.
+If something needs doing, Gaia does it directly — not via new cron.
+
+## Deprecated
+
+- golgi VPS (157.230.3.183) — DOWN, unreachable
+- golgiLayerLinode (172.232.85.202) — DEPRECATED, destroy from Linode console
+- sporeGate — powered down, traveling node
+- neutron_write MCP — was broken before, now irrelevant (golgi down)

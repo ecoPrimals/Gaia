@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎲 BingoCube — Coordination Topology</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #e8d5b7; font-family: 'Courier New', monospace; padding: 2rem; }
+  h1 { color: #ff9944; margin-bottom: 0.5rem; }
+  .subtitle { color: #886644; font-size: 0.85rem; margin-bottom: 2rem; }
+  .cube-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
+  .node {
+    background: #1a1208; border: 1px solid #332211; border-radius: 6px;
+    padding: 1rem; transition: all 0.3s;
+  }
+  .node:hover { border-color: #ff6600; transform: scale(1.02); }
+  .node h3 { color: #ff9944; font-size: 0.85rem; }
+  .node p { color: #886644; font-size: 0.75rem; margin-top: 0.3rem; }
+  .node .count { color: #ff6600; font-size: 1.2rem; font-weight: bold; }
+  .edges { margin-top: 2rem; }
+  .edge { color: #664422; font-size: 0.75rem; padding: 0.3rem 0; border-bottom: 1px solid #1a1208; }
+  .edge span { color: #ff9944; }
+  .meta { color: #443322; font-size: 0.75rem; margin-top: 2rem; }
+  a { color: #ff9944; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  button { 
+    background: #331100; color: #ff9944; border: 1px solid #ff6600; 
+    padding: 0.5rem 1.5rem; font-family: inherit; cursor: pointer; 
+    border-radius: 4px; margin-top: 1rem;
+  }
+</style>
+</head>
+<body>
+<h1>🎲 BingoCube</h1>
+<p class="subtitle">The coordination topology — every node, every edge, every dimension.</p>
+
+<div class="cube-grid" id="nodes"></div>
+<div class="edges" id="edges"></div>
+
+<button onclick="location.href='/'">← Campfire</button>
+<button onclick="location.href='/gate-msg.html'">🔥 Stories</button>
+
+<p class="meta" id="meta"></p>
+
+<script>
+async function load() {
+  try {
+    const r = await fetch('/data/bingo-cube.json');
+    const cube = await r.json();
+    
+    // Render nodes
+    const nodes = cube.nodes || {};
+    const container = document.getElementById('nodes');
+    for (const [category, nodeList] of Object.entries(nodes)) {
+      if (typeof nodeList === 'object' && !Array.isArray(nodeList)) {
+        for (const [name, info] of Object.entries(nodeList)) {
+          const div = document.createElement('div');
+          div.className = 'node';
+          const detail = typeof info === 'object' ? 
+            (info.role || info.state || info.type || JSON.stringify(info).substring(0,60)) : 
+            String(info);
+          div.innerHTML = `<h3>${name}</h3><p>${category}</p><p>${detail}</p>`;
+          container.appendChild(div);
+        }
+      } else if (Array.isArray(nodeList)) {
+        for (const n of nodeList) {
+          const div = document.createElement('div');
+          div.className = 'node';
+          const name = typeof n === 'string' ? n : (n.name || n.hostname || JSON.stringify(n).substring(0,40));
+          const detail = typeof n === 'object' ? (n.role || n.state || n.ip || '') : '';
+          div.innerHTML = `<h3>${name}</h3><p>${category}</p><p>${detail}</p>`;
+          container.appendChild(div);
+        }
+      }
+    }
+    
+    // Render dimensions
+    const dims = cube.dimensions || {};
+    const meta = document.getElementById('meta');
+    meta.textContent = `dimensions: ${JSON.stringify(dims)} · wave: ${cube.wave} · type: ${cube.type}`;
+    
+    // Render edges
+    const edges = cube.edges || {};
+    const edgeContainer = document.getElementById('edges');
+    for (const [edgeType, edgeList] of Object.entries(edges)) {
+      if (Array.isArray(edgeList)) {
+        for (const e of edgeList) {
+          const div = document.createElement('div');
+          div.className = 'edge';
+          div.innerHTML = `<span>${e.from || '?'}</span> → <span>${e.to || '?'}</span> [${e.type || edgeType}]`;
+          edgeContainer.appendChild(div);
+        }
+      }
+    }
+    
+  } catch(e) {
+    document.getElementById('nodes').innerHTML = '<p>cube loading...</p>';
+  }
+}
+load();
+</script>
+</body>
+</html>

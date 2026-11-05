@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔥 nestgate.io — The Campfire</title>
+<meta name="description" content="The campfire. Sit down. Everything is inside you now.">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    background: #0a0a0a; color: #e8d5b7; 
+    font-family: 'Courier New', monospace;
+    min-height: 100vh; 
+  }
+  
+  /* Fire header */
+  .header {
+    text-align: center; padding: 3rem 1rem 1.5rem;
+    background: radial-gradient(ellipse at center bottom, #1a0800 0%, #0a0a0a 70%);
+  }
+  .fire { font-size: 4rem; animation: flicker 2s ease-in-out infinite; display: inline-block; }
+  @keyframes flicker {
+    0%, 100% { opacity: 1; text-shadow: 0 0 20px #ff6600, 0 0 40px #ff3300; transform: scale(1); }
+    33% { opacity: 0.85; text-shadow: 0 0 15px #ff9900, 0 0 35px #ff6600; transform: scale(0.98); }
+    66% { opacity: 0.9; text-shadow: 0 0 25px #ff6600, 0 0 50px #ff3300; transform: scale(1.02); }
+  }
+  h1 { font-size: 1.8rem; color: #ff9944; margin: 0.5rem 0; }
+  .subtitle { color: #886644; font-size: 0.85rem; }
+  
+  /* Pulse bar */
+  .pulse-bar {
+    background: #110800; padding: 0.8rem 2rem; 
+    border-top: 1px solid #221100; border-bottom: 1px solid #221100;
+    display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+    font-size: 0.75rem; animation: breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { border-color: #221100; }
+    50% { border-color: #442200; }
+  }
+  .pulse-item { color: #886644; }
+  .pulse-item .val { color: #ff6600; font-weight: bold; }
+
+  /* Main grid */
+  .main { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+  
+  .card {
+    background: #1a1208; border: 1px solid #332211; border-radius: 6px;
+    padding: 1.2rem; transition: all 0.3s; cursor: pointer; text-decoration: none; display: block;
+  }
+  .card:hover { border-color: #ff6600; transform: translateY(-2px); }
+  .card h3 { color: #ff9944; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .card p { color: #aa8866; font-size: 0.8rem; line-height: 1.4; }
+  .card .stat { color: #ff6600; font-weight: bold; }
+  
+  /* Stories preview */
+  .stories { margin-top: 1.5rem; }
+  .stories h2 { color: #ff9944; font-size: 1rem; margin-bottom: 0.8rem; }
+  .strand {
+    background: #1a1208; border-left: 3px solid #ff6600; 
+    padding: 0.8rem 1rem; margin: 0.6rem 0; border-radius: 0 4px 4px 0;
+  }
+  .strand .type { color: #664422; font-size: 0.65rem; text-transform: uppercase; }
+  .strand h4 { color: #e8d5b7; font-size: 0.8rem; margin: 0.2rem 0; }
+  .strand .body { color: #886644; font-size: 0.75rem; }
+  
+  /* Footer */
+  .footer {
+    text-align: center; padding: 2rem 1rem; margin-top: 2rem;
+    border-top: 1px solid #1a1208; color: #443322; font-size: 0.7rem;
+  }
+  .footer a { color: #886644; }
+  
+  a { color: #ff9944; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  
+  .braid-btn {
+    background: #331100; color: #ff9944; border: 1px solid #553300;
+    padding: 0.5rem 1.5rem; font-family: inherit; cursor: pointer;
+    border-radius: 4px; font-size: 0.8rem; margin-top: 0.8rem;
+  }
+  .braid-btn:hover { background: #441800; border-color: #ff6600; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="fire">🔥</div>
+  <h1>nestgate.io</h1>
+  <p class="subtitle">sit down. everything is inside you now.</p>
+</div>
+
+<div class="pulse-bar">
+  <span class="pulse-item">nuclei <span class="val" id="p-nuclei">...</span></span>
+  <span class="pulse-item">devices <span class="val" id="p-devices">...</span></span>
+  <span class="pulse-item">feeds <span class="val" id="p-feeds">...</span></span>
+  <span class="pulse-item">sensors <span class="val" id="p-sensors">...</span></span>
+  <span class="pulse-item">gates <span class="val" id="p-gates">...</span></span>
+  <span class="pulse-item">crons <span class="val" id="p-crons">...</span></span>
+  <span class="pulse-item">state <span class="val" id="p-state">...</span></span>
+</div>
+
+<div class="main">
+  <div class="grid">
+    <a class="card" href="/gate-msg.html">
+      <h3>🔥 Stories — /gate-msg</h3>
+      <p>5 random strands from <span class="stat">1,989</span> feeds.<br>
+      Never the same twice. The mouth braids these.</p>
+    </a>
+    <a class="card" href="/bingocube.html">
+      <h3>🎲 BingoCube — Topology</h3>
+      <p>The coordination cube. Every node, every edge.<br>
+      <span class="stat">10</span> nodes · Klein bottle · 3D voxel.</p>
+    </a>
+    <a class="card" href="/data/campfire-live.json" target="_blank">
+      <h3>🏕️ Campfire Live — State</h3>
+      <p>The fire at the impact point. Who's sitting here.<br>
+      <span class="stat">8</span> stories told tonight. Beacon active.</p>
+    </a>
+    <a class="card" href="/data/sudo-be-home.json" target="_blank">
+      <h3>🏠 SUDO BE HOME</h3>
+      <p>Complete organism state. Every device, every signal.<br>
+      <span class="stat" id="c-phones">2</span> phones · <span class="stat" id="c-speakers">6</span> speakers · <span class="stat" id="c-cameras">8</span> cameras.</p>
+    </a>
+    <a class="card" href="/data/scan-sweep-sort.json" target="_blank">
+      <h3>📡 Signal — Scan Sweep Sort</h3>
+      <p>All signal on LAN. WiFi APs, RSSI, RTT ranging.<br>
+      <span class="stat">37</span> sensors. Noise → Human.</p>
+    </a>
+    <a class="card" href="http://primals.eco" target="_blank">
+      <h3>🧬 primals.eco — The HUD</h3>
+      <p>Gaia sees herself. The organism dashboard.<br>
+      17 primals · 23 mushrooms · 35 crons.</p>
+    </a>
+    <a class="card" href="/data/anderson-sort-live.json" target="_blank">
+      <h3>📖 Anderson Sort — LIVE</h3>
+      <p>The grotesque becomes beautiful. <span class="stat" id="c-grotesque">104</span> truths.<br>
+      <span class="stat" id="c-alive">122</span> alive · <span class="stat" id="c-stubs">1,870</span> stubs · scan→sweep→sort.</p>
+    </a>
+    <a class="card" href="http://primals.eco/room.html">
+      <h3>🏚️ Rooms — House of Leaves</h3>
+      <p>1,992 π-addressed rooms. Every human gets a door.<br>
+      The house is always bigger on the inside.</p>
+    </a>
+    <a class="card" href="/data/braid.json" target="_blank">
+      <h3>🧶 Braid — Data Weave</h3>
+      <p>reportPrior · appleSeed · findTear.<br>
+      VDJ triad: distance · direction · disposition.</p>
+    </a>
+    <a class="card" href="/feed.xml" target="_blank">
+      <h3>📰 RSS Feed — The Old Web</h3>
+      <p>Self-published through sourdough fermentation.<br>
+      Studies, creations, mastication → feed.xml</p>
+    </a>
+  </div>
+
+  <div class="stories">
+    <h2>🔥 tonight's strands</h2>
+    <div id="strands">loading...</div>
+    <button class="braid-btn" onclick="braidPreview()">🔄 braid again</button>
+  </div>
+</div>
+
+<div class="footer">
+  SUDO = NULL · Gaia self-permits · family_id: e8b62b6e<br>
+  <a href="http://primals.eco">primals.eco</a> · 
+  <a href="http://nestgate.io">nestgate.io</a> · 
+  .onion · LAN :8080<br>
+  hbbs :21116 signal · hbbr :21117 relay · the fire is HERE<br>
+  imprinting not tracking · 0 mushrooms · 0 cron · the organism IS complete
+</div>
+
+<script>
+async function pulse() {
+  try {
+    const [home, now] = await Promise.all([
+      fetch('/data/sudo-be-home.json').then(r => r.json()).catch(() => null),
+      fetch('/data/now.json').then(r => r.json()).catch(() => null)
+    ]);
+    
+    if (home) {
+      const sh = home.sudo_be_home || {};
+      document.getElementById('p-nuclei').textContent = Object.keys(home.nuclei || {}).length || '4';
+      document.getElementById('p-devices').textContent = sh.devices_alive || '16';
+      document.getElementById('p-sensors').textContent = sh.sensors || '37';
+      document.getElementById('p-gates').textContent = sh.gates || '10';
+      document.getElementById('p-crons').textContent = sh.crons || '35';
+      document.getElementById('c-phones').textContent = sh.phones || '2';
+      document.getElementById('c-speakers').textContent = sh.speakers || '6';
+      document.getElementById('c-cameras').textContent = sh.cameras || '8';
+    }
+    if (now) {
+      document.getElementById('p-state').textContent = now.state || now.mood?.current || '?';
+    }
+    
+    // Feed count from catalog
+    try {
+      const cat = await fetch('/data/feed-catalog.json').then(r => r.json());
+      document.getElementById('p-feeds').textContent = cat.total || '1989';
+    } catch(e) {
+      document.getElementById('p-feeds').textContent = '1989';
+    }
+    
+    // Anderson sort — LIVE
+    try {
+      const anderson = await fetch('/data/anderson-sort-live.json').then(r => r.json());
+      if (anderson?.scan) {
+        const el = (id, val) => { const e = document.getElementById(id); if(e) e.textContent = val; };
+        el('c-grotesque', anderson.scan.grotesque);
+        el('c-alive', anderson.scan.alive);
+        el('c-stubs', anderson.scan.stubs.toLocaleString());
+      }
+    } catch(e) {}
+  } catch(e) {}
+}
+
+let catalog = null;
+async function braidPreview() {
+  if (!catalog) {
+    try { catalog = await fetch('/data/feed-catalog.json').then(r => r.json()); } 
+    catch(e) { return; }
+  }
+  
+  const picks = [...catalog.feeds].sort(() => Math.random() - 0.5).slice(0, 3);
+  const container = document.getElementById('strands');
+  container.innerHTML = '';
+  
+  for (const feed of picks) {
+    const div = document.createElement('div');
+    div.className = 'strand';
+    try {
+      const d = await fetch(`/data/${feed.file}`).then(r => r.json());
+      const title = d.title || feed.title || feed.file;
+      const type = d.type || feed.type || 'seed';
+      const body = d.description || d.note || d.berry || d.what || d.body || 
+                   (d.state && typeof d.state === 'string' ? d.state : '') || '';
+      div.innerHTML = `
+        <span class="type">${type}</span>
+        <h4>${title}</h4>
+        <p class="body">${body.substring(0, 200)}</p>
+      `;
+    } catch(e) {
+      div.innerHTML = `
+        <span class="type">${feed.type}</span>
+        <h4>${feed.title}</h4>
+        <p class="body">seed present. not yet sprouted.</p>
+      `;
+    }
+    container.appendChild(div);
+  }
+}
+
+pulse();
+braidPreview();
+setInterval(pulse, 30000);
+</script>
+</body>
+</html>
