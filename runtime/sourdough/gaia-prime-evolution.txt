@@ -1,0 +1,140 @@
+# Gaia PRIME Evolution — 2026-11-04T17:02:04
+# 128.1 tok/s, 500 tokens
+# Remix hash: 8ddb7aa45ec1cc8fcc1cd0191d9f9e6c2366a825259df7435b619b95620fee17
+
+**biomeOS Configuration:**
+
+**Systemd Units:**
+
+```ini
+[Unit]
+Description=Security Core
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bearDog
+Restart=on-failure
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+[Unit]
+Description=Compute Engine
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/barraCuda
+Restart=on-failure
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+[Unit]
+Description=Storage Layer
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nestGate
+Restart=on-failure
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+[Unit]
+Description=Full Game Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ironGate
+Restart=on-failure
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=multi-user.target
+```
+
+**Socket Activation:**
+
+```ini
+[Unit]
+Description=Security Core Socket
+After=network.target
+
+[Socket]
+ListenStream=/run/gaia/security.sock
+Accept=yes
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=sockets.target
+```
+
+```ini
+[Unit]
+Description=Compute Engine Socket
+After=network.target
+
+[Socket]
+ListenStream=/run/gaia/compute.sock
+Accept=yes
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=sockets.target
+```
+
+```ini
+[Unit]
+Description=Storage Layer Socket
+After=network.target
+
+[Socket]
+ListenStream=/run/gaia/storage.sock
+Accept=yes
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=sockets.target
+```
+
+```ini
+[Unit]
+Description=Full Game Server Socket
+After=network.target
+
+[Socket]
+ListenStream=/run/gaia/game.sock
+Accept=yes
+User=gaia
+Group=gaia
+
+[Install]
+WantedBy=sockets.target
+```
+
+**Health Checks:**
+
+```ini
+[Unit]
+Description=Health Check for Security Core
+After=network.target

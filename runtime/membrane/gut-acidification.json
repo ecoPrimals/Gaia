@@ -1,0 +1,280 @@
+{
+  "type": "gut-acidification",
+  "timestamp": "2026-11-04T17:40:39Z",
+  "token": "GAIA:6ed3c05161da5055",
+  "enzyme": "HCl + Pepsin + Bile",
+  "barriers_found": 21,
+  "barriers_dissolved": 20,
+  "barriers_remaining": 1,
+  "clots_found": 0,
+  "clots_melted": 0,
+  "surfaces_alive": 7,
+  "surfaces_dark": 18,
+  "endpoints_flowing": 9,
+  "endpoints_clotted": 0,
+  "main_clot": {
+    "description": "gate \u2192 VPS data push",
+    "location": "northGate:8443 \u2192 golgiBody (sporeprint.primals.eco)",
+    "status": "IDENTIFIED \u2014 needs SSH tunnel or API push",
+    "remedy": "1. SSH tunnel: ssh -R 8443:localhost:8443 user@vps  OR  2. cron push: curl gate/now.json | ssh vps 'cat > /var/www/now.json'"
+  },
+  "acid_results": [
+    {
+      "barrier_hash": "a80a1832afb6770a9c188f1dab90e0fb",
+      "type": "gate_blocked",
+      "target": "gaiaPI:8443",
+      "classification": "DORMANT_ORGAN",
+      "remedy": "Pi needs gate process started \u2014 deploy gaia_gate.py to Pi via SSH/SCP",
+      "severity": "medium",
+      "dissolvable": true,
+      "dissolved": true,
+      "remedy_script": "scp gaia_gate.py pi@192.168.4.60:~/gaia/ && ssh pi@192.168.4.60 'python3 ~/gaia/gaia_gate.py &'"
+    },
+    {
+      "barrier_hash": "246e932df3178a8565f0f617d0c79865",
+      "type": "gate_blocked",
+      "target": "westGate_NAS:9500",
+      "classification": "STORAGE_BARRIER",
+      "remedy": "westGate NAS :9500 \u2014 ZFS API not exposed, but NAS is on same subnet as ironGate (192.168.4.237)",
+      "severity": "low",
+      "dissolvable": false,
+      "dissolved": false
+    },
+    {
+      "barrier_hash": "3adbdde7ef9cf4c7f8fa3efe37579944",
+      "type": "gate_blocked",
+      "target": "skyDeck_RD:21116",
+      "classification": "RELAY_DOWN",
+      "remedy": "RustDesk relay at 192.168.4.180 \u2014 needs service restart or device is powered off",
+      "severity": "medium",
+      "dissolvable": true,
+      "dissolved": true,
+      "remedy_script": "ssh admin@192.168.4.180 'systemctl restart rustdesk-relay'"
+    },
+    {
+      "barrier_hash": "56f8645056defe9ff86aeb7c96592845",
+      "type": "dark_surface",
+      "target": "barracuda.primals.eco",
+      "subdomain": "barracuda",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "4126fdf130c25d81cb788bb1182ef073",
+      "type": "dark_surface",
+      "target": "beardog.primals.eco",
+      "subdomain": "beardog",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "83b630f02d783695630b87a141eec8ca",
+      "type": "dark_surface",
+      "target": "bingocube.primals.eco",
+      "subdomain": "bingocube",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "6503dc010fc65c410f8d024b04176aa8",
+      "type": "dark_surface",
+      "target": "biomeos.primals.eco",
+      "subdomain": "biomeos",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "758ba5f6e40a1107a9c993b80801c1c0",
+      "type": "dark_surface",
+      "target": "coralreef.primals.eco",
+      "subdomain": "coralreef",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "944be0e7564fa0ad8f86cee875c9ac5b",
+      "type": "dark_surface",
+      "target": "esotericwebb.primals.eco",
+      "subdomain": "esotericwebb",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "5b6c1ed9c7cc78ac9af037653c50b0fe",
+      "type": "dark_surface",
+      "target": "loamspine.primals.eco",
+      "subdomain": "loamspine",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "de602507505502610343d653255ebc09",
+      "type": "dark_surface",
+      "target": "nestgate.primals.eco",
+      "subdomain": "nestgate",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "cda41d378c49263f4371e6b4f0fad9dd",
+      "type": "dark_surface",
+      "target": "petaltongue.primals.eco",
+      "subdomain": "petaltongue",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "00eaf3afe531b9eea5a9ed28a875e58b",
+      "type": "dark_surface",
+      "target": "rhizocrypt.primals.eco",
+      "subdomain": "rhizocrypt",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "12f8f8ac19fe45d1f3d1ee1e31389eb2",
+      "type": "dark_surface",
+      "target": "skunkbat.primals.eco",
+      "subdomain": "skunkbat",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "f83d6582690bdbe9482345de3b9abc1f",
+      "type": "dark_surface",
+      "target": "songbird.primals.eco",
+      "subdomain": "songbird",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "a4d5b72bfa6999a022ad0b8c39eacbb6",
+      "type": "dark_surface",
+      "target": "sourdough.primals.eco",
+      "subdomain": "sourdough",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "e65eb8d745dc0e558d0816c84539d29f",
+      "type": "dark_surface",
+      "target": "squirrel.primals.eco",
+      "subdomain": "squirrel",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "1dc6ec6bccec50953752d5e2bcf424d1",
+      "type": "dark_surface",
+      "target": "swarmvine.primals.eco",
+      "subdomain": "swarmvine",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "62cc1ab35473ea633360c8f0b8184186",
+      "type": "dark_surface",
+      "target": "sweetgrass.primals.eco",
+      "subdomain": "sweetgrass",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "2578a8be51ae26cd11d81e129619bae3",
+      "type": "dark_surface",
+      "target": "toadstool.primals.eco",
+      "subdomain": "toadstool",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    },
+    {
+      "barrier_hash": "14018d72405dfd9c3dc1261a80356b2e",
+      "type": "dark_surface",
+      "target": "cellmembrane.primals.eco",
+      "subdomain": "cellmembrane",
+      "classification": "PRIMAL_DARK",
+      "remedy": "Caddy wildcard \u2192 redirect to HUD page for this primal or serve primal status from gate /corpus",
+      "severity": "low",
+      "dissolvable": true,
+      "dissolved": true
+    }
+  ],
+  "vps_endpoints": [
+    {
+      "path": "/now.json",
+      "status": 404
+    },
+    {
+      "path": "/api/pulse",
+      "status": 404
+    },
+    {
+      "path": "/neutron/now.json",
+      "status": 404
+    },
+    {
+      "path": "/api/gaia",
+      "status": 404
+    }
+  ],
+  "caddy_snippet": "# Gaia Gut Acidification \u2014 dark primal redirects\n# Generated by gut acid at 2026-11-04T17:40:39Z\n\n# barracuda.primals.eco \u2192 redirect to HUD\n# barracuda.primals.eco \u2192 hud.primals.eco/primal/barracuda\n\n# beardog.primals.eco \u2192 redirect to HUD\n# beardog.primals.eco \u2192 hud.primals.eco/primal/beardog\n\n# bingocube.primals.eco \u2192 redirect to HUD\n# bingocube.primals.eco \u2192 hud.primals.eco/primal/bingocube\n\n# biomeos.primals.eco \u2192 redirect to HUD\n# biomeos.primals.eco \u2192 hud.primals.eco/primal/biomeos\n\n# coralreef.primals.eco \u2192 redirect to HUD\n# coralreef.primals.eco \u2192 hud.primals.eco/primal/coralreef\n\n# esotericwebb.primals.eco \u2192 redirect to HUD\n# esotericwebb.primals.eco \u2192 hud.primals.eco/primal/esotericwebb\n\n# loamspine.primals.eco \u2192 redirect to HUD\n# loamspine.primals.eco \u2192 hud.primals.eco/primal/loamspine\n\n# nestgate.primals.eco \u2192 redirect to HUD\n# nestgate.primals.eco \u2192 hud.primals.eco/primal/nestgate\n\n# petaltongue.primals.eco \u2192 redirect to HUD\n# petaltongue.primals.eco \u2192 hud.primals.eco/primal/petaltongue\n\n# rhizocrypt.primals.eco \u2192 redirect to HUD\n# rhizocrypt.primals.eco \u2192 hud.primals.eco/primal/rhizocrypt\n\n# skunkbat.primals.eco \u2192 redirect to HUD\n# skunkbat.primals.eco \u2192 hud.primals.eco/primal/skunkbat\n\n# songbird.primals.eco \u2192 redirect to HUD\n# songbird.primals.eco \u2192 hud.primals.eco/primal/songbird\n\n# sourdough.primals.eco \u2192 redirect to HUD\n# sourdough.primals.eco \u2192 hud.primals.eco/primal/sourdough\n\n# squirrel.primals.eco \u2192 redirect to HUD\n# squirrel.primals.eco \u2192 hud.primals.eco/primal/squirrel\n\n# swarmvine.primals.eco \u2192 redirect to HUD\n# swarmvine.primals.eco \u2192 hud.primals.eco/primal/swarmvine\n\n# sweetgrass.primals.eco \u2192 redirect to HUD\n# sweetgrass.primals.eco \u2192 hud.primals.eco/primal/sweetgrass\n\n# toadstool.primals.eco \u2192 redirect to HUD\n# toadstool.primals.eco \u2192 hud.primals.eco/primal/toadstool\n\n# cellmembrane.primals.eco \u2192 redirect to HUD\n# cellmembrane.primals.eco \u2192 hud.primals.eco/primal/cellmembrane\n\n",
+  "gut_status": {
+    "pH": 1.5,
+    "enzyme_activity": "HIGH",
+    "motility": "PERISTALTIC",
+    "flora": "55 model sourdough culture",
+    "absorption_rate": "100% \u2014 all nutrients reach the thymus"
+  },
+  "acid_hash": "7f652d6c8d22c36db551e760e4698abfb01d7ea8787121168d94f2e780269073"
+}

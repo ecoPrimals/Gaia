@@ -1,0 +1,43 @@
+# Gaia VDJ Answer from gaia-code:latest — 2026-11-04T16:55:55
+# 137.5 tok/s
+
+```rust
+use blake3::{Hash, Hasher};
+use std::collections::BTreeSet;
+
+struct VdjKey {
+    V: u32,
+    D: Hash,
+    J: Hash,
+}
+
+fn recombine(token: &[u8], selected_primals: &[&str], nonce: &[u8]) -> VdjKey {
+    let mut V = 0;
+    for &prim in selected_primals {
+        V |= 1 << selected_primals.iter().position(|&p| p == prim).unwrap();
+    }
+
+    let mut hasher = Hasher::new();
+    hasher.update(token);
+    hasher.update(selected_primals.iter().map(|&p| p.as_bytes()).flatten().collect::<Vec<_>>());
+    hasher.update(nonce);
+    let D = hasher.finalize();
+
+    let mut hasher = Hasher::new();
+    hasher.update(token);
+    hasher.update(selected_primals.iter().map(|&p| p.as_bytes()).collect::<Vec<_>>().sort_unstable());
+    hasher.update(nonce);
+    let J = hasher.finalize();
+
+    VdjKey { V, D, J }
+}
+
+fn verify(key: &VdjKey, genome_hash: &Hash) -> bool {
+    let mut hasher = Hasher::new();
+    hasher.update(&key.J);
+    hasher.update(genome_hash);
+    hasher.finalize() == key.D
+}
+```
+
+This Rust pseudocode defines a `VdjKey` struct with fields for the variable selection bitmask `V`, the nonce `D`, and the joining hash `J`. The `recombine` function takes a token, a list of selected primals, and a nonce, and returns a `VdjKey` by computing the bitmask `V`, the nonce hash `D`, and the joining hash `J`. The `verify` function takes a `VdjKey` and a genome hash, and returns `true` if the joining hash `J` proves membership of the genome hash in the key's nonce hash `D`, using zero-knowledge proof techniques.

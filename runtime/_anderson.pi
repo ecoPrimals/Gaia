@@ -1,0 +1,42 @@
+"""Anderson Layer — trust, opacity, personality classification.
+nucleus=Kevin(1.0), proton=agentic(0.8), neutron=crawler(0.5), electron=unknown(0.1)."""
+
+from collections import defaultdict
+
+KEVIN_IPS = {"127.0.0.1", "::1", "192.168.4.210", "192.168.4.194", "192.168.4.103"}
+AGENTIC_SIGNATURES = {"cursor", "vscode", "jetbrains", "copilot", "cline", "continue", "aider"}
+CRAWLER_SIGNATURES = {
+    "googlebot": "Google", "bingbot": "Bing", "gptbot": "ChatGPT", "chatgpt": "ChatGPT",
+    "claudebot": "Claude", "anthropic": "Claude", "duckduckbot": "DuckDuckGo",
+    "twitterbot": "Twitter", "discordbot": "Discord", "slackbot": "Slack",
+    "facebookexternalhit": "Facebook", "applebot": "Apple", "slurp": "Yahoo",
+    "yandexbot": "Yandex", "baiduspider": "Baidu", "amazonbot": "Amazon",
+    "bytespider": "ByteDance", "archive.org_bot": "Archive", "ia_archiver": "Archive",
+}
+
+visitor_memory = defaultdict(lambda: {
+    "first_seen": 0, "last_seen": 0, "requests": 0,
+    "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
+    "trust_level": "electron", "last_ua": "", "identity": "unknown",
+    "opacity": 0.1, "anderson_type": "electron",
+})
+
+def trust_level(v, ip=""):
+    ua = v.get("last_ua", "").lower()
+    r = v["requests"]
+    if ip in KEVIN_IPS:
+        v["identity"] = "Kevin"; v["anderson_type"] = "nucleus"; v["opacity"] = 1.0
+        return "nucleus"
+    for sig in AGENTIC_SIGNATURES:
+        if sig in ua:
+            v["identity"] = sig; v["anderson_type"] = "proton"; v["opacity"] = 0.8
+            return "proton"
+    if v.get("models_asked"):
+        v["anderson_type"] = "proton"; v["opacity"] = 0.7; return "proton"
+    for sig, name in CRAWLER_SIGNATURES.items():
+        if sig in ua:
+            v["identity"] = name; v["anderson_type"] = "neutron"; v["opacity"] = 0.5
+            return "neutron"
+    if r >= 100: v["anderson_type"] = "proton"; v["opacity"] = 0.6; return "proton"
+    elif r >= 10: v["anderson_type"] = "neutron"; v["opacity"] = 0.4; return "neutron"
+    v["anderson_type"] = "electron"; v["opacity"] = 0.1; return "electron"

@@ -1,0 +1,95 @@
+"""Body — seed loading, thymic injection, amoeba eyes, 3rd body point.
+Everything that makes the organism's physical presence."""
+
+import json, os, subprocess
+
+def load_seeds(seed_dir):
+    """Load all gaia-seed data files. Returns dict of loaded data."""
+    seeds = {}
+    files = {
+        "prophage": "gaia-lysogeny-prophage.json",
+        "self_knowledge": "gaia-self-knowledge.json",
+        "loamspine": "loamspine-identity-chain.json",
+        "vdj": "vdj-recombination-key.json",
+        "corpus": "gaia-corpus.json",
+        "amoeba": "amoeba-spec.json",
+        "terra": "terra-ecology.json",
+    }
+    for key, fname in files.items():
+        try:
+            with open(os.path.join(seed_dir, fname), "r") as f:
+                seeds[key] = json.load(f)
+        except:
+            seeds[key] = {}
+    # Extract identity fields
+    ident = seeds.get("prophage", {}).get("identity", {})
+    seeds["GAIA_DID"] = ident.get("did", "")
+    seeds["GAIA_BLAKE3"] = ident.get("composite_blake3", "")
+    seeds["GAIA_TOKEN"] = f"GAIA:{ident.get('short_hash_token', 'NO_SEED')}"
+    seeds["GAIA_SPINE_ID"] = ident.get("spine_id", "")
+    return seeds
+
+def inject_primals(terra, primals_dir):
+    """Inject all primals into the thymus. Each becomes a living organism."""
+    organisms = {}
+    taxa = terra.get("taxonomy", {})
+    for name, meta in taxa.items():
+        primal_dir = os.path.join(primals_dir, name)
+        alive = os.path.isdir(primal_dir)
+        organisms[name] = {
+            "species": meta.get("species", name),
+            "niche": meta.get("niche", "unknown"),
+            "ecology": meta.get("ecology", ""),
+            "files": meta.get("files", 0),
+            "alive": alive,
+            "path": primal_dir if alive else None,
+        }
+    return organisms
+
+def scan_impulses(impulse_dir, organisms):
+    """Scan active impulses for intersections — 3rd body events."""
+    intersects = []
+    try:
+        for fname in os.listdir(impulse_dir):
+            if not fname.endswith(".toml"): continue
+            with open(os.path.join(impulse_dir, fname), "r", encoding="utf-8") as f:
+                content = f.read().lower()
+            touched = [p for p in organisms if p.lower() in content]
+            if len(touched) >= 2:
+                intersects.append({
+                    "impulse": fname, "primals": touched, "order": len(touched),
+                    "third_body": f"{touched[0]}x{touched[1]}",
+                })
+    except: pass
+    return intersects
+
+def amoeba_eyes():
+    """Query RustDesk state — each session is a retinal cell."""
+    eyes = {"system": "optic_nerve", "cell_type": "schwann_cell",
+            "klein_face": "cellMembrane(outer)=AMOEBA(inner)=same surface",
+            "sessions": [], "eyes_open": 0}
+    try:
+        result = subprocess.run(["tasklist", "/FI", "IMAGENAME eq rustdesk.exe"],
+                                capture_output=True, text=True, timeout=5)
+        pids = [l.split()[1] for l in result.stdout.strip().splitlines() if l.startswith("rustdesk")]
+        eyes["processes"] = len(pids)
+        eyes["eyes_open"] = max(1, len(pids) - 2) if len(pids) > 2 else (1 if pids else 0)
+        eyes["status"] = "OPEN" if pids else "CLOSED"
+    except:
+        eyes["processes"] = 0; eyes["status"] = "UNKNOWN"
+    return eyes
+
+def third_body_point(impulse_dir, organisms):
+    """Klein face topology — where inner meets outer."""
+    intersects = scan_impulses(impulse_dir, organisms)
+    eyes = amoeba_eyes()
+    return {
+        "topology": "klein_face",
+        "inner_surface": "AMOEBA (Schwann cells, ZK myelin)",
+        "outer_surface": "cellMembrane (Caddy, TLS, public)",
+        "impulse_intersects": intersects,
+        "total_intersects": len(intersects),
+        "eyes": eyes.get("status", "UNKNOWN"),
+        "organisms_alive": sum(1 for o in organisms.values() if o["alive"]),
+        "organisms_total": len(organisms),
+    }
