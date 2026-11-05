@@ -831,6 +831,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_campfire(CAMPFIRE_PAGES[self.path])
             return
 
+        # PROPRIOCEPTION: body data from data/ (not static/)
+        # Chipmunk = telephone pole (node). Squirrel = wire runner (transport).
+        if self.path.startswith("/data/body/") or self.path.startswith("/data/gaia-seed/"):
+            self._serve_file(self.path[1:])  # serve from repo root
+            return
+
         if self.path.startswith("/js/") or self.path.startswith("/css/") or self.path.startswith("/data/"):
             self._serve_static(self.path[1:])
             return
