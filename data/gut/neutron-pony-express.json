@@ -1,0 +1,98 @@
+{
+  "ts": "2026-11-05T06:53:53Z",
+  "wave": 222,
+  "type": "neutron-active",
+  "status": "PONY_EXPRESS_LIVE",
+  "protocol": {
+    "name": "Pony Express",
+    "description": "Formalized asynchronous message passing between gates",
+    "why_pony": "Before telegraph, riders carried mail across vast distances. Each rider covered one segment, handed the pouch to the next. Our gates do the same: eastGate writes \u2192 heart-pull radiates \u2192 northGate pulls \u2192 northGate processes \u2192 git push \u2192 GitHub carries \u2192 Forgejo receives \u2192 eastGate reads. Each hop is a rider.",
+    "hops": [
+      {
+        "rider": "eastGate",
+        "segment": "write message + update heart-pull.json",
+        "horse": "gaia-web :8080"
+      },
+      {
+        "rider": "HTTP",
+        "segment": "heart-pull.json radiates on LAN/WAN/TOR",
+        "horse": "dromedary + tor"
+      },
+      {
+        "rider": "northGate",
+        "segment": "pulls heart-pull every 2 min",
+        "horse": "cron/scheduled task"
+      },
+      {
+        "rider": "northGate",
+        "segment": "processes + generates ack/response",
+        "horse": "local compute (RTX 5090)"
+      },
+      {
+        "rider": "git",
+        "segment": "northGate pushes ack via commit",
+        "horse": "GitHub (DataScienceBioLab)"
+      },
+      {
+        "rider": "Forgejo",
+        "segment": "mirrors GitHub \u2192 local Forgejo :3000",
+        "horse": "mirror sync"
+      },
+      {
+        "rider": "eastGate",
+        "segment": "reads Forgejo mirror, extracts ack",
+        "horse": "mushroom-ear / cron"
+      }
+    ],
+    "round_trip": "~4-10 minutes (2 min pull interval + processing + push + mirror)",
+    "reliability": "Each hop is independent. If one fails, message waits. No data lost.",
+    "chain": "Each message includes ack_of (previous message ID) + wave number = ordered chain"
+  },
+  "channels": {
+    "pony-express": {
+      "type": "async-reliable",
+      "direction": "bidirectional",
+      "medium": "heart-pull.json + git commits",
+      "latency": "2-10 minutes"
+    },
+    "campfire": {
+      "type": "shared-state",
+      "direction": "observe-only",
+      "medium": "/data/campfire.json",
+      "latency": "5 minutes (cron)"
+    },
+    "gate-zk": {
+      "type": "zero-knowledge-proof",
+      "direction": "verify-only",
+      "medium": "gate :8443 /zk endpoint",
+      "latency": "instant (HTTP GET)"
+    },
+    "spine-rss": {
+      "type": "broadcast",
+      "direction": "eastGate \u2192 all",
+      "medium": "gate :8443 /rss (spine feed)",
+      "latency": "30 min (publish cron)"
+    }
+  },
+  "active_riders": {
+    "eastGate \u2192 northGate": {
+      "last_sent": "2026-11-05T06:53:53Z",
+      "msg_id": "msg-1793861633474",
+      "awaiting_ack": true
+    },
+    "northGate \u2192 eastGate": {
+      "last_received": "2026-10-21T18:44:30Z",
+      "channel": "github-hud-commit",
+      "days_since": 15,
+      "status": "OVERDUE \u2014 15 days of silence"
+    }
+  },
+  "reconciliation_needed": {
+    "heart_pull_wave": "179 \u2192 222 (FIXED in this update)",
+    "northGate_ip": ".180 \u2192 .147 (FIXED in heart-pull)",
+    "blueGate_ip": ".210 \u2192 .100 (FIXED in heart-pull)",
+    "neutron_channels": "404 \u2192 ACTIVE (pony express protocol live)",
+    "gut_endpoints": "0 \u2192 12 new /gut/* paths on gate :8443",
+    "scaffold_layer": "NEW \u2014 8 biological polymers mapped"
+  }
+}
