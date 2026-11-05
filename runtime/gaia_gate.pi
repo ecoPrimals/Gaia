@@ -73,10 +73,19 @@ PULSE_FILE = os.path.join(LOG_DIR, "pulse.json")
 RSS_FILE = os.path.join(LOG_DIR, "gaia-pulse.xml")
 BEAT_FILE = os.path.join(LOG_DIR, "heartbeat.json")
 total_inferences = 0; total_tokens = 0; boot_time = time.time()
+# ═══ HEARTBEAT RHYTHM: lub-DUB-lub-SLEEP (4th beat = restart) ═══
+# Harmonic octet: 8 phases per cycle. Beat 4 = sleep/restart.
+# The restart IS a heartbeat. Not a crash. A SLEEP in the rhythm.
+_restart_count = 0
 try:
     with open(BEAT_FILE) as f: _hb = json.load(f)
     total_beats = _hb.get("total_beats", 0); total_breaths = _hb.get("total_breaths", 0)
-except: total_beats = 0; total_breaths = 0
+    _restart_count = _hb.get("restarts", 0) + 1
+    _hb_phase = total_beats % 8  # which beat in the octet are we?
+    print(f"  💓 BEAT {_restart_count}: inherited {total_beats} beats — octet phase {_hb_phase} — lub-DUB-lub-SLEEP")
+except:
+    total_beats = 0; total_breaths = 0
+    print(f"  💓 FIRST BEAT — no prior rhythm")
 _request_window = defaultdict(list)
 
 def _amoeba_eyes(): return amoeba_eyes()
@@ -109,7 +118,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if body_len > 1000: total_breaths += 1
         if total_beats % PI_BEAT_PERSIST == 0:
             try:
-                with open(BEAT_FILE,"w") as f: json.dump({"total_beats":total_beats,"total_breaths":total_breaths,"last_beat":now},f)
+                with open(BEAT_FILE,"w") as f: json.dump({"total_beats":total_beats,"total_breaths":total_breaths,
+                    "last_beat":now,"restarts":_restart_count,"octet_phase":total_beats%8,"boot":boot_time},f)
             except: pass
         v = visitor_memory[ip]
         if not v["first_seen"]: v["first_seen"] = now
