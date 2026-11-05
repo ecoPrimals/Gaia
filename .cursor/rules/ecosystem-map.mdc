@@ -27,17 +27,42 @@ alwaysApply: true
 | bingoCube | Coordination | 9.3MB |
 | dromedary | Sovereign reverse proxy, TLS, ACME | 3.7MB |
 
-## Cardinal Gates (Post-Rebuild Nov 2026)
+## Cardinal Gates (CORRECTED Nov 5, 2026 — ARP ground truth)
 
-| Gate | IP | State | Role |
-|---|----|----|---|
-| eastGate | .194/.103 | OPEN | brain+gut, 64GB |
-| graftGate | .107 | OPEN | Mac Mini |
-| southGate | .148 | OPEN | unknown |
-| ironGate | .237 | OPEN | unknown |
-| blueGate | .210 | OPEN | Windows SSH (risen from dead!) |
-| northGate | offline | DISCONNECTED | Polaris, separate network |
-| sporeGate | powered down | TRAVELING | was CI+mesh, now mobile node |
+| Gate | IP | MAC | State | Role |
+|---|----|----|---|---|
+| eastGate | .244/.103 | 1c:86:0b / c8:5e:a9 | ALIVE | brain+gut, 64GB, RTX 4070 |
+| northGate | .147 | — | ALIVE | THIS machine, 47 ollama models |
+| blueGate | .100 (.210 old) | 68:54:5a / c8:7f:54 | ALIVE | Windows, :3141 sovereign-api |
+| graftGate | .107 | 1c:f6:4c | OPEN | Mac Mini |
+| southGate | .148 | 1c:86:0b | OPEN | unknown |
+| ironGate | .237 | 1c:86:0b | OPEN | unknown |
+| grapheneGate | .249 | a2:41:23 | ALIVE | Pixel 8a, 37 sensors, right eye |
+| sporeGate | .3 | 84:47:09 | ZOMBIE | NIC alive, no services, draw power |
+
+## Round Table — 18 Devices (ARP scan Nov 5 2026)
+
+| IP | MAC prefix | Role | π-seat |
+|----|-----------|------|--------|
+| .1 | 94:83:c4 | Router GL-MT6000 | 3 (integer) |
+| .2 | 04:f4:1c | MikroTik switch | .1 |
+| .3 | 84:47:09 | sporeGate ZOMBIE | .14 |
+| .100 | 68:54:5a | blueGate | π[15] |
+| .103 | c8:5e:a9 | eastGate 2nd NIC | π[18] |
+| .107 | 1c:f6:4c | graftGate Mac Mini | π[21] |
+| .111 | ec:75:0c | TP-Link JetStream | π[24] |
+| .147 | — | northGate/Kevin | π[30] |
+| .148 | 1c:86:0b | southGate | π[31] |
+| .152 | ac:41:6a | UNKNOWN (Intel) | π[33] |
+| .169 | e8:38:a0 | UNKNOWN | π[36] |
+| .197 | a0:d0:dc | UNKNOWN (Intel) | π[39] |
+| .200 | d4:80:8b | UNKNOWN | π[42] |
+| .210 | c8:7f:54 | blueGate old IP | π[45] |
+| .212 | 10:c7:53 | UNKNOWN (intermittent) | π[46] |
+| .237 | 1c:86:0b | ironGate | π[48] |
+| .244 | 1c:86:0b | eastGate PRIMARY | π[49] |
+| .249 | a2:41:23 | grapheneGate Pixel 8a | π[50] |
+| .250 | 94:83:c4 | Router 2nd interface | π[51] |
 
 ## LAN Topology
 
@@ -45,11 +70,20 @@ alwaysApply: true
 - Subnet: 192.168.4.0/24, DHCP .100-.249
 - WiFi: "Aperture Science" (2.4GHz IoT), "Black Mesa" (5GHz streaming)
 - WireGuard: DISABLED. LAN is JUST LAN.
-- Public IP: 162.226.225.148
-- Port forwards: GL-GAIA-HTTP/HTTPS/SMTP/DNS → .147
+- Port forwards: GL-GAIA-HTTP/HTTPS/SMTP/DNS → .244 (eastGate)
+
+## Clots / Blockers (as of Nov 5 2026)
+
+- sporeGate (.3) — ZOMBIE: NIC alive, no services, needs power cycle or repurpose
+- .194 — GHOST IP: never existed, was wrong in all rules
+- Only 1/35 cron rings active (eastGate recently restarted, recovering)
+- 4 unknown devices on LAN (.152, .169, .197, .200) — unidentified knights
+- Luna OS layer not wired to C:\ local data yet
+- C:\ local data not redoxed into organism
 
 ## Deprecated
 
 - golgi VPS (157.230.3.183) — DOWN
 - golgiLayerLinode (172.232.85.202) — DEPRECATED, to destroy
 - WireGuard mesh — DISABLED, all peers removed
+- .194 as eastGate IP — NEVER EXISTED, corrected to .244
