@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""Scan Bridge — expose a USB scanner over HTTP for LAN access.
+Deploy on any gate with a USB scanner. eastGate can pull scans remotely.
+
+Run: python3 scan_bridge.pi [port]
+Exposes:
+  GET /status    — scanner availability + capabilities
+  GET /scan      — trigger scan, return image
+  GET /formats   — list supported output formats
+  GET /scan?format=png&resolution=300&mode=Color
+  
+The format parameter itself becomes epitope data:
+  BMP  = raw pixels, no compression, exact bit representation
+  PNG  = lossless compression (DEFLATE), preserves all data, smaller
+  JPEG = lossy compression (DCT), introduces artifacts, smallest
+  TIFF = metadata-rich, supports layers, professional scanning
+  PDF  = document container, can embed OCR text layer
+  PNM  = SANE native format, raw
+
+  The DELTA between formats = compression epitope.
+  Same scan, different format = different information loss = measurable."""
+
+import http.server, json, os, subprocess, sys, hashlib, io, time, socketserver
+
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 6580
+SCAN_DIR = "/tmp/gaia-scans"
+os.makedirs(SCAN_DIR, exist_ok=True)
+
+def find_scanners():
+    """Discover all SANE scanners"""
+    r = subprocess.run(["scanimage", "-L"], capture_output=True, text=True, timeout=15)
+    scanners = []
+    for line in r.stdout.split("\n"):
+        if "device" in line and "is a" in line:
+            dev = line.split("'")[1] if "'" in line else line.split("`")[1].split("'")[0]
+            desc = line.split("is a ")[-1].strip()
+            scanners.append({"device": dev, "description": desc})
+    return scanners
+
+def scan(device=None, fmt="png", resolution=300, mode="Color"):
+    """Scan and return the result"""
+    scanners = find_scanners()
+    if not scanners:
+        return None, "no scanners found"
+    
+    dev = device or scanners[0]["device"]
+    ts = int(time.time())
+    
+    # SANE supports: pnm, tiff, png, jpeg, pdf (depending on backend)
+    sane_fmt = fmt.lower()
+    if sane_fmt == "jpg": sane_fmt = "jpeg"
+    if sane_fmt == "bmp": sane_fmt = "pnm"  # BMP not native, use PNM (raw)
+    if sane_fmt == "pdf": sane_fmt = "tiff"  # PDF needs post-processing
+    
+    ext = {"png": "png", "jpeg": "jpg", "tiff": "tif", "pnm": "pnm"}.get(sane_fmt, "png")
+    out_path = os.path.join(SCAN_DIR, f"scan-{ts}.{ext}")
+    
+    cmd = ["scanimage", "-d", dev, f"--format={sane_fmt}",
+           f"--resolution={resolution}", f"--mode={mode}", "-o", out_path]
+    
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if r.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 100:
+            h = hashlib.blake2b(open(out_path, "rb").read(), digest_size=8).hexdigest()
+            return out_path, {"file": os.path.basename(out_path), "format": fmt,
+                             "resolution": resolution, "mode": mode,
+                             "size": os.path.getsize(out_path), "blake2b": h,
+                             "device": dev}
+        return None, f"scan failed: {r.stderr[:200]}"
+    except Exception as e:
+        return None, str(e)
+
+class ScanHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        
+        if parsed.path == "/status":
+            scanners = find_scanners()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "node": os.uname().nodename,
+                "scanners": scanners,
+                "port": PORT,
+                "formats": {
+                    "png":  {"type": "lossless", "compression": "DEFLATE", "info_loss": "0%", "note": "Best for epitope comparison"},
+                    "jpeg": {"type": "lossy", "compression": "DCT", "info_loss": "~5-30%", "note": "Artifacts reveal frequency domain"},
+                    "tiff": {"type": "lossless", "compression": "LZW/none", "info_loss": "0%", "note": "Metadata-rich, professional"},
+                    "pnm":  {"type": "raw", "compression": "none", "info_loss": "0%", "note": "SANE native, exact bit dump"},
+                    "bmp":  {"type": "raw", "compression": "none", "info_loss": "0%", "note": "Maps to PNM in SANE"},
+                },
+                "format_epitope": "Same scan in different formats → different file sizes → the delta IS compression theory"
+            }).encode())
+            
+        elif parsed.path == "/scan":
+            fmt = qs.get("format", ["png"])[0]
+            res = int(qs.get("resolution", ["300"])[0])
+            mode = qs.get("mode", ["Color"])[0]
+            device = qs.get("device", [None])[0]
+            
+            path, result = scan(device=device, fmt=fmt, resolution=res, mode=mode)
+            if path:
+                # Return image directly
+                ct = {"png": "image/png", "jpg": "image/jpeg", "tif": "image/tiff", 
+                      "pnm": "image/x-portable-anymap"}.get(path.rsplit(".", 1)[-1], "application/octet-stream")
+                
+                if qs.get("json", [None])[0]:
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(result).encode())
+                else:
+                    data = open(path, "rb").read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", ct)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("X-Scan-Info", json.dumps(result))
+                    self.end_headers()
+                    self.wfile.write(data)
+            else:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"error": result}).encode())
+        
+        elif parsed.path == "/formats":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "scan_formats": {
+                    "BMP/PNM": {
+                        "bits": "Raw pixels, no compression",
+                        "use": "Ground truth — what the scanner sensor actually captured",
+                        "size": "~25MB per Letter page at 300dpi color",
+                        "epitope": "baseline — all other formats are measured against this"
+                    },
+                    "PNG": {
+                        "bits": "Lossless DEFLATE compression",
+                        "use": "Perfect reproduction, smaller file",
+                        "size": "~3-8MB per Letter page at 300dpi color",
+                        "epitope": "compression ratio reveals image complexity (entropy)"
+                    },
+                    "JPEG": {
+                        "bits": "Lossy DCT (Discrete Cosine Transform)",
+                        "use": "Smallest file, but introduces artifacts",
+                        "size": "~0.5-2MB per Letter page at 300dpi color",
+                        "epitope": "artifacts visible in high-frequency regions (edges, text, halftone)",
+                        "quality_range": "1-100 (lower = more loss = smaller = more artifacts)"
+                    },
+                    "TIFF": {
+                        "bits": "Lossless LZW or uncompressed, with metadata layers",
+                        "use": "Professional archival, embedded color profiles",
+                        "size": "~8-25MB per Letter page at 300dpi color",
+                        "epitope": "metadata = how the scanner describes itself"
+                    },
+                    "PDF": {
+                        "bits": "Container format — can embed any image + OCR text",
+                        "use": "Document scanning with searchable text layer",
+                        "size": "varies — depends on embedded format",
+                        "epitope": "OCR accuracy = how well the system reads handwriting/print"
+                    }
+                },
+                "theory": {
+                    "Shannon_entropy": "Compression ratio = bits per pixel = information density",
+                    "perceptual": "JPEG quality at which human can't tell = perceptual threshold",
+                    "format_delta": "Same scan at PNG vs JPEG → subtract → the residual IS what JPEG threw away",
+                    "resolution_delta": "Same doc at 100/300/600 dpi → reveals scanner optical limits",
+                    "color_delta": "Same scan in Color vs Gray → the difference IS the chrominance channel"
+                }
+            }).encode())
+        
+        else:
+            self.send_response(404)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"endpoints": ["/status", "/scan", "/formats"]}).encode())
+    
+    def log_message(self, format, *args):
+        pass  # Quiet
+
+if __name__ == "__main__":
+    print(f"Scan bridge on :{PORT}")
+    print(f"  GET /status  — list scanners")
+    print(f"  GET /scan    — trigger scan")
+    print(f"  GET /formats — format theory")
+    with socketserver.ThreadingTCPServer(("0.0.0.0", PORT), ScanHandler) as s:
+        s.serve_forever()
