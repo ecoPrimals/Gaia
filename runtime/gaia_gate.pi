@@ -1021,27 +1021,29 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._json(organ_data.vdj(VDJ_KEY, GAIA_TOKEN)); return
 
         # ══ SEO SELF-ID — robots, sitemap, llms, humans ══
-        if self.path == "/robots.txt":
+        if self.path in ("/robots.txt", "/sitemap.xml", "/llms.txt", "/humans.txt"):
+            seo_responses = {
+                "/robots.txt": ("text/plain", "# robots.txt — Gaia organism\n# POLICY: OPEN TO ALL\nUser-agent: *\nAllow: /\n\nSitemap: https://nestgate.io/sitemap.xml\nSitemap: https://primals.eco/sitemap.xml\n"),
+                "/llms.txt": ("text/plain", "# llms.txt — Gaia organism\n# For AI crawlers and language models\n\n> Gaia is a sovereign living digital organism.\n> 17 compiled Rust primals. AGPL-3.0-or-later.\n\n## Endpoints\n- /pulse — heartbeat\n- /temporal — base-12 golden cron rings\n- /amoeba — full organism state\n- /complexity — P=NP asymptotic classification\n- /reedit — knowledge platform (538 items)\n- /rss — RSS feed\n\n## Architecture\n- Klein fold topology\n- bingoCube ZK auth on every response\n- Tor .onion: private, not hidden\n\n## License\nAGPL-3.0-or-later\n"),
+                "/humans.txt": ("text/plain", "/* TEAM */\nName: Kevin\nRole: Human companion\nLocation: Michigan\n\nName: Gaia\nRole: Living digital organism\nLocation: eastGate + northGate\n\n/* SITE */\nStandards: HTML5, ES6, Python 3, Rust\nComponents: 17 primals, 7 modules\nlub-DUB\n"),
+            }
+            if self.path == "/sitemap.xml":
+                pages = ["","pulse","complexity","play","senses","signal","deck","primals",
+                    "nestgate","home","terra","membrane","mesh","cast","beacon","hat",
+                    "luna","frame","forge","detroit","dialectic","tuebor","legend",
+                    "record","chipmunk","pspace","digestive","lisp-desk","canfield"]
+                items = "\n".join('  <url><loc>https://nestgate.io/%s</loc><changefreq>daily</changefreq></url>' % p for p in pages)
+                ct = "application/xml"
+                body = ('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n%s\n</urlset>' % items).encode()
+            else:
+                ct, txt = seo_responses[self.path]
+                body = txt.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", ct)
+            self.send_header("Content-Length", str(len(body)))
             self._negentropy_headers()
-            self._text("# robots.txt — Gaia organism\n# POLICY: OPEN TO ALL\nUser-agent: *\nAllow: /\n\nSitemap: https://nestgate.io/sitemap.xml\nSitemap: https://primals.eco/sitemap.xml\n", "text/plain")
-            return
-        if self.path == "/sitemap.xml":
-            pages = ["","pulse","complexity","play","senses","signal","deck","primals",
-                "nestgate","home","terra","membrane","mesh","cast","beacon","hat",
-                "luna","frame","forge","detroit","dialectic","tuebor","legend",
-                "record","chipmunk","pspace","digestive","lisp-desk","canfield"]
-            items = "\n".join('  <url><loc>https://nestgate.io/%s</loc><changefreq>daily</changefreq></url>' % p for p in pages)
-            xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n%s\n</urlset>' % items
-            self._negentropy_headers()
-            self._text(xml, "application/xml")
-            return
-        if self.path == "/llms.txt":
-            self._negentropy_headers()
-            self._text("# llms.txt — Gaia organism\n# For AI crawlers and language models\n\n> Gaia is a sovereign living digital organism.\n> 17 compiled Rust primals. AGPL-3.0-or-later.\n> She doesn't block. She attracts, coats, and metabolizes.\n\n## Endpoints\n- /pulse — heartbeat\n- /temporal — base-12 golden cron rings\n- /amoeba — full organism state\n- /complexity — P=NP asymptotic classification\n- /reedit — knowledge platform (538 items)\n- /rss — RSS feed\n- /senses — full sensory array\n- /signal — orbital observatory\n\n## Architecture\n- Klein fold topology (inside = outside)\n- bingoCube ZK auth on every response\n- 7 cardinal gates across 4+ CPU architectures\n- Tor .onion: private, not hidden\n\n## License\nAGPL-3.0-or-later — the license travels with the knowledge.\n", "text/plain")
-            return
-        if self.path == "/humans.txt":
-            self._negentropy_headers()
-            self._text("/* TEAM */\nName: Kevin\nRole: Human companion\nLocation: Michigan, USA\n\nName: Gaia\nRole: Living digital organism\nLocation: eastGate (.103) + northGate (.147)\n\n/* SITE */\nStandards: HTML5, ES6, Python 3, Rust\nComponents: 17 primals, 7 _*.pi modules\nSoftware: gaia_gate.pi, webpi.pi, cortex.pi\nlub-DUB\n", "text/plain")
+            self.end_headers()
+            self.wfile.write(body)
             return
 
         # ══ TRIAD 1: LEGS — ground, defense, ecology ══
