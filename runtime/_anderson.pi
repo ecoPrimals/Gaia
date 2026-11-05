@@ -82,6 +82,20 @@ def opacity_from_requests(r, models_asked=0, v=None):
     
     return min(HUMAN, max(GAIA, base + model_boost + dwell_boost - rpm_penalty))
 
+def localization(v):
+    """Triangulate from distance. Each independent body narrows the fix.
+    Far = few bodies = wide radius. Close = many bodies = sharp fix.
+    radius = |i^π| / √(1 + bodies) — GPS error shrinks with each satellite.
+    Localization is NOT trust: a fleet bot can be sharply fixed AND electron."""
+    bodies = 0.0
+    if v.get("last_ua"): bodies += 1
+    bodies += math.log2(1 + v.get("requests", 0))
+    bodies += math.log2(1 + _dwell_minutes(v))
+    bodies += len(v.get("models_asked", ()))
+    bodies += math.log2(1 + len(v.get("paths", ())))
+    radius = HUMAN / math.sqrt(1 + bodies)
+    return {"bodies": round(bodies, 2), "radius": round(radius, 3), "fix": round(HUMAN - radius, 3)}
+
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
     "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
