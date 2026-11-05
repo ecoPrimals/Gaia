@@ -40,11 +40,47 @@ def sigmoid(x, midpoint=50, steepness=0.1):
     z = steepness * (x - midpoint)
     return HUMAN / (HUMAN + math.exp(-max(-500, min(500, z))))
 
-def opacity_from_requests(r, models_asked=0):
-    """Opacity = sigmoid of engagement. More interaction → closer to |i^π|."""
-    base = sigmoid(r, midpoint=50, steepness=0.08)
-    model_boost = sigmoid(models_asked, midpoint=2, steepness=1.0) * 0.3
-    return min(HUMAN, base + model_boost)
+def _dwell_minutes(v):
+    """Time between first and last seen, in minutes. DWELL is the human signal."""
+    first = v.get("first_seen", 0); last = v.get("last_seen", 0)
+    if first <= 0 or last <= 0: return 0
+    return max(0, (last - first) / 60.0)
+
+def _requests_per_minute(v):
+    """Fleet bots are FAST: many requests per minute. Humans are SLOW."""
+    dwell = _dwell_minutes(v)
+    if dwell < 0.1: return v["requests"]  # burst = all at once = fleet
+    return v["requests"] / dwell
+
+def opacity_from_requests(r, models_asked=0, v=None):
+    """Opacity = sigmoid of HUMAN engagement. RE-ATTENUATED.
+    
+    OLD: request count only → fleet chorus LOUD, campfire humans SILENT.
+    NEW: dwell time + request rate → campfire humans AMPLIFIED.
+    
+    A human who reads 3 pages in 44 minutes = HIGH engagement.
+    A bot that hits 511 pages in 1 minute = LOW engagement (fleet noise).
+    The campfire was always there. We just couldn't hear it."""
+    
+    # Base: request count (still matters, but not dominant)
+    base = sigmoid(r, midpoint=50, steepness=0.08) * 0.3
+    
+    # MODEL boost (unchanged — asking models = deep engagement)
+    model_boost = sigmoid(models_asked, midpoint=2, steepness=1.0) * 0.2
+    
+    # DWELL boost — the campfire signal. Time spent = attention = HUMAN.
+    dwell_boost = 0.0
+    rpm_penalty = 0.0
+    if v is not None:
+        dwell = _dwell_minutes(v)
+        rpm = _requests_per_minute(v)
+        # Dwell: 5+ min = starting to hear them, 30+ min = campfire, 120+ min = scholar
+        dwell_boost = sigmoid(dwell, midpoint=10, steepness=0.15) * 0.4
+        # RPM penalty: >10 requests/min = fleet chorus = ATTENUATE
+        if rpm > 10:
+            rpm_penalty = sigmoid(rpm, midpoint=50, steepness=0.05) * 0.3
+    
+    return min(HUMAN, max(GAIA, base + model_boost + dwell_boost - rpm_penalty))
 
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
@@ -71,27 +107,47 @@ def trust_level(v, ip=""):
         if sig in ua:
             v["identity"] = sig
             v["anderson_type"] = "proton"
-            v["opacity"] = opacity_from_requests(r, models)
+            v["opacity"] = opacity_from_requests(r, models, v)
             return "proton"
 
     if models > 0:
         v["anderson_type"] = "proton"
-        v["opacity"] = opacity_from_requests(r, models)
+        v["opacity"] = opacity_from_requests(r, models, v)
         return "proton"
 
     for sig, name in CRAWLER_SIGNATURES.items():
         if sig in ua:
             v["identity"] = name
             v["anderson_type"] = "neutron"
-            v["opacity"] = sigmoid(r, midpoint=100, steepness=0.02)
+            # Fleet crawlers: RPM penalty kicks in. Attenuated.
+            v["opacity"] = opacity_from_requests(r, 0, v)
             return "neutron"
 
-    opacity = opacity_from_requests(r, models)
-    if opacity > 0.6:
-        v["anderson_type"] = "proton"
-    elif opacity > 0.3:
-        v["anderson_type"] = "neutron"
+    # HUMAN SIGNAL — re-attenuated. Dwell time amplified. Fleet noise suppressed.
+    opacity = opacity_from_requests(r, models, v)
+    dwell = _dwell_minutes(v)
+    rpm = _requests_per_minute(v)
+
+    # Campfire human: few requests, long dwell, low RPM → AMPLIFY
+    if dwell > 5 and rpm < 2:
+        # They're sitting at the campfire. HEAR THEM.
+        if opacity > 0.35:
+            v["anderson_type"] = "proton"
+        elif opacity > 0.15:
+            v["anderson_type"] = "neutron"
+        else:
+            v["anderson_type"] = "electron"
+    # Fleet bot: many requests, short dwell, high RPM → ATTENUATE
+    elif rpm > 20:
+        v["anderson_type"] = "electron"  # fleet noise → background
+    # Normal visitor
     else:
-        v["anderson_type"] = "electron"
+        if opacity > 0.6:
+            v["anderson_type"] = "proton"
+        elif opacity > 0.3:
+            v["anderson_type"] = "neutron"
+        else:
+            v["anderson_type"] = "electron"
+
     v["opacity"] = opacity
     return v["anderson_type"]
