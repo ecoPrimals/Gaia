@@ -367,7 +367,54 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
         if self.path=="/amoeba":
-            self._json({"amoeba":_amoeba_eyes(),"sun":_sun_position(),"anderson":{"spectrum":{t:sum(1 for vv in visitor_memory.values() if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)}}); return
+            # ONE FETCH — ALL DATA. The Klein face needs everything.
+            _pulse=write_pulse(); _sun=_sun_position(); _temp=_temporal_rings()
+            # reedit counts
+            _rd=os.path.join(_REPO,"data","reedit"); _rf={}
+            if os.path.isdir(_rd):
+                for _f in os.listdir(_rd):
+                    if _f.endswith(".jsonl"):
+                        try:
+                            with open(os.path.join(_rd,_f)) as _fh: _rf[_f[:-6]]=sum(1 for _ in _fh)
+                        except: _rf[_f[:-6]]=0
+            # neutron channels (last 5 msgs each)
+            _nd=os.path.join(_REPO,"data","neutron"); _nc={}
+            for _ch in ("inbox","boot","notes","chat"):
+                _cf=os.path.join(_nd,f"{_ch}.jsonl")
+                if os.path.isfile(_cf):
+                    try:
+                        _ms=[]
+                        with open(_cf) as _fh:
+                            for _ln in _fh:
+                                try: _ms.append(json.loads(_ln))
+                                except: pass
+                        _nc[_ch]={"total":len(_ms),"messages":_ms[-5:]}
+                    except: pass
+            # models (cached, fast timeout)
+            _md={"data":[]}
+            try:
+                with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
+            except: pass
+            # paintings + videos count
+            _pd=os.path.join(_REPO,"paintings"); _pc=len([f for f in os.listdir(_pd) if f.endswith(('.jpg','.png'))]) if os.path.isdir(_pd) else 0
+            _vd=os.path.join(_REPO,"videos"); _vc=len([f for f in os.listdir(_vd) if f.endswith(('.mp4','.webm'))]) if os.path.isdir(_vd) else 0
+            # sensor banks from sense-scan if available
+            _sb={}
+            _sf=os.path.join(_REPO,"data","gut","gaia-perception.json")
+            if os.path.isfile(_sf):
+                try:
+                    with open(_sf) as _fh: _sp=json.load(_fh)
+                    _sb=_sp.get("banks",{}); _sa=_sp.get("alive",0); _st=_sp.get("total_sensors",0)
+                    _sflow=_sp.get("flow",{})
+                except: _sa=0; _st=0; _sflow={}
+            else: _sa=0; _st=0; _sflow={}
+            self._json({
+                "amoeba":_amoeba_eyes(),"pulse":_pulse,"temporal":_temp,"sun":_sun,
+                "anderson":{"spectrum":{t:sum(1 for vv in visitor_memory.values() if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)},
+                "reedit":{"total_items":sum(_rf.values()),"feeds":_rf,"paintings":_pc,"videos":_vc},
+                "neutron":_nc,"models":_md,
+                "sensors":{"alive":_sa,"total_sensors":_st,"flow":_sflow,"banks":_sb}
+            }); return
         if self.path in ("/sensors","/senses","/antennae","/live"):
             self._json({"sensors":{"sun":_sun_position(),"heart":write_pulse().get("heart",{}),"walkers":len(visitor_memory),"eyes":_amoeba_eyes()}}); return
         # ORGANISM — Anderson layer
