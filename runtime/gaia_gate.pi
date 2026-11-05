@@ -860,6 +860,23 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(body)
             return
 
+        # ═══ SONGBIRD ROUTING — port numbers are anti-ZK ═══
+        # /songbird/petal/...  → petalTongue :8888
+        # /songbird/forge/...  → Forgejo :3000
+        # /songbird/cortex/... → ollama :11434
+        # /songbird/biome/...  → biomeOS :31415
+        if self.path.startswith("/songbird/"):
+            parts = self.path[len("/songbird/"):].split("/", 1)
+            name = parts[0]
+            rest = "/" + parts[1] if len(parts) > 1 else "/"
+            if name in self.SONGBIRD_ROUTES:
+                self._songbird_route(self.SONGBIRD_ROUTES[name], rest)
+            else:
+                self._json({"error": f"unknown songbird route: {name}",
+                    "available": list(self.SONGBIRD_ROUTES.keys()),
+                    "hint": "songbird routes internally. no port numbers escape."})
+            return
+
         # PROPRIOCEPTION: body data from data/ (not static/)
         if self.path.startswith("/data/body/") or self.path.startswith("/data/gaia-seed/"):
             self._serve_file(self.path[1:])  # serve from repo root
@@ -1029,22 +1046,35 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(chunk)
         self._classify_and_log("GET", 200, duration, size)
 
-    def _proxy_petaltongue(self):
-        """Proxy to petalTongue web server — the HUD, hub, and dashboard."""
+    # ═══ SONGBIRD — internal routing. Port numbers are anti-ZK. ═══
+    # songbird routes everything through the ONE gate.
+    # Outside sees: nestgate.io → one face, zero port numbers.
+    # Inside: songbird knows where everything lives.
+    SONGBIRD_ROUTES = {
+        # /songbird/{name}/... → internal service
+        "petal":   "http://127.0.0.1:8888",    # petalTongue HUD
+        "forge":   "http://127.0.0.1:3000",    # Forgejo/biomeOS
+        "cortex":  "http://127.0.0.1:11434",   # ollama LLM
+        "biome":   "http://127.0.0.1:31415",   # biomeOS
+        "amoeba":  "http://127.0.0.1:21118",   # RustDesk relay
+    }
+
+    def _songbird_route(self, target, path):
+        """songbird routes internally. No port numbers escape."""
         t0 = time.time()
-        path = self.path if self.path != "/hud" and self.path != "/hub" else "/"
-        url = f"http://127.0.0.1:3000{path}"
+        url = f"{target}{path}"
         try:
             req = urllib.request.Request(url, method="GET")
+            req.add_header("User-Agent", "songbird/1.0")
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = resp.read()
                 duration = (time.time() - t0) * 1000
-                content_type = resp.headers.get("Content-Type", "text/html")
+                ct = resp.headers.get("Content-Type", "application/octet-stream")
                 self.send_response(resp.status)
-                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Type", ct)
                 self.send_header("Content-Length", str(len(data)))
                 self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("X-Powered-By", "petalTongue v1.7.0 + Gaia Gate")
+                self.send_header("X-Routed-By", "songbird")
                 self.end_headers()
                 self.wfile.write(data)
                 self._classify_and_log("GET", resp.status, duration, len(data))
@@ -1054,7 +1084,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self.send_response(502)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"error": f"petalTongue unreachable: {e}"}).encode())
+            self.wfile.write(json.dumps({"error": str(e), "route": "songbird"}).encode())
+
+    def _proxy_petaltongue(self):
+        """Proxy to petalTongue — songbird routes this."""
+        path = self.path if self.path != "/hud" and self.path != "/hub" else "/"
+        self._songbird_route("http://127.0.0.1:3000", path)
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
