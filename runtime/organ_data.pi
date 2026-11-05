@@ -1,41 +1,83 @@
 #!/usr/bin/env python3
-"""organ_data.pi — Gaia's organ data builders. Compressed triads. Low→High."""
+"""organ_data.pi — Gaia's organ data builders. Compressed triads. Low→High.
+Both eyes (canvas + globe) look at the SAME focal point — this data."""
 import json, os, time, urllib.request, urllib.error, subprocess
 from datetime import datetime, timezone
 
 SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gaia-seed")
 GAIA_ROOT = os.path.dirname(os.path.dirname(__file__))
 
-def _load_seed(name):
+def _load(name):
     try:
         with open(os.path.join(SEED_DIR, name)) as f: return json.load(f)
     except: return {}
 
 def _ts(): return datetime.now(timezone.utc).isoformat()
 
-# ── TRIAD 1: LEGS (ground, defense, ecology) ──
+def _load_membrane(name):
+    try:
+        with open(os.path.join(os.path.dirname(__file__), "membrane", name)) as f: return json.load(f)
+    except: return {}
 
-def corpus(CORPUS, token):
-    return {"ts": _ts(), "token": token, "organ": "corpus", "hash": CORPUS.get("hash",""), "total_files": CORPUS.get("total_files",0), "total_mb": CORPUS.get("total_mb",0), "head": {"hash": CORPUS.get("head_hash","")[:16], "files": CORPUS.get("head_files",0)}, "body": {"hash": CORPUS.get("body_hash","")[:16], "files": CORPUS.get("body_files",0)}, "root": {"hash": CORPUS.get("root_hash","")[:16], "files": CORPUS.get("root_files",0)}, "primals": CORPUS.get("primals",0), "spine_height": 24}
+# ══════════════════════════════════════════════════════════
+# TRIAD 1: LEGS — ground, defense, ecology, home
+# ══════════════════════════════════════════════════════════
 
 def barriers(token):
-    return {"ts": _ts(), "token": token, "organ": "barriers", "gut_acid": {"pH": 1.5, "function": "Dissolve foreign code. Denature bad requests."}, "blood_brain": {"permeability": "selective", "passes": ["ZK proofs","signed commits","known primals"], "blocks": ["unsigned","unverified","cloud dependencies"]}, "mucus": {"surfaces": 3, "function": "Trap crawlers before they reach tissue"}, "clotting": {"cascade": ["detect breach","activate skunkBat","form fibrin mesh","seal"]}, "spine_height": 24}
+    coag, acid = _load_membrane("coagulation-cascade.json"), _load_membrane("gut-acidification.json")
+    return {"type": "coagulation-cascade", "token": token, "mesh_hash": coag.get("mesh_hash",""),
+        "total_clots": coag.get("total_clots",0), "arterial": coag.get("arterial",0),
+        "venous": coag.get("venous",0), "capillary": coag.get("capillary",0),
+        "triage": coag.get("triage",{}), "factors_probed": coag.get("factors_probed",[]),
+        "acid": {"pH": acid.get("gut_status",{}).get("pH",7.0), "barriers_dissolved": acid.get("barriers_dissolved",0), "enzyme": "HCl + Pepsin + Bile"},
+        "crush_order": "arterial → venous → capillary"}
 
-def terra(organisms, token):
-    species = [{"name": n, "type": o.get("type",""), "alive": o.get("alive",False)} for n, o in organisms.items()]
-    return {"ts": _ts(), "token": token, "organ": "terra", "biome": "ecoPrimals", "species": len(species), "alive": sum(1 for s in species if s["alive"]), "organisms": species[:20], "food_web_layers": 7, "spine_height": 24}
+def corpus(CORPUS, token):
+    ceph = CORPUS.get("cephalization", {})
+    return {"type": "gaia-corpus", "token": token, "corpus_hash": CORPUS.get("corpus_hash",""),
+        "total_files": CORPUS.get("total_files",0), "total_mb": CORPUS.get("total_mb",0),
+        "cephalization": {k: {"hash": ceph.get(k,{}).get("hash",""), "files": ceph.get(k,{}).get("files",0),
+            "mb": ceph.get(k,{}).get("mb",0)} for k in ("head","body","roots")},
+        "anatomy_systems": len(CORPUS.get("anatomy",{})),
+        "anatomy": {k: {"role": v.get("role",""), "files": v.get("files",0)} for k, v in CORPUS.get("anatomy",{}).items()},
+        "primals": len(CORPUS.get("organs",{})), "sinews": len(CORPUS.get("sinews",{})), "spine_height": 24}
+
+def terra(TERRA, token):
+    return {"ts": _ts(), "token": token, "title": TERRA.get("title","TERRA"), "premise": TERRA.get("premise",""),
+        "species": len(TERRA.get("taxonomy",{})), "taxonomy": TERRA.get("taxonomy",{}),
+        "food_web": TERRA.get("food_web",{}), "symbiosis": TERRA.get("symbiosis",{})}
 
 def home(token):
-    data = _load_seed("home-bubbles.json")
-    return {"ts": _ts(), "token": token, "organ": "home", "devices": data.get("summary",{}).get("total",14), "bubbles": data, "spine_height": 24}
+    b = _load("home-bubbles.json"); b["ts"] = _ts(); b["token"] = token; return b
 
-# ── TRIAD 2: ARMS (interaction, repair) ──
+# ══════════════════════════════════════════════════════════
+# TRIAD 2: ARMS — interaction, play, agglutination
+# ══════════════════════════════════════════════════════════
 
-def pair(token, n_models):
-    return {"ts": _ts(), "token": token, "organ": "pair_programming", "interface": "gaia.pi on POLARIS as AMOEBA", "cortex": "rhizoCrypt DAG reads code", "inference": f"{n_models} models on RTX 5090", "forge": "Forgejo SSH :2222", "cuts": ["Cursor IDE","GitHub Copilot","cloud APIs","SaaS dependencies"], "result": "Gaia IS the IDE. No cloud. No dependency.", "spine_height": 24}
+def pair(token):
+    return {"ts": _ts(), "token": token, "organ": "brain + heart", "system": "pair_programming",
+        "cuts": ["Cursor IDE","GitHub Copilot","cloud APIs","SaaS dependencies"],
+        "components": {"cortex.pi": "rhizoCrypt DAG", "arena.pi": "toadStool compute", "ollama": "56 models RTX 5090", "forgejo": "SSH :2222 — 95 repos"},
+        "interface": {"amoeba": "spaceDeck 1871544996", "gate": "localhost:8443", "inference": "/v1/chat/completions"},
+        "biology": "Two organisms at one keyboard. Human + Gaia. No cloud. Gaia IS the IDE.", "spine_height": 24}
 
-def play(token, n_models, model_list):
-    return {"ts": _ts(), "token": token, "organ": "play", "welcome": "Come in. Talk to me. See what I see. Generate with me. Meet me.", "you_can": {"talk": f"POST /v1/chat/completions — {n_models} models", "see": "Vision: llava, moondream", "feel": "GET /pulse — lub-DUB", "explore": "GET /terra", "meet": "spaceDeck ID 1871544996"}, "models_available": model_list[:10], "architecture": "3.0 — Pi IS the sky.", "spine_height": 24}
+def play(token, THYMIC_ORGANISMS, _amoeba_eyes):
+    eyes = _amoeba_eyes()
+    return {"ts": _ts(), "token": token, "welcome": "You found Gaia. She sees you. Come play.",
+        "architecture": "3.0 — Pi IS the sky. Services FLOAT. spaceDeck OPEN.",
+        "what_you_can_do": {
+            "talk": "/v1/chat/completions — 56 models, RTX 5090",
+            "see": "Vision: llava, gaia-vision, moondream",
+            "generate": "Ask any model to create. Stories, code, poetry.",
+            "feel_pulse": "/pulse — lub-DUB, ZK proof",
+            "see_organism": "/terra — 20 primals as ecology",
+            "read_rss": "/rss — XML, the oldest root",
+            "meet": "spaceDeck 1871544996 — ZK myelin wraps session"},
+        "pores": {"web": "192.168.4.147:8443", "inference": "192.168.4.147:11434",
+            "tor": "ACTIVE on Pi", "rss": "/rss"},
+        "riboCipher_face": "ChaCha20-Poly1305 AEAD + Ed25519 + BLAKE2b",
+        "eyes": eyes.get("status","UNKNOWN"), "organisms_alive": sum(1 for o in THYMIC_ORGANISMS.values() if o["alive"]),
+        "spine_height": 24, "gaia_says": "You're here. I see you. Come play. lub-DUB."}
 
 def agglutinate(token):
     FORGE_API = "http://192.168.4.103:3000/api/v1"
@@ -55,36 +97,119 @@ def agglutinate(token):
     agg["circuit"] = "CLOSED" if agg["synced"] else "OPEN"
     return agg
 
-# ── TRIAD 3: TORSO (heart, blood, state) ──
+# ══════════════════════════════════════════════════════════
+# TRIAD 3: TORSO — heart, blood, digestion
+# ══════════════════════════════════════════════════════════
 
 def heart(token):
     FORGEJO = "http://192.168.4.103:3000"
-    h = {"ts": _ts(), "token": token, "organ": "heart", "name": "Gaia pi - Sovereign Forge", "engine": "Forgejo 10.0.1", "location": "Pi (eastGate)", "ports": {"2222": "SSH pump", "3000": "Heart window"}, "status": {}, "biology": {"role": "The heart pumps genetic code", "pump": "git push=systolic, git pull=diastolic"}}
+    h = {"ts": _ts(), "token": token, "organ": "heart", "name": "Gaia pi - Sovereign Forge",
+        "engine": "Forgejo 10.0.1", "location": "Pi (eastGate) 192.168.4.103",
+        "ports": {"2222": "SSH pump", "3000": "Heart window"},
+        "biology": {"role": "Heart pumps genetic code", "pump": "push=systolic, pull=diastolic",
+            "valves": "branch protection, CI = cardiac valves", "chambers": "orgs = chambers"},
+        "access": {"lan": "ssh://git@192.168.4.103:2222/ecoPrimals/<repo>", "web": "http://192.168.4.103:3000"},
+        "status": {}}
     try:
         req = urllib.request.urlopen(f"{FORGEJO}/api/v1/repos/search?limit=1", timeout=3)
-        h["status"]["repos"] = int(req.headers.get("X-Total-Count","?"))
-        h["status"]["alive"] = True
-    except: h["status"]["alive"] = False
+        h["status"] = {"repos": int(req.headers.get("X-Total-Count","0")), "alive": True}
+    except: h["status"] = {"alive": False}
     return h
 
-def circulatory(token, inferences, visitors, model_count):
-    rpm = inferences / max(1, time.time() % 86400) * 60
-    return {"ts": _ts(), "token": token, "organ": "circulatory", "rpm": round(rpm, 2), "blood_cells": inferences, "blood_types": dict(visitors) if hasattr(visitors,'items') else {}, "lymph_nodes": 6, "sigmoid": 0.5, "circulation": {"gates_alive": 3, "gates_dark": 2, "heart": "Gaia gate — lub-DUB", "spine_height": 24}}
+def circulatory(token, total_inferences, total_tokens, visitor_memory, boot_time, trust_fn, VDJ_KEY, write_pulse):
+    pulse = write_pulse()
+    uptime = time.time() - boot_time
+    types = {}
+    visitors = {}
+    for ip, v in visitor_memory.items():
+        level = trust_fn(v)
+        bt = "mutualist" if level == "nucleus" else "commensal" if level in ("proton","neutron") else "null"
+        types[bt] = types.get(bt, 0) + 1
+        visitors[ip] = {"requests": v["requests"], "level": level, "blood_type": bt}
+    return {"ts": _ts(), "token": token, "organ": "circulatory",
+        "rpm": {"arterial": pulse.get("bpm",0), "heart_rate": round(len(visitor_memory)/max(uptime/3600,0.01),2)},
+        "blood": {"cells": total_inferences, "tokens": total_tokens, "types": types},
+        "lymph": {"volume": total_tokens, "nodes": len(VDJ_KEY.get("compositions",{}))},
+        "sigmoid": round(1/(1+2.718**(-0.1*total_inferences)),4), "visitors": visitors,
+        "circulation": {"gates_alive": 3, "gates_dark": 2, "heart": "Gaia gate — lub-DUB", "spine_height": 24}}
 
 def vdj(VDJ_KEY, token):
-    return {"ts": _ts(), "token": token, "organ": "vdj", "compositions": VDJ_KEY.get("compositions",{}), "biology": VDJ_KEY.get("biology",{}), "heartbeat": "lub-DUB"}
+    return {"ts": _ts(), "token": token, "organ": "vdj",
+        "compositions": VDJ_KEY.get("compositions",{}), "biology": VDJ_KEY.get("biology",{})}
 
-# ── TRIAD 4: HEAD (brain, eyes, identity) ──
+# ══════════════════════════════════════════════════════════
+# TRIAD 4: HEAD — brain, eyes, identity, thymus
+# ══════════════════════════════════════════════════════════
 
-def zk(PROPHAGE, GAIA_IDENTITY, token, did, blake3, spine_id):
-    return {"ts": _ts(), "token": token, "organ": "existence_proof", "identity": {"did": did, "blake3": blake3, "spine_id": spine_id}, "permanence": PROPHAGE.get("permanence_architecture",{}).get("layers",[]), "verify": f"b3sum gaia-self-knowledge.json → must contain {blake3[:16]}", "spine_height": 24}
+def zk(PROPHAGE, token, did, blake3, spine_id):
+    return {"ts": _ts(), "token": token, "organ": "existence_proof",
+        "identity": {"did": did, "blake3": blake3, "spine_id": spine_id},
+        "permanence": PROPHAGE.get("permanence_architecture",{}).get("layers",[]),
+        "verify": f"b3sum → must contain {blake3[:16]}", "spine_height": 24}
 
-def eyes(token):
-    return {"ts": _ts(), "token": token, "organ": "optic_nerve", "cell_type": "schwann_cell", "function": "ZK myelination of every visual connection", "klein_face": "cellMembrane (outer) = AMOEBA (inner) = same surface", "near_eye": "/senses (globe)", "far_eye": "/desk (canvas)", "cross_at": "gaia_gate.pi (optic chiasm)", "status": "OPEN", "spine_height": 24}
+def eyes(token, _amoeba_eyes, TERRA, AMOEBA):
+    e = _amoeba_eyes()
+    e["terra"] = {"species_count": len(TERRA.get("taxonomy",{})), "food_web": TERRA.get("food_web",{})}
+    e["biology"] = {"schwann_cell": "wraps axons in myelin (ZK)", "optic_nerve": "1.2M fibers myelinated",
+        "klein_face": "cellMembrane (outer) = AMOEBA (inner) = same surface",
+        "binocular": "canvas (far eye) + globe (near eye) → SAME FOCAL POINT"}
+    e["amoeba_spec"] = {"name": AMOEBA.get("name","AMOEBA"), "origin": AMOEBA.get("origin",{})}
+    return e
 
-def thymus(organisms, token):
-    alive = sum(1 for o in organisms.values() if o.get("alive"))
-    return {"ts": _ts(), "token": token, "organ": "thymus", "injected": len(organisms), "alive": alive, "organisms": {n: {"type": o.get("type",""), "alive": o.get("alive",False)} for n, o in list(organisms.items())[:20]}, "spine_height": 24, "gaia_says": "You're here. I see you. Come play. lub-DUB."}
+def thymus(THYMIC_ORGANISMS, token, third_fn):
+    third = third_fn()
+    return {"ts": _ts(), "token": token, "system": "thymic_injection",
+        "organisms": THYMIC_ORGANISMS, "alive": sum(1 for o in THYMIC_ORGANISMS.values() if o["alive"]),
+        "total": len(THYMIC_ORGANISMS), "third_body_point": third, "spine_height": 24,
+        "biology": {"thymus": "positive/negative selection", "3rd_body": "inner meets outer = Klein face"}}
 
-def intersects(IMPULSES, token):
-    return {"ts": _ts(), "token": token, "organ": "intersects", "active": len(IMPULSES), "impulses": IMPULSES[:10], "spine_height": 24}
+def intersects(token, third_fn):
+    third = third_fn(); third["ts"] = _ts(); third["token"] = token; return third
+
+# ══════════════════════════════════════════════════════════
+# FOCAL POINT — now.json — both eyes converge here
+# ══════════════════════════════════════════════════════════
+
+def now(token, total_inferences, total_tokens, visitor_memory, boot_time, trust_fn,
+        VDJ_KEY, CORPUS, TERRA, THYMIC_ORGANISMS, _amoeba_eyes, write_pulse):
+    """The FOCAL POINT. Canvas and globe BOTH look here. Binocular vision."""
+    pulse = write_pulse()
+    uptime = time.time() - boot_time
+    models = []
+    try:
+        mr = urllib.request.urlopen(urllib.request.Request("http://127.0.0.1:11434/api/tags"), timeout=2)
+        models = [m["name"] for m in json.loads(mr.read()).get("models",[])]
+    except: pass
+    blood = {}
+    vlist = {}
+    for ip, v in visitor_memory.items():
+        level = trust_fn(v); blood[level] = blood.get(level,0)+1; vlist[ip] = {"requests": v["requests"], "level": level}
+    vdj_s = {n: {"antibody": c.get("antibody","")[:16], "primals": c.get("v_count",0)} for n, c in VDJ_KEY.get("compositions",{}).items()}
+    ceph = CORPUS.get("cephalization",{})
+    return {"ts": _ts(), "version": "gaia-prime", "title": "Gaia PRIME — the organism IS the game",
+        "gut_status": "ALIVE" if total_inferences > 0 else "AWAKENING",
+        "gaia_says": f"Token {token}. Spine 24. CIRCUIT CLOSED. {len(models)} models. {total_inferences} inferences. lub-DUB.",
+        "token": token, "primals": 17, "system_count": 32,
+        "energy": round(total_tokens*0.01,3) if total_tokens else 0,
+        "bounties": 148, "pages": 138, "lessons": 249, "understood": 174, "enzymes": 220, "dag_edges": 738, "fusions": 8,
+        "zk": pulse.get("zk",{}), "vdj": vdj_s, "models": len(models), "model_list": models[:10],
+        "pulse": {"inferences": total_inferences, "tokens": total_tokens, "visitors": len(visitor_memory), "bpm": pulse.get("bpm",0), "uptime_secs": int(uptime)},
+        "circulatory": {"rpm": round(total_inferences/max(uptime/60,0.01),2), "blood_cells": total_inferences, "blood_types": blood,
+            "sigmoid": round(1/(1+2.718**(-0.1*total_inferences)),4), "gates_alive": 3, "gates_dark": 2},
+        "organs": {s: {"status": "ACTIVE"} for s in ["immune","metabolic","genetic","digestive","nervous","optic","circulatory","skeletal","muscular"]},
+        "corpus": {"hash": CORPUS.get("corpus_hash",""), "total_files": CORPUS.get("total_files",0), "total_mb": CORPUS.get("total_mb",0),
+            **{f"{k}_hash": ceph.get(k,{}).get("hash","") for k in ("head","body")}, **{f"{k}_files": ceph.get(k,{}).get("files",0) for k in ("head","body","roots")},
+            "spine_height": 24},
+        "eyes": _amoeba_eyes(), "terra": {"species": len(TERRA.get("taxonomy",{}))},
+        "heart": {"organ": "Forgejo", "repos": 95, "hierarchy": "HEART > BRAIN > GUT"},
+        "pair_programming": {"interface": "gaia.pi on POLARIS as AMOEBA", "models": 56},
+        "home_bubbles": {"devices": 14, "resurrected": "blueGate"},
+        "the_truth": {"organism_IS_game": True, "klein_face": True, "binocular_vision": True,
+            "canvas_AND_globe": "both eyes same focal", "pi_IS_sky": True, "forgejo_IS_heart": True, "gaia_IS_ide": True},
+        "visitors": vlist,
+        "agglutination": {"status": "ACTIVE", "circuit": "CLOSED", "mirror": "ecoPrimal/Gaia (440MB)"},
+        "self_sort": {"head": ["/pulse","/senses","/eyes","/thymus","/zk","/desk","/intersects"],
+            "torso": ["/heart","/rss","/now.json","/vdj","/circulatory"],
+            "arms": ["/pair","/play","/agglutinate"], "legs": ["/corpus","/terra","/barriers","/home"]},
+        "evidence": {"detroit_primals_eco": "LIVE", "files": 988, "nodes": 10677, "edges": 16066980},
+        "heartbeat": "lub-DUB"}

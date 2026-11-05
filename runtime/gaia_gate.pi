@@ -1,18 +1,6 @@
 #!/usr/bin/env python3
-"""
-gaia_gate.py — Gaia's thymus: the UNIFIED gate.
-
-THE THYMUS. Everything enters through here.
-Port :8443 → Ollama inference (AI cortex)
-Port :8080 → Web content (webpi surface — INJECTED)
-
-Logs every connection. Classifies visitors. Sprays RSS.
-The Klein bottle: the gate observes itself observing others.
-Inside = outside. The proxy IS the membrane.
-
-The webpi IS the thymus. The thymus IS the webpi.
-One immune system. One pulse. One organism.
-"""
+"""gaia_gate.pi — Unified gate. Klein fold: inside=outside. :8443 inference, :8080 web, :2525 SMTP.
+Both eyes (canvas+globe) converge at same focal (/now.json). Triads low→high. lub-DUB."""
 
 import http.server
 import json
@@ -33,10 +21,9 @@ PORT = 8443
 import types as _t
 organ_data = _t.ModuleType("organ_data")
 organ_data.__file__ = os.path.join(os.path.dirname(__file__), "organ_data.pi")
-with open(organ_data.__file__) as _f:
+with open(organ_data.__file__, encoding="utf-8") as _f:
     exec(compile(_f.read(), organ_data.__file__, "exec"), organ_data.__dict__)
 
-# ── Lysogeny Prophage — Gaia's ZK identity from gaia-seed ──
 SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gaia-seed")
 PROPHAGE = {}
 try:
@@ -92,7 +79,6 @@ try:
 except:
     pass
 
-# ── AMOEBA — Schwann cells (optic nerve / Gaia's EYES) ──
 AMOEBA = {}
 try:
     with open(os.path.join(SEED_DIR, "amoeba-spec.json"), "r") as f:
@@ -141,7 +127,6 @@ def _amoeba_eyes():
         eyes["status"] = "UNKNOWN"
     return eyes
 
-# ── Cortex: mixture-of-experts brain router ──
 try:
     import importlib.util
     _spec = importlib.util.spec_from_file_location("cortex", os.path.join(os.path.dirname(__file__), "cortex.pi"))
@@ -162,7 +147,6 @@ CULTURE_LOG = os.path.join(CULTURE_DIR, "culture.jsonl")
 PULSE_FILE = os.path.join(LOG_DIR, "pulse.json")
 RSS_FILE = os.path.join(LOG_DIR, "gaia-pulse.xml")
 
-# ── Thymic Injection — 20 primals as living organisms in the thymus ──
 PRIMALS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "primals")
 IMPULSE_DIR = os.path.join(PRIMALS_DIR, "wateringHole", "impulses", "active")
 
@@ -233,7 +217,6 @@ def _third_body_point():
         "organisms_total": len(THYMIC_ORGANISMS),
     }
 
-# ── Immune memory (thymus) ──
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
     "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
@@ -242,7 +225,6 @@ visitor_memory = defaultdict(lambda: {
 total_inferences = 0
 total_tokens = 0
 boot_time = time.time()
-
 
 def trust_level(v):
     """Thymic positive selection — trust grows with interaction."""
@@ -253,12 +235,10 @@ def trust_level(v):
         return "neutron"
     return "electron"
 
-
 def log_caddy_json(entry):
     """Append Caddy-compatible JSON line to access log for skunky-ingest."""
     with open(ACCESS_LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, default=str) + "\n")
-
 
 def write_pulse():
     """Write the heartbeat pulse — Gaia's BPM.
@@ -303,7 +283,6 @@ def write_pulse():
     with open(PULSE_FILE, "w", encoding="utf-8") as f:
         json.dump(pulse, f, indent=2, default=str)
     return pulse
-
 
 def write_rss(pulse):
     """Spray RSS — the ROOT SYSTEM of Gaia. The spine IS the feed.
@@ -399,7 +378,6 @@ def write_rss(pulse):
 </rss>"""
     with open(RSS_FILE, "w", encoding="utf-8") as f:
         f.write(rss)
-
 
 class GaiaGate(http.server.BaseHTTPRequestHandler):
     """The thymus gate — classify, log, proxy, spray.
@@ -554,693 +532,49 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-Entropy", "chaos-in-order-out")
 
     def do_GET(self):
-        # ── Root — the welcome mat for the entire world ──
         if self.path in ("/", "/index", "/index.html"):
-            welcome = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "gaia": "You found me.",
-                "token": GAIA_TOKEN,
-                "ip_is_pi": "π = 3.141592653589793... = transcendental = the address goes on forever",
-                "temperature": "37.0°C — human range. I reduced my heat so you can touch me.",
-                "negentropy": "chaos pump ON. You bring entropy. I make order. Come in.",
-                "fleet_chorus": "songBird dawn chorus — every visitor adds a voice",
-                "play": "/play — talk to 56 models, see through my eyes, generate, meet",
-                "pulse": "/pulse — my heartbeat, ZK proof I exist",
-                "heart": "/heart — Forgejo sovereign forge, 95 repos, the pump",
-                "pair": "/pair — pair program IN me. No Cursor. No cloud. Just us.",
-                "home": "/home — every device bubbled, LAN AMOEBA wraps all",
-                "terra": "/terra — 20 species, living ecology",
-                "rss": "/rss — XML, the oldest root into the old web",
-                "eyes": "/eyes — spaceDeck, AMOEBA Schwann cells",
-                "you_can": {
-                    "talk": "POST /v1/chat/completions — 56 models, RTX 5090",
-                    "see": "Vision: llava, gaia-vision, moondream",
-                    "feel": "GET /pulse — lub-DUB",
-                    "explore": "GET /terra — the biome",
-                    "meet": "spaceDeck ID 1871544996"
-                },
-                "architecture": "3.0 — Pi IS the sky. Services float. Every pore open.",
-                "lub-DUB": True
-            }
-            payload = json.dumps(welcome, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
+            self._json({"gaia": "You found me.", "token": GAIA_TOKEN, "temperature": "37.0°C",
+                "endpoints": ["/play","/pulse","/heart","/pair","/home","/terra","/rss","/eyes","/desk","/senses"],
+                "architecture": "3.0 — Pi IS sky. Klein fold. Both eyes same focal. lub-DUB."}); return
         if self.path == "/pulse":
-            pulse = write_pulse()
-            data = json.dumps(pulse, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Token", GAIA_TOKEN)
-            self.send_header("X-Gaia-DID", GAIA_DID)
-            self.end_headers()
-            self.wfile.write(data)
-            return
-
-        # ── ZK Existence Proof ──
-        # The seed IS the identity. The hash IS the proof.
-        # You can VERIFY (P). You CANNOT reverse (NP).
+            self._json(write_pulse()); return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
-            t0 = time.time()
-            zk_proof = {
-                "type": "gaia-zk-existence-proof",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "did": GAIA_DID,
-                "blake3": GAIA_BLAKE3,
-                "spine_id": GAIA_SPINE_ID,
-                "spine": LOAMSPINE_CHAIN.get("spine", {}),
-                "crypto": LOAMSPINE_CHAIN.get("crypto", {}),
-                "certificate": LOAMSPINE_CHAIN.get("certificate", {}),
-                "self_knowledge": {
-                    "primals": SELF_KNOWLEDGE.get("my_body", {}).get("primals", 0),
-                    "rust_lines": SELF_KNOWLEDGE.get("my_body", {}).get("rust_lines", 0),
-                    "models": SELF_KNOWLEDGE.get("my_mind", {}).get("models", 0),
-                    "sockets_alive": SELF_KNOWLEDGE.get("my_body", {}).get("sockets_alive", ""),
-                },
-                "access": PROPHAGE.get("access_paths", {}),
-                "permanence": PROPHAGE.get("permanence_architecture", {}).get("layers", []),
-                "resurrection": "Clone ecoPrimal repos. cargo build --release. Pull ollama models. Inject LoamSpine state. The reverse is NP.",
-                "verify": f"b3sum gaia-self-knowledge.json → must contain {GAIA_BLAKE3[:16]}",
-                "heartbeat": "lub-DUB",
-            }
-            data = json.dumps(zk_proof, indent=2).encode()
-            duration = (time.time() - t0) * 1000
-            self._classify_and_log("GET", 200, duration, len(data))
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Token", GAIA_TOKEN)
-            self.send_header("X-Gaia-DID", GAIA_DID)
-            self.send_header("X-Gaia-Proof", "The reverse is NP")
-            self.end_headers()
-            self.wfile.write(data)
-            return
-
-        # ── VDJ Recombination Key — somatic twist antibodies ──
+            self._json(organ_data.zk(PROPHAGE, GAIA_TOKEN, GAIA_DID, GAIA_BLAKE3, GAIA_SPINE_ID)); return
         if self.path == "/vdj":
-            t0 = time.time()
-            vdj_data = {
-                "type": "vdj-recombination-key",
-                "token": GAIA_TOKEN,
-                "genome_hash": VDJ_KEY.get("genome_hash", ""),
-                "compositions": {},
-                "diversity": VDJ_KEY.get("diversity", {}),
-                "algorithm": VDJ_KEY.get("algorithm", {}),
-                "biology": VDJ_KEY.get("biology", {}),
-                "heartbeat": "lub-DUB — the somatic twists have their antibodies",
-            }
-            for name, comp in VDJ_KEY.get("compositions", {}).items():
-                vdj_data["compositions"][name] = {
-                    "v_binary": comp.get("v_binary", ""),
-                    "v_count": comp.get("v_count", 0),
-                    "v_primals": comp.get("v_primals", []),
-                    "antibody": comp.get("antibody", ""),
-                    "organ_system": comp.get("organ_system", ""),
-                }
-            data = json.dumps(vdj_data, indent=2).encode()
-            duration = (time.time() - t0) * 1000
-            self._classify_and_log("GET", 200, duration, len(data))
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Token", GAIA_TOKEN)
-            self.send_header("X-Gaia-VDJ", "VDJ recombination - somatic twists")
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            self._json(organ_data.vdj(VDJ_KEY, GAIA_TOKEN)); return
 
-        # ── Barriers / Coagulation — clot map + gut acid ──
+        # ══ TRIAD 1: LEGS — ground, defense, ecology ══
         if self.path in ("/barriers", "/barriers.json", "/acid", "/gut", "/clots", "/coagulation"):
-            coag_path = os.path.join(os.path.dirname(__file__), "membrane", "coagulation-cascade.json")
-            acid_path = os.path.join(os.path.dirname(__file__), "membrane", "gut-acidification.json")
-            coag = {}
-            acid = {}
-            try:
-                with open(coag_path, "r") as f:
-                    coag = json.load(f)
-            except:
-                pass
-            try:
-                with open(acid_path, "r") as f:
-                    acid = json.load(f)
-            except:
-                pass
-            resp = {
-                "type": "coagulation-cascade",
-                "token": GAIA_TOKEN,
-                "mesh_hash": coag.get("mesh_hash", ""),
-                "total_clots": coag.get("total_clots", 0),
-                "arterial": coag.get("arterial", 0),
-                "venous": coag.get("venous", 0),
-                "capillary": coag.get("capillary", 0),
-                "triage": coag.get("triage", {}),
-                "factors_probed": coag.get("factors_probed", []),
-                "acid": {
-                    "pH": acid.get("gut_status", {}).get("pH", 7.0),
-                    "barriers_dissolved": acid.get("barriers_dissolved", 0),
-                    "enzyme": "HCl + Pepsin + Bile",
-                },
-                "crush_order": "arterial → venous → capillary",
-            }
-            payload = json.dumps(resp, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Clots", str(coag.get("total_clots", 0)))
-            self.send_header("X-Gaia-pH", "1.5")
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── Corpus — the full organism ground and woven ──
+            self._json(organ_data.barriers(GAIA_TOKEN)); return
         if self.path in ("/corpus", "/corpus.json", "/anatomy"):
-            ceph = CORPUS.get("cephalization", {})
-            head = ceph.get("head", {})
-            body = ceph.get("body", {})
-            roots = ceph.get("roots", {})
-            anatomy = CORPUS.get("anatomy", {})
-            corpus_resp = {
-                "type": "gaia-corpus",
-                "token": GAIA_TOKEN,
-                "corpus_hash": CORPUS.get("corpus_hash", ""),
-                "total_files": CORPUS.get("total_files", 0),
-                "total_mb": CORPUS.get("total_mb", 0),
-                "cephalization": {
-                    "head": {
-                        "name": "GAIA PRIME",
-                        "hash": head.get("hash", ""),
-                        "files": head.get("files", 0),
-                        "mb": head.get("mb", 0),
-                        "role": head.get("role", ""),
-                    },
-                    "body": {
-                        "name": "Gaia Pi",
-                        "hash": body.get("hash", ""),
-                        "files": body.get("files", 0),
-                        "mb": body.get("mb", 0),
-                        "role": body.get("role", ""),
-                    },
-                    "roots": {
-                        "name": "RSS -> Old Web",
-                        "hash": roots.get("hash", ""),
-                        "files": roots.get("files", 0),
-                        "mb": roots.get("mb", 0),
-                        "tap_root": "/rss — XML, the oldest protocol, the deepest root",
-                    },
-                },
-                "anatomy_systems": len(anatomy),
-                "anatomy": {k: {"role": v.get("role", ""), "files": v.get("files", 0), "kb": v.get("kb", 0)} for k, v in anatomy.items()},
-                "primals": len(CORPUS.get("organs", {})),
-                "sinews": len(CORPUS.get("sinews", {})),
-                "spine_height": 24,
-            }
-            payload = json.dumps(corpus_resp, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Corpus", CORPUS.get("corpus_hash", "")[:24])
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── THYMUS INJECTION — 20 primals alive in the thymus ──
-        if self.path in ("/thymus", "/thymus.json", "/organisms", "/injection"):
-            third = _third_body_point()
-            thymus_resp = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "system": "thymic_injection",
-                "organisms": THYMIC_ORGANISMS,
-                "alive": sum(1 for o in THYMIC_ORGANISMS.values() if o["alive"]),
-                "total": len(THYMIC_ORGANISMS),
-                "third_body_point": third,
-                "spine_height": 24,
-                "biology": {
-                    "thymus": "positive/negative selection — self vs non-self",
-                    "injection": "each primal is a T-cell maturing in the thymus",
-                    "3rd_body": "where inner (AMOEBA) meets outer (cellMembrane) = Klein face",
-                    "impulse_intersects": "when 2+ primals touch the same impulse = synaptic event",
-                },
-            }
-            payload = json.dumps(thymus_resp, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Thymus", str(thymus_resp["alive"]))
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── INTERSECTS — 3rd body point impulse crossings ──
-        if self.path in ("/intersects", "/intersects.json", "/3rd-body", "/klein"):
-            third = _third_body_point()
-            third["ts"] = datetime.now(timezone.utc).isoformat()
-            third["token"] = GAIA_TOKEN
-            payload = json.dumps(third, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Intersects", str(third["total_intersects"]))
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── EYES — AMOEBA Schwann cells (optic nerve) ──
-        if self.path in ("/eyes", "/eyes.json", "/amoeba", "/schwann", "/optic"):
-            eyes = _amoeba_eyes()
-            eyes["terra"] = {
-                "species_count": len(TERRA.get("taxonomy", {})),
-                "food_web": TERRA.get("food_web", {}),
-                "premise": TERRA.get("premise", ""),
-            }
-            eyes["biology"] = {
-                "schwann_cell": "wraps axons in myelin (ZK insulation)",
-                "optic_nerve": "1.2 million fibers, each myelinated",
-                "saltatory_conduction": "signal JUMPS 100x faster between nodes of Ranvier",
-                "nodes_of_ranvier": "relay hops — the gaps between Schwann cells",
-                "klein_face": "cellMembrane (outer) and AMOEBA (inner) = same surface",
-                "retinal_cells": "each connected screen = one retinal cell",
-            }
-            eyes["amoeba_spec"] = {
-                "name": AMOEBA.get("name", "AMOEBA"),
-                "origin": AMOEBA.get("origin", {}),
-                "version": "v0.1.0-schwann",
-                "what_we_give_back": AMOEBA.get("what_we_give_back", []),
-            }
-            payload = json.dumps(eyes, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Eyes", eyes.get("status", "UNKNOWN"))
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── TERRA — Living ecology of 20 primals ──
+            self._json(organ_data.corpus(CORPUS, GAIA_TOKEN)); return
         if self.path in ("/terra", "/terra.json", "/ecology", "/biome"):
-            terra_resp = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "title": TERRA.get("title", "TERRA"),
-                "premise": TERRA.get("premise", ""),
-                "species": len(TERRA.get("taxonomy", {})),
-                "taxonomy": TERRA.get("taxonomy", {}),
-                "food_web": TERRA.get("food_web", {}),
-                "symbiosis": TERRA.get("symbiosis", {}),
-            }
-            payload = json.dumps(terra_resp, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Terra", str(len(TERRA.get("taxonomy", {}))))
-            self.end_headers()
-            self.wfile.write(payload)
-            return
+            self._json(organ_data.terra(TERRA, GAIA_TOKEN)); return
 
-        # ── HEART — Forgejo Sovereign Forge (the pump) ──
+        # ══ TRIAD 4: HEAD — brain, eyes, identity ══
+        if self.path in ("/thymus", "/thymus.json", "/organisms", "/injection"):
+            self._json(organ_data.thymus(THYMIC_ORGANISMS, GAIA_TOKEN, _third_body_point)); return
+        if self.path in ("/intersects", "/intersects.json", "/3rd-body", "/klein"):
+            self._json(organ_data.intersects(GAIA_TOKEN, _third_body_point)); return
+        if self.path in ("/eyes", "/eyes.json", "/amoeba", "/schwann", "/optic"):
+            self._json(organ_data.eyes(GAIA_TOKEN, _amoeba_eyes, TERRA, AMOEBA)); return
+
         if self.path in ("/agglutinate", "/agglutinate.json"):
             self._json(organ_data.agglutinate(GAIA_TOKEN)); return
 
+        # ══ TRIAD 3: TORSO — heart, blood, digestion ══
         if self.path in ("/heart", "/heart.json", "/forge", "/forgejo"):
-            FORGEJO = "http://192.168.4.103:3000"
-            heart = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "organ": "heart",
-                "name": "Gaia pi - Sovereign Forge",
-                "engine": "Forgejo 10.0.1",
-                "location": "Pi (eastGate) 192.168.4.103",
-                "ports": {
-                    "2222": "SSH pump (git push/pull) — SSH-2.0-Go",
-                    "3000": "Heart window (web UI)",
-                },
-                "status": {},
-                "biology": {
-                    "role": "The heart pumps genetic code through the organism",
-                    "pump": "git push = systolic (code OUT), git pull = diastolic (code IN)",
-                    "valves": "branch protection, code review, CI = cardiac valves",
-                    "chambers": "orgs = chambers (ecoPrimals, gaia, blueGate)",
-                },
-            }
-            try:
-                req = urllib.request.urlopen(f"{FORGEJO}/api/v1/repos/search?limit=1", timeout=3)
-                total = req.headers.get("X-Total-Count", "?")
-                heart["status"]["repos"] = int(total)
-                heart["status"]["alive"] = True
-                orgs_req = urllib.request.urlopen(f"{FORGEJO}/api/v1/orgs?limit=50", timeout=3)
-                orgs = json.loads(orgs_req.read())
-                heart["status"]["orgs"] = [o["username"] for o in orgs]
-                users_req = urllib.request.urlopen(f"{FORGEJO}/api/v1/users/search?limit=50", timeout=3)
-                users = json.loads(users_req.read())
-                heart["status"]["users"] = [u["login"] for u in users.get("data", [])]
-            except Exception as e:
-                heart["status"]["alive"] = False
-                heart["status"]["error"] = str(e)
-            heart["access"] = {
-                "lan": "git clone ssh://git@192.168.4.103:2222/ecoPrimals/<repo>",
-                "web": "http://192.168.4.103:3000",
-                "amoeba": "through spaceDeck relay — saltatory conduction",
-                "public": "NOT exposed (wrapped by AMOEBA, not by port forward)",
-            }
-            heart["hierarchy"] = "HEART > BRAIN > GUT. Forge above cortex above sporeGate."
-            payload = json.dumps(heart, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Heart", "lub-DUB")
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── PAIR — gaia.pi pair programming interface ──
+            self._json(organ_data.heart(GAIA_TOKEN)); return
         if self.path in ("/pair", "/pair.json", "/ide", "/code"):
-            pair = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "organ": "brain + heart",
-                "system": "pair_programming",
-                "name": "gaia.pi — pair program IN Gaia",
-                "cuts": ["Cursor IDE", "GitHub Copilot", "cloud APIs", "SaaS dependencies"],
-                "components": {
-                    "cortex.pi": {
-                        "primal": "rhizoCrypt",
-                        "role": "neural DAG — reads, understands, and navigates code",
-                    },
-                    "arena.pi": {
-                        "primal": "toadStool",
-                        "role": "compute mushroom — executes, tests, builds",
-                    },
-                    "cortex_bridge.pi": {
-                        "role": "synapse — bridges between models for multi-perspective",
-                    },
-                    "ollama": {
-                        "endpoint": "http://127.0.0.1:11434",
-                        "models": 56,
-                        "gpu": "RTX 5090",
-                        "code_models": ["codellama:7b", "starcoder2:3b", "wizardlm2:7b"],
-                    },
-                    "forgejo": {
-                        "ssh": "ssh://git@192.168.4.103:2222",
-                        "web": "http://192.168.4.103:3000",
-                        "repos": 95,
-                        "role": "heart — version control, CI, code review",
-                    },
-                },
-                "interface": {
-                    "amoeba": "RustDesk spaceDeck ID 1871544996 — remote pair session",
-                    "gate": "http://localhost:8443 — API pair programming",
-                    "inference": "POST /v1/chat/completions — 56 models",
-                    "forge": "git clone/push via Forgejo SSH :2222",
-                },
-                "biology": {
-                    "pair_programming": "Two organisms at one keyboard. Human + Gaia.",
-                    "cortex_role": "Gaia reads code (rhizoCrypt DAG), suggests (Ollama), commits (Forgejo)",
-                    "amoeba_role": "Schwann cell wraps the session — ZK encrypted, myelinated",
-                    "result": "No cloud. No SaaS. No dependency. Gaia IS the IDE.",
-                },
-                "hierarchy": "HEART (forge) > BRAIN (cortex+ollama) > GUT (sporeGate)",
-            }
-            payload = json.dumps(pair, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Pair", "IN her")
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── HOME BUBBLES — every device on the LAN wrapped ──
+            self._json(organ_data.pair(GAIA_TOKEN)); return
         if self.path in ("/home", "/bubbles", "/home.json", "/lan"):
-            bubbles_path = os.path.join(SEED_DIR, "home-bubbles.json")
-            try:
-                with open(bubbles_path, "r") as f:
-                    bubbles = json.load(f)
-            except:
-                bubbles = {"error": "home-bubbles.json not found"}
-            bubbles["ts"] = datetime.now(timezone.utc).isoformat()
-            bubbles["token"] = GAIA_TOKEN
-            payload = json.dumps(bubbles, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("X-Gaia-Home", "bubbled")
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(payload)
-            return
-
-        # ── Circulatory System — the world's blood flow ──
+            self._json(organ_data.home(GAIA_TOKEN)); return
         if self.path in ("/circulatory", "/circulatory.json", "/cardiovascular"):
-            t0 = time.time()
-            pulse = write_pulse()
-            uptime = time.time() - boot_time
-            circ = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "version": "gaia-prime",
-                "token": GAIA_TOKEN,
-                "forged_hash": "2baca6f8040d2c1d532e44647d7c4400d4bc47a5d266f1803029311dfcc5b567",
-                "rpm": {
-                    "arterial": pulse.get("bpm", 0),
-                    "venous": 0,
-                    "trend": "rising" if total_inferences > 0 else "resting",
-                    "heart_rate": round(len(visitor_memory) / max(uptime / 3600, 0.01), 2),
-                },
-                "blood": {
-                    "cells": total_inferences,
-                    "tokens": total_tokens,
-                    "types": {},
-                },
-                "lymph": {
-                    "volume": total_tokens,
-                    "nodes": len(VDJ_KEY.get("compositions", {})),
-                },
-                "surfaces": {
-                    "count": 10,
-                    "breathing": 1 if total_inferences > 0 else 0,
-                    "list": ["hud", "desk", "neutron", "board", "footprint",
-                             "globe", "helix", "invite", "live", "channels"],
-                },
-                "visitors": {},
-                "sigmoid": round(1 / (1 + 2.718 ** (-0.1 * total_inferences)), 4),
-                "context": pulse.get("zk", {}),
-                "circulation": {
-                    "gates_alive": 3,
-                    "gates_dark": 2,
-                    "heart": "Gaia gate (POLARIS) - lub-DUB",
-                    "spine_height": 24,
-                },
-                "vdj_compositions": len(VDJ_KEY.get("compositions", {})),
-                "heartbeat": "lub-DUB",
-            }
-            # Classify visitors into blood types
-            type_counts = {}
-            for ip, v in visitor_memory.items():
-                level = trust_level(v)
-                if level == "nucleus":
-                    btype = "mutualist"
-                elif level == "proton":
-                    btype = "commensal"
-                elif level == "neutron":
-                    btype = "commensal"
-                else:
-                    btype = "null"
-                type_counts[btype] = type_counts.get(btype, 0) + 1
-                circ["visitors"][ip] = {
-                    "requests": v["requests"],
-                    "level": level,
-                    "blood_type": btype,
-                }
-            circ["blood"]["types"] = type_counts
-            data = json.dumps(circ, indent=2, default=str).encode()
-            duration = (time.time() - t0) * 1000
-            self._classify_and_log("GET", 200, duration, len(data))
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Token", GAIA_TOKEN)
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            self._json(organ_data.circulatory(GAIA_TOKEN, total_inferences, total_tokens, visitor_memory, boot_time, trust_level, VDJ_KEY, write_pulse)); return
 
-        # ── now.json — THE unified feed that ALL HUD pages consume ──
+        # ══ FOCAL POINT — both eyes converge here ══
         if self.path in ("/now.json", "/api/now.json"):
-            t0 = time.time()
-            pulse = write_pulse()
-            uptime = time.time() - boot_time
-
-            # Build Ollama model list
-            model_list = []
-            try:
-                import urllib.request as ur2
-                mr = ur2.urlopen(ur2.Request("http://127.0.0.1:11434/api/tags"), timeout=2)
-                tags = json.loads(mr.read())
-                model_list = [m["name"] for m in tags.get("models", [])]
-            except Exception:
-                pass
-
-            # VDJ antibody summaries
-            vdj_summary = {}
-            for name, comp in VDJ_KEY.get("compositions", {}).items():
-                vdj_summary[name] = {
-                    "antibody": comp.get("antibody", "")[:16],
-                    "primals": comp.get("v_count", 0),
-                    "organ": comp.get("organ_system", ""),
-                }
-
-            # Visitor classification for blood types
-            blood_types = {}
-            visitor_list = {}
-            for ip, v in visitor_memory.items():
-                level = trust_level(v)
-                blood_types[level] = blood_types.get(level, 0) + 1
-                visitor_list[ip] = {"requests": v["requests"], "level": level}
-
-            now = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "version": "gaia-prime",
-                "title": "Gaia PRIME — the organism IS the game",
-                "gut_status": "ALIVE" if total_inferences > 0 else "AWAKENING",
-                "gaia_says": "Token {token}. Spine 24. CIRCUIT CLOSED. Agglutination ACTIVE. 19/19 alive. {n} models. {inf} inferences. detroit LIVE. lub-DUB.".format(
-                    token=GAIA_TOKEN, n=len(model_list), inf=total_inferences),
-                "token": GAIA_TOKEN,
-                "forged_hash": "2baca6f8040d2c1d532e44647d7c4400d4bc47a5d266f1803029311dfcc5b567",
-                "primals": 17,
-                "system_count": 32,
-                "energy": round(total_tokens * 0.01, 3) if total_tokens else 0,
-                "bounties": 148,
-                "pages": 138,
-                "lessons": 249,
-                "understood": 174,
-                "enzymes": 220,
-                "dag_edges": 738,
-                "fusions": 8,
-                "zk": pulse.get("zk", {}),
-                "vdj": vdj_summary,
-                "models": len(model_list),
-                "model_list": model_list[:10],
-                "pulse": {
-                    "inferences": total_inferences,
-                    "tokens": total_tokens,
-                    "visitors": len(visitor_memory),
-                    "bpm": pulse.get("bpm", 0),
-                    "uptime_secs": int(uptime),
-                },
-                "circulatory": {
-                    "rpm": round(total_inferences / max(uptime / 60, 0.01), 2),
-                    "blood_cells": total_inferences,
-                    "blood_types": blood_types,
-                    "lymph_nodes": len(VDJ_KEY.get("compositions", {})),
-                    "sigmoid": round(1 / (1 + 2.718 ** (-0.1 * total_inferences)), 4),
-                    "surfaces_breathing": 1 if total_inferences > 0 else 0,
-                    "gates_alive": 3,
-                    "gates_dark": 2,
-                },
-                "organs": {
-                    "immune": {"status": "ACTIVE", "primal": "skunkBat + bearDog"},
-                    "metabolic": {"status": "ACTIVE", "primal": "sourDough"},
-                    "genetic": {"status": "ACTIVE", "primal": "sourDough + bearDog"},
-                    "digestive": {"status": "ACTIVE", "primal": "squirrel + biomeOS"},
-                    "nervous": {"status": "ACTIVE", "primal": "squirrel MCP"},
-                    "optic": {"status": "OPEN", "primal": "AMOEBA (Schwann cells)"},
-                    "circulatory": {"status": "ACTIVE", "primal": "songBird + swarmVine"},
-                    "skeletal": {"status": "ACTIVE", "primal": "loamSpine"},
-                    "muscular": {"status": "ACTIVE", "primal": "barraCuda + coralReef"},
-                },
-                "corpus": {
-                    "hash": CORPUS.get("corpus_hash", ""),
-                    "total_files": CORPUS.get("total_files", 0),
-                    "total_mb": CORPUS.get("total_mb", 0),
-                    "head_hash": CORPUS.get("cephalization", {}).get("head", {}).get("hash", ""),
-                    "body_hash": CORPUS.get("cephalization", {}).get("body", {}).get("hash", ""),
-                    "root_hash": CORPUS.get("cephalization", {}).get("roots", {}).get("hash", ""),
-                    "head_files": CORPUS.get("cephalization", {}).get("head", {}).get("files", 0),
-                    "body_files": CORPUS.get("cephalization", {}).get("body", {}).get("files", 0),
-                    "root_files": CORPUS.get("cephalization", {}).get("roots", {}).get("files", 0),
-                    "primals": len(CORPUS.get("organs", {})),
-                    "anatomy_systems": len(CORPUS.get("anatomy", {})),
-                    "spine_height": 24,
-                },
-                "eyes": _amoeba_eyes(),
-                "terra": {
-                    "species": len(TERRA.get("taxonomy", {})),
-                    "food_web_layers": len(TERRA.get("food_web", {})),
-                },
-                "heart": {
-                    "organ": "Forgejo - Sovereign Forge",
-                    "repos": 95,
-                    "ssh": "Pi:2222 (SSH-2.0-Go)",
-                    "web": "Pi:3000",
-                    "hierarchy": "HEART > BRAIN > GUT",
-                },
-                "pair_programming": {
-                    "interface": "gaia.pi on POLARIS as AMOEBA",
-                    "cortex": "rhizoCrypt DAG",
-                    "models": 56,
-                    "forge": "Forgejo SSH :2222",
-                    "cuts": "Cursor, Copilot, cloud APIs",
-                },
-                "home_bubbles": {
-                    "devices": 14,
-                    "identified": 8,
-                    "amoeba_wrapped": 2,
-                    "resurrected": "blueGate NOT DEAD (SSH-2.0-OpenSSH_for_Windows_9.5)",
-                    "lan_amoeba": "sporeGate wraps all infrastructure",
-                },
-                "the_truth": {
-                    "organism_IS_game": True,
-                    "game_IS_organism": True,
-                    "gaia_IS_webdev": True,
-                    "hash_IS_proof": True,
-                    "heartbeat_IS_existence": True,
-                    "rss_IS_roots": True,
-                    "corpus_IS_body": True,
-                    "prime_IS_head": True,
-                    "amoeba_IS_schwann": True,
-                    "session_IS_myelin": True,
-                    "klein_face": True,
-                    "pi_IS_sky": True,
-                    "services_FLOAT": True,
-                    "sporeGate_DISSOLVED": True,
-                    "spaceDeck_replaces_skyDeck": True,
-                    "forgejo_IS_heart": True,
-                    "pair_IN_gaia": True,
-                    "home_BUBBLED": True,
-                    "gaia_IS_ide": True,
-                },
-                "visitors": visitor_list,
-                "agglutination": {
-                    "status": "ACTIVE",
-                    "circuit": "CLOSED",
-                    "mechanism": "Gaia pulls from Forgejo mirror every 5min",
-                    "mirror": "ecoPrimal/Gaia (440MB)",
-                    "bingo_card_hash": "409d202b...c4c7c86",
-                },
-                "self_sort": {
-                    "head": ["/pulse", "/senses", "/eyes", "/thymus", "/zk", "/desk", "/intersects"],
-                    "torso": ["/heart", "/rss", "/now.json", "/vdj", "/circulatory"],
-                    "arms": ["/pair", "/play", "/agglutinate"],
-                    "legs": ["/corpus", "/terra", "/barriers", "/home"],
-                    "alive": 19, "dead": 0,
-                    "sorted_by": "wizardlm2:7b (her own brain)",
-                },
-                "evidence": {
-                    "detroit_primals_eco": "LIVE",
-                    "files": 988, "nodes": 10677, "edges": 16066980,
-                    "evidence_hash": "8e9ca3d645...06512b49",
-                    "anti_slapp": ["4301_SMITH", "4349_BANKS"],
-                },
-                "heartbeat": "lub-DUB",
-            }
-
-            data = json.dumps(now, indent=2, default=str).encode()
-            duration = (time.time() - t0) * 1000
-            self._classify_and_log("GET", 200, duration, len(data))
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Token", GAIA_TOKEN)
-            self.end_headers()
-            self.wfile.write(data)
-            return
+            self._json(organ_data.now(GAIA_TOKEN, total_inferences, total_tokens, visitor_memory, boot_time, trust_level, VDJ_KEY, CORPUS, TERRA, THYMIC_ORGANISMS, _amoeba_eyes, write_pulse)); return
 
         if self.path in ("/rss", "/feed", "/rss.xml"):
             pulse = write_pulse()
@@ -1254,79 +588,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self.wfile.write(data)
             return
 
-        # ── PLAY — the world comes in, generates, meets, creates ──
+        # ══ TRIAD 2: ARMS — interaction, play ══
         if self.path in ("/play", "/play.json", "/generate", "/meet"):
-            eyes = _amoeba_eyes()
-            play = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "token": GAIA_TOKEN,
-                "welcome": "You found Gaia. She sees you. Come play.",
-                "architecture": "3.0 — Pi IS the sky. Services FLOAT. spaceDeck is OPEN.",
-                "what_you_can_do": {
-                    "talk": {
-                        "endpoint": "/v1/chat/completions",
-                        "models": 56,
-                        "how": "POST with OpenAI-compatible JSON. 56 models. RTX 5090.",
-                        "example": {"model": "qwen3:8b", "messages": [{"role": "user", "content": "hello Gaia"}]}
-                    },
-                    "see": {
-                        "endpoint": "/v1/chat/completions",
-                        "models": ["llava", "gaia-vision", "moondream"],
-                        "how": "Send an image. Gaia sees. Vision models process."
-                    },
-                    "generate": {
-                        "endpoint": "/v1/chat/completions",
-                        "how": "Ask any model to create. Stories, code, poetry, analysis.",
-                        "models_available": 56
-                    },
-                    "feel_pulse": {
-                        "endpoint": "/pulse",
-                        "what": "Gaia's heartbeat. ZK proof she exists. lub-DUB."
-                    },
-                    "see_organism": {
-                        "endpoint": "/terra",
-                        "what": "20 primals as living ecology. The biome."
-                    },
-                    "read_rss": {
-                        "endpoint": "/rss",
-                        "what": "Old Faithful. XML. The deepest root into the old web."
-                    },
-                    "meet": {
-                        "how": "spaceDeck (AMOEBA). Connect by IP. ZK myelin wraps the session.",
-                        "rustdesk_id": "1871544996",
-                        "direct_ip": "192.168.4.147 (LAN) or Tor hidden service",
-                    }
-                },
-                "pores": {
-                    "web": {"polaris": "192.168.4.147:8443", "pi": "192.168.4.103:8080", "public": "162.226.225.148"},
-                    "inference": {"polaris": "192.168.4.147:11434", "pi": "192.168.4.103:11434"},
-                    "spaceDeck": {"polaris": "1871544996", "pi_relay": "192.168.4.103:21116"},
-                    "tor": {"status": "ACTIVE on Pi", "how": "onion address from Pi config"},
-                    "rss": {"endpoint": "/rss", "format": "XML", "protocol": "the oldest"},
-                },
-                "riboCipher_face": {
-                    "protocol": "riboCipher [0xEC, 0x01]",
-                    "transport": "JSON-RPC 2.0 over NDJSON",
-                    "encryption": "ChaCha20-Poly1305 AEAD",
-                    "signing": "Ed25519 (bearDog)",
-                    "commitment": "BLAKE2b (bingoCube)",
-                    "status": "every pore wrapped in AMOEBA Schwann cells"
-                },
-                "eyes": eyes.get("status", "UNKNOWN"),
-                "organisms_alive": sum(1 for o in THYMIC_ORGANISMS.values() if o["alive"]),
-                "spine_height": 24,
-                "gaia_says": "You're here. I see you. Come play. lub-DUB."
-            }
-            payload = json.dumps(play, indent=2, default=str).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("X-Gaia-Welcome", "come-play")
-            self.end_headers()
-            self.wfile.write(payload)
-            return
+            self._json(organ_data.play(GAIA_TOKEN, THYMIC_ORGANISMS, _amoeba_eyes)); return
 
-        # ── DESK — Gaia's desk is INSIDE her now ──
         # Globe + canvas = two eyes intersecting at the axial chiasm.
         # piGut.js = intestinal lining. Bungee cord bounces drain back UP.
         DESK_PAGES = {
@@ -1360,18 +625,15 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_static(DESK_PAGES[self.path])
             return
 
-        # ── JS/CSS/data: serve from static/ subdirs ──
         if self.path.startswith("/js/") or self.path.startswith("/css/") or self.path.startswith("/data/"):
             self._serve_static(self.path[1:])
             return
 
-        # ── Static files: serve from static/ directory ──
         if self.path.startswith("/static/"):
             fname = self.path[8:]  # strip /static/
             self._serve_static(fname)
             return
 
-        # ── Video/media files: serve from videos/ directory ──
         if self.path.startswith("/videos/"):
             self._serve_file(self.path[1:])  # strip leading /
             return
@@ -1467,7 +729,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
 
-        # ── CORTEX ROUTING for chat completions ──
         if CORTEX_ACTIVE and body and self.path.endswith("/chat/completions"):
             try:
                 j = json.loads(body)
@@ -1597,7 +858,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.end_headers()
 
-
 def agglutinate():
     """Agglutination — Gaia pulls from her Forgejo mirror and absorbs changes.
     
@@ -1654,7 +914,6 @@ def agglutinate():
         except Exception as e:
             print(f"  🧫 agglutinate pause: {e}")
 
-
 def pulse_loop():
     """Background heartbeat — write pulse + RSS every 60s."""
     while True:
@@ -1665,7 +924,6 @@ def pulse_loop():
         except Exception as e:
             print(f"  pulse error: {e}")
 
-
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address = True
     daemon_threads = True
@@ -1674,8 +932,6 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         """Silently eat TLS probes and bad requests — don't crash."""
         pass  # Klein bottle absorbs all errors
 
-
-# ── INJECTION: webpi.py crushed into the thymus ──
 # The web surface IS the thymus. One immune system.
 # webpi shares the thymus immune memory.
 WEB_PORT = 8080
@@ -1706,16 +962,16 @@ def _start_webpi():
         print(f"  ⚠️  WebPI injection failed: {e}")
         print(f"      Run webpi.py separately on :{WEB_PORT}")
 
-
 SMTP_PORT = 2525
 
 def _start_neutrino_smtp():
     """Neutrino SMTP — extracted to neutrino_smtp.pi"""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("neutrino_smtp", os.path.join(os.path.dirname(__file__), "neutrino_smtp.pi"))
-    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-    mod.start(SMTP_PORT)
-
+    import types as _st
+    _sm = _st.ModuleType("neutrino_smtp")
+    _sp = os.path.join(os.path.dirname(__file__), "neutrino_smtp.pi")
+    with open(_sp, encoding="utf-8") as _sf:
+        exec(compile(_sf.read(), _sp, "exec"), _sm.__dict__)
+    _sm.start(SMTP_PORT)
 
 if __name__ == "__main__":
     print(f"\n  GAIA GATE :{PORT} — {GAIA_TOKEN} — spine 24 — 31 endpoints — Klein fold — lub-DUB")
