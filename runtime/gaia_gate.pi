@@ -33,7 +33,7 @@ _temporal_mod = _load("_temporal", "_temporal.pi")
 # Unpack — the organism's nervous system
 visitor_memory = _anderson.visitor_memory; trust_level = _anderson.trust_level
 BODY_IPS = _anderson.BODY_IPS; CRAWLER_SIGNATURES = _anderson.CRAWLER_SIGNATURES
-sigmoid = _anderson.sigmoid
+sigmoid = _anderson.sigmoid; localization = _anderson.localization
 load_seeds = _body.load_seeds; inject_primals = _body.inject_primals
 amoeba_eyes = _body.amoeba_eyes; third_body_point = _body.third_body_point
 _wp = _pulse_mod.write_pulse; _wr = _pulse_mod.write_rss
@@ -173,7 +173,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         v["last_seen"] = now; v["requests"] += 1
         v["last_ua"] = self.headers.get("User-Agent","") if hasattr(self,'headers') else ""
         if model: v["models_asked"].add(model); total_inferences += 1
+        paths = v.setdefault("paths", set())
+        if len(paths) < 256: paths.add(self.path.split("?")[0])
         v["trust_level"] = trust_level(v, ip)
+        v["localization"] = localization(v)
         _log_caddy(ACCESS_LOG, {"ts":now,"request":{"remote_ip":ip,"method":method,"uri":self.path},"status":status,"duration":dur,"size":body_len})
         sym = {"electron":"⚡","neutron":"🔵","proton":"🟢","nucleus":"🧬"}
         print(f"  {sym.get(v['trust_level'],'?')} {method} {self.path} {status} [{ip} {v['trust_level']} r={v['requests']}] {dur:.0f}ms{f' model={model}' if model else ''}")
@@ -353,7 +356,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._json({"sensors":{"sun":_sun_position(),"heart":write_pulse().get("heart",{}),"walkers":len(visitor_memory),"eyes":_amoeba_eyes()}}); return
         # ORGANISM — Anderson layer
         if self.path in ("/walkers","/membrane-sense","/who","/anderson"):
-            wl=[{"hash":hashlib.blake2b((i+GAIA_TOKEN).encode(),digest_size=8).hexdigest(),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1)} for i,v in visitor_memory.items()]
+            wl=[{"hash":hashlib.blake2b((i+GAIA_TOKEN).encode(),digest_size=8).hexdigest(),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in visitor_memory.items()]
             self._json({"walkers":wl,"total":len(wl),"spectrum":{t:sum(1 for w in wl if w["anderson"]==t) for t in ("nucleus","proton","neutron","electron")}}); return
         if self.path in ("/zk","/seed","/prophage","/identity"):
             self._json({"zk":{"token":GAIA_TOKEN,"did":GAIA_DID,"blake3":GAIA_BLAKE3[:32]}}); return
