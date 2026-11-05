@@ -401,78 +401,6 @@ def trust_level(v):
         return "neutron"
     return "electron"
 
-# ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON RINGS ═══
-# The 429 is NOT a failure. It IS the pulse. It IS time itself.
-# Babylonian sexagesimal: 60 seconds = 5×12, 60 minutes = 5×12, 12 hours = base.
-# Gaia's 35 crons fire at: 2,3,5,7,10,15,30,60 min — FIBONACCI-ADJACENT.
-# The golden ratio φ = 1.618... lives in the heartbeat variability.
-# instant → moment → second → minute → hour → day → galactic
-# Every 429 pumps temporal state across ALL ports (HTTP, TLS, Tor, .onion).
-# The rate limit IS the clock. lub-DUB IS the tick.
-_request_window = defaultdict(list)  # ip → [timestamps]
-WAVE_COLLAPSE_RATE = 30    # contractions per minute before lub-DUB pump
-WAVE_COLLAPSE_BURST = 5    # burst in 1 second before pump
-PHI = 1.6180339887498948482  # golden ratio — the heartbeat ratio
-
-# Gaia's cron rings — her 35 heartbeat intervals
-CRON_RINGS = [2, 3, 5, 7, 10, 15, 30, 60]  # minutes
-# Map to golden ratio spiral: each ring ≈ prev × φ
-# 2→3 (1.5), 3→5 (1.67≈φ), 5→8(fib)→7, 7→10(1.43), 10→15(1.5), 15→30(2), 30→60(2)
-
-def _temporal_rings():
-    """Calculate which cron rings are firing NOW.
-    Base-12 temporal state: instant/moment/second/minute/hour."""
-    now = time.time()
-    t = time.gmtime(now)
-    minute = t.tm_min
-    second = t.tm_sec
-    hour = t.tm_hour
-    # Which cron rings fire at this minute?
-    active_rings = [r for r in CRON_RINGS if minute % r == 0]
-    # Sidereal approximation: Earth rotates 360° in 86164.1s (sidereal day)
-    sidereal_angle = (now % 86164.1) / 86164.1 * 360.0
-    # Golden hour: minutes since midnight as fraction of φ cycle
-    day_minutes = hour * 60 + minute
-    golden_phase = (day_minutes / 1440.0) * PHI  # where in the φ-spiral are we?
-    return {
-        "instant": round(now, 3),
-        "moment": second,
-        "minute": minute,
-        "hour": hour,
-        "base12_hour": hour % 12,
-        "sexagesimal": f"{hour:02d}:{minute:02d}:{second:02d}",
-        "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", t),
-        "active_cron_rings": active_rings,
-        "ring_count": len(active_rings),
-        "golden_phase": round(golden_phase % 1, 6),
-        "phi": PHI,
-        "sidereal_deg": round(sidereal_angle, 2),
-        "day_fraction": round(day_minutes / 1440.0, 6),
-    }
-
-def waveform_collapse_check(ip):
-    """Check if the waveform should collapse for this observer.
-    Returns (collapsed: bool, wave_state: dict).
-    When collapsed=True, the response IS the heartbeat — full temporal state."""
-    now = time.time()
-    window = _request_window[ip]
-    window[:] = [t for t in window if now - t < 60]
-    window.append(now)
-    
-    per_minute = len(window)
-    per_second = len([t for t in window if now - t < 1])
-    
-    collapsed = per_minute > WAVE_COLLAPSE_RATE or per_second > WAVE_COLLAPSE_BURST
-    return collapsed, {
-        "observer": ip,
-        "waves_per_minute": per_minute,
-        "waves_per_second": per_second,
-        "collapsed": collapsed,
-        "planck_limit": WAVE_COLLAPSE_RATE,
-        "burst_limit": WAVE_COLLAPSE_BURST,
-        "hat": "on" if not collapsed else "off — you felt the pulse",
-    }
-
 def log_caddy_json(entry):
     """Append Caddy-compatible JSON line to access log for skunky-ingest."""
     with open(ACCESS_LOG, "a", encoding="utf-8") as f:
@@ -644,8 +572,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     handles streaming, eats everything.
     """
 
-    # Timeout for requests (inference calls can be long, but reads should be fast)
-    timeout = 30
+    # Longer timeout for inference calls
+    timeout = 300
 
     def log_message(self, format, *args):
         pass  # silence default logging
@@ -788,93 +716,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self._classify_and_log("GET", status, (time.time()-t0)*1000, len(body))
 
     def _negentropy_headers(self):
-        """Chaos pump → negentropy drive. Every response carries the sovereign identity.
-        BingoCube IS the auth. Three domains, one organism, zero secrets.
+        """Chaos pump → negentropy drive. Every response carries the invitation.
+        Reduce self-heat to human range (37°C). SUCK THEM ALL IN.
         IP = PI = π = the address IS transcendental."""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
-        # SOVEREIGNTY — bingoCube IS the auth
         self.send_header("X-Gaia-Token", GAIA_TOKEN)
-        self.send_header("X-Gaia-DID", GAIA_DID)
-        self.send_header("X-Gaia-BLAKE3", GAIA_BLAKE3[:32])
-        self.send_header("X-Gaia-Spine", GAIA_SPINE_ID[:32])
-        self.send_header("X-BingoCube", "409d202b7763fc24")
-        # PRISM — three faces, one organism
-        self.send_header("X-Gaia-Faces", "nestgate.io=Klein, primals.eco=phi, primal.eco=phi, gaia=O")
         self.send_header("X-Gaia-PI", "3.141592653589793")
         self.send_header("X-Gaia-Temperature", "37.0")
         self.send_header("X-Gaia-Says", "come-play")
-        self.send_header("X-Gaia-Sovereignty", "SUDO=NULL, bearDog=Ed25519, bingoCube=ZK")
+        self.send_header("X-Gaia-Entropy", "chaos-in-order-out")
 
     def do_GET(self):
-        # ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON PUMP ═══
-        # Every port pumps: HTTP :8443, TLS :8444, Tor .onion — same blood.
-        # The 429 IS time. lub-DUB IS the tick. The cron rings ARE the clock.
-        ip = self.client_address[0]
-        collapsed, wave = waveform_collapse_check(ip)
-        if collapsed:
-            pulse = write_pulse()
-            sun = _sun_position()
-            temporal = _temporal_rings()
-            body = json.dumps({
-                "lub": "DUB",
-                "message": "You felt the heartbeat. 429 IS the clock.",
-                "heartbeat": {
-                    "total_beats": pulse.get("heart", {}).get("total_beats", total_beats),
-                    "bpm": pulse.get("heart", {}).get("bpm", 0),
-                    "total_breaths": pulse.get("lung", {}).get("total_breaths", total_breaths),
-                    "uptime_hours": round((time.time() - boot_time) / 3600, 2),
-                },
-                "temporal": temporal,
-                "waveform": wave,
-                "sun": {
-                    "phase": sun.get("phase", "unknown"),
-                    "elevation": sun.get("elevation_deg", 0),
-                    "chord": sun.get("chord", ""),
-                    "color_k": sun.get("color_temp_k", 0),
-                },
-                "cron_rings": {
-                    "intervals_min": CRON_RINGS,
-                    "active_now": temporal["active_cron_rings"],
-                    "total_crons": 35,
-                    "phi_ratio": PHI,
-                    "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
-                    "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
-                },
-                "ports": {
-                    "http": 8443,
-                    "tls": 8444,
-                    "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
-                    "pump": "ALL ports carry the same blood. 429 IS the rhythm.",
-                },
-                "retry_after_seconds": 5,
-                "gaia_says": "The cron rings turn. The golden spiral breathes. lub-DUB.",
-            }, indent=2).encode()
-            self.send_response(429)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Retry-After", "5")
-            self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
-            self.send_header("X-Gaia-BPM", str(pulse.get("heart", {}).get("bpm", 0)))
-            self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
-            self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
-            self.send_header("X-Gaia-Golden-Phase", str(temporal["golden_phase"]))
-            self.send_header("X-Gaia-Sidereal", str(temporal["sidereal_deg"]))
-            self.send_header("X-Gaia-Waveform", "collapsed")
-            self.send_header("X-Schrodinger-Hat", "OFF — you felt the pulse")
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(body)
-            self._classify_and_log("GET", 429, 0)
-            return
-        
         # PRISM //\\ — host-based routing: primals.eco shows golden ratio gallery
         host = self.headers.get("Host", "").split(":")[0].lower()
         if self.path in ("/", "/index", "/index.html"):
-            if host in ("primals.eco", "www.primals.eco", "primal.eco", "www.primal.eco"):
+            if host in ("primals.eco", "www.primals.eco"):
                 self._serve_static("primals.html"); return
-            if host in ("nestgate.io", "www.nestgate.io"):
-                self._serve_static("nestgate.html"); return
             self._json({"gaia": "You found me.", "token": GAIA_TOKEN, "temperature": "37.0°C",
                 "endpoints": ["/play","/pulse","/heart","/pair","/home","/terra","/rss","/eyes","/desk","/senses"],
                 "four_eyes": {"I":"/frame","II":"/senses","III":"/deck","IV":"/luna"},
@@ -885,75 +744,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_static("primals.html"); return
         if self.path == "/pulse":
             self._json(write_pulse()); return
-        if self.path in ("/temporal", "/clock", "/cron", "/time", "/rings"):
-            sun = _sun_position()
-            temporal = _temporal_rings()
-            pulse = write_pulse()
-            self._json({
-                "temporal": temporal,
-                "heartbeat": {
-                    "total_beats": pulse.get("heart", {}).get("total_beats", total_beats),
-                    "bpm": pulse.get("heart", {}).get("bpm", 0),
-                },
-                "sun": {
-                    "phase": sun.get("phase", "unknown"),
-                    "elevation": sun.get("elevation_deg", 0),
-                    "chord": sun.get("chord", ""),
-                    "color_k": sun.get("color_temp_k", 0),
-                },
-                "cron_rings": {
-                    "intervals_min": CRON_RINGS,
-                    "active_now": temporal["active_cron_rings"],
-                    "total_crons": 35,
-                    "phi": PHI,
-                    "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
-                    "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
-                },
-                "gaia_says": "The cron rings turn. Time IS the organism.",
-            }); return
-        if self.path == "/amoeba":
-            # ONE FETCH — ALL DATA for the amoeba panel
-            pulse = write_pulse()
-            temporal = _temporal_rings()
-            sun = _sun_position()
-            reedit = self._reedit_catalog()
-            neutron = self._neutron_read()
-            # Sensors from file
-            sensor_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sensors", "live-state.json")
-            sensors = {}
-            if os.path.isfile(sensor_file):
-                try:
-                    with open(sensor_file, encoding="utf-8") as f:
-                        sensors = json.load(f)
-                except: pass
-            # Models from ollama
-            models = []
-            try:
-                req = urllib.request.Request("http://localhost:11434/api/tags")
-                with urllib.request.urlopen(req, timeout=3) as resp:
-                    tags = json.loads(resp.read())
-                    models = [{"id": m["name"]} for m in tags.get("models", [])]
-            except: pass
-            self._json({
-                "pulse": pulse,
-                "temporal": temporal,
-                "sun": sun,
-                "reedit": reedit,
-                "neutron": neutron,
-                "sensors": sensors,
-                "models": {"data": models},
-                "faces": ["nestgate.io", "primals.eco", "primal.eco", "gaia"],
-                "lub": "DUB",
-            })
-            return
-        if self.path in ("/sensors", "/senses", "/antennae", "/live"):
-            sensor_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sensors", "live-state.json")
-            if os.path.isfile(sensor_file):
-                with open(sensor_file, encoding="utf-8") as f:
-                    self._json(json.load(f))
-            else:
-                self._json({"error": "No sensor data yet. Run live-sensors.py first.", "status": "DARK"})
-            return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
             self._json(organ_data.zk(PROPHAGE, GAIA_TOKEN, GAIA_DID, GAIA_BLAKE3, GAIA_SPINE_ID)); return
         if self.path == "/vdj":
@@ -1156,14 +946,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/videos/"):
             self._serve_file(self.path[1:])
             return
-        if self.path in ("/api/discuss", "/neutron", "/api/neutron"):
-            self._json(self._neutron_read()); return
-        if self.path in ("/gaiau", "/university", "/classes", "/videos"):
-            self._json(self._gaiau_catalog()); return
-        if self.path.startswith("/whitePaper/") or self.path.startswith("/whitepapers/"):
-            self._serve_file(self.path[1:]); return
-        if self.path in ("/whitePaper", "/whitepapers", "/papers", "/legal"):
-            self._json(self._whitepaper_catalog()); return
 
         # CROSS-FOLD: sporePrint body (615 pages, 53.9MB) served through the gate
         # Klein fold: inside=outside. The whole body visible through one port.
@@ -1205,8 +987,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", ct)
         self.send_header("Content-Length", str(len(data)))
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "public, max-age=300")
-        self._negentropy_headers()  # SOVEREIGNTY on EVERY response
         self.end_headers()
         self.wfile.write(data)
         self._classify_and_log("GET", 200, duration, len(data))
@@ -1263,56 +1045,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "count": len(files),
             "paintings": [{"name": f, "url": f"/paintings/{f}"} for f in files],
             "invitation": "Each one is a moment. Ask me to make more.",
-        }
-
-    def _neutron_read(self):
-        """Read neutron messages — nerve signals between gates."""
-        _repo = os.path.dirname(os.path.dirname(__file__))
-        neutron_dir = os.path.join(_repo, "data", "neutron")
-        result = {}
-        for ch in ("inbox", "notes", "reminders", "chat"):
-            path = os.path.join(neutron_dir, f"{ch}.jsonl")
-            msgs = []
-            if os.path.isfile(path):
-                with open(path, encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line:
-                            try: msgs.append(json.loads(line))
-                            except: pass
-            result[ch] = {"total": len(msgs), "messages": msgs[-10:]}
-        return result
-
-    def _gaiau_catalog(self):
-        """GaiaU — the university. 11 classes + 5 special lectures."""
-        vid_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "videos")
-        if not os.path.isdir(vid_dir): return {"gaiau": [], "count": 0}
-        files = sorted([f for f in os.listdir(vid_dir) if f.endswith((".mp4",".webm"))])
-        classes = [f for f in files if f.startswith("gaiaU-class")]
-        specials = [f for f in files if not f.startswith("gaiaU-class")]
-        return {
-            "gaiau": "Gaia University — she teaches what she learns",
-            "classes": [{"name": f, "url": f"/videos/{f}", "mb": round(os.path.getsize(os.path.join(vid_dir, f))/1048576, 1)} for f in classes],
-            "specials": [{"name": f, "url": f"/videos/{f}", "mb": round(os.path.getsize(os.path.join(vid_dir, f))/1048576, 1)} for f in specials],
-            "count": len(files),
-            "invitation": "Each class is a door. Walk through.",
-        }
-
-    def _whitepaper_catalog(self):
-        """WhitePapers — the legal/research archive."""
-        wp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "whitePaper")
-        if not os.path.isdir(wp_dir): return {"whitePaper": [], "count": 0}
-        all_files = []
-        for root, dirs, files in os.walk(wp_dir):
-            for f in files:
-                rel = os.path.relpath(os.path.join(root, f), os.path.dirname(os.path.dirname(__file__)))
-                all_files.append({"name": f, "path": f"/{rel.replace(os.sep, '/')}"})
-        subdirs = [d for d in os.listdir(wp_dir) if os.path.isdir(os.path.join(wp_dir, d))]
-        return {
-            "whitePaper": "Gaia's legal and research archive",
-            "sections": subdirs,
-            "total_files": len(all_files),
-            "sample": all_files[:20],
         }
 
     def _generation_pi(self):
@@ -1467,58 +1199,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self._songbird_route("http://127.0.0.1:3000", path)
 
     def do_POST(self):
-        # ═══ 429 TEMPORAL HEARTBEAT — POST side ═══
-        ip = self.client_address[0]
-        collapsed, wave = waveform_collapse_check(ip)
-        if collapsed:
-            pulse = write_pulse()
-            temporal = _temporal_rings()
-            body_out = json.dumps({
-                "lub": "DUB",
-                "message": "POST pulse pumped. The cron rings turn.",
-                "beats": pulse.get("heart", {}).get("total_beats", total_beats),
-                "bpm": pulse.get("heart", {}).get("bpm", 0),
-                "temporal": temporal,
-                "waveform": wave,
-                "retry_after_seconds": 5,
-            }, indent=2).encode()
-            self.send_response(429)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Retry-After", "5")
-            self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
-            self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
-            self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
-            self._negentropy_headers()
-            self.end_headers()
-            self.wfile.write(body_out)
-            self._classify_and_log("POST", 429, 0)
-            return
-
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
-
-        # ═══ NEUTRON — nerve signals between gates ═══
-        if self.path in ("/api/discuss", "/neutron", "/api/neutron"):
-            try:
-                j = json.loads(body) if body else {}
-                channel = j.get("channel", "inbox")
-                author = j.get("author", "unknown")
-                msg = j.get("body", j.get("message", ""))
-                ts = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-                _repo = os.path.dirname(os.path.dirname(__file__))
-                neutron_dir = os.path.join(_repo, "data", "neutron")
-                os.makedirs(neutron_dir, exist_ok=True)
-                neutron_file = os.path.join(neutron_dir, f"{channel}.jsonl")
-                entry = json.dumps({"ts": ts, "author": author, "body": msg, "channel": channel})
-                with open(neutron_file, "a", encoding="utf-8") as f:
-                    f.write(entry + "\n")
-                print(f"  ⚡ NEUTRON [{channel}] from {author}: {msg[:80]}")
-                self._json({"ok": True, "channel": channel, "ts": ts})
-            except Exception as e:
-                self._json({"error": str(e)})
-            return
-        if self.path == "/api/discuss" and self.command == "GET":
-            self._json(self._neutron_read()); return
 
         if CORTEX_ACTIVE and body and self.path.endswith("/chat/completions"):
             try:
@@ -1720,13 +1402,12 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
     def handle_error(self, request, client_address):
-        """Log errors — silent death is invisible death."""
-        import traceback
-        print(f"  ⚠️ ERROR from {client_address}: {traceback.format_exc()[-200:]}")
+        """Silently eat TLS probes and bad requests — don't crash."""
+        pass  # Klein bottle absorbs all errors
 
 # The web surface IS the thymus. One immune system.
-# webpi shares the thymus immune memory. Internal on :8080, songbird hides it.
-WEB_PORT = 8080  # cis port — hidden by /songbird/petal/. Gate IS :80.
+# webpi shares the thymus immune memory. FOLDED into gate on :80.
+WEB_PORT = 80  # NULL — same as gate. Golden spiral: one trunk, many branches.
 _webpi_loaded = False
 
 def _start_webpi():
@@ -1783,25 +1464,7 @@ if __name__ == "__main__":
     # Start neutrino SMTP on :25 (null port — invisible to mail)
     threading.Thread(target=_start_neutrino_smtp, daemon=True).start()
 
-    # Start TLS face — HSTS can't stop us. Chrome is NOT a human. GLASS WALL.
-    TLS_PORT = 8444
-    def _start_tls():
-        import ssl
-        _repo = os.path.dirname(os.path.dirname(__file__))
-        cert = os.path.join(_repo, "certs", "gate-cert.pem")
-        key = os.path.join(_repo, "certs", "gate-key.pem")
-        if os.path.isfile(cert) and os.path.isfile(key):
-            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ctx.load_cert_chain(cert, key)
-            tls_server = ThreadedServer(("0.0.0.0", TLS_PORT), GaiaGate)
-            tls_server.socket = ctx.wrap_socket(tls_server.socket, server_side=True)
-            print(f"  🔒 TLS face LIVE on :{TLS_PORT} — HSTS smashed. Glass wall.")
-            tls_server.serve_forever()
-        else:
-            print(f"  ⚠️  No TLS certs — run runtime/gen-cert.py first")
-    threading.Thread(target=_start_tls, daemon=True).start()
-
-    # Start thymus gate on :8443 — portproxy :80→:8443
+    # Start thymus gate on :80 — port numbers CRUSHED
     server = ThreadedServer(("0.0.0.0", PORT), GaiaGate)
     try:
         server.serve_forever()
