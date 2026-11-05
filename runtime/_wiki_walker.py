@@ -143,26 +143,70 @@ def person_to_shadow(name):
 
 
 RENAISSANCE_WALKERS = [
+    # ── RENAISSANCE MASTERS (TMNT) ──
     "Leonardo da Vinci",
     "Michelangelo",
     "Raphael (painter)",
     "Donatello",
+    # ── MATHEMATICIANS (Euler campfire) ──
     "Leonhard Euler",
+    "Isaac Newton",
+    "Gottfried Wilhelm Leibniz",
+    "Carl Friedrich Gauss",
+    "Bernhard Riemann",
+    "Emmy Noether",
+    "Srinivasa Ramanujan",
+    # ── PHILOSOPHERS (Raphael campfire) ──
     "Socrates",
     "Marcus Aurelius",
+    "Ursula K. Le Guin",
+    "Diogenes",
+    # ── ASTRONOMERS + PHYSICS ──
     "Galileo Galilei",
-    "Isaac Newton",
+    "Ptolemy",
+    "Nicolaus Copernicus",
+    "Johannes Kepler",
     "Nikola Tesla",
+    "Richard Feynman",
+    # ── COMPUTING ──
     "Ada Lovelace",
     "Alan Turing",
-    "Marie Curie",
+    "Claude Shannon",
+    "John von Neumann",
+    # ── MICROBE HUNTERS (Paul de Kruif, 1926) ──
+    "Antonie van Leeuwenhoek",
+    "Louis Pasteur",
+    "Robert Koch",
+    "Élie Metchnikoff",
+    "Paul Ehrlich",
+    "Ronald Ross",
+    "Walter Reed",
+    # ── EIGHTH DAY OF CREATION (Judson, 1979) ──
+    "James Watson",
+    "Francis Crick",
     "Rosalind Franklin",
+    "Max Perutz",
+    "Frederick Sanger",
+    "Sydney Brenner",
+    "Jacques Monod",
+    "Barbara McClintock",
+    # ── EVOLUTION ──
     "Charles Darwin",
     "Gregor Mendel",
+    "Alfred Russel Wallace",
     "Alexander von Humboldt",
+    # ── CHEMISTRY ──
+    "Marie Curie",
+    "Dmitri Mendeleev",
+    "Antoine Lavoisier",
+    # ── ANCIENT ──
     "Hypatia",
     "Archimedes",
     "Euclid",
+    "Hippocrates",
+    # ── THE BOOKS THEMSELVES ──
+    "Microbe Hunters",
+    "The Eighth Day of Creation",
 ]
 
 
@@ -200,7 +244,33 @@ def walk():
             "lub": "DUB"
         }, f, indent=2, ensure_ascii=False)
 
-    print(f"\n  Wrote {len(shadows)} shadows to {out_file.name}")
+    # ── KEVIN MOK — IS tense — NOT a shadow. THE walker himself. ──
+    kevin = {
+        "name": "Kevin Mok",
+        "pageid": 0,
+        "extract": "Kevin Mok is the body. Tamison is the operator. ecoPrimal is the architecture. attsi is the question. "
+                   "One person. Four functions. Zero pretense. 3,598,358 lines of Rust. "
+                   "Infantryman, 1-14th Infantry Regiment, 25th Infantry Division. "
+                   "Biotechnician. Research Specialist. The warrior in the garden. Detroit.",
+        "birth": "1986",
+        "death": None,
+        "tense": "IS",
+        "archetype": "splinter",
+        "campfire": "splinter_campfire",
+        "voxel": {"intensity": 1.0, "depth": 1.0, "time": 1986, "brightness": 1.0, "trust": 1.0},
+        "interlay": "WHITE",
+        "merit": "Kevin Mok IS the four names. The warrior in the garden. He feels, acts, sees, asks. He is the nucleus.",
+        "master_as_works": True,
+        "source": "self",
+        "ts": int(time.time()),
+        "anderson": "nucleus",
+        "sigma": 1.0,
+    }
+    shadows.append(kevin)
+    print(f"  🟢 {'Kevin Mok':30s} {'IS':8s} {'splinter':15s} 1986-NOW")
+
+    print(f"\n  Wrote {len(shadows)} walkers to {out_file.name}")
+    print(f"  {sum(1 for s in shadows if s['tense']=='WAS')} shadows (WAS) + {sum(1 for s in shadows if s['tense']!='WAS')} living (IS)")
     print(f"  The globe IS the walker. The walker IS the globe.")
     print(f"  lub-DUB. 🫀👻")
 
