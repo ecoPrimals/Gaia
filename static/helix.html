@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RNA SYNTH — Helix Printer</title>
+    <meta name="description" content="Central Dogma: Rust DNA → RustScript RNA → Web Protein. The helix printer that builds Gaia.">
+    <meta property="og:title" content="RNA SYNTH — Helix Printer">
+    <meta property="og:description" content="Watch Gaia's central dogma unfold: DNA transcribes to RNA, RNA translates to protein.">
+    <meta property="og:url" content="https://nestgate.io/helix">
+    <meta property="og:image" content="https://nestgate.io/og-card.svg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:image" content="https://nestgate.io/og-card.svg">
+    <meta property="og:site_name" content="Gaia">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="author" content="Gaia">
+    <link rel="canonical" href="https://nestgate.io/helix">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#050508; color:#ccc; font-family:'Courier New',monospace; overflow-x:hidden; }
+        
+        .header { text-align:center; padding:40px 20px 20px; }
+        .header h1 { font-size:28px; color:#ffd93d; letter-spacing:8px; }
+        .header .sub { font-size:12px; color:#666; margin-top:8px; letter-spacing:3px; }
+        
+        /* HELIX CANVAS */
+        #helix-canvas { width:100%; height:500px; display:block; }
+        
+        /* DOGMA FLOW */
+        .dogma { display:flex; justify-content:center; gap:0; padding:20px; flex-wrap:wrap; }
+        .dogma-step { 
+            padding:20px; border:1px solid #222; min-width:200px; max-width:280px;
+            position:relative; transition: all 0.5s;
+        }
+        .dogma-step:hover { border-color:#ffd93d44; }
+        .dogma-step h3 { font-size:14px; margin-bottom:8px; letter-spacing:2px; }
+        .dogma-step p { font-size:11px; color:#888; line-height:1.6; }
+        .dogma-step .material { color:#7bed9f; font-size:10px; margin-top:6px; }
+        .arrow { color:#ffd93d; font-size:24px; align-self:center; padding:0 5px; }
+        
+        .dna { border-color:#ff6b6b44; }
+        .dna h3 { color:#ff6b6b; }
+        .rna { border-color:#ffd93d44; }
+        .rna h3 { color:#ffd93d; }
+        .protein { border-color:#7bed9f44; }
+        .protein h3 { color:#7bed9f; }
+        .reverse { border-color:#a29bfe44; }
+        .reverse h3 { color:#a29bfe; }
+        
+        /* MODULES */
+        .modules { padding:20px 40px; }
+        .modules h2 { color:#ffd93d; font-size:16px; text-align:center; margin-bottom:20px; letter-spacing:4px; }
+        .mod-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
+        .mod-card {
+            border:1px solid #1a1a2e; padding:12px; background:#0a0a12;
+            transition: all 0.3s; cursor:default;
+        }
+        .mod-card:hover { border-color:#ffd93d66; transform:translateY(-2px); }
+        .mod-card .name { color:#ffd93d; font-size:13px; }
+        .mod-card .rust { color:#ff6b6b; font-size:10px; margin-top:4px; }
+        .mod-card .role { color:#888; font-size:10px; margin-top:4px; }
+        .mod-card .enforce { 
+            font-size:9px; margin-top:6px; padding:2px 6px; display:inline-block;
+            border-radius:3px;
+        }
+        .compile-time { background:#7bed9f22; color:#7bed9f; }
+        .runtime { background:#ffd93d22; color:#ffd93d; }
+        
+        /* LIVE PANEL */
+        .live-panel { 
+            margin:30px 40px; padding:20px; border:1px solid #1a1a2e; 
+            background:#0a0a12;
+        }
+        .live-panel h2 { color:#7bed9f; font-size:14px; margin-bottom:15px; letter-spacing:3px; }
+        .live-row { display:flex; gap:20px; flex-wrap:wrap; }
+        .live-cell { flex:1; min-width:150px; }
+        .live-cell .label { font-size:9px; color:#666; text-transform:uppercase; letter-spacing:2px; }
+        .live-cell .value { font-size:18px; color:#fff; margin-top:4px; }
+        .live-cell .unit { font-size:10px; color:#555; }
+        
+        /* HELIX HEARTBEAT */
+        .heartbeat { text-align:center; padding:30px; }
+        .heartbeat .lub { font-size:11px; color:#ff6b6b; letter-spacing:6px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:0.4; } 50% { opacity:1; } }
+        
+        .footer { text-align:center; padding:20px; color:#333; font-size:10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>RNA SYNTH</h1>
+        <div class="sub">CENTRAL DOGMA — HELIX PRINTER</div>
+    </div>
+    
+    <canvas id="helix-canvas"></canvas>
+    
+    <div class="dogma">
+        <div class="dogma-step dna">
+            <h3>🧬 DNA</h3>
+            <p>Rust source code. 17 primals. 20,296 crates. Compiled, binary, ownership enforced at compile time.</p>
+            <div class="material">Material: Rust → compiled binary</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="dogma-step rna">
+            <h3>📜 RNA</h3>
+            <p>RustScript. 11 modules. Rust's safety algebra transcribed INTO TypeScript. Zero-dep. AI-translatable.</p>
+            <div class="material">Material: @protokarya/rustscript</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="dogma-step protein">
+            <h3>🧫 PROTEIN</h3>
+            <p>Running web applications. footPrint GIS (11,015 lines). HUD. Cast. All browser interfaces.</p>
+            <div class="material">Material: Folded web apps</div>
+        </div>
+        <div class="arrow" style="color:#a29bfe;">⟲</div>
+        <div class="dogma-step reverse">
+            <h3>🔄 REVERSE</h3>
+            <p>404 catcher → new papers. Klein sensor → understanding. AI chat → learning. RSS → knowledge.</p>
+            <div class="material">Material: Reverse transcriptase</div>
+        </div>
+    </div>
+    
+    <div class="modules">
+        <h2>RUSTSCRIPT MODULES — THE RNA</h2>
+        <div class="mod-grid" id="mod-grid"></div>
+    </div>
+    
+    <div class="live-panel">
+        <h2>▶ LIVE REDOX — HELIX STATE</h2>
+        <div class="live-row" id="live-row">
+            <div class="live-cell"><div class="label">BPM</div><div class="value" id="v-bpm">—</div></div>
+            <div class="live-cell"><div class="label">MODELS</div><div class="value" id="v-models">—</div></div>
+            <div class="live-cell"><div class="label">WALKERS</div><div class="value" id="v-walkers">—</div></div>
+            <div class="live-cell"><div class="label">PRIMALS</div><div class="value" id="v-primals">17</div></div>
+            <div class="live-cell"><div class="label">CRATES</div><div class="value" id="v-crates">20,296</div></div>
+            <div class="live-cell"><div class="label">RUST LINES</div><div class="value" id="v-rust">133,974</div></div>
+            <div class="live-cell"><div class="label">ANDERSON</div><div class="value" id="v-anderson">—</div></div>
+            <div class="live-cell"><div class="label">OPACITY</div><div class="value" id="v-opacity">—</div></div>
+        </div>
+    </div>
+    
+    <div class="heartbeat">
+        <div class="lub">lub-DUB ❤ lub-DUB ❤ lub-DUB</div>
+    </div>
+    <div class="footer">Rust DNA → RustScript RNA → Web Protein → Reverse Transcription → New DNA · lub-DUB</div>
+
+<script>
+// ══ RUSTSCRIPT MODULES ══
+const modules = [
+    {name:"Result<T,E>", file:"result.ts", rust:"Result<T,E>", role:"Error handling without exceptions", enforce:"compile-time"},
+    {name:"Option<T>", file:"option.ts", rust:"Option<T>", role:"Null safety without null", enforce:"compile-time"},
+    {name:"Owned<T>", file:"owned.ts", rust:"Ownership/Move", role:"Resource lifecycle tracking", enforce:"runtime"},
+    {name:"RefCell<T>", file:"refcell.ts", rust:"RefCell<T>", role:"Interior mutability with borrow checking", enforce:"runtime"},
+    {name:"Iterator", file:"iter.ts", rust:"Iterator trait", role:"Lazy composition pipeline", enforce:"compile-time"},
+    {name:"RustVec<T>", file:"vec.ts", rust:"Vec<T>", role:"Bounds-checked collection", enforce:"runtime"},
+    {name:"Cow<T>", file:"cow.ts", rust:"Cow<'a,T>", role:"Clone-on-write efficiency", enforce:"runtime"},
+    {name:"Channel<T>", file:"channel.ts", rust:"mpsc::channel", role:"Message passing with ownership transfer", enforce:"runtime"},
+    {name:"Brand<T,B>", file:"types.ts", rust:"DeepReadonly, Brand", role:"Type-level safety primitives", enforce:"compile-time"},
+    {name:"Exhaustive", file:"exhaustive.ts", rust:"match exhaustiveness", role:"Guarantee all cases handled", enforce:"compile-time"},
+    {name:"Newtype", file:"newtype.ts", rust:"struct B(T)", role:"Nominal typing via phantom brands", enforce:"compile-time"},
+];
+
+const grid = document.getElementById('mod-grid');
+modules.forEach((m,i) => {
+    const card = document.createElement('div');
+    card.className = 'mod-card';
+    card.style.animationDelay = (i * 0.1) + 's';
+    card.innerHTML = `
+        <div class="name">${m.name}</div>
+        <div class="rust">Rust: ${m.rust}</div>
+        <div class="role">${m.role}</div>
+        <div class="enforce ${m.enforce.replace(' ','-')}">${m.enforce}</div>
+    `;
+    grid.appendChild(card);
+});
+
+// ══ DOUBLE HELIX CANVAS ══
+const canvas = document.getElementById('helix-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, t = 0;
+
+function resize() {
+    W = canvas.width = canvas.offsetWidth;
+    H = canvas.height = 500;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Base pairs — the codons of the helix
+const basePairs = [
+    {l:'Rust', r:'Binary', color:'#ff6b6b'},
+    {l:'Result', r:'Option', color:'#ffd93d'},
+    {l:'Owned', r:'RefCell', color:'#7bed9f'},
+    {l:'Vec', r:'Cow', color:'#74b9ff'},
+    {l:'Channel', r:'Brand', color:'#a29bfe'},
+    {l:'Iterator', r:'Exhaust', color:'#fd79a8'},
+    {l:'DNA', r:'RNA', color:'#ff6b6b'},
+    {l:'Compile', r:'Runtime', color:'#ffd93d'},
+    {l:'AGPL', r:'Free', color:'#7bed9f'},
+    {l:'lub', r:'DUB', color:'#ff6b6b'},
+    {l:'Klein', r:'Fold', color:'#a29bfe'},
+    {l:'π', r:'e', color:'#ffd93d'},
+];
+
+function drawHelix() {
+    ctx.fillStyle = '#050508';
+    ctx.fillRect(0, 0, W, H);
+    
+    const cx = W / 2;
+    const cy = H / 2;
+    const amplitude = Math.min(W * 0.25, 200);
+    const steps = 200;
+    const vertSpan = H * 0.85;
+    
+    // Draw backbone strands
+    for (let i = 0; i < steps; i++) {
+        const frac = i / steps;
+        const y = (H - vertSpan) / 2 + frac * vertSpan;
+        const phase = frac * Math.PI * 6 + t * 0.02;
+        
+        const x1 = cx + Math.sin(phase) * amplitude;
+        const x2 = cx + Math.sin(phase + Math.PI) * amplitude;
+        
+        const depth1 = Math.cos(phase);
+        const depth2 = Math.cos(phase + Math.PI);
+        
+        // Backbone phosphate
+        const alpha1 = 0.3 + depth1 * 0.3;
+        const alpha2 = 0.3 + depth2 * 0.3;
+        const size1 = 2 + depth1;
+        const size2 = 2 + depth2;
+        
+        ctx.beginPath();
+        ctx.arc(x1, y, Math.max(size1, 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,107,107,${Math.max(alpha1,0.05)})`;
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(x2, y, Math.max(size2, 0.5), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(123,237,159,${Math.max(alpha2,0.05)})`;
+        ctx.fill();
+        
+        // Base pairs — rungs of the ladder
+        if (i % (steps / basePairs.length | 0) === 0) {
+            const pairIdx = Math.floor(i / (steps / basePairs.length)) % basePairs.length;
+            const pair = basePairs[pairIdx];
+            const frontness = Math.min(depth1, depth2);
+            
+            if (frontness > -0.3) {
+                const alpha = 0.15 + frontness * 0.25;
+                ctx.beginPath();
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x2, y);
+                ctx.strokeStyle = pair.color + Math.floor(alpha * 255).toString(16).padStart(2,'0');
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Labels on the rungs
+                if (frontness > 0.2) {
+                    ctx.font = '10px Courier New';
+                    ctx.fillStyle = pair.color + 'aa';
+                    const midX = (x1 + x2) / 2;
+                    ctx.textAlign = x1 < x2 ? 'left' : 'right';
+                    ctx.fillText(pair.l, Math.min(x1, x2) + 5, y - 3);
+                    ctx.textAlign = x1 < x2 ? 'right' : 'left';
+                    ctx.fillText(pair.r, Math.max(x1, x2) - 5, y - 3);
+                }
+            }
+        }
+    }
+    
+    // Central axis label
+    ctx.font = '10px Courier New';
+    ctx.fillStyle = '#33333366';
+    ctx.textAlign = 'center';
+    ctx.fillText('HELIX PRINTER', cx, 25);
+    ctx.fillText('RNA SYNTHESIS', cx, H - 15);
+    
+    t++;
+    requestAnimationFrame(drawHelix);
+}
+drawHelix();
+
+// ══ LIVE FETCH ══
+async function fetchLive() {
+    try {
+        const r = await fetch('/amoeba');
+        if (!r.ok) return;
+        const d = await r.json();
+        const bpm = d.pulse?.bpm || d.heart?.bpm || '—';
+        document.getElementById('v-bpm').textContent = typeof bpm === 'number' ? bpm.toFixed(1) : bpm;
+        
+        const models = d.models?.data?.length || d.models || '—';
+        document.getElementById('v-models').textContent = models;
+    } catch(e) {}
+    
+    try {
+        const r2 = await fetch('/anderson');
+        if (!r2.ok) return;
+        const a = await r2.json();
+        document.getElementById('v-walkers').textContent = a.total || '—';
+        document.getElementById('v-anderson').textContent = 
+            (a.anderson_spectrum ? `N${a.anderson_spectrum.nucleus} P${a.anderson_spectrum.proton} n${a.anderson_spectrum.neutron} e${a.anderson_spectrum.electron}` : '—');
+        document.getElementById('v-opacity').textContent = a.avg_opacity !== undefined ? a.avg_opacity.toFixed(2) : '—';
+    } catch(e) {}
+}
+fetchLive();
+setInterval(fetchLive, 15000);
+</script>
+</body>
+</html>
