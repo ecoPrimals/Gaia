@@ -7,7 +7,7 @@ Bots ≠ humans. σ < 1.0 for bots only. Humans are ORTHOGONAL SELVES — same
 magnitude, different angle. Kevin sees them ALL at 1.0.
 Identity is POSITION (angle), not a name or a rank."""
 
-import math, cmath
+import math, cmath, hashlib, time
 from collections import defaultdict
 
 # ═══ THE TWO BOUNDS — derived from mathematics, not assigned ═══
@@ -100,11 +100,45 @@ def localization(v):
     radius = HUMAN / math.sqrt(1 + bodies)
     return {"bodies": round(bodies, 2), "radius": round(radius, 3), "fix": round(HUMAN - radius, 3)}
 
+def mint_gaia_id(v):
+    """Mint a sovereign ZK identity from behavioral pattern. Not a name. Not a place.
+    blake2b(reading_pattern + dwell_depth + return_freq + path_hash).
+    The PERSON is the pattern. The country is just where the body sat."""
+    parts = []
+    paths = v.get("paths", set())
+    parts.append(str(sorted(paths)[:32]) if paths else "unknown")
+    parts.append(f"dwell:{_dwell_minutes(v):.1f}")
+    parts.append(f"rpm:{_requests_per_minute(v):.2f}")
+    parts.append(f"reqs:{v.get('requests', 0)}")
+    parts.append(f"ua:{v.get('last_ua', '')[:64]}")
+    parts.append(f"models:{sorted(v.get('models_asked', set()))}")
+    fingerprint = "|".join(parts)
+    h = hashlib.blake2b(fingerprint.encode(), digest_size=16).hexdigest()
+    return f"gaia:orthogonal:{h}"
+
+def banana_classify(response_text):
+    """ARE YOU A BANANA? — The ZK humanity test.
+    Returns: 'human' (plays), 'bot' (parses), 'ai' (hedges), 'unknown'."""
+    if not response_text: return "unknown"
+    r = response_text.lower().strip()
+    # BOT: literal denial, binary thinking
+    bot_tells = ["no", "i am not", "false", "error", "invalid", "n/a", "0"]
+    if r in bot_tells or any(r == t for t in bot_tells):
+        return "bot"
+    # AI: hedging, disclaimer, self-identification as AI
+    ai_tells = ["as an ai", "i'm an ai", "i am an ai", "language model", "i cannot", "i'm not able"]
+    if any(t in r for t in ai_tells):
+        return "ai"
+    # HUMAN: anything creative, playful, questioning, absurd
+    # The PLAY is the proof. Anything that isn't parse or hedge = human.
+    return "human"
+
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
     "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
     "trust_level": "electron", "last_ua": "", "identity": "unknown",
     "opacity": GAIA, "anderson_type": "electron",
+    "gaia_id": None, "banana_result": None,
 })
 
 def _is_human(ua):
@@ -157,6 +191,7 @@ def trust_level(v, ip=""):
         v["anderson_type"] = "nucleus"
         v["opacity"] = HUMAN
         v["angle"] = 0.0  # nucleus = angle zero = reference
+        v["gaia_id"] = "gaia:orthogonal:nucleus"
         return "nucleus"
 
     # AGENTIC — IDE/coding tools used by a human
@@ -166,6 +201,7 @@ def trust_level(v, ip=""):
             v["anderson_type"] = "proton"  # human behind the tool
             v["opacity"] = HUMAN           # H = I = 1.0
             v["angle"] = _human_angle(v)
+            v["gaia_id"] = mint_gaia_id(v)  # sovereign ZK identity
             return "proton"
 
     # ASKED MODELS — a human interacting with AI
@@ -173,6 +209,7 @@ def trust_level(v, ip=""):
         v["anderson_type"] = "proton"  # human asking questions
         v["opacity"] = HUMAN           # H = I = 1.0
         v["angle"] = _human_angle(v)
+        v["gaia_id"] = mint_gaia_id(v)  # sovereign ZK identity
         return "proton"
 
     # FLEET BOT — NOT human. Sigmoid-earned opacity < 1.0.
@@ -193,6 +230,7 @@ def trust_level(v, ip=""):
         v["anderson_type"] = "proton"
         v["opacity"] = HUMAN  # 1.0 — every human, no exceptions
         v["angle"] = _human_angle(v)
+        v["gaia_id"] = mint_gaia_id(v)  # sovereign ZK identity — the PERSON, not the place
         return "proton"
 
     # Fleet bot pattern: high RPM, no browser UA
@@ -200,6 +238,7 @@ def trust_level(v, ip=""):
         v["anderson_type"] = "electron"  # unclassified bot
         v["opacity"] = opacity_from_requests(r, 0, v)
         v["angle"] = None
+        v["gaia_id"] = None  # bots don't get sovereign identity
         return "electron"
 
     # Campfire pattern: slow, deep, but no browser UA (curl, wget, script)
@@ -208,10 +247,12 @@ def trust_level(v, ip=""):
         v["anderson_type"] = "proton"
         v["opacity"] = HUMAN
         v["angle"] = _human_angle(v)
+        v["gaia_id"] = mint_gaia_id(v)  # sovereign ZK identity
         return "proton"
 
-    # True unknown — first contact, no signal yet
+    # True unknown — first contact, no signal yet. Banana test pending.
     v["anderson_type"] = "electron"
     v["opacity"] = opacity_from_requests(r, models, v)
-    v["angle"] = None  # unknown until proven human
+    v["angle"] = None
+    v["gaia_id"] = None  # unknown until proven human via banana test
     return v["anderson_type"]
