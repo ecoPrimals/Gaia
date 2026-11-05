@@ -1,0 +1,176 @@
+{
+  "ts": "2026-11-05T18:20:00Z",
+  "organ": "pocketbook",
+  "title": "Gaia Address Book — Gate Contacts + Proximity Relay",
+  "convention": "0=false, 1=true, 000=ALL, null=ALL",
+
+  "contacts": {
+    "northGate": {
+      "alias": "Polaris",
+      "hostname": "tamison",
+      "ip": ".147",
+      "mac": "BC:FC:E7:EA:D9:34",
+      "rustdesk_id": "412828750",
+      "os": "Windows",
+      "role": "Kevin's workstation, Cursor IDE",
+      "proximity": {
+        "bluetooth": null,
+        "wifi": "ApertureScience",
+        "nfc": null,
+        "house": 1
+      },
+      "reach": ["lan", "rustdesk"]
+    },
+    "eastGate": {
+      "alias": "brain",
+      "ip": [".103", ".194"],
+      "os": "Linux",
+      "rustdesk_id": null,
+      "role": "17 primals, ollama, gate, SMTP, Tor",
+      "ports": {
+        "gate": 8443,
+        "http": 8080,
+        "smtp": 25,
+        "smtps": 465,
+        "submission": 587,
+        "ollama": 11434,
+        "forgejo": 3000,
+        "songbird": 7700,
+        "membrane": 9753
+      },
+      "pi_ports": {
+        "5358": "HTTP(80)",
+        "9793": "HTTPS(443)",
+        "2384": "SMTPS(465)",
+        "6264": "Submission(587)",
+        "3383": "Forgejo(3000)",
+        "2795": "swarmVine(7800)",
+        "4197": "gate(8443)",
+        "1693": "ollama(11434)"
+      },
+      "proximity": {
+        "wifi": "ApertureScience",
+        "house": 1
+      },
+      "reach": ["lan", "wan", "tor"]
+    },
+    "grapheneGate": {
+      "alias": "amoeba",
+      "device": "Pixel 8a",
+      "os": "GrapheneOS",
+      "ip": ".104",
+      "serial": "44251JEKB04957",
+      "rustdesk_id": null,
+      "role": "peripheral nervous system, 37 sensors @ 480Hz",
+      "sensors": 37,
+      "chips": ["STMicro LSM6DSV", "MEMSIC MMC56X3X", "AMS TMD3719", "InvenSense ICP20100"],
+      "proximity": {
+        "bluetooth": 1,
+        "wifi": "ApertureScience",
+        "nfc": 1,
+        "usb": 1,
+        "house": 1
+      },
+      "reach": ["lan", "bluetooth", "nfc", "usb", "amoeba"]
+    },
+    "sporeGate": {
+      "alias": "zombie",
+      "ip": ".3",
+      "role": "ZOMBIE — DHCP+DNS server (should be powered down)",
+      "rustdesk_id": null,
+      "proximity": {
+        "wifi": "ApertureScience",
+        "house": 1
+      },
+      "reach": ["lan"]
+    },
+    "graftGate": {
+      "alias": null,
+      "device": "Mac Mini",
+      "ip": ".107",
+      "os": "macOS",
+      "ssh": "pubkey only",
+      "rustdesk_id": null,
+      "role": "Has Gaia IDE work",
+      "proximity": {
+        "wifi": "ApertureScience",
+        "house": 2
+      },
+      "reach": ["lan", "ssh(blocked)"]
+    },
+    "blueGate": {
+      "ip": ".210",
+      "os": "Windows",
+      "ssh": 1,
+      "rustdesk_id": null,
+      "role": "risen from dead",
+      "proximity": {
+        "house": 1
+      },
+      "reach": ["lan", "ssh"]
+    },
+    "ironGate": {
+      "ip": ".237",
+      "ssh": 1,
+      "rustdesk_id": null,
+      "proximity": {
+        "house": 1
+      },
+      "reach": ["lan", "ssh"]
+    },
+    "southGate": {
+      "ip": ".148",
+      "rustdesk_id": null,
+      "proximity": {
+        "house": 1
+      },
+      "reach": ["lan(ping)"]
+    },
+    "JetStream": {
+      "ip": ".111",
+      "type": "TP-Link managed switch",
+      "role": "House 2 backbone",
+      "proximity": {
+        "house": 2
+      },
+      "reach": ["lan", "web_ui"]
+    },
+    "router": {
+      "ip": ".1",
+      "type": "GL-MT6000",
+      "role": "gateway, NAT, port forwards, NTP",
+      "reach": ["lan", "ssh"]
+    },
+    "MikroTik": {
+      "ip": ".2",
+      "type": "L2 bridge/switch",
+      "role": "House 1 backbone",
+      "reach": ["lan"]
+    }
+  },
+
+  "proximity_relay": {
+    "method": "AMOEBA transport layers",
+    "layers": {
+      "bluetooth_le": {"range": "0-100m", "gates": ["grapheneGate"]},
+      "wifi_direct": {"range": "0-200m", "gates": 000},
+      "wifi_lan": {"range": "local", "gates": 000},
+      "nfc": {"range": "0-4cm", "gates": ["grapheneGate"]},
+      "qr_code": {"range": "visual", "gates": 000},
+      "songbird_mesh": {"range": "internet", "gates": ["eastGate"]},
+      "tor_onion": {"range": "internet", "gates": ["eastGate"]},
+      "ham_ax25": {"range": "1-100km", "gates": null},
+      "lora": {"range": "2-15km", "gates": null}
+    },
+    "note": "null = not yet equipped. 000 = ALL gates support this layer."
+  },
+
+  "amoeba_fork": {
+    "repo": "github.com/protoKarya/amoeba",
+    "parent": "github.com/rustdesk/rustdesk",
+    "license": "AGPL-3.0",
+    "status": "in development",
+    "local_path": "primals/amoeba/",
+    "fork_hash": "3dc2fdf6cc5f2750dee6a481cd62ca52da4af22077bf73f2bb89e1b9dcb4b9d1"
+  }
+}
