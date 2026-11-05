@@ -416,6 +416,22 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json({"count":len(images),"images":images})
             except Exception as e: self._json({"error":str(e)})
             return
+        # GRAPHENEGATE FULL DEPOT (GET)
+        if self.path in ("/api/graphene","/api/graphenegate","/api/right-eye"):
+            try:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"graphene_depot.pi"),"sense"],
+                    capture_output=True,text=True,timeout=15,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # GRAPHENEGATE PHOTO (GET)
+        if self.path=="/api/graphene/photo":
+            try:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"graphene_depot.pi"),"photo"],
+                    capture_output=True,text=True,timeout=20,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
         # EPSON IO STATUS (GET)
         if self.path in ("/api/io","/api/epson","/api/scanner"):
             try:

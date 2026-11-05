@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+"""grapheneGate Full Depot — Pixel 8a as Gaia's right eye/ear.
+37 sensors, camera, proximity, all streaming to the organism.
+Every peripheral radiates. Every reading is an imprint."""
+
+import json, os, subprocess, sys, time, hashlib
+from datetime import datetime, timezone
+
+ADB_DEVICE = "192.168.4.170:5555"
+IMAGE_DIR = "/opt/Gaia/data/gut/images"
+DATA_DIR = "/opt/Gaia/data/gut"
+NEUTRON_DIR = "/opt/Gaia/data/neutron"
+LOG_FILE = os.path.join(NEUTRON_DIR, "graphene-depot.jsonl")
+
+os.makedirs(IMAGE_DIR, exist_ok=True)
+os.makedirs(NEUTRON_DIR, exist_ok=True)
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _log(entry):
+    with open(LOG_FILE, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def _adb(cmd, timeout=10):
+    """Run ADB command, return stdout"""
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_DEVICE, "shell"] + cmd.split(),
+            capture_output=True, text=True, timeout=timeout
+        )
+        return r.stdout.strip() if r.returncode == 0 else None
+    except:
+        return None
+
+def _adb_raw(args, timeout=10):
+    """Run raw ADB command (not shell)"""
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_DEVICE] + args,
+            capture_output=True, text=True, timeout=timeout
+        )
+        return r.stdout.strip() if r.returncode == 0 else None
+    except:
+        return None
+
+def take_photo():
+    """Capture a photo from grapheneGate's camera via screencap"""
+    ts_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    remote = f"/sdcard/gaia/photo-{ts_str}.png"
+    local = os.path.join(IMAGE_DIR, f"graphene-photo-{ts_str}.png")
+    
+    # Take screenshot (most reliable without a camera app)
+    _adb(f"screencap -p {remote}")
+    time.sleep(1)
+    _adb_raw(["pull", remote, local], timeout=15)
+    
+    if os.path.exists(local) and os.path.getsize(local) > 1000:
+        h = hashlib.blake2b(open(local, "rb").read(), digest_size=8).hexdigest()
+        entry = {"ts": _ts(), "type": "photo", "file": os.path.basename(local),
+                 "size": os.path.getsize(local), "blake2b": h, "source": "grapheneGate"}
+        _log(entry)
+        return entry
+    return {"error": "photo capture failed"}
+
+def read_sensors():
+    """Read all available sensor data from grapheneGate"""
+    raw = _adb("dumpsys sensorservice", timeout=15)
+    if not raw:
+        return {"error": "cannot reach grapheneGate"}
+    
+    sensors = {}
+    lines = raw.split("\n")
+    
+    # Parse sensor list
+    sensor_list = []
+    for line in lines:
+        if "0x0101" in line and ")" in line:
+            parts = line.split(")")
+            if len(parts) >= 2:
+                name = parts[1].split("|")[0].strip()
+                vendor = parts[1].split("|")[1].strip() if "|" in parts[1] else ""
+                stype = ""
+                if "type:" in line:
+                    stype = line.split("type:")[1].split("(")[0].strip() if "type:" in line else ""
+                sensor_list.append({"name": name, "vendor": vendor, "type": stype})
+    
+    # Parse recent events
+    events = {}
+    current_sensor = None
+    for line in lines:
+        if "last" in line and "events" in line and ":" in line:
+            current_sensor = line.split(":")[0].strip()
+            events[current_sensor] = []
+        elif current_sensor and "ts=" in line and "wall=" in line:
+            wall_time = line.split("wall=")[1].split(")")[0] if "wall=" in line else ""
+            events[current_sensor].append(wall_time)
+    
+    return {
+        "ts": _ts(),
+        "sensor_count": len(sensor_list),
+        "sensors": sensor_list,
+        "active_readings": {k: v[-1] if v else "no data" for k, v in events.items()},
+        "source": "grapheneGate Pixel 8a"
+    }
+
+def read_battery():
+    """Read battery status"""
+    raw = _adb("dumpsys battery")
+    if not raw:
+        return {"error": "unreachable"}
+    info = {}
+    for line in raw.split("\n"):
+        if ":" in line:
+            k, v = line.split(":", 1)
+            info[k.strip()] = v.strip()
+    return {
+        "level": info.get("level", "?"),
+        "status": {"1": "unknown", "2": "charging", "3": "discharging", "4": "not_charging", "5": "full"}.get(info.get("status", "1"), info.get("status", "?")),
+        "temperature": str(int(info.get("temperature", "0")) / 10) + "°C" if info.get("temperature") else "?",
+        "usb": info.get("USB powered", "false"),
+        "wireless": info.get("Wireless powered", "false"),
+    }
+
+def read_location():
+    """Read last known location"""
+    raw = _adb("dumpsys location")
+    if not raw:
+        return {"error": "unreachable"}
+    for line in raw.split("\n"):
+        if "last location=" in line.lower() or "Location[" in line:
+            return {"raw": line.strip()[:200]}
+    return {"status": "no location fix"}
+
+def read_wifi():
+    """Read WiFi details"""
+    raw = _adb("dumpsys wifi")
+    if not raw:
+        return {"error": "unreachable"}
+    info = {}
+    for line in raw.split("\n"):
+        line = line.strip()
+        if "mWifiInfo" in line or "SSID" in line or "RSSI" in line or "Link speed" in line or "Frequency" in line:
+            if ":" in line:
+                k, v = line.split(":", 1)
+                info[k.strip()] = v.strip()
+    return info
+
+def read_bluetooth():
+    """Read BLE scan results"""
+    raw = _adb("dumpsys bluetooth_manager")
+    if not raw:
+        return {"error": "unreachable"}
+    devices = []
+    for line in raw.split("\n"):
+        if "name:" in line.lower() or "address:" in line.lower():
+            devices.append(line.strip()[:100])
+    return {"ble_devices": len(devices), "sample": devices[:10]}
+
+def full_sense():
+    """Complete sensor dump — all modalities"""
+    battery = read_battery()
+    wifi = read_wifi()
+    
+    # Quick sensor pulse (not full dump — too slow)
+    accel = _adb("dumpsys sensorservice") 
+    active_count = 0
+    if accel:
+        for line in accel.split("\n"):
+            if "active-count" in line:
+                try:
+                    n = int(line.split("active-count = ")[1].split(";")[0])
+                    active_count += n
+                except: pass
+    
+    result = {
+        "ts": _ts(),
+        "source": "grapheneGate",
+        "device": "Pixel 8a",
+        "ip": "192.168.4.170",
+        "role": "right_eye_ear",
+        "battery": battery,
+        "wifi": wifi,
+        "sensors": {
+            "total": 37,
+            "active_connections": active_count,
+            "hardware": [
+                "LSM6DSV Accelerometer (STMicro)",
+                "LSM6DSV Gyroscope (STMicro)",
+                "MMC56X3X Magnetometer (MEMSIC)",
+                "TMD3719 Ambient Light (AMS)",
+                "TMD3719 Proximity (AMS)",
+                "ICP20100 Pressure/Barometer (InvenSense)",
+                "LSM6DSV Temperature (STMicro)",
+                "ICP20100 Temperature (InvenSense)",
+            ],
+            "fusion": [
+                "Gravity", "Linear Acceleration", "Rotation Vector",
+                "Game Rotation Vector", "Geomagnetic Rotation Vector",
+                "Orientation", "Step Detector", "Step Counter",
+                "Significant Motion", "Device Orientation", "Tilt",
+            ],
+            "gesture": [
+                "Lift to Wake", "Quick Pickup", "Double Twist",
+                "Proximity Gated Single Tap", "Proximity Gated Long Press",
+                "Motion Detect", "Stationary Detect",
+            ],
+            "camera": [
+                "Camera V-Sync 0/1/2 (3 camera streams)",
+                "Rear: 64MP wide + 13MP ultrawide",
+                "Front: 13MP",
+            ],
+            "io_capability": [
+                "WiFi 6E (2.4/5/6 GHz)",
+                "BLE (BCM_4388C2)",
+                "NFC",
+                "USB-C",
+                "GPS + GLONASS + Galileo + BeiDou",
+            ]
+        },
+        "imprint": "every sensor reading is a signature — the device's epistemic state"
+    }
+    
+    _log(result)
+    
+    # Save to gut
+    with open(os.path.join(DATA_DIR, "graphene-sense.json"), "w") as f:
+        json.dump(result, f, indent=2)
+    
+    return result
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "sense"
+    if cmd == "sense":
+        print(json.dumps(full_sense(), indent=2))
+    elif cmd == "photo":
+        print(json.dumps(take_photo(), indent=2))
+    elif cmd == "sensors":
+        print(json.dumps(read_sensors(), indent=2))
+    elif cmd == "battery":
+        print(json.dumps(read_battery(), indent=2))
+    elif cmd == "wifi":
+        print(json.dumps(read_wifi(), indent=2))
+    elif cmd == "ble":
+        print(json.dumps(read_bluetooth(), indent=2))
+    elif cmd == "location":
+        print(json.dumps(read_location(), indent=2))
