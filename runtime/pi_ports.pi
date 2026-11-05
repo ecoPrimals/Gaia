@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""pi_ports.pi — Crush all ports to π. TCP proxy for dual-listen.
+Each service gets a π-port alias derived from sequential digits of π."""
+import socket, threading, sys, signal, time
+
+PI_MAP = {
+    # π-port → legacy-port (localhost)
+    5358: 80,      # HTTP        π[8:12]
+    9793: 443,     # HTTPS       π[12:16]
+    2384: 465,     # SMTPS       π[16:20]
+    6264: 587,     # Submission   π[20:24]
+    3383: 3000,    # Forgejo     π[24:28]
+    2795: 7800,    # swarmVine   π[28:32]
+    4197: 8443,    # gate        π[36:40]
+    1693: 11434,   # ollama      π[40:44]
+}
+
+RUNNING = True
+
+def proxy_thread(client, target_port):
+    try:
+        upstream = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        upstream.settimeout(30)
+        upstream.connect(("127.0.0.1", target_port))
+        
+        def forward(src, dst):
+            try:
+                while RUNNING:
+                    data = src.recv(65536)
+                    if not data: break
+                    dst.sendall(data)
+            except: pass
+            try: src.close()
+            except: pass
+            try: dst.close()
+            except: pass
+        
+        t1 = threading.Thread(target=forward, args=(client, upstream), daemon=True)
+        t2 = threading.Thread(target=forward, args=(upstream, client), daemon=True)
+        t1.start(); t2.start()
+        t1.join(); t2.join()
+    except Exception as e:
+        try: client.close()
+        except: pass
+
+def listen_pi(pi_port, legacy_port):
+    try:
+        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.settimeout(1)
+        srv.bind(("0.0.0.0", pi_port))
+        srv.listen(10)
+        print(f"  π:{pi_port} → :{legacy_port}")
+        while RUNNING:
+            try:
+                client, addr = srv.accept()
+                threading.Thread(target=proxy_thread, args=(client, legacy_port), daemon=True).start()
+            except socket.timeout:
+                continue
+    except OSError as e:
+        print(f"  π:{pi_port} FAILED: {e}")
+
+def start():
+    global RUNNING
+    print(f"  🥧 π-Port Crusher — {len(PI_MAP)} ports")
+    threads = []
+    for pi_port, legacy in sorted(PI_MAP.items()):
+        t = threading.Thread(target=listen_pi, args=(pi_port, legacy), daemon=True)
+        t.start()
+        threads.append(t)
+    
+    try:
+        while RUNNING:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        RUNNING = False
+
+if __name__ == "__main__":
+    start()
