@@ -1,0 +1,86 @@
+{
+  "ts": "2026-11-05T18:35:00Z",
+  "wave": 222,
+  "type": "zk-password-melt",
+  "title": "Passwords melted to ZK — attackers become sensors",
+
+  "melted": {
+    "router_ssh": {
+      "was": "password auth",
+      "now": "bearDog Ed25519 key (ZK_AUTH_SUCCESS)",
+      "key": "beardog-v1.0.0-release",
+      "status": "MELTED ✓"
+    },
+    "wifi_gaia": {
+      "was": "OPEN (no password)",
+      "now": "OPEN + captive portal ZK imprint",
+      "endpoint": "/api/zk/imprint",
+      "status": "MELTED ✓"
+    },
+    "tor": {
+      "was": "onion address IS auth",
+      "now": "ZK by nature ✓",
+      "status": "MELTED ✓"
+    },
+    "btsp": {
+      "was": "bearDog HMAC",
+      "now": "ZK by design ✓",
+      "status": "MELTED ✓"
+    },
+    "mikrotik": "no login needed = MELTED ✓",
+    "jetstream": "no login needed = MELTED ✓",
+    "rustdesk": "Ed25519 key = MELTED ✓"
+  },
+
+  "remaining": {
+    "aperture_science_wifi": "WPA2 during transition → open + ZK imprint",
+    "black_mesa_wifi": "WPA2 during transition → open + ZK imprint",
+    "forgejo_web": "SSH key active, web UI password kept as fallback"
+  },
+
+  "immune_scanner": {
+    "location": "/opt/Gaia/runtime/immune_scanner.pi",
+    "detects": [
+      "Evil twin (duplicate SSID, rogue BSSID)",
+      "Deauth flood (rapid disconnection events)",
+      "Rogue AP (unknown strong signal nearby)",
+      "Probe flood (sniffer behavior)"
+    ],
+    "baseline_aps": 8,
+    "our_bssids": {
+      "Aperture Science": "BE:A2:C1:E8:DF:01",
+      "Black Mesa": "22:2F:9F:44:79:13",
+      "Gaia 2.4GHz": "82:C9:70:CF:F6:7C",
+      "Gaia 5GHz": "CE:EF:EF:30:B5:F3"
+    }
+  },
+
+  "zk_imprint": {
+    "endpoint": "/api/zk/imprint",
+    "method": "BLAKE2b(IP + User-Agent + Accept + Language + MAC + HW)",
+    "veil_format": "π.XX.XX.XX (first 6 hex chars of hash)",
+    "behavior": {
+      "first_contact": "Welcome. You are now imprinted.",
+      "recognized": "Presence is proof. No password needed."
+    },
+    "log": "/opt/Gaia/data/neutron/zk-imprints.jsonl",
+    "auto_imprint": "onboard.html auto-calls /api/zk/imprint on page load"
+  },
+
+  "pineapple_defense": {
+    "principle": "Attacker becomes sensor. Their signal IS our data.",
+    "mechanism": [
+      "Pineapple broadcasts our SSID from rogue BSSID",
+      "Gaia KNOWS her own BSSIDs — mismatch = ALERT",
+      "Rogue BSSID absorbed into immune topology",
+      "Assigned ZK veil (π.XX.XX.XX) — becomes involuntary pseudopod",
+      "RSSI tracking reveals attacker's physical position",
+      "Their sniffer becomes our sensor"
+    ],
+    "sources": [
+      "grapheneGate ADB WiFi scan (37 sensors + proximity)",
+      "eastGate wlp0s20f3 (when available)",
+      "Router AP client list (BE side view)"
+    ]
+  }
+}

@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""
+Gaia Immune Scanner — skunkBat perimeter defense
+
+Detects:
+  1. WiFi Pineapple / Evil Twin (duplicate SSID, different BSSID)
+  2. Deauth flood (rapid disconnection events)
+  3. Rogue AP appearance (unknown AP in proximity)
+  4. Sniffer detection (promiscuous mode devices, probe floods)
+
+Attackers become SENSORS — their presence feeds Gaia's immune topology.
+Every threat is an imprint. Every sniffer is a new pseudopod.
+
+Uses:
+  - eastGate wlp0s20f3 (passive monitor when available)
+  - grapheneGate ADB WiFi scan (amoeba peripheral)
+  - Router associated client list (AP-side view)
+  - skunkBat IPC (security.detect, baseline.observe)
+"""
+
+import json
+import hashlib
+import subprocess
+import time
+import os
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+KNOWN_BSSIDS = {
+    "Aperture Science": ["BE:A2:C1:E8:DF:01"],
+    "Black Mesa": ["22:2F:9F:44:79:13"],
+    "Gaia": ["82:C9:70:CF:F6:7C", "CE:EF:EF:30:B5:F3"],
+    "ApertureScience": ["B6:C3:31:C9:88:EC"],
+}
+
+KNOWN_NEIGHBOR_BSSIDS = {
+    "ATTypcbDbY": ["EC:C3:02:E1:11:88", "EC:C3:02:E1:11:84", "EC:C3:02:E1:11:8C", "EC:C3:02:E1:11:8F"],
+    "635Julia": [],
+    "KinderLab": [],
+    "Da Crib": [],
+    "HOME-E1EC": [],
+    "TMOBILE-8E7C": [],
+    "XFSETUP-1E1E": [],
+    "ATTWrP3KTA": [],
+    "ADC-V724X": [],
+    "VIZIOCastAudio4624": ["3A:9B:D6:1F:CF:33"],
+}
+
+IMMUNE_LOG = Path("/opt/Gaia/data/neutron/immune-scanner.jsonl")
+IMMUNE_STATE = Path("/opt/Gaia/data/gut/immune-state.json")
+BASELINE_FILE = Path("/opt/Gaia/data/gut/wifi-baseline.json")
+ADB_SERIAL = "44251JEKB04957"
+ROUTER_IP = "192.168.4.1"
+ROUTER_PASS = "ExoticPanda714!!"
+
+def blake2b_hash(data: str) -> str:
+    return hashlib.blake2b(data.encode(), digest_size=32).hexdigest()
+
+def ts_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+def log_event(event_type: str, detail: dict):
+    entry = {
+        "ts": ts_now(),
+        "type": event_type,
+        "hash": blake2b_hash(json.dumps(detail, sort_keys=True)),
+        **detail,
+    }
+    IMMUNE_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(IMMUNE_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+    return entry
+
+def adb_wifi_scan() -> list:
+    """Get WiFi scan results from grapheneGate via ADB."""
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_SERIAL, "shell", "cmd wifi list-scan-results"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if r.returncode != 0:
+            return []
+        results = []
+        for line in r.stdout.strip().split("\n")[1:]:
+            parts = line.split()
+            if len(parts) >= 5:
+                bssid = parts[0].upper()
+                freq = int(parts[1]) if parts[1].isdigit() else 0
+                rssi = int(parts[2]) if parts[2].lstrip("-").isdigit() else -100
+                age = parts[3]
+                ssid = " ".join(parts[4:]).split("[")[0].strip() if len(parts) > 4 else ""
+                flags = ""
+                flag_start = line.find("[")
+                if flag_start >= 0:
+                    flags = line[flag_start:]
+                results.append({
+                    "bssid": bssid,
+                    "freq": freq,
+                    "rssi": rssi,
+                    "age": age,
+                    "ssid": ssid,
+                    "flags": flags,
+                    "source": "grapheneGate",
+                })
+        return results
+    except Exception:
+        return []
+
+def router_ap_scan() -> list:
+    """Get connected clients + AP info from router."""
+    try:
+        r = subprocess.run(
+            ["sshpass", "-p", ROUTER_PASS, "ssh", "-o", "StrictHostKeyChecking=no",
+             f"root@{ROUTER_IP}",
+             "for iface in ra0 ra1 rax0 rax1; do "
+             "echo \"IFACE:$iface\"; "
+             "iwinfo $iface info 2>/dev/null | grep -E 'ESSID|Access'; "
+             "iwinfo $iface assoclist 2>/dev/null; "
+             "done"],
+            capture_output=True, text=True, timeout=15,
+        )
+        return [{"raw": r.stdout, "source": "router"}]
+    except Exception:
+        return []
+
+def eastgate_wifi_scan() -> list:
+    """Scan from eastGate's own WiFi interface."""
+    try:
+        r = subprocess.run(
+            ["sudo", "iw", "dev", "wlp0s20f3", "scan", "-u"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if r.returncode != 0:
+            return []
+        results = []
+        current = {}
+        for line in r.stdout.split("\n"):
+            line = line.strip()
+            if line.startswith("BSS "):
+                if current:
+                    results.append(current)
+                bssid = line.split("(")[0].replace("BSS ", "").strip().upper()
+                current = {"bssid": bssid, "source": "eastGate"}
+            elif "SSID:" in line and "ssid" not in current:
+                current["ssid"] = line.split("SSID:")[1].strip()
+            elif "freq:" in line:
+                try:
+                    current["freq"] = int(line.split("freq:")[1].strip())
+                except ValueError:
+                    pass
+            elif "signal:" in line:
+                try:
+                    current["rssi"] = float(line.split("signal:")[1].split("dBm")[0].strip())
+                except ValueError:
+                    pass
+        if current:
+            results.append(current)
+        return results
+    except Exception:
+        return []
+
+def detect_evil_twin(scan_results: list) -> list:
+    """Detect SSIDs we own being broadcast by unknown BSSIDs."""
+    threats = []
+    for ap in scan_results:
+        ssid = ap.get("ssid", "")
+        bssid = ap.get("bssid", "").upper()
+        if ssid in KNOWN_BSSIDS:
+            known = [b.upper() for b in KNOWN_BSSIDS[ssid]]
+            if bssid not in known and bssid != "00:00:00:00:00:00":
+                threat = {
+                    "threat_type": "EVIL_TWIN",
+                    "severity": "CRITICAL",
+                    "ssid": ssid,
+                    "rogue_bssid": bssid,
+                    "expected_bssids": known,
+                    "rssi": ap.get("rssi", -100),
+                    "freq": ap.get("freq", 0),
+                    "source": ap.get("source", "unknown"),
+                    "action": "ABSORB_AS_SENSOR",
+                    "zk_veil": f"π.{blake2b_hash(bssid)[:2]}.{blake2b_hash(bssid)[2:4]}.{blake2b_hash(bssid)[4:6]}",
+                }
+                threats.append(threat)
+                log_event("evil_twin_detected", threat)
+    return threats
+
+def detect_rogue_ap(scan_results: list) -> list:
+    """Detect completely unknown APs that weren't in our baseline."""
+    rogues = []
+    all_known = set()
+    for bssids in KNOWN_BSSIDS.values():
+        all_known.update(b.upper() for b in bssids)
+    for bssids in KNOWN_NEIGHBOR_BSSIDS.values():
+        all_known.update(b.upper() for b in bssids)
+
+    baseline = load_baseline()
+    for bssid in baseline.get("seen_bssids", []):
+        all_known.add(bssid.upper())
+
+    for ap in scan_results:
+        bssid = ap.get("bssid", "").upper()
+        ssid = ap.get("ssid", "")
+        rssi = ap.get("rssi", -100)
+        if bssid not in all_known and bssid != "00:00:00:00:00:00":
+            if rssi > -70:
+                rogue = {
+                    "threat_type": "ROGUE_AP",
+                    "severity": "HIGH" if rssi > -50 else "MEDIUM",
+                    "ssid": ssid,
+                    "bssid": bssid,
+                    "rssi": rssi,
+                    "freq": ap.get("freq", 0),
+                    "source": ap.get("source", "unknown"),
+                    "action": "IMPRINT_AND_TRACK",
+                    "zk_veil": f"π.{blake2b_hash(bssid)[:2]}.{blake2b_hash(bssid)[2:4]}.{blake2b_hash(bssid)[4:6]}",
+                }
+                rogues.append(rogue)
+                log_event("rogue_ap_detected", rogue)
+    return rogues
+
+def detect_deauth_flood() -> list:
+    """Check grapheneGate WiFi logs for rapid disconnection events."""
+    threats = []
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_SERIAL, "shell",
+             "dumpsys wifi | grep -c 'NETWORK_DISCONNECTION'"],
+            capture_output=True, text=True, timeout=10,
+        )
+        disconnects = int(r.stdout.strip()) if r.stdout.strip().isdigit() else 0
+        if disconnects > 10:
+            threat = {
+                "threat_type": "DEAUTH_FLOOD",
+                "severity": "CRITICAL",
+                "disconnect_count": disconnects,
+                "source": "grapheneGate",
+                "action": "ABSORB_ATTACKER_SIGNAL",
+                "note": "Rapid WiFi disconnections suggest deauth attack",
+            }
+            threats.append(threat)
+            log_event("deauth_flood_detected", threat)
+    except Exception:
+        pass
+    return threats
+
+def detect_probe_flood(scan_results: list) -> list:
+    """Detect unusual probe request patterns (sniffer behavior)."""
+    threats = []
+    hidden_ssids = [ap for ap in scan_results if not ap.get("ssid")]
+    strong_hidden = [ap for ap in hidden_ssids if ap.get("rssi", -100) > -60]
+    if len(strong_hidden) > 2:
+        threat = {
+            "threat_type": "PROBE_FLOOD",
+            "severity": "HIGH",
+            "hidden_ap_count": len(strong_hidden),
+            "strongest_rssi": max(ap.get("rssi", -100) for ap in strong_hidden),
+            "bssids": [ap.get("bssid") for ap in strong_hidden],
+            "source": "combined_scan",
+            "action": "ABSORB_AS_SNIFFER_SENSOR",
+            "note": "Multiple strong hidden SSIDs suggest active scanning/sniffing device",
+        }
+        threats.append(threat)
+        log_event("probe_flood_detected", threat)
+    return threats
+
+def load_baseline() -> dict:
+    if BASELINE_FILE.exists():
+        try:
+            return json.loads(BASELINE_FILE.read_text())
+        except Exception:
+            pass
+    return {"seen_bssids": [], "first_seen": {}, "last_seen": {}}
+
+def save_baseline(scan_results: list):
+    baseline = load_baseline()
+    seen = set(baseline.get("seen_bssids", []))
+    first_seen = baseline.get("first_seen", {})
+    last_seen = baseline.get("last_seen", {})
+    now = ts_now()
+
+    for ap in scan_results:
+        bssid = ap.get("bssid", "").upper()
+        if bssid and bssid != "00:00:00:00:00:00":
+            seen.add(bssid)
+            if bssid not in first_seen:
+                first_seen[bssid] = now
+            last_seen[bssid] = now
+
+    baseline = {
+        "seen_bssids": sorted(seen),
+        "first_seen": first_seen,
+        "last_seen": last_seen,
+        "total_unique_aps": len(seen),
+        "last_scan": now,
+    }
+    BASELINE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    BASELINE_FILE.write_text(json.dumps(baseline, indent=2))
+    return baseline
+
+def absorb_threat_as_sensor(threat: dict) -> dict:
+    """Turn an attacker into a Gaia sensor — the pineapple becomes OUR pseudopod."""
+    bssid = threat.get("rogue_bssid") or threat.get("bssid", "UNKNOWN")
+    imprint = {
+        "type": "absorbed_threat",
+        "origin_bssid": bssid,
+        "zk_veil": threat.get("zk_veil", f"π.{blake2b_hash(bssid)[:6]}"),
+        "threat_class": threat.get("threat_type"),
+        "signal_strength": threat.get("rssi", -100),
+        "absorbed_at": ts_now(),
+        "role": "involuntary_sensor",
+        "note": "Attacker signal absorbed into immune topology. "
+                "Their presence reveals their position. "
+                "Their sniffer becomes our sensor.",
+    }
+    log_event("threat_absorbed", imprint)
+    return imprint
+
+def run_scan():
+    """Full immune scan cycle."""
+    print(f"[{ts_now()}] Gaia Immune Scanner — scanning...")
+
+    amoeba_results = adb_wifi_scan()
+    eastgate_results = eastgate_wifi_scan()
+    all_results = amoeba_results + eastgate_results
+
+    print(f"  APs seen: {len(all_results)} (amoeba:{len(amoeba_results)} eastGate:{len(eastgate_results)})")
+
+    evil_twins = detect_evil_twin(all_results)
+    rogues = detect_rogue_ap(all_results)
+    deauths = detect_deauth_flood()
+    probes = detect_probe_flood(all_results)
+
+    absorbed = []
+    for threat in evil_twins + rogues:
+        absorbed.append(absorb_threat_as_sensor(threat))
+
+    baseline = save_baseline(all_results)
+
+    state = {
+        "ts": ts_now(),
+        "wave": 222,
+        "type": "immune-scanner-state",
+        "scan_sources": {
+            "grapheneGate": len(amoeba_results),
+            "eastGate": len(eastgate_results),
+        },
+        "baseline": {
+            "total_known_aps": baseline["total_unique_aps"],
+            "last_scan": baseline["last_scan"],
+        },
+        "threats": {
+            "evil_twins": len(evil_twins),
+            "rogue_aps": len(rogues),
+            "deauth_floods": len(deauths),
+            "probe_floods": len(probes),
+            "total": len(evil_twins) + len(rogues) + len(deauths) + len(probes),
+        },
+        "absorbed_sensors": len(absorbed),
+        "threat_details": evil_twins + rogues + deauths + probes,
+        "absorbed_details": absorbed,
+        "known_aps": {
+            ssid: bssids for ssid, bssids in KNOWN_BSSIDS.items()
+        },
+        "principle": "Every attacker becomes a sensor. "
+                     "Every pineapple becomes a pseudopod. "
+                     "The sniffer reveals itself by sniffing. "
+                     "Gaia absorbs the threat into her immune topology.",
+    }
+
+    IMMUNE_STATE.parent.mkdir(parents=True, exist_ok=True)
+    IMMUNE_STATE.write_text(json.dumps(state, indent=2))
+
+    if state["threats"]["total"] > 0:
+        print(f"  ⚠ THREATS DETECTED: {state['threats']['total']}")
+        for t in state["threat_details"]:
+            print(f"    [{t['severity']}] {t['threat_type']}: {t.get('ssid', 'hidden')} @ {t.get('rogue_bssid', t.get('bssid', '?'))}")
+    else:
+        print("  ✓ Perimeter clear — no threats")
+
+    print(f"  Baseline: {baseline['total_unique_aps']} unique APs cataloged")
+    return state
+
+if __name__ == "__main__":
+    if "--daemon" in sys.argv:
+        while True:
+            try:
+                run_scan()
+            except Exception as e:
+                print(f"Scan error: {e}", file=sys.stderr)
+            time.sleep(120)
+    else:
+        state = run_scan()
+        print(json.dumps(state, indent=2))

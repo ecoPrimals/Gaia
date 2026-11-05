@@ -444,6 +444,46 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json({"ok":True,"gate":gate,"command":f"curl -sf http://192.168.4.244:8443/data/gut/gate-onboard.sh | sudo bash -s {gate}"})
             except Exception as e: self._json({"error":str(e)})
             return
+        # ZK IMPRINT — device presence IS identity, no passwords
+        if self.path in ("/api/zk/imprint","/api/imprint"):
+            try:
+                ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+                ua=self.headers.get("User-Agent","unknown")
+                accept=self.headers.get("Accept","*/*")
+                lang=self.headers.get("Accept-Language","")
+                j=json.loads(body) if body else {}
+                mac=j.get("mac",""); hw=j.get("hw",""); name=j.get("name","")
+                fp_raw=f"{ip}|{ua}|{accept}|{lang}|{mac}|{hw}"
+                fp_hash=hashlib.blake2b(fp_raw.encode(),digest_size=32).hexdigest()
+                zk_veil=f"π.{fp_hash[:2]}.{fp_hash[2:4]}.{fp_hash[4:6]}"
+                nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+                imprint={"ts":ts,"ip":ip,"fingerprint":fp_hash,"zk_veil":zk_veil,
+                         "ua":ua[:120],"mac":mac,"name":name,"hw":hw}
+                with open(os.path.join(nd,"zk-imprints.jsonl"),"a") as f:
+                    f.write(json.dumps(imprint)+"\n")
+                known=False
+                try:
+                    with open(os.path.join(nd,"zk-imprints.jsonl")) as f:
+                        for line in f:
+                            try:
+                                e=json.loads(line)
+                                if e.get("fingerprint")==fp_hash and e["ts"]!=ts: known=True; break
+                            except: pass
+                except: pass
+                self._json({"ok":True,"zk_veil":zk_veil,"recognized":known,
+                            "fingerprint":fp_hash[:16]+"...",
+                            "message":"Presence is proof. No password needed." if known else "Welcome. You are now imprinted."})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # IMMUNE SCAN STATUS
+        if self.path=="/api/immune":
+            try:
+                sf=os.path.join(_REPO,"data","gut","immune-state.json")
+                if os.path.exists(sf):
+                    with open(sf) as f: self._json(json.loads(f.read()))
+                else: self._json({"status":"no scan yet"})
+            except Exception as e: self._json({"error":str(e)})
+            return
         # NEUTRON
         if self.path in ("/api/discuss","/neutron","/api/neutron"):
             try:
