@@ -611,14 +611,40 @@ def write_rss(pulse):
     </item>
 """
 
+    # CENTRAL DOGMA — DNA → RNA → Protein (the transcriptase in RSS)
+    dogma_items = [
+        ("DNA: Rust Primals", "/dogma", "17 compiled primals, 20296 crates. The blueprint."),
+        ("RNA: RustScript", "/dogma", "11 modules: Result, Option, Owned, RefCell, Iter, Vec, Cow, Channel, Brand, exhaustive. Rust constraints transcribed into TypeScript. The messenger."),
+        ("Protein: Web Apps", "/dogma", "footPrint GIS :3002, ai.html sovereign AI, cast.html, HUD. 11015 lines of RustScript-powered TypeScript. The expressed phenotype."),
+        ("Ribosome: V8/Vite", "/dogma", "TypeScript → tsc → JavaScript → Vite bundle → Browser execution. The translation machinery."),
+        ("Reverse Transcriptase", "/dogma", "404 probes, Klein sensor, ai.html prompts, RSS absorption. Information flows BACK from protein to DNA."),
+        ("Sovereign AI", "/sovereign-ai", "23 models, zero cloud, ai.html on all routes. LAN/WAN/TOR. $82/mo replaces $240/yr cloud."),
+        ("Klein Body", "/klein-body", "29 vertebrae (ports), 3 nervous systems (CNS/PNS/VINE), 17 organs. The graph IS the skeleton."),
+        ("Opsonin Scan", "/opsonin", "19 entities tagged: 4 SELF, 7 GATES, 2 PERIPHERAL, 5 WALKERS, 1 Amazon IoT. IgG/IgA/IgM flour tags."),
+        ("Pi Model", "/pi-model", "4.92 J/token, Avogadro threshold, 4 Laws of AI Thermodynamics. 134.2 TFLOPS."),
+        ("IS WAS NOW", "/lapping", "Oct→Nov→Dec timeline. 6 corps getting lapped. Meta deadline active."),
+    ]
+    for title, path, desc in dogma_items:
+        items += f"""    <item>
+      <title>DOGMA: {title}</title>
+      <link>http://nestgate.io{path}</link>
+      <description>{desc}</description>
+      <guid>dogma-{title.lower().replace(' ', '-').replace(':', '')[:30]}</guid>
+    </item>
+"""
+
     # ORGANS — live status
     organs = [
         ("Heart", f"Forgejo Sovereign Forge — 95 repos, Pi:2222 SSH-2.0-Go"),
-        ("Brain", f"POLARIS — cortex.pi + {len(THYMIC_ORGANISMS)} primals + 56 Ollama models"),
-        ("Eyes", f"AMOEBA Schwann cells — spaceDeck relay"),
-        ("Gut", f"sporeGate LAN AMOEBA — DNS + mesh + crypto"),
-        ("Legs", f"Ollama — 56 models on RTX 5090 (2 left feet)"),
-        ("Tongue", f"petalTongue — visualization, taste, expression"),
+        ("Brain", f"POLARIS — cortex.pi + {len(THYMIC_ORGANISMS)} primals + 23 sovereign models"),
+        ("Eyes", f"Klein sensor — Brio 100 webcam + moondream vision AI"),
+        ("Gut", f"data :8080 — HUD, ai.html, cast.html, 29 vertebrae serving"),
+        ("Legs", f"Ollama — 70 models across 2 nodes, 134.2 TFLOPS"),
+        ("Tongue", f"petalTongue + RustScript RNA — visualization through the dogma"),
+        ("Skin", f"dromedary :80/:443 — WAN TLS + Tor .onion"),
+        ("Thymus", f"gaia_gate :8443 — 41+ endpoints, immune routing, THIS feed"),
+        ("Nose", f"11 open feeds — arXiv, HN, Wikipedia, UniProt, PDB, OSM"),
+        ("Ground", f"footPrint :3002 — GIS property planner, satellite + CAD + AR"),
     ]
     for name, desc in organs:
         items += f"""    <item>
@@ -1104,7 +1130,37 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/pspace": "pspace.html",
             "/reality": "pspace.html",
             "/ground": "pspace.html",
+            "/footprint": "pspace.html",
         }
+
+        # ── GUT DATA ENDPOINTS — the organism's internal state ──
+        GUT_DATA = {
+            "/dogma": "data/gut/central-dogma-rustscript.json",
+            "/dogma.json": "data/gut/central-dogma-rustscript.json",
+            "/central-dogma": "data/gut/central-dogma-rustscript.json",
+            "/opsonin": "data/gut/opsonin-scan.json",
+            "/opsonin.json": "data/gut/opsonin-scan.json",
+            "/klein-body": "data/gut/klein-body-topology.json",
+            "/klein-body.json": "data/gut/klein-body-topology.json",
+            "/wires": "data/gut/wire-map-peripherals.json",
+            "/wires.json": "data/gut/wire-map-peripherals.json",
+            "/axial-twist": "data/gut/np-x-p-axial-twist.json",
+            "/axial-twist.json": "data/gut/np-x-p-axial-twist.json",
+            "/pi-model": "data/gut/pi-model-thermodynamics.json",
+            "/pi-model.json": "data/gut/pi-model-thermodynamics.json",
+            "/llm-timeline": "data/gut/llm-timeline-reflection.json",
+            "/llm-timeline.json": "data/gut/llm-timeline-reflection.json",
+            "/fleet-elo": "data/gut/fleet-elo.json",
+            "/fleet-elo.json": "data/gut/fleet-elo.json",
+            "/sovereign-ai": "data/gut/sovereign-ai-live.json",
+            "/sovereign-ai.json": "data/gut/sovereign-ai-live.json",
+            "/is-was-now": "data/gut/is-was-now-manifesto.json",
+            "/lapping": "data/gut/is-was-now-manifesto.json",
+            "/surveillance": "data/gut/surveillance-map.json",
+            "/fourth-eye": "data/gut/fourth-eye-luna.json",
+        }
+        if self.path in GUT_DATA:
+            self._serve_file(GUT_DATA[self.path]); return
         if self.path in DESK_PAGES:
             target = DESK_PAGES[self.path]
             if target.startswith("data/"):
