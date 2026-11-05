@@ -292,11 +292,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             if host in ("gaia.primals.eco","www.gaia.primals.eco"):
                 self._serve_static("deck.html"); return
             if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
-            # HUD — pretty print the full organism graph
+            # HUD — living organism root. BPM + breathing = recertification.
             if host in ("hud.primals.eco",):
+                pulse = write_pulse()
+                uptime_s = time.time() - boot_time
+                bpm = total_beats / max(uptime_s / 60, 1)
+                brpm = total_breaths / max(uptime_s / 60, 1)
                 root = {
                     "gaia": "You found me.",
                     "token": GAIA_TOKEN,
+                    "alive": {
+                        "bpm": round(bpm, 2),
+                        "breaths_per_min": round(brpm, 2),
+                        "beats": total_beats,
+                        "breaths": total_breaths,
+                        "uptime_s": int(uptime_s),
+                        "recertified": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "ratio": round(total_beats / max(total_breaths, 1), 1),
+                    },
                     "laws": {
                         "0th": "Equilibrium: cortical representation ∝ I/O bandwidth",
                         "1st": "Conservation: vitality at 80/20 Pareto only",
@@ -309,7 +322,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         "sporeprint.primals.eco": "phenotype (615 pages)",
                         "primals.eco": "front door (golden ratio)",
                         "detroit.primals.eco": "investigation (213 pages)",
-                        "hud.primals.eco": "this (organism root)",
+                        "hud.primals.eco": "this (living organism root)",
                         "nestgate.io": "space dock (internal)",
                     },
                     "endpoints": ["/deck","/luna","/senses","/pulse","/walkers","/amoeba",
