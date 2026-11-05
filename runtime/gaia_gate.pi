@@ -390,24 +390,21 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                                 except: pass
                         _nc[_ch]={"total":len(_ms),"messages":_ms[-5:]}
                     except: pass
-            # models (cached, fast timeout)
+            # models (try /v1/models first, fallback /api/tags)
             _md={"data":[]}
             try:
-                with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
-            except: pass
+                with urllib.request.urlopen(f"{OLLAMA}/v1/models",timeout=3) as _r: _md=json.loads(_r.read())
+            except:
+                try:
+                    with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
+                except: pass
             # paintings + videos count
             _pd=os.path.join(_REPO,"paintings"); _pc=len([f for f in os.listdir(_pd) if f.endswith(('.jpg','.png'))]) if os.path.isdir(_pd) else 0
             _vd=os.path.join(_REPO,"videos"); _vc=len([f for f in os.listdir(_vd) if f.endswith(('.mp4','.webm'))]) if os.path.isdir(_vd) else 0
-            # sensor banks from sense-scan if available
-            _sb={}
-            _sf=os.path.join(_REPO,"data","gut","gaia-perception.json")
-            if os.path.isfile(_sf):
-                try:
-                    with open(_sf) as _fh: _sp=json.load(_fh)
-                    _sb=_sp.get("banks",{}); _sa=_sp.get("alive",0); _st=_sp.get("total_sensors",0)
-                    _sflow=_sp.get("flow",{})
-                except: _sa=0; _st=0; _sflow={}
-            else: _sa=0; _st=0; _sflow={}
+            # sensors — live data (sun + heart + walkers + gates)
+            _sa=sum(1 for o in THYMIC_ORGANISMS.values() if o.get("alive")); _st=len(THYMIC_ORGANISMS)
+            _sb={"sun":_sun,"heart":_pulse.get("heart",{}),"gates":{"alive":_sa,"total":_st}}
+            _sflow={"total_bytes":0,"walkers":len(visitor_memory)}
             self._json({
                 "amoeba":_amoeba_eyes(),"pulse":_pulse,"temporal":_temp,"sun":_sun,
                 "anderson":{"spectrum":{t:sum(1 for vv in visitor_memory.values() if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)},
