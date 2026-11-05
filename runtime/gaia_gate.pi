@@ -141,11 +141,27 @@ def write_pulse():
     return p
 def write_rss(pulse): _wr(RSS_FILE, pulse, SEED_DIR, visitor_memory, THYMIC_ORGANISMS)
 
+def _real_ip(handler):
+    """Socket peer, unless the peer is our own loopback proxy (dromedary) AND it names the real client.
+    X-Forwarded-For is trusted ONLY from loopback — from anyone else it is ignored, so it cannot be spoofed
+    to dodge the limiter. Until dromedary sends the header this returns the peer, exactly as before."""
+    peer = handler.client_address[0]
+    if peer in ("127.0.0.1", "::1"):
+        import ipaddress
+        cand = (handler.headers.get("X-Forwarded-For") or handler.headers.get("X-Real-IP") or "").split(",")[0].strip()
+        try:
+            ipaddress.ip_address(cand); return cand
+        except ValueError:
+            pass
+    return peer
+
 def waveform_collapse_check(ip):
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
     collapsed = pm > PI_TIMEOUT or ps > PI_RETRY
+    if collapsed:
+        window.pop()   # a refused request must not extend the window, or a client that backs off never recovers (the 429 collapse)
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
 
 # ═══ CONTENT TYPES ═══
@@ -273,7 +289,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_response(204); self._negentropy_headers(); self.end_headers()
 
     def do_GET(self):
-        ip=self.client_address[0]; collapsed,wave=waveform_collapse_check(ip)
+        ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
             accept=self.headers.get("Accept","")
             if "text/html" in accept:
@@ -665,7 +681,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         return {"feed":name,"count":len(items),"items":items}
 
     def do_POST(self):
-        ip=self.client_address[0]; collapsed,wave=waveform_collapse_check(ip)
+        ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
             accept=self.headers.get("Accept","")
             if "text/html" in accept:
