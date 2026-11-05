@@ -353,6 +353,90 @@ def amoeba():
     _log({"ts": ts, "type": "amoeba", "conn": conn, "battery": level, "sensors": hw_sensors})
     return out
 
+# ═══ CHIMERA — Gaia Tower (bearDog+songBird+skunkBat) on the phone ═══
+# The phone is a Gaia dev peripheral. This is the ONLY place the launcher lives;
+# it is pushed to the phone on `chimera start`. Everything binds 127.0.0.1;
+# reach it via `adb forward` (health) — nothing but adbd is exposed to the LAN.
+CHIMERA_DIR = "/data/local/tmp/gaia-chimera"
+CHIMERA_PORTS = {"beardog": 9100, "songbird": 9200, "skunkbat": 9140}
+CHIMERA_START_SH = r"""#!/system/bin/sh
+# Gaia chimera (Tower) on grapheneGate-as-dev-tool. Localhost only; reach via `adb forward`.
+D=/data/local/tmp/gaia-chimera
+cd $D || exit 1
+umask 077
+mkdir -p run/songbird
+[ -f run/family.seed ] || head -c 32 /dev/urandom > run/family.seed
+export FAMILY_ID=gaia-chimera-dev NODE_ID=chimera1
+export BEARDOG_FAMILY_SEED=$D/run/family.seed
+export HOME=$D/run TMPDIR=$D/run XDG_RUNTIME_DIR=$D/run
+
+# stop any previous chimera processes (only ours, by path)
+for p in beardog songbird skunkbat; do pkill -f "$D/bin/$p" 2>/dev/null; done
+sleep 1
+
+nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 --family-id $FAMILY_ID \
+  > run/beardog.log 2>&1 < /dev/null &
+echo $! > run/beardog.pid
+sleep 2
+export SONGBIRD_FEDERATION_BIND=127.0.0.1 SONGBIRD_PRODUCTION_BIND_ADDRESS=127.0.0.1
+export SONGBIRD_SECURITY_PROVIDER=beardog BEARDOG_SOCKET=@biomeos_beardog BEARDOG_MODE=direct
+nohup $D/bin/songbird server --federation-port 7700 --bind 127.0.0.1 --listen 127.0.0.1:9200 --node-id $NODE_ID \
+  --state-dir $D/run/songbird --pid-dir $D/run > run/songbird.log 2>&1 < /dev/null &
+echo $! > run/songbird.pid
+nohup $D/bin/skunkbat server --bind-mode tcp-only --bind 127.0.0.1 --port 9140 \
+  > run/skunkbat.log 2>&1 < /dev/null &
+echo $! > run/skunkbat.pid
+sleep 3
+echo started
+"""
+
+def chimera_start():
+    dev, _ = adb_target()
+    if not dev:
+        return {"error": "phone not reachable"}
+    import tempfile
+    with tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False) as t:
+        t.write(CHIMERA_START_SH); tmp = t.name
+    try:
+        _adb_raw(["push", tmp, f"{CHIMERA_DIR}/start.sh"], timeout=15)
+    finally:
+        os.unlink(tmp)
+    _adb(f"chmod 700 {CHIMERA_DIR}/start.sh")
+    out = _adb(f"sh {CHIMERA_DIR}/start.sh", timeout=30)
+    health = {}
+    for _ in range(10):          # songBird takes several seconds to bind
+        time.sleep(2)
+        health = chimera_health()
+        if all(v.get("status") == "alive" for v in health.values()):
+            break
+    return {"started": out, "health": health}
+
+def chimera_stop():
+    for p in CHIMERA_PORTS:
+        _adb(f"pkill -f {CHIMERA_DIR}/bin/{p}")
+    return {"stopped": list(CHIMERA_PORTS)}
+
+def chimera_health():
+    """JSON-RPC health.liveness to each primal through temporary adb forwards (local-only ports)."""
+    import socket
+    dev, _ = adb_target()
+    if not dev:
+        return {"error": "phone not reachable"}
+    res = {}
+    for i, (name, port) in enumerate(CHIMERA_PORTS.items()):
+        lport = 19500 + i
+        _adb_raw(["forward", f"tcp:{lport}", f"tcp:{port}"])
+        try:
+            s = socket.create_connection(("127.0.0.1", lport), timeout=5)
+            s.sendall(b'{"jsonrpc":"2.0","method":"health.liveness","params":{},"id":1}\n')
+            res[name] = json.loads(s.recv(4096).decode().strip().split("\n")[0]).get("result", {})
+            s.close()
+        except Exception as e:
+            res[name] = {"status": "down", "err": str(e)[:80]}
+        finally:
+            _adb_raw(["forward", "--remove", f"tcp:{lport}"])
+    return res
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "sense"
     if cmd == "sense":
@@ -361,6 +445,10 @@ if __name__ == "__main__":
         r = amoeba()
         print(json.dumps({k: r[k] for k in ("ts","connection","battery","wifi","hw_sensors")} if "error" not in r else r, indent=2))
         sys.exit(1 if "error" in r else 0)
+    elif cmd == "chimera":
+        sub = sys.argv[2] if len(sys.argv) > 2 else "health"
+        fn = {"start": chimera_start, "stop": chimera_stop, "health": chimera_health}.get(sub)
+        print(json.dumps(fn() if fn else {"usage": "chimera start|stop|health"}, indent=2))
     elif cmd == "target":
         d, c = adb_target(refresh=True); print(json.dumps({"device": d, "conn": c}))
     elif cmd == "photo":
