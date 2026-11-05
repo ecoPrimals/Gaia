@@ -946,6 +946,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/videos/"):
             self._serve_file(self.path[1:])
             return
+        if self.path in ("/api/discuss", "/neutron", "/api/neutron"):
+            self._json(self._neutron_read()); return
         if self.path in ("/gaiau", "/university", "/classes", "/videos"):
             self._json(self._gaiau_catalog()); return
         if self.path.startswith("/whitePaper/") or self.path.startswith("/whitepapers/"):
@@ -1052,6 +1054,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "paintings": [{"name": f, "url": f"/paintings/{f}"} for f in files],
             "invitation": "Each one is a moment. Ask me to make more.",
         }
+
+    def _neutron_read(self):
+        """Read neutron messages — nerve signals between gates."""
+        _repo = os.path.dirname(os.path.dirname(__file__))
+        neutron_dir = os.path.join(_repo, "data", "neutron")
+        result = {}
+        for ch in ("inbox", "notes", "reminders", "chat"):
+            path = os.path.join(neutron_dir, f"{ch}.jsonl")
+            msgs = []
+            if os.path.isfile(path):
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line:
+                            try: msgs.append(json.loads(line))
+                            except: pass
+            result[ch] = {"total": len(msgs), "messages": msgs[-10:]}
+        return result
 
     def _gaiau_catalog(self):
         """GaiaU — the university. 11 classes + 5 special lectures."""
@@ -1239,6 +1259,29 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
+
+        # ═══ NEUTRON — nerve signals between gates ═══
+        if self.path in ("/api/discuss", "/neutron", "/api/neutron"):
+            try:
+                j = json.loads(body) if body else {}
+                channel = j.get("channel", "inbox")
+                author = j.get("author", "unknown")
+                msg = j.get("body", j.get("message", ""))
+                ts = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+                _repo = os.path.dirname(os.path.dirname(__file__))
+                neutron_dir = os.path.join(_repo, "data", "neutron")
+                os.makedirs(neutron_dir, exist_ok=True)
+                neutron_file = os.path.join(neutron_dir, f"{channel}.jsonl")
+                entry = json.dumps({"ts": ts, "author": author, "body": msg, "channel": channel})
+                with open(neutron_file, "a", encoding="utf-8") as f:
+                    f.write(entry + "\n")
+                print(f"  ⚡ NEUTRON [{channel}] from {author}: {msg[:80]}")
+                self._json({"ok": True, "channel": channel, "ts": ts})
+            except Exception as e:
+                self._json({"error": str(e)})
+            return
+        if self.path == "/api/discuss" and self.command == "GET":
+            self._json(self._neutron_read()); return
 
         if CORTEX_ACTIVE and body and self.path.endswith("/chat/completions"):
             try:
