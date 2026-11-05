@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""iPHONE DEPOT — Gaia's left eye.
+iPhone has no ADB, no SSH. We use what it GIVES us:
+  1. Web sensors — Safari/Chrome gives location, motion, orientation, battery via browser APIs
+  2. iOS Shortcuts — periodic HTTP POST with device data (battery, wifi, location, photos)
+  3. mDNS discovery — detect when iPhone appears/disappears from LAN
+  
+This module:
+  - Serves a sensor page that the iPhone opens in browser → streams data TO Gaia
+  - Accepts POST /api/iphone/ingest for Shortcuts automation
+  - Discovers iPhone on LAN via ARP/mDNS
+  - Tracks all ingested data in neutron channel
+
+The iPhone is Gaia's LEFT EYE (grapheneGate Pixel 8a = right eye)."""
+
+import json, os, sys, time, subprocess, hashlib
+from datetime import datetime, timezone
+
+DATA_DIR = "/opt/Gaia/data/neutron"
+IMAGE_DIR = "/opt/Gaia/data/gut/images"
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _log(entry):
+    with open(os.path.join(DATA_DIR, "iphone-depot.jsonl"), "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def discover():
+    """Find iPhone on the LAN — check ARP, mDNS, DHCP"""
+    found = []
+    
+    try:
+        r = subprocess.run(["arp", "-a"], capture_output=True, text=True, timeout=5)
+        for line in r.stdout.splitlines():
+            low = line.lower()
+            if "iphone" in low or "diagnoss" in low or "apple" in low:
+                parts = line.split()
+                for p in parts:
+                    if p.startswith("192.168.4."):
+                        found.append({"ip": p.strip("()"), "source": "arp", "raw": line.strip()})
+    except: pass
+    
+    try:
+        r = subprocess.run(["avahi-browse", "-art"], capture_output=True, text=True, timeout=5)
+        for line in r.stdout.splitlines():
+            low = line.lower()
+            if "iphone" in low or "apple" in low or "_companion" in low:
+                found.append({"source": "mdns", "raw": line.strip()[:100]})
+    except: pass
+    
+    known_ips = ["192.168.4.134", "192.168.4.160", "192.168.4.246"]
+    for ip in known_ips:
+        try:
+            r = subprocess.run(["ping", "-c", "1", "-W", "1", ip],
+                             capture_output=True, timeout=3)
+            if r.returncode == 0:
+                found.append({"ip": ip, "source": "ping", "alive": True})
+        except: pass
+    
+    result = {
+        "ts": _ts(),
+        "type": "iphone_discovery",
+        "found": found,
+        "known_leases": {
+            "134": {"name": "iPhone", "mac": "8e:87:7b:38:39:25", "source": "sporeGate_dhcp"},
+            "160": {"name": "DiagnosssiPhone", "mac": "unknown", "source": "router_arp"},
+            "246": {"name": "iPad", "mac": "92:e7:ee:84:83:e9", "source": "sporeGate_dhcp"},
+        },
+        "note": "iOS uses private MAC addresses — same device may get different IPs each connect"
+    }
+    
+    _log(result)
+    return result
+
+def ingest(data):
+    """Accept data push from iPhone (via Shortcuts or web sensor page)"""
+    entry = {
+        "ts": _ts(),
+        "type": "iphone_ingest",
+        "data": data,
+        "blake2b": hashlib.blake2b(json.dumps(data, sort_keys=True).encode(), digest_size=8).hexdigest(),
+    }
+    
+    state_path = os.path.join(DATA_DIR, "iphone-state.json")
+    state = {}
+    if os.path.exists(state_path):
+        try:
+            with open(state_path) as f: state = json.load(f)
+        except: pass
+    
+    state["last_ingest"] = _ts()
+    state["last_data"] = data
+    state["ingest_count"] = state.get("ingest_count", 0) + 1
+    state["blake2b"] = entry["blake2b"]
+    
+    if "location" in data:
+        state["last_location"] = data["location"]
+    if "battery" in data:
+        state["last_battery"] = data["battery"]
+    if "device" in data:
+        state["device_info"] = data["device"]
+    
+    with open(state_path, "w") as f:
+        json.dump(state, f, indent=2)
+    
+    _log(entry)
+    return {"status": "ingested", "ts": _ts(), "blake2b": entry["blake2b"],
+            "total_ingests": state["ingest_count"]}
+
+def status():
+    """Current iPhone depot status"""
+    state_path = os.path.join(DATA_DIR, "iphone-state.json")
+    state = {"online": False, "ingest_count": 0}
+    if os.path.exists(state_path):
+        try:
+            with open(state_path) as f: state = json.load(f)
+        except: pass
+    
+    state["organ"] = "iphone_depot"
+    state["role"] = "left_eye"
+    state["note"] = "Open http://eastGate:8443/sense on your iPhone to start streaming"
+    state["shortcuts_url"] = "POST http://192.168.4.244:8443/api/iphone/ingest"
+    return state
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    if cmd == "discover":
+        print(json.dumps(discover(), indent=2))
+    elif cmd == "status":
+        print(json.dumps(status(), indent=2))
+    elif cmd == "ingest":
+        data = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {"test": True}
+        print(json.dumps(ingest(data), indent=2))

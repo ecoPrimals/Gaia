@@ -294,6 +294,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
             self._serve_static("deck.html"); return
         if self.path in ("/primals","/primals.html","/eco"): self._serve_static("primals.html"); return
+        if self.path in ("/sense","/sense.html","/left-eye","/iphone"): self._serve_static("sense.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
@@ -523,6 +524,19 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     self._json(status)
             except Exception as e: self._json({"error":str(e)})
             return
+        # iPHONE DEPOT (GET /api/iphone — left eye status/discovery)
+        if self.path.startswith("/api/iphone"):
+            try:
+                if self.path=="/api/iphone/discover":
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"discover"],
+                        capture_output=True,text=True,timeout=10,cwd=_REPO)
+                    self._json(json.loads(r.stdout))
+                else:
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"status"],
+                        capture_output=True,text=True,timeout=5,cwd=_REPO)
+                    self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -710,6 +724,41 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # iPHONE DATA INGEST (POST /api/iphone/ingest)
+        if self.path=="/api/iphone/ingest":
+            try:
+                j=json.loads(body) if body else {}
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"ingest",json.dumps(j)],
+                    capture_output=True,text=True,timeout=10,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # iPHONE PHOTO UPLOAD (POST /api/iphone/photo)
+        if self.path=="/api/iphone/photo":
+            try:
+                import cgi
+                ct=self.headers.get("Content-Type","")
+                if "multipart" in ct:
+                    fs=cgi.FieldStorage(fp=self.rfile,headers=self.headers,
+                        environ={"REQUEST_METHOD":"POST","CONTENT_TYPE":ct})
+                    photo=fs["photo"] if "photo" in fs else None
+                    if photo and photo.file:
+                        fname=f"iphone-{int(time.time())}.jpg"
+                        fpath=os.path.join(_REPO,"data","gut","images",fname)
+                        with open(fpath,"wb") as f: f.write(photo.file.read())
+                        loc_raw=fs.getfirst("location","{}"); dev_raw=fs.getfirst("device","{}")
+                        meta={"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"file":fname,"path":fpath,
+                              "location":json.loads(loc_raw),"device":json.loads(dev_raw),
+                              "blake2b":hashlib.blake2b(open(fpath,"rb").read(),digest_size=8).hexdigest()}
+                        nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+                        with open(os.path.join(nd,"iphone-depot.jsonl"),"a") as f:
+                            f.write(json.dumps({"ts":meta["ts"],"type":"photo","file":fname,"blake2b":meta["blake2b"]})+"\n")
+                        self._json({"status":"photo_saved","file":fname,"blake2b":meta["blake2b"]})
+                    else: self._json({"error":"no photo in upload"})
+                else:
+                    self._json({"error":"expected multipart/form-data"})
             except Exception as e: self._json({"error":str(e)})
             return
         # EPSON PRINT IMAGE (POST /api/io/print)

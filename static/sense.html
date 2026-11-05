@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Gaia — Sense</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;overflow-x:hidden;
+  -webkit-user-select:none;user-select:none}
+h1{font-size:14px;color:#0f8;margin-bottom:4px}
+.tag{display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;margin:2px}
+.on{background:#0f02;border:1px solid #0f04;color:#0f0}
+.off{background:#f002;border:1px solid #f004;color:#f88}
+.wait{background:#ff02;border:1px solid #ff04;color:#ff0}
+#status{font-size:10px;color:#0f8;margin:4px 0}
+.section{border:1px solid #0f02;border-radius:4px;padding:6px;margin:6px 0}
+.section h2{font-size:11px;color:#0fa;margin-bottom:4px}
+.val{color:#0ff;font-size:10px}
+.dim{color:#080;font-size:9px}
+#pulse{width:8px;height:8px;border-radius:50%;background:#0f0;display:inline-block;
+  animation:throb 2s infinite}
+@keyframes throb{0%,100%{opacity:0.3}50%{opacity:1}}
+button{background:#0f02;border:1px solid #0f04;color:#0f0;padding:6px 12px;
+  border-radius:4px;font:11px monospace;margin:4px}
+button:active{background:#0f04}
+#cam{width:100%;max-height:30vh;border-radius:4px;margin:4px 0}
+#log{max-height:100px;overflow-y:auto;font-size:8px;color:#080;border-top:1px solid #0f02;
+  margin-top:8px;padding-top:4px}
+</style>
+</head>
+<body>
+<h1><span id="pulse"></span> GAIA SENSE — <span id="device">detecting...</span></h1>
+<div id="status">connecting to organism...</div>
+
+<div class="section" id="s-loc">
+  <h2>📍 Location</h2>
+  <div class="val" id="v-loc">waiting...</div>
+</div>
+
+<div class="section" id="s-motion">
+  <h2>🔄 Motion</h2>
+  <div class="val" id="v-accel">accel: —</div>
+  <div class="val" id="v-gyro">gyro: —</div>
+  <div class="val" id="v-orient">orient: —</div>
+</div>
+
+<div class="section" id="s-battery">
+  <h2>🔋 Battery</h2>
+  <div class="val" id="v-bat">—</div>
+</div>
+
+<div class="section" id="s-net">
+  <h2>📡 Network</h2>
+  <div class="val" id="v-net">—</div>
+</div>
+
+<div class="section" id="s-cam">
+  <h2>📷 Camera</h2>
+  <button onclick="startCam()">Open Camera</button>
+  <button onclick="snapPhoto()">Snap → Gaia</button>
+  <video id="cam" autoplay playsinline muted></video>
+  <canvas id="snap-canvas" style="display:none"></canvas>
+</div>
+
+<div class="section">
+  <h2>⚡ Controls</h2>
+  <button onclick="pushNow()">Push All → Gaia</button>
+  <button onclick="toggleStream()">Auto-Stream: <span id="stream-state">OFF</span></button>
+  <button onclick="requestMotion()">Enable Motion</button>
+</div>
+
+<div id="tags"></div>
+<div id="log"></div>
+
+<script>
+const GAIA = location.origin;
+const INGEST = GAIA + '/api/iphone/ingest';
+let streaming = false;
+let streamTimer = null;
+let sensorData = { device: {}, location: null, motion: {}, battery: null, network: {} };
+let pushCount = 0;
+
+function log(msg) {
+  const el = document.getElementById('log');
+  const d = new Date().toLocaleTimeString();
+  el.innerHTML = `<div>${d} ${msg}</div>` + el.innerHTML;
+  if(el.children.length > 50) el.lastChild.remove();
+}
+
+function tag(id, state, label) {
+  return `<span class="tag ${state}" id="t-${id}">${label}</span>`;
+}
+
+// === DEVICE INFO ===
+const ua = navigator.userAgent;
+const isIOS = /iPhone|iPad|iPod/.test(ua);
+const isAndroid = /Android/.test(ua);
+const deviceName = isIOS ? (ua.match(/iPhone|iPad|iPod/)?.[0] || 'iOS') : 
+                   isAndroid ? 'Android' : 'Browser';
+document.getElementById('device').textContent = deviceName;
+sensorData.device = {
+  name: deviceName,
+  ua: ua.slice(0, 120),
+  screen: `${screen.width}×${screen.height}@${devicePixelRatio}`,
+  touch: navigator.maxTouchPoints,
+  memory: navigator.deviceMemory || null,
+  cores: navigator.hardwareConcurrency || null,
+  ts: new Date().toISOString(),
+};
+log(`Device: ${deviceName} ${screen.width}×${screen.height}`);
+
+// === LOCATION ===
+let watchId = null;
+if('geolocation' in navigator) {
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      sensorData.location = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+        altitude: pos.coords.altitude,
+        altAccuracy: pos.coords.altitudeAccuracy,
+        heading: pos.coords.heading,
+        speed: pos.coords.speed,
+        ts: new Date(pos.timestamp).toISOString(),
+      };
+      const loc = sensorData.location;
+      document.getElementById('v-loc').textContent = 
+        `${loc.lat.toFixed(6)}, ${loc.lon.toFixed(6)} ±${Math.round(loc.accuracy)}m` +
+        (loc.altitude ? ` · alt ${loc.altitude.toFixed(1)}m` : '') +
+        (loc.speed ? ` · ${(loc.speed*2.237).toFixed(1)}mph` : '');
+      log(`📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)} ±${Math.round(loc.accuracy)}m`);
+    },
+    err => {
+      document.getElementById('v-loc').textContent = `Error: ${err.message}`;
+      log(`📍 Error: ${err.message}`);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+  );
+}
+
+// === MOTION SENSORS ===
+function requestMotion() {
+  if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(state => {
+      if(state === 'granted') { bindMotion(); log('🔄 Motion GRANTED'); }
+      else log('🔄 Motion DENIED');
+    }).catch(e => log('🔄 Motion error: ' + e));
+  } else {
+    bindMotion();
+  }
+}
+
+function bindMotion() {
+  window.addEventListener('devicemotion', e => {
+    const a = e.accelerationIncludingGravity || {};
+    const r = e.rotationRate || {};
+    sensorData.motion.accel = { x: a.x?.toFixed(2), y: a.y?.toFixed(2), z: a.z?.toFixed(2) };
+    sensorData.motion.gyro = { alpha: r.alpha?.toFixed(1), beta: r.beta?.toFixed(1), gamma: r.gamma?.toFixed(1) };
+    sensorData.motion.interval = e.interval;
+    document.getElementById('v-accel').textContent = 
+      `accel: x=${a.x?.toFixed(1)} y=${a.y?.toFixed(1)} z=${a.z?.toFixed(1)}`;
+    document.getElementById('v-gyro').textContent = 
+      `gyro: α=${r.alpha?.toFixed(0)} β=${r.beta?.toFixed(0)} γ=${r.gamma?.toFixed(0)}`;
+  });
+  
+  window.addEventListener('deviceorientation', e => {
+    sensorData.motion.orientation = { alpha: e.alpha?.toFixed(1), beta: e.beta?.toFixed(1), gamma: e.gamma?.toFixed(1) };
+    document.getElementById('v-orient').textContent = 
+      `orient: α=${e.alpha?.toFixed(0)}° β=${e.beta?.toFixed(0)}° γ=${e.gamma?.toFixed(0)}°`;
+  });
+}
+
+// Try auto-binding (non-iOS)
+if(!isIOS) bindMotion();
+
+// === BATTERY ===
+if('getBattery' in navigator) {
+  navigator.getBattery().then(bat => {
+    function updateBat() {
+      sensorData.battery = {
+        level: Math.round(bat.level * 100),
+        charging: bat.charging,
+        chargingTime: bat.chargingTime,
+        dischargingTime: bat.dischargingTime,
+      };
+      document.getElementById('v-bat').textContent = 
+        `${sensorData.battery.level}% ${bat.charging ? '⚡charging' : '🔋discharging'}`;
+    }
+    updateBat();
+    bat.addEventListener('levelchange', updateBat);
+    bat.addEventListener('chargingchange', updateBat);
+  });
+} else {
+  document.getElementById('v-bat').textContent = 'Battery API not available (iOS Safari)';
+}
+
+// === NETWORK ===
+function updateNet() {
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  sensorData.network = {
+    online: navigator.onLine,
+    type: conn?.effectiveType || null,
+    downlink: conn?.downlink || null,
+    rtt: conn?.rtt || null,
+    saveData: conn?.saveData || null,
+  };
+  document.getElementById('v-net').textContent = 
+    `${navigator.onLine ? '✓ Online' : '✗ Offline'}` +
+    (conn ? ` · ${conn.effectiveType} · ${conn.downlink}Mbps · RTT ${conn.rtt}ms` : '');
+}
+updateNet();
+window.addEventListener('online', updateNet);
+window.addEventListener('offline', updateNet);
+
+// === CAMERA ===
+let camStream = null;
+async function startCam() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false 
+    });
+    document.getElementById('cam').srcObject = camStream;
+    log('📷 Camera started');
+  } catch(e) { log('📷 Error: ' + e.message); }
+}
+
+async function snapPhoto() {
+  if(!camStream) { log('📷 Start camera first'); return; }
+  const v = document.getElementById('cam');
+  const c = document.getElementById('snap-canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  
+  c.toBlob(async blob => {
+    const form = new FormData();
+    form.append('photo', blob, `iphone-${Date.now()}.jpg`);
+    form.append('location', JSON.stringify(sensorData.location));
+    form.append('device', JSON.stringify(sensorData.device));
+    try {
+      const r = await fetch(GAIA + '/api/iphone/photo', { method: 'POST', body: form });
+      const d = await r.json();
+      log(`📷 Photo → Gaia: ${d.status || 'sent'}`);
+    } catch(e) { log('📷 Upload error: ' + e.message); }
+  }, 'image/jpeg', 0.85);
+}
+
+// === PUSH TO GAIA ===
+async function pushNow() {
+  const payload = {
+    ...sensorData,
+    ts: new Date().toISOString(),
+    push_count: ++pushCount,
+  };
+  
+  try {
+    const r = await fetch(INGEST, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    document.getElementById('status').textContent = 
+      `✓ Push #${d.total_ingests || pushCount} · ${d.blake2b?.slice(0,8) || '?'} · ${new Date().toLocaleTimeString()}`;
+    log(`⚡ Pushed → ${d.blake2b?.slice(0,8) || '?'}`);
+  } catch(e) {
+    document.getElementById('status').textContent = `✗ ${e.message}`;
+    log(`✗ Push failed: ${e.message}`);
+  }
+}
+
+function toggleStream() {
+  streaming = !streaming;
+  document.getElementById('stream-state').textContent = streaming ? 'ON' : 'OFF';
+  if(streaming) {
+    pushNow();
+    streamTimer = setInterval(pushNow, 10000);
+    log('🔁 Auto-stream ON (every 10s)');
+  } else {
+    clearInterval(streamTimer);
+    log('🔁 Auto-stream OFF');
+  }
+}
+
+// === STATUS TAGS ===
+function updateTags() {
+  const t = document.getElementById('tags');
+  t.innerHTML = [
+    tag('loc', sensorData.location ? 'on' : 'off', 'GPS'),
+    tag('motion', sensorData.motion.accel ? 'on' : 'wait', 'Motion'),
+    tag('bat', sensorData.battery ? 'on' : 'off', 'Battery'),
+    tag('net', navigator.onLine ? 'on' : 'off', 'Network'),
+    tag('cam', camStream ? 'on' : 'off', 'Camera'),
+    tag('stream', streaming ? 'on' : 'off', 'Stream'),
+    tag('device', 'on', deviceName),
+  ].join('');
+}
+setInterval(updateTags, 2000);
+updateTags();
+
+// Initial push on load
+setTimeout(pushNow, 2000);
+</script>
+</body>
+</html>
