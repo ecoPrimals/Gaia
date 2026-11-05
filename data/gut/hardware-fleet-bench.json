@@ -1,0 +1,96 @@
+{
+  "ts": "2026-11-05T02:16:00-0500",
+  "wave": 222,
+  "type": "hardware-fleet-bench",
+  "title": "POLYGLOT SILICON — 4+ architectures, no single point of failure",
+
+  "active_gates": {
+    "northGate": {"arch": "x86_64", "cpu": "i9-14900K", "gpu": "RTX 5090", "ram_gb": 192, "status": "ALIVE"},
+    "eastGate": {"arch": "x86_64", "cpu": "AMD", "gpu": "integrated", "ram_gb": 64, "status": "ALIVE"},
+    "graftGate": {"arch": "arm64", "cpu": "Apple M2", "gpu": "ANE/NCU + Metal", "ram_gb": "?", "status": "OPEN"},
+    "blueGate": {"arch": "x86_64", "cpu": "unknown", "gpu": "unknown", "ram_gb": "?", "status": "RISEN"},
+    "ironGate": {"arch": "unknown", "status": "OPEN"},
+    "southGate": {"arch": "unknown", "status": "OPEN"},
+    "sporeGate": {"arch": "x86_64", "status": "TRAVELING"}
+  },
+
+  "incoming_hardware": {
+    "apple_m2": {
+      "gate": "graftGate",
+      "arch": "arm64 (aarch64)",
+      "ncu": "Apple Neural Engine — 15.8 TOPS neural compute",
+      "metal": "Metal GPU — unified memory, no PCIe bottleneck",
+      "frameworks": ["CoreML", "MLX", "GGML/llama.cpp ARM NEON"],
+      "rust": "Tier 1 target: aarch64-apple-darwin",
+      "python": "Native arm64 Python via Homebrew",
+      "bench": {
+        "llama_7b_tok_s": "~25 tok/s (MLX on M2)",
+        "compile_time": "~30% faster than equivalent x86 (unified memory)",
+        "power": "10W TDP vs 125W+ x86 — 12x more efficient"
+      }
+    },
+    "risc_v": {
+      "arch": "RISC-V (RV64GC)",
+      "isa": "OPEN — no licensing fees, no x86 patent wall, no ARM royalties",
+      "boards": [
+        {"name": "StarFive VisionFive2", "soc": "JH7110", "cores": 4, "ram_gb": 8, "price": "$65"},
+        {"name": "Milk-V Mars", "soc": "JH7110", "cores": 4, "ram_gb": 8, "price": "$40"},
+        {"name": "Milk-V Pioneer", "soc": "SG2042", "cores": 64, "ram_gb": 128, "price": "$1300"},
+        {"name": "SiFive HiFive Unmatched", "soc": "FU740", "cores": 4, "ram_gb": 16, "price": "$665"}
+      ],
+      "rust": "Tier 2 target: riscv64gc-unknown-linux-gnu",
+      "python": "Python 3.11+ available on Fedora/Ubuntu RISC-V",
+      "why": "x86 = Intel/AMD tax. ARM = ARM Holdings tax. RISC-V = ZERO TAX. The FREE instruction set.",
+      "bingocube_on_riscv": "Fully sovereign: open ISA + open source primals + ZK auth = NO proprietary dependency ANYWHERE"
+    },
+    "raspberry_pi": {
+      "arch": "arm64 (Cortex-A76/A72)",
+      "models": [
+        {"name": "Pi 5", "cores": 4, "ram_gb": 8, "price": "$80", "role": "edge gate"},
+        {"name": "Pi Zero 2W", "cores": 4, "ram_gb": 0.5, "price": "$15", "role": "heartbeat beacon"},
+        {"name": "Pi Pico W", "cores": 2, "ram_gb": 0.000264, "price": "$6", "role": "sensor node"}
+      ],
+      "hats": [
+        "LoRa HAT — 915MHz, 10km mesh relay",
+        "Camera Module 3 — Klein sensor eye",
+        "Sense HAT — temperature, humidity, pressure, IMU",
+        "GPS HAT — precise location for sidereal calculation"
+      ],
+      "role": "Plant like seeds. Each Pi IS a gate. Heartbeat mesh."
+    },
+    "esp32": {
+      "arch": "Xtensa LX6/LX7 or RISC-V (ESP32-C3)",
+      "price": "$3-8",
+      "role": "IoT heartbeat beacon, BLE mesh, WiFi sensor",
+      "note": "ESP32-C3 is RISC-V! Even the $3 chip is sovereign."
+    }
+  },
+
+  "architecture_diversity": {
+    "x86_64": {"gates": ["northGate", "eastGate", "blueGate"], "status": "ACTIVE"},
+    "arm64": {"gates": ["graftGate", "raspberry_pi"], "status": "COMING"},
+    "risc_v": {"gates": ["incoming boards", "ESP32-C3"], "status": "PLANNED"},
+    "why_polyglot": "If Intel backdoors x86, ARM lives. If ARM licenses revoke, RISC-V lives. If all silicon fails, HAM radio lives. NO SINGLE POINT OF FAILURE."
+  },
+
+  "bench_declaration": {
+    "bioreadout_v1": {
+      "pulse_latency_ms": "<50",
+      "amoeba_latency_ms": "<200",
+      "tls_handshake_ms": "<100",
+      "tor_circuit_s": "<3",
+      "rss_gen_ms": "<500",
+      "sovereignty_headers": 10,
+      "sensors_alive": "18/21",
+      "cross_gate_neutron_min": "<10"
+    },
+    "cross_arch_status": {
+      "x86_64_linux": "CONFIRMED (eastGate)",
+      "x86_64_windows": "CONFIRMED (northGate/blueGate)",
+      "arm64_macos": "TO TEST (graftGate M2)",
+      "arm64_linux": "TO TEST (Raspberry Pi)",
+      "risc_v_linux": "TO TEST (incoming boards)",
+      "risc_v_bare": "FUTURE (ESP32-C3 micropython)"
+    }
+  }
+}
