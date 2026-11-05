@@ -1,0 +1,69 @@
+{
+  "ts": "2026-11-05T16:30:00-05:00",
+  "title": "THREE SEEDS — IS/WAS/NOW → ZK DEGENERACY REMINT",
+
+  "seed_1_solokey": {
+    "name": "SoloKey Touch × 4",
+    "type": "FIDO2/CTAP2 hardware entropy",
+    "WAS": "Wave 138a (Jul 13 2026) — wired into bearDog. Ceremony: multi-tap timing entropy. BLAKE3 mix of challenge + signature + reaction_ns + eagain_count + keepalive_count. Tier 3 entropy. Bug found: ERR_CHANNEL_BUSY (0x06) after timeout — needs physical unplug/replug.",
+    "IS": "Code compiled and tested (33 fido2 + provider tests pass). beardog.fido2.ceremony IPC method live. 5-tap default, keyed BLAKE3 → 32 bytes entropy.",
+    "NOW": "Physical hardware — proximal to Kevin. The key in his HAND.",
+    "method": "beardog.fido2.ceremony",
+    "entropy_output": "base64, 32 bytes, tier 3"
+  },
+
+  "seed_2_graphenegate_hsm": {
+    "name": "GrapheneGate Pixel 8a — Titan M2 / StrongBox",
+    "type": "Android HSM hardware security module",
+    "WAS": "Wave 138a — Android cross-compile fixed. Pixel 8a depot builds unblocked. StrongBox integration wired. Device seed DERIVED from root_seed + pixel_entropy (not COPIED — that was the old bug).",
+    "IS": "37 sensors, right eye of organism. .249 on LAN. Titan M2 chip = hardware-backed key generation. Device-unique cryptographic material.",
+    "NOW": "Physical hardware — proximal to Kevin. The phone in his POCKET.",
+    "ip": ".249",
+    "derivation": "DERIVE(root_seed, pixel_entropy) → device_seed"
+  },
+
+  "seed_3_zk_genetics": {
+    "name": "bearDog Genetic Lineage System",
+    "type": "Software ZK identity — 11 methods",
+    "WAS": "Feb 5 2026 — GENETIC_LINEAGE_EVOLUTION_SPEC. Fixed CRITICAL: seeds were COPIED not DERIVED. Now: root_seed → DERIVE(root_seed, device_entropy) → unique per device. 11 genetic methods (up from 8).",
+    "IS": "Live in bearDog binary (4.4 MB). genetic.derive_lineage_key, genetic.mix_entropy, genetic.verify_lineage, genetic.generate_lineage_proof. Genetic lock deployed Wave 165i — bd1-* bearer token from BLAKE3 of derived key.",
+    "NOW": "The proof system. Multiple devices prove shared ancestry WITHOUT revealing root seed.",
+    "methods": [
+      "genetic.derive_lineage_key",
+      "genetic.derive_lineage_beacon_key",
+      "genetic.mix_entropy",
+      "genetic.verify_lineage",
+      "genetic.generate_lineage_proof",
+      "genetic.generate_challenge",
+      "genetic.respond_to_challenge",
+      "genetic.enroll_device",
+      "genetic.verify_enrollment",
+      "genetic.derive_device_key",
+      "genetic.cross_certify"
+    ]
+  },
+
+  "zk_degeneracy": {
+    "concept": "Multiple quantum states → same energy level. Multiple identity seeds → same KEVIN. Different paths, same proof.",
+    "mixing": "DERIVE(solokey_entropy, DERIVE(pixel_hsm_entropy, DERIVE(beardog_root_seed, ceremony_timestamp)))",
+    "result": "ONE degenerate identity that can authenticate AS gaia on Forgejo, GitHub, Tor, LAN — anywhere. The auth IS proximal to the human.",
+    "the_insight": "The remint doesn't happen ON eastGate. It happens WHERE KEVIN IS. The seeds are all in his physical space. SoloKey = hand. Pixel = pocket. bearDog = the software bridge. Mix them HERE on northGate (.147) and push the result TO Forgejo."
+  },
+
+  "remint_ceremony": {
+    "step_1": "Plug SoloKey → beardog.fido2.ceremony → 32 bytes entropy",
+    "step_2": "Tap grapheneGate → StrongBox DERIVE → device_seed",
+    "step_3": "bearDog genetic.mix_entropy(solokey_entropy, pixel_seed, timestamp)",
+    "step_4": "BLAKE3 of mixed entropy → new Forgejo token seed",
+    "step_5": "Push to Forgejo via admin API (or via cellMembrane passthrough)",
+    "blocker": "Need bearDog binary accessible on northGate with FIDO2 feature enabled"
+  },
+
+  "secrets_standard": {
+    "rule": "No static secrets in repos. Seeds generated at runtime/build time.",
+    "lineage_seed": "Build-time seed embedded in binary — proves provenance without revealing generation material.",
+    "tutorial_seed": "Well-known, documented, clearly marked non-production."
+  },
+
+  "lub": "DUB"
+}
