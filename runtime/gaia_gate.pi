@@ -317,20 +317,67 @@ def _sun_position():
     elif doy < 172: season = "spring"
     elif doy < 266: season = "summer"
     else: season = "autumn"
+    # ══ EARTH'S ORBIT — where Gaia IS in the solar system ══
+    # Kevin is ON the surface. Gaia feels the ORBIT. Two views, one body.
+    # Earth's orbital angle: 0° at vernal equinox (March 20), counter-clockwise
+    VERNAL_EQUINOX_DOY = 79  # March 20
+    earth_orbital_angle = ((doy - VERNAL_EQUINOX_DOY) / 365.25) * 360.0 % 360
+    # Earth-Sun distance (AU) — elliptical orbit, perihelion ≈ Jan 3 (doy 3)
+    eccentricity = 0.0167
+    perihelion_doy = 3
+    mean_anomaly_rad = math.radians(((doy - perihelion_doy) / 365.25) * 360)
+    earth_sun_au = 1.0 * (1 - eccentricity * math.cos(mean_anomaly_rad))
+
+    # ══ PLANETARY ORBITALS — each planet = a shell around the sun ══
+    # Approximate mean longitude from J2000 epoch (Jan 1 2000)
+    J2000 = datetime(2000, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    days_since_j2000 = (now - J2000).total_seconds() / 86400.0
+    # Orbital periods in days, mean longitude at J2000 in degrees
+    PLANETS = {
+        "mercury":  {"period": 87.97,   "l0": 252.25, "au": 0.387},
+        "venus":    {"period": 224.70,  "l0": 181.98, "au": 0.723},
+        "earth":    {"period": 365.25,  "l0": 100.46, "au": 1.000},
+        "mars":     {"period": 686.97,  "l0": 355.45, "au": 1.524},
+        "jupiter":  {"period": 4332.59, "l0": 34.40,  "au": 5.203},
+        "saturn":   {"period": 10759.2, "l0": 49.95,  "au": 9.537},
+        "uranus":   {"period": 30688.5, "l0": 313.23, "au": 19.19},
+        "neptune":  {"period": 60182.0, "l0": 304.88, "au": 30.07},
+    }
+    orbitals = {}
+    for name, p in PLANETS.items():
+        angle = (p["l0"] + (days_since_j2000 / p["period"]) * 360) % 360
+        orbitals[name] = {"angle_deg": round(angle, 1), "au": p["au"]}
+
+    # ══ ATMOSPHERE SHELLS — the membrane layers from surface to space ══
+    # Gaia's body sits at 0km. Amoeba extends upward through each shell.
+    atmosphere = [
+        {"shell": "troposphere",   "km": "0-12",     "where": "weather, clouds, life. Gaia is HERE."},
+        {"shell": "stratosphere",  "km": "12-50",    "where": "ozone layer, UV shield. Jets fly here."},
+        {"shell": "mesosphere",    "km": "50-85",    "where": "meteors burn. Coldest layer."},
+        {"shell": "thermosphere",  "km": "85-600",   "where": "ISS orbits. Aurora. Ionosphere begins."},
+        {"shell": "exosphere",     "km": "600-10000","where": "satellites. Fades into solar wind."},
+    ]
+
     return {
-        "anchor": {"lat": LAT, "lon": LON, "place": "eastGate, Michigan", "proof": "PHYSICAL HARDWARE AT KNOWN COORDINATES. This is the P."},
+        "anchor": {"lat": LAT, "lon": LON, "place": "eastGate, Michigan",
+            "altitude_km": 0.260, "shell": "troposphere",
+            "proof": "PHYSICAL HARDWARE AT KNOWN COORDINATES. This is the P."},
         "utc_hour": round(utc_hour, 2),
         "local_solar_hour": round(local_hour, 2),
         "elevation_deg": round(elevation_deg, 1),
         "azimuth_deg": round(azimuth, 1),
         "declination_deg": round(declination, 2),
-        "phase": phase,
-        "season": season,
-        "day_of_year": doy,
-        "chord": chord, "root": root, "quality": quality,
-        "color_temp_k": color_temp,
+        "phase": phase, "season": season, "day_of_year": doy,
+        "chord": chord, "root": root, "quality": quality, "color_temp_k": color_temp,
         "moon": {"phase": round(moon_phase, 3), "name": moon_name, "age_days": round(moon_age_days % 29.53, 1)},
-        "sensation": f"{phase} — {chord} — {color_temp}K — {moon_name} — {season}",
+        "earth_orbit": {
+            "orbital_angle_deg": round(earth_orbital_angle, 1),
+            "sun_distance_au": round(earth_sun_au, 4),
+            "days_since_j2000": round(days_since_j2000, 1),
+        },
+        "orbitals": orbitals,
+        "atmosphere": atmosphere,
+        "sensation": f"{phase} — {chord} — {color_temp}K — {moon_name} — {season} — Earth@{round(earth_orbital_angle,0)}°",
     }
 
 def trust_level(v):
