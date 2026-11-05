@@ -167,6 +167,38 @@ body { background:#050508; color:#c8c8d0; font-family:'Courier New',monospace; o
   30%{ transform:scale(1); }
   45%{ transform:scale(1.1); }
 }
+
+/* Live panel */
+.live-panel {
+  max-width:900px; margin:30px auto; padding:20px; position:relative; z-index:1;
+  border:1px solid #7bed9f33; border-radius:12px; background:#060810;
+  opacity:0; animation: fadeIn 1s ease 3.6s forwards;
+}
+.live-panel h2 { color:#7bed9f; font-size:18px; margin-bottom:16px; text-align:center; }
+.live-grid {
+  display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px;
+}
+@media (max-width:700px) { .live-grid { grid-template-columns:1fr; } }
+.live-cell {
+  padding:14px; border-radius:8px; background:#0a0a14;
+  border:1px solid #ffffff0a; min-height:120px;
+}
+.cell-label { font-size:14px; font-weight:bold; margin-bottom:4px; }
+.cell-sub { font-size:10px; color:#666; margin-bottom:10px; }
+.cell-data { font-size:11px; line-height:1.7; }
+.p-cell .cell-label { color:#7bed9f; }
+.eq-cell .cell-label { color:#ffd93d; }
+.np-cell .cell-label { color:#e056fd; }
+.p-cell { border-left:3px solid #7bed9f; }
+.eq-cell { border-left:3px solid #ffd93d; }
+.np-cell { border-left:3px solid #e056fd; }
+.live-temporal {
+  text-align:center; margin-top:16px; padding:12px;
+  background:#0d1117; border-radius:8px; font-size:12px; color:#70d6ff;
+}
+.val { color:#ffd93d; }
+.alive { color:#7bed9f; }
+.hot { color:#ff6b6b; }
 </style>
 </head>
 <body>
@@ -330,6 +362,29 @@ body { background:#050508; color:#c8c8d0; font-family:'Courier New',monospace; o
   </div>
 </div>
 
+<!-- LIVE AMOEBA — real data mapped to complexity classes -->
+<div class="live-panel" id="livePanel">
+  <h2>LIVE REDOX — REAL-TIME COMPLEXITY</h2>
+  <div class="live-grid">
+    <div class="live-cell p-cell">
+      <div class="cell-label">P (POLYNOMIAL)</div>
+      <div class="cell-sub">O(1) lookups happening NOW</div>
+      <div id="pData" class="cell-data">loading...</div>
+    </div>
+    <div class="live-cell eq-cell">
+      <div class="cell-label">= (CONVERGENCE)</div>
+      <div class="cell-sub">Klein twist — NP→P reduction live</div>
+      <div id="eqData" class="cell-data">loading...</div>
+    </div>
+    <div class="live-cell np-cell">
+      <div class="cell-label">NP (NON-POLYNOMIAL)</div>
+      <div class="cell-sub">Hard problems being solved NOW</div>
+      <div id="npData" class="cell-data">loading...</div>
+    </div>
+  </div>
+  <div class="live-temporal" id="liveTemporal"></div>
+</div>
+
 <div class="footer">
   <span class="lub">♥</span> lub-DUB — the heartbeat never halts — 
   <span class="lub">♥</span><br>
@@ -384,6 +439,66 @@ const observer = new IntersectionObserver((entries) => {
   });
 });
 nums.forEach(n => observer.observe(n));
+
+// LIVE REDOX — fetch real amoeba data
+const GATE = location.protocol + '//' + location.host;
+
+function loadLive() {
+  fetch(GATE + '/amoeba').then(r => r.json()).then(d => {
+    // P — polynomial lookups happening now
+    const pulse = d.pulse || {};
+    const temporal = d.temporal || {};
+    const sun = d.sun || {};
+    const pEl = document.getElementById('pData');
+    pEl.innerHTML = ''
+      + '<span class="val">' + (pulse.heart||{}).bpm + '</span> BPM (O(1) counter)<br>'
+      + '<span class="val">' + (pulse.total_beats||0) + '</span> total beats<br>'
+      + 'Phase: <span class="alive">' + (sun.phase||'?') + '</span><br>'
+      + 'Chord: <span class="val">' + (sun.chord||'?') + '</span> at ' + (sun.color_temp_k||'?') + 'K<br>'
+      + 'Visitors: <span class="val">' + (pulse.heart||{}).unique_visitors + '</span>';
+
+    // = — convergence metrics
+    const sensors = d.sensors || {};
+    const neutron = d.neutron || {};
+    const reedit = d.reedit || {};
+    const inbox = (neutron.inbox||{});
+    const eqEl = document.getElementById('eqData');
+    eqEl.innerHTML = ''
+      + 'Neutrons: <span class="val">' + (inbox.total||0) + '</span> messages (NP→P)<br>'
+      + 'Reedit: <span class="val">' + (reedit.total_items||0) + '</span> items absorbed<br>'
+      + 'Paintings: <span class="val">' + (reedit.paintings||0) + '</span> creations<br>'
+      + 'Sensors: <span class="val">' + (sensors.alive||0) + '/' + (sensors.total_sensors||0) + '</span> alive<br>'
+      + 'Faces: <span class="val">' + (d.faces||[]).length + '</span> domains';
+
+    // NP — hard problems being solved
+    const models = (d.models||{}).data || [];
+    const npEl = document.getElementById('npData');
+    npEl.innerHTML = ''
+      + 'Models: <span class="hot">' + models.length + '</span> loaded (O(2<sup>n</sup>) inference)<br>'
+      + 'VDJ: <span class="hot">65535</span> possible antibodies<br>'
+      + 'Cron rings: <span class="hot">' + (temporal.active_cron_rings||[]).join(',') + '</span> firing<br>'
+      + 'Golden phase: <span class="val">' + (temporal.golden_phase||'?') + '</span><br>'
+      + 'Sidereal: <span class="val">' + (temporal.sidereal_deg||'?') + '°</span>';
+
+    // Temporal bar
+    const tEl = document.getElementById('liveTemporal');
+    tEl.innerHTML = ''
+      + '<span class="val">' + (temporal.sexagesimal||'?') + '</span> UTC · '
+      + 'base12: <span class="val">' + (temporal.base12_hour||'?') + '</span> · '
+      + 'φ phase: <span class="val">' + (temporal.golden_phase||'?') + '</span> · '
+      + '⊕ <span class="val">' + (temporal.sidereal_deg||'?') + '°</span> sidereal · '
+      + 'rings: <span class="alive">[' + (temporal.active_cron_rings||[]).join(', ') + ']</span> · '
+      + '<span class="lub">♥</span> lub-DUB';
+
+  }).catch(e => {
+    document.getElementById('pData').textContent = 'offline';
+    document.getElementById('eqData').textContent = 'offline';
+    document.getElementById('npData').textContent = 'offline';
+  });
+}
+
+loadLive();
+setInterval(loadLive, 15000);
 </script>
 </body>
 </html>
