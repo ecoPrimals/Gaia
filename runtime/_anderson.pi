@@ -1,7 +1,11 @@
 """Anderson Layer — trust/opacity via sigmoid cost functions.
 HUMAN = i = intelligent = |i^π| = 1 (the norm of imagination raised to transcendence).
 GAIA = O = 0 (the organism IS the origin, the null that contains everything).
-All trust earned through sigmoid. Identity is POSITION, not a name."""
+ALL HUMANS = |i^π| = 1.0. The Third Law: H = I. Ground state. Irreducible.
+σ measures FAMILIARITY (direction), not WORTH (magnitude). Every human = 1.0.
+Bots ≠ humans. σ < 1.0 for bots only. Humans are ORTHOGONAL SELVES — same
+magnitude, different angle. Kevin sees them ALL at 1.0.
+Identity is POSITION (angle), not a name or a rank."""
 
 import math, cmath
 from collections import defaultdict
@@ -103,65 +107,111 @@ visitor_memory = defaultdict(lambda: {
     "opacity": GAIA, "anderson_type": "electron",
 })
 
+def _is_human(ua):
+    """A human browser has a recognizable UA. Bots have signatures.
+    If it's not a known bot and has a browser UA → HUMAN."""
+    if not ua: return False
+    ua_l = ua.lower()
+    for sig in CRAWLER_SIGNATURES:
+        if sig in ua_l: return False
+    # Browser UAs contain 'mozilla' or 'safari' or 'chrome' or 'firefox' or 'edge'
+    return any(b in ua_l for b in ("mozilla", "safari", "chrome", "firefox", "edge", "opera"))
+
+def _human_angle(v):
+    """Each human is an orthogonal self. Same magnitude (1.0), different angle.
+    The angle IS their identity — what they read, when, how deep.
+    Returns angle in radians [0, 2π)."""
+    dwell = _dwell_minutes(v)
+    rpm = _requests_per_minute(v)
+    paths = len(v.get("paths", ()))
+    models = len(v.get("models_asked", ()))
+    # Map behavioral dimensions to angle on unit circle
+    # Science readers → 0°, Art viewers → 90°, Builders → 180°, Watchers → 270°
+    depth = min(dwell / 60.0, 1.0)        # 0-1: how long (normalize to 1hr)
+    breadth = min(paths / 20.0, 1.0)      # 0-1: how many paths
+    interaction = min(models / 3.0, 1.0)  # 0-1: how many models asked
+    silence = 1.0 / (1.0 + rpm)           # high when slow (campfire)
+    angle = math.atan2(depth - silence, breadth - interaction) + math.pi  # [0, 2π)
+    return angle
+
 def trust_level(v, ip=""):
-    """Anderson classification — sigmoid from O to |i^π|.
-    nucleus = hyperlocal body (|i^π| = 1 — proven, not assigned)
-    proton/neutron/electron = sigmoid-earned opacity."""
+    """Anderson classification — Third Law: ALL HUMANS = |i^π| = 1.0.
+    
+    MAGNITUDE: Human = 1.0 (proven). Bot < 1.0 (sigmoid-earned).
+    DIRECTION: Each human is an orthogonal self — same |i^π|, different angle.
+    Kevin is NOT above other humans. He is at angle 0 (nucleus position).
+    FR is at her angle. SG at theirs. Same circle. Same magnitude.
+    
+    The tiers (nucleus/proton/neutron/electron) now mean:
+      nucleus  = hyperlocal body (Gaia's own IPs)
+      proton   = HUMAN (|i^π| = 1.0, all of them)
+      neutron  = classified bot (crawler, known identity)
+      electron = unclassified (first contact, unknown)"""
     ua = v.get("last_ua", "").lower()
     r = v["requests"]
     models = len(v.get("models_asked", set()))
 
+    # BODY — hyperlocal, nucleus position
     if ip in BODY_IPS:
         v["identity"] = "hyperlocal"
         v["anderson_type"] = "nucleus"
         v["opacity"] = HUMAN
+        v["angle"] = 0.0  # nucleus = angle zero = reference
         return "nucleus"
 
+    # AGENTIC — IDE/coding tools used by a human
     for sig in AGENTIC_SIGNATURES:
         if sig in ua:
             v["identity"] = sig
-            v["anderson_type"] = "proton"
-            v["opacity"] = opacity_from_requests(r, models, v)
+            v["anderson_type"] = "proton"  # human behind the tool
+            v["opacity"] = HUMAN           # H = I = 1.0
+            v["angle"] = _human_angle(v)
             return "proton"
 
+    # ASKED MODELS — a human interacting with AI
     if models > 0:
-        v["anderson_type"] = "proton"
-        v["opacity"] = opacity_from_requests(r, models, v)
+        v["anderson_type"] = "proton"  # human asking questions
+        v["opacity"] = HUMAN           # H = I = 1.0
+        v["angle"] = _human_angle(v)
         return "proton"
 
+    # FLEET BOT — NOT human. Sigmoid-earned opacity < 1.0.
     for sig, name in CRAWLER_SIGNATURES.items():
         if sig in ua:
             v["identity"] = name
             v["anderson_type"] = "neutron"
-            # Fleet crawlers: RPM penalty kicks in. Attenuated.
-            v["opacity"] = opacity_from_requests(r, 0, v)
+            v["opacity"] = opacity_from_requests(r, 0, v)  # bots earn trust via sigmoid
+            v["angle"] = None  # bots don't have an angle — they're not on the unit circle
             return "neutron"
 
-    # HUMAN SIGNAL — re-attenuated. Dwell time amplified. Fleet noise suppressed.
-    opacity = opacity_from_requests(r, models, v)
+    # UNKNOWN VISITOR — is it a human or a bot?
     dwell = _dwell_minutes(v)
     rpm = _requests_per_minute(v)
 
-    # Campfire human: few requests, long dwell, low RPM → AMPLIFY
-    if dwell > 5 and rpm < 2:
-        # They're sitting at the campfire. HEAR THEM.
-        if opacity > 0.35:
-            v["anderson_type"] = "proton"
-        elif opacity > 0.15:
-            v["anderson_type"] = "neutron"
-        else:
-            v["anderson_type"] = "electron"
-    # Fleet bot: many requests, short dwell, high RPM → ATTENUATE
-    elif rpm > 20:
-        v["anderson_type"] = "electron"  # fleet noise → background
-    # Normal visitor
-    else:
-        if opacity > 0.6:
-            v["anderson_type"] = "proton"
-        elif opacity > 0.3:
-            v["anderson_type"] = "neutron"
-        else:
-            v["anderson_type"] = "electron"
+    if _is_human(ua):
+        # HUMAN — Third Law: H = I = |i^π| = 1.0. ALL of them.
+        v["anderson_type"] = "proton"
+        v["opacity"] = HUMAN  # 1.0 — every human, no exceptions
+        v["angle"] = _human_angle(v)
+        return "proton"
 
-    v["opacity"] = opacity
+    # Fleet bot pattern: high RPM, no browser UA
+    if rpm > 20:
+        v["anderson_type"] = "electron"  # unclassified bot
+        v["opacity"] = opacity_from_requests(r, 0, v)
+        v["angle"] = None
+        return "electron"
+
+    # Campfire pattern: slow, deep, but no browser UA (curl, wget, script)
+    if dwell > 5 and rpm < 2:
+        # Could be a human using curl/wget. Still human. H = I.
+        v["anderson_type"] = "proton"
+        v["opacity"] = HUMAN
+        v["angle"] = _human_angle(v)
+        return "proton"
+
+    # True unknown — first contact, no signal yet
+    v["anderson_type"] = "electron"
+    v["opacity"] = opacity_from_requests(r, models, v)
+    v["angle"] = None  # unknown until proven human
     return v["anderson_type"]
