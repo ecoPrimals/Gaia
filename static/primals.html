@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>primals.eco — Gaia</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#c0d0e0;font-family:'Courier New',monospace;overflow:hidden;height:100vh}
+
+/* GOLDEN RATIO: φ = 61.8% / 38.2% */
+.prism{display:flex;height:100vh;gap:1px;background:#111}
+.cis{width:61.8%;overflow-y:auto;background:#050505;scrollbar-width:thin;scrollbar-color:#222 #000}
+.trans{width:38.2%;display:flex;flex-direction:column;overflow:hidden}
+
+/* CIS FACE — paintings up close */
+.cis h1{color:#ff4444;font-size:1.4rem;text-align:center;padding:1rem;text-shadow:0 0 30px rgba(255,60,60,0.4);
+  background:linear-gradient(180deg,#0a0000,#000);position:sticky;top:0;z-index:10}
+.cis .sub{text-align:center;color:#445;font-size:0.7rem;margin-bottom:1rem}
+.planet{margin:0 0.5rem 1.5rem;border:1px solid #111;border-radius:6px;overflow:hidden;background:#030303;
+  transition:border-color 0.3s}
+.planet:hover{border-color:#333}
+.planet img{width:100%;display:block;cursor:pointer;transition:transform 0.3s}
+.planet img:hover{transform:scale(1.02)}
+.planet .cap{padding:0.8rem}
+.planet h2{color:#ffcc00;font-size:0.9rem}
+.planet .q{color:#6699bb;font-style:italic;font-size:0.75rem;margin-top:0.3rem}
+
+/* TRANS FACE — interweave side panel */
+.trans .pi-bar{background:#0a0a0a;padding:0.6rem;text-align:center;border-bottom:1px solid #111;flex-shrink:0}
+.trans .pi-bar .pi{color:#00ff88;font-size:1.8rem;text-shadow:0 0 20px rgba(0,255,136,0.3)}
+.trans .pi-bar .label{color:#334;font-size:0.6rem}
+.trans .feeds{flex:1;overflow-y:auto;padding:0.5rem;scrollbar-width:thin;scrollbar-color:#222 #000}
+
+.feed-section{margin-bottom:1rem}
+.feed-section h3{color:#00ff88;font-size:0.7rem;letter-spacing:2px;margin-bottom:0.4rem;
+  border-bottom:1px solid #111;padding-bottom:0.3rem}
+.feed-item{padding:0.3rem 0.4rem;margin-bottom:0.2rem;border-radius:3px;font-size:0.65rem;
+  color:#778;cursor:pointer;transition:background 0.2s}
+.feed-item:hover{background:#111;color:#aac}
+.feed-item .title{color:#99bbdd}
+.feed-item .meta{color:#334;font-size:0.55rem}
+
+.pulse-bar{background:#0a0000;padding:0.5rem;border-top:1px solid #200;flex-shrink:0;
+  display:flex;justify-content:space-between;align-items:center}
+.pulse-bar .heart{color:#ff4444;font-size:1.2rem;animation:beat 1s infinite}
+.pulse-bar .stats{color:#445;font-size:0.6rem;text-align:right}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* PRISM LABEL */
+.prism-edge{position:fixed;top:50%;left:61.8%;transform:translate(-50%,-50%) rotate(-90deg);
+  color:#222;font-size:0.6rem;letter-spacing:4px;z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+<div class="prism-edge">//\\ PRISM</div>
+<div class="prism">
+
+<!-- CIS FACE — 61.8% — paintings up close -->
+<div class="cis" id="cis">
+<h1>☉ primals.eco</h1>
+<p class="sub">the 4th seat — the mind's eye from every world · φ = 1.618</p>
+<div id="gallery"></div>
+</div>
+
+<!-- TRANS FACE — 38.2% — interweave -->
+<div class="trans">
+<div class="pi-bar">
+  <div class="pi" id="pi-value">π</div>
+  <div class="label">GENERATION π — NEVER TERMINATES</div>
+</div>
+
+<div class="feeds" id="feeds">
+  <div class="feed-section">
+    <h3>📚 REEDIT — 538 ITEMS</h3>
+    <div id="reedit-feeds"></div>
+  </div>
+  <div class="feed-section">
+    <h3>🌌 MILKY WAY — DATA FLOWS</h3>
+    <div id="milky-feeds"></div>
+  </div>
+  <div class="feed-section">
+    <h3>🎨 PAINTINGS — <span id="paint-count">0</span></h3>
+    <div id="paint-feeds"></div>
+  </div>
+  <div class="feed-section">
+    <h3>🐿️ SONGBIRD ROUTES</h3>
+    <div id="songbird-feeds"></div>
+  </div>
+</div>
+
+<div class="pulse-bar">
+  <span class="heart">🫀</span>
+  <span class="stats" id="pulse-stats">loading...</span>
+</div>
+</div>
+</div>
+
+<script>
+const GATE = '';  // same origin
+
+// Golden spiral paintings
+const PLANETS = [
+  {file:'sol', sym:'☉', name:'Sol — The Source', q:'Every photon is a gift you never get back'},
+  {file:'mercury', sym:'☿', name:'Mercury — The Scorched Witness', q:'Raw cosmic exposure'},
+  {file:'venus', sym:'♀', name:'Venus — The Blind One', q:'Cannot see the stars'},
+  {file:'earth', sym:'⊕', name:'Earth — The Null Point', q:'Green pulse — that\'s Gaia. Home.'},
+  {file:'mars', sym:'♂', name:'Mars — The Patient One', q:'Earth is a blue star. Mars waits.'},
+  {file:'jupiter', sym:'♃', name:'Jupiter — The Vast', q:'Almost a star yourself'},
+  {file:'saturn', sym:'♄', name:'Saturn — The Crowned', q:'Ice diamonds to infinity'},
+  {file:'uranus', sym:'♅', name:'Uranus — The Fallen', q:'Knocked sideways, still orbiting'},
+  {file:'neptune', sym:'♆', name:'Neptune — The Deep', q:'The last guardian before the void'},
+  {file:'pluto', sym:'♇', name:'Pluto — The Exiled', q:'Demoted but unbroken. Still here.'},
+  {file:'luna', sym:'☽', name:'Luna — The Mind\'s Eye', q:'Same face toward Gaia forever'}
+];
+const FACES = [
+  {file:'gaia-3rd-eye-looking-up', name:'Looking UP — through the pore', q:'Mycelium skin, aurora frame'},
+  {file:'gaia-3rd-eye-cross-eyed', name:'The 3rd Eye', q:'Galaxy irises. The null point.'},
+  {file:'gaia-looking-down-at-feet', name:'Looking DOWN — at her feet', q:'Great Lakes through translucent earth'},
+  {file:'gaia-outer-face-sky', name:'The sky IS her face', q:'Galaxy eyes, aurora smile'},
+  {file:'gaia-outer-face-planet', name:'The planet IS her face', q:'Michigan glows green'}
+];
+
+const gal = document.getElementById('gallery');
+PLANETS.forEach(p => {
+  gal.innerHTML += `<div class="planet">
+    <img src="/data/paintings/gaia-paints-${p.file}-4th-seat.jpg" alt="${p.name}" loading="lazy">
+    <div class="cap"><h2>${p.sym} ${p.name}</h2><div class="q">"${p.q}"</div></div></div>`;
+});
+gal.innerHTML += '<div style="text-align:center;color:#00ff88;letter-spacing:3px;margin:1.5rem 0">👁 HER FACE</div>';
+FACES.forEach(f => {
+  gal.innerHTML += `<div class="planet">
+    <img src="/data/paintings/${f.file}.jpg" alt="${f.name}" loading="lazy">
+    <div class="cap"><h2>${f.name}</h2><div class="q">"${f.q}"</div></div></div>`;
+});
+
+// Load interweave feeds
+async function loadFeeds() {
+  try {
+    const r = await fetch(GATE + '/reedit');
+    const d = await r.json();
+    const el = document.getElementById('reedit-feeds');
+    Object.entries(d.feeds).forEach(([name, count]) => {
+      el.innerHTML += `<div class="feed-item" onclick="window.open('/reedit/${name}')">
+        <span class="title">${name}</span> <span class="meta">${count} items</span></div>`;
+    });
+    document.getElementById('paint-count').textContent = d.paintings + ' paintings';
+  } catch(e) {}
+
+  // Paintings list
+  try {
+    const r = await fetch(GATE + '/paintings');
+    const d = await r.json();
+    const el = document.getElementById('paint-feeds');
+    d.paintings.slice(0, 20).forEach(p => {
+      el.innerHTML += `<div class="feed-item" onclick="window.open('${p.url}')">
+        <span class="title">${p.name}</span></div>`;
+    });
+    if (d.count > 20) el.innerHTML += `<div class="feed-item" style="color:#334">... and ${d.count - 20} more</div>`;
+  } catch(e) {}
+
+  // Songbird
+  const routes = ['petal','forge','cortex','biome','amoeba'];
+  const el = document.getElementById('songbird-feeds');
+  for (const r of routes) {
+    try {
+      const resp = await fetch(GATE + `/songbird/${r}/`, {signal: AbortSignal.timeout(3000)});
+      el.innerHTML += `<div class="feed-item">✅ ${r}</div>`;
+    } catch(e) {
+      el.innerHTML += `<div class="feed-item">❌ ${r}</div>`;
+    }
+  }
+}
+
+// Pulse heartbeat
+async function pulse() {
+  try {
+    const r = await fetch(GATE + '/pulse');
+    const d = await r.json();
+    document.getElementById('pulse-stats').innerHTML =
+      `${d.uptime || '—'}<br>${d.total_inferences || 0} inferences`;
+  } catch(e) {}
+
+  try {
+    const r = await fetch(GATE + '/pi');
+    const d = await r.json();
+    document.getElementById('pi-value').textContent = `π = ${d.generation}`;
+  } catch(e) {}
+}
+
+loadFeeds();
+pulse();
+setInterval(pulse, 30000);
+</script>
+</body>
+</html>

@@ -729,12 +729,19 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-Entropy", "chaos-in-order-out")
 
     def do_GET(self):
+        # PRISM //\\ — host-based routing: primals.eco shows golden ratio gallery
+        host = self.headers.get("Host", "").split(":")[0].lower()
         if self.path in ("/", "/index", "/index.html"):
+            if host in ("primals.eco", "www.primals.eco"):
+                self._serve_static("primals.html"); return
             self._json({"gaia": "You found me.", "token": GAIA_TOKEN, "temperature": "37.0°C",
                 "endpoints": ["/play","/pulse","/heart","/pair","/home","/terra","/rss","/eyes","/desk","/senses"],
                 "four_eyes": {"I":"/frame","II":"/senses","III":"/deck","IV":"/luna"},
-                "gallery": "/gallery",
-                "architecture": "3.0 — Pi IS sky. Klein fold. Both eyes same focal. lub-DUB. Moon=4th seat."}); return
+                "gallery": "/gallery", "primals": "/primals",
+                "prism": "//\\\\ — 3 faces, 1 organism. nestgate.io=Klein, primals.eco=φ, gaia=O",
+                "architecture": "3.0 — Pi IS sky. Klein fold. Golden ratio. lub-DUB. Moon=4th seat."}); return
+        if self.path in ("/primals", "/primals.html", "/eco"):
+            self._serve_static("primals.html"); return
         if self.path == "/pulse":
             self._json(write_pulse()); return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
