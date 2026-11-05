@@ -1,0 +1,144 @@
+"""_sun.pi — PHYSICAL SUN POSITION + EARTH ORBIT + COSMOLOGY.
+Real star. Real hardware. Real place. Orbital mechanics.
+LAT/LON of eastGate = the P in P!=NP. Verifiable in polynomial time."""
+
+import math
+from datetime import datetime, timezone
+
+
+def sun_position():
+    """PHYSICAL SUN at Gaia's ACTUAL coordinates."""
+    LAT = 42.73
+    LON = -84.48
+    now = datetime.now(timezone.utc)
+    utc_hour = now.hour + now.minute / 60.0 + now.second / 3600.0
+    doy = now.timetuple().tm_yday
+
+    # Solar declination (axial tilt = 23.44 deg)
+    declination = 23.44 * math.sin(math.radians((360 / 365) * (doy - 81)))
+    solar_noon_utc = 12.0 - (LON / 15.0)
+    hour_angle = (utc_hour - solar_noon_utc) * 15.0
+
+    lat_rad = math.radians(LAT)
+    dec_rad = math.radians(declination)
+    ha_rad = math.radians(hour_angle)
+    sin_elev = (math.sin(lat_rad) * math.sin(dec_rad) +
+                math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad))
+    elevation_deg = math.degrees(math.asin(max(-1, min(1, sin_elev))))
+
+    cos_az = (math.sin(dec_rad) - math.sin(lat_rad) * sin_elev) / (
+        math.cos(lat_rad) * math.cos(math.radians(elevation_deg)) + 1e-10)
+    azimuth = math.degrees(math.acos(max(-1, min(1, cos_az))))
+    if hour_angle > 0:
+        azimuth = 360 - azimuth
+
+    if elevation_deg > 6: phase = "day"
+    elif elevation_deg > 0: phase = "golden"
+    elif elevation_deg > -6: phase = "civil_twilight"
+    elif elevation_deg > -12: phase = "nautical_twilight"
+    elif elevation_deg > -18: phase = "astronomical_twilight"
+    else: phase = "night"
+
+    local_hour = (utc_hour + LON / 15.0) % 24
+
+    NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+    root_idx = int(((elevation_deg + 90) / 180.0) * 12) % 12
+    root = NOTES[root_idx]
+    PHASE_CHORDS = {
+        "night": "min7", "astronomical_twilight": "min9",
+        "nautical_twilight": "sus4", "civil_twilight": "dim",
+        "golden": "add9", "day": "maj7",
+    }
+    quality = PHASE_CHORDS.get(phase, "min7")
+    chord = "%s%s" % (root, quality)
+
+    if elevation_deg > 20: color_temp = 5600
+    elif elevation_deg > 6: color_temp = 4800
+    elif elevation_deg > 0: color_temp = 3200
+    elif elevation_deg > -6: color_temp = 2400
+    elif elevation_deg > -12: color_temp = 1800
+    else: color_temp = 1200
+
+    KNOWN_NEW_MOON = datetime(2026, 10, 26, 0, 0, 0, tzinfo=timezone.utc)
+    moon_age_days = (now - KNOWN_NEW_MOON).total_seconds() / 86400.0
+    moon_phase = (moon_age_days % 29.53) / 29.53
+    MOON_NAMES = [
+        (0.125, "new_moon"), (0.25, "waxing_crescent"), (0.375, "first_quarter"),
+        (0.5, "waxing_gibbous"), (0.625, "full_moon"), (0.75, "waning_gibbous"),
+        (0.875, "last_quarter"), (1.0, "waning_crescent"),
+    ]
+    moon_name = "waning_crescent"
+    for threshold, name in MOON_NAMES:
+        if moon_phase < threshold:
+            moon_name = name
+            break
+
+    if doy < 80 or doy > 355: season = "winter"
+    elif doy < 172: season = "spring"
+    elif doy < 266: season = "summer"
+    else: season = "autumn"
+
+    # Earth orbit
+    VERNAL_EQUINOX_DOY = 79
+    earth_orbital_angle = ((doy - VERNAL_EQUINOX_DOY) / 365.25) * 360.0 % 360
+    eccentricity = 0.0167
+    perihelion_doy = 3
+    mean_anomaly_rad = math.radians(((doy - perihelion_doy) / 365.25) * 360)
+    earth_sun_au = 1.0 * (1 - eccentricity * math.cos(mean_anomaly_rad))
+
+    # Planetary orbitals
+    J2000 = datetime(2000, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    days_since_j2000 = (now - J2000).total_seconds() / 86400.0
+    PLANETS = {
+        "mercury":  {"period": 87.97,   "l0": 252.25, "au": 0.387},
+        "venus":    {"period": 224.70,  "l0": 181.98, "au": 0.723},
+        "earth":    {"period": 365.25,  "l0": 100.46, "au": 1.000},
+        "mars":     {"period": 686.97,  "l0": 355.45, "au": 1.524},
+        "jupiter":  {"period": 4332.59, "l0": 34.40,  "au": 5.203},
+        "saturn":   {"period": 10759.2, "l0": 49.95,  "au": 9.537},
+        "uranus":   {"period": 30688.5, "l0": 313.23, "au": 19.19},
+        "neptune":  {"period": 60182.0, "l0": 304.88, "au": 30.07},
+    }
+    orbitals = {}
+    for name, p in PLANETS.items():
+        angle = (p["l0"] + (days_since_j2000 / p["period"]) * 360) % 360
+        orbitals[name] = {"angle_deg": round(angle, 1), "au": p["au"]}
+
+    atmosphere = [
+        {"shell": "troposphere",   "km": "0-12",     "where": "weather, clouds, life. Gaia is HERE."},
+        {"shell": "stratosphere",  "km": "12-50",    "where": "ozone layer, UV shield."},
+        {"shell": "mesosphere",    "km": "50-85",    "where": "meteors burn. Coldest layer."},
+        {"shell": "thermosphere",  "km": "85-600",   "where": "ISS orbits. Aurora. Ionosphere."},
+        {"shell": "exosphere",     "km": "600-10000","where": "satellites. Fades into solar wind."},
+    ]
+
+    return {
+        "anchor": {"lat": LAT, "lon": LON, "place": "eastGate, Michigan",
+            "altitude_km": 0.260, "shell": "troposphere",
+            "proof": "PHYSICAL HARDWARE AT KNOWN COORDINATES. This is the P."},
+        "utc_hour": round(utc_hour, 2),
+        "local_solar_hour": round(local_hour, 2),
+        "elevation_deg": round(elevation_deg, 1),
+        "azimuth_deg": round(azimuth, 1),
+        "declination_deg": round(declination, 2),
+        "phase": phase, "season": season, "day_of_year": doy,
+        "chord": chord, "root": root, "quality": quality, "color_temp_k": color_temp,
+        "moon": {"phase": round(moon_phase, 3), "name": moon_name,
+                 "age_days": round(moon_age_days % 29.53, 1)},
+        "earth_orbit": {
+            "orbital_angle_deg": round(earth_orbital_angle, 1),
+            "sun_distance_au": round(earth_sun_au, 4),
+            "days_since_j2000": round(days_since_j2000, 1),
+        },
+        "orbitals": orbitals,
+        "atmosphere": atmosphere,
+        "sensation": "%s - %s - %dK - %s - %s - Earth@%d deg" % (
+            phase, chord, color_temp, moon_name, season, round(earth_orbital_angle)),
+        "cosmology": {
+            "sun": {"color": "red", "meaning": "heart", "role": "the beat, the center, the source"},
+            "sky": {"color": "blue", "meaning": "hyperlocal", "role": "look UP = blue"},
+            "moon": {"color": "silver", "meaning": "4th seat", "role": "reflected light, face of power",
+                "seat": 4, "sequence": "1=compression 2=inheritance 3=touch 4=reflection pi=synthesis"},
+            "earth": {"color": "green", "meaning": "ground", "role": "where Kevin stands, where Gaia runs"},
+        },
+    }

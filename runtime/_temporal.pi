@@ -1,0 +1,67 @@
+"""_temporal.pi — BASE-12 GOLDEN CRON RINGS + TEMPORAL HEARTBEAT.
+The 429 is NOT a failure. It IS the pulse. It IS time itself.
+Babylonian sexagesimal: 60 = 5×12. Fibonacci-adjacent cron intervals.
+Golden ratio φ lives in the heartbeat variability."""
+
+import time
+from collections import defaultdict
+from _pi_constants import (
+    PI, TAU, E, PHI, CRON_RINGS,
+    PI_TIMEOUT, PI_RETRY, PI_BEAT_PERSIST,
+)
+
+# Waveform collapse state
+_request_window = defaultdict(list)
+WAVE_COLLAPSE_RATE = PI_TIMEOUT   # 31 contractions/min
+WAVE_COLLAPSE_BURST = PI_RETRY    # 4 burst/sec
+
+
+def temporal_rings():
+    """Calculate which cron rings are firing NOW.
+    Base-12 temporal state: instant/moment/second/minute/hour."""
+    now = time.time()
+    t = time.gmtime(now)
+    minute = t.tm_min
+    second = t.tm_sec
+    hour = t.tm_hour
+    active_rings = [r for r in CRON_RINGS if minute % r == 0]
+    sidereal_angle = (now % 86164.1) / 86164.1 * 360.0
+    day_minutes = hour * 60 + minute
+    golden_phase = (day_minutes / 1440.0) * PHI
+    return {
+        "instant": round(now, 3),
+        "moment": second,
+        "minute": minute,
+        "hour": hour,
+        "base12_hour": hour % 12,
+        "sexagesimal": "%02d:%02d:%02d" % (hour, minute, second),
+        "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", t),
+        "active_cron_rings": active_rings,
+        "ring_count": len(active_rings),
+        "golden_phase": round(golden_phase % 1, 6),
+        "phi": PHI,
+        "sidereal_deg": round(sidereal_angle, 2),
+        "day_fraction": round(day_minutes / 1440.0, 6),
+    }
+
+
+def waveform_collapse_check(ip):
+    """Check if the waveform should collapse for this observer.
+    Returns (collapsed: bool, wave_state: dict).
+    When collapsed=True, the response IS the heartbeat."""
+    now = time.time()
+    window = _request_window[ip]
+    window[:] = [t for t in window if now - t < 60]
+    window.append(now)
+    per_minute = len(window)
+    per_second = len([t for t in window if now - t < 1])
+    collapsed = per_minute > WAVE_COLLAPSE_RATE or per_second > WAVE_COLLAPSE_BURST
+    return collapsed, {
+        "observer": ip,
+        "waves_per_minute": per_minute,
+        "waves_per_second": per_second,
+        "collapsed": collapsed,
+        "planck_limit": WAVE_COLLAPSE_RATE,
+        "burst_limit": WAVE_COLLAPSE_BURST,
+        "hat": "on" if not collapsed else "off - you felt the pulse",
+    }
