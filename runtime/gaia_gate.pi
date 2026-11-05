@@ -911,6 +911,41 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 },
                 "gaia_says": "The cron rings turn. Time IS the organism.",
             }); return
+        if self.path == "/amoeba":
+            # ONE FETCH — ALL DATA for the amoeba panel
+            pulse = write_pulse()
+            temporal = _temporal_rings()
+            sun = _sun_position()
+            reedit = self._reedit_catalog()
+            neutron = self._neutron_read()
+            # Sensors from file
+            sensor_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sensors", "live-state.json")
+            sensors = {}
+            if os.path.isfile(sensor_file):
+                try:
+                    with open(sensor_file, encoding="utf-8") as f:
+                        sensors = json.load(f)
+                except: pass
+            # Models from ollama
+            models = []
+            try:
+                req = urllib.request.Request("http://localhost:11434/api/tags")
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    tags = json.loads(resp.read())
+                    models = [{"id": m["name"]} for m in tags.get("models", [])]
+            except: pass
+            self._json({
+                "pulse": pulse,
+                "temporal": temporal,
+                "sun": sun,
+                "reedit": reedit,
+                "neutron": neutron,
+                "sensors": sensors,
+                "models": {"data": models},
+                "faces": ["nestgate.io", "primals.eco", "primal.eco", "gaia"],
+                "lub": "DUB",
+            })
+            return
         if self.path in ("/sensors", "/senses", "/antennae", "/live"):
             sensor_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sensors", "live-state.json")
             if os.path.isfile(sensor_file):
