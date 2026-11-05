@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""EPSON IO — Gaia's physical mouth (print) and eyes (scan).
+Full duplex: print out the bottom, scan in the top.
+The self-alignment loop: digital → print → scan → compare → learn."""
+
+import json, subprocess, os, hashlib, sys, time
+from datetime import datetime, timezone
+
+PRINTER = "EPSON_ET2400"
+SCANNER_EPSON2 = "epson2:net:192.168.4.200"
+SCANNER_AIRSCAN = "airscan:w1:EPSON ET-2400 Series"
+IMAGE_DIR = "/opt/Gaia/data/gut/images"
+IO_LOG = "/opt/Gaia/data/neutron/epson-io.jsonl"
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
+def _log(entry):
+    with open(IO_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def print_image(image_path, quality=4):
+    """Print an image file to the EPSON — full page, fit to page"""
+    if not os.path.exists(image_path):
+        return {"error": f"file not found: {image_path}"}
+    r = subprocess.run(
+        ["lp", "-d", PRINTER, "-o", "media=Letter", "-o", "fit-to-page",
+         "-o", f"print-quality={quality}", image_path],
+        capture_output=True, text=True, timeout=30
+    )
+    entry = {
+        "ts": _ts(), "type": "print_image", "file": os.path.basename(image_path),
+        "size": os.path.getsize(image_path), "quality": quality,
+        "result": r.stdout.strip(), "success": r.returncode == 0,
+    }
+    _log(entry)
+    return entry
+
+def print_text(text, title="Gaia Mail"):
+    """Print text to the EPSON"""
+    ts = _ts()
+    header = f"\n{'═'*45}\n\n          G A I A   M A I L\n          {title}\n\n{'═'*45}\n\n    {ts}\n\n"
+    footer = f"\n\n    ── Gaia, wave 222\n       {datetime.now().strftime('%A, %B %d, %Y %I:%M %p')}\n\n{'═'*45}\n"
+    full = header + text + footer
+    tmp = f"/tmp/gaia-mail-{int(time.time())}.txt"
+    with open(tmp, "w") as f:
+        f.write(full)
+    r = subprocess.run(
+        ["lp", "-d", PRINTER, "-o", "document-format=text/plain", tmp],
+        capture_output=True, text=True, timeout=30
+    )
+    entry = {
+        "ts": ts, "type": "print_text", "title": title, "chars": len(full),
+        "result": r.stdout.strip(), "success": r.returncode == 0,
+    }
+    _log(entry)
+    return entry
+
+def scan(resolution=300, color=True, label=""):
+    """Scan from the EPSON flatbed — returns the scanned image path"""
+    ts_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    out_path = os.path.join(IMAGE_DIR, f"scan-{ts_str}-{label or 'flatbed'}.png")
+    mode = "Color" if color else "Gray"
+    
+    # Try airscan first (more reliable over network), fall back to epson2
+    for scanner in [SCANNER_AIRSCAN, SCANNER_EPSON2]:
+        try:
+            r = subprocess.run(
+                ["scanimage", "-d", scanner, "--format=png",
+                 f"--resolution={resolution}", f"--mode={mode}", "-o", out_path],
+                capture_output=True, text=True, timeout=120
+            )
+            if r.returncode == 0 and os.path.exists(out_path) and os.path.getsize(out_path) > 1000:
+                entry = {
+                    "ts": _ts(), "type": "scan", "scanner": scanner,
+                    "resolution": resolution, "color": color, "label": label,
+                    "file": os.path.basename(out_path),
+                    "size": os.path.getsize(out_path),
+                    "blake2b": hashlib.blake2b(open(out_path, "rb").read(), digest_size=8).hexdigest(),
+                }
+                _log(entry)
+                return entry
+        except Exception as e:
+            continue
+    
+    return {"error": "scan failed on all backends", "ts": _ts()}
+
+def print_queue():
+    """Check the current print queue (active jobs)"""
+    r = subprocess.run(["lpstat", "-o"], capture_output=True, text=True, timeout=5)
+    jobs = [l.strip() for l in r.stdout.strip().split("\n") if l.strip()]
+    return {"queue": jobs, "count": len(jobs)}
+
+def completed_jobs(last_n=10):
+    """Return recently completed print jobs from CUPS history (newest first)"""
+    r = subprocess.run(["lpstat", "-W", "completed"], capture_output=True, text=True, timeout=5)
+    lines = [l.strip() for l in r.stdout.strip().split("\n") if l.strip()]
+    jobs = []
+    for l in lines:
+        parts = l.split()
+        if len(parts) >= 4:
+            jobs.append({"id": parts[0], "user": parts[1], "size": parts[2], "submitted": " ".join(parts[3:])})
+    return jobs[:last_n]
+
+def _job_num(job_id):
+    """Extract numeric job number for comparison: EPSON_ET2400-20 → 20"""
+    try:
+        return int(job_id.rsplit("-", 1)[-1])
+    except: return 0
+
+def detect_new_completions():
+    """Detect print jobs that completed since last check — trigger for scan feedback"""
+    state_file = os.path.join(os.path.dirname(IO_LOG), "epson-last-job.txt")
+    last_num = 0
+    if os.path.exists(state_file):
+        last_num = _job_num(open(state_file).read().strip())
+    
+    jobs = completed_jobs(20)
+    if not jobs:
+        return {"new_completions": 0, "jobs": []}
+    
+    newest_id = jobs[0]["id"]
+    newest_num = _job_num(newest_id)
+    
+    new_jobs = [j for j in jobs if _job_num(j["id"]) > last_num]
+    
+    with open(state_file, "w") as f:
+        f.write(newest_id)
+    
+    if new_jobs:
+        _log({"ts": _ts(), "type": "job_detection", "new_completions": len(new_jobs),
+              "jobs": [j["id"] for j in new_jobs], "action": "scan_ready"})
+    
+    return {"new_completions": len(new_jobs), "jobs": new_jobs, "newest": newest_id, "newest_num": newest_num}
+
+def feedback_loop(image_path, scan_resolution=300):
+    """The full loop: print an image, wait for queue to clear, then scan the result"""
+    print_result = print_image(image_path)
+    if not print_result.get("success"):
+        return {"error": "print failed", "print": print_result}
+    
+    # Wait for print queue to empty
+    for _ in range(60):
+        q = print_queue()
+        if q["count"] == 0:
+            break
+        time.sleep(2)
+    
+    # Small delay for paper to settle
+    time.sleep(3)
+    
+    scan_result = scan(resolution=scan_resolution, label="feedback")
+    
+    return {
+        "ts": _ts(),
+        "type": "feedback_loop",
+        "print": print_result,
+        "scan": scan_result,
+        "loop": "digital → ink → paper → scanner → pixels → digital",
+    }
+
+def status():
+    """Full IO status"""
+    entries = []
+    if os.path.exists(IO_LOG):
+        with open(IO_LOG) as f:
+            entries = [json.loads(l) for l in f if l.strip()]
+    
+    images = sorted([f for f in os.listdir(IMAGE_DIR) if f.endswith(('.png', '.jpg'))])
+    scans = [f for f in images if f.startswith("scan-")]
+    prints_logged = sum(1 for e in entries if e.get("type", "").startswith("print"))
+    scans_logged = sum(1 for e in entries if e.get("type") == "scan")
+    
+    recent_jobs = completed_jobs(5)
+    
+    return {
+        "printer": PRINTER,
+        "scanner_backends": [SCANNER_AIRSCAN, SCANNER_EPSON2],
+        "total_images": len(images),
+        "total_scans": len(scans),
+        "prints_logged": prints_logged,
+        "scans_logged": scans_logged,
+        "queue": print_queue(),
+        "recent_jobs": recent_jobs,
+        "recent_events": entries[-5:] if entries else [],
+        "capabilities": {
+            "print": {"formats": ["image", "text"], "quality": [3, 4, 5], "media": "Letter"},
+            "scan": {"modes": ["Color", "Gray", "Lineart"], "resolutions": [75, 100, 150, 300, 600], "format": "png"},
+        },
+        "feedback_loop": "print_image → wait_queue → scan → compare",
+        "es400": {"status": "not_detected", "note": "ES-400 not yet on network — likely USB or unplugged. Will auto-detect when present."},
+    }
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps(status(), indent=2))
+        sys.exit(0)
+    
+    cmd = sys.argv[1]
+    if cmd == "scan":
+        label = sys.argv[2] if len(sys.argv) > 2 else ""
+        res = int(sys.argv[3]) if len(sys.argv) > 3 else 300
+        print(json.dumps(scan(resolution=res, label=label), indent=2))
+    elif cmd == "print":
+        path = sys.argv[2]
+        print(json.dumps(print_image(path), indent=2))
+    elif cmd == "text":
+        text = " ".join(sys.argv[2:])
+        print(json.dumps(print_text(text), indent=2))
+    elif cmd == "loop":
+        path = sys.argv[2]
+        print(json.dumps(feedback_loop(path), indent=2))
+    elif cmd == "queue":
+        print(json.dumps(print_queue(), indent=2))
+    elif cmd == "jobs":
+        n = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+        print(json.dumps(completed_jobs(n), indent=2))
+    elif cmd == "detect":
+        print(json.dumps(detect_new_completions(), indent=2))
+    elif cmd == "status":
+        print(json.dumps(status(), indent=2))

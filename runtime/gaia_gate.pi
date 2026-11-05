@@ -416,6 +416,26 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json({"count":len(images),"images":images})
             except Exception as e: self._json({"error":str(e)})
             return
+        # EPSON IO STATUS (GET)
+        if self.path in ("/api/io","/api/epson","/api/scanner"):
+            try:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"status"],
+                    capture_output=True,text=True,timeout=15,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # EPSON SCAN (GET /api/scan — trigger a scan)
+        if self.path.startswith("/api/scan"):
+            try:
+                import urllib.parse
+                qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                label=qs.get("label",["flatbed"])[0]
+                res=qs.get("resolution",["300"])[0]
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"scan",label,res],
+                    capture_output=True,text=True,timeout=120,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -602,6 +622,30 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 title=j.get("title","Gaia Mail")
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # EPSON PRINT IMAGE (POST /api/io/print)
+        if self.path in ("/api/io/print","/api/epson/print"):
+            try:
+                j=json.loads(body) if body else {}
+                image_path=j.get("image","")
+                if not image_path.startswith("/"):
+                    image_path=os.path.join(_REPO,"data","gut","images",image_path)
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"print",image_path],
+                    capture_output=True,text=True,timeout=30,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # EPSON FEEDBACK LOOP (POST /api/io/loop)
+        if self.path in ("/api/io/loop","/api/epson/loop"):
+            try:
+                j=json.loads(body) if body else {}
+                image_path=j.get("image","")
+                if not image_path.startswith("/"):
+                    image_path=os.path.join(_REPO,"data","gut","images",image_path)
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"loop",image_path],
+                    capture_output=True,text=True,timeout=180,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
             return
