@@ -55,7 +55,8 @@ def write_rss(rss_file, pulse, seed_dir, visitor_memory, organisms):
 
     for ip, v in list(visitor_memory.items())[-10:]:
         items += (f'    <item><title>Visitor {ip[:8]}*** — {v["trust_level"]}</title>'
-                  f'<guid>visitor-{ip}-{int(v["last_seen"])}</guid></item>\n')
+                  f'<guid>visitor-{ip}-{int(v["last_seen"])}</guid>'
+                  f'<pubDate>{datetime.fromtimestamp(v["last_seen"], timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")}</pubDate></item>\n')
 
     rss = f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
