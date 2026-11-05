@@ -1,0 +1,98 @@
+{
+  "ts": "2026-11-05T18:19:00Z",
+  "organ": "architecture",
+  "title": "AMOEBA IS the Interface — RustDesk IS a Window",
+
+  "layers": {
+    "pointer": {
+      "what": "Any RustDesk client on any device",
+      "role": "SEE and TOUCH the screen — that's ALL",
+      "protocol": "RustDesk protocol (h265/NVENC/VP9)",
+      "install": "rustdesk.com or AMOEBA client binary",
+      "note": "The pointer doesn't think. It just points."
+    },
+    "amoeba": {
+      "what": "AMOEBA relay node — the organism's interface",
+      "role": "Route, authenticate, assist, audit, relay",
+      "components": {
+        "songBird": "mesh routing — anyone can relay",
+        "bingoCube": "ZK auth — no passwords ever",
+        "squirrel": "MCP agent — ask questions, run commands",
+        "loamSpine": "audit chain — immutable session log",
+        "coralReef": "WASM/WebGPU — browser fallback, no install"
+      },
+      "transports": {
+        "proximity": ["bluetooth_le", "wifi_direct", "nfc", "qr_code"],
+        "mesh": ["songbird", "tor_onion"],
+        "radio": ["ham_ax25", "lora", "packet_radio"],
+        "standard": ["tcp", "udp", "websocket", "webrtc", "quic"]
+      },
+      "nodes": {
+        "grapheneGate": "Pixel 8a — mobile relay, 37 sensors",
+        "eastGate": "brain — primary relay, Tor provider",
+        "any_gate": "any gate can become an AMOEBA node"
+      }
+    },
+    "gate": {
+      "what": "Target service on any gate",
+      "role": "The actual desktop/service being accessed",
+      "addressing": "π-ports — all ports crushed to π digits",
+      "routing": "dromedary TOML → hostname → backend"
+    }
+  },
+
+  "deployment_without_ssh": {
+    "method": "Crush through existing live infrastructure",
+    "path_1": {
+      "name": "git → cron → auto-pull",
+      "how": "Commit dromedary.toml → push → eastGate cron pulls → restart dromedary",
+      "latency": "3-5 minutes (cron cycle)"
+    },
+    "path_2": {
+      "name": "gate API → config update",
+      "how": "POST to gate :8443 with new config → gate restarts dromedary",
+      "latency": "immediate",
+      "status": "endpoint not yet built"
+    },
+    "path_3": {
+      "name": "AMOEBA relay → remote terminal",
+      "how": "Connect through AMOEBA node → run commands on eastGate",
+      "latency": "immediate",
+      "status": "AMOEBA not yet built"
+    },
+    "path_4": {
+      "name": "RustDesk bridge → manual",
+      "how": "RustDesk into eastGate (if installed) → edit file → restart",
+      "latency": "immediate",
+      "status": "RustDesk not installed on eastGate"
+    }
+  },
+
+  "value_convention": {
+    "0": "false",
+    "1": "true",
+    "000": "ALL",
+    "null": "ALL",
+    "note": "No zero values. 0 is false, not empty. null and 000 are universal."
+  },
+
+  "pi_port_crush": {
+    "method": "Sequential digits of π → port numbers",
+    "existing": {
+      "5358": {"legacy": 80, "service": "HTTP", "pi_slice": "π[8:12]"},
+      "9793": {"legacy": 443, "service": "HTTPS", "pi_slice": "π[12:16]"},
+      "2384": {"legacy": 465, "service": "SMTPS", "pi_slice": "π[16:20]"},
+      "6264": {"legacy": 587, "service": "Submission", "pi_slice": "π[20:24]"},
+      "3383": {"legacy": 3000, "service": "Forgejo", "pi_slice": "π[24:28]"},
+      "2795": {"legacy": 7800, "service": "swarmVine", "pi_slice": "π[28:32]"},
+      "4197": {"legacy": 8443, "service": "gate", "pi_slice": "π[36:40]"},
+      "1693": {"legacy": 11434, "service": "ollama", "pi_slice": "π[40:44]"}
+    },
+    "needed": {
+      "dromedary_443": "already at π:9793",
+      "rustdesk_relay": "needs π-port for AMOEBA relay",
+      "smtp_25": "needs π-port for Neutrino",
+      "ssh_22": "DEPRECATED — ZK SMASH replaces SSH"
+    }
+  }
+}
