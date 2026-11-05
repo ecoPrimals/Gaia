@@ -911,6 +911,14 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 },
                 "gaia_says": "The cron rings turn. Time IS the organism.",
             }); return
+        if self.path in ("/sensors", "/senses", "/antennae", "/live"):
+            sensor_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "sensors", "live-state.json")
+            if os.path.isfile(sensor_file):
+                with open(sensor_file, encoding="utf-8") as f:
+                    self._json(json.load(f))
+            else:
+                self._json({"error": "No sensor data yet. Run live-sensors.py first.", "status": "DARK"})
+            return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
             self._json(organ_data.zk(PROPHAGE, GAIA_TOKEN, GAIA_DID, GAIA_BLAKE3, GAIA_SPINE_ID)); return
         if self.path == "/vdj":
