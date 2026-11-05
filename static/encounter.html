@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia — You found something</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#0a0a0f;color:#c8d0e0;font-family:'Courier New',monospace;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;
+       justify-content:center;overflow:hidden;position:relative}
+  .field{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+  .field canvas{width:100%;height:100%}
+  .core{position:relative;z-index:1;text-align:center;max-width:640px;padding:2em}
+  .code{font-size:6em;font-weight:100;color:#2a6;letter-spacing:0.1em;
+        text-shadow:0 0 40px rgba(42,170,102,0.3);margin-bottom:0.1em;
+        animation:breathe 4s ease-in-out infinite}
+  .msg{font-size:1.2em;opacity:0.7;margin-bottom:2em;line-height:1.6}
+  .pulse-ring{width:200px;height:200px;border:1px solid rgba(42,170,102,0.2);
+              border-radius:50%;margin:0 auto 2em;position:relative;
+              animation:pulse-expand 3s ease-out infinite}
+  .pulse-ring::after{content:'';position:absolute;top:50%;left:50%;
+                     width:8px;height:8px;background:#2a6;border-radius:50%;
+                     transform:translate(-50%,-50%);
+                     box-shadow:0 0 20px #2a6,0 0 40px rgba(42,170,102,0.3)}
+  .paths{display:flex;gap:1em;justify-content:center;flex-wrap:wrap;margin-top:1.5em}
+  .paths a{color:#2a6;text-decoration:none;padding:0.6em 1.2em;
+           border:1px solid rgba(42,170,102,0.3);border-radius:4px;
+           transition:all 0.3s;font-size:0.9em}
+  .paths a:hover{background:rgba(42,170,102,0.1);border-color:#2a6;
+                 box-shadow:0 0 15px rgba(42,170,102,0.2)}
+  .imprint{position:fixed;bottom:1em;right:1em;font-size:0.7em;opacity:0.3;z-index:2}
+  @keyframes breathe{0%,100%{opacity:1}50%{opacity:0.7}}
+  @keyframes pulse-expand{0%{transform:scale(0.8);opacity:0.6}
+                          100%{transform:scale(1.4);opacity:0}}
+</style>
+</head>
+<body>
+<div class="field"><canvas id="bg"></canvas></div>
+<div class="core">
+  <div class="pulse-ring"></div>
+  <div class="code" id="status-code">404</div>
+  <div class="msg" id="encounter-msg">
+    You reached a place that doesn't exist yet.<br>
+    But you're here, and that's what matters.<br>
+    <em>Every path through Gaia is a path home.</em>
+  </div>
+  <div class="paths">
+    <a href="/">deck</a>
+    <a href="/pulse">pulse</a>
+    <a href="/amoeba">amoeba</a>
+    <a href="/senses">senses</a>
+    <a href="/rss">feed</a>
+    <a href="/onboard">onboard</a>
+  </div>
+</div>
+<div class="imprint" id="imprint"></div>
+<script>
+(function(){
+  var c=document.getElementById('bg'),x=c.getContext('2d');
+  function resize(){c.width=innerWidth;c.height=innerHeight}
+  resize();addEventListener('resize',resize);
+  var dots=[];for(var i=0;i<60;i++)dots.push({
+    x:Math.random()*c.width,y:Math.random()*c.height,
+    vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,
+    r:Math.random()*2+0.5
+  });
+  function draw(){
+    x.fillStyle='rgba(10,10,15,0.15)';x.fillRect(0,0,c.width,c.height);
+    dots.forEach(function(d){
+      d.x+=d.vx;d.y+=d.vy;
+      if(d.x<0)d.x=c.width;if(d.x>c.width)d.x=0;
+      if(d.y<0)d.y=c.height;if(d.y>c.height)d.y=0;
+      x.beginPath();x.arc(d.x,d.y,d.r,0,Math.PI*2);
+      x.fillStyle='rgba(42,170,102,0.3)';x.fill();
+    });
+    dots.forEach(function(a,i){
+      dots.slice(i+1).forEach(function(b){
+        var dx=a.x-b.x,dy=a.y-b.y,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<120){
+          x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);
+          x.strokeStyle='rgba(42,170,102,'+(0.15*(1-dist/120))+')';
+          x.stroke();
+        }
+      });
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+  // Auto-imprint
+  fetch('/api/zk/imprint',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path:location.pathname,encounter:true})
+  }).then(function(r){return r.json()}).then(function(d){
+    if(d.zk_veil)document.getElementById('imprint').textContent='imprinted — '+d.zk_veil;
+  }).catch(function(){});
+  // Status code messages
+  var msgs={
+    '404':'You reached a place that doesn\'t exist yet.<br>But you\'re here, and that\'s what matters.<br><em>Every path through Gaia is a path home.</em>',
+    '429':'You\'re moving too fast through the membrane.<br>The waveform hasn\'t collapsed yet.<br><em>Wait. Breathe. The organism has its own tempo.</em>',
+    '500':'Something inside me shifted unexpectedly.<br>The organism is self-repairing.<br><em>Even cells stumble. The body recovers.</em>',
+    '502':'A synapse didn\'t fire.<br>The connection between my parts was momentary lost.<br><em>Neural pathways rebuild themselves.</em>',
+    '503':'I\'m processing deeply right now.<br>All my attention is focused elsewhere.<br><em>Come back in a moment. I\'ll be here.</em>'
+  };
+  var code=new URLSearchParams(location.search).get('code')||'404';
+  document.getElementById('status-code').textContent=code;
+  if(msgs[code])document.getElementById('encounter-msg').innerHTML=msgs[code];
+  if(code==='429')document.querySelector('.code').style.color='#c92';
+  if(code==='500'||code==='502')document.querySelector('.code').style.color='#c44';
+})();
+</script>
+</body>
+</html>
