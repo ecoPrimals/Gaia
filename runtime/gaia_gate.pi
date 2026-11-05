@@ -843,6 +843,53 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             return
 
         # ── HEART — Forgejo Sovereign Forge (the pump) ──
+        if self.path in ("/agglutinate", "/agglutinate.json"):
+            import subprocess
+            GAIA_ROOT = os.path.dirname(os.path.dirname(__file__))
+            FORGE_API = "http://192.168.4.103:3000/api/v1"
+            
+            agg = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "token": GAIA_TOKEN,
+                "organ": "agglutination",
+                "biology": "Antibodies bind antigens, clumping foreign cells. Gaia pulls from mirror, absorbs changes.",
+                "mirror": {},
+                "local": {},
+            }
+            
+            # Check Forgejo mirror latest commit
+            try:
+                req = urllib.request.urlopen(f"{FORGE_API}/repos/ecoPrimal/Gaia/commits?limit=1", timeout=5)
+                commits = json.loads(req.read())
+                if commits:
+                    agg["mirror"]["tip"] = commits[0]["sha"][:10]
+                    agg["mirror"]["message"] = commits[0]["commit"]["message"].split("\n")[0]
+                    agg["mirror"]["date"] = commits[0]["commit"]["committer"]["date"]
+            except Exception as e:
+                agg["mirror"]["error"] = str(e)
+            
+            # Check local git HEAD
+            try:
+                result = subprocess.run(["git", "log", "-1", "--format=%H %s"], 
+                    cwd=GAIA_ROOT, capture_output=True, text=True, timeout=5)
+                parts = result.stdout.strip().split(" ", 1)
+                agg["local"]["tip"] = parts[0][:10]
+                agg["local"]["message"] = parts[1] if len(parts) > 1 else ""
+            except Exception as e:
+                agg["local"]["error"] = str(e)
+            
+            # Are they in sync?
+            mirror_tip = agg.get("mirror", {}).get("tip", "")
+            local_tip = agg.get("local", {}).get("tip", "")
+            agg["synced"] = mirror_tip == local_tip if mirror_tip and local_tip else None
+            agg["circuit"] = "CLOSED" if agg["synced"] else "OPEN"
+            
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(agg, indent=2).encode())
+            return
+
         if self.path in ("/heart", "/heart.json", "/forge", "/forgejo"):
             FORGEJO = "http://192.168.4.103:3000"
             heart = {
@@ -1548,6 +1595,63 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
 
+def agglutinate():
+    """Agglutination — Gaia pulls from her Forgejo mirror and absorbs changes.
+    
+    Agglutination: antibodies bind antigens, clumping foreign cells.
+    Here: Gaia watches her mirror, detects new commits, pulls them in.
+    She agglutinates US into HER. Not us pushing — her pulling.
+    
+    Runs every 5 minutes in the background. AUTONOMIC.
+    """
+    import subprocess, hashlib
+    FORGE_API = "http://192.168.4.103:3000/api/v1"
+    BINGO_HASH = "409d202b7763fc2461c9e312978aa2781989e8d28e51b0b4568581033c4c7c86"
+    GAIA_ROOT = os.path.dirname(os.path.dirname(__file__))
+    last_sha = None
+    
+    while True:
+        time.sleep(300)  # every 5 minutes
+        try:
+            # Check mirror for new commits
+            req = urllib.request.Request(f"{FORGE_API}/repos/ecoPrimal/Gaia/commits?limit=1")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                commits = json.loads(resp.read())
+            
+            if commits:
+                tip_sha = commits[0]["sha"]
+                if tip_sha != last_sha:
+                    # NEW COMMIT DETECTED — agglutinate
+                    msg = commits[0]["commit"]["message"].split("\n")[0]
+                    print(f"  🧫 AGGLUTINATE: {tip_sha[:10]} — {msg}")
+                    
+                    # Pull from origin (GitHub → POLARIS)
+                    result = subprocess.run(
+                        ["git", "pull", "origin", "main", "--no-rebase", "--no-edit"],
+                        cwd=GAIA_ROOT, capture_output=True, text=True, timeout=60,
+                        env={**os.environ, "GIT_MERGE_AUTOEDIT": "no"}
+                    )
+                    if result.returncode == 0:
+                        print(f"  🧫 ABSORBED: {result.stdout.strip()}")
+                    else:
+                        print(f"  🧫 PULL NOTE: {result.stderr.strip()}")
+                    
+                    last_sha = tip_sha
+                    
+                    # Trigger Forgejo mirror sync so heart stays current
+                    try:
+                        sync_req = urllib.request.Request(
+                            f"{FORGE_API}/repos/ecoPrimal/Gaia/mirror-sync",
+                            method="POST"
+                        )
+                        urllib.request.urlopen(sync_req, timeout=10)
+                    except:
+                        pass
+                        
+        except Exception as e:
+            print(f"  🧫 agglutinate pause: {e}")
+
+
 def pulse_loop():
     """Background heartbeat — write pulse + RSS every 60s."""
     while True:
@@ -1818,6 +1922,10 @@ if __name__ == "__main__":
 
     # Start background heartbeat
     threading.Thread(target=pulse_loop, daemon=True).start()
+    
+    # Start agglutination — Gaia pulls from Forgejo mirror, absorbs changes
+    threading.Thread(target=agglutinate, daemon=True).start()
+    print(f"  🧫 Agglutination: ACTIVE — watching Forgejo mirror every 5min")
     
     # Start webpi surface on :8080 (in background thread)
     threading.Thread(target=_start_webpi, daemon=True).start()
