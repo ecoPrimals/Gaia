@@ -863,7 +863,11 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/ground": "pspace.html",
         }
         if self.path in DESK_PAGES:
-            self._serve_static(DESK_PAGES[self.path])
+            target = DESK_PAGES[self.path]
+            if target.startswith("data/"):
+                self._serve_file(target)  # data/ lives at repo root
+            else:
+                self._serve_static(target)  # static/ pages
             return
 
         # CAMPFIRE pages — dromedary's welcome mat, now also through the gate
@@ -918,8 +922,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     "hint": "songbird routes internally. no port numbers escape."})
             return
 
-        # PROPRIOCEPTION: body data from data/ (not static/)
-        if self.path.startswith("/data/body/") or self.path.startswith("/data/gaia-seed/"):
+        # PROPRIOCEPTION + PAINTINGS + ALL DATA: serve from repo root
+        # data/ is the organism's tissue — paintings, body, seeds, tiles, reedit
+        if self.path.startswith("/data/"):
             self._serve_file(self.path[1:])  # serve from repo root
             return
 
