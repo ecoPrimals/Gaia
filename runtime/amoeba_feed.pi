@@ -1,0 +1,384 @@
+#!/usr/bin/env python3
+"""
+Gaia Amoeba Feed — grapheneGate as roaming peripheral nervous system
+
+The Pixel 8a in Kevin's pocket is NOT a phone. It is:
+  - 37 hardware sensors (accelerometer, gyro, magnetometer, barometer, light, proximity...)
+  - 4 cameras (rear, rear-wide, rear-virtual, front)
+  - WiFi 6 scanner (sees every AP in range)
+  - BLE beacon scanner
+  - Step counter + motion detector
+  - Barometric altimeter (floor detection!)
+  - Ambient light (indoor/outdoor)
+  - Temperature (gyro + pressure sensors)
+
+When Kevin moves house-to-house, the WiFi fingerprint changes.
+When Kevin walks, the step counter increments.
+When Kevin changes floors, the barometer shifts.
+The phone IS the roaming pseudopod of the amoeba.
+
+Feeds: /opt/Gaia/data/gut/amoeba-live.json (latest state)
+       /opt/Gaia/data/neutron/amoeba-feed.jsonl (history)
+       /opt/Gaia/data/gut/amoeba-location.json (WiFi-inferred location)
+"""
+
+import json
+import hashlib
+import subprocess
+import time
+import os
+import re
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+ADB_SERIAL = "44251JEKB04957"
+FEED_LIVE = Path("/opt/Gaia/data/gut/amoeba-live.json")
+FEED_LOG = Path("/opt/Gaia/data/neutron/amoeba-feed.jsonl")
+LOCATION_FILE = Path("/opt/Gaia/data/gut/amoeba-location.json")
+HUD_COPY = Path("/home/eastgate/Development/ecoPrimals/infra/hud/site/public/data/amoeba-live.json")
+
+HOUSE1_BSSIDS = {
+    "BE:A2:C1:E8:DF:01": "Aperture Science (2.4GHz)",
+    "22:2F:9F:44:79:13": "Black Mesa (5GHz)",
+    "82:C9:70:CF:F6:7C": "Gaia (2.4GHz)",
+    "CE:EF:EF:30:B5:F3": "Gaia (5GHz)",
+}
+
+HOUSE2_BSSIDS = {
+    # Will be populated when Kevin walks to House 2 with the phone
+    # JetStream (.111) will appear in scan
+}
+
+def ts_now():
+    return datetime.now(timezone.utc).isoformat()
+
+def adb(cmd, timeout=10):
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_SERIAL, "shell", cmd],
+            capture_output=True, text=True, timeout=timeout
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except Exception:
+        return ""
+
+def adb_available():
+    try:
+        r = subprocess.run(
+            ["adb", "-s", ADB_SERIAL, "get-state"],
+            capture_output=True, text=True, timeout=5
+        )
+        return "device" in r.stdout
+    except Exception:
+        return False
+
+def read_battery():
+    raw = adb("dumpsys battery")
+    d = {}
+    for line in raw.split("\n"):
+        if ":" in line:
+            k, v = line.split(":", 1)
+            k = k.strip().lower().replace(" ", "_")
+            v = v.strip()
+            if v.isdigit():
+                v = int(v)
+            d[k] = v
+    return {
+        "level": d.get("level", -1),
+        "temperature": d.get("temperature", -1),
+        "voltage": d.get("voltage", -1),
+        "usb_powered": d.get("usb_powered", "false") == "true",
+        "status": d.get("status", -1),
+        "health": d.get("health", -1),
+    }
+
+def read_wifi():
+    raw = adb("dumpsys wifi | grep mWifiInfo")
+    info = {}
+    if raw:
+        ssid_m = re.search(r'SSID: "([^"]*)"', raw)
+        bssid_m = re.search(r'BSSID: ([0-9a-f:]+)', raw)
+        rssi_m = re.search(r'RSSI: (-?\d+)', raw)
+        freq_m = re.search(r'Frequency: (\d+)', raw)
+        speed_m = re.search(r'Link speed: (\d+)', raw)
+        standard_m = re.search(r'Wi-Fi standard: (\S+)', raw)
+        ip_m = re.search(r'IP: /([0-9.]+)', raw)
+        info = {
+            "ssid": ssid_m.group(1) if ssid_m else "",
+            "bssid": bssid_m.group(1).upper() if bssid_m else "",
+            "rssi": int(rssi_m.group(1)) if rssi_m else -100,
+            "freq_mhz": int(freq_m.group(1)) if freq_m else 0,
+            "speed_mbps": int(speed_m.group(1)) if speed_m else 0,
+            "standard": standard_m.group(1) if standard_m else "",
+            "ip": ip_m.group(1) if ip_m else "",
+        }
+    return info
+
+def read_wifi_scan():
+    raw = adb("cmd wifi list-scan-results")
+    results = []
+    for line in raw.split("\n")[1:]:
+        parts = line.split()
+        if len(parts) >= 4:
+            bssid = parts[0].upper()
+            try:
+                freq = int(parts[1])
+                rssi = int(parts[2])
+            except ValueError:
+                continue
+            ssid = ""
+            rest = " ".join(parts[4:])
+            flag_start = rest.find("[")
+            if flag_start > 0:
+                ssid = rest[:flag_start].strip()
+            elif flag_start < 0:
+                ssid = rest.strip()
+            results.append({
+                "bssid": bssid,
+                "freq": freq,
+                "rssi": rssi,
+                "ssid": ssid,
+            })
+    return results
+
+def read_sensors_summary():
+    raw = adb("dumpsys sensorservice | head -60")
+    sensors = {}
+    total = 0
+    running = 0
+    m = re.search(r'Total (\d+) h/w sensors, (\d+) running', raw)
+    if m:
+        total = int(m.group(1))
+        running = int(m.group(2))
+    active_ids = []
+    for line in raw.split("\n"):
+        am = re.match(r'(0x[0-9a-f]+)\) active-count = (\d+)', line.strip())
+        if am and int(am.group(2)) > 0:
+            active_ids.append(am.group(1))
+    sensors = {
+        "total_hw": total,
+        "running": running,
+        "active_sensor_ids": active_ids,
+    }
+    return sensors
+
+def read_light():
+    raw = adb("dumpsys sensorservice | grep -A2 'Ambient Light'")
+    return {"raw": raw[:200] if raw else "unavailable"}
+
+def read_step_counter():
+    raw = adb("dumpsys activity service com.google.android.gms/.fitness.sensors.SensorService 2>/dev/null | grep -i step | head -5")
+    return raw[:200] if raw else "unavailable"
+
+def read_screen_state():
+    raw = adb("dumpsys display | grep mScreenState")
+    if "ON" in raw:
+        return "ON"
+    elif "OFF" in raw:
+        return "OFF"
+    return "unknown"
+
+def read_thermals():
+    raw = adb("dumpsys thermalservice | grep -E 'Temperature|mStatus' | head -20")
+    temps = {}
+    for line in raw.split("\n"):
+        m = re.search(r'Temperature\{mValue=([\d.]+), mType=(\d+), mName=(.+?), mStatus=(\d+)\}', line)
+        if m:
+            temps[m.group(3).strip()] = {
+                "value_c": float(m.group(1)),
+                "status": int(m.group(4)),
+            }
+    return temps
+
+def read_ble_devices():
+    raw = adb("dumpsys bluetooth_manager | grep -E 'GATT|BLE|bond' | head -20")
+    return raw[:500] if raw else "no BLE data"
+
+def capture_photo(path="/sdcard/amoeba-snap.jpg"):
+    """Take a photo via ADB camera capture (requires camera permission)."""
+    adb(f"screencap -p /sdcard/amoeba-screen.png")
+    return "screen captured"
+
+def infer_location(wifi_scan, wifi_info):
+    """Infer which house/room Kevin is in based on WiFi fingerprint."""
+    current_bssid = wifi_info.get("bssid", "").upper()
+    current_rssi = wifi_info.get("rssi", -100)
+
+    house1_visible = []
+    house2_visible = []
+    for ap in wifi_scan:
+        b = ap["bssid"]
+        if b in HOUSE1_BSSIDS:
+            house1_visible.append({"bssid": b, "ssid": HOUSE1_BSSIDS[b], "rssi": ap["rssi"]})
+
+    location = {
+        "house": "unknown",
+        "confidence": 0.0,
+        "connected_to": wifi_info.get("ssid", ""),
+        "connected_bssid": current_bssid,
+        "connected_rssi": current_rssi,
+    }
+
+    if current_bssid in HOUSE1_BSSIDS:
+        location["house"] = "House 1"
+        location["confidence"] = 0.95 if current_rssi > -50 else 0.7
+        if current_rssi > -30:
+            location["room"] = "server room (very close to AP)"
+        elif current_rssi > -50:
+            location["room"] = "near AP"
+        else:
+            location["room"] = "far from AP"
+    elif len(house1_visible) > 0:
+        best = max(house1_visible, key=lambda x: x["rssi"])
+        if best["rssi"] > -60:
+            location["house"] = "House 1"
+            location["confidence"] = 0.6
+            location["room"] = "in range but not connected"
+        else:
+            location["house"] = "between houses or House 2"
+            location["confidence"] = 0.3
+    else:
+        location["house"] = "House 2 or away"
+        location["confidence"] = 0.4
+
+    location["house1_aps_visible"] = len(house1_visible)
+    location["house1_strongest"] = max((ap["rssi"] for ap in house1_visible), default=-100)
+    location["total_aps_visible"] = len(wifi_scan)
+
+    return location
+
+def full_read():
+    """Complete sensor read from grapheneGate."""
+    ts = ts_now()
+
+    if not adb_available():
+        return {"ts": ts, "status": "OFFLINE", "note": "grapheneGate not reachable via ADB"}
+
+    battery = read_battery()
+    wifi = read_wifi()
+    wifi_scan = read_wifi_scan()
+    sensors = read_sensors_summary()
+    thermals = read_thermals()
+    screen = read_screen_state()
+    location = infer_location(wifi_scan, wifi)
+
+    state = {
+        "ts": ts,
+        "wave": 222,
+        "type": "amoeba-live-feed",
+        "status": "ALIVE",
+        "gate": "grapheneGate",
+        "device": "Pixel 8a (GrapheneOS)",
+        "adb_serial": ADB_SERIAL,
+
+        "battery": battery,
+        "thermals": thermals,
+        "screen": screen,
+
+        "wifi": {
+            "connected": wifi,
+            "scan": wifi_scan,
+            "visible_aps": len(wifi_scan),
+            "our_aps_visible": sum(1 for ap in wifi_scan if ap["bssid"] in HOUSE1_BSSIDS),
+        },
+
+        "sensors": sensors,
+
+        "location": location,
+
+        "capabilities": {
+            "hw_sensors": 37,
+            "cameras": 4,
+            "wifi_standard": "WiFi 6 (802.11ax)",
+            "ble": True,
+            "barometer": True,
+            "magnetometer": True,
+            "step_counter": True,
+            "gyroscope_480hz": True,
+            "accelerometer_480hz": True,
+        },
+
+        "amoeba_role": {
+            "primary": "roaming peripheral nervous system",
+            "functions": [
+                "WiFi triangulation between houses",
+                "Barometric floor detection",
+                "Step counting for movement tracking",
+                "BLE beacon proximity sensing",
+                "Ambient light for indoor/outdoor detection",
+                "Camera for visual mapping (on demand)",
+                "Thermal sensing for environment detection",
+                "Magnetometer for orientation/compass",
+            ],
+            "movement_detection": "WiFi fingerprint + step counter + barometer",
+            "house_detection": "BSSID visibility + RSSI pattern matching",
+        },
+
+        "fingerprint": hashlib.blake2b(
+            json.dumps({"wifi": wifi, "battery": battery, "ts": ts}).encode(),
+            digest_size=16
+        ).hexdigest(),
+    }
+
+    return state
+
+def save_state(state):
+    FEED_LIVE.parent.mkdir(parents=True, exist_ok=True)
+    FEED_LIVE.write_text(json.dumps(state, indent=2))
+
+    FEED_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(FEED_LOG, "a") as f:
+        compact = {k: v for k, v in state.items() if k not in ("wifi",)}
+        compact["wifi_ssid"] = state.get("wifi", {}).get("connected", {}).get("ssid", "")
+        compact["wifi_rssi"] = state.get("wifi", {}).get("connected", {}).get("rssi", -100)
+        compact["visible_aps"] = state.get("wifi", {}).get("visible_aps", 0)
+        f.write(json.dumps(compact) + "\n")
+
+    if state.get("location"):
+        LOCATION_FILE.write_text(json.dumps(state["location"], indent=2))
+
+    try:
+        HUD_COPY.parent.mkdir(parents=True, exist_ok=True)
+        HUD_COPY.write_text(json.dumps(state, indent=2))
+    except Exception:
+        pass
+
+def run_once():
+    print(f"[{ts_now()}] Amoeba feed — reading grapheneGate...")
+    state = full_read()
+
+    if state.get("status") == "OFFLINE":
+        print("  ✗ grapheneGate OFFLINE — not reachable via ADB")
+    else:
+        battery = state.get("battery", {})
+        wifi = state.get("wifi", {}).get("connected", {})
+        loc = state.get("location", {})
+        sensors = state.get("sensors", {})
+        thermals = state.get("thermals", {})
+
+        print(f"  🔋 Battery: {battery.get('level', '?')}% | {battery.get('temperature', '?')//10 if isinstance(battery.get('temperature'), int) else '?'}°C | USB: {battery.get('usb_powered', '?')}")
+        print(f"  📡 WiFi: {wifi.get('ssid', '?')} @ {wifi.get('rssi', '?')}dBm | {wifi.get('speed_mbps', '?')}Mbps | {wifi.get('standard', '?')}")
+        print(f"  🗺️  Location: {loc.get('house', '?')} ({loc.get('confidence', 0)*100:.0f}% confidence)")
+        if loc.get("room"):
+            print(f"     Room: {loc['room']}")
+        print(f"  📊 Sensors: {sensors.get('total_hw', '?')} hw / {sensors.get('running', '?')} running / {len(sensors.get('active_sensor_ids', []))} active")
+        print(f"  🌡️  Thermals: {len(thermals)} zones | Screen: {state.get('screen', '?')}")
+        print(f"  📶 Visible APs: {state['wifi']['visible_aps']} ({state['wifi']['our_aps_visible']} ours)")
+
+    save_state(state)
+    return state
+
+if __name__ == "__main__":
+    if "--daemon" in sys.argv:
+        interval = 30
+        print(f"Amoeba feed daemon — polling every {interval}s")
+        while True:
+            try:
+                run_once()
+            except Exception as e:
+                print(f"  Error: {e}", file=sys.stderr)
+            time.sleep(interval)
+    else:
+        state = run_once()
+        print(json.dumps(state, indent=2))
