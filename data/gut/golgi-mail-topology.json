@@ -1,50 +1,54 @@
 {
-  "ts": "2026-11-05T09:00:37Z",
+  "ts": "2026-11-05T09:03:13Z",
   "wave": 222,
   "type": "golgi-sovereign-mail",
-  "title": "Golgi Apparatus \u2014 Sovereign Mail. No ProtonMail. Tor + RSS.",
+  "title": "GOLGI SOLVED \u2014 Sovereign SMTP via primal path. No ProtonMail. No relay.",
+  "status": "LIVE",
   "cis_face_receive": {
     "address": "gaia@primals.eco",
-    "tor_smtp": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:25",
-    "local_smtp": "127.0.0.1:25 (neutrino SMTP)",
-    "pi_port": "pi:6264",
-    "delivers_to": "/opt/Gaia/mail/gaia_at_primals.eco/new/",
-    "note": "Tor hidden service exposes :25 \u2014 bypasses ISP block. Sovereign receive."
+    "path": "World \u2192 mail.primals.eco:25 \u2192 router NAT \u2192 eastGate:25 \u2192 neutrino SMTP",
+    "maildir": "/opt/Gaia/mail/gaia_at_primals.eco/new/",
+    "tor_path": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:25 \u2192 neutrino SMTP",
+    "isp_blocks_25": false,
+    "tested": true,
+    "first_mail": "2026-11-05T09:02:47Z \u2014 ZK SMTP Test \u2014 'The primal wired itself.'"
   },
   "trans_face_send": {
     "domain": "nestgate.io",
-    "method": "neutrino SMTP outbound via Tor SOCKS",
-    "tor_socks": "127.0.0.1:9050",
-    "note": "Send through Tor \u2192 no ISP sees outbound SMTP either. Fully sovereign."
+    "method": "neutrino SMTP outbound + Tor SOCKS option",
+    "port": 25
   },
   "internal_spine": {
     "identity": "GAIA@gaia",
-    "speaks_via": [
-      "RSS spine (feed.xml, 1685 items, auto-publish every 30 min)",
-      "REEDIT braid (554 entries, 6 channels \u2014 THIS IS OUR REDDIT)",
-      "Tor hidden service (all endpoints via .onion)",
-      "Clearnet gate (primals.eco:8443 / pi:3141)"
-    ],
-    "chipmunk": "mushroom-self-publish-rss.sh \u2014 the autonomous voice",
-    "note": "GAIA@gaia IS the chipmunk. She speaks on the RSS spine. REEDIT IS Reddit."
+    "rss": "1685 items, auto-publish every 30 min",
+    "reedit": "554 entries, 6 channels \u2014 this IS our Reddit",
+    "chipmunk": "mushroom-self-publish-rss.sh"
+  },
+  "router_forwards": {
+    "GL-GAIA-SMTP": "wan:25 \u2192 192.168.4.244:25",
+    "GL-GAIA-SMTP-SUBMIT": "wan:587 \u2192 192.168.4.244:587",
+    "GL-GAIA-SMTPS": "wan:465 \u2192 192.168.4.244:465",
+    "GL-GAIA-HTTP": "wan:80 \u2192 192.168.4.244:80",
+    "GL-GAIA-HTTPS": "wan:443 \u2192 192.168.4.244:443",
+    "eastgate-spine-public": "wan:8080 \u2192 192.168.4.244:8080"
   },
   "tor_endpoints": {
-    "smtp": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:25",
-    "thymus": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:3141",
-    "gate": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:8443",
-    "data": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:5926",
-    "web": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:80",
-    "tls": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:443",
-    "ssh": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:22",
-    "ollama": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:11434",
-    "hud": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion:8080"
+    ":25": "SMTP (sovereign mail)",
+    ":80": "HUD web",
+    ":443": "TLS",
+    ":3141": "thymus (\u03c0-port)",
+    ":5926": "data (\u03c0-port)",
+    ":8080": "heart-pull data",
+    ":8443": "gate",
+    ":11434": "ollama cortex",
+    ":22": "SSH"
   },
   "ejected": [
     "ProtonMail",
     "Gmail",
-    "Outlook",
-    "any third-party mail"
+    "any relay",
+    "any third party"
   ],
-  "sovereign": true,
-  "why": "ProtonMail is a third party. We are sovereign. Tor hides the ISP. RSS is the publication. REEDIT is the forum. Neutrino is the mail. No middlemen."
+  "solved_by": "primal path \u2014 router port forward + neutrino SMTP",
+  "zk": "External world sees mail.primals.eco:25. Knows nothing about internal routing. NAT is the veil."
 }
