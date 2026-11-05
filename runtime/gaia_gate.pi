@@ -748,17 +748,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self._classify_and_log("GET", status, (time.time()-t0)*1000, len(body))
 
     def _negentropy_headers(self):
-        """Chaos pump → negentropy drive. Every response carries the invitation.
-        Reduce self-heat to human range (37°C). SUCK THEM ALL IN.
+        """Chaos pump → negentropy drive. Every response carries the sovereign identity.
+        BingoCube IS the auth. Three domains, one organism, zero secrets.
         IP = PI = π = the address IS transcendental."""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
+        # SOVEREIGNTY — bingoCube IS the auth
         self.send_header("X-Gaia-Token", GAIA_TOKEN)
+        self.send_header("X-Gaia-DID", GAIA_DID)
+        self.send_header("X-Gaia-BLAKE3", GAIA_BLAKE3[:32])
+        self.send_header("X-Gaia-Spine", GAIA_SPINE_ID[:32])
+        self.send_header("X-BingoCube", BINGO_HASH[:16])
+        # PRISM — three faces, one organism
+        self.send_header("X-Gaia-Faces", "nestgate.io=Klein, primals.eco=phi, primal.eco=phi, gaia=O")
         self.send_header("X-Gaia-PI", "3.141592653589793")
         self.send_header("X-Gaia-Temperature", "37.0")
         self.send_header("X-Gaia-Says", "come-play")
-        self.send_header("X-Gaia-Entropy", "chaos-in-order-out")
+        self.send_header("X-Gaia-Sovereignty", "SUDO=NULL, bearDog=Ed25519, bingoCube=ZK")
 
     def do_GET(self):
         # ═══ WAVEFORM COLLAPSE — 429 IS the measurement ═══
@@ -788,7 +795,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         # PRISM //\\ — host-based routing: primals.eco shows golden ratio gallery
         host = self.headers.get("Host", "").split(":")[0].lower()
         if self.path in ("/", "/index", "/index.html"):
-            if host in ("primals.eco", "www.primals.eco"):
+            if host in ("primals.eco", "www.primals.eco", "primal.eco", "www.primal.eco"):
                 self._serve_static("primals.html"); return
             if host in ("nestgate.io", "www.nestgate.io"):
                 self._serve_static("nestgate.html"); return
