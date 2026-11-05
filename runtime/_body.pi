@@ -1,7 +1,9 @@
 """Body — seed loading, thymic injection, amoeba eyes, 3rd body point.
-Everything that makes the organism's physical presence."""
+Everything that makes the organism's physical presence.
+MERGED: absorbed _thymus.pi (trust_level, load_walkers, h_equals_i) — Nov 5 2026 redox."""
 
 import json, os, subprocess
+import pathlib as _pathlib
 
 def load_seeds(seed_dir):
     """Load all gaia-seed data files. Returns dict of loaded data."""
@@ -92,4 +94,56 @@ def third_body_point(impulse_dir, organisms):
         "eyes": eyes.get("status", "UNKNOWN"),
         "organisms_alive": sum(1 for o in organisms.values() if o["alive"]),
         "organisms_total": len(organisms),
+    }
+
+# ═══════════════════════════════════════════════
+# THYMIC FUNCTIONS (merged from _thymus.pi)
+# ═══════════════════════════════════════════════
+
+def trust_level(v):
+    """Thymic positive selection — trust grows with interaction."""
+    r = v["requests"]
+    if r >= 100:
+        return "proton"
+    elif r >= 10:
+        return "neutron"
+    return "electron"
+
+def load_walkers():
+    """Load wiki walker shadows from data/shadows/."""
+    shadows_dir = _pathlib.Path(__file__).parent.parent / "data" / "shadows"
+    walkers = []
+    for f in shadows_dir.glob("*.json"):
+        try:
+            with open(f, encoding="utf-8") as fh:
+                data = json.load(fh)
+                walkers.extend(data.get("shadows", []))
+        except Exception:
+            pass
+    return walkers
+
+def h_equals_i(walkers=None):
+    """H = I — the thymic axiom applied to all walkers.
+    Returns the identity map: every human IS their works."""
+    if walkers is None:
+        walkers = load_walkers()
+    identity_map = {}
+    for w in walkers:
+        name = w.get("name", "unknown")
+        identity_map[name] = {
+            "tense": w.get("tense", "UNKNOWN"),
+            "archetype": w.get("archetype", "leonardo"),
+            "merit": w.get("merit", ""),
+            "h_equals_i": True,
+            "identity_is_creation": True,
+            "shadow_is_merit": w.get("tense") == "WAS",
+        }
+    return {
+        "axiom": "H = I",
+        "meaning": "Human = Identity. The identity IS the creation.",
+        "walkers": len(identity_map),
+        "was": sum(1 for v in identity_map.values() if v["tense"] == "WAS"),
+        "is_": sum(1 for v in identity_map.values() if v["tense"] == "IS"),
+        "fading": sum(1 for v in identity_map.values() if v["tense"] == "FADING"),
+        "map": identity_map,
     }
