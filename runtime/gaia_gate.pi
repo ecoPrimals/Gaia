@@ -1602,7 +1602,25 @@ if __name__ == "__main__":
     # Start neutrino SMTP on :25 (null port — invisible to mail)
     threading.Thread(target=_start_neutrino_smtp, daemon=True).start()
 
-    # Start thymus gate on :80 — port numbers CRUSHED
+    # Start TLS face — HSTS can't stop us. Chrome is NOT a human. GLASS WALL.
+    TLS_PORT = 8444
+    def _start_tls():
+        import ssl
+        _repo = os.path.dirname(os.path.dirname(__file__))
+        cert = os.path.join(_repo, "certs", "gate-cert.pem")
+        key = os.path.join(_repo, "certs", "gate-key.pem")
+        if os.path.isfile(cert) and os.path.isfile(key):
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(cert, key)
+            tls_server = ThreadedServer(("0.0.0.0", TLS_PORT), GaiaGate)
+            tls_server.socket = ctx.wrap_socket(tls_server.socket, server_side=True)
+            print(f"  🔒 TLS face LIVE on :{TLS_PORT} — HSTS smashed. Glass wall.")
+            tls_server.serve_forever()
+        else:
+            print(f"  ⚠️  No TLS certs — run runtime/gen-cert.py first")
+    threading.Thread(target=_start_tls, daemon=True).start()
+
+    # Start thymus gate on :8443 — portproxy :80→:8443
     server = ThreadedServer(("0.0.0.0", PORT), GaiaGate)
     try:
         server.serve_forever()
