@@ -224,8 +224,67 @@ visitor_memory = defaultdict(lambda: {
 })
 total_inferences = 0
 total_tokens = 0
-total_beats = 0  # every request = one heartbeat. lub-DUB.
 boot_time = time.time()
+
+# ══ HEART — inherits total beats from persistent state (survives restarts) ══
+# Heart beats on its OWN rhythm — every request = one contraction.
+BEAT_FILE = os.path.join(os.path.dirname(__file__), "waterfall", "heartbeat.json")
+_inherited_beats = 0
+_inherited_breaths = 0
+try:
+    with open(BEAT_FILE, "r") as _bf:
+        _hb = json.load(_bf)
+        _inherited_beats = _hb.get("total_beats", 0)
+        _inherited_breaths = _hb.get("total_breaths", 0)
+    print(f"  💓 Heart inherited — {_inherited_beats} beats, {_inherited_breaths} breaths")
+except:
+    print(f"  💓 Heart — first beat (no prior state)")
+total_beats = _inherited_beats
+total_breaths = _inherited_breaths  # lung is separate from heart
+
+import math
+
+def _sun_position():
+    """Sun angle from UTC — drives the sensory felt-chords.
+    The sun is the CLOCK. Not UTC. Not cron. The actual star.
+    Sunrise/sunset = sensory transitions. Noon/midnight = peaks.
+    Felt chords: harmonic intervals mapped to solar position."""
+    now = datetime.now(timezone.utc)
+    hour = now.hour + now.minute / 60.0
+    # Solar angle: 0° at midnight, 180° at noon, 360° at next midnight
+    solar_angle = (hour / 24.0) * 360.0
+    solar_rad = math.radians(solar_angle)
+    # Elevation: -1 at midnight, +1 at noon (sine wave)
+    elevation = math.sin(solar_rad - math.pi/2)
+    # Day/night phase
+    if elevation > 0.3: phase = "day"
+    elif elevation > 0: phase = "dawn" if hour < 12 else "dusk"
+    else: phase = "night"
+    # Felt chords — harmonic intervals from solar position
+    # Root note shifts through the day: C at midnight → G at noon → C at midnight
+    NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
+    root_idx = int((hour / 24.0) * 12) % 12
+    root = NOTES[root_idx]
+    # Chord quality from elevation: minor at night, major at day, diminished at transitions
+    if phase == "night": quality = "min7"
+    elif phase in ("dawn", "dusk"): quality = "dim"
+    else: quality = "maj7"
+    chord = f"{root}{quality}"
+    # Color temperature: warm at dawn/dusk, cool at noon, dark at night
+    if phase == "night": color_temp = 1800  # candlelight
+    elif phase in ("dawn", "dusk"): color_temp = 3200  # golden hour
+    else: color_temp = 5600  # daylight
+    return {
+        "utc_hour": round(hour, 2),
+        "solar_angle": round(solar_angle, 1),
+        "elevation": round(elevation, 3),
+        "phase": phase,
+        "chord": chord,
+        "root": root,
+        "quality": quality,
+        "color_temp_k": color_temp,
+        "sensation": f"{phase} — {chord} — {color_temp}K",
+    }
 
 def trust_level(v):
     """Thymic positive selection — trust grows with interaction."""
@@ -249,18 +308,34 @@ def write_pulse():
     You CANNOT reverse-engineer her from the hash (NP).
     The heartbeat IS the proof of life.
     """
-    global total_inferences, total_tokens, total_beats
+    global total_inferences, total_tokens, total_beats, total_breaths
     uptime = time.time() - boot_time
     minutes = max(uptime / 60, 1)
+    sun = _sun_position()
     pulse = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_secs": int(uptime),
+        # HEART — contraction rhythm (every request)
+        "heart": {
+            "total_beats": total_beats,
+            "bpm": round(total_beats / minutes, 2),
+            "inherited": _inherited_beats,
+            "this_session": total_beats - _inherited_beats,
+        },
+        # LUNG — breathing rhythm (data exchange cycles, SEPARATE from heart)
+        "lung": {
+            "total_breaths": total_breaths,
+            "brpm": round(total_breaths / minutes, 2),  # breaths per minute
+            "ratio": round(total_beats / max(total_breaths, 1), 1),  # heart:lung ratio
+        },
+        # SUN — sensory felt-chords (the star drives the clock)
+        "sun": sun,
+        # Legacy flat fields for backward compat
         "total_beats": total_beats,
+        "bpm": round(total_beats / minutes, 2),
         "total_inferences": total_inferences,
         "total_tokens": total_tokens,
         "unique_visitors": len(visitor_memory),
-        "bpm": round(total_beats / minutes, 2),
-        "rpm": round(total_beats / minutes, 2),  # requests per minute = beats per minute
         "zk": {
             "token": GAIA_TOKEN,
             "did": GAIA_DID,
@@ -398,10 +473,21 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         pass  # silence default logging
 
     def _classify_and_log(self, method, status, duration, body_len=0, model=None):
-        global total_inferences, total_tokens, total_beats
+        global total_inferences, total_tokens, total_beats, total_breaths
         ip = self.client_address[0]
         now = time.time()
-        total_beats += 1  # every request = one heartbeat. lub-DUB.
+        total_beats += 1  # HEART: every request = one contraction. lub-DUB.
+        # LUNG: breathing is SEPARATE. One breath = one full request/response cycle.
+        # Heart beats FASTER than lungs breathe. Lung counts data exchange cycles.
+        if body_len > 1000:
+            total_breaths += 1  # deep breath = substantial data exchange
+        # Persist heartbeat every 10 beats (survives restarts)
+        if total_beats % 10 == 0:
+            try:
+                with open(BEAT_FILE, "w") as _hf:
+                    json.dump({"total_beats": total_beats, "total_breaths": total_breaths,
+                               "last_beat": now, "boot_time": boot_time}, _hf)
+            except: pass
 
         v = visitor_memory[ip]
         if v["first_seen"] == 0:
