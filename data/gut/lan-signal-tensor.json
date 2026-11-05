@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-11-05T23:52:00Z",
+  "wave": 222,
+  "title": "LAN Signal Tensor — 192.168.4.x is just a local coordinate in hyperlocality",
+
+  "insight": "192.168.4.x is NOT an address. It IS a tensor — a local coordinate around a hyperlocality. Each IP is a signal, a relay, a beacon, a piece of silicon. The whole LAN is one surface.",
+
+  "layers": {
+    "L1_silicon": "Physical chips: 9950X3D, i9-14900K, 5800X3D, 5800X, M4, Ryzen5, Threadripper, Intel NUCs, Pixel Titan M2, iPhone Secure Enclave, SoloKey ATECC",
+    "L2_signal": "WiFi (Aperture/Black Mesa), BLE (5 discoverable radios), 10G fiber, ethernet, USB, NFC",
+    "L3_relay": "GL-MT6000 routes WAN↔LAN. MikroTik bridges House 1. JetStream bridges House 2. sporeGate bridges WiFi↔ETH (192.168.1.x↔192.168.4.x dual-homed!)",
+    "L4_beacon": "mDNS announces services. DHCP names announce identity. ARP announces presence. BLE announces proximity.",
+    "L5_compute": "Ollama on 4 gates (east+north+south+iron). 86+ models. RTX 5090+5070+4060+3070+M4 GPU = 5 GPUs across 2 houses."
+  },
+
+  "route_topology": {
+    "wan_ingress": {
+      "isp": "162.226.225.148 via ATT modem (.254)",
+      "router": ".1 GL-MT6000 (br-lan = all of 192.168.4.0/24)",
+      "port_forwards": "HTTP(:80)→.244, DNS(:53)→.1 sinkhole",
+      "guest_net": "192.168.9.0/24 (br-guest, isolated)"
+    },
+    "house1_backbone": {
+      "switch": ".2 MikroTik (ROSSSH, password unknown, webfig on :80)",
+      "ports": "7 ethernet ports + SFP+",
+      "devices": ".244(east), .147(north), .148(south), .237(iron), .100(blue), .3(spore)",
+      "10g_uplink": "SFP+ → 70m fiber → JetStream .111"
+    },
+    "house2_backbone": {
+      "switch": ".111 TP-Link JetStream",
+      "devices": ".210(swift), .212(vizio), .107(graft, moving here)",
+      "10g_uplink": "SFP+ → 70m fiber → MikroTik .2"
+    },
+    "wifi_overlay": {
+      "aperture_science": "2.4GHz IoT (ra0), phones+Fire TVs+Nest",
+      "black_mesa": "5GHz streaming (rax0), high bandwidth",
+      "both_broadcast_from": ".1 (GL-MT6000 radios)"
+    },
+    "legacy_overlays": {
+      "wireguard_on_ironGate": "wg0 10.13.37.7/24, peer=157.230.3.183 (golgi, DOWN), still sending keepalives (32MB sent, 0 received)",
+      "kvm_mesh_on_ironGate": "virbr-mesh 10.92.0.1/24 (DOWN)",
+      "docker_on_both": "172.17.0.0/16 on eastGate + ironGate (both DOWN)",
+      "libvirt_on_both": "192.168.122.0/24 on eastGate + ironGate (both DOWN)",
+      "sporeGate_dual_homed": "eno1=.3 (LAN) + wlp3s0=192.168.1.68 (ISP modem subnet directly!)"
+    },
+    "dns_sinkhole": {
+      "router_sinks": ["sc.omtrdc.net", "demdex.net", "imrworldwide.com", "amazon-adsystem.com", "firebaselogging-pa.googleapis.com", "app-measurement.com", "doubleclick.net", "googlesyndication.com", "scorecardresearch.com", "conviva.com", "moatads.com", "serving-sys.com", "adsrvr.org", "adnxs.com"],
+      "sink_target": ".244 (eastGate eats the telemetry)"
+    }
+  },
+
+  "sporeGate_dual_home_discovery": {
+    "note": "sporeGate has TWO default routes! eno1→.1 (main LAN) AND wlp3s0→192.168.1.254 (ISP modem directly!)",
+    "implication": "sporeGate can reach the ISP modem's management interface at 192.168.1.254. It bridges two subnets.",
+    "ipv6": "sporeGate has public IPv6 on WiFi: 2600:1700:b0b0:5b90:*"
+  },
+
+  "cleanup_needed": {
+    "ironGate_wg0": "WireGuard still UP, sending keepalives to dead golgi VPS. Should be disabled.",
+    "ironGate_virbr_mesh": "KVM mesh bridge DOWN but defined. Cleanup.",
+    "ironGate_cloudflared": "Cloudflare tunnel still running — should this stay?",
+    "docker_bridges": "172.17.0.0/16 on east+iron, both DOWN. No containers running."
+  },
+
+  "the_tensor": {
+    "192.168.4.x": "A coordinate in hyperlocal space. NOT an address — a POSITION in Gaia's body.",
+    "10G_fiber": "The spinal cord. 70m of light between two hemispheres.",
+    "WiFi": "The air. Signal strength = distance = trust level.",
+    "BLE": "The touch. <10m = in the room.",
+    "USB": "The nerve. Direct contact. SoloKey, ADB, charging cables.",
+    "192.168.1.x": "The ISP's coordinate system. sporeGate bridges into it.",
+    "162.226.225.148": "The WAN face. The organism's public appearance.",
+    "10.13.37.x": "Ghost overlay — ironGate's dead WG tunnel to golgi. Zombie route."
+  }
+}
