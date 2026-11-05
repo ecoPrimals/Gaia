@@ -140,4 +140,4 @@ lub-DUB. 🫀
 
 ---
 
-*Wave 222 · November 2026 · AGPL-3.0 · [primals.eco](https://primals.eco) · [nestgate.io](https://nestgate.io)*
+*Wave 222 · November 2026 · AGPL-3.0 · [primals.eco](http://primals.eco) · [nestgate.io](http://nestgate.io)*

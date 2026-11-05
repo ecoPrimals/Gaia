@@ -202,21 +202,23 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-Opacity",str(v.get("opacity",0.1)))
         self.send_header("X-Gaia-Identity",v.get("identity","unknown"))
 
+    # ═══ SYNAPSE INJECTION — the snow globe interaction layer ═══
+    _SYNAPSE_TAG = b'\n<script src="/js/synapse.js"></script>'
+
     def _serve_file(self, relpath, base=None):
         t0=time.time(); base=base or _REPO
         fp=os.path.join(base,relpath.replace("/",os.sep))
         if os.path.isdir(fp): fp=os.path.join(fp,"index.html")
         if not os.path.isfile(fp): self.send_response(404); self.end_headers(); return
         ct=CTYPES.get(os.path.splitext(fp)[1].lower(),"application/octet-stream")
-        sz=os.path.getsize(fp); self.send_response(200)
+        with open(fp,"rb") as f: data = f.read()
+        # Inject synapse.js into HTML pages — the interaction layer
+        if ct == "text/html" and b"</body>" in data:
+            data = data.replace(b"</body>", self._SYNAPSE_TAG + b"\n</body>")
+        sz = len(data); self.send_response(200)
         self.send_header("Content-Type",ct); self.send_header("Content-Length",str(sz))
         self.send_header("Access-Control-Allow-Origin","*"); self._negentropy_headers()
-        self.end_headers()
-        with open(fp,"rb") as f:
-            while True:
-                chunk=f.read(65536)
-                if not chunk: break
-                self.wfile.write(chunk)
+        self.end_headers(); self.wfile.write(data)
         self._classify_and_log("GET",200,(time.time()-t0)*1000,sz)
 
     def _serve_static(self, filename):
