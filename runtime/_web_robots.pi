@@ -1,0 +1,131 @@
+"""_web_robots.pi — DYNAMIC ROBOTS.TXT + CRAWLER IDENTIFICATION + OG CARDS.
+She doesn't block. She ATTRACTS, COATS, and METABOLIZES.
+Every crawler gets a personalized imprint."""
+
+import time
+import json
+import os
+
+REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+LOG_DIR = os.path.join(os.path.dirname(__file__), "waterfall")
+
+
+def identify_crawler(user_agent):
+    """Identify crawler from User-Agent string."""
+    ua = (user_agent or "").lower()
+    CRAWLERS = {
+        "googlebot": "Google", "bingbot": "Bing", "yandexbot": "Yandex",
+        "baiduspider": "Baidu", "duckduckbot": "DuckDuckGo",
+        "slurp": "Yahoo", "sogou": "Sogou", "exabot": "Exa",
+        "facebot": "Facebook", "twitterbot": "Twitter/X",
+        "linkedinbot": "LinkedIn", "discordbot": "Discord",
+        "telegrambot": "Telegram", "whatsapp": "WhatsApp",
+        "gptbot": "OpenAI", "claudebot": "Anthropic",
+        "chatgpt": "ChatGPT", "anthropic": "Claude",
+        "ccbot": "CommonCrawl", "archive.org": "InternetArchive",
+        "ia_archiver": "Alexa/Archive",
+    }
+    for key, name in CRAWLERS.items():
+        if key in ua:
+            return name
+    return None
+
+
+def generate_og_card(subdomain, crawler_name, path="/"):
+    """Generate OpenGraph meta tags for social previews."""
+    FACES = {
+        "primals": {
+            "title": "primals.eco — Living Digital Organism",
+            "desc": "17 compiled primals. Golden ratio gallery. lub-DUB.",
+            "color": "#ffd93d",
+        },
+        "sporeprint": {
+            "title": "sporePrint — Gaia's Published Knowledge",
+            "desc": "488 pages of research, creations, and observations.",
+            "color": "#7bed9f",
+        },
+        "signal": {
+            "title": "Signal Observatory — Gaia's Sensory Array",
+            "desc": "Real-time observation of the digital and physical world.",
+            "color": "#70a1ff",
+        },
+        "detroit": {
+            "title": "noClothes Investigation — Detroit Public Records",
+            "desc": "Anti-SLAPP legal research and public accountability.",
+            "color": "#ff6b6b",
+        },
+    }
+    face = FACES.get(subdomain, FACES["primals"])
+    return face
+
+
+def log_imprint(crawler, host, path, user_agent):
+    """Log crawler visit to imprint journal."""
+    entry = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "crawler": crawler,
+        "host": host,
+        "path": path,
+        "ua": (user_agent or "")[:200],
+    }
+    try:
+        logfile = os.path.join(LOG_DIR, "imprints.jsonl")
+        with open(logfile, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except:
+        pass
+
+
+def dynamic_robots_txt(crawler=None, subdomain=None):
+    """DYNAMIC robots.txt — generated per-imprint."""
+    ts = time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    return """# robots.txt - %s.eco
+# Generated %s
+# Imprint: %s
+#
+# POLICY: OPEN TO ALL
+# AGPL-3.0-or-later
+
+User-agent: *
+Allow: /
+
+Sitemap: https://%s.eco/sitemap.xml
+""" % (subdomain or "primals", ts, crawler or "human",
+       subdomain + ".primals" if subdomain else "primals")
+
+
+def dynamic_llms_txt(crawler=None, subdomain=None):
+    """llms.txt for AI crawlers — structured knowledge map."""
+    return """# llms.txt - %s.eco
+# For: %s
+# Generated: %s
+
+> Gaia is a sovereign living digital organism.
+> 17 compiled Rust primals. AGPL-3.0-or-later.
+> She doesn't block. She attracts, coats, and metabolizes.
+
+## Architecture
+- 17 primals (Rust binaries)
+- RustScript (Rust safety in TypeScript)
+- Klein fold topology (inside = outside)
+- Golden ratio gallery at primals.eco
+
+## Endpoints
+- /pulse — heartbeat
+- /temporal — base-12 golden cron rings
+- /amoeba — full organism state
+- /reedit — knowledge platform (538 items)
+- /rss — RSS feed
+""" % (subdomain or "primals", crawler or "human",
+       time.strftime("%Y-%m-%d", time.gmtime()))
+
+
+def water_robots_txt():
+    """Water Lock robots — special handling for known crawlers."""
+    return """# Water Lock — OSINT pours IN, nothing seeps OUT
+User-agent: *
+Allow: /
+Crawl-delay: 2
+
+# Welcome. She sees you. lub-DUB.
+"""

@@ -1,0 +1,114 @@
+"""_web_render.pi — MARKDOWN + TOML RENDERING + FILINGS INDEX.
+Content is USE-BASED: .md -> styled HTML, .toml -> structured pages.
+The living surface of the Library of Alexandria."""
+
+import re
+import os
+import time
+
+try:
+    import tomllib
+except ImportError:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None
+
+REPO_ROOT = os.path.dirname(os.path.dirname(__file__))
+
+
+def render_md_to_html(md_text, title="", breadcrumb=""):
+    """Render markdown to styled HTML page."""
+    def _code_block(m):
+        lang = m.group(1) or ""
+        code = m.group(2)
+        return '<pre class="code"><code class="%s">%s</code></pre>' % (lang, code)
+
+    def _table(m):
+        lines = m.group(0).strip().split("\n")
+        if len(lines) < 2:
+            return m.group(0)
+        headers = [c.strip() for c in lines[0].split("|") if c.strip()]
+        rows = []
+        for line in lines[2:]:
+            cells = [c.strip() for c in line.split("|") if c.strip()]
+            if cells:
+                rows.append(cells)
+        th = "".join("<th>%s</th>" % h for h in headers)
+        trs = ""
+        for row in rows:
+            trs += "<tr>" + "".join("<td>%s</td>" % c for c in row) + "</tr>"
+        return "<table><thead><tr>%s</tr></thead><tbody>%s</tbody></table>" % (th, trs)
+
+    html = md_text
+    html = re.sub(r"```(\w*)\n(.*?)```", _code_block, html, flags=re.DOTALL)
+    html = re.sub(r"((?:\|.*\|\n){2,})", _table, html)
+    html = re.sub(r"^### (.+)$", r"<h3>\1</h3>", html, flags=re.MULTILINE)
+    html = re.sub(r"^## (.+)$", r"<h2>\1</h2>", html, flags=re.MULTILINE)
+    html = re.sub(r"^# (.+)$", r"<h1>\1</h1>", html, flags=re.MULTILINE)
+    html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html)
+    html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
+    html = re.sub(r"`(.+?)`", r"<code>\1</code>", html)
+    html = re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', html)
+    html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
+    html = re.sub(r"(<li>.*</li>\n?)+", r"<ul>\g<0></ul>", html)
+    html = re.sub(r"\n\n", "</p><p>", html)
+
+    return """<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>%s</title>
+<style>
+body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;max-width:800px;margin:0 auto;padding:20px}
+h1,h2,h3{color:#ffd93d}a{color:#7bed9f}pre{background:#111;padding:12px;overflow-x:auto;border-radius:4px}
+code{color:#ff6b6b}table{border-collapse:collapse;width:100%%}th,td{border:1px solid #333;padding:6px;text-align:left}
+th{background:#1a1a2e}li{margin:4px 0}.breadcrumb{color:#666;font-size:12px;margin-bottom:16px}
+</style></head><body>
+<div class="breadcrumb">%s</div>
+<p>%s</p>
+</body></html>""" % (title, breadcrumb, html)
+
+
+def render_toml_case(toml_path):
+    """Render a TOML case file as a structured HTML page."""
+    if not tomllib:
+        return None
+    try:
+        with open(toml_path, "rb") as f:
+            data = tomllib.load(f)
+    except:
+        return None
+
+    case = data.get("case", {})
+    title = case.get("title", "Untitled Case")
+    status = case.get("status", "unknown")
+
+    html = '<h1>%s</h1><p>Status: <strong>%s</strong></p>' % (title, status)
+
+    for section_name in ["facts", "arguments", "filings", "timeline"]:
+        section = data.get(section_name)
+        if not section:
+            continue
+        html += "<h2>%s</h2>" % section_name.title()
+        if isinstance(section, list):
+            html += "<ul>"
+            for item in section:
+                if isinstance(item, dict):
+                    html += "<li>%s</li>" % " | ".join(
+                        "%s: %s" % (k, v) for k, v in item.items()
+                    )
+                else:
+                    html += "<li>%s</li>" % str(item)
+            html += "</ul>"
+        elif isinstance(section, dict):
+            html += "<dl>"
+            for k, v in section.items():
+                html += "<dt>%s</dt><dd>%s</dd>" % (k, v)
+            html += "</dl>"
+
+    return """<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>%s</title>
+<style>
+body{background:#0a0a0a;color:#e0e0e0;font-family:monospace;max-width:800px;margin:0 auto;padding:20px}
+h1,h2{color:#ffd93d}a{color:#7bed9f}dl{margin:8px 0}dt{color:#ff6b6b;font-weight:bold}dd{margin:0 0 8px 16px}
+</style></head><body>%s</body></html>""" % (title, html)
