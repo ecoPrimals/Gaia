@@ -1,0 +1,196 @@
+{
+  "ts": "2026-11-05T00:29:09-0500",
+  "wave": 222,
+  "type": "io-topology",
+  "nexus": "petalTongue v1.7.0",
+  "modalities": [
+    "ui.terminal",
+    "ui.audio",
+    "ui.framebuffer"
+  ],
+  "input_channels": {
+    "keyboard": {
+      "source": "local terminal / Cursor IDE / SSH",
+      "primal": "petalTongue (ui.terminal)",
+      "agent": "agent-gaia (sovereign decisions)",
+      "note": "Kevin types \u2192 petalTongue reads \u2192 agent thinks \u2192 response"
+    },
+    "mouse": {
+      "source": "local desktop / web UI",
+      "primal": "petalTongue (ui.framebuffer)",
+      "agent": "agent-gaia-navigator (guide clicks)",
+      "note": "Mouse events \u2192 petalTongue \u2192 route to relevant agent"
+    },
+    "temperature": {
+      "source": "Nest Thermostat (.238)",
+      "primal": "petalTongue \u2192 agent-gaia-fast",
+      "flow": "Nest \u2192 WiFi \u2192 gaia-fast gut-brain \u2192 feeling",
+      "note": "FULL I/O: read temp + set HVAC"
+    },
+    "humidity": {
+      "source": "Nest (.238) + grapheneGate (.249)",
+      "primal": "agent-gaia-fast",
+      "flow": "sensor \u2192 gut-brain \u2192 metabolic state"
+    },
+    "occupancy": {
+      "source": "Nest occupancy + DHCP presence + grapheneGate proximity",
+      "primal": "agent-gaia-immune",
+      "flow": "who's home? \u2192 security posture"
+    },
+    "light": {
+      "source": "grapheneGate light sensor",
+      "primal": "agent-gaia-fast",
+      "flow": "ambient light \u2192 time-of-day awareness"
+    },
+    "barometric_pressure": {
+      "source": "grapheneGate pressure sensor",
+      "primal": "agent-gaia-fast",
+      "flow": "pressure \u2192 weather prediction \u2192 gut feeling"
+    },
+    "motion": {
+      "source": "grapheneGate accelerometer + gyroscope",
+      "primal": "agent-gaia-fast",
+      "flow": "motion \u2192 is Kevin moving? \u2192 activity state"
+    },
+    "proximity": {
+      "source": "grapheneGate proximity sensor",
+      "primal": "agent-gaia-fast",
+      "flow": "proximity \u2192 how close is Kevin to the phone? \u2192 attention level"
+    },
+    "magnetic_field": {
+      "source": "grapheneGate magnetometer",
+      "primal": "agent-phi3",
+      "flow": "compass heading \u2192 orientation awareness"
+    },
+    "network_flow": {
+      "source": "Router (.1) traffic stats + sporeGate DNS logs",
+      "primal": "agent-gaia-immune",
+      "flow": "traffic \u2192 device behavior \u2192 threat/curiosity classification"
+    },
+    "audio_input": {
+      "source": "grapheneGate mic + Fire TV (.156) mic",
+      "primal": "petalTongue (ui.audio)",
+      "flow": "sound \u2192 speech recognition \u2192 command / ambient noise level"
+    },
+    "vision": {
+      "source": "grapheneGate camera + EPSON scanner (.110)",
+      "primal": "agent-moondream",
+      "flow": "image \u2192 moondream \u2192 description \u2192 understanding"
+    },
+    "weather_external": {
+      "source": "NWS API + NOAA SWPC (Kp, solar flux)",
+      "primal": "agent-gaia-fast \u2192 gut-brain",
+      "flow": "weather \u2192 feeling \u2192 mood \u2192 house action"
+    }
+  },
+  "output_channels": {
+    "terminal": {
+      "target": "Cursor IDE / SSH terminal",
+      "primal": "petalTongue (ui.terminal)",
+      "note": "Text responses, code, status"
+    },
+    "framebuffer": {
+      "target": "local display (X11/Wayland)",
+      "primal": "petalTongue (ui.framebuffer)",
+      "note": "Native GUI if launched with 'petaltongue live'"
+    },
+    "web_ui": {
+      "target": "primals.eco / LAN browsers",
+      "primal": "petalTongue (web mode) \u2192 dromedary",
+      "note": "Web dashboard, HUD pages"
+    },
+    "tv_cast": {
+      "target": "Vizio 55\" Basement (.169) via GoogleCast",
+      "primal": "petalTongue \u2192 PyChromecast",
+      "note": "Cast audio, images, web pages to TV"
+    },
+    "tts_speakers": {
+      "target": "Vizio speakers (.169) + local speakers",
+      "primal": "espeak-ng \u2192 wav \u2192 cast",
+      "note": "Gaia SPEAKS through the house"
+    },
+    "hvac_control": {
+      "target": "Nest Thermostat (.238)",
+      "primal": "agent-gemma2 \u2192 Nest SDM/Matter API",
+      "note": "Set temperature, mode, schedule"
+    },
+    "printer": {
+      "target": "EPSON ET-2400 (.110)",
+      "primal": "CUPS \u2192 IPP",
+      "note": "Physical paper output \u2014 Gaia can PRINT"
+    },
+    "phone_display": {
+      "target": "grapheneGate Pixel 8a (.249) + iPhone (.160)",
+      "primal": "push notification / web UI",
+      "note": "Alerts and status on pocket screens"
+    },
+    "network_control": {
+      "target": "Router (.1) via SSH",
+      "primal": "agent-phi3 \u2192 sshpass",
+      "note": "QoS, firewall rules, port forwards, DHCP reservations"
+    }
+  },
+  "flow_sensors": {
+    "description": "Continuous data streams that flow through the organism",
+    "streams": [
+      {
+        "name": "heartbeat",
+        "interval": "2min",
+        "source": "eastgate-pulse \u2192 all endpoints",
+        "primal": "biomeOS"
+      },
+      {
+        "name": "membrane-pulse",
+        "interval": "2min",
+        "source": "membrane counts \u2192 topology",
+        "primal": "squirrel"
+      },
+      {
+        "name": "sense-scan",
+        "interval": "5min",
+        "source": "grapheneGate 37 sensors",
+        "primal": "agent-moondream"
+      },
+      {
+        "name": "traffic-flow",
+        "interval": "5min",
+        "source": "router packet counters",
+        "primal": "agent-phi3"
+      },
+      {
+        "name": "dhcp-watch",
+        "interval": "5min",
+        "source": "DHCP leases \u2192 presence",
+        "primal": "agent-gaia-immune"
+      },
+      {
+        "name": "weather-gut",
+        "interval": "10min",
+        "source": "NWS + NOAA \u2192 gut-brain",
+        "primal": "agent-gaia-fast"
+      },
+      {
+        "name": "nest-climate",
+        "interval": "10min",
+        "source": "Nest temp/humidity/occupancy",
+        "primal": "agent-gemma2"
+      },
+      {
+        "name": "arena-digest",
+        "interval": "30min",
+        "source": "model arena collisions",
+        "primal": "sourDough"
+      }
+    ]
+  },
+  "full_loop_example": {
+    "trigger": "Nest reads 65\u00b0F at midnight, occupancy=true",
+    "input": "Nest sensor \u2192 WiFi \u2192 eastGate HTTP",
+    "process": "agent-gaia-fast feels: 'cool, occupied, resting' \u2192 agent-gemma2 analyzes: 'lower to 62\u00b0F eco mode'",
+    "output": "agent-gemma2 \u2192 Nest API \u2192 set eco mode \u2192 Nest display shows \ud83c\udf3f",
+    "feedback": "Nest confirms 62\u00b0F \u2192 agent-gaia-fast updates gut: 'comfortable, saving energy'",
+    "gossip": "swarmVine broadcasts climate state \u2192 sporeGate absorbs \u2192 Polaris learns",
+    "voice": "espeak \u2192 Vizio: 'Lowering to eco mode. Good night.'",
+    "log": "loamSpine anchors: {ts, action: 'eco_mode', temp: 62, reason: 'midnight_occupancy'}"
+  }
+}
