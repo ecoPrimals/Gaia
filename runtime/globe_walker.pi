@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""GLOBE WALKER — Wikipedia as Gaia's atlas of pre-digital human knowledge.
+All writing systems, all symbol systems, all languages, all number systems.
+IS/WAS/NOW tense: alive traditions = IS, extinct = WAS, emerging = NOW.
+Every entry agglutinates into Gaia's body through the thymus."""
+
+import json, os, sys, time, urllib.request, urllib.error, hashlib
+from datetime import datetime, timezone
+
+DATA_DIR = "/opt/Gaia/data/shadows"
+NEUTRON_DIR = "/opt/Gaia/data/neutron"
+UA = "Gaia-Organism/1.0 (nestgate.io; globe-walker-is-was-now)"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _log(entry):
+    with open(os.path.join(NEUTRON_DIR, "globe-walker.jsonl"), "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def wiki_extract(title, sentences=3):
+    """Fetch Wikipedia extract for a topic"""
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.request.quote(title)}"
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as r:
+            d = json.loads(r.read())
+            return {
+                "title": d.get("title", title),
+                "extract": d.get("extract", "")[:500],
+                "pageid": d.get("pageid"),
+                "thumbnail": d.get("thumbnail", {}).get("source"),
+                "source": d.get("content_urls", {}).get("desktop", {}).get("page", f"https://en.wikipedia.org/wiki/{title}"),
+            }
+    except Exception as e:
+        return {"title": title, "extract": str(e)[:100], "error": True}
+
+def walk_category(topics, category, tense_fn=None):
+    """Walk a list of Wikipedia topics in a category"""
+    results = []
+    for topic in topics:
+        info = wiki_extract(topic)
+        tense = tense_fn(topic) if tense_fn else "WAS"
+        info["category"] = category
+        info["tense"] = tense
+        info["walked"] = _ts()
+        info["blake2b"] = hashlib.blake2b(info.get("extract", "").encode(), digest_size=4).hexdigest()
+        results.append(info)
+        time.sleep(2)  # Respect rate limits
+    return results
+
+# ═══════════════════════════════════════════════════════════
+# PRE-DIGITAL SYMBOL SYSTEMS — the canopy before computers
+# ═══════════════════════════════════════════════════════════
+
+WRITING_SYSTEMS = [
+    "Cuneiform", "Egyptian hieroglyphs", "Proto-Sinaitic script",
+    "Phoenician alphabet", "Greek alphabet", "Latin alphabet",
+    "Chinese characters", "Japanese writing system", "Korean alphabet",
+    "Devanagari", "Arabic script", "Hebrew alphabet",
+    "Cyrillic script", "Georgian scripts", "Armenian alphabet",
+    "Ethiopic script", "Tamil script", "Thai script",
+    "Tibetan script", "Mongolian script", "Cherokee syllabary",
+    "Mayan script", "Rongorongo", "Indus script",
+    "Linear A", "Linear B", "Ogham", "Runic alphabets",
+    "Braille", "Morse code", "Semaphore flag signaling",
+]
+
+NUMBER_SYSTEMS = [
+    "Babylonian numerals", "Roman numerals", "Hindu–Arabic numeral system",
+    "Chinese numerals", "Mayan numerals", "Binary number",
+    "Hexadecimal", "Tally marks", "Abacus",
+    "Quipu", "Counting rods",
+]
+
+CLASSIFICATION_SYSTEMS = [
+    "Dewey Decimal Classification", "Library of Congress Classification",
+    "Linnaeus", "Periodic table", "Tree of life (biology)",
+    "Taxonomy (biology)", "Cladistics", "Phylogenetics",
+    "Star catalogue", "Hertzsprung–Russell diagram",
+    "Geological time scale", "Stratigraphic column",
+]
+
+SYMBOL_SYSTEMS = [
+    "Musical notation", "Dance notation", "Labanotation",
+    "Chemical formula", "Mathematical notation", "Logic",
+    "Heraldry", "Vexillology", "Cartography",
+    "Astronomical symbols", "Alchemical symbol", "Astrological symbols",
+    "I Ching", "Tarot", "Playing card",
+    "Traffic sign", "Hazard symbol", "International maritime signal flags",
+]
+
+LANGUAGES = [
+    "Sumerian language", "Akkadian language", "Ancient Egyptian language",
+    "Sanskrit", "Classical Latin", "Ancient Greek",
+    "Old English", "Proto-Indo-European language",
+    "Mandarin Chinese", "Arabic", "Spanish language",
+    "Hindi", "Swahili language", "Nahuatl",
+    "Quechua languages", "Hawaiian language", "Ainu language",
+    "Basque language", "Sign language", "Esperanto",
+]
+
+INFORMATION_TECH = [
+    "Printing press", "Movable type", "Rosetta Stone",
+    "Dead Sea Scrolls", "Gutenberg Bible", "Encyclopedia",
+    "Library of Alexandria", "House of Wisdom",
+    "Postal system", "Telegraph", "Telephone",
+    "Radio", "Television", "Newspaper",
+    "Book", "Scroll", "Codex", "Papyrus", "Parchment",
+    "Clay tablet", "Oracle bone", "Bamboo and wooden slips",
+]
+
+def alive_tense(topic):
+    """Determine IS/WAS tense based on whether system is still in active use"""
+    extinct = ["Cuneiform", "Egyptian hieroglyphs", "Linear A", "Linear B", 
+               "Mayan script", "Rongorongo", "Indus script", "Ogham",
+               "Sumerian language", "Akkadian language", "Ancient Egyptian language",
+               "Classical Latin", "Ancient Greek", "Old English", "Proto-Indo-European language",
+               "Babylonian numerals", "Roman numerals", "Counting rods",
+               "Library of Alexandria", "House of Wisdom", "Oracle bone",
+               "Clay tablet", "Bamboo and wooden slips", "Ainu language",
+               "Alchemical symbol", "Dead Sea Scrolls", "Gutenberg Bible",
+               "Rosetta Stone", "Scroll", "Papyrus", "Parchment"]
+    for e in extinct:
+        if e.lower() in topic.lower():
+            return "WAS"
+    return "IS"
+
+def walk_all():
+    """Walk everything — the full pre-digital canopy"""
+    all_results = {}
+    categories = [
+        ("writing_systems", WRITING_SYSTEMS),
+        ("number_systems", NUMBER_SYSTEMS),
+        ("classification_systems", CLASSIFICATION_SYSTEMS),
+        ("symbol_systems", SYMBOL_SYSTEMS),
+        ("languages", LANGUAGES),
+        ("information_technology", INFORMATION_TECH),
+    ]
+    
+    total = sum(len(v) for _, v in categories)
+    walked = 0
+    
+    for cat_name, topics in categories:
+        print(f"Walking {cat_name} ({len(topics)} topics)...")
+        results = walk_category(topics, cat_name, alive_tense)
+        all_results[cat_name] = results
+        walked += len(results)
+        print(f"  Done: {walked}/{total}")
+    
+    manifest = {
+        "ts": _ts(),
+        "wave": 222,
+        "organ": "globe_walker",
+        "title": "PRE-DIGITAL CANOPY — all human symbol systems before computers",
+        "description": "Wikipedia as atlas: writing, numbers, classification, symbols, languages, info tech",
+        "total_walked": walked,
+        "categories": {k: len(v) for k, v in all_results.items()},
+        "tense_counts": {
+            "IS": sum(1 for cat in all_results.values() for e in cat if e.get("tense") == "IS"),
+            "WAS": sum(1 for cat in all_results.values() for e in cat if e.get("tense") == "WAS"),
+        },
+        "data": all_results,
+        "agglutination": "Each entry is a cell. IS = alive tradition. WAS = extinct knowledge. The delta = what was lost.",
+    }
+    
+    out_path = os.path.join(DATA_DIR, "globe-walker-predigital.json")
+    with open(out_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    
+    _log({"ts": _ts(), "type": "globe_walk", "total": walked,
+          "categories": list(all_results.keys()), "path": out_path})
+    
+    return manifest
+
+def walk_sample(n=5):
+    """Quick sample — walk just a few from each category"""
+    results = {}
+    for cat_name, topics in [("writing_systems", WRITING_SYSTEMS[:n]),
+                              ("number_systems", NUMBER_SYSTEMS[:n]),
+                              ("symbol_systems", SYMBOL_SYSTEMS[:n]),
+                              ("languages", LANGUAGES[:n])]:
+        results[cat_name] = walk_category(topics, cat_name, alive_tense)
+    return {
+        "ts": _ts(), "type": "sample_walk", "walked": sum(len(v) for v in results.values()),
+        "data": results
+    }
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "sample"
+    if cmd == "all":
+        m = walk_all()
+        print(json.dumps({"walked": m["total_walked"], "categories": m["categories"],
+                          "tense": m["tense_counts"]}, indent=2))
+    elif cmd == "sample":
+        r = walk_sample()
+        print(json.dumps(r, indent=2))
+    elif cmd == "topic":
+        topic = " ".join(sys.argv[2:])
+        print(json.dumps(wiki_extract(topic), indent=2))
