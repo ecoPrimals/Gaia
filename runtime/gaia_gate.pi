@@ -436,6 +436,43 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
             return
+        # EPITOPE PATTERNS (GET /api/epitope)
+        if self.path.startswith("/api/epitope"):
+            try:
+                import urllib.parse
+                qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                action=qs.get("action",["list"])[0]
+                if action=="generate":
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"generate"],
+                        capture_output=True,text=True,timeout=30,cwd=_REPO)
+                elif action=="print":
+                    name=qs.get("name",["cmyk-strips"])[0]
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"print",name],
+                        capture_output=True,text=True,timeout=30,cwd=_REPO)
+                else:
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"list"],
+                        capture_output=True,text=True,timeout=10,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # SCAN WATCHER STATE (GET /api/watcher)
+        if self.path=="/api/watcher":
+            try:
+                sf=os.path.join(_REPO,"data","neutron","scan-watcher-state.json")
+                pid_f=os.path.join(_REPO,"data","neutron","scan-watcher.pid")
+                state={}
+                if os.path.exists(sf):
+                    with open(sf) as f: state=json.load(f)
+                pid="dead"
+                if os.path.exists(pid_f):
+                    p=open(pid_f).read().strip()
+                    try:
+                        os.kill(int(p),0); pid=f"alive:{p}"
+                    except: pid="dead"
+                state["daemon"]=pid
+                self._json(state)
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")

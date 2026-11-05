@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""Scan Watcher — Gaia's passive scanner eye.
+Detects when something new is placed on the flatbed.
+Compares scan hash to last known → if different, ingest + classify."""
+
+import hashlib, json, os, subprocess, sys, time
+from datetime import datetime, timezone
+
+IMAGE_DIR = "/opt/Gaia/data/gut/images"
+STATE_FILE = "/opt/Gaia/data/neutron/scan-watcher-state.json"
+IO_LOG = "/opt/Gaia/data/neutron/epson-io.jsonl"
+SCANNER = "airscan:w1:EPSON ET-2400 Series"
+BLANK_THRESHOLD = 50000  # bytes — a blank scan at 150dpi is tiny (~9KB)
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _log(entry):
+    with open(IO_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+def _load_state():
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE) as f:
+            return json.load(f)
+    return {"last_hash": "", "last_scan": "", "blank_hash": "", "scans": 0}
+
+def _save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+
+def quick_scan():
+    """Fast low-res scan to detect if something is on the glass"""
+    out = f"/tmp/gaia-quickscan-{int(time.time())}.png"
+    try:
+        r = subprocess.run(
+            ["scanimage", "-d", SCANNER, "--format=png",
+             "--resolution=100", "--mode=Gray", "-o", out],
+            capture_output=True, text=True, timeout=60
+        )
+        if r.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 500:
+            return out
+    except:
+        pass
+    return None
+
+def full_scan(label="auto"):
+    """Full 300dpi color scan for ingestion"""
+    ts_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    out = os.path.join(IMAGE_DIR, f"scan-{ts_str}-{label}.png")
+    try:
+        r = subprocess.run(
+            ["scanimage", "-d", SCANNER, "--format=png",
+             "--resolution=300", "--mode=Color", "-o", out],
+            capture_output=True, text=True, timeout=120
+        )
+        if r.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 1000:
+            h = hashlib.blake2b(open(out, "rb").read(), digest_size=8).hexdigest()
+            return {"file": os.path.basename(out), "path": out, "size": os.path.getsize(out), "blake2b": h}
+    except:
+        pass
+    return None
+
+def file_hash(path):
+    """BLAKE2B hash of a file"""
+    if not os.path.exists(path):
+        return ""
+    return hashlib.blake2b(open(path, "rb").read(), digest_size=8).hexdigest()
+
+def watch_once():
+    """Single watch cycle: quick scan → compare → full scan if new"""
+    state = _load_state()
+    
+    qpath = quick_scan()
+    if not qpath:
+        return {"action": "scan_failed", "ts": _ts()}
+    
+    qsize = os.path.getsize(qpath)
+    qhash = file_hash(qpath)
+    
+    # Is it blank? (small file = empty glass)
+    is_blank = qsize < BLANK_THRESHOLD
+    
+    # Is it the same as last scan?
+    is_same = qhash == state.get("last_hash", "")
+    
+    if is_blank:
+        state["blank_hash"] = qhash
+        _save_state(state)
+        os.remove(qpath)
+        return {"action": "blank", "ts": _ts(), "size": qsize}
+    
+    if is_same:
+        os.remove(qpath)
+        return {"action": "unchanged", "ts": _ts(), "hash": qhash}
+    
+    # NEW CONTENT DETECTED! Do full scan
+    result = full_scan("auto-detect")
+    if result:
+        state["last_hash"] = qhash
+        state["last_scan"] = result["file"]
+        state["scans"] = state.get("scans", 0) + 1
+        _save_state(state)
+        
+        entry = {
+            "ts": _ts(), "type": "auto_scan", "trigger": "content_change",
+            "file": result["file"], "size": result["size"], "blake2b": result["blake2b"],
+            "scan_number": state["scans"]
+        }
+        _log(entry)
+        os.remove(qpath)
+        return {"action": "ingested", **entry}
+    
+    os.remove(qpath)
+    return {"action": "full_scan_failed", "ts": _ts()}
+
+def calibrate_blank():
+    """Scan the empty flatbed to establish blank baseline"""
+    qpath = quick_scan()
+    if qpath:
+        state = _load_state()
+        state["blank_hash"] = file_hash(qpath)
+        state["blank_size"] = os.path.getsize(qpath)
+        _save_state(state)
+        os.remove(qpath)
+        return {"calibrated": True, "blank_hash": state["blank_hash"], "blank_size": state["blank_size"]}
+    return {"error": "scan failed"}
+
+def daemon(interval=120):
+    """Run as daemon — check every N seconds"""
+    print(f"Scan watcher daemon started (every {interval}s)")
+    while True:
+        try:
+            result = watch_once()
+            if result.get("action") == "ingested":
+                print(f"[{_ts()}] NEW SCAN: {result['file']} ({result['size']} bytes)")
+            elif result.get("action") not in ("blank", "unchanged"):
+                print(f"[{_ts()}] {result.get('action', 'unknown')}")
+        except Exception as e:
+            print(f"[{_ts()}] ERROR: {e}")
+        time.sleep(interval)
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(json.dumps(watch_once(), indent=2))
+    elif sys.argv[1] == "daemon":
+        interval = int(sys.argv[2]) if len(sys.argv) > 2 else 120
+        daemon(interval)
+    elif sys.argv[1] == "calibrate":
+        print(json.dumps(calibrate_blank(), indent=2))
+    elif sys.argv[1] == "state":
+        print(json.dumps(_load_state(), indent=2))
