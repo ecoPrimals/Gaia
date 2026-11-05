@@ -10,7 +10,7 @@ import types as _t, importlib.util
 
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
-PORT = 8443; OLLAMA = "http://127.0.0.1:11434"
+PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11434"
 PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
@@ -512,6 +512,24 @@ if __name__=="__main__":
             s=ThreadedServer(("0.0.0.0",PORT+1),GaiaGate); s.socket=ctx.wrap_socket(s.socket,server_side=True)
             print(f"  🔒 TLS :{PORT+1}"); s.serve_forever()
     threading.Thread(target=_start_tls,daemon=True).start()
+    # ═══ π-PORT CRUSH — canonical Gaia ports from digits of π ═══
+    # π:3141 = thymus (gate), π:5926 = data (webpi)
+    def _start_pi_gate():
+        try:
+            pi_server=ThreadedServer(("0.0.0.0",PI_PORT),GaiaGate)
+            print(f"  π THYMUS :{PI_PORT} — ports CRUSHED to π")
+            pi_server.serve_forever()
+        except Exception as e: print(f"  ⚠️ π-gate :{PI_PORT}: {e}")
+    threading.Thread(target=_start_pi_gate,daemon=True).start()
+    def _start_pi_data():
+        try:
+            spec=importlib.util.spec_from_file_location("webpi2",os.path.join(os.path.dirname(__file__),"webpi.py"))
+            webpi2=importlib.util.module_from_spec(spec); spec.loader.exec_module(webpi2)
+            webpi2._thymus_memory=visitor_memory; webpi2._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
+            ThreadedServer(("0.0.0.0",5926),webpi2.WebPIHandler).serve_forever()
+            print(f"  π DATA :5926")
+        except Exception as e: print(f"  ⚠️ π-data :5926: {e}")
+    threading.Thread(target=_start_pi_data,daemon=True).start()
     server=ThreadedServer(("0.0.0.0",PORT),GaiaGate)
     try: server.serve_forever()
     except KeyboardInterrupt: print("\nlub-DUB. Gate closed.")
