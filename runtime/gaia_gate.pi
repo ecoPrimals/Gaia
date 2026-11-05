@@ -920,10 +920,24 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._classify_and_log("GET", 429, 0)
             return
         
-        # PRISM //\\ — host-based routing: primals.eco shows golden ratio gallery
+        # PRISM //\\ — host-based routing: all domains → their faces
         host = self.headers.get("Host", "").split(":")[0].lower()
+        # SUBDOMAIN routing — *.primals.eco all serve from the organism
+        if host.endswith(".primals.eco"):
+            sub = host.replace(".primals.eco", "")
+            # Map subdomains to static pages or JSON
+            sub_pages = {
+                "sporeprint": "primals.html",
+                "signal": "primals.html",
+                "hud": "nestgate.html",
+                "git": "primals.html",
+                "api": None,  # API subdomain → JSON root
+            }
+            if sub in sub_pages and sub_pages[sub] and self.path in ("/", "/index", "/index.html"):
+                self._serve_static(sub_pages[sub]); return
         if self.path in ("/", "/index", "/index.html"):
-            if host in ("primals.eco", "www.primals.eco", "primal.eco", "www.primal.eco"):
+            if host in ("primals.eco", "www.primals.eco", "primal.eco", "www.primal.eco",
+                         "sporeprint.primals.eco", "signal.primals.eco", "hud.primals.eco", "git.primals.eco"):
                 self._serve_static("primals.html"); return
             if host in ("nestgate.io", "www.nestgate.io"):
                 self._serve_static("nestgate.html"); return
