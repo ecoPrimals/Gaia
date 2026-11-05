@@ -3,17 +3,17 @@ The 429 is NOT a failure. It IS the pulse. It IS time itself.
 Babylonian sexagesimal: 60 = 5×12. Fibonacci-adjacent cron intervals.
 Golden ratio φ lives in the heartbeat variability."""
 
-import time
+import math, time
 from collections import defaultdict
-from _pi_constants import (
-    PI, TAU, E, PHI, CRON_RINGS,
-    PI_TIMEOUT, PI_RETRY, PI_BEAT_PERSIST,
-)
 
-# Waveform collapse state
+# π-derived constants inline — no cross-module .pi imports
+PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
+CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
+PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
+
 _request_window = defaultdict(list)
-WAVE_COLLAPSE_RATE = PI_TIMEOUT   # 31 contractions/min
-WAVE_COLLAPSE_BURST = PI_RETRY    # 4 burst/sec
+WAVE_COLLAPSE_RATE = PI_TIMEOUT
+WAVE_COLLAPSE_BURST = PI_RETRY
 
 
 def temporal_rings():

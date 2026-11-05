@@ -24,13 +24,26 @@ def _load(name, fname):
     return m
 
 organ_data = _load("organ_data", "organ_data.pi")
-from _anderson import visitor_memory, trust_level, BODY_IPS, CRAWLER_SIGNATURES, sigmoid
-from _body import load_seeds, inject_primals, amoeba_eyes, third_body_point
-from _pulse import write_pulse as _wp, write_rss as _wr, log_caddy_json as _log_caddy, log_culture
-from _routes import (DESK_PAGES, GUT_DATA, CAMPFIRE_PAGES, SEO_RESPONSES,
-                     KNOWN_GATES, SPORE_PREFIXES, INDEXNOW_KEY)
-from _sun import _sun_position
-from _temporal import _temporal_rings
+_anderson = _load("_anderson", "_anderson.pi")
+_body = _load("_body", "_body.pi")
+_pulse_mod = _load("_pulse", "_pulse.pi")
+_routes_mod = _load("_routes", "_routes.pi")
+_sun_mod = _load("_sun", "_sun.pi")
+_temporal_mod = _load("_temporal", "_temporal.pi")
+# Unpack — the organism's nervous system
+visitor_memory = _anderson.visitor_memory; trust_level = _anderson.trust_level
+BODY_IPS = _anderson.BODY_IPS; CRAWLER_SIGNATURES = _anderson.CRAWLER_SIGNATURES
+sigmoid = _anderson.sigmoid
+load_seeds = _body.load_seeds; inject_primals = _body.inject_primals
+amoeba_eyes = _body.amoeba_eyes; third_body_point = _body.third_body_point
+_wp = _pulse_mod.write_pulse; _wr = _pulse_mod.write_rss
+_log_caddy = _pulse_mod.log_caddy_json; log_culture = _pulse_mod.log_culture
+DESK_PAGES = _routes_mod.DESK_PAGES; GUT_DATA = _routes_mod.GUT_DATA
+CAMPFIRE_PAGES = _routes_mod.CAMPFIRE_PAGES; SEO_RESPONSES = _routes_mod.SEO_RESPONSES
+KNOWN_GATES = _routes_mod.KNOWN_GATES; SPORE_PREFIXES = _routes_mod.SPORE_PREFIXES
+INDEXNOW_KEY = _routes_mod.INDEXNOW_KEY
+_sun_position = _sun_mod._sun_position if hasattr(_sun_mod, '_sun_position') else _sun_mod.sun_position
+_temporal_rings = _temporal_mod._temporal_rings if hasattr(_temporal_mod, '_temporal_rings') else _temporal_mod.temporal_rings
 
 try:
     _spec = importlib.util.spec_from_file_location("cortex", os.path.join(os.path.dirname(__file__), "cortex.pi"))
