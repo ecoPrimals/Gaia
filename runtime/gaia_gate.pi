@@ -1165,6 +1165,40 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        # ══ INDEXNOW — instant search engine indexing, no account needed ══
+        INDEXNOW_KEY = "d82bdf9656300a434ce90cc84953edae"
+        if self.path == "/%s.txt" % INDEXNOW_KEY:
+            body = INDEXNOW_KEY.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if self.path == "/indexnow":
+            pages = ["","pulse","complexity","play","senses","signal","deck","primals",
+                "nestgate","home","terra","membrane","mesh","cast","beacon","hat",
+                "luna","frame","forge","detroit","dialectic","tuebor","legend",
+                "record","chipmunk","pspace","digestive","lisp-desk","canfield",
+                "anderson","walkers","onboard"]
+            urls = ["https://nestgate.io/%s" % p for p in pages]
+            payload = json.dumps({"host": "nestgate.io", "key": INDEXNOW_KEY,
+                "keyLocation": "https://nestgate.io/%s.txt" % INDEXNOW_KEY, "urlList": urls}).encode()
+            results = {}
+            for engine in ["api.indexnow.org", "www.bing.com", "yandex.com"]:
+                try:
+                    req = urllib.request.Request("https://%s/indexnow" % engine,
+                        data=payload, headers={"Content-Type": "application/json; charset=utf-8"})
+                    with urllib.request.urlopen(req, timeout=10) as r:
+                        results[engine] = {"status": r.status, "ok": True}
+                except urllib.error.HTTPError as e:
+                    results[engine] = {"status": e.code, "ok": e.code in (200, 202)}
+                    e.read()
+                except Exception as e:
+                    results[engine] = {"error": str(e)[:80]}
+            self._json({"indexnow": results, "urls_submitted": len(urls), "key": INDEXNOW_KEY})
+            return
+
         # ══ TRIAD 1: LEGS — ground, defense, ecology ══
         if self.path in ("/barriers", "/barriers.json", "/acid", "/gut", "/clots", "/coagulation"):
             self._json(organ_data.barriers(GAIA_TOKEN)); return
