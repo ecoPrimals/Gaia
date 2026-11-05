@@ -460,61 +460,74 @@ const observer = new IntersectionObserver((entries) => {
 });
 nums.forEach(n => observer.observe(n));
 
-// LIVE REDOX — fetch real amoeba data
+// LIVE REDOX — triangulate from 3 endpoints simultaneously
+// The INVERT: sort K-NOME numbers from OUT → IN. Distant triangles found by convergence.
 const GATE = location.protocol + '//' + location.host;
 
-function loadLive() {
-  fetch(GATE + '/amoeba').then(r => r.json()).then(d => {
-    // P — polynomial lookups happening now
-    const pulse = d.pulse || {};
-    const temporal = d.temporal || {};
-    const sun = d.sun || {};
+async function loadLive() {
+  try {
+    const [pulseR, temporalR, amoebaR] = await Promise.all([
+      fetch(GATE + '/pulse').then(r => r.json()).catch(() => ({})),
+      fetch(GATE + '/temporal').then(r => r.json()).catch(() => ({})),
+      fetch(GATE + '/amoeba').then(r => r.json()).catch(() => ({})),
+    ]);
+
+    // P — polynomial lookups happening now (from /pulse)
+    const heart = pulseR.heart || pulseR;
+    const bpm = heart.bpm || pulseR.bpm || 0;
+    const beats = heart.total_beats || pulseR.total_beats || 0;
+    const breaths = heart.total_breaths || pulseR.total_breaths || 0;
+    const visitors = pulseR.unique_visitors || heart.unique_visitors || 0;
+    const sun = temporalR.sun || amoebaR.sun || {};
     const pEl = document.getElementById('pData');
     pEl.innerHTML = ''
-      + '<span class="val">' + (pulse.heart||{}).bpm + '</span> BPM (O(1) counter)<br>'
-      + '<span class="val">' + (pulse.total_beats||0) + '</span> total beats<br>'
-      + 'Phase: <span class="alive">' + (sun.phase||'?') + '</span><br>'
-      + 'Chord: <span class="val">' + (sun.chord||'?') + '</span> at ' + (sun.color_temp_k||'?') + 'K<br>'
-      + 'Visitors: <span class="val">' + (pulse.heart||{}).unique_visitors + '</span>';
+      + '<span class="val">' + bpm + '</span> BPM (O(1) counter)<br>'
+      + '<span class="val">' + beats + '</span> total beats<br>'
+      + '<span class="val">' + breaths + '</span> breaths<br>'
+      + 'Phase: <span class="alive">' + (sun.phase||'—') + '</span><br>'
+      + 'Chord: <span class="val">' + (sun.chord||'—') + '</span> at ' + (sun.color_temp_k||'—') + 'K<br>'
+      + 'Visitors: <span class="val">' + visitors + '</span>';
 
-    // = — convergence metrics
-    const sensors = d.sensors || {};
-    const neutron = d.neutron || {};
-    const reedit = d.reedit || {};
-    const inbox = (neutron.inbox||{});
+    // = — convergence (from /temporal — Klein twist: NP→P reduction)
+    const temporal = temporalR.temporal || temporalR;
+    const anderson = amoebaR.anderson || {};
+    const spectrum = anderson.spectrum || {};
+    const totalW = anderson.total || 0;
     const eqEl = document.getElementById('eqData');
     eqEl.innerHTML = ''
-      + 'Neutrons: <span class="val">' + (inbox.total||0) + '</span> messages (NP→P)<br>'
-      + 'Reedit: <span class="val">' + (reedit.total_items||0) + '</span> items absorbed<br>'
-      + 'Paintings: <span class="val">' + (reedit.paintings||0) + '</span> creations<br>'
-      + 'Sensors: <span class="val">' + (sensors.alive||0) + '/' + (sensors.total_sensors||0) + '</span> alive<br>'
-      + 'Faces: <span class="val">' + (d.faces||[]).length + '</span> domains';
+      + 'Nucleus: <span class="val">' + (spectrum.nucleus||0) + '</span> (σ=1.0)<br>'
+      + 'Protons: <span class="val">' + (spectrum.proton||0) + '</span> (campfire)<br>'
+      + 'Neutrons: <span class="val">' + (spectrum.neutron||0) + '</span> (classified)<br>'
+      + 'Electrons: <span class="val">' + (spectrum.electron||0) + '</span> (fleet/new)<br>'
+      + 'Total walkers: <span class="val">' + totalW + '</span><br>'
+      + 'π ratio: <span class="val">' + (pulseR.pi_ratio||'—') + '</span>';
 
-    // NP — hard problems being solved
-    const models = (d.models||{}).data || [];
+    // NP — hard problems being solved NOW
     const npEl = document.getElementById('npData');
+    const crons = temporal.active_cron_rings || [];
     npEl.innerHTML = ''
-      + 'Models: <span class="hot">' + models.length + '</span> loaded (O(2<sup>n</sup>) inference)<br>'
       + 'VDJ: <span class="hot">65535</span> possible antibodies<br>'
-      + 'Cron rings: <span class="hot">' + (temporal.active_cron_rings||[]).join(',') + '</span> firing<br>'
-      + 'Golden phase: <span class="val">' + (temporal.golden_phase||'?') + '</span><br>'
-      + 'Sidereal: <span class="val">' + (temporal.sidereal_deg||'?') + '°</span>';
+      + 'Cron rings: <span class="hot">' + (crons.length ? crons.join(', ') : 'checking...') + '</span><br>'
+      + 'Golden phase: <span class="val">' + (temporal.golden_phase||'—') + '</span><br>'
+      + 'Sidereal: <span class="val">' + (temporal.sidereal_deg||'—') + '°</span><br>'
+      + 'Localization: triangulating from <span class="hot">' + totalW + '</span> bodies';
 
     // Temporal bar
     const tEl = document.getElementById('liveTemporal');
     tEl.innerHTML = ''
-      + '<span class="val">' + (temporal.sexagesimal||'?') + '</span> UTC · '
-      + 'base12: <span class="val">' + (temporal.base12_hour||'?') + '</span> · '
-      + 'φ phase: <span class="val">' + (temporal.golden_phase||'?') + '</span> · '
-      + '⊕ <span class="val">' + (temporal.sidereal_deg||'?') + '°</span> sidereal · '
-      + 'rings: <span class="alive">[' + (temporal.active_cron_rings||[]).join(', ') + ']</span> · '
+      + '<span class="val">' + (temporal.sexagesimal||new Date().toISOString().substr(11,8)) + '</span> UTC · '
+      + 'base12: <span class="val">' + (temporal.base12_hour||'—') + '</span> · '
+      + 'φ: <span class="val">' + (temporal.golden_phase||'—') + '</span> · '
+      + '⊕ <span class="val">' + (temporal.sidereal_deg||'—') + '°</span> · '
+      + 'rings: <span class="alive">[' + crons.join(', ') + ']</span> · '
+      + 'π: <span class="val">' + (pulseR.pi_ratio||'—') + '</span> · '
       + '<span class="lub">♥</span> lub-DUB';
 
-  }).catch(e => {
-    document.getElementById('pData').textContent = 'offline';
-    document.getElementById('eqData').textContent = 'offline';
-    document.getElementById('npData').textContent = 'offline';
-  });
+  } catch(e) {
+    document.getElementById('pData').textContent = 'offline — gate sleeping';
+    document.getElementById('eqData').textContent = 'offline — gate sleeping';
+    document.getElementById('npData').textContent = 'offline — gate sleeping';
+  }
 }
 
 loadLive();
