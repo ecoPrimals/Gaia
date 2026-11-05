@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head><script src="/js/piGut.js"></script>
+<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>chipmunk · membrane primal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:"Courier New",monospace;min-height:100vh;overflow-x:hidden}
+
+/* --- MEMBRANE CANVAS â€” the SVG fills the viewport --- */
+#membrane-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#membrane-canvas svg{width:100%;height:100%}
+
+/* --- CONTROLS OVERLAY â€” floats on the membrane --- */
+.overlay{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;pointer-events:none}
+.overlay > *{pointer-events:auto}
+
+/* --- TOP BAR --- */
+.top-bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:rgba(13,17,23,0.85);backdrop-filter:blur(4px);border-bottom:1px solid rgba(33,38,45,0.6)}
+.top-bar h1{font-size:14px;color:#5ab87a;font-weight:normal;white-space:nowrap}
+.top-bar .sub{font-size:9px;color:#484f58}
+.status-items{display:flex;gap:12px;margin-left:auto;font-size:10px;flex-wrap:wrap}
+.status-items .s{color:#484f58}.status-items .v{color:#8b949e}
+.status-items .alive{color:#3fb950}
+
+/* --- ATTENTION METER --- */
+.attn-bar{display:flex;align-items:center;gap:8px;padding:6px 16px;background:rgba(22,27,34,0.8);font-size:10px}
+.attn-bar .label{color:#484f58;text-transform:uppercase;letter-spacing:1px;min-width:60px}
+.attn-track{flex:1;height:6px;background:rgba(33,38,45,0.6);border-radius:3px;overflow:hidden;max-width:200px}
+.attn-fill{height:100%;background:#3fb950;border-radius:3px;transition:width 0.8s ease;width:10%}
+.attn-val{color:#3fb950;min-width:30px}
+.attn-bar .engage{color:#6e7681;margin-left:6px}
+
+/* --- BUTTON RING â€” control buttons around the edge --- */
+.btn-ring{position:fixed;z-index:2}
+.btn-ring.left{left:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+.btn-ring.right{right:8px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+.btn-ring.bottom{bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
+.ring-btn{background:rgba(22,27,34,0.85);backdrop-filter:blur(4px);border:1px solid rgba(48,54,61,0.7);color:#c9d1d9;width:52px;height:52px;border-radius:50%;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:all 0.2s;font-family:inherit;font-size:8px;line-height:1.2;text-align:center;user-select:none}
+.ring-btn:hover{border-color:#5ab87a;background:rgba(35,134,54,0.3);transform:scale(1.08)}
+.ring-btn:active{background:rgba(35,134,54,0.6);transform:scale(0.95)}
+.ring-btn .icon{font-size:18px}
+.ring-btn .lbl{font-size:7px;color:#8b949e;margin-top:1px}
+
+/* --- PANELS â€” slide out from edges --- */
+.panel{position:fixed;z-index:3;background:rgba(13,17,23,0.92);backdrop-filter:blur(8px);border:1px solid rgba(33,38,45,0.8);border-radius:10px;padding:14px;max-width:340px;max-height:60vh;overflow-y:auto;display:none;font-size:12px;line-height:1.5}
+.panel.show{display:block}
+.panel.left-panel{left:70px;top:50%;transform:translateY(-50%)}
+.panel.right-panel{right:70px;top:50%;transform:translateY(-50%)}
+.panel.bottom-panel{bottom:70px;left:50%;transform:translateX(-50%);max-width:600px}
+.panel .close{position:absolute;top:6px;right:10px;background:none;border:none;color:#484f58;font-size:14px;cursor:pointer;font-family:inherit}
+.panel .close:hover{color:#c9d1d9}
+.panel .title{font-size:10px;color:#5ab87a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.panel .msg{white-space:pre-wrap;font-size:11px;line-height:1.5}
+.panel .msg .num{color:#f0883e}
+.panel .msg .label{color:#8b949e}
+.panel .msg .good{color:#3fb950}
+.panel .msg .warn{color:#f0883e}
+.panel .msg .braid{color:#a371f7}
+.panel .msg .site{color:#58a6ff}
+.panel .msg .dim{color:#484f58}
+
+/* --- SORT DECK â€” floats center-bottom --- */
+.sort-deck{position:fixed;z-index:3;bottom:70px;left:50%;transform:translateX(-50%);width:90%;max-width:420px;display:none}
+.sort-deck.show{display:block}
+.sort-card{background:rgba(13,17,23,0.92);backdrop-filter:blur(8px);border:1px solid rgba(48,54,61,0.8);border-radius:10px;padding:14px;margin-bottom:6px;transition:all 0.3s}
+.sort-card .entity{font-size:12px;color:#c9d1d9;margin-bottom:4px}
+.sort-card .meta{font-size:9px;color:#6e7681;margin-bottom:8px}
+.sort-btns{display:flex;gap:4px}
+.sort-btns button{flex:1;padding:8px 2px;border-radius:6px;font-family:inherit;font-size:10px;cursor:pointer;transition:all 0.15s;border:1px solid rgba(48,54,61,0.7);background:rgba(13,17,23,0.8)}
+.sort-btns .self-btn{color:#3fb950;border-color:rgba(35,134,54,0.5)}.sort-btns .self-btn:hover{background:rgba(35,134,54,0.6);color:#fff}
+.sort-btns .nonself-btn{color:#e85d3a;border-color:rgba(232,93,58,0.5)}.sort-btns .nonself-btn:hover{background:rgba(232,93,58,0.6);color:#fff}
+.sort-btns .partial-btn{color:#f0883e;border-color:rgba(240,136,62,0.5)}.sort-btns .partial-btn:hover{background:rgba(240,136,62,0.6);color:#fff}
+.sort-btns .skip-btn{color:#484f58;border-color:rgba(48,54,61,0.5)}.sort-btns .skip-btn:hover{background:rgba(33,38,45,0.6)}
+.sort-card.sorted{opacity:0;transform:translateX(100px);height:0;padding:0;margin:0;border:0;overflow:hidden}
+.sort-header{display:flex;justify-content:space-between;align-items:center;background:rgba(13,17,23,0.92);backdrop-filter:blur(8px);border-radius:8px;padding:8px 12px;margin-bottom:6px}
+.sort-header .stitle{font-size:10px;color:#5ab87a;text-transform:uppercase;letter-spacing:1px}
+.sort-header .count{font-size:9px;color:#484f58}
+
+/* --- GUESS BUBBLE â€” chipmunk speaks --- */
+.guess-bubble{position:fixed;z-index:4;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(13,17,23,0.95);backdrop-filter:blur(12px);border:1px solid #3fb950;border-radius:14px;padding:20px 24px;max-width:320px;display:none;text-align:center;font-size:12px;line-height:1.6}
+.guess-bubble.show{display:block}
+.guess-bubble .gtext{margin-bottom:14px}
+.guess-bubble .gtext .good{color:#3fb950}
+.guess-bubble .gtext .warn{color:#f0883e}
+.guess-bubble .gtext .dim{color:#484f58}
+.guess-btns{display:flex;gap:8px;justify-content:center}
+.guess-btns button{padding:10px 20px;border-radius:8px;font-family:inherit;font-size:12px;cursor:pointer;border:1px solid rgba(48,54,61,0.7);transition:all 0.15s}
+.guess-btns .yes{background:rgba(35,134,54,0.3);color:#3fb950;border-color:rgba(35,134,54,0.5)}.guess-btns .yes:hover{background:rgba(35,134,54,0.7);color:#fff}
+.guess-btns .no{background:rgba(232,93,58,0.2);color:#e85d3a;border-color:rgba(232,93,58,0.4)}.guess-btns .no:hover{background:rgba(232,93,58,0.5);color:#fff}
+
+/* --- EPITOPE PICKER â€” bottom strip --- */
+.ep-strip{position:fixed;z-index:2;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:rgba(13,17,23,0.85);backdrop-filter:blur(4px);border-radius:24px;padding:6px 10px;display:none}
+.ep-strip.show{display:flex}
+.ep-btn{background:rgba(22,27,34,0.8);border:1px solid rgba(48,54,61,0.6);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:inherit;font-size:9px;color:#8b949e;transition:all 0.15s;white-space:nowrap}
+.ep-btn:hover{border-color:#58a6ff;color:#c9d1d9}
+.ep-btn.active{background:rgba(31,111,235,0.4);border-color:#1f6feb;color:#fff}
+
+/* --- TRACE BUTTONS â€” left side --- */
+.trace-strip{position:fixed;z-index:2;left:70px;bottom:20%;display:flex;flex-direction:column;gap:3px;display:none}
+.trace-strip.show{display:flex}
+.trace-btn{background:rgba(13,17,23,0.8);backdrop-filter:blur(4px);border:1px solid rgba(48,54,61,0.5);border-radius:6px;padding:4px 8px;cursor:pointer;font-family:inherit;font-size:8px;color:#a371f7;transition:all 0.15s}
+.trace-btn:hover{border-color:#a371f7;background:rgba(131,113,229,0.2)}
+.trace-btn.active{background:rgba(137,87,229,0.4);border-color:#8957e5;color:#fff}
+
+/* --- READOUT â€” floating log --- */
+.readout{position:fixed;z-index:2;right:70px;bottom:20%;width:260px;max-height:200px;overflow-y:auto;background:rgba(13,17,23,0.85);backdrop-filter:blur(4px);border:1px solid rgba(33,38,45,0.6);border-radius:8px;padding:8px;font-size:10px}
+.readout .entry{margin-bottom:6px;line-height:1.3}
+.readout .who{font-size:8px;text-transform:uppercase;letter-spacing:1px;margin-bottom:1px}
+.readout .who.chipmunk{color:#5ab87a}
+.readout .who.system{color:#484f58}
+.readout .msg{font-size:10px;color:#c9d1d9;white-space:pre-wrap}
+.readout .msg .num{color:#f0883e}.readout .msg .good{color:#3fb950}
+.readout .msg .warn{color:#f0883e}.readout .msg .dim{color:#484f58}
+
+/* --- NOTE INPUT â€” minimal bottom-right --- */
+.note-float{position:fixed;z-index:2;right:70px;bottom:8px;display:flex;gap:4px;align-items:center}
+.note-float input{background:rgba(22,27,34,0.85);backdrop-filter:blur(4px);border:1px solid rgba(33,38,45,0.6);color:#c9d1d9;padding:6px 10px;font-family:inherit;font-size:10px;border-radius:16px;outline:none;width:180px}
+.note-float input:focus{border-color:#5ab87a;width:240px;transition:width 0.3s}
+.note-float input::placeholder{color:#30363d}
+.note-float button{background:rgba(33,38,45,0.8);color:#8b949e;border:none;padding:6px 10px;font-family:inherit;font-size:9px;border-radius:14px;cursor:pointer}
+.note-float button:hover{background:rgba(48,54,61,0.8);color:#c9d1d9}
+
+@media(max-width:600px){
+  .ring-btn{width:42px;height:42px;font-size:7px}
+  .ring-btn .icon{font-size:14px}
+  .panel{max-width:85vw;padding:10px}
+  .readout{width:180px;right:54px}
+  .btn-ring.left{left:4px}.btn-ring.right{right:4px}
+}
+</style>
+</head>
+<body>
+
+<!-- THE MEMBRANE â€” full-screen SVG canvas -->
+<div id="membrane-canvas"></div>
+
+<!-- OVERLAY â€” controls on top of the membrane -->
+<div class="overlay">
+  <div class="top-bar">
+    <h1>?? chipmunk</h1>
+    <div class="sub">inside the membrane</div>
+    <div class="status-items">
+      <span><span class="s">wake:</span> <span class="v" id="sb-wake">â€”</span></span>
+      <span><span class="s">sel:</span> <span class="v" id="sb-sel">â€”</span></span>
+      <span><span class="s">humans:</span> <span class="alive" id="sb-humans">â€”</span></span>
+      <span><span class="s">braids:</span> <span class="v" id="sb-braids">â€”</span></span>
+    </div>
+  </div>
+  <div class="attn-bar">
+    <span class="label">attention</span>
+    <div class="attn-track"><div class="attn-fill" id="attn-fill"></div></div>
+    <span class="attn-val" id="attn-val">0.10</span>
+    <span class="engage" id="engage-count"></span>
+  </div>
+</div>
+
+<!-- LEFT BUTTONS â€” human side of the membrane -->
+<div class="btn-ring left">
+  <button class="ring-btn" onclick="C.act('humans')"><span class="icon">??</span><span class="lbl">humans</span></button>
+  <button class="ring-btn" onclick="C.act('braids')"><span class="icon">??</span><span class="lbl">braids</span></button>
+  <button class="ring-btn" onclick="C.act('trace')"><span class="icon">?</span><span class="lbl">trace</span></button>
+  <button class="ring-btn" onclick="C.act('energy')"><span class="icon">??</span><span class="lbl">energy</span></button>
+</div>
+
+<!-- RIGHT BUTTONS â€” chipmunk's side of the membrane -->
+<div class="btn-ring right">
+  <button class="ring-btn" onclick="C.act('membrane')"><span class="icon">??</span><span class="lbl">membrane</span></button>
+  <button class="ring-btn" onclick="C.act('scan')"><span class="icon">??</span><span class="lbl">pipeline</span></button>
+  <button class="ring-btn" onclick="C.act('above')"><span class="icon">??</span><span class="lbl">above</span></button>
+  <button class="ring-btn" onclick="C.act('observe')"><span class="icon">??</span><span class="lbl">eyes</span></button>
+</div>
+
+<!-- BOTTOM BUTTONS -->
+<div class="btn-ring bottom">
+  <button class="ring-btn" onclick="C.act('speed')" style="width:auto;border-radius:24px;padding:8px 16px"><span class="icon">?</span><span class="lbl">speed</span></button>
+  <button class="ring-btn" onclick="C.act('sort')" style="width:auto;border-radius:24px;padding:8px 16px"><span class="icon">?</span><span class="lbl">sort</span></button>
+  <button class="ring-btn" onclick="C.act('whatami')" style="width:auto;border-radius:24px;padding:8px 16px"><span class="icon">?</span><span class="lbl">what am i</span></button>
+</div>
+
+<!-- PANELS â€” appear over the membrane when buttons are pressed -->
+<div class="panel left-panel" id="panel-left"><button class="close" onclick="C.closePanel('left')">×</button><div class="title" id="panel-left-title"></div><div class="msg" id="panel-left-msg"></div></div>
+<div class="panel right-panel" id="panel-right"><button class="close" onclick="C.closePanel('right')">×</button><div class="title" id="panel-right-title"></div><div class="msg" id="panel-right-msg"></div></div>
+
+<!-- SORT DECK -->
+<div class="sort-deck" id="sort-deck-wrap">
+  <div class="sort-header"><span class="stitle">? help sort</span><span class="count" id="sort-count"></span><button class="close" onclick="C.closeSortDeck()" style="position:static;color:#484f58;background:none;border:none;font-size:14px;cursor:pointer">×</button></div>
+  <div id="sort-deck"></div>
+</div>
+
+<!-- GUESS BUBBLE â€” chipmunk's proactive engagement -->
+<div class="guess-bubble" id="guess-bubble"><div class="gtext" id="guess-text"></div><div class="guess-btns" id="guess-btns"></div></div>
+
+<!-- TRACE STRIP -->
+<div class="trace-strip" id="trace-strip"></div>
+
+<!-- EPITOPE PICKER -->
+<div class="ep-strip" id="ep-strip"></div>
+
+<!-- READOUT -->
+<div class="readout" id="log"></div>
+
+<!-- NOTE INPUT -->
+<div class="note-float">
+  <input type="text" id="input" placeholder="I notice..." autocomplete="off">
+  <button onclick="C.sendNote()">note</button>
+</div>
+
+<script src="/js/chipmunk-talk.js"></script>
+</body>
+</html>

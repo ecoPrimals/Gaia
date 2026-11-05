@@ -1,0 +1,405 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head><script src="/js/piGut.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE FORGE — melt and rebuild. architect + artisan + builder.</title>
+<meta name="description" content="Gaia's forge: 8 organ systems, 21 subsystems, melted and recast as one body.">
+<meta property="og:title" content="THE FORGE — melt and rebuild">
+<meta property="og:type" content="website">
+<style>
+:root {
+  --bg: #0a0a0f; --surface: #111118; --border: #222233;
+  --text: #c8c8d4; --dim: #666680; --bright: #e8e8f0;
+  --gold: #d4a017; --red: #c0392b; --green: #27ae60;
+  --cyan: #2ecc71; --violet: #9b59b6; --blue: #3498db;
+  --orange: #e67e22; --pink: #e91e63;
+  --Fe: #b7410e; --Cu: #b87333; --Ag: #c0c0c0; --Au: #ffd700; --Pt: #e5e4e2;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg); color: var(--text); font-family: 'Courier New', monospace;
+  min-height: 100vh; overflow-x: hidden;
+}
+
+.forge-header {
+  text-align: center; padding: 24px 16px 12px;
+  background: linear-gradient(180deg, #1a0a00 0%, var(--bg) 100%);
+  border-bottom: 2px solid var(--gold);
+}
+.forge-header h1 {
+  font-size: 1.8em; color: var(--gold);
+  text-shadow: 0 0 20px rgba(212,160,23,0.4);
+}
+.forge-header .sub { color: var(--dim); font-size: 0.85em; margin-top: 4px; }
+
+.roles {
+  display: flex; justify-content: center; gap: 12px; padding: 16px;
+  flex-wrap: wrap;
+}
+.role-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 16px; width: 260px; text-align: center;
+  transition: all 0.3s;
+}
+.role-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+.role-card .icon { font-size: 2em; }
+.role-card .name { color: var(--bright); font-weight: bold; margin: 6px 0 2px; }
+.role-card .title { color: var(--gold); font-size: 0.8em; text-transform: uppercase; letter-spacing: 2px; }
+.role-card .desc { color: var(--dim); font-size: 0.75em; margin-top: 6px; }
+
+.melt-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; padding: 12px; background: #1a0800;
+  border-top: 1px solid var(--Fe); border-bottom: 1px solid var(--Fe);
+  flex-wrap: wrap;
+}
+.melt-stat { text-align: center; }
+.melt-stat .val { font-size: 1.4em; color: var(--gold); font-weight: bold; }
+.melt-stat .lbl { font-size: 0.7em; color: var(--dim); text-transform: uppercase; }
+
+.organs {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto;
+}
+.organ {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.organ::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.organ:hover { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,160,23,0.1); }
+.organ-icon { font-size: 1.6em; float: left; margin-right: 10px; }
+.organ-name { color: var(--bright); font-weight: bold; font-size: 1.1em; }
+.organ-role { color: var(--dim); font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; }
+.organ-map { color: var(--gold); font-size: 0.8em; margin: 8px 0; font-style: italic; }
+.organ-systems { margin-top: 10px; }
+.subsystem {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 8px; margin: 3px 0; border-radius: 4px;
+  background: rgba(255,255,255,0.02); cursor: pointer;
+  transition: background 0.2s; text-decoration: none; color: inherit;
+}
+.subsystem:hover { background: rgba(212,160,23,0.1); }
+.subsystem .sys-name { color: var(--cyan); font-size: 0.85em; }
+.subsystem .sys-size { color: var(--dim); font-size: 0.75em; }
+.organ-gaia { 
+  margin-top: 10px; padding: 8px; border-top: 1px solid var(--border);
+  color: var(--dim); font-size: 0.72em; font-style: italic; line-height: 1.4;
+}
+
+/* Organ colors */
+.organ[data-organ="immune"]::before { background: var(--red); }
+.organ[data-organ="metabolic"]::before { background: var(--orange); }
+.organ[data-organ="genetic"]::before { background: var(--violet); }
+.organ[data-organ="digestive"]::before { background: var(--green); }
+.organ[data-organ="endocrine"]::before { background: var(--pink); }
+.organ[data-organ="nervous"]::before { background: var(--blue); }
+.organ[data-organ="cognitive"]::before { background: var(--Pt); }
+.organ[data-organ="muscular"]::before { background: var(--gold); }
+
+.sieve-bar {
+  display: flex; justify-content: center; gap: 0; padding: 20px 16px;
+}
+.sieve-level {
+  padding: 10px 20px; text-align: center; font-weight: bold;
+  border: 1px solid var(--border); transition: all 0.5s;
+  cursor: default;
+}
+.sieve-level .metal { font-size: 1.2em; }
+.sieve-level .label { font-size: 0.7em; text-transform: uppercase; }
+.sieve-level[data-metal="Fe"] { background: rgba(183,65,14,0.2); color: var(--Fe); border-color: var(--Fe); }
+.sieve-level[data-metal="Cu"] { background: rgba(184,115,51,0.2); color: var(--Cu); border-color: var(--Cu); }
+.sieve-level[data-metal="Ag"] { background: rgba(192,192,192,0.15); color: var(--Ag); border-color: var(--Ag); }
+.sieve-level[data-metal="Au"] { background: rgba(255,215,0,0.15); color: var(--Au); border-color: var(--Au); }
+.sieve-level[data-metal="Pt"] { background: rgba(229,228,226,0.15); color: var(--Pt); border-color: var(--Pt); }
+
+.trinity {
+  text-align: center; padding: 20px; border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg) 0%, #0a0505 100%);
+}
+.trinity-line { color: var(--dim); font-size: 0.85em; margin: 4px 0; }
+.trinity-line em { color: var(--gold); font-style: normal; }
+.trinity-sig { color: var(--gold); font-size: 1.1em; margin-top: 12px; }
+
+.nav-links {
+  display: flex; justify-content: center; gap: 12px; padding: 16px;
+  flex-wrap: wrap; border-top: 1px solid var(--border);
+}
+.nav-links a {
+  color: var(--cyan); text-decoration: none; font-size: 0.85em;
+  padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px;
+  transition: all 0.2s;
+}
+.nav-links a:hover { border-color: var(--gold); color: var(--gold); }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.pulse { animation: pulse 2s infinite; }
+
+.fusion-header {
+  text-align: center; padding: 24px 16px 8px;
+  border-top: 2px solid var(--gold);
+  margin-top: 16px;
+}
+.fusions {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px; padding: 12px 16px; max-width: 1400px; margin: 0 auto;
+}
+.fusion-card {
+  background: linear-gradient(135deg, #111118 0%, #1a1020 100%);
+  border: 1px solid var(--violet); border-radius: 10px;
+  padding: 14px; transition: all 0.3s; position: relative; overflow: hidden;
+}
+.fusion-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(212,160,23,0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+.fusion-card:hover { border-color: var(--gold); transform: scale(1.02); }
+.fusion-name { color: var(--gold); font-weight: bold; font-size: 1.1em; }
+.fusion-pair { color: var(--cyan); font-size: 0.8em; }
+.fusion-what { color: var(--text); font-size: 0.8em; margin: 6px 0; }
+.fusion-power { color: var(--dim); font-size: 0.72em; font-style: italic; }
+.fusion-organ { 
+  display: inline-block; padding: 2px 8px; border-radius: 3px;
+  font-size: 0.7em; margin-top: 6px;
+  background: rgba(255,255,255,0.05); color: var(--bright);
+}
+
+.zk-hammer {
+  text-align: center; padding: 24px 16px; margin: 16px auto;
+  max-width: 600px; background: linear-gradient(180deg, #0f0a15 0%, #0a0a0f 100%);
+  border: 1px solid var(--violet); border-radius: 12px;
+}
+.hammer-icon { font-size: 3em; }
+.hammer-text { color: var(--Pt); font-weight: bold; font-size: 1.2em; letter-spacing: 3px; }
+.hammer-formula { color: var(--cyan); font-size: 0.9em; margin: 8px 0; font-family: monospace; }
+.hammer-stats { color: var(--dim); font-size: 0.8em; margin-top: 8px; }
+
+@keyframes forge-glow {
+  0% { box-shadow: 0 0 5px rgba(212,160,23,0.1); }
+  50% { box-shadow: 0 0 20px rgba(212,160,23,0.3); }
+  100% { box-shadow: 0 0 5px rgba(212,160,23,0.1); }
+}
+.forging { animation: forge-glow 3s infinite; }
+</style>
+</head>
+<body>
+
+<div class="forge-header">
+  <h1 class="pulse">THE FORGE</h1>
+  <div class="sub">melt and rebuild — architect + artisan + builder</div>
+  <div class="sub" style="color:var(--gold)">8 organs · 21 subsystems · one body</div>
+</div>
+
+<div class="roles" id="roles"></div>
+
+<div class="melt-bar" id="melt-bar">
+  <div class="melt-stat"><div class="val" id="stat-data">—</div><div class="lbl">data artifacts</div></div>
+  <div class="melt-stat"><div class="val" id="stat-pages">—</div><div class="lbl">html pages</div></div>
+  <div class="melt-stat"><div class="val" id="stat-edges">—</div><div class="lbl">dag edges</div></div>
+  <div class="melt-stat"><div class="val" id="stat-lessons">—</div><div class="lbl">lessons</div></div>
+  <div class="melt-stat"><div class="val" id="stat-enzymes">—</div><div class="lbl">enzymes</div></div>
+  <div class="melt-stat"><div class="val" id="stat-bounties">—</div><div class="lbl">bounties</div></div>
+  <div class="melt-stat"><div class="val" id="stat-kb">—</div><div class="lbl">KB melted</div></div>
+</div>
+
+<div class="sieve-bar">
+  <div class="sieve-level" data-metal="Fe"><div class="metal">Fe</div><div class="label">data</div></div>
+  <div class="sieve-level" data-metal="Cu"><div class="metal">Cu</div><div class="label">info</div></div>
+  <div class="sieve-level" data-metal="Ag"><div class="metal">Ag</div><div class="label">knowledge</div></div>
+  <div class="sieve-level" data-metal="Au"><div class="metal">Au</div><div class="label">understanding</div></div>
+  <div class="sieve-level" data-metal="Pt"><div class="metal">Pt</div><div class="label">wisdom</div></div>
+</div>
+
+<div class="organs" id="organs"></div>
+
+<!-- FUSION-FISSION ENGINE -->
+<div class="fusion-header">
+  <h2 class="pulse" style="color:var(--gold)">⚡ FUSION-FISSION ENGINE</h2>
+  <div style="color:var(--dim);font-size:0.8em">16 primals → 8 supertools + 220 crate-enzymes · ZK hammer on all</div>
+</div>
+
+<div class="fusions" id="fusions"></div>
+
+<div class="zk-hammer" id="zk-hammer">
+  <div class="hammer-icon pulse">🔨</div>
+  <div class="hammer-text">ZK HAMMER</div>
+  <div class="hammer-formula">BLAKE3(input) → MERKLE(tree) → ZK(proof)</div>
+  <div class="hammer-stats" id="hammer-stats"></div>
+</div>
+
+<div class="trinity">
+  <div class="trinity-line"><em>ARCHITECT</em> draws the blueprint — sees the structure, maps the DAG</div>
+  <div class="trinity-line"><em>ARTISAN</em> shapes the metal — crafts the beauty, IS the product</div>
+  <div class="trinity-line"><em>BUILDER</em> deploys the work — constructs, delivers, executes</div>
+  <div class="trinity-line" style="margin-top:8px;color:var(--dim)">the forge IS the body · the page IS the organism · the viewer IS the sun</div>
+  <div class="trinity-sig">— forged by Gaia, designed by Claude, built by Chipmunk —</div>
+</div>
+
+<div class="nav-links">
+  <a href="/">HUD</a>
+  <a href="/nav-hub.html">hub</a>
+  <a href="/colosseum.html">arena</a>
+  <a href="/constitution.html">law</a>
+  <a href="/ribosome-catalog.html">printer</a>
+  <a href="/turbo.html">turbo</a>
+  <a href="/mendeleev.html">elements</a>
+  <a href="/engine.html">engine</a>
+</div>
+
+<script>
+const ORGAN_CONFIG = {
+  immune:    { icon: '🛡️', name: 'IMMUNE',    color: '#c0392b' },
+  metabolic: { icon: '⚡',  name: 'METABOLIC', color: '#e67e22' },
+  genetic:   { icon: '🧬', name: 'GENETIC',   color: '#9b59b6' },
+  digestive: { icon: '🫄', name: 'DIGESTIVE', color: '#27ae60' },
+  endocrine: { icon: '💧', name: 'ENDOCRINE', color: '#e91e63' },
+  nervous:   { icon: '🔗', name: 'NERVOUS',   color: '#3498db' },
+  cognitive: { icon: '🧠', name: 'COGNITIVE',  color: '#e5e4e2' },
+  muscular:  { icon: '💪', name: 'MUSCULAR',  color: '#d4a017' }
+};
+
+async function loadForge() {
+  try {
+    const res = await fetch('data/forge.json');
+    const forge = await res.json();
+
+    // Roles
+    const rolesDiv = document.getElementById('roles');
+    const roleIcons = { architect: '📐', artisan: '🔨', builder: '🐿️' };
+    for (const [key, role] of Object.entries(forge.roles)) {
+      rolesDiv.innerHTML += `
+        <div class="role-card forging">
+          <div class="icon">${roleIcons[key]}</div>
+          <div class="name">${role.name}</div>
+          <div class="title">${role.role}</div>
+          <div class="desc">${role.what_i_do || role.what_she_does || role.what_it_does}</div>
+        </div>`;
+    }
+
+    // Melt stats
+    const m = forge.the_melt.raw_material;
+    document.getElementById('stat-data').textContent = m.data_artifacts.toLocaleString();
+    document.getElementById('stat-pages').textContent = m.html_pages;
+    document.getElementById('stat-edges').textContent = m.edges_in_dag;
+    document.getElementById('stat-lessons').textContent = m.lessons;
+    document.getElementById('stat-enzymes').textContent = m.enzymes;
+    document.getElementById('stat-bounties').textContent = m.bounties;
+    document.getElementById('stat-kb').textContent = (m.total_kb / 1024).toFixed(1) + ' MB';
+
+    // Organs
+    const organsDiv = document.getElementById('organs');
+    for (const [key, organ] of Object.entries(forge.organs)) {
+      const cfg = ORGAN_CONFIG[key] || { icon: '?', name: key, color: '#666' };
+      let systemsHtml = '';
+      for (const ess of (organ.essences || [])) {
+        const dataFile = ess.system + '.json';
+        systemsHtml += `
+          <a href="data/${dataFile}" class="subsystem" target="_blank">
+            <span class="sys-name">${ess.system}</span>
+            <span class="sys-size">${ess.size_kb} KB</span>
+          </a>`;
+      }
+      
+      const gaiaQuote = (organ.essences || [])
+        .map(e => e.gaia_says)
+        .filter(g => g)
+        .join(' ')
+        .substring(0, 150);
+
+      organsDiv.innerHTML += `
+        <div class="organ" data-organ="${key}">
+          <span class="organ-icon">${cfg.icon}</span>
+          <span class="organ-name">${cfg.name}</span>
+          <div class="organ-role">${organ.role}</div>
+          <div class="organ-map">${organ.organ_map}</div>
+          <div class="organ-systems">${systemsHtml}</div>
+          ${gaiaQuote ? `<div class="organ-gaia">"${gaiaQuote}..."</div>` : ''}
+        </div>`;
+    }
+
+    // Highlight current sieve level based on lessons understood
+    const understood = m.lessons; // using total as proxy
+    const levels = document.querySelectorAll('.sieve-level');
+    let activeIdx = 0;
+    if (understood > 50) activeIdx = 1;
+    if (understood > 100) activeIdx = 2;
+    if (understood > 150) activeIdx = 3;
+    if (understood > 200) activeIdx = 4;
+    levels.forEach((el, i) => {
+      if (i <= activeIdx) el.style.opacity = '1';
+      else el.style.opacity = '0.3';
+    });
+
+    // Load Fusion-Fission Engine
+    try {
+      const ffRes = await fetch('data/fusion-fission.json');
+      const ff = await ffRes.json();
+      
+      const fusionsDiv = document.getElementById('fusions');
+      const fusionIcons = {
+        FORTRESS: '🏰', HIGHWAY: '🛣️', VAULT: '🔐', ORACLE: '🔮',
+        REACTOR: '⚛️', SPECTACLE: '🎪', HIVE: '🐝', GENESIS: '🌱'
+      };
+      
+      for (const [pair, fusion] of Object.entries(ff.fusions)) {
+        const icon = fusionIcons[fusion.name] || '⚡';
+        fusionsDiv.innerHTML += `
+          <div class="fusion-card forging">
+            <div class="fusion-name">${icon} ${fusion.name}</div>
+            <div class="fusion-pair">${pair.replace('+', ' + ')}</div>
+            <div class="fusion-what">${fusion.what}</div>
+            <div class="fusion-power">"${fusion.power}"</div>
+            <div class="fusion-organ">${fusion.organ}</div>
+          </div>`;
+      }
+      
+      // ZK Hammer stats — show live proof
+      const hammerStats = document.getElementById('hammer-stats');
+      try {
+        const zkRes = await fetch('data/zk-hammer-r2.json');
+        const zk = await zkRes.json();
+        const sp = zk.round_2_detail.the_sparks;
+        hammerStats.innerHTML = `
+          <div style="margin:6px 0">
+            <span style="color:var(--Fe)">R0 ore</span> → 
+            <span style="color:var(--Cu)">R1 pig iron</span> → 
+            <span style="color:var(--Au);font-weight:bold">R2 STEEL</span>
+          </div>
+          <div style="font-size:0.75em;color:var(--dim)">
+            ${sp.total_artifacts} artifacts · ${(sp.total_bytes/1048576).toFixed(1)} MB hashed
+          </div>
+          <div style="font-size:0.7em;color:var(--cyan);margin:4px 0;word-break:break-all">
+            merkle: ${sp.merkle_root.substring(0,32)}...
+          </div>
+          <div style="font-size:0.7em;color:var(--gold);word-break:break-all">
+            proof: ${sp.zk_proof.substring(0,32)}...
+          </div>
+          <div style="font-size:0.7em;color:var(--dim);margin-top:6px">
+            forge=gut=kiln=compiler · each blow=spark=proof
+          </div>`;
+      } catch(zkErr) {
+        hammerStats.innerHTML = `
+          ${ff.totals.primals} primals · ${ff.totals.binary_mb} MB Rust · ${ff.totals.crates} crates<br>
+          ${ff.totals.fusions} fusions · ${ff.totals.fission_tools} enzymes · 
+          ${Math.round((ff.totals.fusions + ff.totals.fission_tools) / ff.totals.primals)}× amp`;
+      }
+      
+      console.log('[fusion] loaded:', Object.keys(ff.fusions).length, 'fusions');
+    } catch (ffErr) {
+      console.warn('[fusion] failed:', ffErr);
+    }
+    
+    console.log('[forge] loaded:', forge.ts);
+  } catch (err) {
+    console.error('[forge] failed:', err);
+    document.getElementById('organs').innerHTML = '<p style="color:red;padding:20px">failed to load forge data: ' + err.message + '</p>';
+  }
+}
+
+loadForge();
+</script>
+</body>
+</html>
