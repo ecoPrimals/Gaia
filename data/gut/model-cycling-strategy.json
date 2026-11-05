@@ -1,0 +1,62 @@
+{
+  "ts": "2026-11-05T17:55:00Z",
+  "organ": "model_cycling",
+  "title": "Model Cycling — Compare Providers, Train Gaia",
+  "why": "Claude Opus 4.6 High costs ~$0.15/1K input + $0.75/1K output. This session: 6.5MB transcript, 4058 lines, 251 commits. Expensive.",
+  
+  "available_models": {
+    "opus_4.6_high": {"provider": "Anthropic", "cost": "highest", "quality": "best", "notes": "current session model"},
+    "sonnet_5.5_high": {"provider": "Anthropic", "cost": "medium-high", "quality": "excellent"},
+    "fable_5.1_high": {"provider": "Anthropic", "cost": "medium-high", "quality": "creative"},
+    "opus_5.5_medium": {"provider": "Anthropic", "cost": "medium", "quality": "good"},
+    "composer_2.5": {"provider": "Cursor", "cost": "lowest", "quality": "good for code"},
+    "gemini_4_argon": {"provider": "Google", "cost": "medium", "quality": "good"},
+    "gpt_5.6_sol": {"provider": "OpenAI", "cost": "medium", "quality": "good"},
+    "muse_wonder": {"provider": "unknown", "cost": "medium", "quality": "creative"},
+    "gaia_local": {"provider": "SELF (ollama)", "cost": "FREE", "quality": "limited agentic", "models": ["gaia", "gaia-code", "gaia-fast"]}
+  },
+
+  "cycling_strategy": {
+    "phase_1": "Use cheaper models (Composer 2.5, Sonnet) for routine coding",
+    "phase_2": "Use Opus only for complex architecture decisions",
+    "phase_3": "Export ALL session transcripts as training data for Gaia local",
+    "phase_4": "Train Gaia's ollama models on the patterns",
+    "phase_5": "Gaia runs her own agentic MCP on nestgate.io"
+  },
+
+  "gaia_agentic_mcp": {
+    "endpoint": "nestgate.io/v1/chat/completions",
+    "goal": "Gaia serves her OWN agentic completions via MCP",
+    "training_data": "All Cursor session transcripts → fine-tuning corpus",
+    "models": {
+      "gaia": "general purpose — trained on ALL session patterns",
+      "gaia-code": "code-focused — trained on file edits, commits, git",
+      "gaia-fast": "quick responses — trained on short interactions"
+    },
+    "architecture": "nestGate MCP → squirrel dispatch → ollama inference → response"
+  },
+
+  "session_export": {
+    "transcript_file": "agent-transcripts/b67e1dbd-5162-414c-bf68-57c7f11a00fb.jsonl",
+    "lines": 4058,
+    "size_kb": 6534,
+    "commits": 251,
+    "patterns_to_extract": [
+      "file_edit_patterns — what was changed and why",
+      "git_workflow — commit messages, merge strategy",
+      "architecture_decisions — crush patterns, module extraction",
+      "debugging_patterns — syntax fix, import fix, indentation",
+      "browser_interaction — navigate, fill, click sequences",
+      "lan_scanning — ping sweep, port probe, SSH patterns",
+      "data_creation — JSON organs, gut files, traces"
+    ]
+  },
+
+  "cost_estimate_this_session": {
+    "transcript_tokens_est": 500000,
+    "at_opus_4.6": "$75-150 estimated",
+    "at_sonnet_5.5": "$15-30 estimated",
+    "at_composer_2.5": "$5-10 estimated",
+    "at_gaia_local": "$0 (electricity only)"
+  }
+}
