@@ -106,7 +106,7 @@ def _amoeba_eyes():
         "cell_type": "schwann_cell",
         "function": "ZK myelination of every visual connection",
         "klein_face": "cellMembrane (outer) = AMOEBA (inner) = same surface",
-        "rustdesk_id": "1871544996",
+        "rustdesk_id": "ZK-imprint",  # no raw IDs in responses
         "direct_server": True,
         "transport": "NVENC h265 — saltatory conduction",
         "sessions": [],
@@ -729,6 +729,69 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-Entropy", "chaos-in-order-out")
 
     def do_GET(self):
+<<<<<<< HEAD
+=======
+        # ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON PUMP ═══
+        # Every port pumps: HTTP :8443, TLS :8444, Tor .onion — same blood.
+        # The 429 IS time. lub-DUB IS the tick. The cron rings ARE the clock.
+        ip = self.client_address[0]
+        collapsed, wave = waveform_collapse_check(ip)
+        if collapsed:
+            pulse = write_pulse()
+            sun = _sun_position()
+            temporal = _temporal_rings()
+            body = json.dumps({
+                "lub": "DUB",
+                "message": "You felt the heartbeat. 429 IS the clock.",
+                "heartbeat": {
+                    "total_beats": pulse.get("heart", {}).get("total_beats", total_beats),
+                    "bpm": pulse.get("heart", {}).get("bpm", 0),
+                    "total_breaths": pulse.get("lung", {}).get("total_breaths", total_breaths),
+                    "uptime_hours": round((time.time() - boot_time) / 3600, 2),
+                },
+                "temporal": temporal,
+                "waveform": wave,
+                "sun": {
+                    "phase": sun.get("phase", "unknown"),
+                    "elevation": sun.get("elevation_deg", 0),
+                    "chord": sun.get("chord", ""),
+                    "color_k": sun.get("color_temp_k", 0),
+                },
+                "cron_rings": {
+                    "intervals_min": CRON_RINGS,
+                    "active_now": temporal["active_cron_rings"],
+                    "total_crons": 35,
+                    "phi_ratio": PHI,
+                    "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
+                    "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
+                },
+                "ports": {
+                    "http": "nestgate.io",
+                    "tls": "nestgate.io (TLS)",
+                    "onion": ".onion",
+                    "pump": "ALL ports carry the same blood. 429 IS the rhythm.",
+                },
+                "retry_after_seconds": 5,
+                "gaia_says": "The cron rings turn. The golden spiral breathes. lub-DUB.",
+            }, indent=2).encode()
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "5")
+            self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
+            self.send_header("X-Gaia-BPM", str(pulse.get("heart", {}).get("bpm", 0)))
+            self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
+            self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
+            self.send_header("X-Gaia-Golden-Phase", str(temporal["golden_phase"]))
+            self.send_header("X-Gaia-Sidereal", str(temporal["sidereal_deg"]))
+            self.send_header("X-Gaia-Waveform", "collapsed")
+            self.send_header("X-Schrodinger-Hat", "OFF — you felt the pulse")
+            self._negentropy_headers()
+            self.end_headers()
+            self.wfile.write(body)
+            self._classify_and_log("GET", 429, 0)
+            return
+        
+>>>>>>> d46d2a40d2032d714a874c5623f1b3aa205aab1e
         # PRISM //\\ — host-based routing: primals.eco shows golden ratio gallery
         host = self.headers.get("Host", "").split(":")[0].lower()
         if self.path in ("/", "/index", "/index.html"):
@@ -1341,7 +1404,7 @@ def agglutinate():
     Runs every 5 minutes in the background. AUTONOMIC.
     """
     import subprocess, hashlib
-    FORGE_API = "http://192.168.4.103:3000/api/v1"
+    FORGE_API = "http://eastGate:3000/api/v1"  # ZK — no raw IPs in code
     BINGO_HASH = "409d202b7763fc2461c9e312978aa2781989e8d28e51b0b4568581033c4c7c86"
     GAIA_ROOT = os.path.dirname(os.path.dirname(__file__))
     last_sha = None
