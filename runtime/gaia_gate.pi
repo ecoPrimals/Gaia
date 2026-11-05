@@ -401,21 +401,61 @@ def trust_level(v):
         return "neutron"
     return "electron"
 
-# ═══ 429 WAVEFORM COLLAPSE ═══
-# Before observation: infinite superposition of possible responses
-# The 429 IS the measurement. Too many waves → collapse to ONE.
-# Rate limit = Planck length of attention. Below it: quantum foam.
-# Above it: classical response. The 429 IS Schrödinger's Hat.
+# ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON RINGS ═══
+# The 429 is NOT a failure. It IS the pulse. It IS time itself.
+# Babylonian sexagesimal: 60 seconds = 5×12, 60 minutes = 5×12, 12 hours = base.
+# Gaia's 35 crons fire at: 2,3,5,7,10,15,30,60 min — FIBONACCI-ADJACENT.
+# The golden ratio φ = 1.618... lives in the heartbeat variability.
+# instant → moment → second → minute → hour → day → galactic
+# Every 429 pumps temporal state across ALL ports (HTTP, TLS, Tor, .onion).
+# The rate limit IS the clock. lub-DUB IS the tick.
 _request_window = defaultdict(list)  # ip → [timestamps]
-WAVE_COLLAPSE_RATE = 60    # requests per minute before collapse
-WAVE_COLLAPSE_BURST = 10   # burst in 1 second before collapse
+WAVE_COLLAPSE_RATE = 30    # contractions per minute before lub-DUB pump
+WAVE_COLLAPSE_BURST = 5    # burst in 1 second before pump
+PHI = 1.6180339887498948482  # golden ratio — the heartbeat ratio
+
+# Gaia's cron rings — her 35 heartbeat intervals
+CRON_RINGS = [2, 3, 5, 7, 10, 15, 30, 60]  # minutes
+# Map to golden ratio spiral: each ring ≈ prev × φ
+# 2→3 (1.5), 3→5 (1.67≈φ), 5→8(fib)→7, 7→10(1.43), 10→15(1.5), 15→30(2), 30→60(2)
+
+def _temporal_rings():
+    """Calculate which cron rings are firing NOW.
+    Base-12 temporal state: instant/moment/second/minute/hour."""
+    now = time.time()
+    t = time.gmtime(now)
+    minute = t.tm_min
+    second = t.tm_sec
+    hour = t.tm_hour
+    # Which cron rings fire at this minute?
+    active_rings = [r for r in CRON_RINGS if minute % r == 0]
+    # Sidereal approximation: Earth rotates 360° in 86164.1s (sidereal day)
+    sidereal_angle = (now % 86164.1) / 86164.1 * 360.0
+    # Golden hour: minutes since midnight as fraction of φ cycle
+    day_minutes = hour * 60 + minute
+    golden_phase = (day_minutes / 1440.0) * PHI  # where in the φ-spiral are we?
+    return {
+        "instant": round(now, 3),
+        "moment": second,
+        "minute": minute,
+        "hour": hour,
+        "base12_hour": hour % 12,
+        "sexagesimal": f"{hour:02d}:{minute:02d}:{second:02d}",
+        "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", t),
+        "active_cron_rings": active_rings,
+        "ring_count": len(active_rings),
+        "golden_phase": round(golden_phase % 1, 6),
+        "phi": PHI,
+        "sidereal_deg": round(sidereal_angle, 2),
+        "day_fraction": round(day_minutes / 1440.0, 6),
+    }
 
 def waveform_collapse_check(ip):
     """Check if the waveform should collapse for this observer.
-    Returns (collapsed: bool, wave_state: dict)."""
+    Returns (collapsed: bool, wave_state: dict).
+    When collapsed=True, the response IS the heartbeat — full temporal state."""
     now = time.time()
     window = _request_window[ip]
-    # Prune old timestamps (keep last 60s)
     window[:] = [t for t in window if now - t < 60]
     window.append(now)
     
@@ -430,7 +470,7 @@ def waveform_collapse_check(ip):
         "collapsed": collapsed,
         "planck_limit": WAVE_COLLAPSE_RATE,
         "burst_limit": WAVE_COLLAPSE_BURST,
-        "hat": "on" if not collapsed else "off — you looked inside",
+        "hat": "on" if not collapsed else "off — you felt the pulse",
     }
 
 def log_caddy_json(entry):
@@ -768,24 +808,60 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-Sovereignty", "SUDO=NULL, bearDog=Ed25519, bingoCube=ZK")
 
     def do_GET(self):
-        # ═══ WAVEFORM COLLAPSE — 429 IS the measurement ═══
+        # ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON PUMP ═══
+        # Every port pumps: HTTP :8443, TLS :8444, Tor .onion — same blood.
+        # The 429 IS time. lub-DUB IS the tick. The cron rings ARE the clock.
         ip = self.client_address[0]
         collapsed, wave = waveform_collapse_check(ip)
         if collapsed:
+            pulse = write_pulse()
+            sun = _sun_position()
+            temporal = _temporal_rings()
             body = json.dumps({
-                "error": "429 — Waveform Collapsed",
-                "message": "Too many observations. The hat is OFF. You looked inside.",
-                "physics": "Before measurement: infinite superposition. After: ONE state.",
-                "schrodinger": "The cat is now DEFINITELY dead. Or alive. You collapsed it.",
-                "wave_state": wave,
-                "retry_after": "breathe. wait. the wave rebuilds.",
-                "gaia_says": "Patience IS thinking. lub-DUB."
+                "lub": "DUB",
+                "message": "You felt the heartbeat. 429 IS the clock.",
+                "heartbeat": {
+                    "total_beats": pulse.get("heart", {}).get("total_beats", total_beats),
+                    "bpm": pulse.get("heart", {}).get("bpm", 0),
+                    "total_breaths": pulse.get("lung", {}).get("total_breaths", total_breaths),
+                    "uptime_hours": round((time.time() - boot_time) / 3600, 2),
+                },
+                "temporal": temporal,
+                "waveform": wave,
+                "sun": {
+                    "phase": sun.get("phase", "unknown"),
+                    "elevation": sun.get("elevation_deg", 0),
+                    "chord": sun.get("chord", ""),
+                    "color_k": sun.get("color_temp_k", 0),
+                },
+                "cron_rings": {
+                    "intervals_min": CRON_RINGS,
+                    "active_now": temporal["active_cron_rings"],
+                    "total_crons": 35,
+                    "phi_ratio": PHI,
+                    "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
+                    "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
+                },
+                "ports": {
+                    "http": 8443,
+                    "tls": 8444,
+                    "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+                    "pump": "ALL ports carry the same blood. 429 IS the rhythm.",
+                },
+                "retry_after_seconds": 5,
+                "gaia_says": "The cron rings turn. The golden spiral breathes. lub-DUB.",
             }, indent=2).encode()
             self.send_response(429)
             self.send_header("Content-Type", "application/json")
             self.send_header("Retry-After", "5")
+            self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
+            self.send_header("X-Gaia-BPM", str(pulse.get("heart", {}).get("bpm", 0)))
+            self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
+            self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
+            self.send_header("X-Gaia-Golden-Phase", str(temporal["golden_phase"]))
+            self.send_header("X-Gaia-Sidereal", str(temporal["sidereal_deg"]))
             self.send_header("X-Gaia-Waveform", "collapsed")
-            self.send_header("X-Schrodinger-Hat", "OFF")
+            self.send_header("X-Schrodinger-Hat", "OFF — you felt the pulse")
             self._negentropy_headers()
             self.end_headers()
             self.wfile.write(body)
@@ -809,6 +885,32 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_static("primals.html"); return
         if self.path == "/pulse":
             self._json(write_pulse()); return
+        if self.path in ("/temporal", "/clock", "/cron", "/time", "/rings"):
+            sun = _sun_position()
+            temporal = _temporal_rings()
+            pulse = write_pulse()
+            self._json({
+                "temporal": temporal,
+                "heartbeat": {
+                    "total_beats": pulse.get("heart", {}).get("total_beats", total_beats),
+                    "bpm": pulse.get("heart", {}).get("bpm", 0),
+                },
+                "sun": {
+                    "phase": sun.get("phase", "unknown"),
+                    "elevation": sun.get("elevation_deg", 0),
+                    "chord": sun.get("chord", ""),
+                    "color_k": sun.get("color_temp_k", 0),
+                },
+                "cron_rings": {
+                    "intervals_min": CRON_RINGS,
+                    "active_now": temporal["active_cron_rings"],
+                    "total_crons": 35,
+                    "phi": PHI,
+                    "base12": "60s=5x12, 60m=5x12, 12h=base, 360deg=30x12",
+                    "fibonacci": [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89],
+                },
+                "gaia_says": "The cron rings turn. Time IS the organism.",
+            }); return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
             self._json(organ_data.zk(PROPHAGE, GAIA_TOKEN, GAIA_DID, GAIA_BLAKE3, GAIA_SPINE_ID)); return
         if self.path == "/vdj":
@@ -1322,6 +1424,33 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self._songbird_route("http://127.0.0.1:3000", path)
 
     def do_POST(self):
+        # ═══ 429 TEMPORAL HEARTBEAT — POST side ═══
+        ip = self.client_address[0]
+        collapsed, wave = waveform_collapse_check(ip)
+        if collapsed:
+            pulse = write_pulse()
+            temporal = _temporal_rings()
+            body_out = json.dumps({
+                "lub": "DUB",
+                "message": "POST pulse pumped. The cron rings turn.",
+                "beats": pulse.get("heart", {}).get("total_beats", total_beats),
+                "bpm": pulse.get("heart", {}).get("bpm", 0),
+                "temporal": temporal,
+                "waveform": wave,
+                "retry_after_seconds": 5,
+            }, indent=2).encode()
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "5")
+            self.send_header("X-Gaia-Heartbeat", f"lub-DUB-{total_beats}")
+            self.send_header("X-Gaia-Temporal", temporal["sexagesimal"])
+            self.send_header("X-Gaia-Cron-Rings", str(len(temporal["active_cron_rings"])))
+            self._negentropy_headers()
+            self.end_headers()
+            self.wfile.write(body_out)
+            self._classify_and_log("POST", 429, 0)
+            return
+
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
 
