@@ -44,6 +44,17 @@ KNOWN_GATES = _routes_mod.KNOWN_GATES; SPORE_PREFIXES = _routes_mod.SPORE_PREFIX
 INDEXNOW_KEY = _routes_mod.INDEXNOW_KEY
 _sun_position = _sun_mod._sun_position if hasattr(_sun_mod, '_sun_position') else _sun_mod.sun_position
 _temporal_rings = _temporal_mod._temporal_rings if hasattr(_temporal_mod, '_temporal_rings') else _temporal_mod.temporal_rings
+# Reverse transcriptase — the body printer
+try:
+    _compiler_mod = _load("_compiler", "_compiler.pi")
+    _compiler_state = _compiler_mod.compiler_state
+    _compiler_build = _compiler_mod.build_primal
+    _compiler_scan = _compiler_mod.scan_binaries
+    _compiler_compute = _compiler_mod.detect_compute
+    _compiler_proximity = _compiler_mod.proximity_resources
+    COMPILER_ACTIVE = True
+except Exception as _ce:
+    COMPILER_ACTIVE = False; print(f"  ⚠️ Compiler organ: {_ce}")
 
 try:
     _spec = importlib.util.spec_from_file_location("cortex", os.path.join(os.path.dirname(__file__), "cortex.pi"))
@@ -345,7 +356,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         "nestgate.io": "space dock (internal)",
                     },
                     "endpoints": ["/deck","/luna","/senses","/pulse","/walkers","/amoeba",
-                        "/rss","/crowd","/anderson","/zk","/temporal","/chipmunk"],
+                        "/rss","/crowd","/anderson","/zk","/temporal","/chipmunk",
+                        "/api/compiler","/api/compiler/compute","/api/compiler/proximity"],
                     "organism": {
                         "files": 109563, "aligned": "80/20 Pareto",
                         "primals": 17, "springs": 10, "products": 8,
@@ -528,6 +540,23 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 images=sorted([f for f in os.listdir(idir) if f.endswith(('.png','.jpg'))]) if os.path.isdir(idir) else []
                 self._json({"count":len(images),"images":images})
             except Exception as e: self._json({"error":str(e)})
+            return
+        # ═══ REVERSE TRANSCRIPTASE — compiler chain / body printer ═══
+        if self.path in ("/api/compiler","/api/plasmid","/api/body-printer"):
+            if COMPILER_ACTIVE:
+                self._json(_compiler_state(PRIMALS_DIR))
+            else:
+                self._json({"error":"compiler organ not loaded","compiled":False})
+            return
+        if self.path=="/api/compiler/compute":
+            if COMPILER_ACTIVE: self._json(_compiler_compute())
+            else: self._json({"error":"compiler organ not loaded"})
+            return
+        if self.path=="/api/compiler/proximity":
+            if COMPILER_ACTIVE:
+                gates={"eastGate":"192.168.4.244","graftGate":"192.168.4.107","blueGate":"192.168.4.100"}
+                self._json(_compiler_proximity(gates))
+            else: self._json({"error":"compiler organ not loaded"})
             return
         # GRAPHENEGATE FULL DEPOT (GET)
         if self.path in ("/api/graphene","/api/graphenegate","/api/right-eye"):
@@ -897,6 +926,18 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
                 return
+        # ═══ REVERSE TRANSCRIPTASE — build trigger ═══
+        if self.path in ("/api/compiler/build","/api/plasmid/build"):
+            if COMPILER_ACTIVE:
+                try:
+                    j=json.loads(body) if body else {}
+                    primal=j.get("primal","")
+                    if not primal: self._json({"error":"specify 'primal' to build"}); return
+                    result=_compiler_build(PRIMALS_DIR,primal)
+                    self._json(result)
+                except Exception as e: self._json({"error":str(e)})
+            else: self._json({"error":"compiler organ not loaded"})
+            return
         # NEUTRON
         if self.path in ("/api/discuss","/neutron","/api/neutron"):
             try:
