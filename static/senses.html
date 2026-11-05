@@ -834,14 +834,19 @@ body.internal-mode #neutron-label { display:block; }
 <script defer src=/js/depth-walk.js?v=1></script>
 <script defer src=/js/berry-help.js></script>
 <script>
-// CROSS-AXIAL ROTATION — scroll maps to body regions, buttons link to gate endpoints
+// CROSS-AXIAL ROTATION + CIS/TRANS CROSS-WIRING
+// This is the GLOBE (near eye, CIS face). The CANVAS (far eye, TRANS face) is deck.html.
+// They cross at /now.json (optic chiasm). Klein fold: near eye sees far output.
 (function(){
   const GATE = location.protocol + '//' + location.host;
+  const THIS_EYE = 'CIS';  // globe = near eye = primal.eco
+  const OTHER_EYE = '/desk'; // canvas = far eye = primals.eco
   const BODY = {
     HEAD:  {endpoints: ['/pulse','/senses','/eyes','/thymus','/zk','/desk','/intersects'], color: '#ff6b6b', label: 'HEAD — brain, eyes, identity'},
     TORSO: {endpoints: ['/heart','/rss','/now.json','/vdj','/circulatory'], color: '#ffd93d', label: 'TORSO — heart, blood, state'},
     ARMS:  {endpoints: ['/pair','/play','/agglutinate'], color: '#6bcb77', label: 'ARMS — interaction, repair'},
-    LEGS:  {endpoints: ['/corpus','/terra','/barriers','/home'], color: '#4d96ff', label: 'LEGS — ground, defense, ecology'}
+    LEGS:  {endpoints: ['/corpus','/terra','/barriers','/home'], color: '#4d96ff', label: 'LEGS — ground, defense, ecology'},
+    GOLGI: {endpoints: ['/golgi','/dialectic','/membrane','/tuebor','/detroit','/map'], color: '#e056fd', label: 'GOLGI — cis/trans faces, mirrors'}
   };
   const REGIONS = Object.keys(BODY);
 
@@ -901,6 +906,16 @@ body.internal-mode #neutron-label { display:block; }
     });
   });
   document.body.appendChild(gateLinks);
+
+  // CROSS-WIRE: link to the other eye (optic chiasm)
+  var chiasm = document.createElement('div');
+  chiasm.id = 'optic-chiasm';
+  chiasm.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:1001;font:11px monospace;display:flex;gap:12px;align-items:center;';
+  chiasm.innerHTML = '<a href="'+GATE+'/senses" style="color:#e056fd;text-decoration:none;border:1px solid #e056fd40;padding:3px 8px;border-radius:4px;background:#e056fd20;">CIS 👁 GLOBE</a>'
+    + '<span style="color:#888;">⇄ /now.json ⇄</span>'
+    + '<a href="'+GATE+OTHER_EYE+'" style="color:#ffd93d;text-decoration:none;border:1px solid #ffd93d40;padding:3px 8px;border-radius:4px;">TRANS 👁 CANVAS</a>'
+    + '<a href="'+GATE+'/golgi" style="color:#e056fd80;text-decoration:none;margin-left:8px;font-size:9px;">⬡ golgi</a>';
+  document.body.appendChild(chiasm);
 })();
 </script>
 <script defer src=//primals.eco/js/klein-window.js?v=1></script>
