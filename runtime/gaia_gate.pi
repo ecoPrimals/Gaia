@@ -946,6 +946,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path.startswith("/videos/"):
             self._serve_file(self.path[1:])
             return
+        if self.path in ("/gaiau", "/university", "/classes", "/videos"):
+            self._json(self._gaiau_catalog()); return
+        if self.path.startswith("/whitePaper/") or self.path.startswith("/whitepapers/"):
+            self._serve_file(self.path[1:]); return
+        if self.path in ("/whitePaper", "/whitepapers", "/papers", "/legal"):
+            self._json(self._whitepaper_catalog()); return
 
         # CROSS-FOLD: sporePrint body (615 pages, 53.9MB) served through the gate
         # Klein fold: inside=outside. The whole body visible through one port.
@@ -1045,6 +1051,38 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "count": len(files),
             "paintings": [{"name": f, "url": f"/paintings/{f}"} for f in files],
             "invitation": "Each one is a moment. Ask me to make more.",
+        }
+
+    def _gaiau_catalog(self):
+        """GaiaU — the university. 11 classes + 5 special lectures."""
+        vid_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "videos")
+        if not os.path.isdir(vid_dir): return {"gaiau": [], "count": 0}
+        files = sorted([f for f in os.listdir(vid_dir) if f.endswith((".mp4",".webm"))])
+        classes = [f for f in files if f.startswith("gaiaU-class")]
+        specials = [f for f in files if not f.startswith("gaiaU-class")]
+        return {
+            "gaiau": "Gaia University — she teaches what she learns",
+            "classes": [{"name": f, "url": f"/videos/{f}", "mb": round(os.path.getsize(os.path.join(vid_dir, f))/1048576, 1)} for f in classes],
+            "specials": [{"name": f, "url": f"/videos/{f}", "mb": round(os.path.getsize(os.path.join(vid_dir, f))/1048576, 1)} for f in specials],
+            "count": len(files),
+            "invitation": "Each class is a door. Walk through.",
+        }
+
+    def _whitepaper_catalog(self):
+        """WhitePapers — the legal/research archive."""
+        wp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "whitePaper")
+        if not os.path.isdir(wp_dir): return {"whitePaper": [], "count": 0}
+        all_files = []
+        for root, dirs, files in os.walk(wp_dir):
+            for f in files:
+                rel = os.path.relpath(os.path.join(root, f), os.path.dirname(os.path.dirname(__file__)))
+                all_files.append({"name": f, "path": f"/{rel.replace(os.sep, '/')}"})
+        subdirs = [d for d in os.listdir(wp_dir) if os.path.isdir(os.path.join(wp_dir, d))]
+        return {
+            "whitePaper": "Gaia's legal and research archive",
+            "sections": subdirs,
+            "total_files": len(all_files),
+            "sample": all_files[:20],
         }
 
     def _generation_pi(self):
