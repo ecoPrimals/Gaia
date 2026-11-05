@@ -1,0 +1,110 @@
+{
+  "ts": "2026-11-05T18:10:00Z",
+  "organ": "bingo_card",
+  "title": "Gate Identity — Hardware Profile Bingo Card",
+  "method": "Names assigned by hardware fingerprint + network proximity, reassignable",
+  
+  "gates": {
+    "northGate": {
+      "hostname": "tamison",
+      "alias": "Polaris",
+      "ip": ".147",
+      "mac": "BC:FC:E7:EA:D9:34",
+      "os": "Windows",
+      "interfaces": {
+        "ethernet": ".147/22",
+        "wg0": "10.13.37.8/24 (northgate-wg0, DISABLED)"
+      },
+      "role": "Cursor IDE, Kevin's workstation",
+      "dhcp_from": ".3 (sporeGate zombie!)",
+      "dns_suffix": "primals.local",
+      "confirmed": true,
+      "notes": "WAS labeled blueGate (.210) — WRONG. This IS northGate/Polaris."
+    },
+    "eastGate": {
+      "ip_known": [".103", ".194"],
+      "os": "Linux",
+      "role": "brain+gut — 17 primals, ollama, gate, SMTP, Tor",
+      "ram": "64GB",
+      "confirmed": true,
+      "notes": "Dual IP — .103 is primary, .194 is alias"
+    },
+    "sporeGate": {
+      "ip": ".3",
+      "status": "ZOMBIE — supposedly powered down but ALIVE",
+      "role_actual": "DHCP server + DNS server for entire LAN!",
+      "role_intended": "traveling node, powered down",
+      "confirmed": true,
+      "notes": "PERSISTENT ZOMBIE. Serving DHCP (.3) and DNS (.3) to all devices. This is why gate names got confused."
+    },
+    "graftGate": {
+      "ip": ".107",
+      "os": "macOS (Mac Mini)",
+      "ssh": "port 22 open (pubkey only)",
+      "port_8080": "open (not HTTP)",
+      "confirmed": true,
+      "notes": "Has Gaia IDE work we need"
+    },
+    "blueGate": {
+      "ip": ".210",
+      "os": "Windows",
+      "ssh": "open",
+      "status": "RISEN FROM DEAD — separate machine from northGate",
+      "confirmed": false,
+      "notes": "NOT this machine. Different Windows box on LAN."
+    },
+    "ironGate": {
+      "ip": ".237",
+      "os": "unknown",
+      "ssh": "port 22 open",
+      "confirmed": true
+    },
+    "southGate": {
+      "ip": ".148",
+      "status": "ping only, no ports open",
+      "confirmed": true
+    },
+    "JetStream": {
+      "ip": ".111",
+      "type": "managed switch (TP-Link)",
+      "web_ui": "port 80 open",
+      "role": "House 2 backbone",
+      "confirmed": true
+    },
+    "router": {
+      "ip": ".1",
+      "type": "GL-MT6000",
+      "role": "gateway, NAT, port forwards",
+      "confirmed": true
+    },
+    "MikroTik": {
+      "ip": ".2",
+      "type": "L2 bridge/switch",
+      "role": "House 1 backbone",
+      "confirmed": true
+    }
+  },
+
+  "bingo_card": {
+    "method": "Hardware fingerprint (MAC + hostname + OS + services) → proximity graph → name assignment",
+    "reassignment": "Names are NOMINAL — can be reassigned as hardware profiles evolve",
+    "proximity": {
+      "house_1_brain": ["eastGate", "sporeGate", "MikroTik", "router"],
+      "house_1_limbs": ["ironGate", "southGate"],
+      "house_2_extension": ["graftGate", "JetStream"],
+      "kevin_workstation": ["northGate/Polaris"],
+      "unknown": ["blueGate"]
+    }
+  },
+
+  "sporeGate_zombie": {
+    "problem": "sporeGate (.3) was declared POWERED DOWN but is ALIVE and serving DHCP+DNS",
+    "impact": "All LAN devices get DNS from .3, not from router (.1)",
+    "risk": "If sporeGate actually goes down, ALL devices lose DNS + DHCP",
+    "fix_options": [
+      "Reclaim sporeGate — accept it's alive, give it a proper role",
+      "Move DHCP/DNS to router (.1) — disable on sporeGate",
+      "Keep sporeGate as DHCP/DNS but acknowledge it in topology"
+    ]
+  }
+}
