@@ -1,0 +1,112 @@
+{
+  "ts": "2026-11-05T18:00:00-05:00",
+  "wave": 222,
+  "organ": "proximity_enrollment",
+  "title": "Physical proximity IS authentication. USB hub travels. HSMs accumulate at home.",
+
+  "the_vision": {
+    "principle": "Touch ONCE = trust FOREVER. Single proximity starts the reveal.",
+    "how": "Kevin carries SoloKey + Pixel + iPhone. Each gate gets physically touched. Over time ALL gates have been enrolled by ALL devices.",
+    "endgame": "ANY registered device approaching from a distance begins the reveal. The HSMs at home verify. No cloud. No password. Presence IS proof."
+  },
+
+  "portable_devices": {
+    "solokey": {
+      "type": "USB-C + NFC hardware token",
+      "enrollment": "WebAuthn/FIDO2 ES256 + hmac-secret",
+      "touches": ["northGate", "grapheneGate", "eastGate", "sporeGate", "graftGate"],
+      "status": "ALL GATES TOUCHED"
+    },
+    "pixel_8a": {
+      "type": "Android phone (GrapheneOS)",
+      "hsm": "Titan M2",
+      "sensors": 37,
+      "enrollment": "ADB + beardog key generate",
+      "touches": ["eastGate (ADB host)", "graftGate (ADB host)"],
+      "status": "2 gates, expanding"
+    },
+    "iphone_xs": {
+      "type": "iOS phone (AT&T)",
+      "hsm": "Secure Enclave",
+      "enrollment": "libimobiledevice + beardog",
+      "touches": ["eastGate", "graftGate"],
+      "status": "2 gates, expanding"
+    }
+  },
+
+  "usb_hub_protocol": {
+    "what": "USB hub with ADB cables travels between gates",
+    "steps": [
+      "1. Plug USB hub into gate",
+      "2. Connect SoloKey + Pixel + iPhone",
+      "3. Run enrollment ceremony (beardog key generate per device)",
+      "4. Gate stores device fingerprints in local HSM / beardog keyring",
+      "5. Unplug hub, move to next gate",
+      "6. Repeat until ALL gates know ALL devices"
+    ],
+    "result": "Every gate has enrolled every portable device. Trust web is COMPLETE.",
+    "can_disable_locks_after": "Once all gates are enrolled, no more manual ceremony needed"
+  },
+
+  "proximity_reveal": {
+    "phase_1_usb": {
+      "range": "0 meters (physical contact)",
+      "method": "USB plug-in, ADB, WebAuthn",
+      "status": "NOW — this is what we just did"
+    },
+    "phase_2_nfc": {
+      "range": "0-4 cm",
+      "method": "SoloKey NFC tap, phone NFC",
+      "status": "READY — SoloKey has NFC, both phones have NFC",
+      "use": "Quick re-auth without unplugging. Tap to confirm."
+    },
+    "phase_3_bluetooth": {
+      "range": "0-10 meters",
+      "method": "BLE proximity detection",
+      "status": "FUTURE — phones have BLE, gates need BLE dongles",
+      "use": "Kevin walks into room → gate detects phone → begins reveal"
+    },
+    "phase_4_wifi": {
+      "range": "0-30 meters (house-wide)",
+      "method": "WiFi probe / mDNS / ARP presence",
+      "status": "PARTIAL — grapheneGate already on ApertureScience WiFi",
+      "use": "Phone connects to home WiFi → all gates know Kevin is home"
+    },
+    "phase_5_wan": {
+      "range": "anywhere on earth",
+      "method": "Tor/WAN → gate API with ZK proof from enrolled device",
+      "status": "ARCHITECTURE EXISTS — .onion + primals.eco",
+      "use": "Kevin abroad → phone sends ZK proof → gates respond with reveal level based on distance"
+    }
+  },
+
+  "hsm_accumulation": {
+    "principle": "HSMs stay HOME. Portable devices TRAVEL. Trust accumulates.",
+    "at_home": {
+      "eastGate": "RTX 4070 + TPM (if present)",
+      "northGate": "RTX 5090 + TPM (if present)",
+      "graftGate": "Apple M4 Secure Enclave + Neural Engine",
+      "sporeGate": "Ryzen TPM",
+      "blueGate": "Windows TPM"
+    },
+    "traveling": {
+      "SoloKey": "carries the root of trust physically",
+      "Pixel": "Titan M2 — mobile HSM that touches each gate",
+      "iPhone": "Secure Enclave — second mobile HSM"
+    },
+    "analogy": "T-cells (phones) travel through the body (LAN), touching every organ (gate). Each organ learns the T-cell. Eventually the BODY recognizes the cell instantly from any distance (WiFi/BLE proximity)."
+  },
+
+  "house_2_expansion": {
+    "protocol": "Same USB hub, same devices, same ceremony",
+    "connection": "10G fiber backbone between houses",
+    "gates_in_house_2": "TP-Link JetStream (.111) + future gates",
+    "vision": "Kevin walks between houses. Both houses recognize him."
+  },
+
+  "pi_gen_fingerprint": "6a668786e9b2992e",
+  "gates_enrolled": 5,
+  "devices_enrolled": 6,
+
+  "lub": "DUB"
+}
