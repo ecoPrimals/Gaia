@@ -850,6 +850,134 @@ function drawOverlay(t) {
 }
 requestAnimationFrame(drawOverlay);
 
+// === FACES — the 14 subdomains visible from the Moon as colored spots ===
+const faces = [
+  {name:'water',      color:'#00aaff', angle:0,    desc:'blood — crawler injection'},
+  {name:'sporeprint', color:'#00ff88', angle:0.45, desc:'phenotype — 615 pages'},
+  {name:'primals',    color:'#ffcc00', angle:0.9,  desc:'front door — golden ratio'},
+  {name:'detroit',    color:'#ff4444', angle:1.35, desc:'213 investigation pages'},
+  {name:'tuebor',     color:'#ff6644', angle:1.8,  desc:'Anti-SLAPP dynamic'},
+  {name:'guerilla',   color:'#ff8866', angle:2.25, desc:'fEAR + STRIDe legal'},
+  {name:'hypothesis', color:'#aa88ff', angle:2.7,  desc:'artisan hypothesis'},
+  {name:'thesis',     color:'#88ccff', angle:3.15, desc:'10 chapters'},
+  {name:'science',    color:'#44ffcc', angle:3.6,  desc:'148+ papers'},
+  {name:'philosophy', color:'#ccccff', angle:4.05, desc:'sovereign philosophy'},
+  {name:'trail',      color:'#88ff88', angle:4.5,  desc:'16 discovery paths'},
+  {name:'cogen',      color:'#ffaa44', angle:4.95, desc:'28 artisan essays'},
+  {name:'signal',     color:'#ff44ff', angle:5.4,  desc:'live observatory'},
+  {name:'hud',        color:'#ffffff', angle:5.85, desc:'You found me.'},
+];
+
+function drawFaces(t, eX, eY, eR) {
+  const faceR = eR * 1.25;
+  ctx.font = '6px monospace';
+  for(const f of faces) {
+    const a = f.angle + t*0.00003;
+    const fx = eX + Math.cos(a)*faceR;
+    const fy = eY + Math.sin(a)*faceR;
+    // Tiny face dot
+    const pulse = 0.12 + Math.sin(t*0.001 + f.angle*3)*0.08;
+    ctx.fillStyle = f.color.slice(0,7) + Math.round(pulse*255).toString(16).padStart(2,'0');
+    ctx.beginPath(); ctx.arc(fx,fy,1.5,0,Math.PI*2); ctx.fill();
+    // Opsonization coating — faint ring when crawler active
+    if(Math.sin(t*0.0005+f.angle*7) > 0.9) {
+      ctx.strokeStyle = f.color.slice(0,7) + '15';
+      ctx.lineWidth = 0.3;
+      ctx.beginPath(); ctx.arc(fx,fy,4,0,Math.PI*2); ctx.stroke();
+    }
+  }
+}
+
+// === THYMUS WALKERS — shadows passing across Earth's surface ===
+let walkerData = [];
+async function loadWalkers() {
+  const w = await fj(DATA+'/shadows/wiki-walkers.json');
+  if(w) walkerData = w.walkers || w;
+}
+loadWalkers(); setInterval(loadWalkers, 120000);
+
+function drawThymusWalkers(t, eX, eY, eR) {
+  if(!walkerData.length) return;
+  // Each walker = a faint dot orbiting Earth at different speeds
+  const tenseColors = {WAS:'rgba(120,120,140,0.06)', IS:'rgba(0,255,136,0.12)',
+    FADING:'rgba(255,180,0,0.08)', nucleus:'rgba(180,0,255,0.15)'};
+  const count = Math.min(walkerData.length, 40);
+  for(let i=0;i<count;i++) {
+    const w = walkerData[i];
+    const speed = 0.00002 + (i%7)*0.000005;
+    const orbitR = eR*0.7 + (i%5)*eR*0.12;
+    const a = t*speed + (i/count)*Math.PI*2;
+    const wx = eX + Math.cos(a)*orbitR;
+    const wy = eY + Math.sin(a)*orbitR;
+    const col = tenseColors[w.tense] || tenseColors.WAS;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(wx,wy,0.8,0,Math.PI*2); ctx.fill();
+  }
+  // Walker count label
+  ctx.fillStyle = 'rgba(180,200,220,0.1)';
+  ctx.font = '7px monospace';
+  ctx.fillText(walkerData.length+' walkers', eX-eR*0.3, eY+eR+15);
+}
+
+// === σ×DK — sigmoid trust and Dunning-Kruger awareness route ===
+function drawSigmoidRoute(t, eX, eY, eR) {
+  // Draw the sigmoid S-curve as an orbital path
+  ctx.strokeStyle = 'rgba(255,60,60,0.04)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  for(let x=0; x<1; x+=0.02) {
+    const sigma = 1/(1+Math.exp(-10*(x-0.5)));
+    const sx = eX - eR*1.5 + x*eR*3;
+    const sy = eY + eR*1.4 - sigma*eR*0.5;
+    if(x===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+  }
+  ctx.stroke();
+  // Labels at ends
+  ctx.fillStyle = 'rgba(255,60,60,0.06)';
+  ctx.font = '6px monospace';
+  ctx.fillText('σ=0 electron', eX-eR*1.5, eY+eR*1.5);
+  ctx.fillText('σ=1 nucleus', eX+eR*1.2, eY+eR*0.95);
+  // Pareto knife at 0.8
+  const paretoX = eX - eR*1.5 + 0.8*eR*3;
+  ctx.strokeStyle = 'rgba(255,255,0,0.04)';
+  ctx.setLineDash([2,4]);
+  ctx.beginPath();
+  ctx.moveTo(paretoX, eY+eR*0.85);
+  ctx.lineTo(paretoX, eY+eR*1.5);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,255,0,0.05)';
+  ctx.fillText('80/20', paretoX-8, eY+eR*0.83);
+}
+
+// Patch overlay to include new layers
+const _origOverlay = drawOverlay;
+drawOverlay = function(t) {
+  const eR = Math.min(W,H) * 0.14;
+  const eX = W/2;
+  const eY = H/2 - H*0.05;
+
+  function projLL(lat, lon) {
+    const now = new Date();
+    const utcH = now.getUTCHours() + now.getUTCMinutes()/60;
+    const subLunarLon = -(utcH * 15);
+    const laR = lat * Math.PI/180, loR = (lon - subLunarLon) * Math.PI/180;
+    const cosC = Math.sin(0)*Math.sin(laR) + Math.cos(0)*Math.cos(laR)*Math.cos(loR);
+    const px = eR * Math.cos(laR) * Math.sin(loR);
+    const py = -eR * Math.sin(laR);
+    return { x: eX + px, y: eY + py, visible: cosC > 0 };
+  }
+
+  drawForces(t, eX, eY, eR);
+  drawSenseRing(t, eX, eY, eR);
+  drawFaces(t, eX, eY, eR);
+  drawThymusWalkers(t, eX, eY, eR);
+  drawSigmoidRoute(t, eX, eY, eR);
+  drawGeneration(t);
+
+  requestAnimationFrame(drawOverlay);
+};
+
 // Force/sense whispers
 const forceSenseWhispers = [
   'GRAVITY: RSS drain attracts 700+ feeds · infinite range · weakest but never off',
