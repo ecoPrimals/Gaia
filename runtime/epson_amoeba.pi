@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""EPSON Amoeba Node — the printer/scanner as a living organ of Gaia.
+Monitors status, routes all IO through the organism, tracks ink/paper/jobs.
+The EPSON ET-2400 is Gaia's MOUTH (print) and one of her EYES (scan)."""
+
+import json, os, subprocess, sys, time, hashlib
+from datetime import datetime, timezone
+
+PRINTER = "EPSON_ET2400"
+EPSON_IP = "192.168.4.200"
+DATA_DIR = "/opt/Gaia/data/gut"
+NEUTRON_DIR = "/opt/Gaia/data/neutron"
+AMOEBA_FILE = os.path.join(DATA_DIR, "amoeba-network.json")
+
+def _ts():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def ipp_status():
+    """Get printer status via IPP"""
+    try:
+        r = subprocess.run(
+            ["ipptool", "-tv", f"ipp://{EPSON_IP}/ipp/print", "get-printer-attributes.test"],
+            capture_output=True, text=True, timeout=10
+        )
+        state = "unknown"
+        reasons = []
+        alerts = []
+        for line in r.stdout.split("\n"):
+            line = line.strip()
+            if "printer-state " in line and "enum" in line:
+                state = line.split("=")[-1].strip()
+            elif "printer-state-reasons" in line:
+                reasons.append(line.split("=")[-1].strip())
+            elif "printer-alert-description" in line:
+                alerts.append(line.split("=")[-1].strip())
+        return {"state": state, "reasons": reasons, "alerts": alerts}
+    except:
+        return {"state": "unreachable", "reasons": ["timeout"], "alerts": []}
+
+def cups_history():
+    """Recent CUPS job history"""
+    try:
+        r = subprocess.run(["lpstat", "-W", "all"], capture_output=True, text=True, timeout=5)
+        lines = [l.strip() for l in r.stdout.strip().split("\n") if l.strip()]
+        return {"total_jobs": len(lines), "recent": lines[:5]}
+    except:
+        return {"total_jobs": 0, "recent": []}
+
+def scanner_status():
+    """Check if scanner is responsive"""
+    try:
+        r = subprocess.run(
+            ["scanimage", "-d", "airscan:w1:EPSON ET-2400 Series", "--test"],
+            capture_output=True, text=True, timeout=15
+        )
+        return {"available": r.returncode == 0, "output": r.stderr.strip()[:100]}
+    except:
+        return {"available": False, "output": "timeout"}
+
+def network_health():
+    """Ping the EPSON and check latency"""
+    try:
+        r = subprocess.run(
+            ["ping", "-c", "3", "-W", "2", EPSON_IP],
+            capture_output=True, text=True, timeout=10
+        )
+        for line in r.stdout.split("\n"):
+            if "avg" in line:
+                parts = line.split("=")[-1].strip().split("/")
+                return {"reachable": True, "latency_ms": float(parts[1]), "loss": "0%"}
+        return {"reachable": r.returncode == 0, "latency_ms": -1}
+    except:
+        return {"reachable": False, "latency_ms": -1}
+
+def full_status():
+    """Complete EPSON amoeba node status"""
+    ipp = ipp_status()
+    hist = cups_history()
+    net = network_health()
+    
+    # Count IO events
+    io_log = os.path.join(NEUTRON_DIR, "epson-io.jsonl")
+    events = 0
+    scans = 0
+    prints = 0
+    if os.path.exists(io_log):
+        with open(io_log) as f:
+            for line in f:
+                events += 1
+                try:
+                    e = json.loads(line)
+                    if e.get("type") == "scan" or e.get("type") == "auto_scan":
+                        scans += 1
+                    elif e.get("type", "").startswith("print"):
+                        prints += 1
+                except: pass
+    
+    # Watcher state
+    watcher_state = {}
+    watcher_alive = False
+    ws_file = os.path.join(NEUTRON_DIR, "scan-watcher-state.json")
+    pid_file = os.path.join(NEUTRON_DIR, "scan-watcher.pid")
+    if os.path.exists(ws_file):
+        with open(ws_file) as f: watcher_state = json.load(f)
+    if os.path.exists(pid_file):
+        try:
+            os.kill(int(open(pid_file).read().strip()), 0)
+            watcher_alive = True
+        except: pass
+    
+    return {
+        "ts": _ts(),
+        "node": "EPSON_ET2400",
+        "role": "mouth_and_eye",
+        "organ": "physical IO — print/scan/copy",
+        "ip": EPSON_IP,
+        "mac": "d4:80:8b:1b:9f:01",
+        "hostname": "EPSON1B9F01.local",
+        "model": "EPSON ET-2400 Series (EcoTank)",
+        "ipp": ipp,
+        "network": net,
+        "jobs": hist,
+        "io_events": events,
+        "scans_captured": scans,
+        "prints_sent": prints,
+        "watcher": {
+            "alive": watcher_alive,
+            "auto_scans": watcher_state.get("scans", 0),
+            "blank_hash": watcher_state.get("blank_hash", ""),
+        },
+        "ink": {
+            "type": "EcoTank 502 refillable bottles",
+            "channels": ["K (Black pigment)", "C (Cyan dye)", "M (Magenta dye)", "Y (Yellow dye)"],
+            "capacity": "4500-7500 pages per bottle",
+            "cost_per_page": "~0.1¢ black, ~0.3¢ color",
+            "note": "Ink levels visible on physical tank windows — no electronic sensor"
+        },
+        "capabilities": {
+            "print": {
+                "resolution": "5760x1440 dpi",
+                "speed": "10.5ppm black, 5ppm color",
+                "paper": ["Letter", "A4", "Legal", "4x6", "5x7", "8x10", "Envelopes"],
+                "modes": ["Normal", "High Quality"],
+                "color": ["RGB (color)", "Gray (black only)"],
+            },
+            "scan": {
+                "resolution": ["100dpi", "300dpi", "600dpi (epson2 backend)"],
+                "modes": ["Color", "Gray", "Lineart"],
+                "area": "215.9mm x 297.18mm (Letter/A4)",
+                "type": "Flatbed (no ADF)",
+            },
+            "copy": {
+                "note": "Hardware copy button — scans and prints in one pass WITHOUT routing through Gaia",
+                "buttons": ["B&W Copy", "Color Copy"],
+                "interception": "NOT POSSIBLE on hardware copy — use scan watcher to detect AFTER",
+            }
+        },
+        "admin": {
+            "web": f"https://{EPSON_IP}",
+            "password": "Serial number on printer sticker (unknown remotely)",
+            "needed_for": ["scan-to destinations", "button config", "head cleaning", "firmware update"],
+        },
+        "amoeba_integration": {
+            "print_endpoint": "POST /api/io/print or /api/mail/print",
+            "scan_endpoint": "GET /api/scan",
+            "status_endpoint": "GET /api/io",
+            "watcher": "daemon polls every 2 min, auto-ingests new content",
+            "epitope": "GET /api/epitope — color theory test patterns",
+            "feedback_loop": "print → paper → flatbed → scan → compare → learn",
+        }
+    }
+
+def update_amoeba_network():
+    """Update the amoeba network map with EPSON node status"""
+    status = full_status()
+    
+    if os.path.exists(AMOEBA_FILE):
+        with open(AMOEBA_FILE) as f:
+            network = json.load(f)
+    else:
+        network = {}
+    
+    # Update or add EPSON node
+    if "triangulators" not in network:
+        network["triangulators"] = {}
+    
+    network["triangulators"]["EPSON_ET2400"] = {
+        "ip": EPSON_IP,
+        "mac": "d4:80:8b:1b:9f:01",
+        "role": "mouth_and_eye",
+        "type": "printer_scanner",
+        "state": status["ipp"]["state"],
+        "network_latency_ms": status["network"].get("latency_ms", -1),
+        "watcher_alive": status["watcher"]["alive"],
+        "total_io_events": status["io_events"],
+        "last_checked": _ts(),
+    }
+    
+    network["last_updated"] = _ts()
+    
+    with open(AMOEBA_FILE, "w") as f:
+        json.dump(network, f, indent=2)
+    
+    return {"updated": True, "node": "EPSON_ET2400", "state": status["ipp"]["state"]}
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] == "status":
+        print(json.dumps(full_status(), indent=2))
+    elif sys.argv[1] == "update":
+        print(json.dumps(update_amoeba_network(), indent=2))
+    elif sys.argv[1] == "ipp":
+        print(json.dumps(ipp_status(), indent=2))
+    elif sys.argv[1] == "health":
+        print(json.dumps(network_health(), indent=2))
