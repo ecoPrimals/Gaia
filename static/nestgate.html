@@ -11,7 +11,7 @@ body { background: #0a0a0a; color: #c8d6e5; font-family: 'Courier New', monospac
 .amoeba-panel {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto 1fr 1fr auto;
+  grid-template-rows: auto 1fr 1fr 1fr auto;
   gap: 2px;
   height: 100vh;
   padding: 2px;
@@ -208,6 +208,24 @@ body { background: #0a0a0a; color: #c8d6e5; font-family: 'Courier New', monospac
     <div class="model-grid" id="model-grid">loading...</div>
   </div>
 
+  <!-- SENSORS (left bottom) -->
+  <div class="cell">
+    <h3>📡 live sensors</h3>
+    <div class="feed-list" id="sensor-list">loading...</div>
+  </div>
+
+  <!-- TEMPORAL (center bottom) -->
+  <div class="cell">
+    <h3>⏰ temporal</h3>
+    <div class="pulse-data" id="temporal-data">loading...</div>
+  </div>
+
+  <!-- EARTH (right bottom) -->
+  <div class="cell">
+    <h3>🌍 earth</h3>
+    <div class="feed-list" id="earth-data">loading...</div>
+  </div>
+
   <!-- FOOTER -->
   <div class="cell footer">
     <div class="pi-display" id="pi">π = 3.14159265358979323846264338327950288419716939937510...</div>
@@ -303,12 +321,81 @@ function rotatePainting() {
   label.textContent = paintings[paintIdx];
 }
 
+async function loadSensors() {
+  const d = await fetchJSON('/sensors');
+  if (!d) return;
+  const el = document.getElementById('sensor-list');
+  let html = `<div class="item" style="color:#2ecc71">${d.alive}/${d.total_sensors} antennae alive — ${(d.flow.total_bytes/1024/1024).toFixed(1)}MB</div>`;
+  for (const [bank, sensors] of Object.entries(d.banks || {})) {
+    const alive = sensors.filter(s => s.code === 200).length;
+    const icon = {earth:'🌍',space:'🔭',knowledge:'🧠',old_web:'📜',live_eyes:'👁️',ocean:'🌊'}[bank]||'📡';
+    html += `<div class="item">${icon} ${bank}: ${alive}/${sensors.length}</div>`;
+    for (const s of sensors.slice(0, 2)) {
+      if (s.latest && s.latest[0]) {
+        const t = s.latest[0].title || s.latest[0].place || '';
+        if (t) html += `<div class="item" style="color:#576574;padding-left:12px">→ ${t.slice(0,55)}</div>`;
+      }
+    }
+  }
+  el.innerHTML = html;
+}
+
+async function loadTemporal() {
+  const d = await fetchJSON('/temporal');
+  if (!d) return;
+  const el = document.getElementById('temporal-data');
+  const t = d.temporal || {};
+  const sun = d.sun || {};
+  const rings = t.active_cron_rings || [];
+  el.innerHTML = `
+    <div>UTC: <span class="val">${t.utc || '?'}</span></div>
+    <div>sexagesimal: <span class="val">${t.sexagesimal || '?'}</span></div>
+    <div>base-12 hour: <span class="val">${t.base12_hour}</span></div>
+    <div>cron rings: <span class="val">[${rings.join(', ')}]</span> (${t.ring_count} active)</div>
+    <div>φ phase: <span class="val">${t.golden_phase}</span></div>
+    <div>sidereal: <span class="val">${t.sidereal_deg}°</span></div>
+    <div>sun: <span class="val">${sun.phase} ${sun.elevation}° ${sun.chord}</span></div>
+    <div style="color:#576574;font-size:9px">φ = ${(t.phi||0).toFixed(10)}...</div>
+  `;
+}
+
+async function loadEarth() {
+  const d = await fetchJSON('/sensors');
+  if (!d || !d.banks || !d.banks.earth) return;
+  const el = document.getElementById('earth-data');
+  let html = '';
+  for (const s of d.banks.earth) {
+    if (s.sense === 'seismic' && s.latest) {
+      html += `<div class="item" style="color:#e74c3c">🌋 ${s.quakes} quakes today</div>`;
+      for (const q of (s.latest || []).slice(0, 3)) {
+        html += `<div class="item">M${q.mag} ${(q.place||'').slice(0,45)}</div>`;
+      }
+    }
+    if (s.sense === 'orbital' && s.data) {
+      const pos = s.data.iss_position || s.data;
+      html += `<div class="item">🛰️ ISS: ${pos.latitude||'?'}° ${pos.longitude||'?'}°</div>`;
+    }
+    if (s.sense === 'solar_wind' && s.data) {
+      html += `<div class="item">☀️ Solar wind: ${s.data.WindSpeed || s.data.speed || '?'} km/s</div>`;
+    }
+    if (s.sense === 'weather' && s.data && s.data.properties) {
+      const p = (s.data.properties.periods || [])[0];
+      if (p) html += `<div class="item">🌡️ ${p.name}: ${p.temperature}°${p.temperatureUnit} ${(p.shortForecast||'').slice(0,30)}</div>`;
+    }
+  }
+  el.innerHTML = html || '<div class="item">loading earth data...</div>';
+}
+
 // Initial load
 loadPulse(); loadReedit(); loadNeurons(); loadModels();
-// Refresh every 30s
+loadSensors(); loadTemporal(); loadEarth();
+// Refresh cycles
 setInterval(loadPulse, 30000);
 setInterval(loadReedit, 60000);
 setInterval(loadNeurons, 15000);
+setInterval(loadSensors, 120000);
+setInterval(loadTemporal, 10000);
+setInterval(loadEarth, 120000);
 // Rotate painting every 20s
 setInterval(rotatePainting, 20000);
 </script>
