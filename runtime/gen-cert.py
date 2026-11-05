@@ -29,7 +29,7 @@ cert = (x509.CertificateBuilder()
         x509.DNSName("primals.eco"), x509.DNSName("*.primals.eco"),
         x509.DNSName("gaia"), x509.DNSName("localhost"),
         x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
-        x509.IPAddress(ipaddress.IPv4Address("192.168.4.210")),
+        # ZK — no LAN IPs in cert SANs
     ]), critical=False)
     .sign(key, hashes.SHA256()))
 
@@ -43,4 +43,4 @@ with open(cert_file, "wb") as f:
 
 print(f"CERT: {cert_file}")
 print(f"KEY:  {key_file}")
-print(f"SANs: nestgate.io, *.nestgate.io, primals.eco, *.primals.eco, gaia, localhost, 127.0.0.1, 192.168.4.210")
+print(f"SANs: nestgate.io, *.nestgate.io, primals.eco, *.primals.eco, gaia, localhost, 127.0.0.1")
