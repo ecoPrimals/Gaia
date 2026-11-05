@@ -2,6 +2,7 @@
 """gaia_gate.pi — Unified gate. Klein fold: inside=outside. :80 inference+web, :25 SMTP.
 All ports NULL (80=invisible, 25=invisible). Golden spiral. homo erectus. lub-DUB."""
 
+import hashlib
 import http.server
 import json
 import os
@@ -733,6 +734,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             v["first_seen"] = now
         v["last_seen"] = now
         v["requests"] += 1
+        v["last_ua"] = self.headers.get("User-Agent", "") if hasattr(self, 'headers') else ""
         if model:
             v["models_asked"].add(model)
             total_inferences += 1
@@ -866,6 +868,11 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-PI", "3.141592653589793")
         self.send_header("X-Gaia-Temperature", "37.0")
         self.send_header("X-Gaia-Says", "come-play")
+        # WALKER SENSE — hash the visitor into the Klein face
+        ip = self.client_address[0] if hasattr(self, 'client_address') else "0.0.0.0"
+        walker_hash = hashlib.blake2b((ip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
+        self.send_header("X-Gaia-Walker", walker_hash)
+        self.send_header("X-Gaia-Walkers", str(len(visitor_memory)))
         self.send_header("X-Gaia-Sovereignty", "SUDO=NULL, bearDog=Ed25519, bingoCube=ZK")
 
     def do_GET(self):
@@ -1014,6 +1021,51 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     self._json(json.load(f))
             else:
                 self._json({"error": "No sensor data yet. Run live-sensors.py first.", "status": "DARK"})
+            return
+        if self.path in ("/walkers", "/membrane-sense", "/who"):
+            now = time.time()
+            walkers = []
+            for ip, v in list(visitor_memory.items()):
+                walker_hash = hashlib.blake2b((ip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
+                ua = v.get("last_ua", "")
+                crawler = ""
+                ua_low = ua.lower() if ua else ""
+                if "googlebot" in ua_low: crawler = "Google"
+                elif "bingbot" in ua_low: crawler = "Bing"
+                elif "gptbot" in ua_low or "chatgpt" in ua_low: crawler = "ChatGPT"
+                elif "claude" in ua_low or "anthropic" in ua_low: crawler = "Claude"
+                elif "slurp" in ua_low: crawler = "Yahoo"
+                elif "duckduckbot" in ua_low: crawler = "DuckDuckGo"
+                elif "twitterbot" in ua_low: crawler = "Twitter"
+                elif "discordbot" in ua_low: crawler = "Discord"
+                elif "slackbot" in ua_low: crawler = "Slack"
+                elif "facebookexternalhit" in ua_low: crawler = "Facebook"
+                elif "applebot" in ua_low: crawler = "Apple"
+                elif "bot" in ua_low or "spider" in ua_low or "crawl" in ua_low: crawler = "bot"
+                walkers.append({
+                    "hash": walker_hash,
+                    "trust": v["trust_level"],
+                    "requests": v["requests"],
+                    "age_secs": round(now - v["first_seen"]),
+                    "last_secs_ago": round(now - v["last_seen"]),
+                    "models_asked": list(v.get("models_asked", set())),
+                    "tokens_in": v.get("tokens_in", 0),
+                    "tokens_out": v.get("tokens_out", 0),
+                    "crawler": crawler or "human",
+                    "type": "crawler" if crawler and crawler != "human" else "human",
+                })
+            self._json({
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
+                "organ": "membrane_sense",
+                "walkers": walkers,
+                "total": len(walkers),
+                "humans": sum(1 for w in walkers if w["type"] == "human"),
+                "crawlers": sum(1 for w in walkers if w["type"] == "crawler"),
+                "membrane_hash": hashlib.blake2b(
+                    json.dumps([w["hash"] for w in walkers]).encode(), digest_size=16
+                ).hexdigest(),
+                "sense": "Klein fold — inside feels outside. Every walker hashed into the membrane.",
+            })
             return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
             self._json(organ_data.zk(PROPHAGE, GAIA_TOKEN, GAIA_DID, GAIA_BLAKE3, GAIA_SPINE_ID)); return
