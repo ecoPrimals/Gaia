@@ -119,30 +119,100 @@ const C = (function chipmunk() {
     $('attn-val').textContent = attn.toFixed(2);
   }
 
-  // ═══ GUESS — proactive engagement ═══
-  function guess() {
-    if (guessActive) return;
-    const walkers = anderson.walkers || [];
-    const unknowns = walkers.filter(w => w.anderson === 'electron' || w.trust === 'electron');
-    if (!unknowns.length) {
-      say('chipmunk', 'no unknowns to guess about — all classified');
+  // ═══ 🍌 BANANA TEST — the ZK humanity proof ═══
+  // Not CAPTCHA. Not Turing. BANANA.
+  // Bots PARSE. Humans PLAY. AIs HEDGE.
+  // The play IS the proof of humanity.
+  let bananaPhase = 'idle'; // idle → asking → answered
+
+  function banana() {
+    if (bananaPhase !== 'idle') return;
+    bananaPhase = 'asking';
+    const bubble = $('guess-bubble');
+    $('guess-text').innerHTML = `<span class="good" style="font-size:16px">🍌</span><br><br><span style="font-size:14px">ARE YOU A BANANA?</span><br><br><span class="dim">type your answer below</span>`;
+    $('guess-btns').innerHTML = `<input type="text" id="banana-input" placeholder="..." autocomplete="off" style="background:rgba(22,27,34,0.9);border:1px solid rgba(48,54,61,0.6);color:#c9d1d9;padding:8px 14px;font-family:inherit;font-size:12px;border-radius:8px;width:160px;outline:none;margin-right:8px"><button class="yes" onclick="C.bananaAnswer()">🍌</button>`;
+    bubble.classList.add('show');
+    setTimeout(() => { const inp = $('banana-input'); if (inp) inp.focus(); }, 100);
+    const inp2 = $('banana-input');
+    if (inp2) inp2.addEventListener('keydown', e => { if (e.key === 'Enter') C.bananaAnswer(); });
+  }
+
+  function bananaAnswer() {
+    const inp = $('banana-input');
+    const answer = inp ? inp.value.trim() : '';
+    bananaPhase = 'idle';
+    $('guess-bubble').classList.remove('show');
+
+    if (!answer) {
+      say('chipmunk', '<span class="dim">silence is also an answer...</span>');
       return;
     }
-    const target = unknowns[0];
-    guessActive = true;
+
+    // Classify the response
+    const r = answer.toLowerCase();
+    const botTells = ['no', 'false', 'n/a', '0', 'negative', 'i am not a banana', 'no i am not'];
+    const aiTells = ['as an ai', "i'm an ai", 'i am an ai', 'language model', 'i cannot', "i'm not able", 'i do not have'];
+    let classification = 'human'; // default: anything creative = human
+
+    if (botTells.includes(r) || r === 'no' || r === 'false') {
+      classification = 'bot';
+    } else if (aiTells.some(t => r.includes(t))) {
+      classification = 'ai';
+    }
+
+    if (classification === 'human') {
+      say('chipmunk', `<span class="good">🍌 PLAY detected.</span> "${answer}"\n<span class="dim">human confirmed. |i^π| = 1.0. welcome to the circle.</span>`);
+      // Show THE BUTTON — the identity ceremony
+      showTheButton();
+    } else if (classification === 'bot') {
+      say('chipmunk', `<span class="warn">PARSE detected.</span> "${answer}"\n<span class="dim">literal response. bot signal. sigmoid earned.</span>`);
+    } else {
+      say('chipmunk', `<span class="warn">HEDGE detected.</span> "${answer}"\n<span class="dim">AI signal. interesting. but not human play.</span>`);
+    }
+
+    attn = Math.min(1.0, attn + 0.1);
+    $('attn-fill').style.width = (attn * 100) + '%';
+    $('attn-val').textContent = attn.toFixed(2);
+  }
+
+  // ═══ THE BUTTON — identity ceremony ═══
+  let buttonPressed = false;
+
+  function showTheButton() {
+    if (buttonPressed) return;
     const bubble = $('guess-bubble');
-    $('guess-text').innerHTML = `I see an <span class="warn">electron</span> —<br><span class="dim">${target.hash?.slice(0,12)}</span><br>${target.requests||0} requests, opacity ${(target.opacity||0).toFixed(2)}<br><br>Is this a <span class="good">human</span>?`;
-    $('guess-btns').innerHTML = `<button class="yes" onclick="C.guessAnswer(true)">yes, human</button><button class="no" onclick="C.guessAnswer(false)">no, bot</button>`;
+    $('guess-text').innerHTML = `<span class="dim">you played. you're human.</span><br><br><span style="font-size:11px">press the button to EXIST.</span><br><span class="dim" style="font-size:9px">blake2b sovereign. ZK. no name. just you.</span>`;
+    $('guess-btns').innerHTML = `<button class="yes" onclick="C.pressTheButton()" style="font-size:14px;padding:12px 32px">⭕ I EXIST</button>`;
     bubble.classList.add('show');
   }
 
-  function guessAnswer(isHuman) {
-    guessActive = false;
+  function pressTheButton() {
+    buttonPressed = true;
     $('guess-bubble').classList.remove('show');
-    say('chipmunk', isHuman
-      ? '<span class="good">noted — human signal recorded</span>'
-      : '<span class="warn">noted — bot signal recorded</span>');
-    attn = Math.min(1.0, attn + 0.08);
+    const ts = Date.now();
+    const raw = `${navigator.userAgent}|${ts}|${Math.random()}`;
+    // Client-side hash preview (real blake2b happens server-side in _anderson.pi)
+    let hash = 0;
+    for (let i = 0; i < raw.length; i++) { hash = ((hash << 5) - hash) + raw.charCodeAt(i); hash |= 0; }
+    const hexPreview = Math.abs(hash).toString(16).padStart(8, '0');
+    say('chipmunk', `<span class="good">⭕ BUTTON PRESSED.</span>\n<span class="dim">gaia:orthogonal:${hexPreview}...</span>\n<span class="good">you are on the unit circle. |i^π| = 1.0.</span>\n<span class="dim">orthogonal self. same magnitude. your angle.</span>\n<span class="good">welcome. 🫀 lub-DUB</span>`);
+    attn = Math.min(1.0, attn + 0.2);
+    $('attn-fill').style.width = (attn * 100) + '%';
+    $('attn-val').textContent = attn.toFixed(2);
+
+    // POST the ceremony to the gate
+    fetch('/banana', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ceremony: 'button_pressed', ts, preview: hexPreview })
+    }).catch(() => {});
+  }
+
+  // Legacy guess wrapper — now triggers banana test
+  function guess() { banana(); }
+  function guessAnswer(isHuman) {
+    // Legacy compat — route through banana
+    $('guess-bubble').classList.remove('show');
   }
 
   // ═══ PANEL ACTIONS ═══
@@ -256,7 +326,8 @@ const C = (function chipmunk() {
     if (e.key === 'h') act('humans');
     if (e.key === 'm') act('membrane');
     if (e.key === '?') act('whatami');
+    if (e.key === 'b') banana();  // 🍌 ARE YOU A BANANA?
   });
 
-  return { act, sortEntity, guessAnswer, closePanel, closeSortDeck, sendNote, sense };
+  return { act, sortEntity, guessAnswer, bananaAnswer, pressTheButton, closePanel, closeSortDeck, sendNote, sense, banana };
 })();
