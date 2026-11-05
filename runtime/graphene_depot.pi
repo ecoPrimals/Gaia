@@ -201,6 +201,11 @@ def read_bluetooth():
             devices.append(line.strip()[:100])
     return {"ble_devices": len(devices), "sample": devices[:10]}
 
+def _wlan_ip():
+    import re
+    m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", _adb("ip -4 addr show wlan0") or "")
+    return m.group(1) if m else "unknown"
+
 def full_sense():
     """Complete sensor dump — all modalities"""
     battery = read_battery()
@@ -221,7 +226,7 @@ def full_sense():
         "ts": _ts(),
         "source": "grapheneGate",
         "device": "Pixel 8a",
-        "ip": (adb_target()[0] or "unreachable").split(":")[0],
+        "ip": _wlan_ip(),
         "role": "right_eye_ear",
         "battery": battery,
         "wifi": wifi,
