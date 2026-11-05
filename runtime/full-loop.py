@@ -87,7 +87,7 @@ except Exception as e:
 
 # Try eastGate
 try:
-    req2 = urllib.request.Request("http://192.168.4.103:8443/api/discuss", data=data,
+    req2 = urllib.request.Request("http://eastGate:8443/api/discuss", data=data,
                                  headers={"Content-Type": "application/json"})
     r2 = urllib.request.urlopen(req2, timeout=5)
     print(f"  ⚡ eastGate neuron: {json.loads(r2.read())}")

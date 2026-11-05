@@ -134,9 +134,8 @@ def sense_network():
         "gaia_gate": ("127.0.0.1", 8443),
         "membrane_hud": ("127.0.0.1", 8888),
         "ollama": ("127.0.0.1", 11434),
-        "eastGate_caddy": ("192.168.4.103", 443),
-        "eastGate_forgejo": ("192.168.4.103", 3000),
-        "sporeGate_ssh": ("192.168.4.3", 22),
+        "eastGate_caddy": ("eastGate", 443),
+        "eastGate_forgejo": ("eastGate", 3000),
     }
     for name, (host, port) in ports.items():
         try:
@@ -166,7 +165,7 @@ def sense_identity():
     identity = {
         "hostname": socket.gethostname(),
         "gate": "northGate",
-        "ip": "192.168.4.147",
+        "ip": "nestgate.io",
         "wave": 178,
         "heartbeat": "lub-DUB",
     }
@@ -279,11 +278,13 @@ def generate_topology():
 
     # Gates as nodes
     gates = [
-        {"id": "northGate", "ip": "192.168.4.147", "status": "HERE"},
-        {"id": "eastGate", "ip": "192.168.4.103", "status": "alive"},
-        {"id": "sporeGate", "ip": "192.168.4.3", "status": "numb"},
-        {"id": "swiftGate", "ip": "unknown", "status": "disconnected"},
-        {"id": "golgi", "ip": "wireguard", "status": "distant"},
+        {"id": "northGate", "ip": "nestgate.io", "status": "HERE"},
+        {"id": "eastGate", "ip": "eastGate", "status": "alive"},
+        {"id": "graftGate", "ip": "graftGate", "status": "OPEN"},
+        {"id": "blueGate", "ip": "blueGate", "status": "RISEN"},
+        {"id": "ironGate", "ip": "ironGate", "status": "OPEN"},
+        {"id": "southGate", "ip": "southGate", "status": "OPEN"},
+        {"id": "sporeGate", "ip": "sporeGate", "status": "TRAVELING"},
     ]
     for g in gates:
         nodes.append({"id": g["id"], "type": "gate", **g})
