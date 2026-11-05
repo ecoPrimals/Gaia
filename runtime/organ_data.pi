@@ -95,6 +95,20 @@ def agglutinate(token):
     mt, lt = agg.get("mirror",{}).get("tip",""), agg.get("local",{}).get("tip","")
     agg["synced"] = mt == lt if mt and lt else None
     agg["circuit"] = "CLOSED" if agg["synced"] else "OPEN"
+    globe_f = os.path.join(GAIA_ROOT, "data", "shadows", "globe-walker-predigital.json")
+    agg_f = os.path.join(GAIA_ROOT, "data", "shadows", "globe-agglutination.json")
+    if os.path.exists(globe_f):
+        try:
+            with open(globe_f) as f: gd = json.load(f)
+            agg["globe_walker"] = {"walked": gd["total_walked"], "categories": gd["categories"],
+                                    "tense": gd["tense_counts"], "ts": gd["ts"]}
+        except: pass
+    if os.path.exists(agg_f):
+        try:
+            with open(agg_f) as f: ad = json.load(f)
+            agg["predigital_canopy"] = {"delta": ad.get("delta"), "alive": len(ad.get("alive_traditions",[])),
+                                         "lost": len(ad.get("lost_knowledge",[]))}
+        except: pass
     return agg
 
 # ══════════════════════════════════════════════════════════

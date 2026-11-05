@@ -489,6 +489,40 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 self._json(state)
             except Exception as e: self._json({"error":str(e)})
             return
+        # GLOBE WALKER (GET /api/globe — pre-digital canopy)
+        if self.path.startswith("/api/globe"):
+            try:
+                import urllib.parse
+                qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                action=qs.get("action",["status"])[0]
+                if action=="walk":
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"all"],
+                        capture_output=True,text=True,timeout=120,cwd=_REPO)
+                    self._json(json.loads(r.stdout))
+                elif action=="agglutinate":
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"agglutinate"],
+                        capture_output=True,text=True,timeout=10,cwd=_REPO)
+                    self._json(json.loads(r.stdout))
+                elif action=="topic":
+                    topic=qs.get("q",["Cuneiform"])[0]
+                    r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"topic",topic],
+                        capture_output=True,text=True,timeout=15,cwd=_REPO)
+                    self._json(json.loads(r.stdout))
+                else:
+                    gf=os.path.join(_REPO,"data","shadows","globe-walker-predigital.json")
+                    af=os.path.join(_REPO,"data","shadows","globe-agglutination.json")
+                    status={"organ":"globe_walker","walked":False}
+                    if os.path.exists(gf):
+                        with open(gf) as f: d=json.load(f)
+                        status={"organ":"globe_walker","walked":True,"total":d["total_walked"],
+                                "categories":d["categories"],"tense":d["tense_counts"],"ts":d["ts"]}
+                    if os.path.exists(af):
+                        with open(af) as f: a=json.load(f)
+                        status["agglutination"]={"delta":a.get("delta"),"alive":len(a.get("alive_traditions",[])),
+                                                  "lost":len(a.get("lost_knowledge",[]))}
+                    self._json(status)
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")

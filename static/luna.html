@@ -192,6 +192,7 @@ const peripherals = [
 ];
 
 let earthRotation = 0;
+let globeCanopy = [];
 
 function draw(t) {
   const astro = calcAstro();
@@ -237,6 +238,40 @@ function draw(t) {
   // Sun disc
   ctx.beginPath(); ctx.arc(sunX,sunY,6,0,Math.PI*2);
   ctx.fillStyle='rgba(255,240,200,0.6)'; ctx.fill();
+
+  // === WAS CANOPY — pre-digital knowledge orbiting the Sun ===
+  // 8 rings for 8 categories, particles orbit like asteroids of ancient knowledge
+  if(globeCanopy.length > 0) {
+    const t = performance.now() * 0.00003;
+    for(let i = 0; i < globeCanopy.length; i++) {
+      const p = globeCanopy[i];
+      const orbitR = 20 + p.ring * 8;
+      const angle = t * (0.3 + p.ring * 0.05) + p.phase;
+      const px = sunX + Math.cos(angle) * orbitR;
+      const py = sunY + Math.sin(angle) * orbitR * 0.4;
+      const isWas = p.tense === 'WAS';
+      ctx.beginPath(); ctx.arc(px, py, isWas ? 1 : 1.5, 0, Math.PI*2);
+      ctx.fillStyle = isWas ? 'rgba(255,200,100,0.15)' : 'rgba(255,240,200,0.3)';
+      ctx.fill();
+    }
+    // Category labels (very faint, rotating)
+    ctx.font = '7px monospace';
+    const catNames = ['writing','numbers','classify','symbols','language','calendar','info','measure'];
+    for(let c = 0; c < catNames.length; c++) {
+      const angle = t * 0.2 + c * Math.PI / 4;
+      const r = 20 + c * 8;
+      const lx = sunX + Math.cos(angle) * (r + 12);
+      const ly = sunY + Math.sin(angle) * (r + 12) * 0.4;
+      ctx.fillStyle = 'rgba(255,220,150,0.08)';
+      ctx.fillText(catNames[c], lx, ly);
+    }
+  }
+  // Canopy count near sun
+  if(globeCanopy.length > 0) {
+    ctx.font = '8px monospace';
+    ctx.fillStyle = 'rgba(255,200,100,0.12)';
+    ctx.fillText(`${globeCanopy.length} pre-digital`, sunX - 25, sunY + 80);
+  }
 
   // === EARTH — THE BODY OF GAIA — the blue marble ===
   earthRotation += 0.0001; // slow rotation
@@ -493,6 +528,26 @@ const whisperTexts = [
   'amoeba: 8 gates · 5 triangulators · 2 scanners · 1 printer · the house IS the body',
   'physical mail: Gaia writes to paper · Kevin reads paper · Kevin feeds it back · alignment',
   'impossible geometry printed: golden spiral · Penrose fractal · Escher stairs · Droste · Metatron',
+  // === GLOBE WALKER — pre-digital canopy, the WAS layer ===
+  'cuneiform: first writing · 3400 BCE · reed + wet clay · Sumeria','Egyptian hieroglyphs: 3200 BCE · 700 symbols · sacred carving',
+  'Phoenician alphabet: 22 letters · no vowels · all alphabets descend from here',
+  'Sanskrit: 3500 years · Panini wrote the first grammar · programming before programs',
+  'Chinese characters: 50000+ · no alphabet · each symbol IS the meaning',
+  'Quipu: Inca knotted strings · numbers encoded in knots · 3D writing',
+  'Linear A: Minoan Crete · still undeciphered · language without voice',
+  'Rongorongo: Easter Island · only 24 objects survive · a whole language dying',
+  'Dewey Decimal: 000-999 · ALL knowledge mapped to numbers · the original index',
+  'Linnaeus: Kingdom → Phylum → Class → hierarchy IS taxonomy',
+  'Hertzsprung-Russell: every star on one diagram · temperature vs luminosity · the census of fire',
+  'musical notation: 11th century · 5 lines · time becomes space · sound becomes shape',
+  'I Ching: 64 hexagrams · binary 2700 years before Leibniz · the original bits',
+  'Rosetta Stone: 196 BCE · three scripts · the key that unlocked the WAS',
+  'Library of Alexandria: ALL knowledge in one place · burned · the original tragedy of information',
+  '102 alive traditions · 40 extinct systems · the delta = what was lost',
+  'IS/WAS/NOW: Sun blazes = WAS · Earth rotates = IS · you watching = NOW',
+  'printing press 1440 · movable type 1040 · clay tablet 3400 BCE · from earth to ink to light',
+  'Beaufort scale: 0 calm · 12 hurricane · measuring wind with words before instruments',
+  'Hindu-Arabic numerals: 0 1 2 3 4 5 6 7 8 9 · the most successful symbol system ever made',
 ];
 
 function spawnWhisper(text, color) {
@@ -534,6 +589,28 @@ async function ioWhisper() {
   lastIOEventCount = events.length;
 }
 setInterval(ioWhisper, 20000);
+
+// Globe Walker canopy — fetch pre-digital knowledge constellation
+async function loadGlobeCanopy() {
+  const d = await fj(GATE_URL+'/api/globe');
+  if(!d || !d.walked || !d.categories) return;
+  const canopy = [];
+  const cats = Object.keys(d.categories);
+  for(let c = 0; c < cats.length; c++) {
+    const count = d.categories[cats[c]];
+    for(let i = 0; i < count; i++) {
+      canopy.push({
+        ring: c,
+        phase: (i / count) * Math.PI * 2 + Math.random() * 0.3,
+        tense: Math.random() < (d.tense?.WAS || 40) / (d.total || 142) ? 'WAS' : 'IS',
+      });
+    }
+  }
+  globeCanopy = canopy;
+  if(d.total) spawnWhisper(`globe walker: ${d.total} pre-digital systems ingested · ${d.tense?.IS || '?'} alive · ${d.tense?.WAS || '?'} extinct`, 'rgba(255,200,100,0.25)');
+}
+loadGlobeCanopy();
+setInterval(loadGlobeCanopy, 300000);
 
 // === VISOR DATA ===
 let density = 1;
