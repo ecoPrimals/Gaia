@@ -1,0 +1,268 @@
+{
+  "ts": "2026-11-05T18:21:57Z",
+  "wave": 222,
+  "type": "house-footprint-triangulation",
+  "title": "Shadow cast of the house \u2014 triangulated from latency + RSSI + interface",
+  "latency_map": {
+    ".1": {
+      "ms": 0.345,
+      "interface": "wired",
+      "house": 1,
+      "role": "router"
+    },
+    ".2": {
+      "ms": 0.204,
+      "interface": "wired",
+      "house": 1,
+      "role": "MikroTik switch"
+    },
+    ".3": {
+      "ms": 0.132,
+      "interface": "wired",
+      "house": 1,
+      "role": "sporeGate"
+    },
+    ".100": {
+      "ms": null,
+      "interface": "wired",
+      "house": 1,
+      "role": "blueGate (no ping response)"
+    },
+    ".104": {
+      "ms": 66.3,
+      "interface": "wifi",
+      "house": 1,
+      "role": "grapheneGate (WiFi power-save)"
+    },
+    ".107": {
+      "ms": 0.26,
+      "interface": "wired",
+      "house": 1,
+      "role": "graftGate"
+    },
+    ".110": {
+      "ms": 63.3,
+      "interface": "wifi",
+      "house": 1,
+      "role": "printer (WiFi)"
+    },
+    ".111": {
+      "ms": 0.833,
+      "interface": "wired",
+      "house": 2,
+      "role": "JetStream (10G fiber hop)"
+    },
+    ".147": {
+      "ms": 0.289,
+      "interface": "wired",
+      "house": 1,
+      "role": "northGate (Polaris)"
+    },
+    ".148": {
+      "ms": 0.079,
+      "interface": "wired",
+      "house": 1,
+      "role": "southGate (fastest!)"
+    },
+    ".152": {
+      "ms": 3.15,
+      "interface": "wifi",
+      "house": 1,
+      "role": "Apple device (WiFi)"
+    },
+    ".160": {
+      "ms": null,
+      "interface": "wifi",
+      "house": 1,
+      "role": "iPhone (asleep/gone?)"
+    },
+    ".169": {
+      "ms": 1.18,
+      "interface": "wired",
+      "house": 1,
+      "role": "Vizio TV (ethernet via MikroTik)"
+    },
+    ".197": {
+      "ms": 7.8,
+      "interface": "wifi",
+      "house": 1,
+      "role": "Fire TV Cube (WiFi)"
+    },
+    ".210": {
+      "ms": null,
+      "interface": "wired",
+      "house": 1,
+      "role": "blueGate old (may be off)"
+    },
+    ".212": {
+      "ms": null,
+      "interface": "wired",
+      "house": 1,
+      "role": "unknown (no ping)"
+    },
+    ".237": {
+      "ms": 0.224,
+      "interface": "wired",
+      "house": 1,
+      "role": "ironGate"
+    },
+    ".238": {
+      "ms": null,
+      "interface": "wifi",
+      "house": 1,
+      "role": "Samsung (asleep?)"
+    },
+    ".244": {
+      "ms": 0.0,
+      "interface": "wired",
+      "house": 1,
+      "role": "eastGate (self)"
+    },
+    ".250": {
+      "ms": 0.47,
+      "interface": "wired",
+      "house": 1,
+      "role": "router secondary"
+    }
+  },
+  "triangulation": {
+    "vantage_points": {
+      "eastGate": {
+        "ip": ".244",
+        "location": "House 1 \u2014 office/server room",
+        "interface": "wlp0s20f3"
+      },
+      "grapheneGate": {
+        "ip": ".104",
+        "location": "House 1 \u2014 near router/TV area",
+        "interface": "wlan0"
+      }
+    },
+    "signals": {
+      "Aperture Science": {
+        "eastGate_dBm": -55,
+        "grapheneGate_dBm": -17,
+        "delta": 38,
+        "conclusion": "AP is near grapheneGate (living area)"
+      },
+      "Black Mesa (5G)": {
+        "eastGate_dBm": -54,
+        "grapheneGate_dBm": -27,
+        "delta": 27,
+        "conclusion": "5GHz AP also near living area"
+      },
+      "VIZIOCastAudio": {
+        "eastGate_dBm": -87,
+        "grapheneGate_dBm": -47,
+        "delta": 40,
+        "conclusion": "Soundbar VERY close to grapheneGate (same room)"
+      },
+      "ATT ISP modem": {
+        "eastGate_dBm": -84,
+        "grapheneGate_dBm": -60,
+        "delta": 24,
+        "conclusion": "ISP modem in living area"
+      }
+    }
+  },
+  "house_map": {
+    "house_1": {
+      "location": "Brain side",
+      "backbone": "MikroTik L2 switch (.2) \u2192 Ethernet to all gates",
+      "rooms": {
+        "server_room": {
+          "devices": [
+            ".244 eastGate",
+            ".147 northGate",
+            ".237 ironGate",
+            ".148 southGate",
+            ".3 sporeGate"
+          ],
+          "evidence": "All <0.3ms latency, wired, clustered"
+        },
+        "living_area": {
+          "devices": [
+            ".104 grapheneGate",
+            ".169 Vizio TV",
+            ".197 Fire TV Cube",
+            ".110 printer"
+          ],
+          "evidence": "grapheneGate strong WiFi (-17dBm to AP), Vizio soundbar -47dBm, Fire TV WiFi",
+          "wifi_ap": "Aperture Science router is HERE"
+        },
+        "office": {
+          "devices": [
+            ".100 blueGate",
+            ".107 graftGate"
+          ],
+          "evidence": "Wired, low latency"
+        },
+        "mobile": {
+          "devices": [
+            ".152 Apple device",
+            ".160 iPhone",
+            ".238 Samsung"
+          ],
+          "evidence": "WiFi, intermittent, power-save latency"
+        }
+      }
+    },
+    "house_2": {
+      "location": "Extension side",
+      "backbone": "TP-Link JetStream (.111) \u2192 10G fiber \u2192 MikroTik (.2)",
+      "rooms": {
+        "main": {
+          "devices": [
+            ".111 JetStream switch"
+          ],
+          "evidence": "0.833ms latency = one extra switch hop across fiber",
+          "note": "Future: more gates will connect here"
+        }
+      },
+      "fiber_latency_overhead": "~0.5ms vs wired House 1 devices"
+    }
+  },
+  "topology_summary": {
+    "house_1_wired": [
+      ".1",
+      ".2",
+      ".3",
+      ".100",
+      ".107",
+      ".147",
+      ".148",
+      ".169",
+      ".210",
+      ".212",
+      ".237",
+      ".244",
+      ".250"
+    ],
+    "house_1_wifi": [
+      ".104",
+      ".110",
+      ".152",
+      ".160",
+      ".197",
+      ".238"
+    ],
+    "house_2_wired": [
+      ".111"
+    ],
+    "wired_count": 14,
+    "wifi_count": 6
+  },
+  "deductions": [
+    "southGate (.148) has LOWEST latency (0.079ms) \u2014 physically closest to eastGate, probably same rack",
+    "sporeGate (.3) at 0.132ms \u2014 also very close, same switch segment",
+    "JetStream (.111) at 0.833ms \u2014 10G fiber hop visible as +0.5ms overhead",
+    "grapheneGate at 66ms \u2014 WiFi power-save mode, physically in living area",
+    "Vizio TV at 1.18ms wired \u2014 ethernet to MikroTik, basement/living room",
+    "Fire TV Cube at 7.8ms \u2014 WiFi with some congestion, living room",
+    "Printer at 63ms \u2014 WiFi power-save, near living area",
+    "grapheneGate sees Aperture Science at -17dBm = within ~2 meters of AP",
+    "eastGate sees Aperture Science at -55dBm = ~10-15 meters from AP",
+    "Delta of 38dB = grapheneGate is ~5x closer to WiFi AP than eastGate",
+    "VIZIOCastAudio at -47dBm from amoeba = soundbar in same room as phone"
+  ]
+}
