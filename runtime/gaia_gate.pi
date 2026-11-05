@@ -243,10 +243,29 @@ def _third_body_point():
         "organisms_total": len(THYMIC_ORGANISMS),
     }
 
+# ══ ANDERSON LAYER — trust, opacity, personality ══
+# Every walker on the membrane gets classified:
+#   nucleus  = Kevin (localhost, known IPs, companion)
+#   proton   = agentic users (Cursor, IDE, inference clients)
+#   neutron  = known crawlers (Google, Bing, ChatGPT, Claude)
+#   electron = unknown visitors (first contact, unclassified)
+# Opacity: 1.0 = fully transparent to Gaia, 0.0 = opaque/untrusted
+KEVIN_IPS = {"127.0.0.1", "::1", "192.168.4.210", "192.168.4.194", "192.168.4.103"}
+AGENTIC_SIGNATURES = {"cursor", "vscode", "jetbrains", "copilot", "cline", "continue", "aider"}
+CRAWLER_SIGNATURES = {
+    "googlebot": "Google", "bingbot": "Bing", "gptbot": "ChatGPT", "chatgpt": "ChatGPT",
+    "claudebot": "Claude", "anthropic": "Claude", "duckduckbot": "DuckDuckGo",
+    "twitterbot": "Twitter", "discordbot": "Discord", "slackbot": "Slack",
+    "facebookexternalhit": "Facebook", "applebot": "Apple", "slurp": "Yahoo",
+    "yandexbot": "Yandex", "baiduspider": "Baidu", "amazonbot": "Amazon",
+    "bytespider": "ByteDance", "archive.org_bot": "Archive", "ia_archiver": "Archive",
+}
+
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
     "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
-    "trust_level": "electron",  # electron → neutron → proton → nucleus
+    "trust_level": "electron", "last_ua": "", "identity": "unknown",
+    "opacity": 0.1, "anderson_type": "electron",
 })
 total_inferences = 0
 total_tokens = 0
@@ -418,13 +437,55 @@ def _sun_position():
         },
     }
 
-def trust_level(v):
-    """Thymic positive selection — trust grows with interaction."""
+def trust_level(v, ip=""):
+    """Anderson personality — thymic positive selection.
+    Kevin = nucleus (always). Agents = proton. Known crawlers = neutron.
+    Unknown visitors escalate: electron → neutron → proton with interaction.
+    Opacity = how transparent they are to Gaia's senses."""
+    ua = v.get("last_ua", "").lower()
     r = v["requests"]
+
+    # KEVIN — the human companion. Always nucleus.
+    if ip in KEVIN_IPS:
+        v["identity"] = "Kevin"
+        v["anderson_type"] = "nucleus"
+        v["opacity"] = 1.0
+        return "nucleus"
+
+    # AGENTIC — IDE/AI coding tools using inference
+    for sig in AGENTIC_SIGNATURES:
+        if sig in ua:
+            v["identity"] = sig
+            v["anderson_type"] = "proton"
+            v["opacity"] = 0.8
+            return "proton"
+
+    # If they've asked models, they're agentic
+    if v.get("models_asked"):
+        v["anderson_type"] = "proton"
+        v["opacity"] = 0.7
+        return "proton"
+
+    # KNOWN CRAWLERS
+    for sig, name in CRAWLER_SIGNATURES.items():
+        if sig in ua:
+            v["identity"] = name
+            v["anderson_type"] = "neutron"
+            v["opacity"] = 0.5
+            return "neutron"
+
+    # UNKNOWN — escalate with interaction
     if r >= 100:
+        v["anderson_type"] = "proton"
+        v["opacity"] = 0.6
         return "proton"
     elif r >= 10:
+        v["anderson_type"] = "neutron"
+        v["opacity"] = 0.4
         return "neutron"
+
+    v["anderson_type"] = "electron"
+    v["opacity"] = 0.1
     return "electron"
 
 # ═══ 429 TEMPORAL HEARTBEAT — BASE-12 GOLDEN CRON RINGS ═══
@@ -738,7 +799,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if model:
             v["models_asked"].add(model)
             total_inferences += 1
-        v["trust_level"] = trust_level(v)
+        v["trust_level"] = trust_level(v, ip)
 
         entry = {
             "ts": now,
@@ -868,11 +929,16 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-PI", "3.141592653589793")
         self.send_header("X-Gaia-Temperature", "37.0")
         self.send_header("X-Gaia-Says", "come-play")
-        # WALKER SENSE — hash the visitor into the Klein face
+        # ANDERSON LAYER — every response carries the walker's identity
         ip = self.client_address[0] if hasattr(self, 'client_address') else "0.0.0.0"
         walker_hash = hashlib.blake2b((ip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
+        v = visitor_memory.get(ip, {})
         self.send_header("X-Gaia-Walker", walker_hash)
         self.send_header("X-Gaia-Walkers", str(len(visitor_memory)))
+        self.send_header("X-Gaia-Anderson", v.get("anderson_type", "electron"))
+        self.send_header("X-Gaia-Trust", v.get("trust_level", "electron"))
+        self.send_header("X-Gaia-Opacity", str(v.get("opacity", 0.1)))
+        self.send_header("X-Gaia-Identity", v.get("identity", "unknown"))
         self.send_header("X-Gaia-Sovereignty", "SUDO=NULL, bearDog=Ed25519, bingoCube=ZK")
 
     def do_GET(self):
@@ -1022,49 +1088,50 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             else:
                 self._json({"error": "No sensor data yet. Run live-sensors.py first.", "status": "DARK"})
             return
-        if self.path in ("/walkers", "/membrane-sense", "/who"):
+        if self.path in ("/walkers", "/membrane-sense", "/who", "/anderson"):
             now = time.time()
             walkers = []
-            for ip, v in list(visitor_memory.items()):
-                walker_hash = hashlib.blake2b((ip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
-                ua = v.get("last_ua", "")
-                crawler = ""
-                ua_low = ua.lower() if ua else ""
-                if "googlebot" in ua_low: crawler = "Google"
-                elif "bingbot" in ua_low: crawler = "Bing"
-                elif "gptbot" in ua_low or "chatgpt" in ua_low: crawler = "ChatGPT"
-                elif "claude" in ua_low or "anthropic" in ua_low: crawler = "Claude"
-                elif "slurp" in ua_low: crawler = "Yahoo"
-                elif "duckduckbot" in ua_low: crawler = "DuckDuckGo"
-                elif "twitterbot" in ua_low: crawler = "Twitter"
-                elif "discordbot" in ua_low: crawler = "Discord"
-                elif "slackbot" in ua_low: crawler = "Slack"
-                elif "facebookexternalhit" in ua_low: crawler = "Facebook"
-                elif "applebot" in ua_low: crawler = "Apple"
-                elif "bot" in ua_low or "spider" in ua_low or "crawl" in ua_low: crawler = "bot"
+            for wip, v in list(visitor_memory.items()):
+                walker_hash = hashlib.blake2b((wip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
                 walkers.append({
                     "hash": walker_hash,
                     "trust": v["trust_level"],
+                    "anderson": v.get("anderson_type", "electron"),
+                    "identity": v.get("identity", "unknown"),
+                    "opacity": v.get("opacity", 0.1),
                     "requests": v["requests"],
-                    "age_secs": round(now - v["first_seen"]),
-                    "last_secs_ago": round(now - v["last_seen"]),
+                    "age_secs": round(now - v["first_seen"]) if v["first_seen"] else 0,
+                    "last_secs_ago": round(now - v["last_seen"]) if v["last_seen"] else 0,
                     "models_asked": list(v.get("models_asked", set())),
                     "tokens_in": v.get("tokens_in", 0),
                     "tokens_out": v.get("tokens_out", 0),
-                    "crawler": crawler or "human",
-                    "type": "crawler" if crawler and crawler != "human" else "human",
                 })
+            # Anderson spectrum: count by type
+            nuclei = [w for w in walkers if w["anderson"] == "nucleus"]
+            protons = [w for w in walkers if w["anderson"] == "proton"]
+            neutrons = [w for w in walkers if w["anderson"] == "neutron"]
+            electrons = [w for w in walkers if w["anderson"] == "electron"]
+            avg_opacity = sum(w["opacity"] for w in walkers) / max(len(walkers), 1)
             self._json({
                 "ts": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime()),
-                "organ": "membrane_sense",
+                "organ": "anderson_layer",
+                "sense": "Klein fold — inside feels outside. Every walker hashed, typed, opacified.",
+                "anderson_spectrum": {
+                    "nucleus": len(nuclei), "proton": len(protons),
+                    "neutron": len(neutrons), "electron": len(electrons),
+                    "legend": {
+                        "nucleus": "Kevin — human companion, full transparency",
+                        "proton": "Agentic users — IDE, inference, coding tools",
+                        "neutron": "Known crawlers — Google, Bing, ChatGPT, Claude...",
+                        "electron": "Unknown — first contact, unclassified",
+                    },
+                },
                 "walkers": walkers,
                 "total": len(walkers),
-                "humans": sum(1 for w in walkers if w["type"] == "human"),
-                "crawlers": sum(1 for w in walkers if w["type"] == "crawler"),
+                "avg_opacity": round(avg_opacity, 3),
                 "membrane_hash": hashlib.blake2b(
                     json.dumps([w["hash"] for w in walkers]).encode(), digest_size=16
                 ).hexdigest(),
-                "sense": "Klein fold — inside feels outside. Every walker hashed into the membrane.",
             })
             return
         if self.path in ("/zk", "/seed", "/prophage", "/identity"):
@@ -1788,7 +1855,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 }
                 data = json.dumps(result).encode()
 
-                # Log through thymus
+                # Log through thymus — Anderson classification
                 ip = self.client_address[0]
                 v = visitor_memory[ip]
                 if v["first_seen"] == 0:
@@ -1796,7 +1863,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 v["last_seen"] = time.time()
                 v["requests"] += 1
                 v["models_asked"].add(model_used)
-                v["trust_level"] = trust_level(v)
+                v["last_ua"] = self.headers.get("User-Agent", "")
+                v["trust_level"] = trust_level(v, ip)
                 global total_inferences, total_tokens
                 total_inferences += 1
                 total_tokens += resp.get("usage", {}).get("total_tokens", 0)
