@@ -50,7 +50,18 @@ KNOWN_NEIGHBOR_BSSIDS = {
 IMMUNE_LOG = Path("/opt/Gaia/data/neutron/immune-scanner.jsonl")
 IMMUNE_STATE = Path("/opt/Gaia/data/gut/immune-state.json")
 BASELINE_FILE = Path("/opt/Gaia/data/gut/wifi-baseline.json")
-ADB_SERIAL = "44251JEKB04957"
+ADB_SERIAL = "44251JEKB04957"   # fallback only; real target comes from graphene_depot.adb_target()
+
+def _adb_target():
+    """USB-or-WiFi endpoint from the single owner (graphene_depot.pi)."""
+    try:
+        import types
+        gp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphene_depot.pi")
+        m = types.ModuleType("graphene_depot"); m.__file__ = gp
+        exec(compile(open(gp).read(), gp, "exec"), m.__dict__)
+        return m.adb_target()[0] or ADB_SERIAL
+    except Exception:
+        return ADB_SERIAL
 ROUTER_IP = "192.168.4.1"
 ROUTER_PASS = "ExoticPanda714!!"
 
@@ -76,7 +87,7 @@ def adb_wifi_scan() -> list:
     """Get WiFi scan results from grapheneGate via ADB."""
     try:
         r = subprocess.run(
-            ["adb", "-s", ADB_SERIAL, "shell", "cmd wifi list-scan-results"],
+            ["adb", "-s", _adb_target(), "shell", "cmd wifi list-scan-results"],
             capture_output=True, text=True, timeout=10,
         )
         if r.returncode != 0:
@@ -224,7 +235,7 @@ def detect_deauth_flood() -> list:
     threats = []
     try:
         r = subprocess.run(
-            ["adb", "-s", ADB_SERIAL, "shell",
+            ["adb", "-s", _adb_target(), "shell",
              "dumpsys wifi | grep -c 'NETWORK_DISCONNECTION'"],
             capture_output=True, text=True, timeout=10,
         )
