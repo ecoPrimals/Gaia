@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""solokey_gaia.pi — the SoloKey as Gaia's hardware root, locally, no third party.
+
+Why not webauthn.io: it is a public demo; a credential minted there is bound to THEIR
+domain and hands them the public key. Gaia's credential is bound to rp_id = primals.eco and
+is created and used only on this machine.
+
+What it uses: the FIDO2 `hmac-secret` extension. The key derives a 32-byte secret INSIDE the
+chip from (its private credential secret, a salt we choose). Same label -> same secret, every
+time, on any machine the key is plugged into; the key's secret is never extractable. That is
+the honest meaning of "derive": a generation's key is HMAC(chip, label), not a stored seed.
+
+PIN and touch happen on the controlling terminal (libfido2 reads /dev/tty), so nothing secret
+passes through chat, logs or argv. The CLI prints fingerprints only. Secrets go to 0600 files
+outside any git tree.
+
+CLI: status | enroll | derive <label> [--write PATH]
+"""
+import os, sys, json, time, base64, hashlib, secrets, subprocess, tempfile, shutil
+
+RP = "primals.eco"
+USER = "gaia"
+STORE = os.path.expanduser("~/.local/share/gaia/solokey")      # private, untracked
+CRED = f"{STORE}/cred.json"
+VID_PID = ("0x1209", "0xbeee")                                  # Solo 2
+
+
+def b64(b): return base64.b64encode(b).decode()
+
+
+def device():
+    r = subprocess.run(["fido2-token", "-L"], capture_output=True, text=True)
+    for line in r.stdout.splitlines():
+        if f"vendor={VID_PID[0]}" in line and f"product={VID_PID[1]}" in line:
+            return line.split(":")[0]
+    return None
+
+
+def _private_dir():
+    os.makedirs(STORE, mode=0o700, exist_ok=True)
+    os.chmod(STORE, 0o700)
+
+
+def _run(args, lines):
+    """Run a fido2 tool with input/output via 0600 temp files so stdin stays the TTY (PIN prompt)."""
+    _private_dir()
+    d = tempfile.mkdtemp(dir=STORE)
+    try:
+        i, o = f"{d}/in", f"{d}/out"
+        with open(i, "w") as f:
+            f.write("\n".join(lines) + "\n")
+        os.chmod(i, 0o600)
+        rc = subprocess.run(args + ["-i", i, "-o", o]).returncode      # inherits tty: prompts + touch
+        if rc != 0 or not os.path.exists(o):
+            return None
+        return open(o).read().splitlines()
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def enroll():
+    dev = device()
+    if not dev:
+        print("no SoloKey 2 found — plug it in"); return 1
+    if os.path.exists(CRED):
+        print(f"already enrolled ({CRED}); refusing to overwrite. Delete it deliberately to re-enroll."); return 1
+    print(f"enrolling {RP} on {dev}: enter the key's PIN when asked, then TOUCH the key.")
+    out = _run(["fido2-cred", "-M", "-h", "-v", dev, "es256"],
+               [b64(secrets.token_bytes(32)), RP, USER, b64(secrets.token_bytes(32))])
+    if not out or len(out) < 5:
+        print("enroll failed (wrong PIN / no touch / key refused). PIN retries are limited — check `fido2-token -I`."); return 2
+    cred = {"rp": RP, "user": USER, "cred_id": out[4], "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "ext": "hmac-secret", "alg": "es256"}
+    fd = os.open(CRED, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump(cred, f)
+    print("enrolled. credential id fingerprint:", hashlib.sha256(cred["cred_id"].encode()).hexdigest()[:16])
+    return 0
+
+
+def derive_secret(label):
+    """32 secret bytes for `label`, derived in the chip. Prompts PIN + touch on the terminal."""
+    dev = device()
+    if not dev or not os.path.exists(CRED):
+        return None
+    cred = json.load(open(CRED))
+    salt = hashlib.sha256(f"gaia:{label}".encode()).digest()
+    out = _run(["fido2-assert", "-G", "-h", "-v", dev],
+               [b64(secrets.token_bytes(32)), cred["rp"], cred["cred_id"], b64(salt)])
+    if not out or len(out) < 5:
+        return None
+    return base64.b64decode(out[-1])
+
+
+def derive(label, write=None):
+    s = derive_secret(label)
+    if not s or len(s) != 32:
+        print("derive failed"); return 2
+    if write:
+        fd = os.open(write, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(s.hex())
+        print(f"wrote 32-byte secret to {write} (0600)")
+    print(f"label={label} fingerprint={hashlib.sha256(s).hexdigest()[:16]}  (same label must always print the same fingerprint)")
+    return 0
+
+
+def status():
+    dev = device()
+    enrolled = os.path.exists(CRED)
+    print("device:", dev or "NOT FOUND")
+    print("enrolled:", enrolled, f"(rp={RP})")
+    if enrolled:
+        c = json.load(open(CRED)); print("created:", c["created"], "cred fp:", hashlib.sha256(c["cred_id"].encode()).hexdigest()[:16])
+    print("store:", STORE, oct(os.stat(STORE).st_mode & 0o777) if os.path.isdir(STORE) else "(absent)")
+    return 0
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:] or ["status"]
+    if a[0] == "status": sys.exit(status())
+    if a[0] == "enroll": sys.exit(enroll())
+    if a[0] == "derive" and len(a) >= 2:
+        w = a[a.index("--write") + 1] if "--write" in a else None
+        sys.exit(derive(a[1], w))
+    print(__doc__)

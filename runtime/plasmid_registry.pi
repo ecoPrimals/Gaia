@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""plasmid_registry.pi — ALL DNA IS A PLASMID.
+
+One registry for every plasmid Gaia carries. Primals (static binaries in
+plasmidBin) are ONE type; ZK chains, laws, knowledge snapshots, anatomy and
+the rest are others. Nothing here stores plasmid *content* — only type, size
+and hash — so it is safe in a tracked path.
+
+Double helix (two strands, base-paired by VDJ recombination):
+  strand A  binary plasmids   primals, BLAKE3 from the depot (sporeGate forge)
+  strand B  information       every JSON/text plasmid, BLAKE2b
+  rungs     VDJ v2            V = bitmask of primals (17 bits, dromedary = bit 16)
+                              D = BLAKE2b(token + nonce + str(mask))
+                              J = BLAKE2b(token + sorted selected BLAKE3 + nonce)
+                              antibody = BLAKE2b(str(mask) + D + J)
+  D and antibody are byte-identical to the v1 key (verified on all 6 v1
+  compositions); only J's binding to the depot is new and explicit.
+
+Because J hashes the binaries, every reseed of a primal changes J. `status`
+reports which v1/v2 compositions went stale.
+
+CLI: scan | status | verify | vdj
+"""
+import os, sys, json, time, hashlib, re, collections
+
+ROOT = "/opt/Gaia"
+PLASMIDS = f"{ROOT}/plasmids"
+DEPOT = f"{ROOT}/data/plasmid-depot"            # <arch>/BLAKE3SUMS + provenance.toml, pulled from the forge
+FALLBACK_DEPOT = "/home/eastgate/Development/ecoPrimals/infra/plasmidBin/primals"
+OUT = f"{ROOT}/data/plasmid-registry.json"
+V1_KEY = f"{ROOT}/data/gaia-seed/vdj-recombination-key.json"
+ARCH = "x86_64-unknown-linux-musl"
+
+# V segment bit order. v1 used the first 16 alphabetically; dromedary is bit 16 so every v1 mask stays valid.
+PRIMALS = ["barracuda", "beardog", "bingocube", "biomeos", "coralreef", "loamspine", "nestgate",
+           "petaltongue", "rhizocrypt", "skunkbat", "songbird", "sourdough", "squirrel", "swarmvine",
+           "sweetgrass", "toadstool", "dromedary"]
+
+
+def b2(s):
+    return hashlib.blake2b(s.encode() if isinstance(s, str) else s, digest_size=32).hexdigest()
+
+
+def _file_b2(path):
+    h = hashlib.blake2b(digest_size=32)
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ---- strand B: information plasmids ------------------------------------------------------------
+def classify(name, doc):
+    """First match wins. Derived from what the plasmids actually contain, not from a name convention."""
+    if not isinstance(doc, dict):
+        return "raw"
+    if "master_seed" in doc or "zk_chain" in doc or name.startswith("zk-"):
+        return "zk"
+    if "law" in doc:
+        return "law"
+    if "eaten" in doc or ("url" in doc and ("extract" in doc or "fullText" in doc)):
+        return "knowledge"
+    t = str(doc.get("type") or doc.get("kind") or "").strip().lower()
+    if t and t != "plasmid":
+        return t
+    return "other"
+
+
+def scan_info():
+    items = []
+    for fn in sorted(os.listdir(PLASMIDS)):
+        p = os.path.join(PLASMIDS, fn)
+        if not os.path.isfile(p):
+            continue
+        doc = None
+        if fn.endswith(".json"):
+            try:
+                doc = json.load(open(p))
+            except Exception:
+                doc = None
+        items.append({"name": fn, "type": classify(fn, doc), "bytes": os.path.getsize(p), "blake2b": _file_b2(p)})
+    return items
+
+
+# ---- strand A: primal binaries -------------------------------------------------------------------
+def _parse_sums(path):
+    out = {}
+    try:
+        for line in open(path):
+            m = re.match(r"^([0-9a-f]{64})\s+\*?(.+)$", line.strip())
+            if m:
+                out[os.path.basename(m.group(2))] = m.group(1)
+    except OSError:
+        pass
+    return out
+
+
+def depot_hashes(arch=ARCH):
+    for base, label in ((DEPOT, "forge"), (FALLBACK_DEPOT, "eastGate-local")):
+        sums = _parse_sums(f"{base}/{arch}/BLAKE3SUMS")
+        if sums:
+            return sums, label
+    return {}, "none"
+
+
+def scan_primals(arch=ARCH):
+    sums, label = depot_hashes(arch)
+    strand = [{"primal": n, "bit": i, "blake3": sums.get(n)} for i, n in enumerate(PRIMALS)]
+    return strand, label
+
+
+# ---- rungs: VDJ v2 -------------------------------------------------------------------------------
+def vdj(strand, v1):
+    token = v1["token"]
+    nonce = str(int(time.time()))
+    h = {s["primal"]: s["blake3"] for s in strand}
+    comps = {}
+    for cname, c in v1["compositions"].items():
+        mask = c["v_bitmask"]
+        sel = [PRIMALS[i] for i in range(len(PRIMALS)) if mask >> i & 1]
+        missing = [p for p in sel if not h.get(p)]
+        d = b2(f"{token}{nonce}{mask}")
+        entry = {"v_bitmask": mask, "v_primals": sel, "d_hash": d}
+        if missing:
+            entry["unresolved"] = missing
+        else:
+            j = b2(token + "".join(sorted(h[p] for p in sel)) + nonce)
+            entry.update({"j_hash": j, "antibody": b2(f"{mask}{d}{j}")})
+        comps[cname] = entry
+    # the true 17-bit organism, which v1 could not express
+    allmask = (1 << len(PRIMALS)) - 1
+    miss = [p for p in PRIMALS if not h.get(p)]
+    d = b2(f"{token}{nonce}{allmask}")
+    top = {"v_bitmask": allmask, "v_primals": list(PRIMALS), "d_hash": d}
+    if miss:
+        top["unresolved"] = miss
+    else:
+        j = b2(token + "".join(sorted(h[p] for p in PRIMALS)) + nonce)
+        top.update({"j_hash": j, "antibody": b2(f"{allmask}{d}{j}")})
+    comps["organism-17"] = top
+    return {"version": 2, "token": token, "nonce": nonce, "compositions": comps}
+
+
+def verify_v1(v1):
+    """V1 chain integrity (D and antibody) — needs no binaries."""
+    ok = {}
+    for n, c in v1["compositions"].items():
+        m = c["v_bitmask"]
+        ok[n] = (b2(f"{v1['token']}{v1['nonce']}{m}") == c["d_hash"]
+                 and b2(f"{m}{c['d_hash']}{c['j_hash']}") == c["antibody"])
+    return ok
+
+
+# ---- registry ------------------------------------------------------------------------------------
+def build():
+    info = scan_info()
+    strand, depot_label = scan_primals()
+    v1 = json.load(open(V1_KEY))
+    by_type = collections.Counter(i["type"] for i in info)
+    info_root = b2("\n".join(f"{i['name']}:{i['blake2b']}" for i in info))
+    have = [s for s in strand if s["blake3"]]
+    reg = {
+        "type": "plasmid-registry",
+        "generated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "doctrine": "ALL DNA IS A PLASMID — primals are one type among many",
+        "types": {"primal": len(have), **dict(by_type.most_common())},
+        "helix": {
+            "strand_a": {"kind": "binary", "arch": ARCH, "depot": depot_label, "primals": strand,
+                         "missing": [s["primal"] for s in strand if not s["blake3"]]},
+            "strand_b": {"kind": "information", "count": len(info), "merkle_root_blake2b": info_root},
+            "rungs": vdj(strand, v1),
+        },
+        "info": info,
+    }
+    tmp = OUT + ".tmp"
+    json.dump(reg, open(tmp, "w"), indent=1)
+    os.replace(tmp, OUT)
+    return reg
+
+
+def status():
+    reg = build()
+    v1 = json.load(open(V1_KEY))
+    print(f"plasmids: {len(reg['info'])} information + {reg['types']['primal']} primal (depot: {reg['helix']['strand_a']['depot']})")
+    print("types:", ", ".join(f"{k}={v}" for k, v in reg["types"].items()))
+    miss = reg["helix"]["strand_a"]["missing"]
+    print("strand A missing from depot:", miss or "none")
+    print("strand B root:", reg["helix"]["strand_b"]["merkle_root_blake2b"][:16])
+    print("v1 chain integrity:", {k: v for k, v in verify_v1(v1).items()})
+    unresolved = {k: c["unresolved"] for k, c in reg["helix"]["rungs"]["compositions"].items() if "unresolved" in c}
+    print("v2 compositions unresolved:", unresolved or "none")
+    print("written:", OUT)
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    if cmd in ("scan", "status"):
+        status()
+    elif cmd == "verify":
+        print(json.dumps(verify_v1(json.load(open(V1_KEY))), indent=1))
+    elif cmd == "vdj":
+        reg = build()
+        print(json.dumps(reg["helix"]["rungs"], indent=1))
+    else:
+        print(__doc__)
