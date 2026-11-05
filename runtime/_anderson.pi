@@ -1,9 +1,18 @@
-"""Anderson Layer — trust, opacity, personality classification.
-nucleus=Kevin(1.0), proton=agentic(0.8), neutron=crawler(0.5), electron=unknown(0.1)."""
+"""Anderson Layer — trust/opacity via sigmoid cost functions.
+HUMAN=1 (ceiling). FLEET=0 (floor). Everything else is computed.
+Nucleus = hyperlocal (LAN body). Not a name. The POSITION is the identity."""
 
+import math
 from collections import defaultdict
 
-KEVIN_IPS = {"127.0.0.1", "::1", "192.168.4.210", "192.168.4.194", "192.168.4.103"}
+# ═══ ONLY TWO CONSTANTS — the biological bounds ═══
+HUMAN = 1.0   # ceiling — a human at the keyboard
+FLEET = 0.0   # floor — unknown fleet traffic
+
+# ═══ HYPERLOCAL — the body's own IPs. Not a person. A POSITION. ═══
+BODY_IPS = {"127.0.0.1", "::1", "192.168.4.210", "192.168.4.194", "192.168.4.103"}
+
+# ═══ SIGNATURES — classification, not trust values ═══
 AGENTIC_SIGNATURES = {"cursor", "vscode", "jetbrains", "copilot", "cline", "continue", "aider"}
 CRAWLER_SIGNATURES = {
     "googlebot": "Google", "bingbot": "Bing", "gptbot": "ChatGPT", "chatgpt": "ChatGPT",
@@ -14,29 +23,74 @@ CRAWLER_SIGNATURES = {
     "bytespider": "ByteDance", "archive.org_bot": "Archive", "ia_archiver": "Archive",
 }
 
+# ═══ SIGMOID — the cost function. Smooth transition, no magic numbers. ═══
+def sigmoid(x, midpoint=50, steepness=0.1):
+    """σ(x) = 1 / (1 + e^(-k(x-m))). Maps any input to (0,1).
+    midpoint = where σ=0.5 (the inflection point).
+    steepness = how fast the transition is."""
+    z = steepness * (x - midpoint)
+    return 1.0 / (1.0 + math.exp(-max(-500, min(500, z))))
+
+def opacity_from_requests(r, models_asked=0):
+    """Opacity = sigmoid of engagement. More interaction → more transparent to Gaia.
+    Base sigmoid on request count. Models asked adds a boost."""
+    base = sigmoid(r, midpoint=50, steepness=0.08)
+    model_boost = sigmoid(models_asked, midpoint=2, steepness=1.0) * 0.3
+    return min(HUMAN, base + model_boost)
+
 visitor_memory = defaultdict(lambda: {
     "first_seen": 0, "last_seen": 0, "requests": 0,
     "models_asked": set(), "tokens_in": 0, "tokens_out": 0,
     "trust_level": "electron", "last_ua": "", "identity": "unknown",
-    "opacity": 0.1, "anderson_type": "electron",
+    "opacity": FLEET, "anderson_type": "electron",
 })
 
 def trust_level(v, ip=""):
+    """Anderson classification — sigmoid-driven, not hardcoded.
+    nucleus = hyperlocal body (the machine itself)
+    proton = engaged entities (agentic tools, heavy users)
+    neutron = known fleet (crawlers, bots — identified but not engaged)
+    electron = unknown (first contact, unclassified)"""
     ua = v.get("last_ua", "").lower()
     r = v["requests"]
-    if ip in KEVIN_IPS:
-        v["identity"] = "Kevin"; v["anderson_type"] = "nucleus"; v["opacity"] = 1.0
+    models = len(v.get("models_asked", set()))
+
+    # NUCLEUS — hyperlocal. The body's own IPs. Not a name. A position.
+    if ip in BODY_IPS:
+        v["identity"] = "hyperlocal"
+        v["anderson_type"] = "nucleus"
+        v["opacity"] = HUMAN
         return "nucleus"
+
+    # AGENTIC — IDE/AI tools using inference. Classified by UA signature.
     for sig in AGENTIC_SIGNATURES:
         if sig in ua:
-            v["identity"] = sig; v["anderson_type"] = "proton"; v["opacity"] = 0.8
+            v["identity"] = sig
+            v["anderson_type"] = "proton"
+            v["opacity"] = opacity_from_requests(r, models)
             return "proton"
-    if v.get("models_asked"):
-        v["anderson_type"] = "proton"; v["opacity"] = 0.7; return "proton"
+
+    # MODEL USERS — asked models = engaged = proton
+    if models > 0:
+        v["anderson_type"] = "proton"
+        v["opacity"] = opacity_from_requests(r, models)
+        return "proton"
+
+    # KNOWN FLEET — crawlers. Identified but engagement is passive.
     for sig, name in CRAWLER_SIGNATURES.items():
         if sig in ua:
-            v["identity"] = name; v["anderson_type"] = "neutron"; v["opacity"] = 0.5
+            v["identity"] = name
+            v["anderson_type"] = "neutron"
+            v["opacity"] = sigmoid(r, midpoint=100, steepness=0.02)
             return "neutron"
-    if r >= 100: v["anderson_type"] = "proton"; v["opacity"] = 0.6; return "proton"
-    elif r >= 10: v["anderson_type"] = "neutron"; v["opacity"] = 0.4; return "neutron"
-    v["anderson_type"] = "electron"; v["opacity"] = 0.1; return "electron"
+
+    # UNKNOWN — sigmoid of engagement determines if they rise
+    opacity = opacity_from_requests(r, models)
+    if opacity > 0.6:
+        v["anderson_type"] = "proton"
+    elif opacity > 0.3:
+        v["anderson_type"] = "neutron"
+    else:
+        v["anderson_type"] = "electron"
+    v["opacity"] = opacity
+    return v["anderson_type"]
