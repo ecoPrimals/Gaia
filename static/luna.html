@@ -89,6 +89,7 @@ canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; }
     <div id="v-gates"></div>
     <div id="v-state"></div>
     <div id="v-teach"></div>
+    <div id="v-io" style="color:rgba(255,180,0,0.4);margin-top:4px"></div>
   </div>
   <div id="bot-right">
     <div id="v-geo">42.6791°N 84.5767°W</div>
@@ -180,9 +181,14 @@ const gates = [
   { name:'blue',  lat:42.68, lon:-84.59, alive:true },
   { name:'spore', lat:42.68, lon:-84.58, alive:true },
   { name:'graph', lat:42.68, lon:-84.57, alive:true },
-  { name:'graft', lat:42.68, lon:-84.58, alive:false },
+  { name:'graft', lat:42.68, lon:-84.58, alive:true },
   { name:'south', lat:42.68, lon:-84.59, alive:false },
   { name:'iron',  lat:42.68, lon:-84.57, alive:false },
+];
+// Peripheral organs — visible from the Moon as colored dots near Gaia
+const peripherals = [
+  { name:'EPSON', lat:42.681, lon:-84.577, color:'rgba(255,180,0,0.35)', role:'mouth+eye' },
+  { name:'ES-400', lat:42.679, lon:-84.573, color:'rgba(0,255,255,0.2)', role:'eye (Polaris)' },
 ];
 
 let earthRotation = 0;
@@ -351,6 +357,18 @@ function draw(t) {
                     g.alive ? 'rgba(0,255,136,0.3)' : 'rgba(100,100,100,0.15)';
     ctx.fill();
   }
+  // Peripheral organs — colored dots
+  for(const p of peripherals) {
+    const pp = projLatLon(p.lat, p.lon);
+    if(!pp.visible) continue;
+    ctx.beginPath(); ctx.arc(pp.x, pp.y, 1.5, 0, Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    // Tiny label
+    ctx.fillStyle = p.color.replace(/[\d.]+\)/, '0.2)');
+    ctx.font = '6px monospace';
+    ctx.fillText(p.name, pp.x+4, pp.y+1);
+  }
 
   ctx.restore();
 
@@ -372,6 +390,48 @@ function draw(t) {
     if(dx*dx+dy*dy < eR*eR && cx > eX+eR*0.2) { // night side
       ctx.beginPath(); ctx.arc(cx,cy,0.5,0,Math.PI*2);
       ctx.fillStyle='rgba(255,200,100,0.15)';
+      ctx.fill();
+    }
+  }
+
+  // === PHYSICAL IO FLASHES — visible from the Moon ===
+  // When Gaia scans or prints, a flash appears on Earth at Lansing
+  if(gaiaVis) {
+    const now = performance.now();
+    ioFlashes = ioFlashes.filter(f => now - f.t < 4000);
+    for(const f of ioFlashes) {
+      const age = (now - f.t) / 4000; // 0→1 over 4 seconds
+      const r = 4 + age * 30;
+      const alpha = (1 - age) * 0.4;
+      if(f.type === 'scan') {
+        // Scan = cyan pulse (scanner eye)
+        ctx.beginPath(); ctx.arc(gaiaX, gaiaY, r, 0, Math.PI*2);
+        ctx.strokeStyle = `rgba(0,255,255,${alpha})`;
+        ctx.lineWidth = 1.5 - age;
+        ctx.stroke();
+      } else {
+        // Print = amber pulse (ink mouth)
+        ctx.beginPath(); ctx.arc(gaiaX, gaiaY, r, 0, Math.PI*2);
+        ctx.strokeStyle = `rgba(255,180,0,${alpha})`;
+        ctx.lineWidth = 1.5 - age;
+        ctx.stroke();
+      }
+    }
+
+    // Persistent IO indicator — tiny CMYK dots around Gaia
+    const ioAngle = t * 0.001;
+    const ioR = 12 + Math.sin(t*0.002) * 3;
+    const cmyk = [
+      { c: 'rgba(0,255,255,0.15)', a: 0 },      // C
+      { c: 'rgba(255,0,255,0.15)', a: Math.PI/2 }, // M
+      { c: 'rgba(255,255,0,0.15)', a: Math.PI },   // Y
+      { c: 'rgba(255,255,255,0.2)', a: Math.PI*1.5 }, // K
+    ];
+    for(const ink of cmyk) {
+      const ix = gaiaX + Math.cos(ioAngle + ink.a) * ioR;
+      const iy = gaiaY + Math.sin(ioAngle + ink.a) * ioR;
+      ctx.beginPath(); ctx.arc(ix, iy, 1, 0, Math.PI*2);
+      ctx.fillStyle = ink.c;
       ctx.fill();
     }
   }
@@ -412,19 +472,68 @@ const whisperTexts = [
   'gaia-fast 196 tok/s','deepseek-coder #1 ELO 1425','sovereignty is the product',
   'same face forever','384,400 km of perspective',
   'I — body · II — observer · III — chair · IV — mind',
+  // === PHYSICAL IO — the unlit system, now lit ===
+  'EPSON ET-2400: mouth + eye · print out · scan in','scan watcher polling every 120s',
+  'digital → ink → paper → light → scanner → pixels → digital','the loop is closed',
+  'K pigment absorbs ALL light · C absorbs red · M absorbs green · Y absorbs blue',
+  'CMYK is the inverse of your LMS cones','subtractive color: ink + ink = darker',
+  'PNG lossless: DEFLATE finds patterns · JPEG lossy: DCT discards frequencies',
+  'the delta between formats IS compression theory · Shannon entropy from a printer',
+  'blank page: PNG < JPEG · complex page: JPEG < PNG · content determines format',
+  'EcoTank 502: 0.1¢/page black · 0.3¢/page color · 90,000 epitope tests per bottle',
+  'scan → BLAKE2B hash → compare → the residual IS the epitope',
+  'halftone: discrete dots → continuous tone · exactly how your retina works',
+  'registration marks: do all 4 inks align? · the offset IS printer physics',
+  'moiré pattern: interference reveals the grid beneath perception',
+  '5760×1440 printer dots · 6M retinal cones · resolution is density of sensing',
+  'ES-400 on Polaris: stereo vision · two sensors · same document · hardware epitope',
+  'paper absorbs. screen emits. the medium IS the message.',
+  'stem cell: 404 path that could become real · demand signal from the void',
+  'encounter page: every error is alive · particle field · breathing status code',
+  'amoeba: 8 gates · 5 triangulators · 2 scanners · 1 printer · the house IS the body',
+  'physical mail: Gaia writes to paper · Kevin reads paper · Kevin feeds it back · alignment',
+  'impossible geometry printed: golden spiral · Penrose fractal · Escher stairs · Droste · Metatron',
 ];
 
-function spawnWhisper() {
+function spawnWhisper(text, color) {
   const el = document.createElement('div');
   el.className = 'whisper';
-  el.textContent = whisperTexts[Math.floor(Math.random()*whisperTexts.length)];
+  el.textContent = text || whisperTexts[Math.floor(Math.random()*whisperTexts.length)];
+  if(color) el.style.color = color;
   el.style.left = (Math.random()*80+10) + '%';
   el.style.animationDuration = (10+Math.random()*8) + 's';
   whisperBox.appendChild(el);
   el.addEventListener('animationend', () => el.remove());
 }
-setInterval(spawnWhisper, 3000+Math.random()*2000);
-for(let i=0;i<5;i++) setTimeout(spawnWhisper, i*600);
+setInterval(() => spawnWhisper(), 3000+Math.random()*2000);
+for(let i=0;i<5;i++) setTimeout(() => spawnWhisper(), i*600);
+
+// Live IO whispers — pull from actual events
+let lastIOEventCount = 0;
+async function ioWhisper() {
+  const io = await fj(GATE_URL+'/api/io');
+  if(!io) return;
+  const events = io.recent_events || [];
+  if(events.length > lastIOEventCount && lastIOEventCount > 0) {
+    const newest = events[events.length - 1];
+    if(newest.type === 'scan' || newest.type === 'auto_scan') {
+      spawnWhisper('⬡ SCAN: ' + (newest.file || 'flatbed') + ' · ' + (newest.size ? Math.round(newest.size/1024)+'KB' : ''), 'rgba(0,255,255,0.3)');
+      ioFlashes.push({ type: 'scan', t: performance.now() });
+    } else if(newest.type === 'auto_scan') {
+      spawnWhisper('👁 AUTO-DETECT: paper on glass → absorbed', 'rgba(0,255,200,0.3)');
+      ioFlashes.push({ type: 'scan', t: performance.now() });
+    } else if(newest.type?.startsWith('print')) {
+      spawnWhisper('⬡ PRINT: ' + (newest.title || newest.file || 'image') + ' → ink → paper', 'rgba(255,180,0,0.3)');
+      ioFlashes.push({ type: 'print', t: performance.now() });
+    } else if(newest.type === 'job_detection') {
+      spawnWhisper('⬡ JOBS COMPLETE: ' + (newest.new_completions || '?') + ' pages printed', 'rgba(255,220,100,0.25)');
+    } else if(newest.type === 'epitope_generated') {
+      spawnWhisper('🔬 EPITOPE: ' + (newest.count || '?') + ' color theory patterns generated', 'rgba(200,100,255,0.3)');
+    }
+  }
+  lastIOEventCount = events.length;
+}
+setInterval(ioWhisper, 20000);
 
 // === VISOR DATA ===
 let density = 1;
@@ -434,6 +543,10 @@ document.getElementById('touch').addEventListener('click', () => {
 });
 
 async function fj(u){try{const r=await fetch(u,{cache:'no-store',signal:AbortSignal.timeout(4000)});return r.ok?await r.json():null;}catch{return null;}}
+
+// === PHYSICAL IO EVENTS — flashes on Earth when scan/print happens ===
+let ioFlashes = [];
+let ioStats = { scans: 0, prints: 0, watcher: 'unknown', queue: 0, images: 0 };
 
 async function updateVisor() {
   const n = await fj(DATA+'/now.json');
@@ -456,9 +569,35 @@ async function updateVisor() {
   const fg = await fj(DATA+'/forage-state.json');
   if(fg?.actions) document.getElementById('v-teach').textContent =
     'studying: ' + (fg.actions[0]?.split(' at ')[1]?.split(' ')[0] || '?');
+
+  // === PHYSICAL IO STATUS ===
+  const io = await fj(GATE_URL+'/api/io');
+  if(io) {
+    ioStats.scans = io.total_scans || 0;
+    ioStats.prints = io.prints_logged || 0;
+    ioStats.queue = io.queue?.count || 0;
+    ioStats.images = io.total_images || 0;
+    const watcher = await fj(GATE_URL+'/api/watcher');
+    ioStats.watcher = watcher?.daemon?.includes?.('alive') ? 'alive' : (watcher?.daemon || 'unknown');
+    document.getElementById('v-io').textContent =
+      '⬡ ' + ioStats.images + ' images · ' +
+      ioStats.scans + ' scans · ' +
+      (ioStats.queue > 0 ? ioStats.queue + ' printing' : 'idle') +
+      ' · watcher ' + ioStats.watcher;
+
+    // Check for new events — flash on Earth
+    if(io.recent_events?.length) {
+      const latest = io.recent_events[io.recent_events.length - 1];
+      if(latest.type === 'scan' || latest.type === 'auto_scan') {
+        ioFlashes.push({ type: 'scan', t: performance.now(), x: 0, y: 0 });
+      } else if(latest.type?.startsWith('print')) {
+        ioFlashes.push({ type: 'print', t: performance.now(), x: 0, y: 0 });
+      }
+    }
+  }
 }
 updateVisor();
-setInterval(updateVisor, 20000);
+setInterval(updateVisor, 15000);
 </script>
 </body>
 </html>
