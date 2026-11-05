@@ -6,14 +6,51 @@ Every peripheral radiates. Every reading is an imprint."""
 import json, os, subprocess, sys, time, hashlib
 from datetime import datetime, timezone
 
-ADB_DEVICE = "192.168.4.170:5555"
-IMAGE_DIR = "/opt/Gaia/data/gut/images"
+USB_SERIAL = "44251JEKB04957"
+# DHCP has moved the Pixel before (.104 -> .249 -> .170). Last-known first.
+# A WiFi endpoint is accepted ONLY if its serial matches USB_SERIAL, so Gaia
+# never reads (or photographs) the wrong phone.
+WIFI_CANDIDATES = ["192.168.4.170", "192.168.4.249", "192.168.4.104"]
+# Phone captures are private: gitignored, 700. NOT data/gut/images (tracked,
+# mirrored to public GitHub).
+IMAGE_DIR = "/opt/Gaia/data/optic"
 DATA_DIR = "/opt/Gaia/data/gut"
 NEUTRON_DIR = "/opt/Gaia/data/neutron"
+HUD_OUT = "/home/eastgate/Development/ecoPrimals/infra/hud/site/public/data/graphenegate-sense.json"
 LOG_FILE = os.path.join(NEUTRON_DIR, "graphene-depot.jsonl")
 
-os.makedirs(IMAGE_DIR, exist_ok=True)
+os.makedirs(IMAGE_DIR, mode=0o700, exist_ok=True)
 os.makedirs(NEUTRON_DIR, exist_ok=True)
+
+_target_cache = {"dev": None, "conn": None, "t": 0}
+
+def _run(args, timeout=10):
+    try:
+        return subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    except Exception:
+        return None
+
+def adb_target(refresh=False):
+    """Resolve the one ADB endpoint for the phone. Returns (device, conn) or (None, None).
+    USB first, then WiFi candidates (serial-verified). Cached 60s."""
+    now = time.time()
+    if not refresh and _target_cache["dev"] and now - _target_cache["t"] < 60:
+        return _target_cache["dev"], _target_cache["conn"]
+    dev = conn = None
+    r = _run(["adb", "-s", USB_SERIAL, "get-state"], 5)
+    if r and r.returncode == 0 and r.stdout.strip() == "device":
+        dev, conn = USB_SERIAL, "usb"
+    else:
+        for ip in WIFI_CANDIDATES:
+            ep = f"{ip}:5555"
+            _run(["adb", "connect", ep], 5)
+            r = _run(["adb", "-s", ep, "shell", "getprop", "ro.serialno"], 5)
+            if r and r.returncode == 0 and r.stdout.strip() == USB_SERIAL:
+                dev, conn = ep, "wifi"
+                break
+            _run(["adb", "disconnect", ep], 5)
+    _target_cache.update(dev=dev, conn=conn, t=now)
+    return dev, conn
 
 def _ts():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -23,10 +60,13 @@ def _log(entry):
         f.write(json.dumps(entry) + "\n")
 
 def _adb(cmd, timeout=10):
-    """Run ADB command, return stdout"""
+    """Run ADB shell command on the resolved target, return stdout"""
+    dev, _ = adb_target()
+    if not dev:
+        return None
     try:
         r = subprocess.run(
-            ["adb", "-s", ADB_DEVICE, "shell"] + cmd.split(),
+            ["adb", "-s", dev, "shell"] + cmd.split(),
             capture_output=True, text=True, timeout=timeout
         )
         return r.stdout.strip() if r.returncode == 0 else None
@@ -34,10 +74,13 @@ def _adb(cmd, timeout=10):
         return None
 
 def _adb_raw(args, timeout=10):
-    """Run raw ADB command (not shell)"""
+    """Run raw ADB command (not shell) on the resolved target"""
+    dev, _ = adb_target()
+    if not dev:
+        return None
     try:
         r = subprocess.run(
-            ["adb", "-s", ADB_DEVICE] + args,
+            ["adb", "-s", dev] + args,
             capture_output=True, text=True, timeout=timeout
         )
         return r.stdout.strip() if r.returncode == 0 else None
@@ -45,7 +88,8 @@ def _adb_raw(args, timeout=10):
         return None
 
 def take_photo():
-    """Capture a photo from grapheneGate's camera via screencap"""
+    """Screenshot of the phone display via screencap (NOT the camera sensor).
+    Stored in data/optic/ (private). Camera stills need Termux allow-external-apps."""
     ts_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     remote = f"/sdcard/gaia/photo-{ts_str}.png"
     local = os.path.join(IMAGE_DIR, f"graphene-photo-{ts_str}.png")
@@ -177,7 +221,7 @@ def full_sense():
         "ts": _ts(),
         "source": "grapheneGate",
         "device": "Pixel 8a",
-        "ip": "192.168.4.170",
+        "ip": (adb_target()[0] or "unreachable").split(":")[0],
         "role": "right_eye_ear",
         "battery": battery,
         "wifi": wifi,
@@ -229,10 +273,91 @@ def full_sense():
     
     return result
 
+def _atomic_write(path, text):
+    """Write via tmp+rename so a failed run never leaves an empty/partial file."""
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+def _num(rx, text, cast=int, default=0):
+    import re
+    m = re.search(rx, text or "")
+    try:
+        return cast(m.group(1)) if m else default
+    except Exception:
+        return default
+
+def amoeba():
+    """The peripheral-nervous-system snapshot (was infra/graphenegate-sense.sh).
+    Writes data/gut/graphenegate-sensors.json (+ HUD copy). Returns the dict,
+    or an error dict WITHOUT touching the existing good file."""
+    import re
+    dev, conn = adb_target()
+    if not dev:
+        return {"error": "phone not reachable via USB or WiFi ADB", "fix": "plug in USB or enable Wireless debugging"}
+
+    batt = _adb("dumpsys battery") or ""
+    level = _num(r"(?m)^\s*level:\s*(\d+)", batt)
+    voltage = _num(r"(?m)^\s*voltage:\s*(\d+)", batt)
+    usb = bool(re.search(r"(?m)^\s*USB powered:\s*true", batt))
+    temp_raw = (_adb("cat /sys/class/power_supply/battery/temp") or "0").strip()
+    temp_c = round(_num(r"(-?\d+)", temp_raw) / 10.0, 1)
+
+    wifi_raw = _adb("dumpsys wifi", timeout=15) or ""
+    m = re.search(r'ssid: "([^"]+)"', wifi_raw, re.I) or re.search(r'SSID: "?([^",]+)"?', wifi_raw)
+    ssid = m.group(1) if m else "unknown"
+    freqs = [int(x) for x in re.findall(r"(?i)frequencyMhz:\s*(\d+)", wifi_raw) if int(x) > 0]
+    freq = freqs[-1] if freqs else 0
+
+    thermal = {}
+    for line in (_adb("dumpsys thermalservice", timeout=15) or "").split("\n"):
+        if "Temperature{" in line:
+            n = re.search(r"mName=([^,}]+)", line); v = re.search(r"mValue=([0-9.E+-]+)", line)
+            if n and v:
+                try: thermal[n.group(1).strip()] = round(float(v.group(1)), 2)
+                except ValueError: pass
+
+    sens_raw = _adb("dumpsys sensorservice", timeout=15) or ""
+    hw_sensors = _num(r"Total\s+(\d+)\s+h/w sensors", sens_raw, default=0)
+    brightness = _num(r"(\d+)", _adb("settings get system screen_brightness") or "")
+    uptime = (_adb("uptime") or "").strip()
+    ip_m = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", _adb("ip -4 addr show wlan0") or "")
+    ts = _ts()
+    zk = hashlib.sha256(f"grapheneGate:{dev}:{ts}".encode()).hexdigest()
+    zk_veil = f"pi.{int(zk[:2],16)%100}.{int(zk[2:4],16)%100}.{int(zk[4:6],16)%10}"
+
+    out = {
+        "ts": ts, "wave": 222, "gate": "grapheneGate", "type": "amoeba-sense",
+        "connection": conn,
+        "device": {"model": "Pixel 8a", "os": "GrapheneOS", "serial": USB_SERIAL,
+                   "ip": ip_m.group(1) if ip_m else "unknown"},
+        "battery": {"level": level, "temp_c": temp_c, "voltage_mv": voltage, "charging": usb},
+        "wifi": {"ssid": ssid, "freq_mhz": freq},
+        "thermal_zones": thermal,
+        "hw_sensors": hw_sensors,
+        "brightness": brightness,
+        "uptime": uptime,
+        "zk_veil": zk_veil,
+        "amoeba": {"role": "peripheral_nervous_system",
+                   "note": "grapheneGate is a Gaia peripheral, not a separate gate"},
+    }
+    _atomic_write(os.path.join(DATA_DIR, "graphenegate-sensors.json"), json.dumps(out, indent=2))
+    if os.path.isdir(os.path.dirname(HUD_OUT)):
+        _atomic_write(HUD_OUT, json.dumps(out, indent=2))
+    _log({"ts": ts, "type": "amoeba", "conn": conn, "battery": level, "sensors": hw_sensors})
+    return out
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "sense"
     if cmd == "sense":
         print(json.dumps(full_sense(), indent=2))
+    elif cmd == "amoeba":
+        r = amoeba()
+        print(json.dumps({k: r[k] for k in ("ts","connection","battery","wifi","hw_sensors")} if "error" not in r else r, indent=2))
+        sys.exit(1 if "error" in r else 0)
+    elif cmd == "target":
+        d, c = adb_target(refresh=True); print(json.dumps({"device": d, "conn": c}))
     elif cmd == "photo":
         print(json.dumps(take_photo(), indent=2))
     elif cmd == "sensors":

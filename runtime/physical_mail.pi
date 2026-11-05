@@ -56,6 +56,14 @@ def print_mail(text, title="Gaia Mail"):
     
     return entry
 
+def _graphene():
+    """Single owner of phone ADB addressing: graphene_depot.pi"""
+    import types
+    gp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "graphene_depot.pi")
+    m = types.ModuleType("graphene_depot"); m.__file__ = gp
+    exec(compile(open(gp).read(), gp, "exec"), m.__dict__)
+    return m
+
 def capture_image(source="graphenegate", label=""):
     """Capture an image from grapheneGate camera via ADB"""
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -63,8 +71,13 @@ def capture_image(source="graphenegate", label=""):
     local_path = os.path.join(IMAGE_DIR, f"capture-{source}-{ts}.png")
     
     if source == "graphenegate":
-        # Take screenshot via ADB
-        for dev in ["44251JEKB04957", "192.168.4.170:5555"]:
+        # Phone captures are private -> data/optic (gitignored), not the tracked image dir
+        g = _graphene()
+        local_path = os.path.join(g.IMAGE_DIR, f"capture-{source}-{ts}.png")
+        # Take screenshot via ADB (single resolved target; USB or serial-verified WiFi)
+        for dev in [g.adb_target()[0]]:
+            if not dev:
+                continue
             try:
                 subprocess.run(
                     ["adb", "-s", dev, "shell", f"screencap -p {remote_path}"],
