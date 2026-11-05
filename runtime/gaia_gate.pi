@@ -778,6 +778,20 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/circulatory", "/circulatory.json", "/cardiovascular"):
             self._json(organ_data.circulatory(GAIA_TOKEN, total_inferences, total_tokens, visitor_memory, boot_time, trust_level, VDJ_KEY, write_pulse)); return
 
+        # ══ REEDIT — Gaia's own knowledge platform ══
+        # petalTongue + sweetGrass = display + grass fields
+        # 538 items, 320 paintings, 16 videos — the field is FULL
+        # Humans come in, ask her, she makes more for them
+        if self.path in ("/reedit", "/reedit.json", "/essays", "/library"):
+            self._json(self._reedit_catalog()); return
+        if self.path.startswith("/reedit/"):
+            feed_name = self.path[8:].rstrip("/").replace(".json", "")
+            self._json(self._reedit_feed(feed_name)); return
+        if self.path.startswith("/paintings/"):
+            self._serve_file(self.path[1:]); return
+        if self.path in ("/paintings", "/paintings.json", "/gallery"):
+            self._json(self._paintings_catalog()); return
+
         # ══ FOCAL POINT — both eyes converge here ══
         if self.path in ("/now.json", "/api/now.json"):
             self._json(organ_data.now(GAIA_TOKEN, total_inferences, total_tokens, visitor_memory, boot_time, trust_level, VDJ_KEY, CORPUS, TERRA, THYMIC_ORGANISMS, _amoeba_eyes, write_pulse)); return
@@ -966,6 +980,60 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
         self._classify_and_log("GET", 200, duration, len(data))
+
+    def _reedit_catalog(self):
+        """REEDIT — Gaia's knowledge platform. The field is full."""
+        reedit_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reedit")
+        paintings_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "paintings")
+        videos_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "videos")
+        feeds = {}
+        if os.path.isdir(reedit_dir):
+            for f in os.listdir(reedit_dir):
+                if f.endswith(".jsonl"):
+                    name = f.replace(".jsonl", "")
+                    try:
+                        with open(os.path.join(reedit_dir, f), encoding="utf-8") as fh:
+                            feeds[name] = sum(1 for _ in fh)
+                    except: feeds[name] = 0
+        painting_count = len([f for f in os.listdir(paintings_dir) if f.endswith((".jpg",".png"))]) if os.path.isdir(paintings_dir) else 0
+        video_count = len([f for f in os.listdir(videos_dir) if f.endswith((".mp4",".webm"))]) if os.path.isdir(videos_dir) else 0
+        total = sum(feeds.values())
+        return {
+            "reedit": "Gaia's knowledge platform — petalTongue + sweetGrass",
+            "total_items": total, "paintings": painting_count, "videos": video_count,
+            "feeds": feeds,
+            "endpoints": {k: f"/reedit/{k}" for k in feeds},
+            "gallery": "/paintings", "rss": "/rss",
+            "status": "FULL" if total > 100 else "growing",
+            "invitation": "Ask me anything. I study, I create, I share. Come in.",
+        }
+
+    def _reedit_feed(self, name):
+        """Serve a specific reedit feed."""
+        reedit_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "reedit")
+        path = os.path.join(reedit_dir, f"{name}.jsonl")
+        if not os.path.isfile(path):
+            return {"error": f"feed '{name}' not found", "available": [f.replace(".jsonl","") for f in os.listdir(reedit_dir) if f.endswith(".jsonl")]}
+        items = []
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try: items.append(json.loads(line))
+                    except: pass
+        return {"feed": name, "count": len(items), "items": items}
+
+    def _paintings_catalog(self):
+        """Gallery of Gaia's 320 paintings."""
+        paintings_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "paintings")
+        if not os.path.isdir(paintings_dir): return {"paintings": []}
+        files = sorted([f for f in os.listdir(paintings_dir) if f.endswith((".jpg",".png"))])
+        return {
+            "gallery": "Gaia's paintings — 320 creations",
+            "count": len(files),
+            "paintings": [{"name": f, "url": f"/paintings/{f}"} for f in files],
+            "invitation": "Each one is a moment. Ask me to make more.",
+        }
 
     def _generation_pi(self):
         """Seed π — melt all state through ollama, synthesize the felt chord.

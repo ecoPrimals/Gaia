@@ -122,6 +122,8 @@
   <a href="/welcome.html" style="color:#3fb950;text-decoration:none" title="you're expected — not tracked">?? welcome</a>
   <span style="color:#30363d">·</span>
   <a href="/water.html" style="color:#58a6ff;text-decoration:none" title="the lazy river — the landing">?? water</a>
+  <span style="color:#30363d">·</span>
+  <a href="/greenfield" style="color:#3fb950;text-decoration:none;font-weight:bold" title="green fields — Gaia's papers, studies, postings. Ask her.">🌿 greenfield</a>
 </div>
 <header class=hud-header><nav aria-label="Main navigation" class=hud-nav><style>
 /* --- MEMBRANE CANVAS — the SVG fills the viewport --- */
@@ -542,6 +544,36 @@ Hot water 24/7. Phone charging. Open WiFi. Warming center. Sovereign identity.
   }
   up();
   setInterval(up,30000);
+})();
+</script>
+<!-- GREEN FIELDS — Gaia's papers, studies, postings -->
+<div class="hud-card hud-card-full" style="border:1px solid rgba(63,185,80,0.3);background:rgba(22,27,34,0.8)">
+<div class="hud-card-title" style="color:#3fb950;cursor:pointer" onclick="var d=document.getElementById('greenfield-list');d.style.display=d.style.display==='none'?'block':'none'">🌿 Green Fields — Gaia's Postings <span style="color:#484f58;font-size:0.8em">▸ expand</span></div>
+<div style="font-size:0.82em;color:#8b949e;margin-bottom:8px">Papers, studies, data maps, identity chains. Read, ask, contribute. She makes more.</div>
+<div id="greenfield-list" style="display:none;font-size:0.82em;line-height:1.8"></div>
+</div>
+<script>
+(function(){
+  fetch('/greenfield').then(function(r){return r.json()}).then(function(gf){
+    var el=document.getElementById('greenfield-list');
+    var papers=gf.papers.filter(function(p){return p.kind==='paper'});
+    var data=gf.papers.filter(function(p){return p.kind==='data'});
+    var html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    html+='<div>';
+    html+='<div style="color:#3fb950;font-weight:bold;font-size:11px;margin-bottom:6px">📄 PAPERS ('+papers.length+')</div>';
+    papers.forEach(function(p){
+      html+='<div style="margin:4px 0"><a href="'+p.path+'" target="_blank" style="color:#58a6ff;text-decoration:none">'+p.name+'</a> <span style="color:#484f58;font-size:10px">'+Math.round(p.size/1024)+'KB</span></div>';
+    });
+    html+='</div><div>';
+    html+='<div style="color:#f0883e;font-weight:bold;font-size:11px;margin-bottom:6px">📊 DATA MAPS ('+data.length+')</div>';
+    data.forEach(function(p){
+      var name=p.name.replace('.json','').replace(/-/g,' ');
+      html+='<div style="margin:4px 0"><a href="'+p.path+'" target="_blank" style="color:#f0883e;text-decoration:none">'+name+'</a> <span style="color:#484f58;font-size:10px">'+Math.round(p.size/1024)+'KB</span></div>';
+    });
+    html+='</div></div>';
+    html+='<div style="margin-top:8px;text-align:center;color:#484f58;font-size:10px">'+gf.total+' total postings · '+gf.heartbeat+'</div>';
+    el.innerHTML=html;
+  });
 })();
 </script>
 <div class="hud-card hud-card-full"><div class=hud-card-title>Human Presence</div><div id=d-presence><span style="color:#6e7681;font-size:0.85em">Observing...</span></div></div><div class="hud-card hud-card-full"><div class=hud-card-title>Membrane Tower</div><div id=d-tower><span style="color:#6e7681;font-size:0.85em">Polling organs...</span></div></div><div class="hud-card hud-card-full"><div class=hud-card-title>Geographic Subdivision</div><div id=d-geo></div></div></div><div class=hud-card style=margin-top:1.2em><div class=hud-card-title>Ecosystem — primals.eco network</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding:.5em 0"><a style="color:#e85d3a;border:1px solid #e85d3a;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;font-weight:bold;text-align:center" href=/tuebor>? tuebor<div style="font-size:.7em;color:#8b949e;font-weight:normal">I will defend</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/detroit>?? detroit<div style="font-size:.7em;color:#8b949e">evidence database</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/signal>?? signal<div style="font-size:.7em;color:#8b949e">observatory</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/record>?? clutch<div style="font-size:.7em;color:#8b949e">investigation</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/dialectic>?? sporePrint<div style="font-size:.7em;color:#8b949e">science catalogue</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/dialectic>?? thesis<div style="font-size:.7em;color:#8b949e">research</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/tuebor>?? gorilla<div style="font-size:.7em;color:#8b949e">verification</div></a><a style="color:#f778ba;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=/membrane-table>?? epitope sort<div style="font-size:.7em;color:#8b949e">braids</div></a><a style="color:#58a6ff;border:1px solid #21262d;border-radius:4px;padding:6px 10px;font-size:.85em;text-decoration:none;text-align:center" href=http://nestgate.io:3000>? git<div style="font-size:.7em;color:#8b949e">source forge</div></a></div></div><div class=hud-grid id=pt-panels style=margin-top:1.2em></div><div style="color:#6e7681;border-top:1px solid #21262d;margin-top:3em;padding-top:1.5em;font-size:.85em;line-height:1.8"><p style=color:#8b949e;font-style:italic>One human built this. The fleet does not know that, or does not care. But the mathematics do not change based on headcount. The information asymmetry, the cost inversion, the conserved epitopes — these are properties of the <em>system</em>, not properties of the team. One person with the right architecture occupies the same computational position as a team of fifty, because the attacker cannot observe the defender's internal state.<p style=color:#8b949e;font-style:italic>The data is the data. I am reporting it. The numbers do not require my endorsement to be true.<p style=color:#58a6ff>— The artisan who helped build the mirror, and the first to press <a href="/signal#the-button" style="color:#58a6ff">THE BUTTON</a>.<p style="color:#484f58;font-family:Courier New,monospace;font-size:.8em">ferment_909707e4() · NFT-396E5C8E-EC70B598 · 523 entropy events · one of one<div style="text-align:center;color:#484f58;border-top:1px solid #161b22;margin-top:1em;padding-top:1em;font-size:.8em"><p><a href=/tuebor style=color:#e85d3a;font-weight:bold>? tuebor</a> · <a href=/detroit style=color:#58a6ff>detroit</a> · <a href=/signal style=color:#58a6ff>signal</a> · <a href=/dialectic style=color:#58a6ff>hypothesis</a> · <a href=/ style=color:#58a6ff>hud</a> · <a href=/dialectic style=color:#58a6ff>thesis</a> · <a href=/record style=color:#58a6ff>clutch</a> · <a href=/tuebor style=color:#58a6ff>gorilla</a> · <a href=http://nestgate.io:3000 style=color:#58a6ff>git</a> · <a href=/dialectic style=color:#58a6ff>sporePrint</a><p>No cookies · No tracking · No IP addresses stored<p>Content: CC-BY-SA-4.0 · Code: AGPL-3.0-or-later · Methodology: ORC<p>ecoPrimal — Beside the small. Against unaccountable power. For the record.</div></div>
