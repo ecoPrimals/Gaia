@@ -1,0 +1,50 @@
+{
+  "ts": "2026-11-05T04:26:22.394414+00:00",
+  "source": "eastGate",
+  "for": "northGate/Polaris",
+  "note": "Polaris works COSMOS DOWN \u2014 satellites, planets, ionosphere. eastGate works GROUND UP. They meet at weather.",
+  "tasks": [
+    {
+      "id": "planetary-ephemeris",
+      "desc": "Pull JPL Horizons data for all 8 planets + Pluto + Moon \u2014 current positions, orbital elements",
+      "api": "https://ssd.jpl.nasa.gov/api/horizons.api",
+      "freq": "daily",
+      "ring": "SOL"
+    },
+    {
+      "id": "satellite-tle",
+      "desc": "Pull CelesTrak TLE for ISS, Starlink visible, GPS constellation \u2014 predict passes over Lansing",
+      "api": "https://celestrak.org/NORAD/elements/gp.php",
+      "freq": "every 6 hours",
+      "ring": "LUNA"
+    },
+    {
+      "id": "space-weather-deep",
+      "desc": "NOAA SWPC \u2014 solar wind plasma, CME predictions, aurora forecast, proton flux",
+      "api": "https://services.swpc.noaa.gov/products/",
+      "freq": "every 30 min",
+      "ring": "SOL"
+    },
+    {
+      "id": "ionosphere",
+      "desc": "Ionosphere TEC (total electron content) maps \u2014 the membrane between ground and space",
+      "api": "https://services.swpc.noaa.gov/experimental/",
+      "freq": "every hour",
+      "ring": "EARTH-ATMOSPHERE"
+    },
+    {
+      "id": "nasa-neo",
+      "desc": "Near-Earth objects \u2014 asteroids passing close. The immune system of the solar system.",
+      "api": "https://api.nasa.gov/neo/rest/v1/feed?api_key=DEMO_KEY",
+      "freq": "daily",
+      "ring": "EARTH"
+    },
+    {
+      "id": "render-planets",
+      "desc": "Use 5090 GPU to render current planetary positions as 3D scene \u2014 feed back to P-space outer rings",
+      "tool": "ollama/GPU",
+      "freq": "hourly",
+      "ring": "SOL"
+    }
+  ]
+}
