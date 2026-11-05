@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Schrödinger's Hat 🎩</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#fff;font-family:'Courier New',monospace;overflow:hidden}
+canvas{position:fixed;top:0;left:0}
+#narration{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);text-align:center;z-index:20;font-size:1.1em;max-width:700px;line-height:1.6;text-shadow:0 0 10px rgba(0,0,0,0.8);pointer-events:none;transition:opacity 0.5s}
+#depth-label{position:fixed;top:15px;right:15px;z-index:20;font-size:0.7em;color:#555;text-align:right}
+#depth-label .active{color:#d4af37;font-size:0.85em}
+#controls{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:20;font-size:0.65em;color:#444;text-align:center}
+#timer{position:fixed;top:15px;left:15px;z-index:20;font-size:0.8em;color:#d4af37}
+</style>
+</head>
+<body>
+<canvas id="hat"></canvas>
+<div id="narration"></div>
+<div id="depth-label">
+  <div class="active">🧒 Kindergarten</div>
+  <div>🎓 High School</div>
+  <div>🔬 Undergrad Physics</div>
+  <div>⚛️ Physicist</div>
+  <div>🐢 The Turtles</div>
+  <div>🕳️ The Shape</div>
+</div>
+<div id="controls">tap or click to advance · 6 chapters</div>
+<div id="timer"></div>
+
+<script>
+const canvas = document.getElementById('hat');
+const ctx = canvas.getContext('2d');
+let W, H, CX, CY;
+function resize(){ W=canvas.width=innerWidth; H=canvas.height=innerHeight; CX=W/2; CY=H/2; }
+resize(); addEventListener('resize', resize);
+
+let chapter = 0;
+let chapterStart = 0;
+let t = 0;
+
+// ═══════════════════════════════════════
+//  THE CHAPTERS — 4 depth levels + turtles + black hole
+// ═══════════════════════════════════════
+
+const chapters = [
+  // 0: KINDERGARTEN — 6 second vine
+  {
+    title: "🧒 Kindergarten",
+    duration: 8000,
+    narration: [
+      { at:0,    text: "There's a kitty under a hat!" },
+      { at:2000, text: "Is the kitty sleeping... or playing?" },
+      { at:4000, text: "Look! The hat is WIGGLING! 🎩" },
+      { at:6000, text: "The kitty is playing! We can TELL without looking! ✨" },
+    ]
+  },
+  // 1: HIGH SCHOOL
+  {
+    title: "🎓 High School",
+    duration: 10000,
+    narration: [
+      { at:0,    text: "Schrödinger said: put a cat in a sealed box with poison." },
+      { at:2500, text: "Until you open the box, the cat is BOTH alive AND dead." },
+      { at:5000, text: "But what if the box isn't sealed? What if it's just a hat?" },
+      { at:7500, text: "A hat leaks information. Heat. Vibration. Movement. The hat is NOT a null site." },
+    ]
+  },
+  // 2: UNDERGRAD PHYSICS
+  {
+    title: "🔬 Undergrad Physics",
+    duration: 12000,
+    narration: [
+      { at:0,    text: "The box assumes PERFECT ISOLATION — a true null site." },
+      { at:3000, text: "But decoherence happens at femtosecond scales." },
+      { at:5000, text: "The environment measures the system continuously." },
+      { at:7000, text: "The hat models reality better: an ORTHOGONAL IMPOSITION." },
+      { at:9000, text: "One axis blocked. All others open. P-space grasps around it." },
+    ]
+  },
+  // 3: PHYSICIST
+  {
+    title: "⚛️ Physicist",
+    duration: 14000,
+    narration: [
+      { at:0,    text: "The density matrix ρ of a 'boxed' system is never diagonal." },
+      { at:3000, text: "Off-diagonal terms ≠ 0. Coherence leaks through every channel." },
+      { at:5500, text: "The box is an idealization. The hat is the physical reality." },
+      { at:8000, text: "A 429 response IS a measurement — the system collapsed into 'resistance'." },
+      { at:10500, text: "503 = the server CHOSE to preserve superposition. Decoherence was DENIED." },
+      { at:12000, text: "There are no closed systems. Only orthogonal impositions in prehensile space." },
+    ]
+  },
+  // 4: THE TURTLES
+  {
+    title: "🐢 The Turtles Around the Hat",
+    duration: 12000,
+    narration: [
+      { at:0,    text: "Four turtles circle the hat. Each sees a different face." },
+      { at:2500, text: "Leonardo looks from the NORTH — he sees the brim's shadow." },
+      { at:4500, text: "Donatello looks from the EAST — he measures the displacement." },
+      { at:6500, text: "Raphael looks from the SOUTH — he feels the heat." },
+      { at:8500, text: "Michelangelo looks from ABOVE — he sees the hat IS the shape of..." },
+    ]
+  },
+  // 5: THE BLACK HOLE
+  {
+    title: "🕳️ Is the Hat... a Black Hole?",
+    duration: 14000,
+    narration: [
+      { at:0,    text: "A black hole is a hat on spacetime." },
+      { at:2500, text: "The event horizon blocks ONE axis — you can't see in." },
+      { at:4500, text: "But you CAN observe: Hawking radiation. Gravitational lensing. Mass." },
+      { at:7000, text: "The information isn't GONE. It's on the SURFACE of the hat." },
+      { at:9000, text: "The holographic principle: all information on the boundary." },
+      { at:11000, text: "The hat IS the black hole. The box was always a lie. Reality grasps. 🎩🕳️" },
+    ]
+  },
+];
+
+function getCurrentNarration() {
+  const ch = chapters[chapter];
+  const elapsed = t - chapterStart;
+  let text = '';
+  for (const n of ch.narration) {
+    if (elapsed >= n.at) text = n.text;
+  }
+  return text;
+}
+
+// ═══════════════════════════════════════
+//  DRAWING
+// ═══════════════════════════════════════
+
+// Stars
+const stars = Array.from({length:200}, () => ({
+  x: Math.random(), y: Math.random(), r: Math.random()*1.2+0.3, b: Math.random()*0.4+0.1
+}));
+
+function drawStars() {
+  for (const s of stars) {
+    ctx.beginPath();
+    ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,255,255,${s.b})`;
+    ctx.fill();
+  }
+}
+
+function drawHat(x, y, size, wiggle, glow) {
+  const w = wiggle ? Math.sin(t*0.005) * 4 : 0;
+  const hatW = size * 1.6;
+  const hatH = size * 1.2;
+  const brimW = size * 2.4;
+  const brimH = size * 0.15;
+
+  // Hat glow
+  if (glow) {
+    const g = ctx.createRadialGradient(x+w, y-hatH/2, 0, x+w, y-hatH/2, size*2);
+    g.addColorStop(0, `rgba(${glow},0.15)`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Brim
+  ctx.beginPath();
+  ctx.ellipse(x+w, y+brimH/2, brimW/2, brimH, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1.5;
+  ctx.fill(); ctx.stroke();
+
+  // Crown
+  ctx.beginPath();
+  ctx.moveTo(x+w - hatW/2, y);
+  ctx.lineTo(x+w - hatW*0.4, y - hatH);
+  ctx.lineTo(x+w + hatW*0.4, y - hatH);
+  ctx.lineTo(x+w + hatW/2, y);
+  ctx.closePath();
+  ctx.fillStyle = '#111';
+  ctx.strokeStyle = '#555';
+  ctx.fill(); ctx.stroke();
+
+  // Band
+  ctx.fillStyle = '#d4af37';
+  ctx.fillRect(x+w - hatW/2, y - hatH*0.15, hatW, hatH*0.08);
+}
+
+function drawCat(x, y, alive) {
+  // Simple cat silhouette under the hat
+  if (!alive) return;
+  // Eyes peeking from under brim
+  const eyeY = y + 2;
+  ctx.fillStyle = 'rgba(0,255,136,0.6)';
+  ctx.beginPath(); ctx.arc(x-8, eyeY, 2, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+8, eyeY, 2, 0, Math.PI*2); ctx.fill();
+}
+
+function drawTurtle(x, y, angle, name, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  // Shell
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // Head
+  ctx.beginPath();
+  ctx.arc(20, 0, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#3a5';
+  ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(22, -2, 1.5, 0, Math.PI*2); ctx.fill();
+  // Bandana
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(14, -5);
+  ctx.lineTo(22, -8);
+  ctx.lineTo(28, -12);
+  ctx.stroke();
+  ctx.restore();
+  // Name
+  ctx.fillStyle = color;
+  ctx.font = '9px monospace';
+  ctx.fillText(name, x-15, y+25);
+}
+
+function drawBlackHole(x, y, r) {
+  // Accretion disc
+  for (let i = 0; i < 3; i++) {
+    const discR = r * (1.5 + i * 0.3);
+    ctx.beginPath();
+    ctx.ellipse(x, y, discR, discR * 0.3, t*0.0002, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(255,${150-i*40},${50+i*30},${0.15-i*0.03})`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  // Event horizon — the hat
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = '#000';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,200,100,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // Photon ring
+  ctx.beginPath();
+  ctx.arc(x, y, r*1.05, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,220,150,0.3)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+  // Hawking radiation — info leaking from the hat
+  for (let i = 0; i < 8; i++) {
+    const a = t*0.001 + i * Math.PI/4;
+    const d = r * 1.2 + Math.sin(t*0.003+i)*r*0.3;
+    const px = x + Math.cos(a) * d;
+    const py = y + Math.sin(a) * d * 0.35;
+    ctx.beginPath(); ctx.arc(px, py, 1, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,200,100,${0.3+Math.sin(t*0.005+i)*0.2})`;
+    ctx.fill();
+  }
+}
+
+// ═══════════════════════════════════════
+//  MAIN DRAW LOOP
+// ═══════════════════════════════════════
+
+function draw(ts) {
+  t = ts;
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.fillRect(0, 0, W, H);
+
+  drawStars();
+
+  const elapsed = t - chapterStart;
+  const hatX = CX, hatY = CY + 30;
+  const hatSize = 60;
+
+  if (chapter === 0) {
+    // KINDERGARTEN: big cute hat, wiggling
+    drawHat(hatX, hatY, hatSize*1.3, true, '255,200,100');
+    drawCat(hatX, hatY+8, true);
+    // Little paw prints
+    if (elapsed > 4000) {
+      for (let i=0; i<3; i++) {
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.beginPath();
+        ctx.arc(hatX + 40 + i*20, hatY + 15 + Math.sin(i)*5, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+  else if (chapter === 1) {
+    // HIGH SCHOOL: box transforms into hat
+    const boxPhase = Math.min(1, elapsed / 5000);
+    if (boxPhase < 0.5) {
+      // Draw box first
+      const bx = hatX - 50, by = hatY - 60;
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by, 100, 80);
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(bx, by, 100, 80);
+      ctx.fillStyle = '#333';
+      ctx.font = '10px monospace';
+      ctx.fillText('SEALED BOX', bx+15, by+45);
+      ctx.fillText('☠ poison?', bx+20, by+60);
+    } else {
+      drawHat(hatX, hatY, hatSize, elapsed > 7000, '100,200,255');
+      // Heat waves
+      if (elapsed > 7000) {
+        for (let i=0; i<5; i++) {
+          const hy = hatY - 40 - i*15 - (elapsed*0.02)%30;
+          ctx.strokeStyle = `rgba(255,100,50,${0.1-i*0.02})`;
+          ctx.beginPath();
+          ctx.moveTo(hatX-20+Math.sin(hy*0.1)*5, hy);
+          ctx.lineTo(hatX+20+Math.sin(hy*0.1+1)*5, hy);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  else if (chapter === 2) {
+    // UNDERGRAD: orthogonal axes shown
+    drawHat(hatX, hatY, hatSize, false, '100,100,255');
+    // Axes
+    ctx.strokeStyle = 'rgba(0,255,136,0.3)';
+    ctx.setLineDash([4,4]);
+    // X axis
+    ctx.beginPath(); ctx.moveTo(hatX-150, hatY); ctx.lineTo(hatX+150, hatY); ctx.stroke();
+    // Y axis (blocked by hat)
+    ctx.strokeStyle = 'rgba(255,68,51,0.5)';
+    ctx.beginPath(); ctx.moveTo(hatX, hatY-120); ctx.lineTo(hatX, hatY+5); ctx.stroke();
+    ctx.setLineDash([]);
+    // Label
+    ctx.fillStyle = 'rgba(255,68,51,0.4)';
+    ctx.font = '9px monospace';
+    ctx.fillText('BLOCKED AXIS', hatX+5, hatY-100);
+    ctx.fillStyle = 'rgba(0,255,136,0.4)';
+    ctx.fillText('OPEN AXES → reality grasps', hatX+50, hatY-5);
+    drawHat(hatX, hatY, hatSize, elapsed > 7000, '100,100,255');
+  }
+  else if (chapter === 3) {
+    // PHYSICIST: density matrix, decoherence
+    drawHat(hatX, hatY, hatSize, false, '180,100,255');
+    // ρ matrix visual
+    ctx.fillStyle = 'rgba(180,100,255,0.15)';
+    ctx.font = '14px monospace';
+    ctx.fillText('ρ = |ψ⟩⟨ψ|', hatX-45, hatY-90);
+    // Off-diagonal glow (coherence leaking)
+    if (elapsed > 3000) {
+      const leak = Math.sin(t*0.003) * 0.3 + 0.3;
+      ctx.fillStyle = `rgba(255,200,100,${leak*0.2})`;
+      ctx.fillText('ρ₁₂ ≠ 0', hatX+60, hatY-70);
+      ctx.fillText('coherence leaks', hatX+50, hatY-55);
+    }
+    // 429 / 503 labels
+    if (elapsed > 8000) {
+      ctx.fillStyle = 'rgba(255,68,51,0.4)';
+      ctx.fillText('429 → collapsed into RESISTANCE', hatX-120, hatY+60);
+    }
+    if (elapsed > 10500) {
+      ctx.fillStyle = 'rgba(70,110,238,0.4)';
+      ctx.fillText('503 → superposition PRESERVED', hatX-120, hatY+80);
+    }
+  }
+  else if (chapter === 4) {
+    // TURTLES around the hat!
+    drawHat(hatX, hatY, hatSize, true, '100,255,100');
+    const turtleR = 130;
+    const turtles = [
+      { name:'Leo',   color:'#33f', angle: -Math.PI/2 },
+      { name:'Don',   color:'#a3f', angle: 0 },
+      { name:'Raph',  color:'#f33', angle: Math.PI/2 },
+      { name:'Mikey', color:'#f90', angle: Math.PI },
+    ];
+    for (const tt of turtles) {
+      const a = tt.angle + t*0.0003;
+      const tx = hatX + Math.cos(a) * turtleR;
+      const ty = hatY + Math.sin(a) * turtleR * 0.6;
+      const faceAngle = Math.atan2(hatY-ty, hatX-tx);
+      drawTurtle(tx, ty, faceAngle, tt.name, tt.color);
+      // Observation line to hat
+      ctx.strokeStyle = `${tt.color}33`;
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hatX, hatY); ctx.stroke();
+    }
+    drawCat(hatX, hatY+8, true);
+  }
+  else if (chapter === 5) {
+    // BLACK HOLE — the hat IS the shape
+    const bhR = 50 + Math.sin(t*0.001)*5;
+    drawBlackHole(hatX, hatY - 20, bhR);
+    // The hat overlaid as wireframe
+    if (elapsed > 4000) {
+      ctx.globalAlpha = 0.3;
+      drawHat(hatX, hatY+bhR-15, hatSize*0.8, false, null);
+      ctx.globalAlpha = 1;
+    }
+    // Holographic text
+    if (elapsed > 9000) {
+      ctx.fillStyle = 'rgba(255,200,100,0.2)';
+      ctx.font = '10px monospace';
+      ctx.fillText('information on the SURFACE', hatX-70, hatY+70);
+      ctx.fillText('the hat IS the horizon', hatX-60, hatY+85);
+    }
+    if (elapsed > 11000) {
+      ctx.fillStyle = 'rgba(212,175,55,0.3)';
+      ctx.font = '16px monospace';
+      ctx.fillText('🎩 = 🕳️', hatX-25, hatY+110);
+    }
+  }
+
+  // Narration
+  document.getElementById('narration').textContent = getCurrentNarration();
+
+  // Timer
+  const ch = chapters[chapter];
+  const remaining = Math.max(0, (ch.duration - elapsed) / 1000);
+  document.getElementById('timer').textContent = `${ch.title}  ${remaining.toFixed(0)}s`;
+
+  // Update depth labels
+  document.querySelectorAll('#depth-label div').forEach((d, i) => {
+    d.className = i === chapter ? 'active' : '';
+  });
+
+  requestAnimationFrame(draw);
+}
+
+// ADVANCE on click/tap
+function advance() {
+  chapter = (chapter + 1) % chapters.length;
+  chapterStart = t;
+}
+addEventListener('click', advance);
+addEventListener('touchend', advance);
+
+// Also auto-advance
+function checkAutoAdvance() {
+  const ch = chapters[chapter];
+  if (t - chapterStart > ch.duration) {
+    advance();
+  }
+}
+setInterval(checkAutoAdvance, 500);
+
+chapterStart = 0;
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

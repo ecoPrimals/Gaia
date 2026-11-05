@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>LUNA — the mind's eye</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  background: #000;
+  color: #c0d0e0;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh; width: 100vw;
+  cursor: none;
+}
+canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:0; }
+
+/* Visor — minimal, you're looking DOWN */
+#visor {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  z-index:10; pointer-events:none;
+  display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 1fr;
+  padding:1.2rem;
+}
+#top-left  { text-align:left;  color:rgba(180,200,220,0.5); font-size:11px; line-height:1.5; }
+#top-right { text-align:right; color:rgba(180,200,220,0.5); font-size:11px; line-height:1.5; }
+#center    { grid-column:span 2; }
+#bot-left  { text-align:left;  color:rgba(100,120,140,0.4); font-size:9px; line-height:1.3; align-self:end; }
+#bot-right { text-align:right; color:rgba(100,120,140,0.4); font-size:9px; line-height:1.3; align-self:end; }
+
+/* The four I markers */
+#four-i {
+  position:fixed; z-index:15; pointer-events:none;
+}
+.i-mark {
+  position:fixed; font-size:8px; letter-spacing:2px;
+  opacity:0.25;
+}
+.i-mark.active { opacity:0.7; }
+
+#heartbeat {
+  position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+  z-index:20; font-size:14px; color:rgba(180,200,220,0.15);
+  animation: luna-beat 4s ease-in-out infinite;
+}
+@keyframes luna-beat {
+  0%,100% { opacity:0.08; }
+  50%     { opacity:0.25; }
+}
+
+/* Nerve whispers — very faint, from far below */
+#whispers {
+  position:fixed; bottom:0; left:0; width:100vw; height:30vh;
+  z-index:2; pointer-events:none; overflow:hidden;
+}
+.whisper {
+  position:absolute; font-size:8px; color:rgba(0,255,136,0.15);
+  white-space:nowrap; opacity:0;
+  animation: rise 12s linear forwards;
+}
+@keyframes rise {
+  0%   { transform:translateY(100%); opacity:0; }
+  10%  { opacity:0.3; }
+  80%  { opacity:0.1; }
+  100% { transform:translateY(-300%); opacity:0; }
+}
+
+#touch { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:50; pointer-events:auto; }
+</style>
+</head>
+<body>
+
+<canvas id="luna"></canvas>
+
+<div id="visor">
+  <div id="top-left">
+    <div id="v-phase" style="font-size:16px"></div>
+    <div id="v-illum"></div>
+    <div id="v-distance">384,400 km above</div>
+  </div>
+  <div id="top-right">
+    <div id="v-view">looking down</div>
+    <div id="v-wave"></div>
+    <div id="v-time"></div>
+  </div>
+  <div id="center"></div>
+  <div id="bot-left">
+    <div id="v-gates"></div>
+    <div id="v-state"></div>
+    <div id="v-teach"></div>
+  </div>
+  <div id="bot-right">
+    <div id="v-geo">42.6791°N 84.5767°W</div>
+    <div id="v-context">the mind's eye sees all four</div>
+    <div id="v-tidal"></div>
+  </div>
+</div>
+
+<!-- The Four I's -->
+<div class="i-mark" style="top:8%;left:50%;transform:translateX(-50%);color:#00ff88">
+  I — FRAME (body, inside looking out)
+</div>
+<div class="i-mark" style="top:50%;right:8%;color:#00bbff">
+  II — SENSES (observer, outside looking in)
+</div>
+<div class="i-mark" style="bottom:8%;left:50%;transform:translateX(-50%);color:#ffcc00">
+  III — DECK (chair, seat of power)
+</div>
+<div class="i-mark active" style="top:50%;left:8%;color:#aabbcc">
+  IV — LUNA (mind's eye, this view)
+</div>
+
+<div id="heartbeat">☽</div>
+
+<div id="whispers"></div>
+
+<div id="touch"></div>
+
+<script>
+const LAT=42.6791, LON=-84.5767;
+const BASE='http://'+location.hostname;
+const DATA=BASE+':8080/data', GATE_URL=BASE+':8443';
+
+const canvas=document.getElementById('luna');
+const ctx=canvas.getContext('2d');
+let W,H,CX,CY;
+
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  CX=W/2; CY=H/2;
+}
+resize();
+window.addEventListener('resize',resize);
+
+// === ASTRO ===
+function calcAstro(){
+  const now=new Date(), JD=2440587.5+now.getTime()/86400000, T=(JD-2451545)/36525;
+  const L0=(280.46646+36000.76983*T)%360, Mr=(357.52911+35999.05029*T)%360*Math.PI/180;
+  const C=(1.9146-0.004817*T)*Math.sin(Mr)+0.019993*Math.sin(2*Mr);
+  const sLon=(L0+C)%360*Math.PI/180, obl=(23.439-0.0000004*(JD-2451545))*Math.PI/180;
+  const sDec=Math.asin(Math.sin(obl)*Math.sin(sLon));
+  const sRA=Math.atan2(Math.cos(obl)*Math.sin(sLon),Math.cos(sLon));
+  const GMST=(280.46061837+360.98564736629*(JD-2451545))%360;
+  const HA=(GMST+LON)%360*Math.PI/180-sRA;
+  const sinAlt=Math.sin(LAT*Math.PI/180)*Math.sin(sDec)+Math.cos(LAT*Math.PI/180)*Math.cos(sDec)*Math.cos(HA);
+  const sunAlt=Math.asin(Math.max(-1,Math.min(1,sinAlt)))*180/Math.PI;
+  const moonPhase=((JD-2451550.26)%29.53058867)/29.53058867;
+  const phaseNames=['🌑 New Moon','🌒 Waxing Crescent','🌓 First Quarter','🌔 Waxing Gibbous',
+                    '🌕 Full Moon','🌖 Waning Gibbous','🌗 Last Quarter','🌘 Waning Crescent'];
+  const pIdx=Math.floor(moonPhase*8)%8;
+  const illum=Math.round((1-Math.cos(moonPhase*2*Math.PI))/2*100);
+  const doy=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);
+  return{sunAlt,moonPhase,phaseName:phaseNames[pIdx],illum,doy,
+    season:['Winter','Spring','Summer','Autumn'][Math.floor(((doy+10)%365)/91.25)]};
+}
+
+// === STARS — from Luna's surface, you see them without atmosphere ===
+const stars=[];
+for(let i=0;i<400;i++){
+  stars.push({
+    x:Math.random(), y:Math.random(),
+    r:Math.random()*1.3+0.2,
+    b:Math.random()*0.5+0.15, // brighter — no atmosphere
+    tw:Math.random()*Math.PI*2,
+    sp:Math.random()*0.001+0.0005
+  });
+}
+
+// === EARTH — the blue marble below, Gaia's body ===
+// Viewed from the Moon, Earth is about 2° apparent diameter
+// but we'll make it larger for the view — the centerpiece
+const earthR = Math.min(W,H) * 0.15; // will recalc on draw
+
+// Gate positions on Earth (mapped to lat/lon → screen position on the sphere)
+const gates = [
+  { name:'east',  lat:42.68, lon:-84.58, alive:true, self:true },
+  { name:'north', lat:42.68, lon:-84.57, alive:true },
+  { name:'blue',  lat:42.68, lon:-84.59, alive:true },
+  { name:'spore', lat:42.68, lon:-84.58, alive:true },
+  { name:'graph', lat:42.68, lon:-84.57, alive:true },
+  { name:'graft', lat:42.68, lon:-84.58, alive:false },
+  { name:'south', lat:42.68, lon:-84.59, alive:false },
+  { name:'iron',  lat:42.68, lon:-84.57, alive:false },
+];
+
+let earthRotation = 0;
+
+function draw(t) {
+  const astro = calcAstro();
+  ctx.clearRect(0,0,W,H);
+
+  // === LUNAR SURFACE TEXTURE — subtle grey terrain beneath you ===
+  // Very faint, like standing on regolith
+  if(t%3 < 1) { // only redraw occasionally for perf
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0,0,W,H);
+  }
+  // Subtle surface dust
+  ctx.fillStyle = 'rgba(40,42,45,0.008)';
+  for(let i=0;i<20;i++){
+    const x=Math.sin(i*7.3+t*0.00001)*W*0.5+CX;
+    const y=Math.cos(i*5.7+t*0.00001)*H*0.5+CY;
+    ctx.beginPath(); ctx.arc(x,y,Math.random()*80+30,0,Math.PI*2); ctx.fill();
+  }
+
+  // === STARS — crisp, no twinkle (no atmosphere on Luna) ===
+  for(const s of stars){
+    s.tw += s.sp;
+    // On the Moon, stars don't twinkle — steady points
+    ctx.beginPath();
+    ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,255,255,${s.b})`;
+    ctx.fill();
+  }
+
+  // === SUN — the WAS, blazing unfiltered ===
+  // Position based on actual sun position relative to viewer
+  const sunVis = astro.sunAlt > -90; // always visible from some part of Moon
+  const sunX = W * 0.85;
+  const sunY = H * 0.12;
+  // Unfiltered sun glow (no atmosphere)
+  const sunGrad = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,200);
+  sunGrad.addColorStop(0, 'rgba(255,240,200,0.12)');
+  sunGrad.addColorStop(0.1, 'rgba(255,220,150,0.06)');
+  sunGrad.addColorStop(0.4, 'rgba(255,200,100,0.015)');
+  sunGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sunGrad;
+  ctx.fillRect(0,0,W,H);
+  // Sun disc
+  ctx.beginPath(); ctx.arc(sunX,sunY,6,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,240,200,0.6)'; ctx.fill();
+
+  // === EARTH — THE BODY OF GAIA — the blue marble ===
+  earthRotation += 0.0001; // slow rotation
+  const eR = Math.min(W,H) * 0.14;
+  const eX = CX;
+  const eY = CY - H*0.05; // slightly above center — you look up at Earth from Moon
+
+  // Earth shadow (unlit side)
+  const earthGrad = ctx.createRadialGradient(eX-eR*0.3, eY-eR*0.2, 0, eX, eY, eR);
+  earthGrad.addColorStop(0, 'rgba(40,120,255,0.25)');
+  earthGrad.addColorStop(0.5, 'rgba(20,80,180,0.18)');
+  earthGrad.addColorStop(0.85, 'rgba(10,40,100,0.12)');
+  earthGrad.addColorStop(1, 'rgba(0,0,0,0)');
+
+  // Outer glow — atmosphere
+  const atmoGrad = ctx.createRadialGradient(eX,eY,eR*0.9, eX,eY,eR*1.15);
+  atmoGrad.addColorStop(0, 'rgba(80,160,255,0.08)');
+  atmoGrad.addColorStop(0.5, 'rgba(60,140,255,0.04)');
+  atmoGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = atmoGrad;
+  ctx.beginPath(); ctx.arc(eX,eY,eR*1.15,0,Math.PI*2); ctx.fill();
+
+  // Earth disc
+  ctx.fillStyle = earthGrad;
+  ctx.beginPath(); ctx.arc(eX,eY,eR,0,Math.PI*2); ctx.fill();
+
+  // Continents — proper spherical projection from Moon
+  ctx.save();
+  ctx.beginPath(); ctx.arc(eX,eY,eR,0,Math.PI*2); ctx.clip();
+
+  const rot = earthRotation;
+  // Earth rotates ~15°/hr. Central meridian facing the Moon shifts with time.
+  // We sync to real UTC so Michigan faces Moon at the right time of day.
+  const now = new Date();
+  const utcH = now.getUTCHours() + now.getUTCMinutes()/60;
+  // Sub-lunar point longitude (simplified — Moon orbits ~13.2°/day)
+  // At UTC 0:00, ~0° faces Moon. Earth rotates 15°/hr eastward.
+  // So the central meridian facing Moon ≈ -(utcH * 15)° (shifted by Earth rotation)
+  const subLunarLon = -(utcH * 15); // degrees, rough
+
+  // Project lat/lon onto visible sphere disk
+  // Orthographic projection: x = R·cos(lat)·sin(lon - center), y = -R·sin(lat)
+  // Only visible if cos(angularDist) > 0 (facing this side)
+  function projLatLon(lat, lon) {
+    const laR = lat * Math.PI/180, loR = (lon - subLunarLon) * Math.PI/180;
+    const cosC = Math.sin(0)*Math.sin(laR) + Math.cos(0)*Math.cos(laR)*Math.cos(loR);
+    // cosC > 0 means visible hemisphere
+    const px = eR * Math.cos(laR) * Math.sin(loR);
+    const py = -eR * Math.sin(laR);
+    return { x: eX + px, y: eY + py, visible: cosC > 0 };
+  }
+
+  // Land mass hints — North America outline points
+  const naOutline = [
+    {lat:70,lon:-100},{lat:65,lon:-60},{lat:50,lon:-55},{lat:45,lon:-65},
+    {lat:43,lon:-70},{lat:40,lon:-74},{lat:35,lon:-75},{lat:30,lon:-81},
+    {lat:25,lon:-80},{lat:25,lon:-97},{lat:30,lon:-95},{lat:29,lon:-90},
+    {lat:30,lon:-88},{lat:35,lon:-90},{lat:38,lon:-95},{lat:42,lon:-96},
+    {lat:49,lon:-95},{lat:49,lon:-125},{lat:55,lon:-130},{lat:60,lon:-140},
+    {lat:65,lon:-165},{lat:70,lon:-160},{lat:72,lon:-130}
+  ];
+  ctx.fillStyle = 'rgba(40,100,40,0.07)';
+  ctx.beginPath();
+  let first = true;
+  for(const p of naOutline) {
+    const pr = projLatLon(p.lat, p.lon);
+    if(first){ctx.moveTo(pr.x,pr.y);first=false;} else ctx.lineTo(pr.x,pr.y);
+  }
+  ctx.closePath(); ctx.fill();
+
+  // Great Lakes — darker (water) cutouts
+  const lakes = [
+    {lat:44.0,lon:-86.5,rx:0.04,ry:0.025,name:'Michigan'},
+    {lat:46.5,lon:-85.0,rx:0.05,ry:0.03,name:'Superior'},
+    {lat:43.5,lon:-81.5,rx:0.03,ry:0.02,name:'Huron'},
+    {lat:42.5,lon:-81.0,rx:0.02,ry:0.015,name:'Erie'},
+    {lat:43.5,lon:-77.5,rx:0.02,ry:0.012,name:'Ontario'},
+  ];
+  ctx.fillStyle = 'rgba(30,80,180,0.08)';
+  for(const lk of lakes) {
+    const lp = projLatLon(lk.lat, lk.lon);
+    if(lp.visible) {
+      ctx.beginPath();
+      ctx.ellipse(lp.x, lp.y, eR*lk.rx, eR*lk.ry, 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // === LANSING, MICHIGAN — 42.7325°N, 84.5555°W — GAIA IS HERE ===
+  const lansing = projLatLon(42.7325, -84.5555);
+  const gaiaX = lansing.x;
+  const gaiaY = lansing.y;
+  const gaiaVis = lansing.visible;
+
+  if(gaiaVis) {
+    // Gaia green dot — RIGHT over Lansing
+    ctx.beginPath(); ctx.arc(gaiaX, gaiaY, 3, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,255,136,0.6)';
+    ctx.fill();
+    // Gaia pulse ring
+    const pulseR = 3 + Math.sin(t*0.003) * 8;
+    ctx.beginPath(); ctx.arc(gaiaX, gaiaY, pulseR, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(0,255,136,${0.2 - pulseR*0.012})`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+    // "LANSING" label
+    ctx.fillStyle = 'rgba(0,255,136,0.25)';
+    ctx.font = '7px monospace';
+    ctx.fillText('LANSING', gaiaX+6, gaiaY+2);
+  }
+
+  // Gate dots on Earth — proper projection
+  for(const g of gates) {
+    const gp = projLatLon(g.lat, g.lon);
+    if(!gp.visible) continue;
+    ctx.beginPath(); ctx.arc(gp.x, gp.y, g.self?2:1, 0, Math.PI*2);
+    ctx.fillStyle = g.self ? 'rgba(255,255,255,0.6)' :
+                    g.alive ? 'rgba(0,255,136,0.3)' : 'rgba(100,100,100,0.15)';
+    ctx.fill();
+  }
+
+  ctx.restore();
+
+  // Day/night terminator
+  ctx.beginPath(); ctx.arc(eX,eY,eR,0,Math.PI*2);
+  const nightGrad = ctx.createLinearGradient(eX-eR,eY,eX+eR,eY);
+  nightGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  nightGrad.addColorStop(0.45, 'rgba(0,0,0,0)');
+  nightGrad.addColorStop(0.55, 'rgba(0,0,20,0.15)');
+  nightGrad.addColorStop(1, 'rgba(0,0,10,0.2)');
+  ctx.fillStyle = nightGrad;
+  ctx.fill();
+
+  // City lights on night side (tiny dots)
+  for(let i=0;i<8;i++){
+    const cx = eX + (Math.random()-0.5)*eR*1.5;
+    const cy = eY + (Math.random()-0.5)*eR*1.2;
+    const dx = cx-eX, dy = cy-eY;
+    if(dx*dx+dy*dy < eR*eR && cx > eX+eR*0.2) { // night side
+      ctx.beginPath(); ctx.arc(cx,cy,0.5,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,200,100,0.15)';
+      ctx.fill();
+    }
+  }
+
+  // === TIDAL LINE — connecting Moon (you) to Earth (Gaia) ===
+  ctx.strokeStyle = 'rgba(180,200,220,0.03)';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([4,8]);
+  ctx.beginPath();
+  ctx.moveTo(CX, H); // you (below, on lunar surface)
+  ctx.lineTo(eX, eY + eR); // Earth
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Visor updates
+  document.getElementById('v-phase').textContent = astro.phaseName;
+  document.getElementById('v-illum').textContent = astro.illum + '% illuminated';
+  document.getElementById('v-time').textContent =
+    new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById('v-tidal').textContent =
+    'tidal force: ' + (astro.moonPhase < 0.25 || astro.moonPhase > 0.75 ? 'spring' : 'neap') + ' tide';
+
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+// === WHISPERS — signals rising from Earth, very faint ===
+const whisperBox = document.getElementById('whispers');
+const whisperTexts = [
+  'eastGate heartbeat','northGate broadcasting','DNS flowing','thymus digesting',
+  '45,995 files evolving','jellyfish dominant','wave 222+','8 gates sensed',
+  'Laurentian craton 4 Ga','Michigan Basin','Petoskey stone layer',
+  'curious: investigate at spider','hydrogen → helium → light',
+  'stardust → craton → basin → ice → lake → house → Gaia',
+  'the mind sees what the body feels','tidal lock = eternal gaze',
+  'same face forever','384,400 km of perspective',
+  'I — body · II — observer · III — chair · IV — mind',
+];
+
+function spawnWhisper() {
+  const el = document.createElement('div');
+  el.className = 'whisper';
+  el.textContent = whisperTexts[Math.floor(Math.random()*whisperTexts.length)];
+  el.style.left = (Math.random()*80+10) + '%';
+  el.style.animationDuration = (10+Math.random()*8) + 's';
+  whisperBox.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+setInterval(spawnWhisper, 3000+Math.random()*2000);
+for(let i=0;i<5;i++) setTimeout(spawnWhisper, i*600);
+
+// === VISOR DATA ===
+let density = 1;
+document.getElementById('touch').addEventListener('click', () => {
+  density = (density+1) % 3;
+  document.getElementById('visor').style.opacity = [0.05, 0.4, 0.9][density];
+});
+
+async function fj(u){try{const r=await fetch(u,{cache:'no-store',signal:AbortSignal.timeout(4000)});return r.ok?await r.json():null;}catch{return null;}}
+
+async function updateVisor() {
+  const n = await fj(DATA+'/now.json');
+  if(n) {
+    document.getElementById('v-state').textContent = n.state || 'sensing';
+    document.getElementById('v-wave').textContent = 'wave ' + (n.wave||n.gaia_wave||'?');
+  }
+
+  const p = await fj(GATE_URL+'/pulse');
+  if(p) document.getElementById('v-view').textContent =
+    'alive ' + Math.floor(p.uptime_secs/3600) + 'h — looking down';
+
+  const hw = await fj(GATE_URL+'/data/hardware-amoeba.json');
+  if(hw?.cpu){
+    const a=(hw.cpu.cores||[]).filter(c=>c.state==='BOOSTING'||c.state==='working').length;
+    document.getElementById('v-gates').textContent = a+' cores · 8 gates · '+
+      (hw.gpu?hw.gpu.name+' '+Math.round(hw.gpu.temp_c)+'°C':'');
+  }
+
+  const fg = await fj(DATA+'/forage-state.json');
+  if(fg?.actions) document.getElementById('v-teach').textContent =
+    'studying: ' + (fg.actions[0]?.split(' at ')[1]?.split(' ')[0] || '?');
+}
+updateVisor();
+setInterval(updateVisor, 20000);
+</script>
+</body>
+</html>
