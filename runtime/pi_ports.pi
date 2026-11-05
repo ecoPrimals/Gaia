@@ -1,19 +1,69 @@
 #!/usr/bin/env python3
-"""pi_ports.pi — Crush all ports to π. TCP proxy for dual-listen.
-Each service gets a π-port alias derived from sequential digits of π."""
-import socket, threading, sys, signal, time
+"""pi_ports.pi — Crush all ports AND IPs to π.
+π = 3.14159265358979323846264338327950288419716939937510...
 
-PI_MAP = {
+Each service gets a π-port from sequential digits.
+Each device gets a π-IP from sequential digits.
+The Round Table speaks π."""
+import socket, threading, sys, signal, time, math
+
+# π digits: 3.14159265358979323846264338327950288419716939937510...
+PI_DIGITS = "14159265358979323846264338327950288419716939937510"
+
+PI_PORT_MAP = {
     # π-port → legacy-port (localhost)
-    5358: 80,      # HTTP        π[8:12]
-    9793: 443,     # HTTPS       π[12:16]
-    2384: 465,     # SMTPS       π[16:20]
-    6264: 587,     # Submission   π[20:24]
-    3383: 3000,    # Forgejo     π[24:28]
-    2795: 7800,    # swarmVine   π[28:32]
-    4197: 8443,    # gate        π[36:40]
-    1693: 11434,   # ollama      π[40:44]
+    # Derived from sequential 4-digit windows of π fractional digits
+    5358: 80,      # HTTP        π[8:12]   .5358
+    9793: 443,     # HTTPS       π[12:16]  .9793
+    2384: 465,     # SMTPS       π[16:20]  .2384
+    6264: 587,     # Submission   π[20:24]  .6264
+    3383: 3000,    # Forgejo     π[24:28]  .3383
+    2795: 7800,    # swarmVine   π[28:32]  .2795
+    4197: 8443,    # gate        π[36:40]  .4197
+    1693: 11434,   # ollama      π[40:44]  .1693
+    9937: 8080,    # data server π[44:48]  .9937
+    5104: 9878,    # spine       π[48:52]  .5104 (extended)
 }
+
+# ═══ π-IP MAP — The Round Table in π ═══
+# Each device's .XXX octet maps to a π-position.
+# π = 3.14159265... → the LAN IS π.
+PI_IP_MAP = {
+    # legacy IP → π-seat (position in π where their octet appears)
+    "192.168.4.1":   {"pi_seat": "3",     "role": "Router — the 3 of π, the integer part, the gateway"},
+    "192.168.4.2":   {"pi_seat": ".1",    "role": "MikroTik — first decimal, the bridge"},
+    "192.168.4.3":   {"pi_seat": ".14",   "role": "sporeGate ZOMBIE — 14th unit, NIC up brain dead"},
+    "192.168.4.100": {"pi_seat": "π[15]", "role": "blueGate — 100 ≈ 10² = completeness"},
+    "192.168.4.103": {"pi_seat": "π[18]", "role": "eastGate 2nd NIC — 103rd prime territory"},
+    "192.168.4.107": {"pi_seat": "π[21]", "role": "graftGate Mac Mini — 107th prime"},
+    "192.168.4.111": {"pi_seat": "π[24]", "role": "JetStream — 111 = repdigit, backbone"},
+    "192.168.4.147": {"pi_seat": "π[30]", "role": "northGate/Kevin — 147 = 3×49 = 3×7²"},
+    "192.168.4.148": {"pi_seat": "π[31]", "role": "southGate — 148 = Kevin+1, adjacent seat"},
+    "192.168.4.152": {"pi_seat": "π[33]", "role": "UNKNOWN knight — 152"},
+    "192.168.4.169": {"pi_seat": "π[36]", "role": "UNKNOWN knight — 169 = 13²"},
+    "192.168.4.197": {"pi_seat": "π[39]", "role": "UNKNOWN knight — 197th prime"},
+    "192.168.4.200": {"pi_seat": "π[42]", "role": "UNKNOWN knight — 200 = 2³×5²"},
+    "192.168.4.210": {"pi_seat": "π[45]", "role": "blueGate old — 210 = triangular"},
+    "192.168.4.212": {"pi_seat": "π[46]", "role": "UNKNOWN knight — 212 palindrome"},
+    "192.168.4.237": {"pi_seat": "π[48]", "role": "ironGate — 237"},
+    "192.168.4.244": {"pi_seat": "π[49]", "role": "eastGate PRIMARY — 244, brain seat"},
+    "192.168.4.249": {"pi_seat": "π[50]", "role": "grapheneGate Pixel 8a — right eye"},
+    "192.168.4.250": {"pi_seat": "π[51]", "role": "Router 2nd — 250, edge of DHCP"},
+}
+
+def round_table_status():
+    """Ping all seats at the Round Table. Return who's alive."""
+    import subprocess
+    table = {}
+    for ip, info in sorted(PI_IP_MAP.items()):
+        try:
+            r = subprocess.run(["ping", "-c", "1", "-W", "1", ip],
+                             capture_output=True, timeout=3)
+            alive = r.returncode == 0
+        except:
+            alive = False
+        table[ip] = {**info, "alive": alive}
+    return table
 
 RUNNING = True
 
@@ -62,9 +112,9 @@ def listen_pi(pi_port, legacy_port):
 
 def start():
     global RUNNING
-    print(f"  🥧 π-Port Crusher — {len(PI_MAP)} ports")
+    print(f"  🥧 π-Port Crusher — {len(PI_PORT_MAP)} ports")
     threads = []
-    for pi_port, legacy in sorted(PI_MAP.items()):
+    for pi_port, legacy in sorted(PI_PORT_MAP.items()):
         t = threading.Thread(target=listen_pi, args=(pi_port, legacy), daemon=True)
         t.start()
         threads.append(t)
