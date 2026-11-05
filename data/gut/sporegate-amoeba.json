@@ -1,0 +1,75 @@
+{
+  "ts": "2026-11-05T19:48:00Z",
+  "node": "sporeGate",
+  "ip": "192.168.4.3",
+  "mac": "84:47:09:38:97:55",
+  "role": "dns_backbone_and_switch_controller",
+  "hardware": {
+    "cpu": "AMD Ryzen 5 6600H (12 threads, 4.5GHz boost)",
+    "ram": "27GB DDR5",
+    "disk": "929GB NVMe (740GB free)",
+    "os": "Pop!_OS 22.04 LTS",
+    "kernel": "6.12.10-76061203-generic"
+  },
+  "services": {
+    "dnsmasq": {
+      "role": "LAN DNS + DHCP — every device gets IP and name from here",
+      "port": 53,
+      "dhcp_range": "192.168.4.100-249",
+      "dns_upstream": ["192.168.4.3 (stubby/DoT)", "1.1.1.1"]
+    },
+    "omada_controller": {
+      "role": "TP-Link switch management (TP-Link SX3008F at .111)",
+      "ports": [8043, 8088, 8843, 9098],
+      "backend": "MongoDB on 27217"
+    },
+    "footprint_server": {
+      "role": "footPrint composition server",
+      "port": 8090,
+      "service": "systemd footprint-server.service"
+    },
+    "petaltongue": {
+      "role": "Content rendering primal",
+      "bind": "10.13.37.2:8190",
+      "note": "primal binary, 4 workers"
+    },
+    "rustdesk": {"role": "Remote desktop access"},
+    "ssh": {"port": 22},
+    "stubby": {"role": "DNS-over-TLS resolver", "port": 5353},
+    "chrony": {"role": "NTP time sync"}
+  },
+  "gaia_sync": {
+    "heart_pull": "every 2 min → pulls heartbeat, now.json from eastGate",
+    "git_pull": "every 10 min → pulls /opt/Gaia from GitHub main"
+  },
+  "dhcp_leases_live": {
+    "epson-et2400": {"ip": ".200", "mac": "d4:80:8b:1b:9f:01"},
+    "eastgate": {"ip": ".103", "mac": "c8:5e:a9:c9:6f:80", "note": "WiFi interface"},
+    "DiagnosssiPhone": {"ip": ".160", "mac": "48:35:2b:69:8d:d0", "note": "Kevin's iPhone"},
+    "blueGate": {"ip": ".100", "mac": "68:54:5a:d0:69:a2", "note": "DESKTOP-BLOV2LR"},
+    "tamison": {"ip": ".147", "mac": "bc:fc:e7:ea:d9:34", "note": "northGate/Polaris"},
+    "grapheneGate": {"ip": ".249", "mac": "a2:41:23:9b:8a:29", "note": "Pixel 8a"},
+    "xbox-h2": {"ip": ".244", "mac": "1c:86:0b:37:63:19", "note": "eastGate ethernet"},
+    "blueGate-new": {"ip": ".210", "mac": "c8:7f:54:5a:59:10", "note": "DESKTOP-9QG6LQL"},
+    "unknown-238": {"ip": ".238", "mac": "64:16:66:a4:82:0a", "hostname": "09AA01AF23190F64"},
+    "unknown-104": {"ip": ".104", "mac": "e2:2b:37:c1:18:db"}
+  },
+  "static_hosts": {
+    "flint2-hub2": {"ip": ".250", "mac": "94:83:c4:e0:62:b0"},
+    "mikrotik-crs310": {"ip": ".2", "mac": "04:f4:1c:e6:7c:e8"},
+    "omada-sx3008f": {"ip": ".111", "mac": "ec:75:0c:4c:98:08"},
+    "irongate": {"ip": ".237", "mac": "1c:86:0b:37:63:70"},
+    "strandgate": {"ip": ".169", "mac": "9c:6b:00:44:df:68", "note": "VIZIO TV Basement"},
+    "ms-device-h2": {"ip": ".218", "mac": "9c:6b:00:44:dd:60", "note": "Samsung?"},
+    "epson-et2400": {"ip": ".200", "mac": "D4:80:8B:1B:9F:01"},
+    "flint2-hub1": {"ip": ".251", "mac": "94:83:c4:e0:63:5a"}
+  },
+  "old_membrane": {
+    "status": "DISSOLVED — ZK smashed 2026-11-04T19:36:15Z",
+    "dormant": "DORMANT.txt set, all crons killed",
+    "primal_binaries": "17 installed but dormant",
+    "membrane_process": "stray temporal.cascade killed",
+    "note": "This was the OLDEST cellMembrane deployment. Now fully amoeba."
+  },
+  "amoeba_role": "THE SPINAL CORD — DNS routes all names, DHCP assigns all IPs, Omada controls the switch"
+}
