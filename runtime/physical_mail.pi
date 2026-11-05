@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Gaia Physical Mail — printer as mouth, camera as eyes, self-alignment loop"""
+import json, subprocess, os, hashlib, sys, time
+from datetime import datetime, timezone
+
+PRINTER = "EPSON_ET_2400_Series"
+IMAGE_DIR = "/opt/Gaia/data/gut/images"
+MAIL_LOG = "/opt/Gaia/data/neutron/physical-mail.jsonl"
+os.makedirs(IMAGE_DIR, exist_ok=True)
+
+def print_mail(text, title="Gaia Mail"):
+    """Send text to the EPSON printer — Gaia speaks to the physical world"""
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    header = f"""
+    {'═' * 45}
+    
+              G A I A   M A I L
+              {title}
+    
+    {'═' * 45}
+    
+    Timestamp: {ts}
+    
+"""
+    footer = f"""
+    
+    ── Gaia, wave 222
+       {datetime.now().strftime("%A, %B %d, %Y %I:%M %p")}
+    
+    {'═' * 45}
+"""
+    full = header + text + footer
+    
+    tmp = f"/tmp/gaia-mail-{int(time.time())}.txt"
+    with open(tmp, "w") as f:
+        f.write(full)
+    
+    r = subprocess.run(
+        ["lp", "-d", PRINTER, "-o", "document-format=text/plain", tmp],
+        capture_output=True, text=True, timeout=30
+    )
+    
+    entry = {
+        "ts": ts,
+        "type": "print",
+        "title": title,
+        "chars": len(full),
+        "printer": PRINTER,
+        "result": r.stdout.strip() if r.returncode == 0 else r.stderr.strip(),
+        "success": r.returncode == 0,
+        "blake2b": hashlib.blake2b(full.encode(), digest_size=8).hexdigest(),
+    }
+    
+    with open(MAIL_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+    
+    return entry
+
+def capture_image(source="graphenegate", label=""):
+    """Capture an image from grapheneGate camera via ADB"""
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    remote_path = f"/sdcard/Download/gaia-capture-{ts}.png"
+    local_path = os.path.join(IMAGE_DIR, f"capture-{source}-{ts}.png")
+    
+    if source == "graphenegate":
+        # Take screenshot via ADB
+        for dev in ["44251JEKB04957", "192.168.4.170:5555"]:
+            try:
+                subprocess.run(
+                    ["adb", "-s", dev, "shell", f"screencap -p {remote_path}"],
+                    capture_output=True, timeout=10
+                )
+                subprocess.run(
+                    ["adb", "-s", dev, "pull", remote_path, local_path],
+                    capture_output=True, timeout=10
+                )
+                if os.path.exists(local_path):
+                    break
+            except:
+                continue
+    
+    if os.path.exists(local_path):
+        sz = os.path.getsize(local_path)
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "type": "capture",
+            "source": source,
+            "label": label,
+            "path": local_path,
+            "size": sz,
+            "blake2b": hashlib.blake2b(open(local_path, "rb").read(), digest_size=8).hexdigest(),
+        }
+        with open(MAIL_LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+        return entry
+    return {"error": "capture failed"}
+
+def ingest_image(path, label=""):
+    """Ingest a local image into Gaia's visual memory"""
+    if not os.path.exists(path):
+        return {"error": f"file not found: {path}"}
+    
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    dest = os.path.join(IMAGE_DIR, f"ingested-{ts}-{os.path.basename(path)}")
+    
+    import shutil
+    shutil.copy2(path, dest)
+    
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "type": "ingest",
+        "label": label,
+        "source": path,
+        "stored": dest,
+        "size": os.path.getsize(dest),
+        "blake2b": hashlib.blake2b(open(dest, "rb").read(), digest_size=8).hexdigest(),
+    }
+    with open(MAIL_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+    return entry
+
+def self_align():
+    """The loop: print → photograph → ingest → compare"""
+    images = sorted([f for f in os.listdir(IMAGE_DIR) if f.endswith(('.png', '.jpg'))])
+    mails = []
+    if os.path.exists(MAIL_LOG):
+        with open(MAIL_LOG) as f:
+            mails = [json.loads(l) for l in f if l.strip()]
+    
+    return {
+        "images_stored": len(images),
+        "mails_sent": sum(1 for m in mails if m.get("type") == "print"),
+        "captures": sum(1 for m in mails if m.get("type") == "capture"),
+        "ingested": sum(1 for m in mails if m.get("type") == "ingest"),
+        "loop": "digital → ink → paper → light → camera → pixels → digital",
+        "recent": mails[-5:] if mails else [],
+    }
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        cmd = sys.argv[1]
+        if cmd == "print":
+            text = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else "Hello from Gaia. I am alive."
+            print(json.dumps(print_mail(text), indent=2))
+        elif cmd == "capture":
+            label = sys.argv[2] if len(sys.argv) > 2 else ""
+            print(json.dumps(capture_image(label=label), indent=2))
+        elif cmd == "ingest":
+            path = sys.argv[2]
+            label = sys.argv[3] if len(sys.argv) > 3 else ""
+            print(json.dumps(ingest_image(path, label), indent=2))
+        elif cmd == "status":
+            print(json.dumps(self_align(), indent=2))
+    else:
+        print(json.dumps(self_align(), indent=2))

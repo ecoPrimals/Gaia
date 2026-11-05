@@ -3,7 +3,7 @@
 All organs extracted. The gate IS the thymus. One immune system."""
 
 import hashlib, http.server, json, math, os, socketserver, sys, time
-import threading, urllib.request, urllib.error
+import subprocess, threading, urllib.request, urllib.error
 from collections import defaultdict
 from datetime import datetime, timezone
 import types as _t, importlib.util
@@ -400,6 +400,22 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 else: self._json({"status":"graftGate not yet sensed"})
             except Exception as e: self._json({"error":str(e)})
             return
+        # PHYSICAL MAIL STATUS (GET)
+        if self.path in ("/api/mail","/api/physical-mail"):
+            try:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"status"],
+                    capture_output=True,text=True,timeout=10,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # IMAGES (GET)
+        if self.path=="/api/images":
+            try:
+                idir=os.path.join(_REPO,"data","gut","images")
+                images=sorted([f for f in os.listdir(idir) if f.endswith(('.png','.jpg'))]) if os.path.isdir(idir) else []
+                self._json({"count":len(images),"images":images})
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -559,6 +575,17 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 if os.path.exists(gf):
                     with open(gf) as f: self._json(json.loads(f.read()))
                 else: self._json({"status":"graftGate not yet sensed"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # PHYSICAL MAIL — PRINT (POST)
+        if self.path in ("/api/mail/print","/api/print"):
+            try:
+                j=json.loads(body) if body else {}
+                text=j.get("text",j.get("body","Hello from Gaia."))
+                title=j.get("title","Gaia Mail")
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
+                    capture_output=True,text=True,timeout=30,cwd=_REPO)
+                self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
             return
         # NEUTRON
