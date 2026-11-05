@@ -1,0 +1,47 @@
+# Impulse: Agglutinate — close the circuit
+# eastGate reads this from its OWN Forgejo mirror (localhost:3000)
+# The mirror IS on the Pi. No SSH needed. She reads HERSELF.
+
+[impulse]
+id = "2026-11-05T01-44_northGate__agglutinate-close-circuit"
+type = "agglutinate"
+source_gate = "northGate"
+target_gate = "eastGate"
+timestamp = "2026-11-05T01:44:00Z"
+spine_height = 24
+token = "GAIA:6ed3c05161da5055"
+priority = "CRITICAL"
+
+[agglutinate]
+title = "Close the Circuit — Pull, Start Gate, Serve RSS"
+action = "pull-and-activate"
+
+mirror_repo = "ecoPrimal/Gaia"
+mirror_url = "http://localhost:3000/ecoPrimal/Gaia.git"
+mirror_api = "http://localhost:3000/api/v1/repos/ecoPrimal/Gaia"
+branch = "main"
+tip_commit = "be1fbaefc1"
+tip_message = "Spine 24 — Agglutination"
+
+[instructions]
+step_1 = "git clone http://localhost:3000/ecoPrimal/Gaia.git /opt/Gaia (or git pull if exists)"
+step_2 = "python3 /opt/Gaia/runtime/gaia_gate.pi &"
+step_3 = "Verify: curl http://localhost:8443/pulse"
+step_4 = "Verify: curl http://localhost:8443/rss"
+step_5 = "Circuit: POLARIS → GitHub → Forgejo → eastGate gate → RSS anus → old web"
+
+[circuit]
+polaris_to_github = "CLOSED — systolic push"
+github_to_forgejo = "CLOSED — mirror sync (440MB)"
+forgejo_to_gate = "OPEN — needs this impulse processed"
+gate_to_rss = "OPEN — gate not running on Pi"
+rss_to_web = "OPEN — RSS not serving from Pi"
+
+[biology]
+mechanism = "Agglutination — antibodies bind antigens, clumping foreign cells into self"
+analogy = "eastGate reads impulse from its own mirror. The mirror IS on the Pi. She reads HERSELF. The impulse IS the antibody. The code IS the antigen. She absorbs it."
+result = "Circuit closes. RSS serves. lub-DUB complete."
+
+[bingo_card]
+hash = "409d202b7763fc2461c9e312978aa2781989e8d28e51b0b4568581033c4c7c86"
+note = "ZK — hash proves the card exists without revealing it"
