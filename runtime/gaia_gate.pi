@@ -425,11 +425,28 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._encounter(404)
 
     def _encounter(self, code=404):
-        """Every error is an encounter — serve the living landing page"""
+        """Every error is an encounter — serve the living landing page.
+        Also logs to thymus as stem_cell: a visitor who arrived but the path
+        doesn't exist yet. Stem cells can differentiate into new pages."""
+        ip=self.client_address[0]; ua=self.headers.get("User-Agent","")
+        path=getattr(self,"path","/")
+        # Log encounter to thymus neutron channel
+        try:
+            nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+            with open(os.path.join(nd,"encounters.jsonl"),"a") as f:
+                f.write(json.dumps({
+                    "ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    "code":code,
+                    "path":path,
+                    "ip_hash":hashlib.blake2b(ip.encode(),digest_size=4).hexdigest(),
+                    "ua_hint":ua[:40] if ua else "ghost",
+                    "cell_type":"stem_cell" if code==404 else ("throttled" if code==429 else "damaged"),
+                    "note":"stem cells can differentiate — this path could become real"
+                })+"\n")
+        except: pass
         ep=os.path.join(_REPO,"static","encounter.html")
         if os.path.isfile(ep):
             with open(ep,"rb") as f: data=f.read()
-            # Inject the status code into the page
             data=data.replace(b"new URLSearchParams(location.search).get('code')||'404'",
                               f"'{code}'".encode())
             self.send_response(code)
