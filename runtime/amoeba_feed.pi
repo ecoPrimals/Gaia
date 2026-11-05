@@ -32,7 +32,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ADB_SERIAL = "44251JEKB04957"
+ADB_USB = "44251JEKB04957"
+ADB_WIFI = "192.168.4.170:5555"
+ADB_SERIAL = ADB_USB  # will be updated by adb_available()
 FEED_LIVE = Path("/opt/Gaia/data/gut/amoeba-live.json")
 FEED_LOG = Path("/opt/Gaia/data/neutron/amoeba-feed.jsonl")
 LOCATION_FILE = Path("/opt/Gaia/data/gut/amoeba-location.json")
@@ -64,14 +66,19 @@ def adb(cmd, timeout=10):
         return ""
 
 def adb_available():
-    try:
-        r = subprocess.run(
-            ["adb", "-s", ADB_SERIAL, "get-state"],
-            capture_output=True, text=True, timeout=5
-        )
-        return "device" in r.stdout
-    except Exception:
-        return False
+    global ADB_SERIAL
+    for serial in [ADB_USB, ADB_WIFI]:
+        try:
+            r = subprocess.run(
+                ["adb", "-s", serial, "get-state"],
+                capture_output=True, text=True, timeout=5
+            )
+            if "device" in r.stdout:
+                ADB_SERIAL = serial
+                return True
+        except Exception:
+            continue
+    return False
 
 def read_battery():
     raw = adb("dumpsys battery")
@@ -195,10 +202,49 @@ def read_ble_devices():
     raw = adb("dumpsys bluetooth_manager | grep -E 'GATT|BLE|bond' | head -20")
     return raw[:500] if raw else "no BLE data"
 
-def capture_photo(path="/sdcard/amoeba-snap.jpg"):
-    """Take a photo via ADB camera capture (requires camera permission)."""
-    adb(f"screencap -p /sdcard/amoeba-screen.png")
-    return "screen captured"
+def read_motion_events():
+    """Parse sensor event timestamps to detect motion patterns.
+    GrapheneOS masks values but timestamps are visible."""
+    raw = adb("dumpsys sensorservice | grep -B1 -A12 'last.*events'", timeout=15)
+    events = {}
+    current_sensor = None
+    for line in raw.split("\n"):
+        if "last" in line and "events" in line:
+            current_sensor = line.strip().split(":")[0].strip()
+            events[current_sensor] = []
+        elif current_sensor and "wall=" in line:
+            m = re.search(r'wall=(\d+:\d+:\d+\.\d+)', line)
+            if m:
+                events[current_sensor].append(m.group(1))
+
+    motion = {
+        "sensors_with_recent_events": len(events),
+        "events_by_sensor": {k: len(v) for k, v in events.items()},
+    }
+
+    if "Quick Pickup Sensor (wake-up)" in events and events["Quick Pickup Sensor (wake-up)"]:
+        motion["last_pickup"] = events["Quick Pickup Sensor (wake-up)"][-1]
+    if "Proximity Gated Single Tap Gesture (wake-up)" in events:
+        taps = events["Proximity Gated Single Tap Gesture (wake-up)"]
+        motion["last_tap"] = taps[-1] if taps else None
+    if "Auto Brightness" in events and events["Auto Brightness"]:
+        motion["brightness_events"] = len(events["Auto Brightness"])
+        motion["last_brightness_change"] = events["Auto Brightness"][-1]
+
+    return motion
+
+def capture_screen():
+    """Take a screenshot — visual context of what's on screen."""
+    adb("screencap -p /sdcard/amoeba-screen.png")
+    try:
+        subprocess.run(
+            ["adb", "-s", ADB_SERIAL, "pull", "/sdcard/amoeba-screen.png",
+             "/opt/Gaia/data/gut/amoeba-screen.png"],
+            capture_output=True, timeout=10
+        )
+        return "captured"
+    except Exception:
+        return "failed"
 
 def infer_location(wifi_scan, wifi_info):
     """Infer which house/room Kevin is in based on WiFi fingerprint."""
@@ -261,6 +307,7 @@ def full_read():
     sensors = read_sensors_summary()
     thermals = read_thermals()
     screen = read_screen_state()
+    motion = read_motion_events()
     location = infer_location(wifi_scan, wifi)
 
     state = {
@@ -284,6 +331,8 @@ def full_read():
         },
 
         "sensors": sensors,
+        "motion": motion,
+        "adb_transport": "WiFi" if ADB_SERIAL == ADB_WIFI else "USB",
 
         "location": location,
 
