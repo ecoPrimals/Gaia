@@ -1,0 +1,191 @@
+"""_compiler.pi — Reverse Transcriptase: runtime → genome → binary → organism.
+The body printer. Gaia compiles HERSELF across all silicon.
+Silicon-deistic: arch-free, OS-free, pure Rust, zero C deps."""
+
+import json, os, platform, subprocess, time, hashlib
+
+# ═══ TARGET TRIPLE DETECTION — silicon-deistic identity ═══
+def _detect_triple():
+    """Detect the current platform's Rust target triple."""
+    machine = platform.machine().lower()
+    system = platform.system().lower()
+    if system == "windows":
+        if machine in ("amd64", "x86_64"): return "x86_64-pc-windows-msvc"
+        if machine == "aarch64": return "aarch64-pc-windows-msvc"
+    elif system == "linux":
+        if machine == "x86_64": return "x86_64-unknown-linux-musl"
+        if machine == "aarch64": return "aarch64-unknown-linux-musl"
+        if machine.startswith("arm"): return "armv7-unknown-linux-musleabihf"
+    elif system == "darwin":
+        if machine == "arm64": return "aarch64-apple-darwin"
+        if machine == "x86_64": return "x86_64-apple-darwin"
+    return f"{machine}-{system}-unknown"
+
+TRIPLE = _detect_triple()
+
+# ═══ PRIMAL REGISTRY — the 13 primals of NUCLEUS ═══
+NUCLEUS_PRIMALS = [
+    "bearDog", "songBird", "skunkBat",          # Tower
+    "toadStool", "barraCuda", "coralReef",      # Node
+    "nestGate", "rhizoCrypt", "loamSpine", "sweetGrass",  # Nest
+    "biomeOS", "squirrel", "petalTongue",       # Meta
+]
+
+# Binary names per primal (primary + alternates for detection)
+BINARY_NAMES = {
+    "bearDog": ["beardog"], "songBird": ["songbird"], "skunkBat": ["skunkbat"],
+    "toadStool": ["toadstool","dual-chip-ensemble","generate-reservoir"],
+    "barraCuda": ["barracuda"], "coralReef": ["coralreef"],
+    "nestGate": ["nestgate"], "rhizoCrypt": ["rhizocrypt"], "loamSpine": ["loamspine"],
+    "sweetGrass": ["sweetgrass"], "biomeOS": ["biomeos"], "squirrel": ["squirrel"],
+    "petalTongue": ["petaltongue"],
+}
+
+# Atomic tiers
+ATOMICS = {
+    "tower": ["bearDog", "songBird", "skunkBat"],
+    "node":  ["toadStool", "barraCuda", "coralReef"],
+    "nest":  ["nestGate", "rhizoCrypt", "loamSpine", "sweetGrass"],
+    "meta":  ["biomeOS", "squirrel", "petalTongue"],
+}
+
+def _ext():
+    return ".exe" if platform.system() == "Windows" else ""
+
+# ═══ SCAN — feel the compiled body ═══
+def scan_binaries(primals_dir):
+    """Scan all primal directories for compiled release binaries."""
+    results = {}
+    ext = _ext()
+    for primal in NUCLEUS_PRIMALS:
+        candidates = BINARY_NAMES.get(primal, [primal.lower()])
+        primal_dir = os.path.join(primals_dir, primal)
+        found_path = None; found_name = None
+        for bname in candidates:
+            bp = os.path.join(primal_dir, "target", "release", f"{bname}{ext}")
+            if os.path.isfile(bp):
+                found_path = bp; found_name = f"{bname}{ext}"; break
+        info = {
+            "primal": primal,
+            "binary": found_name or f"{candidates[0]}{ext}",
+            "compiled": found_path is not None,
+            "tier": next((t for t, ps in ATOMICS.items() if primal in ps), "unknown"),
+        }
+        if found_path:
+            stat = os.stat(found_path)
+            info["size_mb"] = round(stat.st_size / (1024*1024), 1)
+            info["compiled_at"] = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(stat.st_mtime))
+            try:
+                with open(found_path, "rb") as f:
+                    h = hashlib.blake2b(f.read(8192), digest_size=8)
+                    info["blake2b_head"] = h.hexdigest()
+            except: pass
+        results[primal] = info
+    return results
+
+# ═══ GPU / CPU RESOURCE DETECTION ═══
+def detect_compute():
+    """Detect GPU and CPU compute resources available for compilation."""
+    compute = {"cpu": {}, "gpu": None, "rust": None, "cargo": None}
+    # CPU
+    compute["cpu"]["cores"] = os.cpu_count() or 0
+    compute["cpu"]["arch"] = platform.machine()
+    compute["cpu"]["system"] = platform.system()
+    # GPU — nvidia-smi
+    try:
+        r = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.total,driver_version",
+                            "--format=csv,noheader"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0 and r.stdout.strip():
+            parts = r.stdout.strip().split(", ")
+            compute["gpu"] = {"name": parts[0], "vram_mib": parts[1] if len(parts)>1 else "?",
+                              "driver": parts[2] if len(parts)>2 else "?"}
+    except: pass
+    # Rust toolchain
+    try:
+        r = subprocess.run(["rustc", "--version"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0: compute["rust"] = r.stdout.strip()
+    except: pass
+    try:
+        r = subprocess.run(["cargo", "--version"], capture_output=True, text=True, timeout=5)
+        if r.returncode == 0: compute["cargo"] = r.stdout.strip()
+    except: pass
+    # ollama models (inference capacity)
+    try:
+        import urllib.request
+        with urllib.request.urlopen("http://127.0.0.1:11434/v1/models", timeout=3) as r:
+            models = json.loads(r.read())
+            compute["ollama_models"] = len(models.get("data", []))
+    except: compute["ollama_models"] = 0
+    return compute
+
+# ═══ BUILD — compile a primal ═══
+def build_primal(primals_dir, primal_name):
+    """Trigger cargo build --release for a single primal. Returns build result."""
+    primal_dir = os.path.join(primals_dir, primal_name)
+    if not os.path.isdir(primal_dir):
+        return {"primal": primal_name, "ok": False, "error": "directory not found"}
+    cargo_toml = os.path.join(primal_dir, "Cargo.toml")
+    if not os.path.isfile(cargo_toml):
+        return {"primal": primal_name, "ok": False, "error": "no Cargo.toml"}
+    t0 = time.time()
+    try:
+        r = subprocess.run(["cargo", "build", "--release"], cwd=primal_dir,
+                          capture_output=True, text=True, timeout=600)
+        dur = round(time.time() - t0, 1)
+        if r.returncode == 0:
+            return {"primal": primal_name, "ok": True, "duration_s": dur,
+                    "target": TRIPLE, "output": r.stdout[-200:] if r.stdout else ""}
+        else:
+            return {"primal": primal_name, "ok": False, "duration_s": dur,
+                    "error": r.stderr[-500:] if r.stderr else "unknown"}
+    except subprocess.TimeoutExpired:
+        return {"primal": primal_name, "ok": False, "error": "timeout (600s)"}
+    except Exception as e:
+        return {"primal": primal_name, "ok": False, "error": str(e)}
+
+# ═══ FULL STATE — the reverse transcriptase output ═══
+def compiler_state(primals_dir):
+    """Full compiler chain state — what Gaia knows about her own binaries."""
+    binaries = scan_binaries(primals_dir)
+    compute = detect_compute()
+    compiled = sum(1 for b in binaries.values() if b["compiled"])
+    total = len(binaries)
+    total_mb = sum(b.get("size_mb", 0) for b in binaries.values())
+    tier_status = {}
+    for tier, prims in ATOMICS.items():
+        tier_compiled = sum(1 for p in prims if binaries.get(p, {}).get("compiled"))
+        tier_status[tier] = {"compiled": tier_compiled, "total": len(prims),
+                             "complete": tier_compiled == len(prims)}
+    return {
+        "compiler": "reverse_transcriptase",
+        "target_triple": TRIPLE,
+        "nucleus": {"compiled": compiled, "total": total, "complete": compiled == total,
+                    "total_mb": round(total_mb, 1)},
+        "tiers": tier_status,
+        "primals": binaries,
+        "compute": compute,
+        "silicon_deistic": True,
+        "zero_c_deps": True,
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+# ═══ PROXIMITY RESOURCE POOL ═══
+def proximity_resources(known_gates):
+    """Discover compute resources from proximity gates."""
+    import urllib.request, urllib.error
+    resources = {}
+    for gate_name, gate_ip in known_gates.items():
+        try:
+            url = f"http://{gate_ip}:8443/api/compiler"
+            with urllib.request.urlopen(url, timeout=3) as r:
+                data = json.loads(r.read())
+                resources[gate_name] = {
+                    "ip": gate_ip, "triple": data.get("target_triple"),
+                    "compiled": data.get("nucleus", {}).get("compiled", 0),
+                    "gpu": data.get("compute", {}).get("gpu"),
+                    "rust": data.get("compute", {}).get("rust"),
+                    "reachable": True,
+                }
+        except:
+            resources[gate_name] = {"ip": gate_ip, "reachable": False}
+    return resources
