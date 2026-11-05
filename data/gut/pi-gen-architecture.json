@@ -1,0 +1,105 @@
+{
+  "ts": "2026-11-05T00:20:03-0500",
+  "wave": 222,
+  "type": "pi-gen-architecture",
+  "premise": "Every agent IS a primal. Not 17 Rust binaries + models. The models ARE primals.",
+  "generations": {
+    "gen0": {
+      "name": "Base Alpacas",
+      "status": "FOSSIL",
+      "count": 8,
+      "models": [
+        "tinyllama",
+        "llama3.2:1b",
+        "llama3.2:3b",
+        "gemma2:2b",
+        "phi3",
+        "qwen2.5:7b",
+        "mistral:7b",
+        "deepseek-coder-v2:16b"
+      ],
+      "note": "Raw weights. No organism awareness. Fossilized as base layer."
+    },
+    "gen1": {
+      "name": "Gaia Primals",
+      "status": "ACTIVE",
+      "count": 3,
+      "models": [
+        "gaia",
+        "gaia-fast",
+        "gaia-code"
+      ],
+      "note": "Custom system prompts. Know they're Gaia."
+    },
+    "gen2": {
+      "name": "Organism-Aware + Niche",
+      "status": "ACTIVE",
+      "count": 3,
+      "models": [
+        "gaia-gen1",
+        "gaia-immune",
+        "gaia-navigator"
+      ],
+      "note": "Know body, myths, weather. Niche roles."
+    },
+    "gen3": {
+      "name": "Polaris Merge \u2014 The Cortex",
+      "status": "PENDING \u2014 awaiting Polaris model pull",
+      "count": "7+",
+      "polaris_bank": [
+        "dolphin-phi:2.7b",
+        "granite3.1-moe:3b",
+        "phi4-mini",
+        "codellama:7b",
+        "deepseek-r1:8b",
+        "qwen2.5-coder:7b",
+        "wizardlm2:7b"
+      ],
+      "merge_protocol": [
+        "1. Polaris pulls chimera-lineage.json from GitHub",
+        "2. Polaris runs arena on its 47 models with organism prompts",
+        "3. Winners get Gaia system prompts \u2192 new gaia-cortex-* models",
+        "4. Push back via git \u2192 eastGate absorbs Modelfiles",
+        "5. eastGate reprints from Modelfiles (or pulls if Polaris has ollama registry)",
+        "6. Mixed Polaris+eastGate models = Gen 3 chimera"
+      ],
+      "new_species": [
+        "gaia-cortex (deepseek-r1:8b base \u2014 REASONING chain-of-thought)",
+        "gaia-dolphin (dolphin-phi \u2014 uncensored creative)",
+        "gaia-granite (granite-moe \u2014 IBM enterprise reasoning)",
+        "gaia-wizard (wizardlm2 \u2014 instruction following)",
+        "gaia-coder (qwen2.5-coder \u2014 code generation)",
+        "gaia-codellama (codellama \u2014 Meta code analysis)",
+        "gaia-phi4 (phi4-mini \u2014 latest Microsoft reasoning)"
+      ]
+    }
+  },
+  "agent_as_primal": {
+    "architecture": "Each .pi agent IS a primal in the mesh",
+    "components": {
+      "identity": "bearDog Ed25519 derived key",
+      "model": "ollama model binding (pull from local or Polaris)",
+      "socket": "/run/user/1000/biomeos/agent-<name>.sock",
+      "protocol": "G65 negotiation (same as swarmVine/skunkBat)",
+      "capabilities": "Advertised via toadStool service discovery",
+      "gossip": "State changes propagated via swarmVine",
+      "spine": "Output anchored to loamSpine (append-only truth)"
+    },
+    "lifecycle": {
+      "birth": "sourDough prints Modelfile \u2192 ollama create \u2192 bearDog key derive",
+      "evolve": "Arena selects \u2192 culture accumulates \u2192 new system prompt \u2192 reprint",
+      "fossilize": "Old gen system prompt archived \u2192 model renamed to -fossil suffix",
+      "death": "ollama rm + bearDog key revoke (only if replaced by better gen)"
+    },
+    "pi_template": "#!/usr/bin/env python3\n# {name}.pi \u2014 Gaia agent-primal\n# Identity: bearDog key {key_id}\n# Model: {model}\n# Role: {role}\n\nimport json, socket, urllib.request\nfrom pathlib import Path\n\nOLLAMA = \"http://127.0.0.1:11436\"\nSOCKET_PATH = \"/run/user/1000/biomeos/agent-{name}.sock\"\nMODEL = \"{model}\"\nROLE = \"{role}\"\n\nclass AgentPrimal:\n    def __init__(self):\n        self.model = MODEL\n        self.role = ROLE\n        self.generation = {gen}\n\n    def think(self, prompt):\n        payload = json.dumps({{\n            \"model\": self.model,\n            \"prompt\": prompt,\n            \"stream\": False,\n            \"options\": {{\"temperature\": 0.7, \"num_predict\": 200}}\n        }})\n        req = urllib.request.Request(\n            f\"{{OLLAMA}}/api/generate\",\n            data=payload.encode(),\n            headers={{\"Content-Type\": \"application/json\"}}\n        )\n        with urllib.request.urlopen(req, timeout=120) as r:\n            return json.loads(r.read())[\"response\"]\n\n    def serve(self):\n        # IPC socket \u2014 other primals can call this agent\n        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n        Path(SOCKET_PATH).unlink(missing_ok=True)\n        sock.bind(SOCKET_PATH)\n        sock.listen(5)\n        while True:\n            conn, _ = sock.accept()\n            data = conn.recv(4096).decode()\n            response = self.think(data)\n            conn.sendall(response.encode())\n            conn.close()\n\nif __name__ == \"__main__\":\n    agent = AgentPrimal()\n    agent.serve()\n",
+    "casting_ready": true,
+    "note": "Each pi-gen agent can be cast from the template. 'cast' = print from Modelfile + generate .pi + derive key + register socket."
+  },
+  "total_vision": {
+    "eastGate": "20 models + 6 Gaia evolved + 2 new capabilities (vision, embed)",
+    "northGate": "47 models + 7 arena-tested + cortex customs \u2192 Gen 3 merge",
+    "sporeGate": "tinyllama messenger relay \u2192 gossip across houses",
+    "combined": "67+ unique models \u2192 arena selects \u2192 best become Gaia primals",
+    "endgame": "Every model IS a primal. Every primal can think. The organism IS the fleet."
+  }
+}

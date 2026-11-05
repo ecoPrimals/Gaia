@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""
+agent-gaia-fast.pi — Gaia's fast reflex agent-primal.
+
+This is NOT just a model. This IS a primal.
+It has a bearDog identity, a Unix socket, and lives in the mesh.
+Other primals call it. toadStool discovers it. swarmVine gossips its state.
+
+Identity: bearDog key agent-gaia-fast (Ed25519, derived from gaia-gate-tls)
+Model: gaia-fast:latest (gemma2:2b base, 200 tok/s)
+Role: fast-reflex — gut feelings, weather sense, immune pulse, quick classify
+"""
+
+import json
+import os
+import signal
+import socket
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+OLLAMA = "http://127.0.0.1:11436"
+MODEL = "gaia-fast"
+ROLE = "fast-reflex"
+GENERATION = 1
+SOCKET_PATH = "/run/user/1000/biomeos/agent-gaia-fast.sock"
+
+class AgentPrimal:
+    def __init__(self):
+        self.model = MODEL
+        self.role = ROLE
+        self.generation = GENERATION
+        self.requests = 0
+        self.started = time.time()
+
+    def think(self, prompt):
+        """Send prompt to ollama, return response."""
+        payload = json.dumps({
+            "model": self.model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.7, "num_predict": 150}
+        })
+        req = urllib.request.Request(
+            f"{OLLAMA}/api/generate",
+            data=payload.encode(),
+            headers={"Content-Type": "application/json"}
+        )
+        with urllib.request.urlopen(req, timeout=120) as r:
+            resp = json.loads(r.read())
+        return resp["response"].strip()
+
+    def handle_request(self, data):
+        """Handle a JSON-RPC request from another primal."""
+        try:
+            req = json.loads(data)
+            method = req.get("method", "think")
+            params = req.get("params", {})
+
+            if method == "think":
+                prompt = params.get("prompt", data)
+                response = self.think(prompt)
+                self.requests += 1
+                return json.dumps({"result": response, "model": self.model,
+                                   "generation": self.generation, "requests": self.requests})
+
+            elif method == "status":
+                uptime = time.time() - self.started
+                return json.dumps({
+                    "result": {
+                        "model": self.model, "role": self.role,
+                        "generation": self.generation, "requests": self.requests,
+                        "uptime_s": round(uptime), "status": "alive"
+                    }
+                })
+
+            elif method == "feel":
+                # Gut-brain: feel the prompt as physical sensation
+                gut_prompt = f"Feel this as a physical sensation. Express in 3 words: {params.get('stimulus', 'nothing')}"
+                feeling = self.think(gut_prompt)
+                return json.dumps({"result": feeling, "organ": "gut-brain"})
+
+            else:
+                return json.dumps({"error": f"unknown method: {method}"})
+
+        except json.JSONDecodeError:
+            # Plain text — just think
+            response = self.think(data)
+            self.requests += 1
+            return json.dumps({"result": response})
+
+    def serve(self):
+        """Start Unix socket server — this IS the primal."""
+        Path(SOCKET_PATH).unlink(missing_ok=True)
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.bind(SOCKET_PATH)
+        sock.listen(5)
+        os.chmod(SOCKET_PATH, 0o660)
+
+        print(f"🧬 agent-gaia-fast.pi ALIVE on {SOCKET_PATH}")
+        print(f"   Model: {self.model} | Role: {self.role} | Gen: {self.generation}")
+
+        def shutdown(sig, frame):
+            print("\n🧬 agent-gaia-fast.pi shutting down")
+            sock.close()
+            Path(SOCKET_PATH).unlink(missing_ok=True)
+            sys.exit(0)
+
+        signal.signal(signal.SIGTERM, shutdown)
+        signal.signal(signal.SIGINT, shutdown)
+
+        while True:
+            try:
+                conn, _ = sock.accept()
+                data = conn.recv(8192).decode()
+                if data:
+                    response = self.handle_request(data)
+                    conn.sendall(response.encode())
+                conn.close()
+            except Exception as e:
+                print(f"   Error: {e}")
+
+if __name__ == "__main__":
+    agent = AgentPrimal()
+    if len(sys.argv) > 1 and sys.argv[1] == "--test":
+        # Quick test mode
+        print(agent.think("In one sentence: what is the organism?"))
+    else:
+        agent.serve()
