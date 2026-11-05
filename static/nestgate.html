@@ -245,158 +245,144 @@ const paintings = [
 ];
 let paintIdx = 0;
 
-async function fetchJSON(path) {
-  try { const r = await fetch(GATE + path); return await r.json(); }
-  catch(e) { return null; }
+// ONE FETCH — ALL DATA. No parallel requests killing the gate.
+async function loadAll() {
+  try {
+    const r = await fetch(GATE + '/amoeba');
+    const d = await r.json();
+    renderPulse(d.pulse);
+    renderReedit(d.reedit);
+    renderNeurons(d.neutron);
+    renderModels(d.models);
+    renderSensors(d.sensors);
+    renderTemporal(d.temporal, d.sun);
+    renderEarth(d.sensors);
+  } catch(e) {
+    document.getElementById('stats').textContent = 'gate: reconnecting...';
+  }
 }
 
-async function loadPulse() {
-  const d = await fetchJSON('/pulse');
+function renderPulse(d) {
   if (!d) return;
   const el = document.getElementById('pulse-data');
   const h = d.heart || {};
   const l = d.lung || {};
   el.innerHTML = `
-    <div>beats: <span class="val">${h.total_beats || d.total_beats || '?'}</span></div>
+    <div>beats: <span class="val">${h.total_beats || d.total_beats || 0}</span></div>
     <div>bpm: <span class="val">${(h.bpm || d.bpm || 0).toFixed(1)}</span></div>
-    <div>breaths: <span class="val">${l.total_breaths || d.total_breaths || '?'}</span></div>
-    <div>visitors: <span class="val">${d.unique_visitors || '?'}</span></div>
+    <div>breaths: <span class="val">${l.total_breaths || d.total_breaths || 0}</span></div>
+    <div>visitors: <span class="val">${d.unique_visitors || 0}</span></div>
     <div>inferences: <span class="val">${d.total_inferences || 0}</span></div>
     <div>tokens: <span class="val">${(d.total_tokens || 0).toLocaleString()}</span></div>
     <div>uptime: <span class="val">${Math.floor((d.uptime_secs||0)/60)}m</span></div>
   `;
   document.getElementById('stats').textContent =
-    `${h.total_beats||'?'} beats · ${(h.bpm||0).toFixed(0)} bpm · ${d.unique_visitors||0} visitors · spine 25`;
+    `${h.total_beats||0} beats · ${(h.bpm||0).toFixed(0)} bpm · ${d.unique_visitors||0} visitors · spine 25`;
 }
 
-async function loadReedit() {
-  const d = await fetchJSON('/reedit');
-  if (!d || !d.feeds) return;
+function renderReedit(d) {
+  if (!d) return;
   const el = document.getElementById('reedit-feed');
-  let html = '';
+  const feeds = d.feeds || {};
   const cats = {science:'cat-science', code:'cat-code', philosophy:'cat-philosophy', legal:'cat-legal'};
-  let count = 0;
-  for (const [feed, items] of Object.entries(d.feeds)) {
-    for (const item of (items || []).slice(0, 3)) {
-      if (count >= 12) break;
-      const cat = cats[feed] || 'cat-science';
-      const title = item.title || item.subject || feed;
-      html += `<div class="item"><span class="cat ${cat}"></span>${title.slice(0,60)}</div>`;
-      count++;
-    }
+  let html = '';
+  for (const [feed, count] of Object.entries(feeds)) {
+    const cat = cats[feed] || 'cat-science';
+    html += `<div class="item"><span class="cat ${cat}"></span>${feed}: ${count} items</div>`;
   }
-  el.innerHTML = html || `<div class="item">${d.total_items} items across ${Object.keys(d.feeds).length} feeds</div>`;
+  html += `<div class="item" style="color:#2ecc71">${d.total_items || 0} total · ${d.paintings || 0} paintings · ${d.videos || 0} videos</div>`;
+  el.innerHTML = html;
 }
 
-async function loadNeurons() {
-  const d = await fetchJSON('/api/discuss');
+function renderNeurons(d) {
   if (!d) return;
   const el = document.getElementById('neuron-list');
   let html = '';
-  for (const ch of ['inbox','notes','chat']) {
-    const msgs = (d[ch] || {}).messages || [];
-    for (const m of msgs.slice(-4)) {
-      html += `<div class="msg"><span class="author">[${m.author}]</span> ${(m.body||'').slice(0,60)}...</div>`;
+  for (const ch of ['inbox','boot','notes','chat']) {
+    const info = d[ch] || {};
+    const msgs = info.messages || [];
+    if (msgs.length > 0) {
+      html += `<div class="msg" style="color:#2ecc71">[${ch}] ${info.total || msgs.length} msgs</div>`;
+      for (const m of msgs.slice(-3)) {
+        html += `<div class="msg"><span class="author">[${m.author||'?'}]</span> ${(m.body||'').slice(0,55)}</div>`;
+      }
     }
   }
   el.innerHTML = html || '<div class="msg">no neurons yet</div>';
 }
 
-async function loadModels() {
-  const d = await fetchJSON('/v1/models');
+function renderModels(d) {
   if (!d || !d.data) return;
   const el = document.getElementById('model-grid');
   el.innerHTML = d.data.map(m => {
-    const name = m.id || m.name || '?';
-    const isGaia = name.toLowerCase().includes('gaia');
-    return `<span class="model-tag ${isGaia?'gaia':''}">${name}</span>`;
+    const name = m.id || '?';
+    const isGaia = name.toLowerCase().includes('gaia') || name.includes('Primal');
+    return `<span class="model-tag ${isGaia?'gaia':''}">${name.split(':')[0]}</span>`;
   }).join('');
 }
 
-function rotatePainting() {
-  paintIdx = (paintIdx + 1) % paintings.length;
-  const img = document.getElementById('painting-img');
-  const label = document.getElementById('painting-label');
-  img.src = `/data/paintings/${paintings[paintIdx]}.jpg`;
-  label.textContent = paintings[paintIdx];
-}
-
-async function loadSensors() {
-  const d = await fetchJSON('/sensors');
-  if (!d) return;
+function renderSensors(d) {
+  if (!d || !d.banks) return;
   const el = document.getElementById('sensor-list');
-  let html = `<div class="item" style="color:#2ecc71">${d.alive}/${d.total_sensors} antennae alive — ${(d.flow.total_bytes/1024/1024).toFixed(1)}MB</div>`;
-  for (const [bank, sensors] of Object.entries(d.banks || {})) {
+  const bytes = (d.flow||{}).total_bytes || 0;
+  let html = `<div class="item" style="color:#2ecc71">${d.alive||0}/${d.total_sensors||0} alive — ${(bytes/1024/1024).toFixed(1)}MB</div>`;
+  const icons = {earth:'🌍',space:'🔭',knowledge:'🧠',old_web:'📜',live_eyes:'👁️',ocean:'🌊'};
+  for (const [bank, sensors] of Object.entries(d.banks)) {
     const alive = sensors.filter(s => s.code === 200).length;
-    const icon = {earth:'🌍',space:'🔭',knowledge:'🧠',old_web:'📜',live_eyes:'👁️',ocean:'🌊'}[bank]||'📡';
-    html += `<div class="item">${icon} ${bank}: ${alive}/${sensors.length}</div>`;
-    for (const s of sensors.slice(0, 2)) {
+    html += `<div class="item">${icons[bank]||'📡'} ${bank}: ${alive}/${sensors.length}</div>`;
+    for (const s of sensors.slice(0,1)) {
       if (s.latest && s.latest[0]) {
         const t = s.latest[0].title || s.latest[0].place || '';
-        if (t) html += `<div class="item" style="color:#576574;padding-left:12px">→ ${t.slice(0,55)}</div>`;
+        if (t) html += `<div class="item" style="color:#576574;padding-left:10px">→ ${t.slice(0,50)}</div>`;
       }
     }
   }
   el.innerHTML = html;
 }
 
-async function loadTemporal() {
-  const d = await fetchJSON('/temporal');
-  if (!d) return;
+function renderTemporal(t, sun) {
+  if (!t) return;
   const el = document.getElementById('temporal-data');
-  const t = d.temporal || {};
-  const sun = d.sun || {};
   const rings = t.active_cron_rings || [];
+  sun = sun || {};
   el.innerHTML = `
     <div>UTC: <span class="val">${t.utc || '?'}</span></div>
-    <div>sexagesimal: <span class="val">${t.sexagesimal || '?'}</span></div>
-    <div>base-12 hour: <span class="val">${t.base12_hour}</span></div>
-    <div>cron rings: <span class="val">[${rings.join(', ')}]</span> (${t.ring_count} active)</div>
+    <div>base-12: <span class="val">${t.sexagesimal || '?'}</span></div>
+    <div>cron rings: <span class="val">[${rings.join(',')}]</span></div>
     <div>φ phase: <span class="val">${t.golden_phase}</span></div>
     <div>sidereal: <span class="val">${t.sidereal_deg}°</span></div>
-    <div>sun: <span class="val">${sun.phase} ${sun.elevation}° ${sun.chord}</span></div>
-    <div style="color:#576574;font-size:9px">φ = ${(t.phi||0).toFixed(10)}...</div>
+    <div>sun: <span class="val">${sun.phase||'?'} ${sun.elevation||0}° ${sun.chord||''}</span></div>
+    <div style="color:#576574;font-size:9px">φ=${(t.phi||0).toFixed(8)}</div>
   `;
 }
 
-async function loadEarth() {
-  const d = await fetchJSON('/sensors');
+function renderEarth(d) {
   if (!d || !d.banks || !d.banks.earth) return;
   const el = document.getElementById('earth-data');
   let html = '';
   for (const s of d.banks.earth) {
     if (s.sense === 'seismic' && s.latest) {
-      html += `<div class="item" style="color:#e74c3c">🌋 ${s.quakes} quakes today</div>`;
-      for (const q of (s.latest || []).slice(0, 3)) {
-        html += `<div class="item">M${q.mag} ${(q.place||'').slice(0,45)}</div>`;
-      }
+      html += `<div class="item" style="color:#e74c3c">🌋 ${s.quakes||0} quakes</div>`;
+      for (const q of (s.latest||[]).slice(0,2)) html += `<div class="item">M${q.mag} ${(q.place||'').slice(0,40)}</div>`;
     }
     if (s.sense === 'orbital' && s.data) {
-      const pos = s.data.iss_position || s.data;
-      html += `<div class="item">🛰️ ISS: ${pos.latitude||'?'}° ${pos.longitude||'?'}°</div>`;
+      const p = s.data.iss_position || s.data;
+      html += `<div class="item">🛰️ ISS: ${p.latitude||'?'}°, ${p.longitude||'?'}°</div>`;
     }
-    if (s.sense === 'solar_wind' && s.data) {
-      html += `<div class="item">☀️ Solar wind: ${s.data.WindSpeed || s.data.speed || '?'} km/s</div>`;
-    }
-    if (s.sense === 'weather' && s.data && s.data.properties) {
-      const p = (s.data.properties.periods || [])[0];
-      if (p) html += `<div class="item">🌡️ ${p.name}: ${p.temperature}°${p.temperatureUnit} ${(p.shortForecast||'').slice(0,30)}</div>`;
-    }
+    if (s.sense === 'solar_wind' && s.data) html += `<div class="item">☀️ wind: ${s.data.WindSpeed||s.data.speed||'?'} km/s</div>`;
   }
-  el.innerHTML = html || '<div class="item">loading earth data...</div>';
+  el.innerHTML = html || '<div class="item">sensors warming...</div>';
 }
 
-// Initial load
-loadPulse(); loadReedit(); loadNeurons(); loadModels();
-loadSensors(); loadTemporal(); loadEarth();
-// Refresh cycles
-setInterval(loadPulse, 30000);
-setInterval(loadReedit, 60000);
-setInterval(loadNeurons, 15000);
-setInterval(loadSensors, 120000);
-setInterval(loadTemporal, 10000);
-setInterval(loadEarth, 120000);
-// Rotate painting every 20s
+function rotatePainting() {
+  paintIdx = (paintIdx + 1) % paintings.length;
+  document.getElementById('painting-img').src = `/data/paintings/${paintings[paintIdx]}.jpg`;
+  document.getElementById('painting-label').textContent = paintings[paintIdx];
+}
+
+// ONE FETCH, ALL CELLS. No loading... no ???. lub-DUB.
+loadAll();
+setInterval(loadAll, 15000);
 setInterval(rotatePainting, 20000);
 </script>
 </body>
