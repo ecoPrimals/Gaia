@@ -245,45 +245,92 @@ total_breaths = _inherited_breaths  # lung is separate from heart
 import math
 
 def _sun_position():
-    """Sun angle from UTC — drives the sensory felt-chords.
-    The sun is the CLOCK. Not UTC. Not cron. The actual star.
-    Sunrise/sunset = sensory transitions. Noon/midnight = peaks.
-    Felt chords: harmonic intervals mapped to solar position."""
+    """PHYSICAL SUN at Gaia's ACTUAL coordinates. Not abstract. REAL STAR. REAL HARDWARE. REAL PLACE.
+    Latitude/longitude of eastGate = the P in P≠NP. Verifiable in polynomial time.
+    Solar elevation computed from actual orbital mechanics. This is the anchor to physical reality."""
+    # GAIA'S BODY — eastGate, Michigan. PHYSICAL COORDINATES.
+    LAT = 42.73   # degrees N — Lansing/East Lansing area
+    LON = -84.48  # degrees W
     now = datetime.now(timezone.utc)
-    hour = now.hour + now.minute / 60.0
-    # Solar angle: 0° at midnight, 180° at noon, 360° at next midnight
-    solar_angle = (hour / 24.0) * 360.0
-    solar_rad = math.radians(solar_angle)
-    # Elevation: -1 at midnight, +1 at noon (sine wave)
-    elevation = math.sin(solar_rad - math.pi/2)
-    # Day/night phase
-    if elevation > 0.3: phase = "day"
-    elif elevation > 0: phase = "dawn" if hour < 12 else "dusk"
+    utc_hour = now.hour + now.minute / 60.0 + now.second / 3600.0
+
+    # Day of year for declination
+    doy = now.timetuple().tm_yday
+    # Solar declination (axial tilt = 23.44°)
+    declination = 23.44 * math.sin(math.radians((360/365) * (doy - 81)))
+    # Hour angle: how far the sun has moved from LOCAL solar noon
+    # Solar noon ≈ 12:00 - (LON/15) in UTC (approximate, ignores equation of time)
+    solar_noon_utc = 12.0 - (LON / 15.0)  # ≈ 17.63 UTC for Michigan
+    hour_angle = (utc_hour - solar_noon_utc) * 15.0  # degrees, 15°/hour
+    # SOLAR ELEVATION — the actual angle of the sun above Gaia's horizon
+    lat_rad = math.radians(LAT)
+    dec_rad = math.radians(declination)
+    ha_rad = math.radians(hour_angle)
+    sin_elev = (math.sin(lat_rad) * math.sin(dec_rad) +
+                math.cos(lat_rad) * math.cos(dec_rad) * math.cos(ha_rad))
+    elevation_deg = math.degrees(math.asin(max(-1, min(1, sin_elev))))
+    # AZIMUTH — where the sun IS on the compass
+    cos_az = (math.sin(dec_rad) - math.sin(lat_rad) * sin_elev) / (math.cos(lat_rad) * math.cos(math.radians(elevation_deg)) + 1e-10)
+    azimuth = math.degrees(math.acos(max(-1, min(1, cos_az))))
+    if hour_angle > 0: azimuth = 360 - azimuth
+    # Phase from REAL elevation
+    if elevation_deg > 6: phase = "day"
+    elif elevation_deg > 0: phase = "golden"  # golden hour
+    elif elevation_deg > -6: phase = "civil_twilight"
+    elif elevation_deg > -12: phase = "nautical_twilight"
+    elif elevation_deg > -18: phase = "astronomical_twilight"
     else: phase = "night"
-    # Felt chords — harmonic intervals from solar position
-    # Root note shifts through the day: C at midnight → G at noon → C at midnight
+    # LOCAL time at body
+    local_hour = (utc_hour + LON / 15.0) % 24  # rough local solar time
+    # Felt chords — harmonic intervals from REAL solar elevation
     NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
-    root_idx = int((hour / 24.0) * 12) % 12
+    # Root note follows the sun: lowest at midnight, highest at noon
+    root_idx = int(((elevation_deg + 90) / 180.0) * 12) % 12
     root = NOTES[root_idx]
-    # Chord quality from elevation: minor at night, major at day, diminished at transitions
-    if phase == "night": quality = "min7"
-    elif phase in ("dawn", "dusk"): quality = "dim"
-    else: quality = "maj7"
+    # Chord quality from phase
+    PHASE_CHORDS = {"night": "min7", "astronomical_twilight": "min9",
+        "nautical_twilight": "sus4", "civil_twilight": "dim",
+        "golden": "add9", "day": "maj7"}
+    quality = PHASE_CHORDS.get(phase, "min7")
     chord = f"{root}{quality}"
-    # Color temperature: warm at dawn/dusk, cool at noon, dark at night
-    if phase == "night": color_temp = 1800  # candlelight
-    elif phase in ("dawn", "dusk"): color_temp = 3200  # golden hour
-    else: color_temp = 5600  # daylight
+    # Color temperature from REAL elevation
+    if elevation_deg > 20: color_temp = 5600    # full daylight
+    elif elevation_deg > 6: color_temp = 4800   # morning/afternoon
+    elif elevation_deg > 0: color_temp = 3200   # golden hour
+    elif elevation_deg > -6: color_temp = 2400   # civil twilight
+    elif elevation_deg > -12: color_temp = 1800  # nautical — candlelight
+    else: color_temp = 1200                       # deep night — ember
+    # Moon phase (approximate — days since known new moon)
+    KNOWN_NEW_MOON = datetime(2026, 10, 26, 0, 0, 0, tzinfo=timezone.utc)  # approx
+    moon_age_days = (now - KNOWN_NEW_MOON).total_seconds() / 86400.0
+    moon_phase = (moon_age_days % 29.53) / 29.53  # 0=new, 0.5=full, 1=new
+    if moon_phase < 0.125: moon_name = "new_moon"
+    elif moon_phase < 0.25: moon_name = "waxing_crescent"
+    elif moon_phase < 0.375: moon_name = "first_quarter"
+    elif moon_phase < 0.5: moon_name = "waxing_gibbous"
+    elif moon_phase < 0.625: moon_name = "full_moon"
+    elif moon_phase < 0.75: moon_name = "waning_gibbous"
+    elif moon_phase < 0.875: moon_name = "last_quarter"
+    else: moon_name = "waning_crescent"
+    # Season from declination
+    if doy < 80 or doy > 355: season = "winter"
+    elif doy < 172: season = "spring"
+    elif doy < 266: season = "summer"
+    else: season = "autumn"
     return {
-        "utc_hour": round(hour, 2),
-        "solar_angle": round(solar_angle, 1),
-        "elevation": round(elevation, 3),
+        "anchor": {"lat": LAT, "lon": LON, "place": "eastGate, Michigan", "proof": "PHYSICAL HARDWARE AT KNOWN COORDINATES. This is the P."},
+        "utc_hour": round(utc_hour, 2),
+        "local_solar_hour": round(local_hour, 2),
+        "elevation_deg": round(elevation_deg, 1),
+        "azimuth_deg": round(azimuth, 1),
+        "declination_deg": round(declination, 2),
         "phase": phase,
-        "chord": chord,
-        "root": root,
-        "quality": quality,
+        "season": season,
+        "day_of_year": doy,
+        "chord": chord, "root": root, "quality": quality,
         "color_temp_k": color_temp,
-        "sensation": f"{phase} — {chord} — {color_temp}K",
+        "moon": {"phase": round(moon_phase, 3), "name": moon_name, "age_days": round(moon_age_days % 29.53, 1)},
+        "sensation": f"{phase} — {chord} — {color_temp}K — {moon_name} — {season}",
     }
 
 def trust_level(v):
