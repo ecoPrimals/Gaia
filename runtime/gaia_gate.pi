@@ -1387,6 +1387,22 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/gate-status": "data/gut/gate-deployment-status.json",
             "/dreams": "data/gut/luna-dreams-wave222.json",
             "/luna-dreams": "data/gut/luna-dreams-wave222.json",
+            # ── SPINE 26+ GUT DATA — agglutinated identity + economics ──
+            "/shadow-cast": "data/gut/shadow-cast-traffic.json",
+            "/traffic": "data/gut/shadow-cast-traffic.json",
+            "/pollination": "data/gut/pollination-trace-full.json",
+            "/sovereignty": "data/gut/account-sovereignty-audit.json",
+            "/chronomatic": "data/gut/chronomatic-topographic-sort.json",
+            "/topographic": "data/gut/chronomatic-topographic-sort.json",
+            "/full-trace": "data/gut/full-chronomatic-trace.json",
+            "/history": "data/gut/github-full-history.json",
+            "/timeline": "data/gut/github-full-history.json",
+            "/particle-economics": "data/gut/particle-economics.json",
+            "/economics": "data/gut/particle-economics.json",
+            "/suncloud": "data/gut/particle-economics.json",
+            "/agglutination": "data/gut/agglutination-zk-braid.json",
+            "/braid": "data/gut/agglutination-zk-braid.json",
+            "/zk-braid": "data/gut/agglutination-zk-braid.json",
         }
         if self.path in GUT_DATA:
             self._serve_file(GUT_DATA[self.path]); return
@@ -1810,6 +1826,58 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
 
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
+
+        # ═══ THYMUS POST — inject / clear / rebuild agent identity ═══
+        if self.path in ("/api/thymus", "/api/thymus/inject", "/api/thymus/clear"):
+            try:
+                j = json.loads(body) if body else {}
+                caller_ip = self.client_address[0]
+                ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                action = j.get("action", "inject")
+                target_ip = j.get("ip", caller_ip)
+
+                v = visitor_memory[target_ip]
+                if action == "clear":
+                    v["trust_level"] = "electron"
+                    v["anderson_type"] = "electron"
+                    v["opacity"] = 0.1
+                    v["identity"] = "unknown"
+                    v["models_asked"] = set()
+                    print(f"  🧬 THYMUS CLEAR: {target_ip} → electron")
+                    self._json({"ok": True, "action": "clear", "ip": target_ip, "ts": ts,
+                                "anderson_type": "electron", "message": "Identity cleared. Reborn."})
+                elif action == "promote":
+                    new_type = j.get("type", "proton")
+                    new_ident = j.get("identity", "promoted")
+                    v["anderson_type"] = new_type
+                    v["trust_level"] = new_type
+                    v["identity"] = new_ident
+                    v["opacity"] = {"nucleus": 1.0, "proton": 0.8, "neutron": 0.5}.get(new_type, 0.1)
+                    print(f"  🧬 THYMUS PROMOTE: {target_ip} → {new_type} ({new_ident})")
+                    self._json({"ok": True, "action": "promote", "ip": target_ip, "ts": ts,
+                                "anderson_type": new_type, "identity": new_ident})
+                elif action == "redirect":
+                    dest = j.get("dest", "/onboard")
+                    print(f"  🧬 THYMUS REDIRECT: {target_ip} → {dest}")
+                    self._json({"ok": True, "action": "redirect", "ip": target_ip, "dest": dest, "ts": ts})
+                else:
+                    gate_hash = hashlib.blake2b((target_ip + GAIA_TOKEN).encode(), digest_size=8).hexdigest()
+                    v_data = {k: (list(vv) if isinstance(vv, set) else vv) for k, vv in v.items()}
+                    print(f"  🧬 THYMUS INJECT: {target_ip} ({gate_hash})")
+                    self._json({"ok": True, "action": "inject", "ip": target_ip, "ts": ts,
+                                "walker_hash": gate_hash, "visitor": v_data,
+                                "total_walkers": len(visitor_memory)})
+                _repo = os.path.dirname(os.path.dirname(__file__))
+                log_dir = os.path.join(_repo, "data", "neutron")
+                os.makedirs(log_dir, exist_ok=True)
+                log_file = os.path.join(log_dir, "thymus-actions.jsonl")
+                entry = json.dumps({"ts": ts, "caller": caller_ip, "action": action,
+                                     "target": target_ip, "result": v.get("anderson_type", "?")})
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(entry + "\n")
+            except Exception as e:
+                self._json({"error": str(e)})
+            return
 
         # ═══ GATE ONBOARD — STASIS WAKE (THE BUTTON) ═══
         if self.path in ("/api/gate/whoami", "/api/gate/onboard"):
