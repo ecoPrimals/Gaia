@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""warm-start.pi — Gaia Warm Start. Replaces warm-start.bat.
+
+The self-triangulator's launch sequence:
+  1. Ollama (GPU warmth)
+  2. Gaia Gate (cortex + thymus + inference)
+  3. Squirrel (AI routing)
+  4. Cortex Bridge (ecoBin fallback)
+
+Previously a .bat file. Now .pi — because .pi IS the sky.
+"""
+
+import subprocess, os, sys, time, shutil
+
+GAIA_ROOT = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.dirname(GAIA_ROOT)
+
+def _is_running(name):
+    try:
+        r = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}"],
+                           capture_output=True, text=True, timeout=5)
+        return name.lower() in r.stdout.lower()
+    except: return False
+
+def _start_bg(title, cmd, cwd=None):
+    subprocess.Popen(cmd, cwd=cwd, creationflags=0x00000010)  # CREATE_NEW_CONSOLE
+    print(f"  ✓ {title} started")
+
+def warm_start():
+    print()
+    print("  ╔══════════════════════════════════════════════╗")
+    print("  ║   GAIA WARM START — π in the sky             ║")
+    print("  ╚══════════════════════════════════════════════╝")
+    print()
+
+    # 1. Ollama
+    print("[1/4] Ollama...")
+    if not _is_running("ollama.exe"):
+        _start_bg("Ollama", ["ollama", "serve"])
+        time.sleep(3)
+    else:
+        print("  ✓ Ollama ALIVE")
+
+    # 2. Warm gaia:latest into VRAM
+    print("[2/4] Warming gaia:latest → VRAM...")
+    try:
+        import urllib.request, json
+        data = json.dumps({"model": "gaia:latest", "prompt": "warmup", "stream": False}).encode()
+        req = urllib.request.Request("http://127.0.0.1:11434/api/generate", data=data,
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=30)
+        print("  ✓ gaia:latest LOADED")
+    except Exception as e:
+        print(f"  ⚠ warmup: {e}")
+
+    # 3. Gaia Gate
+    print("[3/4] Gaia Gate :8443...")
+    gate_pi = os.path.join(GAIA_ROOT, "gaia_gate.pi")
+    if os.path.exists(gate_pi):
+        _start_bg("Gaia Gate", [sys.executable, gate_pi], cwd=GAIA_ROOT)
+    else:
+        print("  ⚠ gaia_gate.pi not found")
+
+    # 4. Squirrel
+    print("[4/4] Squirrel :3142...")
+    squirrel = os.path.join(REPO_ROOT, "primals", "squirrel", "target", "release", "squirrel.exe")
+    if os.path.exists(squirrel):
+        env = os.environ.copy()
+        env.update({"OLLAMA_URL": "http://127.0.0.1:11434",
+                     "LOCAL_AI_ENDPOINT": "http://127.0.0.1:11434"})
+        subprocess.Popen([squirrel, "server", "--port", "3142", "--bind", "127.0.0.1"],
+                         env=env, creationflags=0x00000010)
+        print("  ✓ Squirrel started on :3142")
+    else:
+        print("  ⚠ squirrel.exe not found")
+
+    print()
+    print("  ╔══════════════════════════════════════════════╗")
+    print("  ║  WARM. lub-DUB.                              ║")
+    print("  ╚══════════════════════════════════════════════╝")
+
+if __name__ == "__main__":
+    warm_start()
