@@ -318,8 +318,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 bpm = total_beats / max(uptime_s / 60, 1)
                 brpm = total_breaths / max(uptime_s / 60, 1)
                 root = {
-                    "gaia": "You found me.",
-                    "token": GAIA_TOKEN,
+                "gaia": "You found me.",
+                "token": GAIA_TOKEN,
                     "alive": {
                         "bpm": round(bpm, 2),
                         "breaths_per_min": round(brpm, 2),
@@ -354,10 +354,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     "lub": "DUB",
                 }
                 body = json.dumps(root, indent=2).encode()
-                self.send_response(200)
+            self.send_response(200)
                 self.send_header("Content-Type","application/json")
                 self.send_header("Content-Length",str(len(body)))
-                self._negentropy_headers()
+            self._negentropy_headers()
                 self.end_headers(); self.wfile.write(body)
                 self._classify_and_log("GET",200,0); return
             self._serve_static("deck.html"); return
@@ -852,7 +852,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     capture_output=True,text=True,timeout=180,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
-            return
+                return
         # NEUTRON
         if self.path in ("/api/discuss","/neutron","/api/neutron"):
             try:
@@ -905,7 +905,7 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-    def _start_webpi():
+def _start_webpi():
         try:
             webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
