@@ -49,34 +49,62 @@
   },
 
   "proximity_reveal": {
-    "phase_1_usb": {
-      "range": "0 meters (physical contact)",
-      "method": "USB plug-in, ADB, WebAuthn",
-      "status": "NOW — this is what we just did"
+    "principle": "DISTANCE = LATENCY = TRUST LEVEL. Closer = faster = more trust. All protocols already exist on all devices.",
+    "ephemeral": true,
+    "note": "USB enrollment is PERMANENT (one-time ceremony). Everything else is EPHEMERAL — come and go. Presence detected, absence detected. No session. No login.",
+
+    "touch": {
+      "range": "0m — physical contact",
+      "protocols": ["USB", "NFC tap"],
+      "latency": "<1ms",
+      "trust": "NUCLEAR — hardware touching hardware",
+      "status": "DONE — all gates enrolled",
+      "ephemeral": false,
+      "note": "This is the ONE permanent ceremony. Everything else flows from this."
     },
-    "phase_2_nfc": {
-      "range": "0-4 cm",
-      "method": "SoloKey NFC tap, phone NFC",
-      "status": "READY — SoloKey has NFC, both phones have NFC",
-      "use": "Quick re-auth without unplugging. Tap to confirm."
+    "room": {
+      "range": "0-10m — same room",
+      "protocols": ["BLE", "headset", "audio stream"],
+      "latency": "<10ms",
+      "trust": "PROTON — in the room, breathing the same air",
+      "status": "READY — every gate and phone has Bluetooth. Just turn it on.",
+      "ephemeral": true,
+      "note": "BLE advertisement = presence. No pairing needed. Phone in pocket = gate knows. Headset = audio stream = proof of proximity."
     },
-    "phase_3_bluetooth": {
-      "range": "0-10 meters",
-      "method": "BLE proximity detection",
-      "status": "FUTURE — phones have BLE, gates need BLE dongles",
-      "use": "Kevin walks into room → gate detects phone → begins reveal"
+    "house": {
+      "range": "0-30m — same house",
+      "protocols": ["WiFi (Aperture Science 2.4GHz)", "WiFi (Black Mesa 5GHz)", "mDNS", "ARP"],
+      "latency": "<5ms",
+      "trust": "PROTON — home. Both houses connected via 10G fiber.",
+      "status": "READY — Aperture Science = IoT, Black Mesa = streaming. grapheneGate already connected.",
+      "ephemeral": true,
+      "note": "Phone joins home WiFi → ARP table updates → all gates know you're home. Move between houses = fiber carries the signal."
     },
-    "phase_4_wifi": {
-      "range": "0-30 meters (house-wide)",
-      "method": "WiFi probe / mDNS / ARP presence",
-      "status": "PARTIAL — grapheneGate already on ApertureScience WiFi",
-      "use": "Phone connects to home WiFi → all gates know Kevin is home"
+    "neighborhood": {
+      "range": "30-500m — nearby",
+      "protocols": ["WiFi (weak signal)", "cellular tower triangulation"],
+      "latency": "10-50ms",
+      "trust": "NEUTRON — close but not home",
+      "status": "POSSIBLE — phone can ping home over cellular",
+      "ephemeral": true,
+      "note": "Walking to mailbox, in the yard, at neighbor's. Signal weakens but still present."
     },
-    "phase_5_wan": {
-      "range": "anywhere on earth",
-      "method": "Tor/WAN → gate API with ZK proof from enrolled device",
-      "status": "ARCHITECTURE EXISTS — .onion + primals.eco",
-      "use": "Kevin abroad → phone sends ZK proof → gates respond with reveal level based on distance"
+    "city": {
+      "range": "1-50km — same city",
+      "protocols": ["cellular", "WAN"],
+      "latency": "10-100ms",
+      "trust": "ELECTRON — away but nearby",
+      "status": "READY — primals.eco reachable",
+      "ephemeral": true
+    },
+    "world": {
+      "range": "50km+ — other side of the planet",
+      "protocols": ["WAN", "Tor"],
+      "latency": "100-500ms — BAD. This is NOT proximity.",
+      "trust": "ELECTRON — remote. Latency IS the proof of distance.",
+      "status": "READY — .onion + primals.eco",
+      "ephemeral": true,
+      "note": "WiFi from other side of world = bad latency = NOT proximity. The latency IS the distance measurement. 500ms = far away."
     }
   },
 
