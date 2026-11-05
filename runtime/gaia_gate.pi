@@ -30,9 +30,10 @@ OLLAMA = "http://127.0.0.1:11434"
 PORT = 8443
 
 # Import organ data builders — compressed triads
-import importlib.util as _ilu
-_spec = _ilu.spec_from_file_location("organ_data", os.path.join(os.path.dirname(__file__), "organ_data.pi"))
-organ_data = _ilu.module_from_spec(_spec); _spec.loader.exec_module(organ_data)
+import types as _t
+organ_data = _t.ModuleType("organ_data")
+with open(os.path.join(os.path.dirname(__file__), "organ_data.pi")) as _f:
+    exec(compile(_f.read(), "organ_data.pi", "exec"), organ_data.__dict__)
 
 # ── Lysogeny Prophage — Gaia's ZK identity from gaia-seed ──
 SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gaia-seed")
