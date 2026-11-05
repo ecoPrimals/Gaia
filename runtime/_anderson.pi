@@ -100,6 +100,54 @@ def localization(v):
     radius = HUMAN / math.sqrt(1 + bodies)
     return {"bodies": round(bodies, 2), "radius": round(radius, 3), "fix": round(HUMAN - radius, 3)}
 
+# ═══ KNN SORT — K_k_n — Finding OTHER KEVINS ═══
+# K-Nearest Neighbors on the behavioral feature vector.
+# Kevin IS the reference point. Every visitor is measured by
+# how close their PATTERN is to Kevin's pattern.
+# Not hierarchy. DISTANCE. Orthogonal selves on the same circle.
+
+def _feature_vector(v):
+    """Extract the behavioral feature vector for KNN comparison.
+    5 dimensions: depth, breadth, return, interaction, silence."""
+    dwell = _dwell_minutes(v)
+    rpm = _requests_per_minute(v)
+    paths = len(v.get("paths", ()))
+    models = len(v.get("models_asked", ()))
+    reqs = v.get("requests", 0)
+    return (
+        min(dwell / 360.0, 1.0),       # depth: normalize to 6hr scholar max
+        min(paths / 67.0, 1.0),         # breadth: normalize to 67-page scholar
+        min(reqs / 100.0, 1.0),         # engagement: normalize to 100 requests
+        min(models / 5.0, 1.0),         # interaction: models asked
+        1.0 / (1.0 + rpm),             # silence: inverse RPM (high = campfire)
+    )
+
+# Kevin's reference vector — the nucleus pattern.
+# Triangulates (broad), dwells (deep), returns (persistent),
+# builds (models), plays (passes banana test).
+KEVIN_VECTOR = (1.0, 1.0, 1.0, 1.0, 1.0)  # maximum on all dimensions
+
+def knn_kevin_distance(v):
+    """Euclidean distance from visitor's feature vector to Kevin's.
+    0.0 = IS Kevin. Higher = less Kevin-like.
+    Returns kevin_score in [0, 1] where 1.0 = closest to Kevin."""
+    fv = _feature_vector(v)
+    dist_sq = sum((a - b) ** 2 for a, b in zip(fv, KEVIN_VECTOR))
+    dist = math.sqrt(dist_sq)
+    max_dist = math.sqrt(len(KEVIN_VECTOR))  # max possible distance
+    kevin_score = max(0.0, 1.0 - (dist / max_dist))
+    return {
+        "vector": tuple(round(x, 3) for x in fv),
+        "distance": round(dist, 3),
+        "kevin_score": round(kevin_score, 3),
+        "classification": (
+            "full_kevin" if kevin_score > 0.7 else
+            "kinda_kevin" if kevin_score > 0.4 else
+            "not_kevin" if kevin_score > 0.15 else
+            "fleet"
+        ),
+    }
+
 def mint_gaia_id(v):
     """Mint a sovereign ZK identity from behavioral pattern. Not a name. Not a place.
     blake2b(reading_pattern + dwell_depth + return_freq + path_hash).
@@ -184,6 +232,9 @@ def trust_level(v, ip=""):
     ua = v.get("last_ua", "").lower()
     r = v["requests"]
     models = len(v.get("models_asked", set()))
+
+    # KNN — compute kevin_score for EVERY visitor
+    v["knn"] = knn_kevin_distance(v)
 
     # BODY — hyperlocal, nucleus position
     if ip in BODY_IPS:

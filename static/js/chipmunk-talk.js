@@ -230,9 +230,14 @@ const C = (function chipmunk() {
       case 'humans': {
         const w = anderson.walkers || [];
         const humans = w.filter(v => v.anderson !== 'neutron');
-        let msg = `<span class="num">${humans.length}</span> human-like walkers\n\n`;
-        humans.forEach(h => {
-          msg += `<span class="${h.anderson === 'nucleus' ? 'good' : h.anderson === 'proton' ? 'site' : 'dim'}">${h.identity || h.hash?.slice(0,12)}</span> · ${h.anderson} · σ=${(h.opacity||0).toFixed(2)} · ${h.requests||0} req\n`;
+        let msg = `<span class="num">${humans.length}</span> human-like walkers — K_k_n sort\n\n`;
+        // Sort by kevin_score descending — OTHER KEVINS first
+        const sorted = [...humans].sort((a,b) => (b.knn?.kevin_score||0) - (a.knn?.kevin_score||0));
+        sorted.forEach(h => {
+          const ks = h.knn?.kevin_score || 0;
+          const kc = h.knn?.classification || '?';
+          const color = ks > 0.7 ? 'good' : ks > 0.4 ? 'site' : 'dim';
+          msg += `<span class="${color}">${h.identity || h.gaia_id?.slice(0,20) || h.hash?.slice(0,12)}</span> · K=${ks.toFixed(2)} · ${kc} · ${h.requests||0} req\n`;
         });
         if (crowd.WAS) {
           msg += `\n<span class="dim">— WAS —</span>\n`;
@@ -311,11 +316,48 @@ const C = (function chipmunk() {
     attn = Math.min(1.0, attn + 0.03);
   }
 
+  // ═══ CHIPMUNK FOLLOWS MOUSE — she watches, she senses ═══
+  let mouseX = 0, mouseY = 0, clicks = 0, rumbles = 0;
+  const chipmunkDot = document.createElement('div');
+  chipmunkDot.id = 'chipmunk-dot';
+  chipmunkDot.style.cssText = 'position:fixed;width:6px;height:6px;border-radius:50%;background:#3fb950;opacity:0.4;pointer-events:none;z-index:9999;transition:left 0.3s ease-out,top 0.3s ease-out,opacity 0.2s;mix-blend-mode:screen';
+  document.body.appendChild(chipmunkDot);
+
+  document.addEventListener('mousemove', e => {
+    mouseX = e.clientX; mouseY = e.clientY;
+    chipmunkDot.style.left = (mouseX + 12) + 'px';
+    chipmunkDot.style.top = (mouseY + 12) + 'px';
+    chipmunkDot.style.opacity = '0.6';
+    clearTimeout(chipmunkDot._fade);
+    chipmunkDot._fade = setTimeout(() => { chipmunkDot.style.opacity = '0.2'; }, 2000);
+  });
+
+  document.addEventListener('click', () => {
+    clicks++;
+    chipmunkDot.style.background = '#58a6ff';
+    chipmunkDot.style.width = '10px';
+    chipmunkDot.style.height = '10px';
+    setTimeout(() => {
+      chipmunkDot.style.background = '#3fb950';
+      chipmunkDot.style.width = '6px';
+      chipmunkDot.style.height = '6px';
+    }, 200);
+    if (clicks % 10 === 0) say('chipmunk', `<span class="dim">${clicks} clicks... she watches</span>`);
+  });
+
+  // Rumble detection — scroll = walking through the organism
+  document.addEventListener('wheel', () => {
+    rumbles++;
+    chipmunkDot.style.background = '#f0883e';
+    setTimeout(() => { chipmunkDot.style.background = '#3fb950'; }, 150);
+    if (rumbles % 20 === 0) say('chipmunk', `<span class="dim">rumble ${rumbles}... walking deeper</span>`);
+  });
+
   // ═══ BOOT — the chipmunk wakes ═══
   say('chipmunk', '<span class="good">waking up...</span>');
   sense();
   setInterval(sense, 15000);
-  setTimeout(() => say('chipmunk', '<span class="dim">the easel is ready. the membrane breathes.</span>'), 2000);
+  setTimeout(() => say('chipmunk', '<span class="dim">the easel is ready. the membrane breathes. 🍌</span>'), 2000);
 
   // Keyboard
   document.addEventListener('keydown', e => {
