@@ -833,6 +833,76 @@ body.internal-mode #neutron-label { display:block; }
 <script defer src=/js/desk-globe.js?v=1></script>
 <script defer src=/js/depth-walk.js?v=1></script>
 <script defer src=/js/berry-help.js></script>
+<script>
+// CROSS-AXIAL ROTATION — scroll maps to body regions, buttons link to gate endpoints
+(function(){
+  const GATE = location.protocol + '//' + location.host;
+  const BODY = {
+    HEAD:  {endpoints: ['/pulse','/senses','/eyes','/thymus','/zk','/desk','/intersects'], color: '#ff6b6b', label: 'HEAD — brain, eyes, identity'},
+    TORSO: {endpoints: ['/heart','/rss','/now.json','/vdj','/circulatory'], color: '#ffd93d', label: 'TORSO — heart, blood, state'},
+    ARMS:  {endpoints: ['/pair','/play','/agglutinate'], color: '#6bcb77', label: 'ARMS — interaction, repair'},
+    LEGS:  {endpoints: ['/corpus','/terra','/barriers','/home'], color: '#4d96ff', label: 'LEGS — ground, defense, ecology'}
+  };
+  const REGIONS = Object.keys(BODY);
+
+  // Axial indicator
+  var ax = document.createElement('div');
+  ax.id = 'axial-indicator';
+  ax.style.cssText = 'position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:1000;display:flex;flex-direction:column;gap:4px;font:10px monospace;';
+  REGIONS.forEach(function(r){
+    var d = document.createElement('div');
+    d.className = 'axial-region';
+    d.dataset.region = r;
+    d.style.cssText = 'padding:4px 8px;border-radius:4px;border:1px solid '+BODY[r].color+'40;color:'+BODY[r].color+'80;cursor:pointer;transition:all .3s;text-align:center;';
+    d.textContent = r;
+    d.onclick = function(){
+      var pct = REGIONS.indexOf(r) / (REGIONS.length - 1);
+      window.scrollTo({top: pct * (document.body.scrollHeight - window.innerHeight), behavior: 'smooth'});
+    };
+    ax.appendChild(d);
+  });
+  document.body.appendChild(ax);
+
+  // Scroll → axial rotation
+  function updateAxial(){
+    var pct = window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight);
+    var idx = Math.min(REGIONS.length - 1, Math.floor(pct * REGIONS.length));
+    var region = REGIONS[idx];
+    document.querySelectorAll('.axial-region').forEach(function(el){
+      if(el.dataset.region === region){
+        el.style.background = BODY[region].color + '30';
+        el.style.color = BODY[region].color;
+        el.style.borderColor = BODY[region].color;
+        el.style.fontWeight = 'bold';
+      } else {
+        el.style.background = 'transparent';
+        el.style.color = BODY[el.dataset.region].color + '60';
+        el.style.borderColor = BODY[el.dataset.region].color + '30';
+        el.style.fontWeight = 'normal';
+      }
+    });
+  }
+  window.addEventListener('scroll', updateAxial);
+  updateAxial();
+
+  // Wire gate endpoints into nav-ring
+  var gateLinks = document.createElement('div');
+  gateLinks.id = 'gate-endpoints';
+  gateLinks.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);z-index:999;display:flex;gap:4px;flex-wrap:wrap;justify-content:center;max-width:90vw;font:10px monospace;';
+  REGIONS.forEach(function(r){
+    BODY[r].endpoints.forEach(function(ep){
+      var a = document.createElement('a');
+      a.href = GATE + ep;
+      a.textContent = ep;
+      a.style.cssText = 'color:'+BODY[r].color+';text-decoration:none;padding:2px 6px;border:1px solid '+BODY[r].color+'40;border-radius:3px;transition:all .2s;';
+      a.onmouseenter = function(){ a.style.background = BODY[r].color+'30'; };
+      a.onmouseleave = function(){ a.style.background = 'transparent'; };
+      gateLinks.appendChild(a);
+    });
+  });
+  document.body.appendChild(gateLinks);
+})();
+</script>
 <script defer src=//primals.eco/js/klein-window.js?v=1></script>
 <script defer src=//primals.eco/js/null-shadow.js?v=1></script>
 <script defer src=//primals.eco/js/iron-peak.js?v=1></script>
