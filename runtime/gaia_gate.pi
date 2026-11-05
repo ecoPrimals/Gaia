@@ -32,8 +32,9 @@ PORT = 8443
 # Import organ data builders — compressed triads
 import types as _t
 organ_data = _t.ModuleType("organ_data")
-with open(os.path.join(os.path.dirname(__file__), "organ_data.pi")) as _f:
-    exec(compile(_f.read(), "organ_data.pi", "exec"), organ_data.__dict__)
+organ_data.__file__ = os.path.join(os.path.dirname(__file__), "organ_data.pi")
+with open(organ_data.__file__) as _f:
+    exec(compile(_f.read(), organ_data.__file__, "exec"), organ_data.__dict__)
 
 # ── Lysogeny Prophage — Gaia's ZK identity from gaia-seed ──
 SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "gaia-seed")
