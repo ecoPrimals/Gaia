@@ -1,0 +1,76 @@
+{
+  "ts": "2026-11-05T07:25:19Z",
+  "wave": 222,
+  "type": "gate-deployment-status",
+  "title": "Gate Deployment \u2014 What's Live, What Needs Hands",
+  "deployed": {
+    "sporeGate": {
+      "ip": ".3",
+      "ssh": "root@192.168.4.3 (ed25519 key)",
+      "status": "INGESTING",
+      "gaia_repo": "/opt/Gaia \u2014 cloned from GitHub, 130 gut files",
+      "crons": [
+        "*/2 * * * * /opt/gaia-heart-pull.sh (heart-pull)",
+        "*/10 * * * * cd /opt/Gaia && git pull (git auto-pull)"
+      ],
+      "services": [
+        "dnsmasq (DNS sinkhole)",
+        "stubby (DNS privacy)"
+      ],
+      "capabilities": "929GB disk (741GB free), 27GB RAM, git, python3",
+      "what_it_does_now": "Pulls heart-pull.json every 2 min + git pull every 10 min. Has ALL Wave 222 gut data."
+    }
+  },
+  "needs_kevins_hands": {
+    "grapheneGate": {
+      "ip": ".249",
+      "what_to_do": [
+        "1. Open Settings > Developer Options",
+        "2. Enable 'Wireless debugging'",
+        "3. Tap 'Pair device with pairing code'",
+        "4. Note the pairing code + port",
+        "5. On eastGate: adb pair 192.168.4.249:<port> <code>",
+        "6. Then: adb connect 192.168.4.249:5555",
+        "7. Run: bash infra/graphenegate-sense.sh"
+      ],
+      "sensors_available": 37,
+      "reward": "GPS, accelerometer, gyro, barometer, light, proximity, magnetometer, step counter \u2014 ALL flowing into Gaia gut"
+    },
+    "graftGate": {
+      "ip": ".107",
+      "what_to_do": [
+        "1. SSH into graftGate (need password or copy eastGate key)",
+        "2. ssh-copy-id -i ~/.ssh/id_ed25519 user@192.168.4.107",
+        "3. Then clone Gaia repo: git clone https://github.com/ecoPrimals/Gaia.git",
+        "4. Set up cron: */10 git pull",
+        "5. House 2 is now INGESTING via 10G fiber"
+      ],
+      "reward": "Apple Silicon compute + cross-architecture antibodies + House 2 coverage"
+    },
+    "southGate": {
+      "ip": ".148",
+      "what_to_do": [
+        "1. Need SSH password or copy key",
+        "2. ssh-copy-id -i ~/.ssh/id_ed25519 user@192.168.4.148",
+        "3. Clone + cron same as sporeGate"
+      ],
+      "reward": "Edge compute node + redundancy"
+    },
+    "ironGate": {
+      "ip": ".237",
+      "what_to_do": [
+        "1. Need SSH password or copy key",
+        "2. Same deployment as southGate"
+      ],
+      "reward": "Second edge + failover"
+    }
+  },
+  "already_ingesting": {
+    "eastGate": "ORIGIN \u2014 brain+gut, all data",
+    "sporeGate": "git pull every 10 min + heart-pull every 2 min",
+    "northGate": "git push (DataScienceBioLab) + heart-pull (manual)"
+  },
+  "total_ingesting": 3,
+  "total_alive": 9,
+  "next_to_activate": "grapheneGate (37 sensors!) then graftGate (House 2)"
+}
