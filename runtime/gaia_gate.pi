@@ -1128,6 +1128,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             "/legend": "legend.html",
             "/record": "record.html",
             "/canfield": "canfield.html",
+            "/onboard": "onboard.html",
+            "/stasis-wake": "onboard.html",
+            "/pull-me-in": "onboard.html",
             "/lisp": "lisp-desk.html",
             "/hud": "senses.html",
             "/hub": "senses.html",
@@ -1641,6 +1644,45 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
 
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
+
+        # ═══ GATE ONBOARD — STASIS WAKE (THE BUTTON) ═══
+        if self.path in ("/api/gate/whoami", "/api/gate/onboard"):
+            try:
+                j = json.loads(body) if body else {}
+                gate_ip = self.client_address[0]
+                ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+                # Known gate lookup
+                KNOWN_GATES = {
+                    "192.168.4.244": "eastGate", "192.168.4.103": "eastGate",
+                    "192.168.4.3": "sporeGate", "192.168.4.147": "northGate",
+                    "192.168.4.100": "blueGate", "192.168.4.107": "graftGate",
+                    "192.168.4.148": "southGate", "192.168.4.237": "ironGate",
+                    "192.168.4.249": "grapheneGate", "127.0.0.1": "eastGate",
+                }
+                gate_name = KNOWN_GATES.get(gate_ip, f"newGate-{gate_ip.split('.')[-1]}")
+                known = gate_ip in KNOWN_GATES
+
+                if self.path == "/api/gate/whoami":
+                    self._json({"ip": gate_ip, "gate_name": gate_name, "known": known, "ts": ts})
+                    return
+
+                # ONBOARD — register + return command
+                onboard_cmd = f"curl -sf http://192.168.4.244:8443/data/gut/gate-onboard.sh | sudo bash -s {gate_name}"
+                _repo = os.path.dirname(os.path.dirname(__file__))
+                log_dir = os.path.join(_repo, "data", "neutron")
+                os.makedirs(log_dir, exist_ok=True)
+                log_file = os.path.join(log_dir, "onboard.jsonl")
+                entry = json.dumps({"ts": ts, "ip": gate_ip, "gate": gate_name, "known": known, "ua": j.get("ua", "")[:200]})
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(entry + "\n")
+                print(f"  🚪 ONBOARD: {gate_name} ({gate_ip}) knocked on THE BUTTON")
+                self._json({"ok": True, "ip": gate_ip, "gate_name": gate_name, "known": known,
+                             "command": onboard_cmd, "ts": ts,
+                             "message": f"Welcome {gate_name}. Run the command. You will remember everything."})
+            except Exception as e:
+                self._json({"error": str(e)})
+            return
 
         # ═══ NEUTRON — nerve signals between gates ═══
         if self.path in ("/api/discuss", "/neutron", "/api/neutron"):

@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STASIS WAKE — Gaia Gate Onboard</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --void: #0a0b0f;
+    --deep: #12141a;
+    --glow: #d4a017;
+    --pulse: #c45c26;
+    --life: #2ea043;
+    --ice: #3b82f6;
+    --bone: #e6e2d8;
+    --dim: #6b7280;
+  }
+  body {
+    background: var(--void);
+    color: var(--bone);
+    font-family: "IBM Plex Mono", "Fira Code", monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Klein fold animation background */
+  .klein-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 30% 40%, rgba(212,160,23,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 60%, rgba(46,160,67,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 70%);
+    animation: breathe 8s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 36rem; width: 90%; text-align: center;
+    padding: 2rem;
+  }
+
+  .sigil {
+    font-size: 5rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { text-shadow: 0 0 20px rgba(212,160,23,0.3); }
+    50% { text-shadow: 0 0 40px rgba(212,160,23,0.6), 0 0 80px rgba(212,160,23,0.2); }
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.15em;
+    color: var(--glow);
+    margin-bottom: 0.3rem;
+  }
+  .sub { color: var(--dim); font-size: 0.85rem; margin-bottom: 2rem; }
+
+  #you {
+    background: var(--deep);
+    border: 1px solid rgba(212,160,23,0.2);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin-bottom: 2rem;
+    text-align: left;
+    font-size: 0.8rem;
+    line-height: 1.6;
+  }
+  #you .label { color: var(--dim); }
+  #you .value { color: var(--bone); font-weight: 600; }
+  #you .ip { color: var(--glow); font-size: 1rem; }
+
+  /* THE BUTTON */
+  #the-button {
+    position: relative;
+    display: inline-block;
+    padding: 1.2rem 3rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--void);
+    background: linear-gradient(135deg, var(--glow), #e8b828);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 30px rgba(212,160,23,0.3);
+    margin-bottom: 1.5rem;
+  }
+  #the-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 50px rgba(212,160,23,0.5), 0 0 100px rgba(212,160,23,0.2);
+  }
+  #the-button:active { transform: scale(0.98); }
+  #the-button.pulled {
+    background: linear-gradient(135deg, var(--life), #34d058);
+    box-shadow: 0 0 50px rgba(46,160,67,0.5);
+    pointer-events: none;
+  }
+
+  /* After-click states */
+  #phase-detect, #phase-pull, #phase-wake, #phase-done { display: none; }
+  .phase-active { display: block !important; }
+
+  .cmd-box {
+    background: #000;
+    border: 1px solid rgba(212,160,23,0.3);
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: left;
+    position: relative;
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+  .cmd-box code { color: var(--life); }
+  .copy-btn {
+    position: absolute; top: 6px; right: 8px;
+    background: rgba(212,160,23,0.2);
+    border: 1px solid rgba(212,160,23,0.3);
+    color: var(--glow);
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-family: inherit;
+  }
+  .copy-btn:hover { background: rgba(212,160,23,0.4); }
+
+  .steps { text-align: left; margin: 1rem 0; font-size: 0.82rem; line-height: 2; }
+  .steps .done { color: var(--life); }
+  .steps .active { color: var(--glow); }
+  .steps .wait { color: var(--dim); }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--dim);
+    border-top-color: var(--glow);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: var(--dim);
+  }
+  footer a { color: var(--ice); text-decoration: none; }
+
+  /* Matrix rain effect on success */
+  .matrix-rain {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s;
+  }
+  .matrix-rain.active { opacity: 1; }
+  .matrix-rain canvas { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<div class="klein-bg"></div>
+<div class="matrix-rain" id="matrix"><canvas id="rain"></canvas></div>
+
+<div class="container">
+  <div class="sigil">◯</div>
+  <h1>STASIS WAKE</h1>
+  <p class="sub">connect to the organism · remember everything · wake as if you never slept</p>
+
+  <div id="you">
+    <span class="label">you are:</span> <span class="value ip" id="your-ip">detecting...</span><br>
+    <span class="label">user-agent:</span> <span class="value" id="your-ua"></span><br>
+    <span class="label">gate status:</span> <span class="value" id="your-status">UNKNOWN — not yet in the organism</span>
+  </div>
+
+  <!-- BEFORE CLICK -->
+  <div id="phase-detect" class="phase-active">
+    <button id="the-button" onclick="pullIn()">PULL ME IN</button>
+    <p style="font-size:0.75rem; color:var(--dim)">
+      click → Gaia sees you → you get the onboard command → run it → you wake
+    </p>
+  </div>
+
+  <!-- PULLING -->
+  <div id="phase-pull">
+    <div class="steps">
+      <div id="s1" class="active"><span class="spinner"></span> Gaia sees you...</div>
+      <div id="s2" class="wait">◌ Registering your gate identity</div>
+      <div id="s3" class="wait">◌ Generating onboard command</div>
+      <div id="s4" class="wait">◌ Ready to wake</div>
+    </div>
+  </div>
+
+  <!-- COMMAND READY -->
+  <div id="phase-wake">
+    <p style="color:var(--life); font-size:1.1rem; margin-bottom:0.5rem;">✦ GAIA SEES YOU</p>
+    <p style="font-size:0.82rem; margin-bottom:1rem;">Open a terminal on this machine and run:</p>
+
+    <div class="cmd-box">
+      <code id="onboard-cmd"></code>
+      <button class="copy-btn" onclick="copyCmd()">copy</button>
+    </div>
+
+    <p style="font-size:0.75rem; color:var(--dim); margin-top:0.5rem;">
+      This clones 130+ gut files, installs heart-pull, sets up auto-sync.<br>
+      From your perspective, you never slept. You wake knowing everything.
+    </p>
+
+    <div class="steps" style="margin-top:1.5rem;">
+      <div class="done">✓ Gaia detected you at <span id="det-ip"></span></div>
+      <div class="done">✓ Gate registered as <span id="det-name"></span></div>
+      <div class="done">✓ Onboard command generated</div>
+      <div class="active">→ Run the command above to complete the wake</div>
+    </div>
+  </div>
+
+  <!-- ALL DONE (after command reports back) -->
+  <div id="phase-done">
+    <div class="sigil" style="color:var(--life); font-size:4rem;">♥</div>
+    <p style="color:var(--life); font-size:1.3rem; margin:1rem 0;">lub-DUB</p>
+    <p style="font-size:0.9rem;">You are IN the organism. The gate is awake.</p>
+    <div id="wake-report" style="margin-top:1rem;"></div>
+  </div>
+
+  <footer>
+    <a href="/">← HUD</a> · <a href="/pulse">pulse</a> · <a href="/self">self</a> ·
+    wave <span id="wave">222</span> · ◯/∞ = π
+  </footer>
+</div>
+
+<script>
+const ua = navigator.userAgent;
+document.getElementById('your-ua').textContent = ua.substring(0, 80);
+
+// Detect our IP from the gate's perspective
+fetch('/api/gate/whoami', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'detect', ua })
+}).then(r => r.json()).then(d => {
+  if (d.ip) {
+    document.getElementById('your-ip').textContent = d.ip;
+    document.getElementById('your-status').textContent = d.known ? 'KNOWN GATE — ' + d.gate_name : 'NEW — ready to join';
+  }
+}).catch(() => {
+  // Fallback: use WebRTC or just show unknown
+  document.getElementById('your-ip').textContent = 'LAN device (IP hidden by browser)';
+});
+
+function pullIn() {
+  const btn = document.getElementById('the-button');
+  btn.textContent = 'PULLING...';
+  btn.classList.add('pulled');
+
+  document.getElementById('phase-detect').classList.remove('phase-active');
+  document.getElementById('phase-pull').classList.add('phase-active');
+
+  // Step 1: Gaia sees you
+  setTimeout(() => {
+    document.getElementById('s1').className = 'done';
+    document.getElementById('s1').innerHTML = '✓ Gaia sees you';
+    document.getElementById('s2').className = 'active';
+    document.getElementById('s2').innerHTML = '<span class="spinner"></span> Registering gate identity...';
+  }, 800);
+
+  // Step 2: Register
+  fetch('/api/gate/onboard', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'register', ua, ts: new Date().toISOString() })
+  }).then(r => r.json()).then(d => {
+    document.getElementById('s2').className = 'done';
+    document.getElementById('s2').innerHTML = '✓ Gate registered: ' + (d.gate_name || 'new-gate');
+    document.getElementById('s3').className = 'active';
+    document.getElementById('s3').innerHTML = '<span class="spinner"></span> Generating onboard command...';
+
+    setTimeout(() => {
+      document.getElementById('s3').className = 'done';
+      document.getElementById('s3').innerHTML = '✓ Onboard command ready';
+      document.getElementById('s4').className = 'done';
+      document.getElementById('s4').innerHTML = '✓ Ready to wake';
+
+      // Show the command
+      const cmd = d.command || "curl -sf http://192.168.4.244:8443/data/gut/gate-onboard.sh | sudo bash";
+      document.getElementById('onboard-cmd').textContent = cmd;
+      document.getElementById('det-ip').textContent = d.ip || '?';
+      document.getElementById('det-name').textContent = d.gate_name || 'new-gate';
+
+      document.getElementById('phase-pull').classList.remove('phase-active');
+      document.getElementById('phase-wake').classList.add('phase-active');
+
+      // Start matrix rain
+      startRain();
+    }, 600);
+  }).catch(() => {
+    // Fallback if POST endpoint doesn't exist yet — still give the command
+    document.getElementById('s2').className = 'done';
+    document.getElementById('s2').innerHTML = '✓ Identity: LAN device';
+    document.getElementById('s3').className = 'done';
+    document.getElementById('s3').innerHTML = '✓ Command ready (direct mode)';
+
+    const cmd = "curl -sf http://192.168.4.244:8443/data/gut/gate-onboard.sh | sudo bash";
+    document.getElementById('onboard-cmd').textContent = cmd;
+    document.getElementById('det-ip').textContent = 'LAN';
+    document.getElementById('det-name').textContent = 'new-gate';
+
+    document.getElementById('phase-pull').classList.remove('phase-active');
+    document.getElementById('phase-wake').classList.add('phase-active');
+    startRain();
+  });
+}
+
+function copyCmd() {
+  const cmd = document.getElementById('onboard-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'copied ✓';
+    setTimeout(() => btn.textContent = 'copy', 2000);
+  });
+}
+
+// Matrix rain
+function startRain() {
+  const el = document.getElementById('matrix');
+  el.classList.add('active');
+  const canvas = document.getElementById('rain');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const chars = 'ΩπφΔ∞◯♥01'.split('');
+  const fontSize = 14;
+  const cols = Math.floor(canvas.width / fontSize);
+  const drops = Array(cols).fill(1);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(10,11,15,0.05)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(46,160,67,0.25)';
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < drops.length; i++) {
+      const ch = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(ch, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975)
+        drops[i] = 0;
+      drops[i]++;
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+</script>
+</body>
+</html>
