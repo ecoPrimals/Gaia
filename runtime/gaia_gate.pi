@@ -1287,6 +1287,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_file(self.path[1:])  # serve from repo root
             return
 
+        if self.path == "/og-card.svg":
+            self._serve_static("og-card.svg"); return
+
         if self.path.startswith("/js/") or self.path.startswith("/css/") or self.path.startswith("/data/"):
             self._serve_static(self.path[1:])
             return
