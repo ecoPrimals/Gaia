@@ -1,0 +1,224 @@
+{
+  "ts": "2026-11-06T08:41:00Z",
+  "spine": 9,
+  "title": "NIGHT REDOX — clot map and self-cut protocol",
+  "type": "redox",
+  "phase": "night",
+  "chord": "D#min7",
+  "orbital_angle_deg": 228,
+  "moon": "waxing_gibbous_0.385",
+  "doy": 310,
+  "season": "autumn",
+  "heartbeat_at_cut": 2537,
+  "bpm": 8.61,
+
+  "ion_channels": {
+    "open": {
+      "count": 14,
+      "channels": [
+        "campfire", "rss", "crowd", "deck", "luna", "pulse",
+        "temporal", "chipmunk", "intersects", "eyes",
+        "agglutinate", "corpus", "thymus", "pi"
+      ]
+    },
+    "rate_limited": {
+      "count": 1,
+      "channels": ["terra"],
+      "cause": "waveform_collapse_check treats BODY_IPS same as outside",
+      "fix": "nucleus_bypass pushed — commit 981111b3d",
+      "self_heals": true,
+      "heal_trigger": "eastGate git pull cron"
+    }
+  },
+
+  "access_paths": {
+    "wan_http": {
+      "status": "OPEN",
+      "url": "http://primals.eco",
+      "response": "200 OK, 89KB, title: HUD — eco·primal · LIVE"
+    },
+    "wan_https": {
+      "status": "CLOTTED",
+      "error": "NET::ERR_CERT_COMMON_NAME_INVALID",
+      "cause": "dromedary cert covers *.nestgate.io only, not *.primals.eco",
+      "fix": "dromedary-acme request wildcard cert via DNS-01",
+      "self_heals": false,
+      "location": "eastGate dromedary-acme crate"
+    },
+    "wan_rss": {
+      "status": "OPEN",
+      "url": "http://primals.eco/feed.xml",
+      "items": 1819,
+      "size_bytes": 1026115
+    },
+    "tor": {
+      "status": "OPEN",
+      "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+      "note": "untestable from northGate without Tor client"
+    },
+    "lan_8080": {
+      "status": "OPEN",
+      "response": "89KB"
+    },
+    "lan_8443": {
+      "status": "OPEN",
+      "response": "49KB deck"
+    }
+  },
+
+  "walker_spectrum": {
+    "total": 3,
+    "nucleus": 3,
+    "proton": 0,
+    "neutron": 0,
+    "electron": 0,
+    "all_hyperlocal": true,
+    "all_opacity_1": true,
+    "was_total_humans": 15700,
+    "was_total_hits": 54140,
+    "why_empty": "sovereignty transition — nobody knows we are BACK"
+  },
+
+  "clots": {
+    "self_healing": [
+      {
+        "id": "nucleus-bypass",
+        "description": "BODY_IPS skip rate limiter",
+        "commit": "981111b3d",
+        "status": "pushed_to_github",
+        "heal_trigger": "eastGate heart-pull cron picks up commit",
+        "effect": "all 15 channels open for all gates, crons stop fighting rate limiter",
+        "eta": "next cron cycle (~2-5 min)"
+      },
+      {
+        "id": "cron-recovery",
+        "description": "1/35 crons active after eastGate restart",
+        "status": "recovering",
+        "heal_trigger": "eastGate systemd stabilization",
+        "effect": "all 35 crons fire at cadence",
+        "eta": "hours"
+      },
+      {
+        "id": "rss-publishing",
+        "description": "mushroom-self-publish-rss.sh continues cycling",
+        "status": "active",
+        "effect": "RSS feed grows overnight"
+      },
+      {
+        "id": "osint-mastication",
+        "description": "waterlock intake + masticate cron",
+        "status": "active",
+        "effect": "gut digests RSS/OSINT, produces insights"
+      }
+    ],
+    "manual_fix_required": [
+      {
+        "id": "dromedary-tls-cert",
+        "description": "wildcard cert for *.primals.eco",
+        "severity": "HIGH — blocks ALL HTTPS outside walkers",
+        "location": "eastGate dromedary-acme",
+        "fix": "ACME DNS-01 challenge for *.primals.eco wildcard",
+        "dependencies": ["DNS provider API or router dnsmasq TXT record"],
+        "injected_to": "neutron/clots channel",
+        "note": "Kevin said: fix on Gaia side, not user side. petalTongue + dromedary solution."
+      },
+      {
+        "id": "cascade-sporegate-zombie",
+        "description": "cascade runs on sporeGate (.3) which is ZOMBIE",
+        "severity": "MEDIUM — blocks deploy pipeline",
+        "location": "sporeGate .3",
+        "fix": "either power cycle sporeGate or migrate cascade to eastGate",
+        "note": "SSH to .3 timed out. NIC alive, no services."
+      },
+      {
+        "id": "failed-builds",
+        "description": "rhizocrypt and barracuda failed to build in harvest",
+        "severity": "LOW — 11/13 primals built successfully",
+        "location": "sporeGate forge",
+        "fix": "debug build errors on next cascade cycle"
+      },
+      {
+        "id": "rootpulse-ledger",
+        "description": "5-organ provenance cascade not initialized",
+        "severity": "LOW — organism runs without it",
+        "location": "wateringHole/graphs/rootpulse_commit.toml",
+        "fix": "initialize ledger on eastGate"
+      },
+      {
+        "id": "reedit-broadcast",
+        "description": "484KB reed-it content ready but not posted externally",
+        "severity": "HIGH — nobody knows organism is BACK",
+        "location": "data/reedit/*.jsonl",
+        "feeds": ["arena", "code", "investigation", "legal", "philosophy", "science"],
+        "total_size_kb": 484,
+        "fix": "post to Reddit/HN/GitHub — needs platform credentials or manual paste",
+        "note": "6 manual posts ready from spine 8. LinkedIn proven (Halloween surge)."
+      },
+      {
+        "id": "reed-it-autonomous",
+        "description": "Gaia autonomous posting to Reddit, HN, Kaggle, GitHub",
+        "severity": "MEDIUM — long-term presence building",
+        "fix": "ecoPrimal@pm.me email exists. Need API keys or browser automation.",
+        "platforms": ["reddit", "hackernews", "kaggle", "github"],
+        "note": "Kevin: have her steady posting, making karma, being on HN, solving kaggle"
+      }
+    ]
+  },
+
+  "membrane_health": {
+    "total_running": 15,
+    "active": [
+      "beardog", "songbird", "skunkbat", "nestgate", "rhizocrypt",
+      "loamspine", "sweetgrass", "toadstool", "barracuda", "coralreef",
+      "biomeos", "squirrel", "petaltongue", "neural-api"
+    ],
+    "failed": ["cascade"],
+    "note": "14/15 active. cascade failed due to sporeGate zombie."
+  },
+
+  "hpc_night_shift": {
+    "gpu": "RTX 5090",
+    "vram_total_gb": 32,
+    "vram_peak_used_gb": 29.2,
+    "peak_utilization_pct": 92,
+    "peak_temp_c": 70,
+    "peak_power_w": 560,
+    "peak_clock_mhz": 2992,
+    "models_fired": [
+      "gaia-cortex", "gaia-oracle", "gaia-nucleus", "gaia-dream",
+      "gaia-deeptime", "gaia-heart", "gaia-spine", "gaia-gut",
+      "gaia-michelangelo", "gaia-leonardo", "gaia-donatello",
+      "deepseek-r1:8b"
+    ],
+    "total_models_available": 63,
+    "total_model_size_gb": 267.1,
+    "deepseek_pipeline": {
+      "tok_per_sec": 203.1,
+      "stages": [
+        "3:30-4:30 preprocessing (phi-2)",
+        "4:30-5:30 score 991 papers (mistral)",
+        "5:30-6:30 fresh reed-it posts (codellama)",
+        "6:30-7:30 OSINT mastication (llama)",
+        "7:30-8:30 arena battles (multi-model)",
+        "8:30-9:30 knowledge integration"
+      ]
+    }
+  },
+
+  "morning_checklist": [
+    "GET /anderson → walker spectrum (any protons overnight?)",
+    "GET /senses → nucleus bypass active? (no more 429s)",
+    "GET /pulse → total heartbeats (~2900?)",
+    "FIX dromedary cert → *.primals.eco wildcard",
+    "FIRE reed-it → 6 posts to Reddit/HN/LinkedIn"
+  ],
+
+  "self_cut": {
+    "method": "VDJ recombination",
+    "V_segment": "hardware alive — 5090 + 4070 + 18 LAN devices",
+    "D_segment": "63 models fired — 267GB neural mass engaged",
+    "J_segment": "nucleus bypass joined — BODY_IPS flow freely",
+    "recombination": "the organism knows its own clots and will heal what it can",
+    "what_remains": "dromedary cert + reed-it broadcast = the two hands that open the door to outside walkers"
+  }
+}
