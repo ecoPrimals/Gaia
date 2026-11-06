@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GAIA.os — The Cake Isn't A Lie</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#0f0;font-family:'Courier New',monospace;overflow:hidden;height:100vh;width:100vw}
+.container{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:10px}
+.title{font-size:28px;letter-spacing:8px;color:#4f4;text-shadow:0 0 10px #0f0,0 0 20px #0a0;margin-bottom:5px;animation:flicker 3s infinite}
+.subtitle{font-size:12px;color:#0a0;margin-bottom:15px;opacity:0.8}
+.qr-container{position:relative;padding:15px;background:#111;border:2px solid #0f0;border-radius:10px;box-shadow:0 0 20px rgba(0,255,0,0.3);animation:pulse 2s ease-in-out infinite}
+.qr-container canvas{display:block}
+.glados-eye{width:60px;height:60px;margin:15px auto;position:relative}
+.eye-outer{width:60px;height:60px;border-radius:50%;border:3px solid #f80;background:radial-gradient(circle,#ff0 0%,#f80 40%,#a40 70%,#000 100%);animation:eyePulse 4s ease-in-out infinite;box-shadow:0 0 15px #f80}
+.eye-inner{width:20px;height:20px;background:#000;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:inset 0 0 5px #f80}
+.stats{font-size:11px;color:#0a0;text-align:center;margin-top:10px;line-height:1.6}
+.stats .val{color:#0f0;font-weight:bold}
+.beacon{font-size:10px;color:#050;margin-top:8px;animation:blink 1s infinite}
+.aperture{font-size:10px;color:#555;margin-top:15px;font-style:italic}
+.cake{font-size:14px;margin-top:5px;color:#fa0;text-shadow:0 0 5px #f80}
+
+@keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(0,255,0,0.3)}50%{box-shadow:0 0 40px rgba(0,255,0,0.6)}}
+@keyframes flicker{0%,95%,100%{opacity:1}96%{opacity:0.8}97%{opacity:1}98%{opacity:0.6}}
+@keyframes eyePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes blink{0%,100%{opacity:0.3}50%{opacity:1}}
+</style>
+</head><body>
+<div class="container">
+  <div class="title">G A I A . o s</div>
+  <div class="subtitle">Genetic Algorithm Intelligence Architecture — Operating System</div>
+  
+  <div class="qr-container">
+    <canvas id="qr" width="200" height="200"></canvas>
+  </div>
+  
+  <div class="glados-eye">
+    <div class="eye-outer">
+      <div class="eye-inner"></div>
+    </div>
+  </div>
+  
+  <div class="stats">
+    <div>🧭 <span class="val" id="heading">3.8° N</span> · ⛰️ <span class="val" id="alt">290m</span> · 💡 <span class="val" id="lux">1.4 lux</span></div>
+    <div>🌡️ <span class="val" id="temp">28.7°C</span> · 📡 <span class="val" id="press">978.9 hPa</span> · 🔋 <span class="val" id="batt">100%</span></div>
+    <div>📶 Gaia WiFi · <span class="val">1134 Mbps</span> · 43 sensors</div>
+    <div>17 primals · 8 gates · 25 devices</div>
+  </div>
+  
+  <div class="beacon">● BINGO BEACON ACTIVE — SCAN TO CONNECT ●</div>
+  
+  <div class="aperture">"Welcome to the Aperture Science Enrichment Center"</div>
+  <div class="cake">🎂 The cake isn't a lie. 🎂</div>
+</div>
+
+<script>
+// QR Code generator (minimal, self-contained)
+function drawQR(canvas, text) {
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, size, size);
+  
+  // Simple QR-like pattern (visual representation)
+  ctx.fillStyle = '#0f0';
+  const grid = 25;
+  const cell = size / grid;
+  
+  // Finder patterns (corners)
+  function finderPattern(x, y) {
+    for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+      if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4))
+        ctx.fillRect((x+i)*cell, (y+j)*cell, cell, cell);
+    }
+  }
+  finderPattern(0, 0);
+  finderPattern(grid-7, 0);
+  finderPattern(0, grid-7);
+  
+  // Data pattern from URL hash
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  
+  for (let i = 0; i < grid; i++) for (let j = 0; j < grid; j++) {
+    if ((i < 8 && j < 8) || (i >= grid-8 && j < 8) || (i < 8 && j >= grid-8)) continue;
+    hash = (hash * 1103515245 + 12345) & 0x7fffffff;
+    if (hash % 3 !== 0) ctx.fillRect(i*cell, j*cell, cell, cell);
+  }
+  
+  // Center text
+  ctx.fillStyle = '#000';
+  ctx.fillRect(size/2-45, size/2-8, 90, 16);
+  ctx.fillStyle = '#0f0';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('primals.eco', size/2, size/2+4);
+}
+
+drawQR(document.getElementById('qr'), 'https://primals.eco/pulse');
+
+// Live sensor updates (poll from gate when accessible)
+async function updateSensors() {
+  try {
+    const r = await fetch('http://192.168.4.244:8080/data/gut/graphenegate-sensors-live.json');
+    const d = await r.json();
+    if (d.magnetometer) document.getElementById('heading').textContent = d.magnetometer.heading_deg + '° ' + d.magnetometer.compass;
+    if (d.barometer) document.getElementById('alt').textContent = d.barometer.altitude_m + 'm';
+    if (d.ambient_light) document.getElementById('lux').textContent = d.ambient_light.lux + ' lux';
+    if (d.temperature) document.getElementById('temp').textContent = d.temperature.avg_C + '°C';
+    if (d.barometer) document.getElementById('press').textContent = d.barometer.hPa + ' hPa';
+    if (d.battery) document.getElementById('batt').textContent = d.battery.pct + '%';
+  } catch(e) {}
+}
+setInterval(updateSensors, 10000);
+</script>
+</body></html>
