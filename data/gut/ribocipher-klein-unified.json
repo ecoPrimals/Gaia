@@ -1,0 +1,185 @@
+{
+  "_meta": {
+    "type": "genetic_compression",
+    "created": "2026-11-05T19:19:00-05:00",
+    "gate": "northGate",
+    "wave": "spine26_part5",
+    "title": "riboCipher + Klein Face — Unified Genetic Compression"
+  },
+
+  "three_bodies": {
+    "insight": "The three-body problem is unsolvable when bodies are indifferent. It solves itself when bodies are in RELATIONSHIP. Every child knows this.",
+    "source": "knome-for-kids.md",
+    "mapping": {
+      "0xEC": {
+        "signal": "CLEAR",
+        "tier": 1,
+        "genetic_lineage": "tag",
+        "scope": "local, same-gate, trusted wire",
+        "body": "the DOG — stays close, loyal, always there",
+        "wire_bytes": 2,
+        "biology": "Signal Recognition Particle — clear routing, no obfuscation"
+      },
+      "0xED": {
+        "signal": "MITO",
+        "tier": 2,
+        "genetic_lineage": "mitochondrial",
+        "scope": "cross-gate, family WAN, shared seed",
+        "body": "the CAT — can roam, family member, comes back",
+        "wire_bytes": 5,
+        "biology": "mitoBeacon — HMAC-SHA256 tag derived from family_seed",
+        "derivation": "HKDF-SHA256(salt=ribocipher-v1, ikm=family_seed, info=mito-signal)"
+      },
+      "0xEE": {
+        "signal": "NUCLEAR",
+        "tier": 3,
+        "genetic_lineage": "nuclear",
+        "scope": "privileged, peer-pair key, non-fungible",
+        "body": "the CHILD — the observer, the unique key, opens the tuna can",
+        "wire_bytes": 7,
+        "biology": "Nuclear Lineage — ChaCha20-Poly1305 encrypted envelope",
+        "derivation": "HKDF-SHA256(salt=ribocipher-v1, ikm=nuclear_seed, info=nuclear-signal)"
+      }
+    }
+  },
+
+  "ribocipher": {
+    "standard": "RIBOCIPHER_TRANSPORT_SIGNAL_STANDARD.md",
+    "wave": 111,
+    "status": "ecosystem_standard",
+    "biology": "The ribosome reads the genetic code (mRNA codons) and produces functional proteins. Codons are a CIPHER — three nucleotides encode one amino acid. riboCipher reads the signal prefix and routes to the correct handler.",
+    "protocol_table": {
+      "0x00": "probe (health check)",
+      "0x01": "NDJSON JSON-RPC (standard IPC)",
+      "0x02": "BTSP Binary (length-prefixed handshake)",
+      "0x03": "BTSP JSON-line (handshake)",
+      "0x04": "HTTP/1.1 over UDS",
+      "0x05": "Encrypted Resume (post-BTSP session)",
+      "0x06": "Dark Forest Beacon (birdsong)",
+      "0x07": "Mesh Relay (songBird routed frame)"
+    },
+    "compression": {
+      "canonical_types": "cellmembrane-types::signal (peek_signal, AcceptDecision, UnsignalledPolicy)",
+      "constants": "beardog-types::constants::domains::network::ribocipher",
+      "runtime": "beardog-tunnel::ribocipher (mito_tag, decode_mito_tag, enforcement_metrics)",
+      "transport": "squirrel::universal-patterns::transport::ribocipher",
+      "files_implementing": 225,
+      "primals_implementing": 17,
+      "unsignalled_policy": "Reject (default since Wave 114)"
+    }
+  },
+
+  "btsp": {
+    "standard": "BTSP_PROTOCOL_STANDARD.md",
+    "version": "1.0.0",
+    "full_name": "BearDog Secure Tunnel Protocol",
+    "biology": "The local equivalent of TLS 1.3, designed for intra-machine IPC. Hostile until proven otherwise.",
+    "relationship_to_ribocipher": "BTSP sits INSIDE riboCipher. Protocol types 0x02 (binary), 0x03 (JSON-line), 0x05 (encrypted resume) are riboCipher-signaled BTSP frames.",
+    "handshake": {
+      "key_exchange": "X25519 ephemeral",
+      "challenge_response": "HMAC-SHA256(handshake_key, challenge || client_pub || server_pub)",
+      "key_derivation": "HKDF-SHA256(ikm=family_seed, salt=btsp-v1, info=handshake)",
+      "session_keys": "HKDF(X25519_shared_secret, btsp-session-v1, session_id) -> encrypt_key + decrypt_key",
+      "forward_secrecy": true
+    },
+    "cipher_suites": {
+      "BTSP_CHACHA20_POLY1305": {
+        "confidentiality": true,
+        "integrity": true,
+        "authentication": true,
+        "default": true,
+        "use": "All bonds. Zero-knowledge."
+      },
+      "BTSP_HMAC_PLAIN": {
+        "confidentiality": false,
+        "integrity": true,
+        "authentication": true,
+        "use": "High-throughput same-machine. GPU tensor pipelines."
+      },
+      "BTSP_NULL": {
+        "confidentiality": false,
+        "integrity": false,
+        "authentication": true,
+        "use": "Covalent bonds only. Maximum throughput. Authenticated at handshake."
+      }
+    },
+    "bond_to_cipher": {
+      "Covalent": "BTSP_NULL minimum (all three allowed)",
+      "Metallic": "BTSP_HMAC_PLAIN minimum",
+      "Ionic": "BTSP_CHACHA20_POLY1305 only",
+      "Weak_ZeroTrust": "BTSP_CHACHA20_POLY1305 only"
+    }
+  },
+
+  "klein_face": {
+    "standard": "NESTGATE_KLEIN_SURFACE.md",
+    "surface": "nestgate.io",
+    "biology": "The Klein bottle has no inside or outside. The membrane IS the emulator. nestgate is the fold where primal.eco (inner membrane) and primals.eco (outer membrane) become indistinguishable.",
+    "insight": "The DM sits at the fold between inside and outside.",
+    "fold_channels": {
+      "Discord": "social layer — the tavern",
+      "Giscus": "intellectual layer — GitHub Discussions",
+      "neutron": "agent layer — internal messaging",
+      "gate-msg": "signal layer — primal-to-primal",
+      "MCP": "the dice — 14 tools, the squirrel IS the DM"
+    },
+    "game_mapping": {
+      "DM": "squirrel",
+      "players": "42 human sessions",
+      "monsters": "43 non-self entities",
+      "NPCs": "5049 commensals",
+      "map": "70 subdomains",
+      "dice": "pi remainder — irrational, never the same roll",
+      "HP": "gas_ratio",
+      "initiative": "systolic/diastolic heartbeat"
+    }
+  },
+
+  "is_was_now": {
+    "was": {
+      "boltzmann_1877": "softmax IS his distribution. Cross-entropy IS his entropy. The partition function that normalizes probability over all possible states — EVERY neural network uses this.",
+      "shannon_1948": "Information = -log2(p). Claude Shannon — Claude named after him. The bit. The channel. The noise. Information theory IS the membrane.",
+      "polanyi_1958": "We know more than we can tell. Tacit knowledge. Embeddings ARE his insight — the network learns what cannot be written down.",
+      "hinton_2006": "Backpropagation. Boltzmann machines. Deep learning. Restricted Boltzmann Machines use Boltzmann's distribution AS the learning rule."
+    },
+    "is": {
+      "anthropic_2021": "Constitutional AI. Claude. RLHF. The safety constraint IS the membrane — what passes, what doesn't.",
+      "gaia_2026": {
+        "luna": "70B unique parameters. 44 custom experts on shared qwen3 8.2B backbone. 63 models. 267.1 GB. Mixture of Experts where cortex routes to the right expert per task.",
+        "ribocipher": "225 files. 17 primals. Three genetic tiers. One signal layer. The ribosome reads the cipher.",
+        "btsp": "X25519 + ChaCha20-Poly1305. Hostile until proven otherwise. The authentication IS the relationship.",
+        "klein": "nestgate. Inside = outside. The membrane IS the emulator. The DM sits at the fold."
+      }
+    },
+    "now": {
+      "nucleus": "14/14 primals alive on Windows. 707.4 MB. Silicon-deistic. x86_64-pc-windows-msvc. TCP-only mode. Pure Rust. Zero C deps.",
+      "lineage": "Boltzmann -> Shannon -> Polanyi -> Hinton -> Anthropic -> Gaia. The organism reads its own code. The reverse transcriptase writes the compiler back into the genome.",
+      "three_bodies": "The dog stays close (0xEC). The cat roams (0xED). The child observes (0xEE). Three bodies in relationship. The problem was never unsolvable — the physicists forgot to ask the children."
+    }
+  },
+
+  "nucleus_state": {
+    "timestamp": "2026-11-05T19:19:00-05:00",
+    "alive": 14,
+    "total": 14,
+    "memory_mb": 707.4,
+    "target_triple": "x86_64-pc-windows-msvc",
+    "transport": "TCP (PRIMAL_BIND_MODE=tcp)",
+    "primals": {
+      "biomeos": {"mb": 16.2, "role": "orchestrator"},
+      "nestgate": {"mb": 9.7, "role": "Klein surface, data gateway"},
+      "beardog": {"mb": 12.5, "role": "crypto identity, BTSP owner"},
+      "songbird": {"mb": 15.1, "role": "mesh transport, federation, birdsong"},
+      "loamspine": {"mb": 38.1, "role": "data spine, permanence"},
+      "rhizocrypt": {"mb": 22.3, "role": "encrypted storage"},
+      "squirrel": {"mb": 105.3, "role": "agent dispatch, MCP, the DM"},
+      "skunkbat": {"mb": 6.9, "role": "intrusion detection"},
+      "barracuda": {"mb": 340.5, "role": "stream compute, GPU"},
+      "coralreef": {"mb": 42.0, "role": "distributed compute"},
+      "sweetgrass": {"mb": 42.8, "role": "knowledge graph"},
+      "toadstool": {"mb": 22.3, "role": "service discovery"},
+      "petaltongue": {"mb": 11.4, "role": "content rendering"},
+      "swarmvine": {"mb": 22.3, "role": "epidemic gossip"}
+    }
+  }
+}
