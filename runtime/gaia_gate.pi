@@ -401,6 +401,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/sense","/sense.html","/left-eye","/iphone"): self._serve_static("sense.html"); return
         if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
         if self.path in ("/eye","/iris","/gaze","/eye.html"): self._serve_static("eye.html"); return
+        if self.path in ("/glados","/gaia-os","/beacon","/bingo-beacon","/glados.html"): self._serve_static("glados.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
@@ -490,6 +491,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             ("/compass","/moral-compass","/north"): lambda: _load_gut("moral-compass.json"),
             ("/seats","/null-body","/surconscious"): lambda: _load_gut("seat-sequence-null-body.json"),
             ("/human","/human-view","/surface"): lambda: _load_gut("human-surface-index.json"),
+            ("/pixel","/rover","/graphenegate-redox"): lambda: _load_gut("graphenegate-redox.json"),
+            ("/shadow","/shadow-cast","/zk-proximity"): lambda: _load_gut("shadow-cast-zk.json"),
+            ("/pixel-sensors","/rover-sense","/graphene-live"): lambda: _load_gut("graphenegate-sensors-live.json"),
+            ("/house","/iot","/body-map"): lambda: _load_gut("house-as-body-iot.json"),
         }
         for paths,fn in ORGAN_DISPATCH.items():
             if self.path in paths: self._json(fn()); return

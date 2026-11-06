@@ -65,29 +65,44 @@ function draw() {
     const irisR = eyeR * 0.6;
     const pupilR = eyeR * 0.2;
     
-    // Cursor offset from center = eye direction
-    const dx = (mx - cx) / cx; // -1 to 1
-    const dy = (my - cy) / cy;
+    // Cursor offset from center = eye direction with π-easing
+    const rawDx = (mx - cx) / cx; // -1 to 1
+    const rawDy = (my - cy) / cy;
+    // Smooth π-eased tracking (iris glides, doesn't snap)
+    if (typeof draw.sx === 'undefined') { draw.sx = 0; draw.sy = 0; draw.sPupil = 0; }
+    const ease = 0.08; // lower = smoother/slower tracking
+    draw.sx += (rawDx - draw.sx) * ease;
+    draw.sy += (rawDy - draw.sy) * ease;
+    const dx = draw.sx;
+    const dy = draw.sy;
     const dist = Math.sqrt(dx*dx + dy*dy);
     const maxShift = irisR * 0.5;
     
     const irisX = cx + dx * maxShift;
     const irisY = cy + dy * maxShift;
     
-    // Speed = pupil dilation
+    // Speed = pupil dilation with smooth easing
     const speed = Math.sqrt(vx*vx + vy*vy);
-    const dilate = Math.min(speed / 30, 1.0); // fast movement = dilated pupil
+    const targetDilate = Math.min(speed / 30, 1.0);
+    draw.sPupil += (targetDilate - draw.sPupil) * 0.12;
+    const dilate = draw.sPupil;
     const currentPupilR = pupilR * (1 + dilate * 0.8);
     
-    // === BLINK ===
-    if (Date.now() - lastBlink > 3000 + Math.random() * 5000) {
+    // === BLINK with π-easing ===
+    const now = Date.now();
+    if (blinkState === 0 && now - lastBlink > 3000 + Math.random() * 5000) {
         blinkState = 1;
-        lastBlink = Date.now();
+        blinkTimer = now;
+        lastBlink = now;
     }
+    // π-ease: use sin(π*t) for smooth open/close — peak closure at t=0.5
+    const BLINK_MS = 250; // full blink cycle
     let lidOpen = 1.0;
-    if (blinkState === 1) { lidOpen -= 0.15; if (lidOpen <= 0.1) blinkState = 2; }
-    if (blinkState === 2) { lidOpen = 0.05; blinkState = 3; }
-    if (blinkState === 3) { lidOpen += 0.15; if (lidOpen >= 1.0) { lidOpen = 1; blinkState = 0; } }
+    if (blinkState > 0) {
+        const t = Math.min((now - blinkTimer) / BLINK_MS, 1.0);
+        lidOpen = 1.0 - 0.95 * Math.sin(Math.PI * t); // sin(π*t): 0→1→0, smooth bell
+        if (t >= 1.0) { blinkState = 0; lidOpen = 1.0; }
+    }
     
     // === SCLERA (white) ===
     ctx.save();
@@ -167,6 +182,26 @@ function draw() {
     
     ctx.restore();
     
+    // === EYELIDS (skin-tone, π-eased) ===
+    if (lidOpen < 0.99) {
+        const lidY = eyeR * (1 - lidOpen);
+        // Upper lid
+        ctx.fillStyle = '#2a1a10';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - lidY * 0.4, eyeR * 1.15, eyeR * 0.7, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
+        // Lower lid  
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + lidY * 0.4, eyeR * 1.15, eyeR * 0.5, 0, 0, Math.PI);
+        ctx.fill();
+        // Lash line
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, eyeR * 1.05, eyeR * lidOpen, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    
     // === TRAIL (movement history = saccade pattern) ===
     for (let i = 1; i < trail.length; i++) {
         const age = (Date.now() - trail[i].t) / 3000;
@@ -207,6 +242,7 @@ async function pollAttenuation() {
         // Quick ping via fetch timing
         const targets = [
             { name: 'luna', url: 'http://192.168.4.147:8443/pulse' },
+            { name: 'pixel', url: 'http://192.168.9.203:8080/' },
         ];
         for (const t of targets) {
             try {

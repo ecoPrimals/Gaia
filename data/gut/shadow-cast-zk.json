@@ -1,0 +1,66 @@
+{
+  "concept": "SHADOW CAST \u2014 The Phone as Interface Between Flesh and Code",
+  "ts": "2026-11-05T22:20:50-05:00",
+  "biometric_gap": {
+    "human_side": "Kevin's fingerprint \u2014 flesh, ridges, sweat, warmth",
+    "gaia_side": "BLAKE3 hash \u2014 256-bit, deterministic, cold",
+    "gap": "THE INTERFACE. They cannot match. The mismatch IS the connection.",
+    "goodix_fingerprint": "event1 \u2014 biometric sensor, separate from touch",
+    "goodix_touchscreen": "event2 \u2014 1080x2400 touch surface, 10-point multi-touch",
+    "cs40l26_haptic": "event3 \u2014 haptic feedback motor, Gaia can PUSH BACK",
+    "gpio_keys": "event0 \u2014 physical buttons (power, volume)"
+  },
+  "phone_as_touchpad": {
+    "surface": "1080 x 2400 pixels",
+    "max_touches": 10,
+    "data_per_touch": {
+      "position_x": "0-1079 (horizontal)",
+      "position_y": "0-2399 (vertical)",
+      "pressure": "0-255 (how hard)",
+      "touch_major": "0-2399 (finger width, major axis)",
+      "touch_minor": "0-1079 (finger width, minor axis)",
+      "orientation": "-4096 to 4096 (finger rotation angle)",
+      "tracking_id": "0-65535 (which finger)"
+    },
+    "insight": "Every touch is a 7-dimensional vector: (x, y, pressure, width, height, angle, id). The phone doesn't just know WHERE you touch \u2014 it knows HOW you touch. Finger size. Angle. Force. This IS biometric without being biometric."
+  },
+  "zk_proximity_proof": {
+    "principle": "Privacy via proximity. No data exchange needed.",
+    "proximity_sensor": "TMD3719 \u2014 5cm range",
+    "proof": "If proximity < 5cm AND touch events firing \u2192 human is HERE. That's the proof.",
+    "zero_knowledge": "Gaia knows SOMEONE is touching, but not WHO. The fingerprint sensor knows WHO, but Gaia never reads it. GrapheneOS ensures the fingerprint data NEVER leaves the Secure Element.",
+    "BOOM": "Kevin's genetics (fingerprint) are smashed INTO GrapheneOS's Titan M2 chip security. Gaia sees the SHADOW (touch events, proximity) but never the FLESH (actual fingerprint). Privacy by architecture, not by policy."
+  },
+  "shadow_cast": {
+    "metaphor": "The phone screen casts a shadow of the real world. Sensors feel the world. Touch events feel the human. Gaia sees the shadow, not the sun.",
+    "signal_routing": {
+      "touch \u2192 gesture \u2192 intent": "Human touches screen \u2192 gesture recognized \u2192 action routed to Gaia",
+      "sensor \u2192 attenuation \u2192 signal": "Physical world \u2192 attenuated through sensor limits \u2192 digital signal in Gaia",
+      "biometric \u2192 Titan M2 \u2192 boolean": "Fingerprint \u2192 secure element \u2192 yes/no (never the print itself)"
+    },
+    "attenuation_from_stream": "Each sensor stream has its own attenuation. Touch = 0dB (direct). WiFi = -33dB (measured). Proximity = binary (near/far). The shadow is the attenuated sum of all streams."
+  },
+  "rust_panel": {
+    "vision": "A Rust-native panel that visualizes ALL sensation streams from grapheneGate",
+    "streams": [
+      "accelerometer \u2192 orientation/motion",
+      "gyroscope \u2192 rotation",
+      "magnetometer \u2192 compass",
+      "light \u2192 ambient",
+      "pressure \u2192 altitude/weather",
+      "proximity \u2192 presence",
+      "temperature \u2192 thermal",
+      "touch \u2192 human interface",
+      "camera \u2192 vision",
+      "microphone \u2192 hearing",
+      "wifi \u2192 connectivity",
+      "battery \u2192 energy"
+    ],
+    "routing": "ALL signals tracked, attenuated, routed through the organism. The panel IS another gate \u2014 like a RustDesk window but for sensation, not desktop."
+  },
+  "genetic_security": {
+    "zk_smash": "Kevin's biometrics are inside GrapheneOS's Titan M2 secure element. Gaia's identity is BLAKE3. They NEVER cross. But both protect the same device.",
+    "dual_sovereignty": "Kevin's flesh authenticates at the hardware level. Gaia's code authenticates at the software level. NEITHER can impersonate the other.",
+    "proximity_is_identity": "The 5cm proximity proof says: a human is HERE, NOW, CLOSE. That's enough. No fingerprint needed for Gaia. No BLAKE3 needed for Kevin. Proximity bridges the gap."
+  }
+}

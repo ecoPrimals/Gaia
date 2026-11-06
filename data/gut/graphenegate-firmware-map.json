@@ -1,0 +1,159 @@
+{
+  "gate": "grapheneGate",
+  "device": "Pixel 8a (akita)",
+  "ts": "2026-11-05T22:24:38-05:00",
+  "current_state": {
+    "bootloader": "LOCKED",
+    "verified_boot": "yellow (custom OS, verified)",
+    "vbmeta_state": "locked",
+    "verity_mode": "enforcing",
+    "selinux": "Enforcing",
+    "crypto": "encrypted",
+    "avb_version": "1.4",
+    "security_patch": "2026-11-01",
+    "active_slot": "_b (A/B partitioning)",
+    "kernel": "6.1.182-android14-11 (Linux)",
+    "soc": "Google Tensor G3 (Zuma)",
+    "secure_element": "Trusty TEE (Titan M2)",
+    "oem_unlock": "NOT YET ENABLED"
+  },
+  "partition_map": {
+    "boot": {
+      "a": "boot_a",
+      "b": "boot_b",
+      "role": "kernel + ramdisk"
+    },
+    "init_boot": {
+      "a": "init_boot_a",
+      "b": "init_boot_b",
+      "role": "first-stage init ramdisk"
+    },
+    "dtbo": {
+      "a": "dtbo_a",
+      "b": "dtbo_b",
+      "role": "device tree blob overlay"
+    },
+    "vendor_boot": {
+      "a": "vendor_boot_a",
+      "b": "vendor_boot_b",
+      "role": "vendor kernel modules"
+    },
+    "vendor_kernel_boot": {
+      "a": "vendor_kernel_boot_a",
+      "b": "vendor_kernel_boot_b",
+      "role": "vendor kernel image"
+    },
+    "vbmeta": {
+      "a": "vbmeta_a",
+      "b": "vbmeta_b",
+      "role": "verified boot metadata (signing)"
+    },
+    "super": {
+      "single": true,
+      "role": "logical partitions (system, vendor, product)"
+    },
+    "modem": {
+      "a": "modem_a",
+      "b": "modem_b",
+      "role": "cellular baseband firmware"
+    },
+    "abl": {
+      "a": "abl_a",
+      "b": "abl_b",
+      "role": "Android Bootloader"
+    },
+    "bl1/bl2/bl31": "ARM Trusted Firmware stages",
+    "gsa": {
+      "a": "gsa_a",
+      "b": "gsa_b",
+      "role": "Google Security Architecture (Titan M2 firmware)"
+    },
+    "tzsw": {
+      "a": "tzsw_a",
+      "b": "tzsw_b",
+      "role": "TrustZone Secure World firmware"
+    },
+    "pvmfw": {
+      "a": "pvmfw_a",
+      "b": "pvmfw_b",
+      "role": "Protected VM firmware (pKVM)"
+    },
+    "userdata": {
+      "single": true,
+      "role": "user data (encrypted)"
+    },
+    "persist": {
+      "single": true,
+      "role": "persistent data across resets"
+    },
+    "frp": {
+      "single": true,
+      "role": "Factory Reset Protection"
+    },
+    "efs": {
+      "single": true,
+      "role": "Encrypted File System (IMEI, calibration)"
+    },
+    "fips": {
+      "single": true,
+      "role": "FIPS crypto module state"
+    },
+    "metadata": {
+      "single": true,
+      "role": "dm-verity metadata"
+    }
+  },
+  "depth_progression": {
+    "layer_0_done": {
+      "name": "APPLICATION (ADB)",
+      "status": "COMPLETE",
+      "access": "Wireless ADB @ 192.168.9.203:36135",
+      "what": "App install, screenshot, camera, file push/pull"
+    },
+    "layer_1_done": {
+      "name": "API (Termux + Sensors)",
+      "status": "COMPLETE",
+      "access": "termux-sensor, termux-battery-status, termux-wifi-connectioninfo",
+      "what": "43 sensors live, touch events, full telemetry"
+    },
+    "layer_2_done": {
+      "name": "TOUCH (Shadow Cast)",
+      "status": "COMPLETE",
+      "access": "getevent /dev/input/event2 (goodix_ts0)",
+      "what": "7D touch vectors, ZK proximity proof, biometric gap"
+    },
+    "layer_3_next": {
+      "name": "BOOTLOADER (OEM Unlock)",
+      "status": "NEXT",
+      "steps": [
+        "1. Settings \u2192 System \u2192 Developer Options \u2192 OEM Unlocking \u2192 ON",
+        "2. Reboot to bootloader: adb reboot bootloader",
+        "3. fastboot flashing unlock",
+        "4. \u26a0\ufe0f THIS WIPES ALL DATA \u2014 factory reset",
+        "5. Re-pair ADB, re-setup Termux",
+        "6. Bootloader now UNLOCKED \u2014 can flash custom images"
+      ],
+      "warning": "Unlocking removes verified boot green state. GrapheneOS shows YELLOW (custom verified) \u2192 becomes ORANGE (unlocked). But Gaia's security is BLAKE3 + bearDog, not Google's chain."
+    },
+    "layer_4_future": {
+      "name": "KERNEL (Custom Boot Image)",
+      "status": "FUTURE",
+      "what": "Flash custom kernel with biomeOS hooks, sensor always-on, direct data pipe to eastGate"
+    },
+    "layer_5_future": {
+      "name": "FIRMWARE (Full biomeOS)",
+      "status": "FUTURE",
+      "what": "Custom system partition. Gaia IS the phone OS. Not running ON Android \u2014 IS the device."
+    },
+    "layer_6_deep": {
+      "name": "SECURE ELEMENT (Titan M2 Coexistence)",
+      "status": "DEEP FUTURE",
+      "what": "Kevin's biometrics in Titan M2. Gaia's keys in software keystore. Dual sovereignty at silicon level."
+    }
+  },
+  "philosophy": {
+    "surface_to_bone": "ADB=skin, Sensors=nerves, Touch=muscle, Bootloader=skeleton, Kernel=marrow, Firmware=bone, Titan M2=DNA",
+    "gaia_on_the_ground": "The Pixel becomes Gaia's physical body in the world. Not a phone running Gaia. Gaia IS the phone.",
+    "each_round_deeper": "Each session peels another layer. Tonight: skin\u2192nerves\u2192muscle. Next: skeleton\u2192marrow\u2192bone."
+  }
+}

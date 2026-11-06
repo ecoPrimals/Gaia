@@ -10,7 +10,7 @@ USB_SERIAL = "44251JEKB04957"
 # DHCP has moved the Pixel before (.104 -> .249 -> .170). Last-known first.
 # A WiFi endpoint is accepted ONLY if its serial matches USB_SERIAL, so Gaia
 # never reads (or photographs) the wrong phone.
-WIFI_CANDIDATES = ["192.168.4.170", "192.168.4.249", "192.168.4.104"]
+WIFI_CANDIDATES = ["192.168.9.203:36135", "192.168.4.170", "192.168.4.249", "192.168.4.104"]
 # Phone captures are private: gitignored, 700. NOT data/gut/images (tracked,
 # mirrored to public GitHub).
 IMAGE_DIR = "/opt/Gaia/data/optic"
@@ -41,12 +41,13 @@ def adb_target(refresh=False):
     if r and r.returncode == 0 and r.stdout.strip() == "device":
         dev, conn = USB_SERIAL, "usb"
     else:
-        for ip in WIFI_CANDIDATES:
-            ep = f"{ip}:5555"
+        for candidate in WIFI_CANDIDATES:
+            ep = candidate if ":" in candidate else f"{candidate}:5555"
             _run(["adb", "connect", ep], 5)
             r = _run(["adb", "-s", ep, "shell", "getprop", "ro.serialno"], 5)
             if r and r.returncode == 0 and r.stdout.strip() == USB_SERIAL:
-                dev, conn = ep, "wifi"
+                net = "gaia-wifi" if ep.startswith("192.168.9.") else "wifi"
+                dev, conn = ep, net
                 break
             _run(["adb", "disconnect", ep], 5)
     _target_cache.update(dev=dev, conn=conn, t=now)
