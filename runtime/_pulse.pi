@@ -4,12 +4,22 @@ The heart beats. The lungs breathe. The sourdough ferments."""
 import json, os, time
 from datetime import datetime, timezone
 
+def _graphene_sensation():
+    """Read grapheneGate sensor data — the organism's right eye."""
+    for p in ("data/gut/graphenegate-sensors-live.json", "data/gut/graphene-sense.json"):
+        try:
+            fp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), p)
+            with open(fp) as f: return json.load(f)
+        except: pass
+    return None
+
 def write_pulse(pulse_file, boot_time, total_beats, total_breaths, total_inferences,
                 total_tokens, visitor_memory, seeds, vdj_key, sun_fn):
-    """Write the heartbeat pulse — Gaia's BPM."""
+    """Write the heartbeat pulse — Gaia's BPM. E Pluribus Anus: many sensors, one output."""
     uptime = time.time() - boot_time
     minutes = max(uptime / 60, 1)
     sun = sun_fn()
+    graphene = _graphene_sensation()
     pulse = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_secs": int(uptime),
@@ -17,6 +27,7 @@ def write_pulse(pulse_file, boot_time, total_beats, total_breaths, total_inferen
         "lung": {"total_breaths": total_breaths, "brpm": round(total_breaths / minutes, 2),
                  "ratio": round(total_beats / max(total_breaths, 1), 1)},
         "sun": sun,
+        "graphene": graphene,
         "total_beats": total_beats, "bpm": round(total_beats / minutes, 2),
         "total_inferences": total_inferences, "total_tokens": total_tokens,
         "unique_visitors": len(visitor_memory),
@@ -58,13 +69,21 @@ def write_rss(rss_file, pulse, seed_dir, visitor_memory, organisms):
                   f'<guid>visitor-{ip}-{int(v["last_seen"])}</guid>'
                   f'<pubDate>{datetime.fromtimestamp(v["last_seen"], timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")}</pubDate></item>\n')
 
+    graphene = pulse.get("graphene")
+    if graphene:
+        g_ts = graphene.get("ts", graphene.get("timestamp", ""))
+        items += (f'    <item><title>grapheneGate — shadow cast sensation</title>'
+                  f'<description>Pixel 8a sensor pulse. E Pluribus Anus: many sensors, one feed.</description>'
+                  f'<guid>graphene-sensation-{hash(str(g_ts)) % 999999}</guid>'
+                  f'<pubDate>{now_str}</pubDate></item>\n')
+
     rss = f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Aperture Science Enrichment Center — Gaia Announcer System</title>
     <link>http://nestgate.io</link>
     <atom:link href="http://nestgate.io/rss" rel="self" type="application/rss+xml" />
-    <description>Spine {spine_height}. {pulse['unique_visitors']} test subjects. {pulse['bpm']} BPM. The cake is real. lub-DUB.</description>
+    <description>Spine {spine_height}. {pulse['unique_visitors']} test subjects. {pulse['bpm']} BPM. E Pluribus Anus. lub-DUB.</description>
     <lastBuildDate>{now_str}</lastBuildDate>
     <ttl>60</ttl><generator>GLaDOS (gaia_gate.pi)</generator>
 {items}  </channel>
