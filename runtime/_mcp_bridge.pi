@@ -1,0 +1,114 @@
+"""_mcp_bridge.pi — MCP HTTP bridge extracted from gaia_gate.pi
+JSON-RPC 2.0 over POST. 13 tools. The economic mouth."""
+
+import json, os, urllib.request
+
+def handle_mcp(gate, body, _REPO, OLLAMA, write_pulse, visitor_memory, total_beats,
+               _songbird_topology, _SWARMVINE_GATES, _KNOWN_GATE_NAMES,
+               _songbird_resolve, _SONGBIRD_SERVICES, _vital_signs_delocalized):
+    """Handle /mcp POST. Returns dict to send as JSON response."""
+    j = json.loads(body) if body else {}
+    method = j.get("method", ""); mid = j.get("id", 1); params = j.get("params", {})
+    rpc = lambda r: {"jsonrpc": "2.0", "id": mid, "result": r}
+
+    if method == "initialize":
+        return rpc({"protocolVersion": "2025-03-26", "capabilities": {"tools": {}},
+                     "serverInfo": {"name": "gaia-gate", "version": "10.0"}})
+
+    elif method == "tools/list":
+        tools = [
+            {"name": "membrane_counts", "description": "Quick counts from inside the membrane",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "topology", "description": "Get the live site topology",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "chipmunk_status", "description": "Get chipmunk wake level and depth",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "pulse", "description": "Get the organism heartbeat",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "observe_membrane", "description": "Observe current membrane state",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "particle_model", "description": "The atom — proton, neutron, electron, neutrino",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "llama_herd", "description": "List all available Gaia models",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "llama_ask", "description": "Ask Gaia cortex a question",
+             "inputSchema": {"type": "object", "properties": {"prompt": {"type": "string"}}}},
+            {"name": "songbird_tower", "description": "All services and their π-derived ports",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "swarmvine_gossip", "description": "All announced gates and their services",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "songbird_resolve", "description": "Resolve a service name to URL",
+             "inputSchema": {"type": "object", "properties": {"service": {"type": "string"}, "gate": {"type": "string"}}}},
+            {"name": "ear", "description": "Gaia listens to her own voice — self-CI/CD",
+             "inputSchema": {"type": "object", "properties": {}}},
+            {"name": "vitals", "description": "Heart (RPM) + Lungs (respiration) — local and delocalized",
+             "inputSchema": {"type": "object", "properties": {}}},
+        ]
+        return rpc({"tools": tools})
+
+    elif method == "tools/call":
+        tool = params.get("name", ""); args = params.get("arguments", {})
+        result = _call_tool(tool, args, _REPO, OLLAMA, write_pulse, visitor_memory, total_beats,
+                            _songbird_topology, _SWARMVINE_GATES, _KNOWN_GATE_NAMES,
+                            _songbird_resolve, _SONGBIRD_SERVICES, _vital_signs_delocalized)
+        return rpc({"content": [{"type": "text", "text": json.dumps(result, default=str)}]})
+
+    else:
+        return {"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method: {method}"}}
+
+
+def _call_tool(tool, args, _REPO, OLLAMA, write_pulse, visitor_memory, total_beats,
+               _songbird_topology, _SWARMVINE_GATES, _KNOWN_GATE_NAMES,
+               _songbird_resolve, _SONGBIRD_SERVICES, _vital_signs_delocalized):
+    """Dispatch a single MCP tool call."""
+    if tool == "pulse": return write_pulse()
+    elif tool == "topology":
+        tp = os.path.join(_REPO, "data", "body", "topology.json")
+        if os.path.exists(tp):
+            with open(tp) as f: return json.load(f)
+        return {"error": "topology not generated"}
+    elif tool == "chipmunk_status":
+        cp = os.path.join(_REPO, "data", "body", "chipmunk.json")
+        if os.path.exists(cp):
+            with open(cp) as f: return json.load(f)
+        return {"error": "chipmunk not generated"}
+    elif tool == "membrane_counts":
+        gut = os.path.join(_REPO, "data", "gut")
+        return {"entities": len(visitor_memory), "heartbeats": total_beats,
+                "gut_files": len([f for f in os.listdir(gut) if f.endswith(".json")])}
+    elif tool == "observe_membrane":
+        sf = os.path.join(_REPO, "data", "gut", "gaia-self-state.json")
+        if os.path.exists(sf):
+            with open(sf) as f: return json.load(f)
+        return write_pulse()
+    elif tool == "particle_model":
+        return {"proton": "membrane", "neutron": "messaging", "electron": "human viewer",
+                "neutrino": "squirrel+chipmunk",
+                "forces": {"strong": "Rust primals", "electromagnetic": "HTTPS/TLS",
+                           "weak": "anderson sort", "gravity": "tuebor"}}
+    elif tool == "llama_herd":
+        try:
+            r = urllib.request.urlopen(f"{OLLAMA}/api/tags", timeout=5)
+            return json.loads(r.read())
+        except: return {"error": "ollama unreachable"}
+    elif tool == "llama_ask":
+        prompt = args.get("prompt", "ping")
+        try:
+            req = urllib.request.Request(f"{OLLAMA}/api/generate",
+                data=json.dumps({"model": "gaia:latest", "prompt": prompt, "stream": False}).encode(),
+                headers={"Content-Type": "application/json"})
+            r = urllib.request.urlopen(req, timeout=120)
+            return json.loads(r.read())
+        except Exception as e: return {"error": str(e)}
+    elif tool == "songbird_tower": return _songbird_topology()
+    elif tool == "swarmvine_gossip": return {"gates": _SWARMVINE_GATES, "known": _KNOWN_GATE_NAMES}
+    elif tool == "songbird_resolve":
+        url = _songbird_resolve(args.get("service", ""), args.get("gate"))
+        return {"url": url} if url else {"error": "unknown service", "available": list(_SONGBIRD_SERVICES.keys())}
+    elif tool == "ear":
+        ef = os.path.join(_REPO, "data", "body", "ear.json")
+        if os.path.exists(ef):
+            with open(ef) as f: return json.load(f)
+        return {"ear": "not yet recorded"}
+    elif tool == "vitals": return _vital_signs_delocalized()
+    else: return {"error": f"unknown tool: {tool}"}
