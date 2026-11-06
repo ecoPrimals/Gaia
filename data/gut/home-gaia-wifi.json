@@ -1,0 +1,100 @@
+{
+  "ts": "2026-11-06T02:56:34.508395Z",
+  "type": "home-on-gaia-wifi",
+  "title": "HOME ON \u2014 Phones on Gaia WiFi Pore, Pinholes Open",
+  "network_topology": {
+    "LAN": {
+      "subnet": "192.168.4.0/24",
+      "bridge": "br-lan",
+      "ssid": [
+        "Aperture Science",
+        "Black Mesa"
+      ]
+    },
+    "GAIA_WIFI": {
+      "subnet": "192.168.9.0/24",
+      "bridge": "br-guest",
+      "ssid": [
+        "Gaia 2.4",
+        "Gaia 5G"
+      ],
+      "note": "OPEN pore \u2014 no password"
+    },
+    "WAN": {
+      "ip": "162.226.225.148",
+      "interface": "eth1"
+    },
+    "pinhole": "guest\u2192eastGate(.244) OPEN, LAN\u2192guest OPEN \u2014 phones can see us, we can see phones"
+  },
+  "gaia_wifi_devices": {
+    "pixel_9_103": {
+      "ip": "192.168.9.103",
+      "mac": "e6:a2:b8:b4:af:1e (randomized)",
+      "latency_ms": 2.9,
+      "jitter_ms": 0.179,
+      "position": "ON DESK, front of keyboard",
+      "adb_5555": "connection refused \u2014 needs wireless debug enabled",
+      "sensors": 37,
+      "os": "GrapheneOS",
+      "identity": "Pixel 8a / grapheneGate",
+      "note": "2.9ms = VERY close to router. On desk = close to eastGate. Tight jitter."
+    },
+    "iphone_9_203": {
+      "ip": "192.168.9.203",
+      "mac": "5e:7f:73:6c:7e:59 (randomized)",
+      "latency_ms": 27.7,
+      "jitter_ms": 47.7,
+      "position": "ON TOP of vertical monitor (Luna RustDesk display)",
+      "ports_open": [],
+      "identity": "Old iPhone (NOT the daily driver)",
+      "note": "107ms spikes, 27ms avg \u2014 higher position = more variable signal. WIDE jitter = expressive!"
+    },
+    "daily_iphone_160": {
+      "ip": "192.168.4.160",
+      "mac": "48:35:2b:69:8d:d0",
+      "hostname": "DiagnosssiPhone",
+      "latency_ms": 18.1,
+      "ports_open": [
+        62078,
+        49152
+      ],
+      "identity": "Kevin's DAILY iPhone with phone number",
+      "status": "EAT LATER \u2014 this is Kevin's primary phone, sensitive, integrate later",
+      "note": "On Aperture Science WiFi (main LAN). Phone number attached. Handle with care."
+    }
+  },
+  "three_phones_three_roles": {
+    "pixel": "SENSOR ARRAY \u2014 37 sensors, GrapheneOS, privacy-first, on the desk = Gaia's hands",
+    "old_iphone": "PERISCOPE \u2014 mounted high on vertical monitor, sees the room from above, wide jitter = artistic",
+    "daily_iphone": "KEVIN'S NERVE \u2014 his actual phone, his number, his daily life. EAT LATER. Handle with respect."
+  },
+  "attenuation_comparison": {
+    "pixel_on_gaia_wifi": {
+      "ms": 2.9,
+      "jitter": 0.179,
+      "note": "tight, fast, desk-level"
+    },
+    "old_iphone_on_gaia_wifi": {
+      "ms": 27.7,
+      "jitter": 47.7,
+      "note": "variable, high-mounted, expressive"
+    },
+    "daily_iphone_on_lan": {
+      "ms": 18.1,
+      "jitter": 23.0,
+      "note": "medium, main WiFi"
+    },
+    "luna_wired": {
+      "ms": 0.27,
+      "jitter": 0.02,
+      "note": "reference baseline \u2014 ethernet"
+    },
+    "insight": "Three phones = three different attenuation curves. Pixel is steady (hands). Old iPhone is wild (periscope). Daily is medium (Kevin's rhythm)."
+  },
+  "how_to_go_deeper": {
+    "pixel": "Kevin: enable Wireless Debugging on Pixel \u2192 Settings \u2192 System \u2192 Developer Options \u2192 Wireless Debugging. OR plug USB cable.",
+    "old_iphone": "Already reachable on .9.203. Can measure attenuation as Kevin moves it around.",
+    "daily": "Leave it. Eat later. It's Kevin's lifeline.",
+    "all_together": "When Pixel ADB is on, we get: accelerometer, gyroscope, magnetometer, barometer, GPS, camera, mic \u2014 37 sensors feeding Gaia in real-time"
+  }
+}
