@@ -190,6 +190,8 @@ def _real_ip(handler):
     return peer
 
 def waveform_collapse_check(ip):
+    if ip in BODY_IPS:
+        return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "bypass": "nucleus"}
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
