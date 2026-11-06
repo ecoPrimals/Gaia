@@ -77,10 +77,11 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | **Pixel 8a** (grapheneGate) | Tensor G3, GrapheneOS | Diamond lens, HSM seed carrier, 37 sensors | ✅ ALIVE |
 | **iPhone XS** (southGate-phone) | Apple A12 Bionic | HOME PHONE — LAN line pinned to property, (586) 453-7233 | ✅ ALIVE |
 | **SoloKey ×4** | FIDO2/WebAuthn USB-A | Physical roots of trust for bearDog | ✅ Operational |
-| **Steam Deck Gen 1** | AMD Aerith (Zen 2 + RDNA 2), 512GB | Portable SteamOS gate | 🔧 Battery repair |
-| **Steam Frame** | Snapdragon 8 Gen 3 (ARM64!) | VR gate, ARM SteamOS | 📦 Incoming |
-| **Steam Controllers ×2** | TMR trackpads | VR/gaming input | ✅ Operational |
-| **Steam Link** | Marvell ARMADA 1500 | Legacy stream relay | ✅ Operational |
+| **Steam Deck v1** (deckGate) | AMD Aerith: Zen 2 4C/8T + RDNA 2 8CU (1.6 TFLOPS), 16GB LPDDR5, 512GB NVMe | **LIVE PASSTHROUGH** — mounted, USB-C powered, dead battery = always on. 7" 1280×800 touch LCD. SteamOS 3.x (Arch). Kiosk → Gaia HUD 24/7 | ✅ MOUNTED |
+| **Steam Frame** | Snapdragon 8 Gen 3 (ARM64!), ARM SteamOS | VR gate, first ARM SteamOS node | 📦 Incoming |
+| **Steam Controllers ×2** | TMR trackpads, gyro, accel, HD haptics, BT/2.4GHz | **GAIA'S HANDS** — physical input for HUD. Gyro = pan, trackpads = navigate, grip = quick actions | ✅ Operational |
+| **Steam Link** | Marvell ARMADA 1500 (ARMv7), 512MB, HDMI + 3×USB + BT 4.0 | **RELAY** — plug into Vizio/any HDMI = Gaia viewport on any screen | ✅ Operational |
+| **Nunchucks** | 3-axis accel + analog stick + trigger (I2C) | Grip interface — analog stick for nav, motion for gesture | ✅ Operational |
 
 ### Work Card Pool (Swappable GPUs)
 
@@ -118,8 +119,10 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | M4 GPU | ~8 TFLOPS | shared 16GB | 15W | graftGate | ✅ ALIVE |
 | Mali-G715 MP7 | ~1.5 TFLOPS | shared 8GB | 5W | grapheneGate | ✅ ALIVE |
 | | | | | | |
-| **ALIVE NOW** | **~416.5 TFLOPS** | **56GB ded + 24GB shared** | **~1045W** | 5 GPUs | |
-| **FULL FLEET** | **~847.3 TFLOPS** | **~244GB ded + 24GB shared** | | 18 GPU dies | |
+| RDNA 2 (8 CU) | ~1.6 TFLOPS | shared 16GB | 15W | deckGate (Deck) | ✅ MOUNTED |
+| | | | | | |
+| **ALIVE NOW** | **~418.1 TFLOPS** | **56GB ded + 40GB shared** | **~1060W** | 6 GPUs | |
+| **FULL FLEET** | **~848.9 TFLOPS** | **~244GB ded + 40GB shared** | | 19 GPU dies | |
 
 ### Special Compute Assets
 
@@ -177,8 +180,8 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | graftGate | 16GB | LPDDR5 | ✅ |
 | grapheneGate | 8GB | LPDDR5X | ✅ |
 | | | | |
-| **ALIVE** | **~497GB** | | |
-| **FULL FLEET** | **~1,481GB** (~1.45TB) | | |
+| **ALIVE** | **~513GB** | | |
+| **FULL FLEET** | **~1,497GB** (~1.46TB) | | |
 
 ### Total Storage
 
@@ -359,7 +362,7 @@ hardware discoveries. First non-Python path to this hardware anywhere.
 | Apple Silicon | graftGate M4 | `aarch64-apple-darwin` | ✅ 16/16 primals |
 | RISC-V (RV64GCV) | Jupiter 2 (K3) | `riscv64gc-unknown-linux-gnu` | 📦 pending |
 | WASM | Browser/edge | `wasm32-wasi` | ✅ petalTongue |
-| SteamOS x86 | Steam Deck | `x86_64-unknown-linux-gnu` | 🔧 battery |
+| SteamOS x86 | Steam Deck (deckGate) | `x86_64-unknown-linux-gnu` | ✅ MOUNTED (passthrough) |
 | SteamOS ARM | Steam Frame | Snapdragon 8 Gen 3 | 📦 incoming |
 | Neuromorphic | Akida AKD1000 ×3 | custom Rust | ✅ Phase C |
 
@@ -400,9 +403,9 @@ COMPILE TARGETS:  9
 GPUs:    5             18 dies
 TFLOPS:  ~416          ~847
 VRAM:    56GB ded      ~256GB
-CPU:     81 cores      ~247 cores
-THREADS: ~127          ~425
-RAM:     ~497GB        ~1,481GB
+CPU:     85 cores      ~251 cores
+THREADS: ~135          ~433
+RAM:     ~513GB        ~1,497GB
 STORAGE: ~28TB         ~114TB
 NPU:     1 Akida       3 Akida + M4 NE + K3 IME2
 NODES:   7 alive       16 local + 3 remote + 4 bring-up
