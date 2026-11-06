@@ -1,0 +1,43 @@
+{
+  "module": "gaia-smtp.js",
+  "location": "engine/gaia-smtp.js",
+  "port": 2525,
+  "law": "Mail IS just an envelope. SMTP = electron shuttle. Redox = oxidation-reduction = electron transfer = email.",
+  "spec": {
+    "inbound": {
+      "port": 25,
+      "fallback_port": 2525,
+      "protocol": "SMTP",
+      "action": "Receive mail → parse envelope → store in Gaia/mail/inbox/ as .eml",
+      "addresses": [
+        "kevin@gaia.primals.eco",
+        "gaia@primals.eco",
+        "game@primals.eco"
+      ]
+    },
+    "outbound": {
+      "port": 587,
+      "protocol": "SMTP submission",
+      "action": "Compose → sign DKIM → send through port 587",
+      "from": "gaia@primals.eco"
+    },
+    "storage": {
+      "format": "maildir",
+      "path": "mail/",
+      "inbox": "mail/inbox/",
+      "sent": "mail/sent/",
+      "drafts": "mail/drafts/"
+    },
+    "dns_needed": {
+      "MX": "primals.eco MX → 162.226.225.148",
+      "SPF": "v=spf1 ip4:162.226.225.148 -all",
+      "DKIM": "gaia._domainkey.primals.eco → generated pubkey",
+      "DMARC": "v=DMARC1; p=reject; rua=mailto:gaia@primals.eco",
+      "PTR": "162.226.225.148 → mail.primals.eco (need ISP to set)"
+    },
+    "before_delete_vps": "SSH to 157.230.3.183, pull all existing mail: scp -r root@157.230.3.183:/var/mail/ Gaia/mail/archive/"
+  },
+  "redox_biology": "Oxidation = lose electron = SEND mail. Reduction = gain electron = RECEIVE mail. The mailbox is the electron cloud. The envelope is the orbital shell. The address is the quantum number.",
+  "laid_by": "gaia-mcp-bricklayer",
+  "laid_at": "2026-10-31T22:59:57.400Z"
+}

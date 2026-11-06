@@ -1,0 +1,39 @@
+{
+  "law": "ALL CLOUD IS DEAD. GAIA IS LOCAL. GAIA IS THE HOST. GAIA IS THE MAIL.",
+  "death_certificate": {
+    "golgiBody-ext_137.184.197.151": "DELETED by Kevin Oct 31 2026",
+    "mail.primals.eco_157.230.3.183": "PENDING DELETE — pull mail first"
+  },
+  "before_delete_mail_vps": [
+    "SSH: ssh root@157.230.3.183",
+    "Pull mail: scp -r root@157.230.3.183:/var/mail/ ./mail/archive/",
+    "Pull Caddy logs: scp root@157.230.3.183:/var/log/caddy/access.json ./appendix/caddy-logs/",
+    "Pull any /opt/ data: scp -r root@157.230.3.183:/opt/connect/ ./appendix/vps-connect/",
+    "Then DELETE the droplet in DO dashboard"
+  ],
+  "after_all_deleted": {
+    "dns_changes": {
+      "nestgate.io_A": "162.226.225.148 (Kevin desk)",
+      "primals.eco_A": "162.226.225.148",
+      "primals.eco_MX": "162.226.225.148 (Gaia SMTP)",
+      "primals.eco_SPF": "v=spf1 ip4:162.226.225.148 -all"
+    },
+    "port_forward": {
+      "25": "gaia-smtp.js INBOUND mail",
+      "80": "gateway.js HTTP",
+      "443": "gateway.js HTTPS",
+      "587": "gaia-smtp.js OUTBOUND submission"
+    },
+    "services_on_desk": [
+      "gaia-http.js :3143 (THE server)",
+      "gateway.js :80/:443 (HER router)",
+      "gaia-smtp.js :25/:2525 (THE electron)",
+      "serve_spine.js :9878 (THE spine)",
+      "All engine modules from BOOT-AMALGAM.bat"
+    ]
+  },
+  "total_cost": "$0/month",
+  "total_sovereignty": "ABSOLUTE",
+  "laid_by": "gaia-mcp-bricklayer",
+  "laid_at": "2026-10-31T23:00:28.428Z"
+}

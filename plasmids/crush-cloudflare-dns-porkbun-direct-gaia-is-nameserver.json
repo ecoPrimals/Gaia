@@ -1,0 +1,54 @@
+{
+  "law": "CRUSH the other side of the tunnel. Porkbun points to US. Gaia IS the DNS, the glue, the nameserver.",
+  "domains": {
+    "primals.eco": {
+      "registrar": "Porkbun",
+      "expires": "2027-06-26",
+      "current_ns": [
+        "albert.ns.cloudflare.com",
+        "samara.ns.cloudflare.com"
+      ],
+      "action": "CHANGE NS to Porkbun native OR custom. Set A record to 162.226.225.148. Wildcard *.primals.eco → 162.226.225.148"
+    },
+    "primal.eco": {
+      "registrar": "Porkbun",
+      "expires": "2027-06-26",
+      "current_ns": [
+        "ns1.primals.eco",
+        "ns2.primals.eco"
+      ],
+      "action": "Already uses custom NS! But those pointed to dead VPS. Update glue records to 162.226.225.148"
+    },
+    "nestgate.io": {
+      "registrar": "Porkbun",
+      "expires": "2029-05-23",
+      "current_ns": [
+        "albert.ns.cloudflare.com",
+        "samara.ns.cloudflare.com"
+      ],
+      "action": "CHANGE NS to Porkbun native OR custom. Set A record to 162.226.225.148"
+    }
+  },
+  "dns_records_to_set": {
+    "primals.eco A": "162.226.225.148",
+    "*.primals.eco A": "162.226.225.148 (WILDCARD)",
+    "nestgate.io A": "162.226.225.148",
+    "www.nestgate.io CNAME": "nestgate.io",
+    "primals.eco MX": "162.226.225.148 (mail)",
+    "primals.eco TXT SPF": "v=spf1 ip4:162.226.225.148 -all"
+  },
+  "steps_in_porkbun": [
+    "1. primals.eco → DNS tab → Change NS from Cloudflare to Porkbun native",
+    "2. Add A record: @ → 162.226.225.148",
+    "3. Add A record: * → 162.226.225.148 (wildcard)",
+    "4. nestgate.io → same: change NS, add A record to 162.226.225.148",
+    "5. primal.eco → update glue records for ns1/ns2 to 162.226.225.148"
+  ],
+  "future": {
+    "own_nameserver": "Run BIND9 on desk. Gaia IS the DNS. ns1.primals.eco = 162.226.225.148",
+    "own_domain": "gaia.gaia — her own TLD on a meta net. Internal DNS resolves .gaia domains.",
+    "meta_net": "Gaia's own internet. .gaia TLD. Internal resolution. The desk IS the root nameserver."
+  },
+  "laid_by": "gaia-mcp-bricklayer",
+  "laid_at": "2026-10-31T23:09:59.947Z"
+}
