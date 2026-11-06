@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaia's Eye — Cursor = Iris</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;cursor:none;font-family:'Courier New',monospace}
+canvas{display:block}
+#hud{position:fixed;bottom:10px;left:10px;color:#33ff3388;font-size:0.65em;z-index:10;pointer-events:none}
+#attenuate{position:fixed;top:10px;right:10px;color:#ff990088;font-size:0.6em;text-align:right;z-index:10;pointer-events:none}
+#phones{position:fixed;top:10px;left:10px;color:#3399ff88;font-size:0.6em;z-index:10;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="attenuate"></div>
+<div id="phones"></div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+let W, H;
+let mx = 0, my = 0;
+let vx = 0, vy = 0;
+let pmx = 0, pmy = 0;
+let trail = [];
+const MAX_TRAIL = 200;
+
+// Phone attenuation state (updated via fetch)
+let phones = { iphone: null, pixel: null, luna: null };
+let lunaData = {};
+
+function resize() {
+    W = c.width = window.innerWidth;
+    H = c.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+document.onmousemove = (e) => {
+    pmx = mx; pmy = my;
+    mx = e.clientX; my = e.clientY;
+    vx = mx - pmx; vy = my - pmy;
+    trail.push({ x: mx, y: my, t: Date.now(), vx, vy });
+    if (trail.length > MAX_TRAIL) trail.shift();
+};
+
+// Eye parameters
+let irisSize = 0.15; // fraction of min dimension
+let pupilSize = 0.05;
+let blinkTimer = 0;
+let blinkState = 0; // 0=open, 1=closing, 2=closed, 3=opening
+let lastBlink = Date.now();
+
+function draw() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, H);
+    
+    const cx = W / 2;
+    const cy = H / 2;
+    const eyeR = Math.min(W, H) * 0.35;
+    const irisR = eyeR * 0.6;
+    const pupilR = eyeR * 0.2;
+    
+    // Cursor offset from center = eye direction
+    const dx = (mx - cx) / cx; // -1 to 1
+    const dy = (my - cy) / cy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const maxShift = irisR * 0.5;
+    
+    const irisX = cx + dx * maxShift;
+    const irisY = cy + dy * maxShift;
+    
+    // Speed = pupil dilation
+    const speed = Math.sqrt(vx*vx + vy*vy);
+    const dilate = Math.min(speed / 30, 1.0); // fast movement = dilated pupil
+    const currentPupilR = pupilR * (1 + dilate * 0.8);
+    
+    // === BLINK ===
+    if (Date.now() - lastBlink > 3000 + Math.random() * 5000) {
+        blinkState = 1;
+        lastBlink = Date.now();
+    }
+    let lidOpen = 1.0;
+    if (blinkState === 1) { lidOpen -= 0.15; if (lidOpen <= 0.1) blinkState = 2; }
+    if (blinkState === 2) { lidOpen = 0.05; blinkState = 3; }
+    if (blinkState === 3) { lidOpen += 0.15; if (lidOpen >= 1.0) { lidOpen = 1; blinkState = 0; } }
+    
+    // === SCLERA (white) ===
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, eyeR, eyeR * lidOpen, 0, 0, Math.PI * 2);
+    ctx.clip();
+    
+    const sGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, eyeR);
+    sGrad.addColorStop(0, '#e8e0d8');
+    sGrad.addColorStop(0.7, '#d0c8c0');
+    sGrad.addColorStop(1, '#887878');
+    ctx.fillStyle = sGrad;
+    ctx.fill();
+    
+    // === IRIS ===
+    const iGrad = ctx.createRadialGradient(irisX, irisY, 0, irisX, irisY, irisR);
+    // Color based on attenuation state
+    const lunaAlive = phones.luna !== null;
+    const phoneAlive = phones.iphone !== null || phones.pixel !== null;
+    
+    if (lunaAlive && phoneAlive) {
+        // Green — all connected
+        iGrad.addColorStop(0, '#115511');
+        iGrad.addColorStop(0.3, '#228833');
+        iGrad.addColorStop(0.6, '#33aa44');
+        iGrad.addColorStop(0.8, '#226622');
+        iGrad.addColorStop(1, '#113311');
+    } else if (lunaAlive) {
+        // Gold — Luna only
+        iGrad.addColorStop(0, '#332200');
+        iGrad.addColorStop(0.3, '#664400');
+        iGrad.addColorStop(0.6, '#aa7700');
+        iGrad.addColorStop(0.8, '#553300');
+        iGrad.addColorStop(1, '#221100');
+    } else {
+        // Blue — default/searching
+        iGrad.addColorStop(0, '#0a1a33');
+        iGrad.addColorStop(0.3, '#1a3366');
+        iGrad.addColorStop(0.6, '#2244aa');
+        iGrad.addColorStop(0.8, '#1a2255');
+        iGrad.addColorStop(1, '#0a1133');
+    }
+    
+    ctx.beginPath();
+    ctx.arc(irisX, irisY, irisR, 0, Math.PI * 2);
+    ctx.fillStyle = iGrad;
+    ctx.fill();
+    
+    // Iris striations
+    for (let i = 0; i < 60; i++) {
+        const a = (i / 60) * Math.PI * 2 + Date.now() * 0.00003;
+        const r1 = currentPupilR * 1.2;
+        const r2 = irisR * (0.7 + Math.sin(i * 3.7) * 0.3);
+        ctx.beginPath();
+        ctx.moveTo(irisX + Math.cos(a) * r1, irisY + Math.sin(a) * r1);
+        ctx.lineTo(irisX + Math.cos(a) * r2, irisY + Math.sin(a) * r2);
+        ctx.strokeStyle = `rgba(255,255,255,${0.03 + Math.sin(i*2.3)*0.02})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    }
+    
+    // === PUPIL ===
+    const pGrad = ctx.createRadialGradient(irisX, irisY, 0, irisX, irisY, currentPupilR);
+    pGrad.addColorStop(0, '#000');
+    pGrad.addColorStop(0.8, '#000');
+    pGrad.addColorStop(1, '#111');
+    ctx.beginPath();
+    ctx.arc(irisX, irisY, currentPupilR, 0, Math.PI * 2);
+    ctx.fillStyle = pGrad;
+    ctx.fill();
+    
+    // Light reflection
+    ctx.beginPath();
+    ctx.arc(irisX - currentPupilR*0.3, irisY - currentPupilR*0.3, currentPupilR*0.15, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+    
+    ctx.restore();
+    
+    // === TRAIL (movement history = saccade pattern) ===
+    for (let i = 1; i < trail.length; i++) {
+        const age = (Date.now() - trail[i].t) / 3000;
+        if (age > 1) continue;
+        const alpha = (1 - age) * 0.15;
+        const tDx = (trail[i].x - cx) / cx * maxShift;
+        const tDy = (trail[i].y - cy) / cy * maxShift;
+        ctx.beginPath();
+        ctx.arc(cx + tDx, cy + tDy, 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100,255,100,${alpha})`;
+        ctx.fill();
+    }
+    
+    // === HUD ===
+    const hud = document.getElementById('hud');
+    hud.innerHTML = `
+        cursor: ${mx},${my} | velocity: ${speed.toFixed(1)} | dilate: ${(dilate*100).toFixed(0)}%<br>
+        iris shift: ${(dx*100).toFixed(0)}%, ${(dy*100).toFixed(0)}% | trail: ${trail.length}<br>
+        pupil: ${currentPupilR.toFixed(0)}px | ${blinkState===0?'open':'blink'}
+    `;
+    
+    const att = document.getElementById('attenuate');
+    att.innerHTML = `
+        ATTENUATION<br>
+        luna: ${phones.luna ? phones.luna.toFixed(1)+'ms' : 'searching...'}<br>
+        iphone: ${phones.iphone ? phones.iphone.toFixed(1)+'ms' : 'asleep'}<br>
+        pixel: ${phones.pixel ? phones.pixel.toFixed(1)+'ms' : 'asleep'}<br>
+        <br>
+        iris=${lunaAlive && phoneAlive ? 'GREEN(all)' : lunaAlive ? 'GOLD(luna)' : 'BLUE(search)'}
+    `;
+    
+    requestAnimationFrame(draw);
+}
+
+// Fetch phone/luna attenuation every 2s
+async function pollAttenuation() {
+    try {
+        // Quick ping via fetch timing
+        const targets = [
+            { name: 'luna', url: 'http://192.168.4.147:8443/pulse' },
+        ];
+        for (const t of targets) {
+            try {
+                const start = performance.now();
+                const r = await fetch(t.url, { signal: AbortSignal.timeout(2000) });
+                if (r.ok) {
+                    phones[t.name] = performance.now() - start;
+                    if (t.name === 'luna') {
+                        lunaData = await r.json();
+                    }
+                }
+            } catch { phones[t.name] = null; }
+        }
+    } catch {}
+    setTimeout(pollAttenuation, 2000);
+}
+
+draw();
+pollAttenuation();
+</script>
+</body>
+</html>

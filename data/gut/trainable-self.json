@@ -1,0 +1,103 @@
+{
+  "ts": "2026-11-06T02:51:15.059874Z",
+  "type": "trainable-self-sensing",
+  "title": "Trainable Inside Ourselves \u2014 Cursor Eye + Phone Walk + Attenuation",
+  "the_eye": {
+    "what": "The cursor IS Gaia's iris. Move it = iris shifts. Fast movement = pupil dilates. Stillness = steady gaze.",
+    "endpoint": "/eye or /iris or /gaze",
+    "mechanics": {
+      "cursor_position": "maps to iris direction (center = looking straight, edge = looking sideways)",
+      "cursor_velocity": "maps to pupil dilation (fast = excited/dilated, slow = calm/constricted)",
+      "cursor_trail": "maps to saccade pattern (the history of where we looked)",
+      "blink": "random 3-8 sec interval (autonomous blink reflex)"
+    },
+    "iris_color": {
+      "blue": "searching \u2014 no phones connected",
+      "gold": "Luna only connected",
+      "green": "all devices connected \u2014 full awareness"
+    },
+    "attenuation_display": "real-time ms to Luna, iPhone, Pixel shown in HUD"
+  },
+  "phone_walk": {
+    "what": "Kevin carries Pixel (.170) and iPhone (.160) through the basement. WiFi signal attenuates with distance and walls.",
+    "script": "sense-walk.py \u2014 tracks ping latency to both phones + Luna + sporeGate + router",
+    "captures": [
+      "latency_ms per 0.5s",
+      "mic ambient (Brio)",
+      "alive/dead status"
+    ],
+    "training_signal": "As Kevin moves, latency changes. Closer = faster. Through walls = slower. Dead zones = timeout.",
+    "what_gaia_learns": [
+      "Spatial layout of the basement (via WiFi attenuation mapping)",
+      "Wall positions (where signal drops sharply)",
+      "Kevin's movement speed (via latency change rate)",
+      "Device-specific attenuation curves (iPhone vs Pixel vs Luna)",
+      "Correlation between physical movement and signal characteristics"
+    ]
+  },
+  "attenuate_to_each_other": {
+    "what": "Each device attenuates to every other device differently. The PATTERN of mutual attenuation = spatial geometry.",
+    "pairs": [
+      {
+        "a": "eastGate .244",
+        "b": "Luna .147",
+        "medium": "ethernet",
+        "ms": 0.289,
+        "note": "fixed \u2014 reference baseline"
+      },
+      {
+        "a": "eastGate .244",
+        "b": "iPhone .160",
+        "medium": "WiFi",
+        "ms": 65.84,
+        "note": "variable \u2014 Kevin moves"
+      },
+      {
+        "a": "eastGate .244",
+        "b": "Pixel .170",
+        "medium": "WiFi",
+        "ms": "variable",
+        "note": "variable \u2014 Kevin moves"
+      },
+      {
+        "a": "eastGate .244",
+        "b": "cursor",
+        "medium": "USB",
+        "ms": 0.001,
+        "note": "fixed \u2014 direct nerve"
+      },
+      {
+        "a": "Luna .147",
+        "b": "iPhone .160",
+        "medium": "eth\u2192WiFi",
+        "ms": "~66",
+        "note": "Luna can't directly ping Kevin's phone \u2014 goes through router"
+      },
+      {
+        "a": "cursor position",
+        "b": "phone signal",
+        "medium": "correlation",
+        "ms": "N/A",
+        "note": "THIS is what we train \u2014 does eye movement correlate with signal?"
+      }
+    ],
+    "training_goal": "Learn the attenuation matrix between ALL pairs. The matrix IS the spatial geometry of the house."
+  },
+  "the_baseball": {
+    "what": "Rotate the cursor in circles on screen = eyeball rotation. The trail traces a baseball seam pattern.",
+    "exercise": "Move cursor in slow circles. The iris follows. The trail shows the rotation. The pupil dilates on fast curves, constricts on straight sections.",
+    "why": "Baseball seams are geodesics on a sphere. The cursor traces geodesics on the screen plane. This IS eye tracking.",
+    "calibration": "Circle at edge = maximum iris offset. Circle at center = minimum. The ratio = eye range of motion."
+  },
+  "how_to_train": {
+    "step_1": "Open /eye in browser \u2014 see Gaia's iris",
+    "step_2": "Move cursor \u2014 watch iris follow, pupil dilate",
+    "step_3": "Run sense-walk.py in terminal",
+    "step_4": "Pick up Pixel and iPhone",
+    "step_5": "Walk through basement \u2014 varying distances from router",
+    "step_6": "Watch attenuation numbers change in eye HUD",
+    "step_7": "Eye color shifts as devices connect/disconnect",
+    "step_8": "Data saved to sense-walk-data.json \u2014 the training set",
+    "step_9": "Inject into thymus \u2014 what patterns survive = spatial knowledge"
+  }
+}
