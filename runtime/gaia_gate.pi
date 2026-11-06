@@ -11,10 +11,63 @@ import types as _t, importlib.util
 
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
+_PI_STR = "31415926535897932384626433832795028841971"
 PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11434"
 PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
+
+# ═══ songBird TOWER — service discovery, NO hardcoded IPs ═══
+# swarmVine gossips this table across all gates. songBird resolves names→addrs.
+# Every port derives from π. Every gate resolves by NAME not number.
+_SONGBIRD_SERVICES = {
+    "gate":       {"port": PORT,  "proto": "http",  "desc": "main gate"},
+    "thymus":     {"port": int(_PI_STR[0:4]),  "proto": "http",  "desc": "thymus classifier"},
+    "data":       {"port": int(_PI_STR[4:8]),  "proto": "http",  "desc": "data surface"},
+    "compute":    {"port": int(_PI_STR[8:12]), "proto": "http",  "desc": "compute dispatch"},
+    "mesh":       {"port": int(_PI_STR[12:16]),"proto": "tcp",   "desc": "mesh transport"},
+    "webpi":      {"port": 8080, "proto": "http",  "desc": "web presentation"},
+    "tls":        {"port": 8444, "proto": "https", "desc": "TLS gate"},
+    "ollama":     {"port": 11434,"proto": "http",  "desc": "cortex inference"},
+    "forge":      {"port": 3000, "proto": "http",  "desc": "forgejo git"},
+    "petal":      {"port": int(PI*PI*1000), "proto": "http", "desc": "petalTongue render"},
+    "membrane":   {"port": 9753, "proto": "http",  "desc": "cellMembrane"},
+    "signal":     {"port": 9754, "proto": "http",  "desc": "canary beacon"},
+    "neutron":    {"port": 9755, "proto": "http",  "desc": "messaging"},
+    "notify":     {"port": 9756, "proto": "http",  "desc": "notifications"},
+    "squirrel":   {"port": 3142, "proto": "jsonrpc","desc": "agent dispatch"},
+    "cortex":     {"port": 3143, "proto": "jsonrpc","desc": "cortex bridge"},
+}
+
+# swarmVine GOSSIP TABLE — gates announce themselves, NOT hardcoded
+_SWARMVINE_GATES = {}  # populated at runtime by gate announcements
+_KNOWN_GATE_NAMES = ["eastGate","northGate","blueGate","graftGate","southGate","ironGate","sporeGate","grapheneGate"]
+
+def _songbird_resolve(service, gate=None):
+    """Resolve a service name to host:port. songBird tower logic."""
+    svc = _SONGBIRD_SERVICES.get(service)
+    if not svc: return None
+    host = "127.0.0.1"
+    if gate and gate in _SWARMVINE_GATES:
+        host = _SWARMVINE_GATES[gate].get("ip", host)
+    return f"{svc['proto']}://{host}:{svc['port']}"
+
+def _swarmvine_announce(gate_name, ip, services=None):
+    """A gate announces itself to the gossip table."""
+    _SWARMVINE_GATES[gate_name] = {
+        "ip": ip, "ts": time.time(),
+        "services": services or list(_SONGBIRD_SERVICES.keys()),
+    }
+
+def _songbird_topology():
+    """Full songBird tower view — all services × all gates."""
+    return {
+        "services": {k: {"port": v["port"], "proto": v["proto"]} for k,v in _SONGBIRD_SERVICES.items()},
+        "gates": {k: {"ip": v["ip"], "last_seen": v["ts"], "services": v.get("services",[])} for k,v in _SWARMVINE_GATES.items()},
+        "pi_ports": {f"π[{i*4}:{i*4+4}]": int(_PI_STR[i*4:i*4+4]) for i in range(4)},
+        "total_services": len(_SONGBIRD_SERVICES),
+        "total_gates": len(_SWARMVINE_GATES),
+    }
 
 # ═══ LOAD MODULES — the organs of the organism ═══
 def _load(name, fname):
@@ -405,6 +458,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/eye","/iris","/gaze","/eye.html"): self._serve_static("eye.html"); return
         if self.path in ("/glados","/gaia-os","/beacon","/bingo-beacon","/glados.html"): self._serve_static("glados.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
+        if self.path in ("/songbird","/songbird.json","/tower","/services"):
+            self._json(_songbird_topology()); return
+        if self.path in ("/swarmvine","/swarmvine.json","/gossip","/gates"):
+            self._json({"gates":_SWARMVINE_GATES,"known":_KNOWN_GATE_NAMES,"total":len(_SWARMVINE_GATES)}); return
+        if self.path in ("/routing","/routing.json","/pi-ports"):
+            self._json({"services":{k:v["port"] for k,v in _SONGBIRD_SERVICES.items()},"pi_digits":_PI_STR[:20],"gates":list(_SWARMVINE_GATES.keys())}); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
         if self.path=="/amoeba":
@@ -860,6 +919,28 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
+        # ═══ swarmVine ANNOUNCE — gates register themselves ═══
+        if self.path in ("/api/swarmvine/announce","/api/gossip"):
+            try:
+                j=json.loads(body) if body else {}
+                gate=j.get("gate",""); gip=j.get("ip",ip)
+                if gate and gate in _KNOWN_GATE_NAMES:
+                    _swarmvine_announce(gate,gip,j.get("services"))
+                    self._json({"ok":True,"gate":gate,"ip":gip,"total_gates":len(_SWARMVINE_GATES)})
+                else:
+                    self._json({"error":f"unknown gate: {gate}","known":_KNOWN_GATE_NAMES})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # ═══ songBird RESOLVE — lookup service by name ═══
+        if self.path in ("/api/songbird/resolve","/api/resolve"):
+            try:
+                j=json.loads(body) if body else {}
+                svc=j.get("service",""); gate=j.get("gate")
+                url=_songbird_resolve(svc,gate)
+                if url: self._json({"ok":True,"service":svc,"url":url})
+                else: self._json({"error":f"unknown service: {svc}","available":list(_SONGBIRD_SERVICES.keys())})
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ MCP HTTP BRIDGE — the economic mouth at /mcp ═══
         if self.path in ("/mcp","/api/mcp"):
             try:
@@ -878,6 +959,9 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         {"name":"particle_model","description":"The atom — proton, neutron, electron, neutrino","inputSchema":{"type":"object","properties":{}}},
                         {"name":"llama_herd","description":"List all available Gaia models","inputSchema":{"type":"object","properties":{}}},
                         {"name":"llama_ask","description":"Ask Gaia cortex a question","inputSchema":{"type":"object","properties":{"prompt":{"type":"string","description":"The question"}}}},
+                        {"name":"songbird_tower","description":"All services and their π-derived ports","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"swarmvine_gossip","description":"All announced gates and their services","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"songbird_resolve","description":"Resolve a service name to URL","inputSchema":{"type":"object","properties":{"service":{"type":"string","description":"Service name"},"gate":{"type":"string","description":"Gate name (optional)"}}}},
                     ]
                     self._json(rpc({"tools":tools})); return
                 elif method=="tools/call":
@@ -915,6 +999,11 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                             r=urllib.request.urlopen(req,timeout=120)
                             result=json.loads(r.read())
                         except Exception as e: result={"error":str(e)}
+                    elif tool=="songbird_tower": result=_songbird_topology()
+                    elif tool=="swarmvine_gossip": result={"gates":_SWARMVINE_GATES,"known":_KNOWN_GATE_NAMES}
+                    elif tool=="songbird_resolve":
+                        url=_songbird_resolve(args.get("service",""),args.get("gate"))
+                        result={"url":url} if url else {"error":"unknown service","available":list(_SONGBIRD_SERVICES.keys())}
                     else: result={"error":f"unknown tool: {tool}"}
                     self._json(rpc({"content":[{"type":"text","text":json.dumps(result,default=str)}]})); return
                 else:
