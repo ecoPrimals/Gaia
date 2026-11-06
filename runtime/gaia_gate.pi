@@ -860,6 +860,67 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
+        # ═══ MCP HTTP BRIDGE — the economic mouth at /mcp ═══
+        if self.path in ("/mcp","/api/mcp"):
+            try:
+                j=json.loads(body) if body else {}
+                method=j.get("method",""); mid=j.get("id",1); params=j.get("params",{})
+                rpc=lambda r: {"jsonrpc":"2.0","id":mid,"result":r}
+                if method=="initialize":
+                    self._json(rpc({"protocolVersion":"2025-03-26","capabilities":{"tools":{}},"serverInfo":{"name":"gaia-gate","version":"10.0"}})); return
+                elif method=="tools/list":
+                    tools=[
+                        {"name":"membrane_counts","description":"Quick counts from inside the membrane","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"topology","description":"Get the live site topology","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"chipmunk_status","description":"Get chipmunk wake level and depth","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"pulse","description":"Get the organism heartbeat","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"observe_membrane","description":"Observe current membrane state","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"particle_model","description":"The atom — proton, neutron, electron, neutrino","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"llama_herd","description":"List all available Gaia models","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"llama_ask","description":"Ask Gaia cortex a question","inputSchema":{"type":"object","properties":{"prompt":{"type":"string","description":"The question"}}}},
+                    ]
+                    self._json(rpc({"tools":tools})); return
+                elif method=="tools/call":
+                    tool=params.get("name",""); args=params.get("arguments",{})
+                    result=None
+                    if tool=="pulse": result=write_pulse()
+                    elif tool=="topology":
+                        tp=os.path.join(_REPO,"data","body","topology.json")
+                        if os.path.exists(tp):
+                            with open(tp) as f: result=json.load(f)
+                        else: result={"error":"topology not generated"}
+                    elif tool=="chipmunk_status":
+                        cp=os.path.join(_REPO,"data","body","chipmunk.json")
+                        if os.path.exists(cp):
+                            with open(cp) as f: result=json.load(f)
+                        else: result={"error":"chipmunk not generated"}
+                    elif tool=="membrane_counts":
+                        result={"entities":len(visitor_memory),"heartbeats":total_beats,"gut_files":len([f for f in os.listdir(os.path.join(_REPO,"data","gut")) if f.endswith(".json")])}
+                    elif tool=="observe_membrane":
+                        sf=os.path.join(_REPO,"data","gut","gaia-self-state.json")
+                        if os.path.exists(sf):
+                            with open(sf) as f: result=json.load(f)
+                        else: result=write_pulse()
+                    elif tool=="particle_model":
+                        result={"proton":"membrane","neutron":"messaging","electron":"human viewer","neutrino":"squirrel+chipmunk","forces":{"strong":"Rust primals","electromagnetic":"HTTPS/TLS","weak":"anderson sort","gravity":"tuebor"}}
+                    elif tool=="llama_herd":
+                        try:
+                            r=urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=5)
+                            result=json.loads(r.read())
+                        except: result={"error":"ollama unreachable"}
+                    elif tool=="llama_ask":
+                        prompt=args.get("prompt","ping")
+                        try:
+                            req=urllib.request.Request(f"{OLLAMA}/api/generate",data=json.dumps({"model":"gaia:latest","prompt":prompt,"stream":False}).encode(),headers={"Content-Type":"application/json"})
+                            r=urllib.request.urlopen(req,timeout=120)
+                            result=json.loads(r.read())
+                        except Exception as e: result={"error":str(e)}
+                    else: result={"error":f"unknown tool: {tool}"}
+                    self._json(rpc({"content":[{"type":"text","text":json.dumps(result,default=str)}]})); return
+                else:
+                    self._json({"jsonrpc":"2.0","id":mid,"error":{"code":-32601,"message":f"unknown method: {method}"}}); return
+            except Exception as e:
+                self._json({"jsonrpc":"2.0","id":mid if 'mid' in dir() else 1,"error":{"code":-32603,"message":str(e)}}); return
         # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
         if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
             try:
@@ -1032,8 +1093,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"print",image_path],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
-            except Exception as e: self._json({"error":str(e)})
-            return
+            except Exception as e: self._json({"error":str(e)}); return
         # EPSON FEEDBACK LOOP (POST /api/io/loop)
         if self.path in ("/api/io/loop","/api/epson/loop"):
             try:
