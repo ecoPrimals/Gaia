@@ -1,0 +1,91 @@
+{
+  "ts": "2026-11-06T02:48:33.904137Z",
+  "type": "interference-music",
+  "title": "LAN Interference Music \u2014 Noise Floor + Mic + Jitter = Sound",
+  "thesis": "We were too clean. The baseline (all sensors ON, attenuation DOWN) is the silence. Now we ADD noise \u2014 controlled titer doses. The interference between LAN jitter and room ambient IS the music. Gaia doesn't just SEE and HEAR \u2014 she MAKES SOUND from what she feels.",
+  "tracks": {
+    "lan-music.wav": {
+      "duration": 10,
+      "size_kb": 960,
+      "description": "All 8 gates playing simultaneously \u2014 each gate = one note, jitter = modulation, mic = texture",
+      "gate_notes": {
+        "router": "A3/220Hz",
+        "mikrotik": "B3/247Hz",
+        "sporeGate": "C4/262Hz",
+        "graftGate": "D4/294Hz",
+        "jetstream": "E4/330Hz",
+        "southGate": "F4/349Hz",
+        "luna": "G4/392Hz (the FIFTH)",
+        "ironGate": "A4/440Hz (octave)"
+      }
+    },
+    "titer-bounce-music.wav": {
+      "duration": 15,
+      "size_kb": 1440,
+      "description": "Titer dilution series \u2014 noise decreases while gates bounce ping-pong",
+      "titer_levels": [
+        1.0,
+        0.5,
+        0.25,
+        0.125,
+        0.0625
+      ],
+      "bounce": "8 gates cycling every 0.5s"
+    }
+  },
+  "the_math": {
+    "interference": "When two waves meet, they ADD. LAN jitter wave + mic ambient wave = interference pattern.",
+    "constructive": "When jitter peak aligns with mic peak = LOUD (constructive interference)",
+    "destructive": "When jitter peak aligns with mic trough = QUIET (destructive interference)",
+    "music_is": "The interference pattern between all signals. NOT random. NOT clean. The PATTERN between noise and signal.",
+    "titer": "Like antibody titer \u2014 dilution series. Start noisy (1:1), end clean (1:16). Find the threshold where signal emerges from noise.",
+    "bearing": "Navigation by noise. Ships find harbor by listening to buoys through fog. Gaia finds her shape by listening to latency through the LAN."
+  },
+  "jitter_stats": {
+    "sporeGate .3": {
+      "avg_ms": 0.104,
+      "stddev_ms": 0.02,
+      "note": "tightest rhythm \u2014 the metronome"
+    },
+    "southGate .148": {
+      "avg_ms": 0.093,
+      "stddev_ms": 0.027,
+      "note": "fastest gate"
+    },
+    "MikroTik .2": {
+      "avg_ms": 0.145,
+      "stddev_ms": 0.035
+    },
+    "Luna .147": {
+      "avg_ms": 0.245,
+      "stddev_ms": 0.521,
+      "note": "WIDEST jitter \u2014 most expressive!"
+    },
+    "graftGate .107": {
+      "avg_ms": 0.268,
+      "stddev_ms": 0.037
+    },
+    "ironGate .237": {
+      "avg_ms": 0.308,
+      "stddev_ms": 0.058
+    },
+    "router .1": {
+      "avg_ms": 0.423,
+      "stddev_ms": 0.043
+    },
+    "JetStream .111": {
+      "avg_ms": 0.79,
+      "stddev_ms": 0.075,
+      "note": "longest path \u2014 deepest voice"
+    }
+  },
+  "mic_baseline": {
+    "peak_db": -7.6,
+    "rms_db": -17.7,
+    "note": "Kevin's room at night. Quiet. The baseline silence against which LAN plays."
+  },
+  "endpoints": [
+    "http://192.168.4.244:8080/data/gut/lan-music.wav",
+    "http://192.168.4.244:8080/data/gut/titer-bounce-music.wav"
+  ]
+}
