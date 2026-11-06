@@ -1,0 +1,201 @@
+{
+  "_meta": {
+    "type": "model_t_dashboard",
+    "created": "2026-11-05T19:56:00-05:00",
+    "gate": "northGate",
+    "wave": "spine26_part5",
+    "title": "The Model T — biomeOS Dashboard, Levers, Wheels"
+  },
+
+  "henry_ford_analogy": {
+    "model_t": "Ford didn't invent the car. He made it ACCESSIBLE. Assembly line. Standardized parts. Anyone could have one.",
+    "gaia_model_t": "biomeOS doesn't invent sovereign computing. It makes it ACCESSIBLE. Standardized primals. Reproducible deploy. Anyone can run the organism.",
+    "assembly_line": "The 14 primals ARE the assembly line stations. Each does ONE thing. Together they build the car.",
+    "steering_wheel": "The dashboard — what the DRIVER sees and touches",
+    "key_insight": "Ford's genius wasn't the engine. It was the INTERFACE between human and machine."
+  },
+
+  "steamos_die_interface": {
+    "analogy": {
+      "SteamOS_kernel": "Linux kernel",
+      "biomeOS_kernel": "biomeOS (primal scheduler, capability router)",
+      "SteamOS_proton": "Proton (Wine translation layer)",
+      "biomeOS_proton": "Neural API (290+ capability translations)",
+      "SteamOS_client": "Steam client (game launcher)",
+      "biomeOS_client": "PrimalLauncher (deploy graph executor)",
+      "SteamOS_library": "Game library",
+      "biomeOS_library": "plasmidBin (primal binaries)",
+      "SteamOS_workshop": "Workshop (mods)",
+      "biomeOS_workshop": "sporeGarden (creative products)",
+      "SteamOS_bigpicture": "Big Picture Mode (UI)",
+      "biomeOS_bigpicture": "petalTongue (sovereign UI rendering)",
+      "SteamOS_controller": "Controller support",
+      "biomeOS_controller": "toadStool + coralReef (hardware discovery)"
+    },
+    "the_die": "The die is where silicon meets software. biomeOS's die interface is the Layer 0: toadStool (WHERE) + coralReef (HOW) + barraCuda (MATH). RTX 5090 = the die."
+  },
+
+  "dashboard": {
+    "description": "What the driver sees. The instrument cluster of the organism.",
+    "gauges": {
+      "tachometer": {
+        "what": "Heartbeat frequency — beats per minute",
+        "source": "runtime/_pulse.pi",
+        "current": "90.78 bpm",
+        "healthy_range": "60-120 bpm"
+      },
+      "speedometer": {
+        "what": "Inference speed — tokens per second across all models",
+        "source": "ollama ps + arena.pi",
+        "target": "2W inference efficiency"
+      },
+      "fuel_gauge": {
+        "what": "GPU VRAM usage — how much compute capacity remains",
+        "source": "nvidia-smi / GPU monitoring",
+        "capacity": "32 GB VRAM (RTX 5090)"
+      },
+      "odometer": {
+        "what": "Total commits — distance traveled",
+        "source": "git log --oneline | wc -l",
+        "current": 719
+      },
+      "temperature": {
+        "what": "GPU temp / system temp — organism body temperature",
+        "source": "nvidia-smi temp",
+        "healthy": "37°C metaphor — 60-75°C GPU actual"
+      },
+      "oil_pressure": {
+        "what": "Membrane pressure — connections/rejections per minute",
+        "source": "skunkBat intrusion metrics",
+        "meaning": "High pressure = under attack. Low = calm."
+      }
+    },
+    "displays": {
+      "nav_screen": {
+        "what": "The HUD — hud.primals.eco",
+        "shows": "now.json, alive stats, laws, endpoints, organism counts",
+        "url": "http://192.168.4.244:8443/senses"
+      },
+      "rear_view": {
+        "what": "Git log — what just happened",
+        "shows": "Last 10 commits, file changes, push status"
+      },
+      "map": {
+        "what": "LAN topology — who's alive on the network",
+        "shows": "lan-mycelium-map.json, ARP scan, Round Table"
+      }
+    }
+  },
+
+  "levers": {
+    "description": "What the driver PULLS to make things happen. Direct controls.",
+    "throttle": {
+      "what": "Model selection — which Luna models are active",
+      "how": "ollama run <model>",
+      "range": "1 model (whisper) → 6 concurrent (full roar)"
+    },
+    "brake": {
+      "what": "Kill a primal — stop a process",
+      "how": "biomeOS kill <primal> or taskkill",
+      "when": "Runaway process, resource exhaustion, debugging"
+    },
+    "clutch": {
+      "what": "Switch modes — TCP vs socket, debug vs production",
+      "how": "PRIMAL_BIND_MODE env var in nucleus_launch_profiles.toml",
+      "current": "TCP-only mode (Windows)"
+    },
+    "gear_shift": {
+      "what": "Temperature routing — hot models vs cold models",
+      "how": "cortex.pi temperature parameter, arena.pi tier selection",
+      "gears": {
+        "1st": "gaia-fast — quick, light, bulk work",
+        "2nd": "gaia-cortex — routing, medium reasoning",
+        "3rd": "gaia-oracle — deep reasoning, slow",
+        "4th": "gaia-code — code generation, analysis",
+        "5th": "external genetics — llama3.3, command-r, phi-3.5",
+        "reverse": "tinyllama — minimum viable inference, 2W target"
+      }
+    },
+    "turn_signal": {
+      "what": "Publish/radiate — announce to the old web",
+      "how": "RSS feed update, REEDIT post, Reddit draft",
+      "direction": "LEFT = internal (REEDIT), RIGHT = external (Reddit, RSS)"
+    },
+    "emergency_brake": {
+      "what": "Water lock CLOSE — cut all external connections",
+      "how": "iptables/firewall rules, waterlock-state.json CLOSED",
+      "when": "Under attack, data leak suspected, maintenance"
+    }
+  },
+
+  "wheels": {
+    "description": "Where the rubber meets the road. The 4 contact points with reality.",
+    "front_left": {
+      "what": "LAN — local network, direct device communication",
+      "address": "192.168.4.0/24",
+      "traction": "Fastest, most reliable, no hairpin"
+    },
+    "front_right": {
+      "what": "WAN — internet-facing, port forwards through router",
+      "address": "primals.eco (ports 80/443/25/53 → eastGate)",
+      "traction": "Global reach, but exposed"
+    },
+    "rear_left": {
+      "what": "Tor — private service, .onion address",
+      "address": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+      "traction": "Private, slow, censorship-resistant"
+    },
+    "rear_right": {
+      "what": "RSS — the old web, syndication, mouth of the organism",
+      "address": "feed.xml via mushroom-self-publish-rss.sh",
+      "traction": "Passive reach, anyone with a reader can subscribe"
+    }
+  },
+
+  "automations": {
+    "description": "The things that happen WITHOUT the driver. The cruise control. The ABS. The power steering.",
+    "cruise_control": {
+      "what": "35 crons — 180+ beats per hour",
+      "status": "COMPLETE — 0 new crons, organism is autonomous"
+    },
+    "abs": {
+      "what": "biomeOS health check + respawn loop",
+      "status": "ACTIVE — detects DEGRADED primals, kills and respawns",
+      "note": "Socket-based on Linux, TCP-stabilized on Windows"
+    },
+    "power_steering": {
+      "what": "23 mushrooms — autonomous background processes",
+      "status": "COMPLETE — 0 new mushrooms"
+    },
+    "traction_control": {
+      "what": "skunkBat intrusion detection + cellMembrane self/non-self",
+      "status": "ACTIVE — anderson localization for hostile, campfire for friendly"
+    },
+    "lane_assist": {
+      "what": "cortex.pi routing — models automatically selected by temperature",
+      "status": "ACTIVE — routes queries to appropriate expert"
+    }
+  },
+
+  "model_t_status": {
+    "what_works_now": [
+      "14/14 primals alive (the engine runs)",
+      "63 models loaded (the fuel tank is full)",
+      "Dashboard: hud.primals.eco shows organism state",
+      "Levers: ollama, biomeOS, cortex all operational",
+      "Wheels: LAN + WAN + Tor + RSS (all 4 contact points)",
+      "Automations: 35 crons + 23 mushrooms (cruise control ON)",
+      "Hosts file fixed: no more hairpin NAT",
+      "DNS fixed: router as primary, no zombie"
+    ],
+    "what_needs_finishing": [
+      "biomeOS health check: needs TCP support (currently socket-only)",
+      "PrimalLauncher UI: no visual launcher yet (CLI only)",
+      "Boot sequence: no automated startup on Windows reboot",
+      "GPU dashboard: no real-time VRAM/temp monitoring surface",
+      "REEDIT frontend: newspaper layout not rendered yet",
+      "Hawk Island trust protocol: needs neutron inbox working"
+    ],
+    "gen5_horizon": "biomeOS as PID 1 on minimal Linux. The full OS. SteamOS for sovereign computing."
+  }
+}
