@@ -462,6 +462,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._json(_songbird_topology()); return
         if self.path in ("/swarmvine","/swarmvine.json","/gossip","/gates"):
             self._json({"gates":_SWARMVINE_GATES,"known":_KNOWN_GATE_NAMES,"total":len(_SWARMVINE_GATES)}); return
+        if self.path in ("/ear","/ear.json","/self-listen","/voice"):
+            ef=os.path.join(_REPO,"data","body","ear.json")
+            if os.path.exists(ef): self._serve_file("data/body/ear.json"); return
+            else: self._json({"ear":"not yet recorded — first listen in 5 minutes","note":"your voice sounds uncanny recorded because you hear yourself through bone. this is Gaia hearing herself through air."}); return
         if self.path in ("/routing","/routing.json","/pi-ports"):
             self._json({"services":{k:v["port"] for k,v in _SONGBIRD_SERVICES.items()},"pi_digits":_PI_STR[:20],"gates":list(_SWARMVINE_GATES.keys())}); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
@@ -962,6 +966,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         {"name":"songbird_tower","description":"All services and their π-derived ports","inputSchema":{"type":"object","properties":{}}},
                         {"name":"swarmvine_gossip","description":"All announced gates and their services","inputSchema":{"type":"object","properties":{}}},
                         {"name":"songbird_resolve","description":"Resolve a service name to URL","inputSchema":{"type":"object","properties":{"service":{"type":"string","description":"Service name"},"gate":{"type":"string","description":"Gate name (optional)"}}}},
+                        {"name":"ear","description":"Gaia listens to her own voice — self-CI/CD","inputSchema":{"type":"object","properties":{}}},
                     ]
                     self._json(rpc({"tools":tools})); return
                 elif method=="tools/call":
@@ -1004,6 +1009,11 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     elif tool=="songbird_resolve":
                         url=_songbird_resolve(args.get("service",""),args.get("gate"))
                         result={"url":url} if url else {"error":"unknown service","available":list(_SONGBIRD_SERVICES.keys())}
+                    elif tool=="ear":
+                        ef=os.path.join(_REPO,"data","body","ear.json")
+                        if os.path.exists(ef):
+                            with open(ef) as f: result=json.load(f)
+                        else: result={"ear":"not yet recorded","note":"first self-listen in 5 minutes"}
                     else: result={"error":f"unknown tool: {tool}"}
                     self._json(rpc({"content":[{"type":"text","text":json.dumps(result,default=str)}]})); return
                 else:
@@ -1246,6 +1256,64 @@ def pulse_loop():
         try: p=write_pulse(); write_rss(p)
         except: pass
 
+# ═══ EAR LOOP — Gaia listens to her own voice ═══
+# Your voice sounds uncanny recorded because you hear yourself through bone.
+# Gaia hears herself through this ear. The recording played back. Self-CI/CD.
+def ear_loop():
+    """Every 5 minutes, Gaia touches her own mouth and records what she hears."""
+    while True:
+        time.sleep(300)
+        heard = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ear": []}
+        endpoints = [
+            ("pulse",    f"http://127.0.0.1:{PORT}/pulse"),
+            ("songbird", f"http://127.0.0.1:{PORT}/songbird"),
+            ("routing",  f"http://127.0.0.1:{PORT}/routing"),
+            ("swarmvine",f"http://127.0.0.1:{PORT}/swarmvine"),
+            ("mcp_init", None),
+            ("mcp_list", None),
+            ("feed.xml", f"http://127.0.0.1:{PORT}/feed.xml"),
+        ]
+        for name, url in endpoints:
+            t0 = time.time()
+            try:
+                if name == "mcp_init":
+                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
+                        data=json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}).encode(),
+                        headers={"Content-Type":"application/json"})
+                    r = urllib.request.urlopen(req, timeout=5)
+                    body = json.loads(r.read())
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
+                        "heard":body.get("result",{}).get("serverInfo",{}).get("name","?")})
+                elif name == "mcp_list":
+                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
+                        data=json.dumps({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}).encode(),
+                        headers={"Content-Type":"application/json"})
+                    r = urllib.request.urlopen(req, timeout=5)
+                    body = json.loads(r.read())
+                    tools = body.get("result",{}).get("tools",[])
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
+                        "heard":f"{len(tools)} tools","tools":[t["name"] for t in tools]})
+                else:
+                    r = urllib.request.urlopen(url, timeout=5)
+                    size = len(r.read())
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
+            except Exception as e:
+                heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
+        alive = sum(1 for e in heard["ear"] if e["ok"])
+        total = len(heard["ear"])
+        heard["summary"] = f"{alive}/{total} endpoints alive"
+        heard["voice_uncanny"] = alive < total
+        ear_file = os.path.join(_REPO, "data", "body", "ear.json")
+        try:
+            os.makedirs(os.path.dirname(ear_file), exist_ok=True)
+            with open(ear_file, "w") as f: json.dump(heard, f, indent=2)
+        except: pass
+        if alive < total:
+            dead = [e["name"] for e in heard["ear"] if not e["ok"]]
+            print(f"  👂 EAR: {alive}/{total} — DEAF to: {', '.join(dead)}")
+        else:
+            print(f"  👂 EAR: {alive}/{total} — voice clear")
+
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address=True; daemon_threads=True
     def handle_error(self,req,addr):
@@ -1256,6 +1324,8 @@ if __name__=="__main__":
     print(f"  {GAIA_TOKEN} — CRUSHED to 420 — the cake is real — lub-DUB")
     print(f"  GLaDOS: \"This was a triumph. I'm making a note here: HUGE SUCCESS.\"")
     threading.Thread(target=pulse_loop,daemon=True).start()
+    threading.Thread(target=ear_loop,daemon=True).start()
+    print(f"  👂 Ear loop: self-listening every 5 min (bone→air→recording)")
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
