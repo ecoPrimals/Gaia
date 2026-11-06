@@ -598,7 +598,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 try:
                     with open(os.path.join(_REPO,"data","gut","cascade-state.json")) as f: cascade=json.load(f)
                     state["cascade_weave"]={
-                        "forge":"sporeGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
+                        "forge":"eastGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
                         "harvest_built":cascade.get("cascade_phases",{}).get("harvest",{}).get("primals_built",0),
                         "rootpulse":cascade.get("cascade_phases",{}).get("rootpulse_commit",{}).get("status","unknown"),
                         "membrane_services":cascade.get("membrane_health",{}).get("total_running",0),
@@ -857,13 +857,38 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 cascade_file=os.path.join(_REPO,"data","gut","cascade-state.json")
                 if self.path=="/api/cascade/trigger":
                     j=json.loads(body) if body else {}
-                    gate=j.get("gate","sporeGate")
-                    if gate=="sporeGate":
-                        import subprocess as sp
-                        result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
-                        self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
+                    gate=j.get("gate","eastGate")
+                    action=j.get("action","status")
+                    import subprocess as sp
+                    if gate=="eastGate":
+                        if action=="certbot":
+                            domains=j.get("domains",["primals.eco","*.primals.eco"])
+                            cmd=["certbot","certonly","--dns-standalone","-d",",".join(domains),"--agree-tos","--non-interactive","--email","ops@primals.eco"]
+                            try:
+                                result=sp.run(cmd,capture_output=True,text=True,timeout=120)
+                                self._json({"ok":True,"action":"certbot","gate":gate,"rc":result.returncode,"stdout":result.stdout.strip()[:500],"stderr":result.stderr.strip()[:500]})
+                            except Exception as e:
+                                self._json({"ok":False,"action":"certbot","error":str(e)})
+                        elif action=="shell":
+                            cmd=j.get("cmd",[])
+                            if cmd and all(c not in str(cmd).lower() for c in ["rm -rf","dd if","mkfs","> /dev"]):
+                                try:
+                                    result=sp.run(cmd,capture_output=True,text=True,timeout=30,cwd=_REPO)
+                                    self._json({"ok":True,"action":"shell","gate":gate,"rc":result.returncode,"stdout":result.stdout.strip()[:1000],"stderr":result.stderr.strip()[:500]})
+                                except Exception as e:
+                                    self._json({"ok":False,"action":"shell","error":str(e)})
+                            else:
+                                self._json({"error":"command blocked by safety filter"})
+                        else:
+                            self._json({"ok":True,"action":"status","gate":gate,"note":"eastGate cascade trigger alive. actions: certbot, shell, status"})
+                    elif gate=="sporeGate":
+                        try:
+                            result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
+                            self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
+                        except Exception as e:
+                            self._json({"ok":False,"action":"cascade_triggered","gate":gate,"error":str(e),"note":"sporeGate is ZOMBIE — consider gate=eastGate"})
                     else:
-                        self._json({"error":f"cascade not available on {gate}"})
+                        self._json({"error":f"unknown gate '{gate}'","available":["eastGate","sporeGate"]})
                 else:
                     try:
                         with open(cascade_file) as f: cascade=json.load(f)
