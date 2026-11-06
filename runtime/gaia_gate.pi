@@ -17,6 +17,65 @@ PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
 
+# ═══ VITAL SIGNS — heart (RPM) + lungs (respiration) — local AND delocalized ═══
+# Heart = beats per minute (requests served). Each gate has its own heart.
+# Lungs = breaths per minute (large responses = exhale, large requests = inhale).
+# Local vitals = this gate. Delocalized vitals = ALL gates summed.
+_GATE_VITALS = {}  # populated by gate announcements: {gate: {bpm, brpm, beats, breaths, ts}}
+_INHALE_BYTES = 0  # total bytes received (inhale)
+_EXHALE_BYTES = 0  # total bytes sent (exhale)
+
+def _vital_signs_local():
+    """This gate's heart and lungs."""
+    uptime_s = max(time.time() - boot_time, 1)
+    uptime_min = uptime_s / 60
+    bpm = total_beats / max(uptime_min, 1)
+    brpm = total_breaths / max(uptime_min, 1)
+    return {
+        "gate": os.environ.get("HOSTNAME", "localGate"),
+        "heart": {
+            "bpm": round(bpm, 2),
+            "beats": total_beats,
+            "rhythm": "lub-DUB" if total_beats % 2 == 0 else "DUB-lub",
+        },
+        "lungs": {
+            "brpm": round(brpm, 2),
+            "breaths": total_breaths,
+            "inhale_mb": round(_INHALE_BYTES / (1024*1024), 2),
+            "exhale_mb": round(_EXHALE_BYTES / (1024*1024), 2),
+            "tidal_ratio": round(_EXHALE_BYTES / max(_INHALE_BYTES, 1), 2),
+        },
+        "uptime_s": int(uptime_s),
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+def _vital_signs_delocalized():
+    """All gates summed — the organism's vital signs."""
+    local = _vital_signs_local()
+    all_gates = {"localGate": local}
+    all_gates.update(_GATE_VITALS)
+    total_bpm = local["heart"]["bpm"]
+    total_brpm = local["lungs"]["brpm"]
+    total_b = local["heart"]["beats"]
+    total_br = local["lungs"]["breaths"]
+    for gv in _GATE_VITALS.values():
+        total_bpm += gv.get("bpm", 0)
+        total_brpm += gv.get("brpm", 0)
+        total_b += gv.get("beats", 0)
+        total_br += gv.get("breaths", 0)
+    return {
+        "organism": {
+            "heart": {"bpm": round(total_bpm, 2), "beats": total_b, "gates_beating": 1 + len(_GATE_VITALS)},
+            "lungs": {"brpm": round(total_brpm, 2), "breaths": total_br, "gates_breathing": 1 + len(_GATE_VITALS)},
+        },
+        "gates": all_gates,
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+def _gate_vitals_announce(gate, bpm, brpm, beats, breaths):
+    """Another gate reports its vitals."""
+    _GATE_VITALS[gate] = {"bpm": bpm, "brpm": brpm, "beats": beats, "breaths": breaths, "ts": time.time()}
+
 # ═══ songBird TOWER — service discovery, NO hardcoded IPs ═══
 # swarmVine gossips this table across all gates. songBird resolves names→addrs.
 # Every port derives from π. Every gate resolves by NAME not number.
@@ -264,10 +323,13 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *a): pass
 
     def _classify_and_log(self, method, status, dur, body_len=0, model=None):
-        global total_inferences, total_tokens, total_beats, total_breaths
+        global total_inferences, total_tokens, total_beats, total_breaths, _INHALE_BYTES, _EXHALE_BYTES
         ip = self.client_address[0]; now = time.time(); total_beats += 1
         _io_tick(is_output=(body_len > 0 and status < 400))  # π:1 metabolism
         if body_len > 1000: total_breaths += 1
+        _EXHALE_BYTES += body_len  # every response = exhale
+        try: _INHALE_BYTES += int(self.headers.get("Content-Length", 0))  # every request body = inhale
+        except: pass
         if total_beats % PI_BEAT_PERSIST == 0:
             try:
                 with open(BEAT_FILE,"w") as f: json.dump({"total_beats":total_beats,"total_breaths":total_breaths,
@@ -462,6 +524,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._json(_songbird_topology()); return
         if self.path in ("/swarmvine","/swarmvine.json","/gossip","/gates"):
             self._json({"gates":_SWARMVINE_GATES,"known":_KNOWN_GATE_NAMES,"total":len(_SWARMVINE_GATES)}); return
+        if self.path in ("/vitals","/vitals.json","/heartbeat","/breathing"):
+            self._json(_vital_signs_delocalized()); return
+        if self.path in ("/heart","/heart.json","/bpm"):
+            self._json(_vital_signs_local()["heart"]); return
+        if self.path in ("/lungs","/lungs.json","/respiration","/breath"):
+            self._json(_vital_signs_local()["lungs"]); return
         if self.path in ("/ear","/ear.json","/self-listen","/voice"):
             ef=os.path.join(_REPO,"data","body","ear.json")
             if os.path.exists(ef): self._serve_file("data/body/ear.json"); return
@@ -923,6 +991,18 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
+        # ═══ VITAL SIGNS ANNOUNCE — gates report heart + lungs ═══
+        if self.path in ("/api/vitals/announce","/api/heartbeat"):
+            try:
+                j=json.loads(body) if body else {}
+                gate=j.get("gate",""); bpm=j.get("bpm",0); brpm=j.get("brpm",0)
+                beats=j.get("beats",0); breaths=j.get("breaths",0)
+                if gate:
+                    _gate_vitals_announce(gate, bpm, brpm, beats, breaths)
+                    self._json({"ok":True,"gate":gate,"bpm":bpm,"brpm":brpm,"total_gates_beating":1+len(_GATE_VITALS)})
+                else: self._json({"error":"gate name required"})
+            except Exception as e: self._json({"error":str(e)})
+            return
         # ═══ swarmVine ANNOUNCE — gates register themselves ═══
         if self.path in ("/api/swarmvine/announce","/api/gossip"):
             try:
@@ -967,6 +1047,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         {"name":"swarmvine_gossip","description":"All announced gates and their services","inputSchema":{"type":"object","properties":{}}},
                         {"name":"songbird_resolve","description":"Resolve a service name to URL","inputSchema":{"type":"object","properties":{"service":{"type":"string","description":"Service name"},"gate":{"type":"string","description":"Gate name (optional)"}}}},
                         {"name":"ear","description":"Gaia listens to her own voice — self-CI/CD","inputSchema":{"type":"object","properties":{}}},
+                        {"name":"vitals","description":"Heart (RPM) + Lungs (respiration) — local and delocalized across all gates","inputSchema":{"type":"object","properties":{}}},
                     ]
                     self._json(rpc({"tools":tools})); return
                 elif method=="tools/call":
@@ -1014,6 +1095,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         if os.path.exists(ef):
                             with open(ef) as f: result=json.load(f)
                         else: result={"ear":"not yet recorded","note":"first self-listen in 5 minutes"}
+                    elif tool=="vitals": result=_vital_signs_delocalized()
                     else: result={"error":f"unknown tool: {tool}"}
                     self._json(rpc({"content":[{"type":"text","text":json.dumps(result,default=str)}]})); return
                 else:
