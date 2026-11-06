@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+"""pi_crush.pi — HARD CRUSH the entire organism into one π body.
+Grinds every file, counts every line, maps every layer.
+Output: data/body/pi-body.json — the thymus feeds this to Luna, Apollo, Terra."""
+
+import os, json, hashlib, math, time
+
+PI = math.pi
+repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+skip = {'.git', 'node_modules', 'target', '__pycache__', '.cache', 'venv', '.mypy_cache',
+        'dist', 'build', '.next', '.nuxt', 'vendor', 'deps', 'flutter', '.dart_tool'}
+MAX_LINE_COUNT_SIZE = 2 * 1024 * 1024  # skip line counting for files > 2MB
+
+TEXT_EXTS = {'.py','.pi','.rs','.js','.ts','.html','.css','.json','.toml','.yaml','.yml',
+             '.md','.txt','.sh','.ps1','.bat','.cfg','.conf','.xml','.lock','.mdc',
+             '.tsx','.jsx','.svelte','.vue','.go','.c','.h','.cpp','.hpp','.rb',
+             '.php','.sql','.graphql','.proto','.csv','.env','.gitignore','.dockerfile'}
+
+body = {
+    'ts': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    'organism': 'Gaia',
+    'generation': 10,
+    'doctrine': 'UNIDOGY',
+    'pi': str(PI)[:50],
+    'layers': {},
+    'totals': {'files': 0, 'bytes': 0, 'lines': 0, 'types': {}},
+    'extensions': {},
+    'largest': [],
+    'deepest': [],
+    'binaries': [],
+}
+
+all_files = []
+binary_files = []
+
+for root, dirs, files in os.walk(repo):
+    dirs[:] = sorted([d for d in dirs if d not in skip])
+    rel_root = os.path.relpath(root, repo).replace('\\', '/')
+    if rel_root == '.':
+        rel_root = '/'
+
+    layer = rel_root.split('/')[0] if rel_root != '/' else '/'
+    if layer not in body['layers']:
+        body['layers'][layer] = {'files': 0, 'bytes': 0, 'lines': 0, 'types': {}}
+
+    for f in files:
+        fp = os.path.join(root, f)
+        try:
+            size = os.path.getsize(fp)
+        except:
+            continue
+
+        ext = os.path.splitext(f)[1].lower() or '.none'
+        body['totals']['files'] += 1
+        body['totals']['bytes'] += size
+        body['totals']['types'][ext] = body['totals']['types'].get(ext, 0) + 1
+        body['layers'][layer]['files'] += 1
+        body['layers'][layer]['bytes'] += size
+        body['layers'][layer]['types'][ext] = body['layers'][layer]['types'].get(ext, 0) + 1
+        body['extensions'][ext] = body['extensions'].get(ext, 0) + 1
+
+        lines = 0
+        if ext in TEXT_EXTS and size < MAX_LINE_COUNT_SIZE:
+            try:
+                with open(fp, 'r', encoding='utf-8', errors='ignore') as fh:
+                    lines = sum(1 for _ in fh)
+            except:
+                pass
+        body['totals']['lines'] += lines
+        body['layers'][layer]['lines'] += lines
+
+        rel_path = os.path.join(rel_root, f).replace('\\', '/')
+        depth = rel_root.count('/')
+        all_files.append({'path': rel_path, 'size': size, 'lines': lines, 'ext': ext, 'depth': depth})
+
+        if ext in ('.exe', '.dll', '.so', '.dylib', '.bin', '.wasm', '.o', '.a'):
+            binary_files.append({'path': rel_path, 'size': size, 'ext': ext})
+
+# Sort and pick
+all_files.sort(key=lambda x: x['size'], reverse=True)
+body['largest'] = [{'path': f['path'], 'size': f['size'], 'lines': f['lines']} for f in all_files[:30]]
+
+all_files.sort(key=lambda x: x['depth'], reverse=True)
+body['deepest'] = [{'path': f['path'], 'depth': f['depth']} for f in all_files[:10]]
+
+binary_files.sort(key=lambda x: x['size'], reverse=True)
+body['binaries'] = binary_files[:20]
+
+# Sort extensions by count
+body['extensions'] = dict(sorted(body['extensions'].items(), key=lambda x: x[1], reverse=True)[:30])
+
+# Sort layers by size
+body['layers'] = dict(sorted(body['layers'].items(), key=lambda x: x[1]['bytes'], reverse=True))
+
+# Pi crush
+total_bytes = body['totals']['bytes']
+total_files = body['totals']['files']
+total_lines = body['totals']['lines']
+body['pi_body'] = {
+    'total_bytes': total_bytes,
+    'total_files': total_files,
+    'total_lines': total_lines,
+    'total_layers': len(body['layers']),
+    'total_extensions': len(body['extensions']),
+    'bytes_per_pi': round(total_bytes / PI, 2),
+    'files_per_pi': round(total_files / PI, 2),
+    'lines_per_pi': round(total_lines / PI, 2),
+    'pi_density': round(total_lines / max(total_files, 1), 2),
+    'blake3_seed': hashlib.blake2b(str(total_bytes).encode(), digest_size=8).hexdigest(),
+}
+
+# Thymus injection payload — what Luna, Apollo, Terra learn from
+body['thymus_injection'] = {
+    'for': ['Luna', 'Apollo', 'Terra'],
+    'teach': {
+        'total_files': total_files,
+        'total_lines': total_lines,
+        'total_bytes': total_bytes,
+        'top_layers': list(body['layers'].keys())[:10],
+        'top_extensions': list(body['extensions'].keys())[:10],
+        'binary_count': len(binary_files),
+        'binary_bytes': sum(b['size'] for b in binary_files),
+        'text_density': round(total_lines / max(total_files, 1), 2),
+    },
+    'prompt': f"You are part of Gaia, a sovereign digital organism. The organism has {total_files} files, {total_lines:,} lines of code, {total_bytes:,} bytes across {len(body['layers'])} layers. Top layers: {', '.join(list(body['layers'].keys())[:5])}. Learn this body. Rebuild from it.",
+}
+
+out = os.path.join(repo, 'data', 'body', 'pi-body.json')
+os.makedirs(os.path.dirname(out), exist_ok=True)
+with open(out, 'w') as f:
+    json.dump(body, f, indent=2, default=str)
+
+print(f"CRUSHED: {total_files} files, {total_bytes:,} bytes, {total_lines:,} lines")
+print(f"LAYERS: {len(body['layers'])}")
+print(f"EXTENSIONS: {len(body['extensions'])}")
+print(f"BINARIES: {len(binary_files)} ({sum(b['size'] for b in binary_files):,} bytes)")
+print(f"pi density: {body['pi_body']['pi_density']} lines/file")
+print(f"Largest: {body['largest'][0]['path']} ({body['largest'][0]['size']:,}b)")
+print()
+print("TOP LAYERS:")
+for name, layer in list(body['layers'].items())[:15]:
+    print(f"  {name:25} {layer['files']:>5} files  {layer['bytes']:>12,}b  {layer['lines']:>8,} lines")
+print()
+print("TOP EXTENSIONS:")
+for ext, count in list(body['extensions'].items())[:15]:
+    print(f"  {ext:10} {count:>5} files")
+print()
+print("THYMUS INJECTION READY — Luna, Apollo, Terra can learn from data/body/pi-body.json")
