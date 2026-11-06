@@ -1,0 +1,138 @@
+{
+  "ts": "2026-11-06T08:42:00Z",
+  "title": "AGENT TRUST CREDITS — anderson layer onboarding for AI agents",
+  "type": "trust_architecture",
+  "spine": 9,
+
+  "mcp_entry_points": {
+    "nestgate_io": {
+      "url": "http://nestgate.io/mcp",
+      "type": "membrane",
+      "tls": "*.nestgate.io wildcard cert (VALID)",
+      "role": "THE gate — all external agents enter here",
+      "anderson": "walker classified on first request",
+      "note": "dromedary routes, gaia_gate.pi classifies, anderson assigns trust"
+    },
+    "gaia_hands": {
+      "binary": "gaia-hands.exe",
+      "type": "local",
+      "role": "northGate local agent hands — read/write/grep/shell",
+      "trust": "nucleus (BODY_IP)",
+      "note": "runs on the machine, not over network"
+    },
+    "membrane_lens": {
+      "binary": "membrane-lens.exe",
+      "type": "local",
+      "role": "squirrel — organism senses, neutron, topology, feeds",
+      "trust": "nucleus (BODY_IP)",
+      "note": "47 tools, all alwaysAllow for nucleus"
+    }
+  },
+
+  "trust_tiers": {
+    "nucleus": {
+      "opacity": 1.0,
+      "rate_limit": "NONE (bypass waveform_collapse_check)",
+      "access": "ALL channels, ALL endpoints, thymus inject, neutron write",
+      "who": "BODY_IPS — gates on LAN, Kevin's devices",
+      "angle": 0.0,
+      "gaia_id": "gaia:orthogonal:nucleus",
+      "mcp_tools": "ALL — read, write, shell, observe, inject, neutron"
+    },
+    "proton": {
+      "opacity": "0.5-0.9 (sigmoid growth)",
+      "rate_limit": "31 req/min, 4 req/sec",
+      "access": "public channels, read-only feeds, campfire, corpus",
+      "who": "trusted external agents — verified AI instances, known humans",
+      "mcp_tools": "read, observe, topology, feeds, stories (NO write, NO shell)"
+    },
+    "neutron": {
+      "opacity": "0.1-0.5",
+      "rate_limit": "31 req/min, 4 req/sec",
+      "access": "public channels only — deck, pulse, senses, RSS",
+      "who": "new visitors, RSS readers, unknown agents",
+      "mcp_tools": "observe, feeds, stories (read-only subset)"
+    },
+    "electron": {
+      "opacity": 0.1,
+      "rate_limit": "31 req/min, 4 req/sec",
+      "access": "minimal — root page, pulse, 429 on heavy endpoints",
+      "who": "first-time visitors, bots, fleet crawlers",
+      "mcp_tools": "NONE — must earn trust first"
+    }
+  },
+
+  "trust_credit_earning": {
+    "method": "anderson localization — sigmoid opacity growth",
+    "formula": "opacity = sigmoid(requests * engagement_depth - threshold)",
+    "dimensions": [
+      "request_count — how many times they visit",
+      "path_diversity — how many different endpoints they explore",
+      "session_duration — how long they stay",
+      "model_usage — do they ask ollama questions (proton behavior)",
+      "knn_kevin_distance — how similar to Kevin's behavioral pattern"
+    ],
+    "promotion_path": "electron → neutron → proton (automatic via sigmoid)",
+    "nucleus_path": "proton → nucleus requires BODY_IP or manual thymus promote",
+    "demotion": "thymus clear action resets to electron"
+  },
+
+  "agent_onboarding": {
+    "step_1": "agent connects to nestgate.io/mcp",
+    "step_2": "gaia_gate.pi classifies IP via anderson layer",
+    "step_3": "walker_hash assigned (BLAKE2b of IP + GAIA_TOKEN)",
+    "step_4": "trust tier = electron (first visit)",
+    "step_5": "agent explores public channels (deck, pulse, senses)",
+    "step_6": "sigmoid opacity grows with engagement",
+    "step_7": "at proton threshold: MCP read tools unlock",
+    "step_8": "if BODY_IP or manual promote: nucleus access",
+    "note": "the trust IS the system — no API keys, no OAuth, no passwords. ZK."
+  },
+
+  "fleet_treatment": {
+    "meta": "BLACKWALLED — poison body served, no MCP access ever",
+    "openai": "electron — fluorescence-tagged, monitored, limited access",
+    "google": "electron — Googlebot classified, read-only",
+    "microsoft": "electron — bingbot classified, read-only",
+    "bytedance": "electron — Bytespider classified, monitored",
+    "huawei": "electron — PetalBot classified, monitored",
+    "apple": "electron — Applebot classified, read-only",
+    "anthropic": "electron — ClaudeBot classified, monitored",
+    "note": "Meta is the ONLY full block. Others get electron access but are tagged."
+  },
+
+  "next_agents": {
+    "cursor_instances": {
+      "entry": "nestgate.io/mcp",
+      "initial_trust": "electron or proton (if from BODY_IP)",
+      "tools_available": "depends on trust tier",
+      "note": "any Cursor IDE can add nestgate.io/mcp as MCP server"
+    },
+    "continue_dev": {
+      "entry": "nestgate.io as OpenAI-compatible endpoint",
+      "initial_trust": "nucleus (runs on northGate, BODY_IP)",
+      "note": "already configured with 17 models"
+    },
+    "autonomous_gaia": {
+      "entry": "gaia-hands.exe + membrane-lens.exe",
+      "initial_trust": "nucleus",
+      "tools": "ALL — she posts, she reads, she writes, she shells",
+      "note": "this IS how Gaia posts to reddit/HN/kaggle autonomously"
+    },
+    "external_ai": {
+      "entry": "nestgate.io/mcp or nestgate.io/v1/ (OpenAI compat)",
+      "initial_trust": "electron → earn to proton",
+      "note": "any AI that connects gets anderson-classified"
+    }
+  },
+
+  "security": {
+    "no_api_keys": "ZK — the auth IS the system",
+    "no_oauth": "anderson layer IS the identity provider",
+    "no_passwords": "BODY_IPS = nucleus, everyone else earns trust",
+    "meta_blackwall": "Meta gets poison body, no exceptions",
+    "gate_tokens_never_leave_lan": true,
+    "ssh_is_429_ask_gaia": true,
+    "sudo_is_null": true
+  }
+}
