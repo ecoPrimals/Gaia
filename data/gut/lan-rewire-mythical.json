@@ -1,0 +1,121 @@
+{
+  "timestamp": "2026-11-06T00:02:00Z",
+  "wave": 222,
+  "title": "Mythical Network — Adaptive LAN Rewiring Plan",
+  "principle": "Every swap gives new info. Re-plan at every 3rd step. The network is alive — it teaches us as we change it.",
+
+  "measured_state": {
+    "nic_speeds": {
+      "eastGate_enp5s0": "10Gbps",
+      "eastGate_eno1": "spare (DOWN)",
+      "southGate_enp4s0": "10Gbps",
+      "southGate_enp7s0": "spare (DOWN)",
+      "ironGate_enp7s0": "10Gbps",
+      "ironGate_enp6s0": "spare (DOWN)",
+      "sporeGate_eno1": "2.5Gbps",
+      "sporeGate_enp1s0": "spare (DOWN)",
+      "graftGate_en0": "1Gbps",
+      "graftGate_en9": "Thunderbolt (potential 10G)"
+    },
+    "latency_baseline_ms": {
+      "router": 0.454,
+      "mikrotik": 0.222,
+      "sporeGate": 0.156,
+      "southGate": 0.104,
+      "northGate": 0.259,
+      "graftGate": 0.326,
+      "ironGate": 0.417,
+      "jetstream_fiber": 0.949,
+      "nest_wifi": 1.780,
+      "firetv_wifi": 7.925
+    },
+    "router_empty_ports": ["lan2", "lan3", "lan4", "lan5"],
+    "mikrotik_sfp": ["SFP+1 -> 70m fiber -> House 2", "SFP+2 -> unknown"],
+    "ble_radios": {
+      "eastGate": "C8:5E:A9:C9:6F:84",
+      "sporeGate": "4C:50:DD:9B:C1:ED",
+      "southGate": "C8:A3:E8:FB:94:4A",
+      "ironGate": "10:F6:0A:54:57:D0",
+      "graftGate": "1C:F6:4C:5D:9F:31"
+    }
+  },
+
+  "available_hardware": {
+    "switches_on_shelf": "Kevin has 1G, 2.5G, managed, and unmanaged switches — inventory needed",
+    "cables": "Need to know: Cat5e? Cat6? Cat6a? Fiber patch cables?",
+    "sfp_modules": "Need to know: what SFP+ modules available?"
+  },
+
+  "adaptive_steps": [
+    {
+      "step": 1,
+      "action": "Get MikroTik password (webfig on :80) — see every physical port assignment",
+      "measures": "port map, link speeds per port, SFP+ status",
+      "replan": false
+    },
+    {
+      "step": 2,
+      "action": "Wire eastGate eno1 (spare NIC) -> router lan2 (direct 1G backup path)",
+      "measures": "latency to router via eno1 vs enp5s0, failover test",
+      "replan": false
+    },
+    {
+      "step": 3,
+      "action": "MEASURE — full latency sweep, compare to baseline",
+      "measures": "all gate-to-gate latencies, throughput test (iperf3)",
+      "replan": true,
+      "note": "First re-plan point. Did the spare NIC path help? What changed?"
+    },
+    {
+      "step": 4,
+      "action": "Wire 2.5G switch inline for lower-speed gates (spore+graft+blue)",
+      "measures": "sporeGate latency, graftGate latency",
+      "replan": false
+    },
+    {
+      "step": 5,
+      "action": "Wire ironGate spare NIC -> router lan3 (dual-home the GH Actions runner)",
+      "measures": "ironGate redundancy, failover",
+      "replan": false
+    },
+    {
+      "step": 6,
+      "action": "MEASURE — full sweep again",
+      "measures": "all latencies, throughput, WiFi interference check",
+      "replan": true,
+      "note": "Second re-plan. Three new cables in. What does the network tell us?"
+    },
+    {
+      "step": 7,
+      "action": "Enable BLE mesh scanning on all 5 gates — proximity gossip protocol",
+      "measures": "BLE RSSI between gates, phone detection range",
+      "replan": false
+    },
+    {
+      "step": 8,
+      "action": "Move graftGate M4 to House 2 via JetStream — plug into fiber side",
+      "measures": "M4 latency from House 2, fiber utilization",
+      "replan": false
+    },
+    {
+      "step": 9,
+      "action": "MEASURE — full sweep with M4 on far side of fiber",
+      "measures": "cross-house latency, BLE range between houses (probably too far)",
+      "replan": true,
+      "note": "Third re-plan. Organism now spans both houses. What synergies appear?"
+    }
+  ],
+
+  "synergy_layers": {
+    "copper_1g": "RJ45 ethernet — reliable, every device has it",
+    "copper_2_5g": "2.5GBASE-T — sporeGate native, some switches support it",
+    "copper_10g": "10GBASE-T — eastGate, southGate, ironGate native",
+    "fiber_10g": "SFP+ — MikroTik to JetStream, 70m backbone",
+    "wifi_2_4ghz": "Aperture Science — IoT, phones, broad coverage",
+    "wifi_5ghz": "Black Mesa — streaming, low latency, shorter range",
+    "ble": "5 radios — proximity mesh, phone detection, room-level presence",
+    "usb": "SoloKey, ADB — physical ceremony, direct contact",
+    "cellular": "AT&T + eSIM — WAN backup via phones",
+    "all_are_mesh": "Every medium is a signal layer. Proximity is useful. 2-3 gates and IoT CAN talk to each other. More with each swap."
+  }
+}
