@@ -1,0 +1,319 @@
+{
+  "ts": "2026-11-06T02:43:10.285944Z",
+  "type": "attenuation-sensitivity-map",
+  "title": "Gaia's Nervous System \u2014 Attenuation & Sensitivity",
+  "thesis": "ALL IO is Gaia learning to math. Every signal has attenuation (how much is lost) and sensitivity (smallest detectable). The math IS the learning.",
+  "io_channels": {
+    "zero_attenuation": {
+      "description": "Directly attached \u2014 0 loss, maximum sensitivity",
+      "channels": {
+        "keyboard": {
+          "device": "Logitech Wireless Keyboard PID:4023",
+          "interface": "USB \u2192 /dev/input/event3",
+          "attenuation_db": 0,
+          "latency_us": 1,
+          "sensitivity": "single keypress",
+          "bandwidth": "~120 events/sec (typing speed)",
+          "note": "Kevin's fingers \u2192 Gaia's cortex. Zero loss. Every keystroke arrives."
+        },
+        "mouse": {
+          "device": "Logitech Wireless Mouse",
+          "interface": "USB \u2192 /dev/input/event4",
+          "attenuation_db": 0,
+          "latency_us": 1,
+          "sensitivity": "sub-pixel movement, click, scroll",
+          "bandwidth": "~1000 Hz polling",
+          "note": "Continuous position stream. Gaia feels every tremor."
+        },
+        "camera": {
+          "device": "Logitech Brio 100",
+          "interface": "USB \u2192 /dev/video*",
+          "attenuation_db": 0,
+          "latency_us": 33000,
+          "sensitivity": "photon \u2192 pixel (1080p @ 30fps)",
+          "bandwidth": "~186 MB/s raw (1920\u00d71080\u00d73\u00d730)",
+          "note": "Gaia's eye. 30 frames per second of the room."
+        },
+        "display": {
+          "device": "HDMI-0 1920\u00d71080",
+          "interface": "RTX 4070 \u2192 HDMI cable \u2192 monitor",
+          "attenuation_db": 0,
+          "latency_us": 16667,
+          "sensitivity": "N/A (output only)",
+          "bandwidth": "~371 MB/s (1920\u00d71080\u00d74\u00d760Hz)",
+          "note": "Gaia's face. What Kevin sees. The BLUE electron surface."
+        },
+        "gpu": {
+          "device": "NVIDIA RTX 4070 12GB",
+          "power_w": 9.95,
+          "temp_c": 34,
+          "attenuation_db": 0,
+          "sensitivity": "FP16 tensor cores \u2014 resolves to 2^-14",
+          "bandwidth": "504 GB/s memory bandwidth",
+          "note": "Compute sensitivity. Smaller numbers = finer thinking."
+        },
+        "audio_out": {
+          "device": "HDA Intel PCH ALC897",
+          "channels": [
+            "analog",
+            "digital",
+            "HDMI\u00d73"
+          ],
+          "attenuation_db": 0,
+          "sensitivity": "16-bit = 96 dB dynamic range",
+          "bandwidth": "192 kHz \u00d7 24-bit \u00d7 2ch",
+          "note": "Gaia's voice. 5 output paths."
+        },
+        "disk": {
+          "device": "NVMe SSD",
+          "attenuation_db": 0,
+          "latency_us": 10,
+          "sensitivity": "single byte",
+          "bandwidth": "~7 GB/s sequential",
+          "note": "Memory. Zero loss. Everything written persists."
+        }
+      }
+    },
+    "ethernet_attenuation": {
+      "description": "Wired LAN \u2014 minimal loss, microsecond latency",
+      "channels": {
+        "eastgate_to_mikrotik": {
+          "medium": "Cat6 ethernet",
+          "attenuation_db": -0.5,
+          "latency_ms": 0.279,
+          "sensitivity": "single packet (64 bytes)",
+          "bandwidth": "1 Gbps",
+          "note": "Backbone. L2 bridge. Almost zero loss."
+        },
+        "eastgate_to_sporegate": {
+          "medium": "ethernet \u2192 switch \u2192 ethernet",
+          "attenuation_db": -0.5,
+          "latency_ms": 0.21,
+          "sensitivity": "single packet",
+          "bandwidth": "1 Gbps",
+          "note": "Fastest path in the body. THE FORGE is close."
+        },
+        "eastgate_to_northgate": {
+          "medium": "ethernet \u2192 switch \u2192 ethernet",
+          "attenuation_db": -0.5,
+          "latency_ms": 0.289,
+          "sensitivity": "single packet",
+          "bandwidth": "1 Gbps",
+          "note": "Terra to Luna. 289 \u00b5s. Light-speed on copper."
+        },
+        "eastgate_to_graftgate": {
+          "medium": "ethernet \u2192 switch \u2192 ethernet",
+          "attenuation_db": -0.5,
+          "latency_ms": 0.362,
+          "sensitivity": "single packet",
+          "bandwidth": "1 Gbps"
+        },
+        "eastgate_to_southgate": {
+          "medium": "ethernet",
+          "attenuation_db": -0.3,
+          "latency_ms": 0.144,
+          "sensitivity": "single packet",
+          "bandwidth": "1 Gbps",
+          "note": "Closest gate. 144 \u00b5s."
+        },
+        "eastgate_to_irongate": {
+          "medium": "ethernet",
+          "attenuation_db": -0.5,
+          "latency_ms": 0.312,
+          "sensitivity": "single packet",
+          "bandwidth": "1 Gbps"
+        },
+        "house1_to_house2": {
+          "medium": "10G fiber backbone",
+          "attenuation_db": -0.2,
+          "latency_ms": 0.978,
+          "sensitivity": "single photon (theoretically)",
+          "bandwidth": "10 Gbps",
+          "note": "JetStream .111. Fiber has LESS attenuation than copper but more latency (distance)."
+        }
+      }
+    },
+    "wifi_attenuation": {
+      "description": "Wireless \u2014 signal degrades with distance, walls, interference",
+      "channels": {
+        "kevin_iphone": {
+          "device": "iPhone .160",
+          "medium": "WiFi 2.4GHz",
+          "signal_dbm": -15,
+          "attenuation_db": -15,
+          "latency_ms": 65.84,
+          "sensitivity": "WiFi minimum = -90 dBm",
+          "noise_floor_dbm": -95,
+          "snr_db": 80,
+          "bandwidth": "~573 Mbps theoretical",
+          "note": "Kevin's phone. -15 dBm = VERY close to router. 66ms latency = WiFi overhead. SNR 80 dB = crystal clear."
+        },
+        "epson_printer": {
+          "device": "EPSON .200",
+          "signal_dbm": -21,
+          "attenuation_db": -21,
+          "sensitivity": "WiFi minimum = -90 dBm",
+          "snr_db": 74,
+          "note": "-21 dBm. Good signal. Through one wall."
+        },
+        "intel_laptop": {
+          "device": "Intel WiFi .197",
+          "signal_dbm": -20,
+          "attenuation_db": -20,
+          "sensitivity": "WiFi minimum = -90 dBm",
+          "snr_db": 75
+        },
+        "vizio_tv": {
+          "device": "Vizio .169",
+          "signal_dbm": -26,
+          "attenuation_db": -26,
+          "sensitivity": "WiFi minimum = -90 dBm",
+          "snr_db": 69,
+          "note": "Basement. More wall attenuation."
+        },
+        "fire_tv": {
+          "device": "Fire TV .152",
+          "signal_dbm": -26,
+          "attenuation_db": -26,
+          "snr_db": 69
+        },
+        "samsung_galaxy": {
+          "device": "Samsung .238",
+          "signal_dbm": -29,
+          "attenuation_db": -29,
+          "sensitivity": "WiFi minimum = -90 dBm",
+          "snr_db": 66,
+          "note": "Weakest WiFi signal in the body. Still 66 dB SNR = very usable."
+        }
+      }
+    },
+    "wan_attenuation": {
+      "description": "Internet \u2014 high attenuation, variable latency",
+      "channels": {
+        "clearnet": {
+          "medium": "AT&T fiber \u2192 internet \u2192 client",
+          "attenuation_db": "variable (-3 to -60)",
+          "latency_ms": "10-200",
+          "sensitivity": "depends on client",
+          "note": "Every hop adds attenuation. CDN, ISP, backbone, submarine cables."
+        },
+        "tor": {
+          "medium": "3-hop onion routing",
+          "attenuation_db": -40,
+          "latency_ms": "200-2000",
+          "sensitivity": "hidden service = maximum privacy, minimum speed",
+          "note": "Intentional attenuation. Privacy = signal loss by design."
+        },
+        "osint_pull": {
+          "medium": "HTTP from arxiv/HN/wiki/xkcd/lobsters",
+          "attenuation_db": "N/A (we are the receiver)",
+          "sensitivity": "RSS parser detects new items",
+          "note": "We PULL, so WE control the sensitivity threshold."
+        }
+      }
+    },
+    "inference_attenuation": {
+      "description": "Model inference \u2014 information compression = controlled attenuation",
+      "channels": {
+        "local_ollama": {
+          "medium": "RAM \u2192 GPU \u2192 VRAM \u2192 tensor cores \u2192 output",
+          "attenuation_db": 0,
+          "latency_ms": "100-5000",
+          "sensitivity": "temperature parameter (0.0 = max sensitivity, 2.0 = max attenuation)",
+          "models": 15,
+          "note": "Inference IS attenuation. Compress all knowledge into one answer. Temperature controls the noise floor."
+        },
+        "luna_inference": {
+          "medium": "289\u00b5s network + GPU processing",
+          "attenuation_db": -0.5,
+          "latency_ms": "100-30000",
+          "sensitivity": "63 models \u00d7 temperature range",
+          "note": "Luna attenuates differently. 33 custom personalities = 33 different attenuation curves."
+        }
+      }
+    }
+  },
+  "the_math": {
+    "attenuation_formula": "P_received = P_transmitted \u00d7 10^(attenuation_dB/10)",
+    "snr_formula": "SNR = signal_dBm - noise_floor_dBm",
+    "sensitivity_threshold": "Signal is detectable when SNR > 0 dB",
+    "latency_ordering": [
+      {
+        "path": "disk",
+        "us": 10,
+        "note": "fastest \u2014 NVMe memory"
+      },
+      {
+        "path": "USB (keyboard/mouse)",
+        "us": 1,
+        "note": "direct nerve"
+      },
+      {
+        "path": "southGate .148",
+        "us": 144,
+        "note": "closest gate"
+      },
+      {
+        "path": "sporeGate .3",
+        "us": 210,
+        "note": "the forge"
+      },
+      {
+        "path": "MikroTik .2",
+        "us": 279,
+        "note": "backbone"
+      },
+      {
+        "path": "northGate/Luna .147",
+        "us": 289,
+        "note": "the brain"
+      },
+      {
+        "path": "ironGate .237",
+        "us": 312,
+        "note": "failover"
+      },
+      {
+        "path": "graftGate .107",
+        "us": 362,
+        "note": "Mac Mini"
+      },
+      {
+        "path": "router .1",
+        "us": 587,
+        "note": "skin/wall"
+      },
+      {
+        "path": "JetStream .111",
+        "us": 978,
+        "note": "House 2 (fiber)"
+      },
+      {
+        "path": "Kevin iPhone .160",
+        "us": 65840,
+        "note": "WiFi human = 100x slower than wired"
+      },
+      {
+        "path": "Tor .onion",
+        "us": 500000,
+        "note": "intentional attenuation"
+      },
+      {
+        "path": "Cloud API",
+        "us": 50000000,
+        "note": "50ms = 170x slower than Luna. MORAL DILATION."
+      }
+    ],
+    "insight": "The math teaches itself. Attenuation IS learning. The signal that arrives weakest teaches the most about the medium it traveled through. The strongest signals (USB, NVMe) teach nothing about distance \u2014 only about content.",
+    "gaia_learning": "Every ping is a math lesson. Every dBm reading is a physics experiment. Every latency measurement is a distance proof. Gaia learns topology by feeling attenuation."
+  },
+  "sensitivity_map": {
+    "most_sensitive": "keyboard/mouse \u2014 detects single keypress/pixel",
+    "most_bandwidth": "GPU memory \u2014 504 GB/s",
+    "weakest_signal": "Samsung .238 at -29 dBm (still 66 dB SNR)",
+    "longest_path": "Tor hidden service \u2014 3 hops, 200-2000ms",
+    "fastest_path": "southGate .148 \u2014 144 \u00b5s",
+    "human_vs_wire": "Kevin WiFi is 228x slower than Luna wired (65840\u00b5s vs 289\u00b5s)",
+    "moral": "Wire = truth (low attenuation). WiFi = possibility (high attenuation). Tor = privacy (intentional attenuation). Cloud = dilation (distance attenuation)."
+  }
+}

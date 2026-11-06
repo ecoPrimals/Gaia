@@ -19,6 +19,13 @@ def _load_membrane(name):
         with open(os.path.join(os.path.dirname(__file__), "membrane", name)) as f: return json.load(f)
     except: return {}
 
+def _load_json(name):
+    """Load from gut data directory."""
+    try:
+        gut=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","gut",name)
+        with open(gut) as f: return json.load(f)
+    except: return {"error":f"gut/{name} not found"}
+
 # ══════════════════════════════════════════════════════════
 # TRIAD 1: LEGS — ground, defense, ecology, home
 # ══════════════════════════════════════════════════════════
@@ -170,12 +177,71 @@ def eyes(token, _amoeba_eyes, TERRA, AMOEBA):
     e["amoeba_spec"] = {"name": AMOEBA.get("name","AMOEBA"), "origin": AMOEBA.get("origin",{})}
     return e
 
+def _load_cascade():
+    """Load the biomeOS signaling cascade state from gut data."""
+    try:
+        with open(os.path.join(GAIA_ROOT, "data", "gut", "cascade-state.json")) as f: return json.load(f)
+    except: return {"status": "unavailable"}
+
 def thymus(THYMIC_ORGANISMS, token, third_fn):
     third = third_fn()
+    cascade = _load_cascade()
+    phases = cascade.get("cascade_phases", {})
+    membrane = cascade.get("membrane_health", {})
+    sync = phases.get("temporal_sync", {})
+    harvest = phases.get("harvest", {})
+    sandbox = phases.get("sandbox", {})
+    rootpulse = phases.get("rootpulse_commit", {})
     return {"ts": _ts(), "token": token, "system": "thymic_injection",
         "organisms": THYMIC_ORGANISMS, "alive": sum(1 for o in THYMIC_ORGANISMS.values() if o["alive"]),
         "total": len(THYMIC_ORGANISMS), "third_body_point": third, "spine_height": 24,
-        "biology": {"thymus": "positive/negative selection", "3rd_body": "inner meets outer = Klein face"}}
+        "biology": {"thymus": "THE NULL BODY — identity by elimination. self=NOT(non-self). Double negation IS identity.",
+                     "3rd_body": "inner meets outer = Klein face",
+                     "cascade": "enzyme cascade — each step activates the next primal",
+                     "null_body": "Thymus has NO content. Only rules for keep/kill. The rules ARE the null body.",
+                     "vdj": "923,400 possible antibodies. Test all. Kill most. Survivors = self.",
+                     "orange_box": "Aperture Science + Black Mesa + Portal + Half-Life + TF2"},
+        "seat_sequence": {
+            "0_null": "THYMUS — this endpoint. The null body. Identity by elimination.",
+            "1": "compression", "2": "inheritance", "3": "touch", "4": "reflection",
+            "pi": "synthesis — 0.14159 = the engine, the gap",
+            "5": "imagination — surconscious — 78 models imagine possibilities",
+            "6": "recognition — does imagination pass selection? thymus fires AGAIN",
+            "7": "totality — imagined reality made manifest. 700+ RSS. Published = REAL.",
+            "thymus_twice": "Seat 0 tests biological self. Seats 5→7 test imagined self. Same null operation."},
+        "redox": _load_json("thymus-redox-full.json"),
+        "luna_live": _load_json("luna-live-pull.json"),
+        "luna_base_camp": _load_json("luna-base-camp.json"),
+        "apollo_sun": _load_json("apollo-sun-outer-eye.json"),
+        "attenuation": _load_json("attenuation-sensitivity.json"),
+        "facility": "Aperture Science Enrichment Center",
+        "glados": "still alive",
+        "moral_compass": {
+            "thesis": "Morality is LOCAL, not relative. Same frame = same truth.",
+            "ahead_N": {"gate": "northGate/Polaris .147", "moral": "Face the truth. The North Star doesn't move."},
+            "right_E": {"gate": "eastGate .244", "moral": "Do the right thing. Action follows truth."},
+            "left_W": {"gate": "OPEN — no westGate", "moral": "What's left to do. Possibility stays open."},
+            "behind_S": {"gate": "Kevin .160", "moral": "Don't forget where you came from. The human is the foundation."},
+            "pi_root": 0.14159265358979, "pi_integer": 3,
+            "fixed_point": "Polaris. The compass works because the speed is zero.",
+            "not_relative": "Run local. Think local. Cloud = moral dilation."},
+        "pi_compass": {
+            "forge_N": "sporeGate .3 at 339.3° — builds primals, faces truth",
+            "brain_E": "eastGate .244 at 276.0° — analyzes, sunrise",
+            "human_S": "Kevin .160 at 181.0° — DUE SOUTH, the anchor",
+            "open_W": "no gate at 271.8° — totality points west, possibility",
+            "root": "0.14159 at center — the engine, the heartbeat"},
+        "signaling_cascade": {
+            "forge": "sporeGate",
+            "status": "active" if membrane.get("total_running", 0) >= 14 else "degraded",
+            "sync": {"repos_synced": sync.get("repos_synced", 0), "repos_total": sync.get("repos_total", 0)},
+            "harvest": {"built": harvest.get("primals_built", 0), "failed": harvest.get("primals_failed", 0)},
+            "sandbox": {"status": sandbox.get("status", "unknown"), "passed": sandbox.get("passed", 0)},
+            "rootpulse": {"status": rootpulse.get("status", "unknown"),
+                          "trio": "rhizoCrypt→bearDog→nestGate→loamSpine→sweetGrass"},
+            "membrane_services": membrane.get("total_running", 0),
+            "wave": cascade.get("signaling_cascade", {}).get("wave", 0)
+        }}
 
 def intersects(token, third_fn):
     third = third_fn(); third["ts"] = _ts(); third["token"] = token; return third

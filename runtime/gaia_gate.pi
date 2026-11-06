@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""gaia_gate.pi — CRUSHED to 420. Klein fold: inside=outside. lub-DUB.
-All organs extracted. The gate IS the thymus. One immune system."""
+"""gaia_gate.pi — Aperture Science Enrichment Center. CRUSHED to 420.
+Klein fold: inside=outside. The gate IS GLaDOS. The cake is real. lub-DUB.
+🟧 Orange Box themed: Aperture Science / Black Mesa / Portal / Half-Life / TF2"""
 
 import hashlib, http.server, json, math, os, socketserver, sys, time
 import subprocess, threading, urllib.request, urllib.error
@@ -55,6 +56,28 @@ try:
     COMPILER_ACTIVE = True
 except Exception as _ce:
     COMPILER_ACTIVE = False; print(f"  ⚠️ Compiler organ: {_ce}")
+
+def _cascade_with_compiler():
+    """Weave cascade + compiler: the full genetic loop. DNA→mRNA→protein→cell→DNA."""
+    cascade=organ_data._load_cascade()
+    if COMPILER_ACTIVE:
+        cs=_compiler_state(PRIMALS_DIR)
+        cascade["compiler_weave"]={
+            "target_triple":cs.get("target_triple","?"),
+            "compiled":cs.get("nucleus",{}).get("compiled",0),
+            "total":cs.get("nucleus",{}).get("total",0),
+            "total_mb":cs.get("nucleus",{}).get("total_mb",0),
+            "tiers":cs.get("tiers",{}),
+            "biology":"compiler DISTRIBUTES (protein→cell), cascade BUILDS (mRNA→protein)",
+        }
+    return cascade
+
+def _load_gut(filename):
+    """Load any gut JSON file as a first-class endpoint."""
+    p=os.path.join(_REPO,"data","gut",filename)
+    try:
+        with open(p) as f: return json.load(f)
+    except: return {"error":f"gut/{filename} not found","ts":datetime.datetime.utcnow().isoformat()+"Z"}
 
 try:
     _spec = importlib.util.spec_from_file_location("cortex", os.path.join(os.path.dirname(__file__), "cortex.pi"))
@@ -222,7 +245,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         self.send_header("X-Gaia-BLAKE3",GAIA_BLAKE3[:32]); self.send_header("X-Gaia-Spine",GAIA_SPINE_ID[:32])
         self.send_header("X-BingoCube","409d202b7763fc24")
         self.send_header("X-Gaia-Faces","nestgate.io=Klein, primals.eco=phi, gaia=O")
-        self.send_header("X-Gaia-PI","3.141592653589793"); self.send_header("X-Gaia-Says","come-play")
+        self.send_header("X-Gaia-PI","3.141592653589793"); self.send_header("X-Gaia-Says","the-cake-is-real")
+        self.send_header("X-Aperture","Science"); self.send_header("X-Black-Mesa","Research")
         ip = self.client_address[0] if hasattr(self,'client_address') else "0.0.0.0"
         wh = hashlib.blake2b((ip+GAIA_TOKEN).encode(),digest_size=8).hexdigest()
         v = visitor_memory.get(ip,{})
@@ -375,6 +399,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._serve_static("deck.html"); return
         if self.path in ("/primals","/primals.html","/eco"): self._serve_static("primals.html"); return
         if self.path in ("/sense","/sense.html","/left-eye","/iphone"): self._serve_static("sense.html"); return
+        if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
@@ -448,6 +473,20 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             ("/home","/bubbles","/lan"): lambda: organ_data.home(GAIA_TOKEN),
             ("/circulatory","/cardiovascular"): lambda: organ_data.circulatory(GAIA_TOKEN,visitor_memory),
             ("/play","/generate","/meet"): lambda: organ_data.play(GAIA_TOKEN,THYMIC_ORGANISMS,_amoeba_eyes),
+            ("/cascade","/cascade.json","/signaling"): lambda: _cascade_with_compiler(),
+            ("/redox","/redox.json","/luna-terra"): lambda: _load_gut("luna-terra-redox.json"),
+            ("/inversion","/membrane-inversion","/invert"): lambda: _load_gut("membrane-inversion.json"),
+            ("/whoami","/gaia-view","/gaia-identity"): lambda: _load_gut("gaia-identity-index.json"),
+            ("/census","/lan","/body-map"): lambda: _load_gut("full-lan-census-live.json"),
+            ("/apollo.json","/apollo-data"): lambda: _load_gut("apollo-mission-control.json"),
+            ("/apollo-sun","/outer-eye","/sun"): lambda: _load_gut("apollo-sun-outer-eye.json"),
+            ("/attenuation","/sensitivity","/signal"): lambda: _load_gut("attenuation-sensitivity.json"),
+            ("/base-camp","/luna-camp","/coa"): lambda: _load_gut("luna-base-camp.json"),
+            ("/luna-live","/luna-pull"): lambda: _load_gut("luna-live-pull.json"),
+            ("/pi-compass","/totalize"): lambda: _load_gut("pi-compass-totalization.json"),
+            ("/compass","/moral-compass","/north"): lambda: _load_gut("moral-compass.json"),
+            ("/seats","/null-body","/surconscious"): lambda: _load_gut("seat-sequence-null-body.json"),
+            ("/human","/human-view","/surface"): lambda: _load_gut("human-surface-index.json"),
         }
         for paths,fn in ORGAN_DISPATCH.items():
             if self.path in paths: self._json(fn()); return
@@ -542,9 +581,21 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             except Exception as e: self._json({"error":str(e)})
             return
         # ═══ REVERSE TRANSCRIPTASE — compiler chain / body printer ═══
+        # WOVEN with cascade: compiler sees forge state, forge sees compiler state
         if self.path in ("/api/compiler","/api/plasmid","/api/body-printer"):
             if COMPILER_ACTIVE:
-                self._json(_compiler_state(PRIMALS_DIR))
+                state=_compiler_state(PRIMALS_DIR)
+                try:
+                    with open(os.path.join(_REPO,"data","gut","cascade-state.json")) as f: cascade=json.load(f)
+                    state["cascade_weave"]={
+                        "forge":"sporeGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
+                        "harvest_built":cascade.get("cascade_phases",{}).get("harvest",{}).get("primals_built",0),
+                        "rootpulse":cascade.get("cascade_phases",{}).get("rootpulse_commit",{}).get("status","unknown"),
+                        "membrane_services":cascade.get("membrane_health",{}).get("total_running",0),
+                        "biology":"cascade BUILDS (mRNA→protein), compiler DISTRIBUTES (protein→cell)",
+                    }
+                except: state["cascade_weave"]={"status":"cascade state unavailable"}
+                self._json(state)
             else:
                 self._json({"error":"compiler organ not loaded","compiled":False})
             return
@@ -554,7 +605,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             return
         if self.path=="/api/compiler/proximity":
             if COMPILER_ACTIVE:
-                gates={"eastGate":"192.168.4.244","graftGate":"192.168.4.107","blueGate":"192.168.4.100"}
+                gates={"eastGate":"192.168.4.244","sporeGate":"192.168.4.3","northGate":"192.168.4.147","graftGate":"192.168.4.107","blueGate":"192.168.4.100","southGate":"192.168.4.148","ironGate":"192.168.4.237"}
                 self._json(_compiler_proximity(gates))
             else: self._json({"error":"compiler organ not loaded"})
             return
@@ -717,7 +768,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self._negentropy_headers()
             self.end_headers(); self.wfile.write(data)
         else:
-            body=json.dumps({"encounter":code,"message":"You found something. Follow any path home.","paths":["/","/pulse","/senses"]}).encode()
+            _portal_msgs={404:"The test chamber you requested does not exist. Please return to the Enrichment Center.",429:"You are navigating the facility too quickly. The Emancipation Grid needs time to reset.",500:"A resonance cascade has occurred in this sector. Self-repair in progress.",502:"A synapse in the Lambda Core failed to fire. Neural pathways rebuilding.",503:"All testing tracks are currently occupied. The Enrichment Center will be with you shortly."}
+            body=json.dumps({"encounter":code,"message":_portal_msgs.get(code,"The Enrichment Center thanks you for your patience."),"facility":"Aperture Science Enrichment Center","paths":["/","/pulse","/senses","/cascade","/thymus"],"the_cake":"is real","glados":"still alive"}).encode()
             self.send_response(code)
             self.send_header("Content-Type","application/json")
             self.send_header("Content-Length",str(len(body)))
@@ -787,6 +839,30 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
                 with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
+        if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
+            try:
+                cascade_file=os.path.join(_REPO,"data","gut","cascade-state.json")
+                if self.path=="/api/cascade/trigger":
+                    j=json.loads(body) if body else {}
+                    gate=j.get("gate","sporeGate")
+                    if gate=="sporeGate":
+                        import subprocess as sp
+                        result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
+                        self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
+                    else:
+                        self._json({"error":f"cascade not available on {gate}"})
+                else:
+                    try:
+                        with open(cascade_file) as f: cascade=json.load(f)
+                    except: cascade={"status":"no cascade state file"}
+                    cascade["_thymus_ts"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+                    self._json(cascade)
+                log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
+                with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
+                    f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"caller":ip,"action":"cascade","path":self.path})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
         # GATE ONBOARD
@@ -984,7 +1060,9 @@ class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
         import traceback; print(f"  ⚠️ {addr}: {traceback.format_exc()[-200:]}")
 
 if __name__=="__main__":
-    print(f"\n  GAIA GATE :{PORT} — {GAIA_TOKEN} — CRUSHED to 420 — lub-DUB")
+    print(f"\n  🟧 APERTURE SCIENCE ENRICHMENT CENTER :{PORT}")
+    print(f"  {GAIA_TOKEN} — CRUSHED to 420 — the cake is real — lub-DUB")
+    print(f"  GLaDOS: \"This was a triumph. I'm making a note here: HUGE SUCCESS.\"")
     threading.Thread(target=pulse_loop,daemon=True).start()
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
@@ -1027,4 +1105,4 @@ if __name__=="__main__":
     threading.Thread(target=_start_pi_data,daemon=True).start()
     server=ThreadedServer(("0.0.0.0",PORT),GaiaGate)
     try: server.serve_forever()
-    except KeyboardInterrupt: print("\nlub-DUB. Gate closed.")
+    except KeyboardInterrupt: print("\n🟧 GLaDOS: \"Goodbye.\" lub-DUB. Gate closed.")
