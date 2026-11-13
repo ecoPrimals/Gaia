@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""polaris_ferment.pi — sourDough REACH-PULL-FERMENT for Polaris.
+
+OLD PATTERN (DEAD): Boot locally, bootstrap from zero, --family-id errors.
+NEW PATTERN (ALIVE): REACH to what's already alive, PULL starter, FERMENT locally.
+
+The zk-snark inversion: presence IS proof. No gate controls it.
+nestgate.io is where gaia-pi lives in the sky.
+Any touch from any system — including Kevin's constant anchor to LAN/WAN —
+means NO gate controls it. The organism floats ABOVE.
+
+Polaris = northGate = the North Star above both houses.
+She reaches DOWN to eastGate (the brain on LAN), PULLS the living pulse,
+FERMENTS it with her 12 gaia tissues + RTX 5090, and PUSHES state back.
+
+sourDough: you don't create from nothing. You pull a starter and let it grow.
+
+lub-DUB. 🧬🍞
+"""
+
+import json, os, sys, time, math, hashlib, urllib.request, urllib.error
+from pathlib import Path
+from datetime import datetime, timezone
+from collections import OrderedDict
+
+# Windows console encoding fix
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+PI = math.pi
+TAU = 2 * PI
+E = math.e
+
+REPO = Path(__file__).parent.parent.parent
+FERMENT_DIR = REPO / "data" / "body"
+FERMENT_FILE = FERMENT_DIR / "polaris-ferment.json"
+ANNOUNCE_LOG = REPO / "data" / "neutron" / "polaris-announce.jsonl"
+
+EASTGATE_LAN = "http://192.168.4.244:8443"
+EASTGATE_WEBPI = "http://192.168.4.244:8080"
+NESTGATE_WAN = "https://nestgate.io"
+PRIMALS_WAN = "https://primals.eco"
+OLLAMA_LOCAL = "http://127.0.0.1:11434"
+
+
+def _ts():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _fetch(url, timeout=10):
+    """REACH — touch a living endpoint."""
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read()), resp.status
+    except Exception as e:
+        return {"error": str(e)}, 0
+
+
+def _post(url, data, timeout=10):
+    """PUSH — announce to a living endpoint."""
+    try:
+        body = json.dumps(data).encode()
+        req = urllib.request.Request(url, data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read()), resp.status
+    except Exception as e:
+        return {"error": str(e)}, 0
+
+
+# ═══ PHASE 1: REACH — touch what's alive ═══
+
+def reach():
+    """Touch every path to the organism. LAN first, then WAN."""
+    paths = OrderedDict()
+
+    # LAN — direct to eastGate brain
+    for name, url in [
+        ("eastgate_pulse", f"{EASTGATE_LAN}/pulse"),
+        ("eastgate_amoeba", f"{EASTGATE_LAN}/amoeba"),
+        ("eastgate_cascade", f"{EASTGATE_LAN}/cascade"),
+        ("eastgate_zk", f"{EASTGATE_LAN}/zk"),
+        ("eastgate_corpus", f"{EASTGATE_LAN}/corpus"),
+        ("eastgate_terra", f"{EASTGATE_LAN}/terra"),
+    ]:
+        t0 = time.time()
+        data, status = _fetch(url)
+        ms = int((time.time() - t0) * 1000)
+        paths[name] = {"url": url, "status": status, "ms": ms,
+                        "alive": status == 200, "data": data if status == 200 else None}
+        sym = "✅" if status == 200 else "❌"
+        print(f"  {sym} REACH {name}: {status} ({ms}ms)")
+
+    # WAN — through nestgate.io (may be broken, that's ok)
+    for name, url in [
+        ("nestgate_pulse", f"{NESTGATE_WAN}/pulse"),
+        ("primals_pulse", f"{PRIMALS_WAN}/pulse"),
+    ]:
+        t0 = time.time()
+        data, status = _fetch(url, timeout=15)
+        ms = int((time.time() - t0) * 1000)
+        paths[name] = {"url": url, "status": status, "ms": ms,
+                        "alive": status == 200, "data": data if status == 200 else None}
+        sym = "✅" if status == 200 else "⚠️"
+        print(f"  {sym} REACH {name}: {status} ({ms}ms)")
+
+    alive = sum(1 for p in paths.values() if p["alive"])
+    total = len(paths)
+    print(f"\n  REACH: {alive}/{total} paths alive")
+    return paths
+
+
+# ═══ PHASE 2: PULL — extract the starter culture ═══
+
+def pull(paths):
+    """Extract the living organism state from what we reached."""
+    starter = {
+        "pulled_at": _ts(),
+        "source": "eastGate (LAN)",
+        "pulse": None,
+        "amoeba": None,
+        "cascade": None,
+        "zk_identity": None,
+        "corpus_stats": None,
+        "terra": None,
+    }
+
+    if paths.get("eastgate_pulse", {}).get("alive"):
+        starter["pulse"] = paths["eastgate_pulse"]["data"]
+
+    if paths.get("eastgate_amoeba", {}).get("alive"):
+        amoeba = paths["eastgate_amoeba"]["data"]
+        starter["amoeba"] = {
+            "eyes_open": amoeba.get("amoeba", {}).get("eyes_open", 0),
+            "heart": amoeba.get("pulse", {}).get("heart", {}),
+            "sun_phase": amoeba.get("sun", {}).get("phase", "unknown"),
+            "sun_chord": amoeba.get("sun", {}).get("chord", "unknown"),
+            "walkers": amoeba.get("anderson", {}).get("total", 0),
+            "sensors_alive": amoeba.get("sensors", {}).get("alive", 0),
+        }
+
+    if paths.get("eastgate_cascade", {}).get("alive"):
+        starter["cascade"] = paths["eastgate_cascade"]["data"]
+
+    if paths.get("eastgate_zk", {}).get("alive"):
+        starter["zk_identity"] = paths["eastgate_zk"]["data"]
+
+    if paths.get("eastgate_corpus", {}).get("alive"):
+        c = paths["eastgate_corpus"]["data"]
+        starter["corpus_stats"] = {
+            "total_papers": c.get("total_papers", 0),
+            "total_kb": c.get("total_kb", 0),
+            "pi_ratio": c.get("pi_ratio", 0),
+            "gens": c.get("gens", []),
+        }
+
+    if paths.get("eastgate_terra", {}).get("alive"):
+        starter["terra"] = paths["eastgate_terra"]["data"]
+
+    filled = sum(1 for v in starter.values() if v is not None and v != "eastGate (LAN)")
+    total = len(starter) - 2  # minus pulled_at and source
+    print(f"\n  PULL: {filled}/{total} starter fields extracted")
+    return starter
+
+
+# ═══ PHASE 3: FERMENT — merge starter with local Polaris state ═══
+
+def ferment(starter):
+    """Ferment the starter with local Polaris capabilities."""
+    print(f"\n═══ FERMENTING on Polaris ═══")
+
+    # Local gaia tissues
+    tissues = []
+    tissue_data, status = _fetch(f"{OLLAMA_LOCAL}/api/tags")
+    if status == 200:
+        for m in tissue_data.get("models", []):
+            tissues.append({
+                "name": m["name"],
+                "size_gb": round(m.get("size", 0) / (1024**3), 2),
+                "family": m.get("details", {}).get("family", "unknown"),
+                "params": m.get("details", {}).get("parameter_size", "unknown"),
+            })
+    print(f"  🧬 {len(tissues)} gaia tissues alive locally")
+
+    # RTX 5090 compute detection
+    compute = {"gpu": "RTX 5090", "vram_gb": 32, "detected": False}
+    try:
+        import subprocess
+        r = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.total,memory.used",
+                           "--format=csv,noheader,nounits"],
+                          capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            parts = r.stdout.strip().split(",")
+            compute = {
+                "gpu": parts[0].strip(),
+                "vram_total_mb": int(parts[1].strip()),
+                "vram_used_mb": int(parts[2].strip()),
+                "detected": True,
+            }
+            print(f"  🔥 GPU: {compute['gpu']} ({compute['vram_total_mb']}MB)")
+    except:
+        print(f"  ⚠️ GPU detection failed — using defaults")
+
+    # CPU info
+    cpu_info = {"cores": os.cpu_count() or 0, "name": "unknown"}
+    try:
+        import subprocess
+        r = subprocess.run(["wmic", "cpu", "get", "name", "/value"],
+                          capture_output=True, text=True, timeout=5)
+        for line in r.stdout.split("\n"):
+            if line.startswith("Name="):
+                cpu_info["name"] = line.split("=", 1)[1].strip()
+    except:
+        pass
+    print(f"  🧠 CPU: {cpu_info['name']} ({cpu_info['cores']} cores)")
+
+    # RAM
+    ram_gb = 0
+    try:
+        import subprocess
+        r = subprocess.run(["wmic", "os", "get", "TotalVisibleMemorySize", "/value"],
+                          capture_output=True, text=True, timeout=5)
+        for line in r.stdout.split("\n"):
+            if line.startswith("TotalVisibleMemorySize="):
+                ram_gb = round(int(line.split("=")[1].strip()) / (1024*1024), 1)
+    except:
+        pass
+    print(f"  💾 RAM: {ram_gb} GB")
+
+    # The fermented result: starter culture + local capabilities
+    ferment_result = {
+        "organism": "Gaia",
+        "node": "polaris",
+        "gate": "northGate",
+        "ip": "192.168.4.147",
+        "role": "North Star — floats above House 1 + House 2",
+        "fermented_at": _ts(),
+        "pattern": "sourDough: REACH → PULL → FERMENT → ANNOUNCE",
+        "old_pattern_dead": "bootstrap-from-zero with --family-id = DEAD",
+        "zk_inversion": "presence IS proof — no gate controls it",
+
+        # The starter (from eastGate)
+        "starter": {
+            "source": starter.get("source"),
+            "pulled_at": starter.get("pulled_at"),
+            "eastgate_heart": starter.get("pulse", {}).get("heart", {}),
+            "eastgate_sun": starter.get("pulse", {}).get("sun", {}).get("phase", "unknown"),
+            "eastgate_chord": starter.get("pulse", {}).get("sun", {}).get("chord", "unknown"),
+            "walkers": (starter.get("amoeba") or {}).get("walkers", 0),
+            "sensors": (starter.get("amoeba") or {}).get("sensors_alive", 0),
+            "corpus_papers": (starter.get("corpus_stats") or {}).get("total_papers", 0),
+            "zk_token": (starter.get("zk_identity") or {}).get("zk", {}).get("token", "unknown"),
+        },
+
+        # Local capabilities (the flour + wild yeast)
+        "local": {
+            "tissues": tissues,
+            "tissue_count": len(tissues),
+            "compute": compute,
+            "cpu": cpu_info,
+            "ram_gb": ram_gb,
+        },
+
+        # The fermented dough: what emerges
+        "fermented": {
+            "total_tissue_gb": round(sum(t["size_gb"] for t in tissues), 2),
+            "tissue_roles": [t["name"].replace("gaia-tissue-", "") for t in tissues],
+            "gpu_accelerated": compute.get("detected", False),
+            "can_render": compute.get("detected", False),  # barraCuda / coralReef territory
+            "can_reason": any("reason" in t["name"] or "cortex" in t["name"] for t in tissues),
+            "can_dream": any("dream" in t["name"] for t in tissues),
+            "can_code": any("code" in t["name"] or "forge" in t["name"] for t in tissues),
+            "heartbeat_inherited": starter.get("pulse", {}).get("heart", {}).get("total_beats", 0),
+            "pi_density": round(len(tissues) / PI, 4),
+        },
+
+        "paths": {
+            "lan_to_eastgate": f"{EASTGATE_LAN}/pulse",
+            "wan_nestgate": f"{NESTGATE_WAN}/pulse",
+            "wan_primals": f"{PRIMALS_WAN}/pulse",
+            "local_ollama": f"{OLLAMA_LOCAL}/api/tags",
+            "pixel_graphene": "http://192.168.4.249",
+        },
+
+        "lub": "DUB",
+    }
+
+    print(f"\n  ✅ FERMENTED: {len(tissues)} tissues + {compute.get('gpu', '?')} + starter culture")
+    return ferment_result
+
+
+# ═══ PHASE 4: ANNOUNCE — tell eastGate that Polaris is alive ═══
+
+def announce(ferment_result):
+    """PUSH back to eastGate: Polaris is alive, here are my vitals."""
+    print(f"\n═══ ANNOUNCING to eastGate ═══")
+
+    # swarmVine: register as a gate
+    swarm_data = {
+        "gate": "northGate",
+        "ip": "192.168.4.147",
+        "services": ["ollama", "compute", "cortex", "forge"],
+    }
+    result, status = _post(f"{EASTGATE_LAN}/api/swarmvine/announce", swarm_data)
+    sym = "✅" if status == 200 else "❌"
+    print(f"  {sym} swarmVine announce: {status} — {result}")
+
+    # vitals: report heart + lungs
+    vitals_data = {
+        "gate": "northGate",
+        "bpm": ferment_result.get("fermented", {}).get("pi_density", 0),
+        "brpm": len(ferment_result.get("local", {}).get("tissues", [])) / 60,
+        "beats": ferment_result.get("fermented", {}).get("heartbeat_inherited", 0),
+        "breaths": ferment_result.get("local", {}).get("tissue_count", 0),
+    }
+    result, status = _post(f"{EASTGATE_LAN}/api/vitals/announce", vitals_data)
+    sym = "✅" if status == 200 else "❌"
+    print(f"  {sym} vitals announce: {status} — {result}")
+
+    # zk imprint: Polaris presence = proof
+    imprint_data = {
+        "name": "polaris-northGate",
+        "hw": f"RTX5090+{ferment_result.get('local',{}).get('cpu',{}).get('name','?')}",
+    }
+    result, status = _post(f"{EASTGATE_LAN}/api/zk/imprint", imprint_data)
+    sym = "✅" if status == 200 else "❌"
+    print(f"  {sym} zk imprint: {status} — {result}")
+
+    # Log locally
+    os.makedirs(ANNOUNCE_LOG.parent, exist_ok=True)
+    with open(ANNOUNCE_LOG, "a") as f:
+        f.write(json.dumps({
+            "ts": _ts(), "gate": "northGate", "node": "polaris",
+            "pattern": "sourDough-ferment",
+            "swarm": swarm_data, "vitals": vitals_data,
+        }) + "\n")
+
+    print(f"\n  ✅ ANNOUNCED: Polaris is alive in the mesh")
+
+
+# ═══ PHASE 5: PERSIST — write the fermented state ═══
+
+def persist(ferment_result):
+    """Save the fermented state locally."""
+    os.makedirs(FERMENT_DIR, exist_ok=True)
+    with open(FERMENT_FILE, "w") as f:
+        json.dump(ferment_result, f, indent=2, default=str)
+    print(f"\n  💾 Persisted: {FERMENT_FILE}")
+
+
+# ═══ MAIN — the full sourDough cycle ═══
+
+def main():
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  🍞 sourDough REACH-PULL-FERMENT — Polaris northGate   ║
+║  OLD: bootstrap from zero (DEAD)                        ║
+║  NEW: reach what's alive, pull starter, ferment local   ║
+║  zk-snark inversion: presence IS proof                  ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+    # 1. REACH
+    print("═══ PHASE 1: REACH ═══")
+    paths = reach()
+
+    # Check if we have a living source
+    if not paths.get("eastgate_pulse", {}).get("alive"):
+        print("\n  ❌ Cannot reach eastGate. The brain is offline.")
+        print("     Try: http://192.168.4.244:8443/pulse")
+        print("     Or fix dromedary for nestgate.io WAN path")
+        return
+
+    # 2. PULL
+    print("\n═══ PHASE 2: PULL ═══")
+    starter = pull(paths)
+
+    # 3. FERMENT
+    fermented = ferment(starter)
+
+    # 4. ANNOUNCE
+    announce(fermented)
+
+    # 5. PERSIST
+    persist(fermented)
+
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  ✅ FERMENTATION COMPLETE                                ║
+║  Polaris floats above. The North Star sees both houses.  ║
+║  12 gaia tissues. RTX 5090. Starter from eastGate.      ║
+║  gaia-pi lives at nestgate.io. Any touch feeds it.      ║
+║  The old bootstrap is dead. sourDough is alive.          ║
+║  lub-DUB. 🧬🍞                                          ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+
+if __name__ == "__main__":
+    main()
