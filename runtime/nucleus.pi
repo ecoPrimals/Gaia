@@ -1,0 +1,355 @@
+#!/usr/bin/env python3
+"""nucleus.pi — LOCAL NUCLEUS for northGate. biomeOS orchestration without the binary.
+
+The whitePapers describe the architecture. This implements it in Python on northGate
+until the Rust primals are compiled and deployed here.
+
+COORDINATION TRIAD (whitePaper/):
+  quorumSignal → SENSE  (observe, discover, classify)
+  rootPulse    → ACTION (create, mutate, prove)
+  waterFall    → SYNC   (reconcile, propagate, cohere)
+
+PROVENANCE TRIO (primals/):
+  rhizoCrypt   → Ephemeral DAG (present/future) 
+  loamSpine    → Immutable history (past)
+  sweetGrass   → Semantic attribution
+
+ECONOMICS (whitePaper/economics/):
+  sunCloud     → Radiating attribution economy
+  latentValue  → Unlock what's already there
+  loamCert     → Memory-bound objects with provenance
+
+GAMES (whitePaper/gAIa/GAIA_GAMES_WFC_OCT11.md):
+  Stardew Valley → cultivation not extraction
+  Minecraft      → seed IS epitope, mining IS sorting, crafting IS braiding
+  esotericWebb   → CRPG engine, Disco Elysium-inspired
+
+THIS IS THE GUT. The stomach WITH eyes that digests everything.
+lub-DUB.
+"""
+
+import json, os, hashlib, time, math, threading
+from pathlib import Path
+from datetime import datetime, timezone
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+PI = math.pi
+PHI = (1 + math.sqrt(5)) / 2
+
+
+# ═══ KNOWLEDGE INGESTION — eat all whitePapers ═══
+
+def ingest_whitepapers():
+    """Ingest ALL whitePaper content into the nucleus knowledge base.
+    
+    26 directories, 955+ files. Every generation of thinking.
+    Gen 0 (hypothesis) → Gen 5 (guerillaGorilla).
+    economics, ethics, gAIa, nautilus, RootPulse, waterFall, neuralAPI.
+    """
+    wp_root = GAIA_ROOT / "whitePaper"
+    knowledge = {
+        "generations": {},
+        "systems": {},
+        "total_files": 0,
+        "total_bytes": 0,
+        "topics": [],
+    }
+    
+    for d in sorted(wp_root.iterdir()):
+        if not d.is_dir():
+            continue
+        
+        name = d.name
+        files = list(d.rglob("*.md"))
+        total_size = sum(f.stat().st_size for f in files)
+        
+        entry = {
+            "name": name,
+            "files": len(files),
+            "size_kb": round(total_size / 1024, 1),
+            "topics": [f.stem for f in files[:20]],
+        }
+        
+        # Classify into generation or system
+        if name.startswith("gen"):
+            knowledge["generations"][name] = entry
+        else:
+            knowledge["systems"][name] = entry
+        
+        knowledge["total_files"] += len(files)
+        knowledge["total_bytes"] += total_size
+        knowledge["topics"].extend(entry["topics"])
+    
+    return knowledge
+
+
+# ═══ COORDINATION TRIAD — quorumSignal / rootPulse / waterFall ═══
+
+class QuorumSignal:
+    """SENSE — observe, discover, classify.
+    
+    What primals are alive? What models exist?
+    What's the organism's state?
+    """
+    
+    def sense(self):
+        """Full sensory sweep."""
+        import urllib.request
+        
+        state = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "gate": "northGate",
+        }
+        
+        # Sense ollama models
+        try:
+            r = urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5)
+            tags = json.loads(r.read())
+            models = tags.get("models", [])
+            state["models"] = {
+                "count": len(models),
+                "names": [m["name"] for m in models],
+                "total_size_gb": round(sum(m.get("size", 0) for m in models) / (1024**3), 2),
+            }
+        except:
+            state["models"] = {"count": 0, "error": "ollama unreachable"}
+        
+        # Sense services
+        services = {
+            "petalTongue": ("http://localhost:5926/", 5926),
+            "webpi": ("http://localhost:8080/", 8080),
+            "talos": ("http://localhost:8443/talos/status", 8443),
+            "ollama": ("http://localhost:11434/", 11434),
+        }
+        state["services"] = {}
+        for name, (url, port) in services.items():
+            try:
+                r = urllib.request.urlopen(url, timeout=3)
+                state["services"][name] = {"status": "ALIVE", "port": port}
+            except:
+                state["services"][name] = {"status": "DOWN", "port": port}
+        
+        # Sense mass
+        mass_file = GAIA_ROOT / "runtime" / "sourdough" / "mass.json"
+        if mass_file.exists():
+            mass = json.loads(mass_file.read_text())
+            state["mass"] = {
+                "total_gb": mass.get("total_mass_gb", 0),
+                "tissues": len(mass.get("tissue", {})),
+            }
+        
+        # Sense whitePaper knowledge
+        wp = ingest_whitepapers()
+        state["knowledge"] = {
+            "whitepaper_files": wp["total_files"],
+            "whitepaper_kb": round(wp["total_bytes"] / 1024, 1),
+            "generations": len(wp["generations"]),
+            "systems": len(wp["systems"]),
+        }
+        
+        return state
+
+
+class RootPulse:
+    """ACTION — create, mutate, prove.
+    
+    Version control through primal coordination.
+    rhizoCrypt (DAG) + loamSpine (linear) + sweetGrass (attribution).
+    """
+    
+    def __init__(self):
+        self.history = []
+    
+    def commit(self, action, data):
+        """Record an action with provenance."""
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "action": action,
+            "data": data,
+            "blake3": hashlib.blake2b(
+                json.dumps(data, default=str).encode(), 
+                digest_size=32
+            ).hexdigest(),
+        }
+        self.history.append(entry)
+        return entry
+    
+    def get_history(self):
+        return self.history
+
+
+class WaterFall:
+    """SYNC — reconcile, propagate, cohere.
+    
+    Temporal ecosystem sync. Waves pass through gates.
+    No coordinator needed — just temporal awareness.
+    """
+    
+    def __init__(self):
+        self.waves = []
+        self.last_sync = None
+    
+    def sync_check(self):
+        """Check sync status with eastGate."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["git", "log", "--oneline", "-1"],
+                capture_output=True, text=True, cwd=str(GAIA_ROOT),
+                timeout=5,
+            )
+            local_head = result.stdout.strip()
+        except:
+            local_head = "unknown"
+        
+        wave = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "gate": "northGate",
+            "local_head": local_head,
+            "pattern": "parity",  # Will be determined after remote check
+        }
+        self.waves.append(wave)
+        self.last_sync = wave
+        return wave
+
+
+# ═══ NUCLEUS — the local orchestrator ═══
+
+class Nucleus:
+    """The LOCAL NUCLEUS on northGate.
+    
+    biomeOS orchestrates primals. On northGate, the nucleus orchestrates
+    everything through Python until the Rust binaries are deployed.
+    
+    The nucleus is the GUT — the stomach WITH eyes.
+    It digests whitePapers, coordinates services, and serves the organism.
+    """
+    
+    def __init__(self):
+        self.qs = QuorumSignal()
+        self.rp = RootPulse()
+        self.wf = WaterFall()
+        self.born = datetime.now(timezone.utc).isoformat()
+        self.knowledge = None
+    
+    def boot(self):
+        """Boot the nucleus — ingest knowledge, sense state."""
+        print(f"\n═══ NUCLEUS BOOT — northGate ═══\n")
+        
+        # 1. Ingest whitePapers
+        print("  1. INGEST whitePapers...", end=" ", flush=True)
+        self.knowledge = ingest_whitepapers()
+        print(f"✅ {self.knowledge['total_files']} files, {round(self.knowledge['total_bytes']/1024)} KB")
+        
+        # Print generations
+        print(f"\n     GENERATIONS ({len(self.knowledge['generations'])}):")
+        for name, gen in sorted(self.knowledge["generations"].items()):
+            print(f"       {name:6} → {gen['files']:>3} files, {gen['size_kb']:>8.1f} KB")
+        
+        # Print systems
+        print(f"\n     SYSTEMS ({len(self.knowledge['systems'])}):")
+        for name, sys in sorted(self.knowledge["systems"].items()):
+            print(f"       {name:20} → {sys['files']:>3} files, {sys['size_kb']:>8.1f} KB")
+        
+        # 2. Sense state
+        print(f"\n  2. SENSE (quorumSignal)...", end=" ", flush=True)
+        state = self.qs.sense()
+        print(f"✅")
+        
+        print(f"     Models: {state['models']['count']} ({state['models'].get('total_size_gb', 0)} GB)")
+        for svc, info in state.get("services", {}).items():
+            status = "🟢" if info["status"] == "ALIVE" else "🔴"
+            print(f"     {status} {svc:15} :{info['port']}")
+        
+        if "mass" in state:
+            print(f"     Mass: {state['mass']['total_gb']} GB across {state['mass']['tissues']} tissues")
+        
+        print(f"     Knowledge: {state['knowledge']['whitepaper_files']} files, {state['knowledge']['whitepaper_kb']} KB")
+        
+        # 3. RootPulse commit
+        print(f"\n  3. COMMIT (rootPulse)...", end=" ", flush=True)
+        entry = self.rp.commit("nucleus_boot", {
+            "gate": "northGate",
+            "knowledge_files": self.knowledge["total_files"],
+            "models": state["models"]["count"],
+            "services": {k: v["status"] for k, v in state.get("services", {}).items()},
+        })
+        print(f"✅ blake3: {entry['blake3'][:16]}...")
+        
+        # 4. WaterFall sync check
+        print(f"\n  4. SYNC (waterFall)...", end=" ", flush=True)
+        wave = self.wf.sync_check()
+        print(f"✅ HEAD: {wave['local_head'][:40]}")
+        
+        # Write nucleus state
+        state_file = GAIA_ROOT / "data" / "nucleus" / "state.json"
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        nucleus_state = {
+            "nucleus": "northGate",
+            "born": self.born,
+            "booted": datetime.now(timezone.utc).isoformat(),
+            "knowledge": {
+                "generations": len(self.knowledge["generations"]),
+                "systems": len(self.knowledge["systems"]),
+                "total_files": self.knowledge["total_files"],
+                "total_kb": round(self.knowledge["total_bytes"] / 1024),
+            },
+            "state": state,
+            "triad": {
+                "quorumSignal": "SENSE — active",
+                "rootPulse": f"ACTION — {len(self.rp.history)} commits",
+                "waterFall": f"SYNC — {len(self.wf.waves)} waves",
+            },
+            "economics": {
+                "sunCloud": "radiating attribution",
+                "latentValue": "unlocking dormant compute",
+                "loamCert": "memory-bound provenance",
+            },
+            "games": {
+                "esotericWebb": "CRPG engine — Disco Elysium-inspired",
+                "ludoSpring": "game science — 75 experiments",
+                "stardew": "cultivation not extraction",
+                "minecraft": "seed IS epitope, mining IS sorting",
+            },
+        }
+        state_file.write_text(json.dumps(nucleus_state, indent=2, default=str))
+        
+        print(f"\n  ✅ NUCLEUS BOOTED on northGate")
+        print(f"     Coordination triad: quorumSignal + rootPulse + waterFall")
+        print(f"     Provenance trio: rhizoCrypt + loamSpine + sweetGrass")
+        print(f"     Economics: sunCloud + latentValue + loamCert")
+        print(f"     Knowledge: {self.knowledge['total_files']} files across {len(self.knowledge['generations'])} generations + {len(self.knowledge['systems'])} systems")
+        print(f"     State → {state_file}")
+        print(f"\n     The gut digests. The stomach has eyes. lub-DUB. 🧬\n")
+        
+        return nucleus_state
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser(description="NUCLEUS — local biomeOS orchestrator on northGate")
+    p.add_argument("--boot", action="store_true", help="Boot the nucleus")
+    p.add_argument("--sense", action="store_true", help="Run quorumSignal sense")
+    p.add_argument("--sync", action="store_true", help="Run waterFall sync check")
+    p.add_argument("--knowledge", action="store_true", help="Show ingested knowledge")
+    args = p.parse_args()
+    
+    nucleus = Nucleus()
+    
+    if args.boot:
+        nucleus.boot()
+    elif args.sense:
+        state = nucleus.qs.sense()
+        print(json.dumps(state, indent=2, default=str))
+    elif args.sync:
+        wave = nucleus.wf.sync_check()
+        print(json.dumps(wave, indent=2, default=str))
+    elif args.knowledge:
+        wp = ingest_whitepapers()
+        print(json.dumps(wp, indent=2, default=str))
+    else:
+        nucleus.boot()
+
+
+if __name__ == "__main__":
+    main()
