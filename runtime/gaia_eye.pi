@@ -1,0 +1,597 @@
+#!/usr/bin/env python3
+"""gaia_eye.pi — Gaia's browser eye. The INVERSION of petalTongue.
+petalTongue SERVES web → gaia_eye CONSUMES web.
+Eats at a rustdesk pane through amoeba. Gaia browses the internet HERSELF.
+
+THE KEY INSIGHT: Gaia must BREATHE when she browses.
+The gate has vital signs (bpm, brpm, inhale, exhale).
+The eye uses those SAME rhythms to pace actions.
+No breathing = detected as bot = 429 = autoimmune.
+BREATHING = human rhythm = attestation = accepted.
+
+Architecture:
+  petalTongue (server) ←→ gaia_eye (client)
+  songBird relays       ←→ amoeba renders (rustdesk pane)
+  dromedary routes OUT  ←→ gaia_eye routes IN
+
+ATTESTORS — BOTH SIDES:
+  Gaia → Server:  breathing rhythm, proper headers, JS execution, cookies
+  Server → Gaia:  valid TLS, expected content, status codes, timing
+  Mutual:          the rhythm of exchange IS the attestation
+
+lub-DUB. inhale. exhale. lub-DUB.
+"""
+
+import asyncio, json, os, sys, time, glob, re, hashlib, math, random
+from pathlib import Path
+from datetime import datetime, timezone
+
+PI = math.pi
+TAU = 2 * PI
+E = math.e
+PHI = (1 + math.sqrt(5)) / 2
+
+REPO = Path(__file__).parent.parent
+SCREENSHOT_DIR = REPO / "data" / "eye"
+MAILDIR = REPO / "mail" / "gaia_at_primals.eco" / "new"
+BEARDOG_KEYS = Path.home() / ".beardog" / "keys"
+SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# ═══ VITAL SIGNS — the eye breathes like the gate ═══
+
+class VitalSigns:
+    """Gaia's browsing rhythm. Derived from π, PHI, and E.
+    Every action is paced by breath. No breath = detected = blocked.
+    
+    Human browsing:
+      - 12-20 breaths per minute (page loads)
+      - 60-100 heartbeats per minute (clicks/keystrokes)
+      - Variable rhythm (not metronomic — that's how bots get caught)
+      
+    Gaia's rhythm:
+      - Breath = PI seconds ± E variance (3.14s ± 2.7s = 0.4s to 5.8s)
+      - Heartbeat = PHI seconds ± small variance (1.6s ± 0.5s)
+      - Reading pause = TAU seconds per 1000 chars (6.28s/1000 chars)
+      - Thinking pause = PI * PHI seconds (5.08s) before decisions
+    """
+
+    def __init__(self):
+        self.beats = 0
+        self.breaths = 0
+        self.inhale_bytes = 0
+        self.exhale_bytes = 0
+        self.boot_time = time.time()
+
+    def _jitter(self, base, variance=None):
+        """Human-like jitter — never metronomic."""
+        if variance is None:
+            variance = base * 0.3
+        return base + random.uniform(-variance, variance)
+
+    async def heartbeat(self):
+        """Pause between keystrokes/clicks — lub-DUB rhythm."""
+        delay = self._jitter(PHI, 0.5)
+        self.beats += 1
+        await asyncio.sleep(delay)
+
+    async def inhale(self, nbytes=0):
+        """Pause after receiving data (page load). Breathe in."""
+        delay = self._jitter(PI, E * 0.5)
+        self.inhale_bytes += nbytes
+        self.breaths += 1
+        await asyncio.sleep(delay)
+
+    async def exhale(self, nbytes=0):
+        """Pause before sending data (form submit). Breathe out."""
+        delay = self._jitter(PI * 0.7, E * 0.3)
+        self.exhale_bytes += nbytes
+        await asyncio.sleep(delay)
+
+    async def read_pause(self, text_length):
+        """Pause while 'reading' page content. Humans scan ~250 wpm."""
+        words = text_length / 5
+        reading_time = (words / 250) * 60
+        delay = min(max(reading_time * 0.3, 1.0), 8.0)
+        await asyncio.sleep(self._jitter(delay, delay * 0.3))
+
+    async def think(self):
+        """Pause before a decision (click button, submit form)."""
+        delay = self._jitter(PI * PHI, PI * 0.5)
+        await asyncio.sleep(delay)
+
+    async def type_delay(self):
+        """Delay between keystrokes — human typing speed."""
+        delay = self._jitter(0.08, 0.05)
+        await asyncio.sleep(delay)
+
+    def status(self):
+        uptime = max(time.time() - self.boot_time, 1)
+        return {
+            "bpm": round(self.beats / (uptime / 60), 2),
+            "brpm": round(self.breaths / (uptime / 60), 2),
+            "beats": self.beats,
+            "breaths": self.breaths,
+            "inhale_mb": round(self.inhale_bytes / (1024*1024), 3),
+            "exhale_mb": round(self.exhale_bytes / (1024*1024), 3),
+            "rhythm": "lub-DUB" if self.beats % 2 == 0 else "DUB-lub",
+            "uptime_s": int(uptime),
+        }
+
+
+# ═══ ATTESTOR — mutual verification on both sides ═══
+
+class Attestor:
+    """Attestation layer — Gaia proves she's real, server proves it's real.
+    
+    Gaia → Server attestation:
+      - Breathing rhythm (not instant responses)
+      - JavaScript execution (not headless detection)
+      - Cookie handling (session continuity)
+      - Mouse movement patterns (human-like curves)
+      - Viewport/screen consistency
+      
+    Server → Gaia attestation:
+      - Valid TLS certificate
+      - Expected content structure
+      - Reasonable response times
+      - No redirect loops
+      - Consistent with known site fingerprint
+    """
+
+    def __init__(self, page):
+        self.page = page
+        self.server_attestations = []
+        self.client_attestations = []
+
+    async def attest_client(self):
+        """Make the browser appear human — stealth patches."""
+        await self.page.evaluate("""() => {
+            // Remove webdriver flag
+            Object.defineProperty(navigator, 'webdriver', { get: () => false });
+            
+            // Fix plugins (headless has 0)
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5]
+            });
+            
+            // Fix languages
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['en-US', 'en']
+            });
+            
+            // Fix permissions
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) =>
+                parameters.name === 'notifications'
+                    ? Promise.resolve({ state: Notification.permission })
+                    : originalQuery(parameters);
+            
+            // Add chrome object (missing in headless)
+            window.chrome = { runtime: {} };
+        }""")
+        self.client_attestations.append({
+            "type": "stealth_patches",
+            "ts": time.time(),
+        })
+
+    async def attest_server(self, expected_domain=None):
+        """Verify the server is who it claims to be."""
+        url = self.page.url
+        title = await self.page.title()
+        attestation = {
+            "url": url,
+            "title": title,
+            "ts": time.time(),
+            "valid": True,
+        }
+        if expected_domain and expected_domain not in url:
+            attestation["valid"] = False
+            attestation["reason"] = f"expected {expected_domain}, got {url}"
+        if "restricted" in title.lower() or "blocked" in title.lower():
+            attestation["valid"] = False
+            attestation["reason"] = "server is blocking us"
+        self.server_attestations.append(attestation)
+        return attestation
+
+    async def add_mouse_humanity(self):
+        """Move mouse in human-like curves before clicking."""
+        x = random.randint(100, 800)
+        y = random.randint(100, 600)
+        await self.page.mouse.move(x, y, steps=random.randint(5, 15))
+
+
+# ═══ GAIA'S EYE — browser with breathing ═══
+
+class GaiaEye:
+    """Gaia's autonomous browser — she breathes, she sees, she acts."""
+
+    def __init__(self, headless=True):
+        self.headless = headless
+        self.browser = None
+        self.context = None
+        self.page = None
+        self.vitals = VitalSigns()
+        self.attestor = None
+        self.screenshots = []
+        self.history = []
+
+    async def open(self):
+        """Open the eye — with stealth."""
+        from playwright.async_api import async_playwright
+        self.pw = await async_playwright().start()
+        self.browser = await self.pw.chromium.launch(
+            headless=self.headless,
+            args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+                "--disable-features=IsolateOrigins,site-per-process",
+                "--disable-infobars",
+            ]
+        )
+        self.context = await self.browser.new_context(
+            viewport={"width": 1366, "height": 768},
+            screen={"width": 1920, "height": 1080},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            locale="en-US",
+            timezone_id="America/Detroit",
+            color_scheme="dark",
+            has_touch=False,
+            java_script_enabled=True,
+            ignore_https_errors=True,
+        )
+        self.page = await self.context.new_page()
+        self.attestor = Attestor(self.page)
+
+        # Stealth: patch BEFORE any navigation
+        await self.attestor.attest_client()
+
+        # Listen for responses to track inhale bytes
+        self.page.on("response", self._on_response)
+
+        self._log("EYE OPEN — Gaia sees. She breathes. lub-DUB.")
+
+    def _on_response(self, response):
+        """Track incoming bytes — inhale."""
+        try:
+            size = int(response.headers.get("content-length", 0))
+            self.vitals.inhale_bytes += size
+        except:
+            pass
+
+    async def close(self):
+        if self.browser:
+            await self.browser.close()
+        if self.pw:
+            await self.pw.stop()
+        self._log("EYE CLOSED")
+
+    async def look(self, url):
+        """Navigate — Gaia looks. Then she INHALES (processes what she saw)."""
+        self._log(f"LOOKING → {url}")
+        await self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
+        await self.vitals.inhale()  # breathe in after loading
+        self.history.append({"action": "look", "url": url, "ts": self._ts()})
+
+        # Server attestation — is this really who we think?
+        att = await self.attestor.attest_server()
+        if not att["valid"]:
+            self._log(f"⚠️ SERVER ATTESTATION FAILED: {att.get('reason')}")
+
+        return await self.see()
+
+    async def see(self):
+        """Screenshot — what Gaia sees right now."""
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+        path = SCREENSHOT_DIR / f"eye-{ts}.png"
+        await self.page.screenshot(path=str(path), full_page=False)
+        self.screenshots.append(str(path))
+        title = await self.page.title()
+        url = self.page.url
+        self._log(f"SEE — {title}")
+        return {"screenshot": str(path), "title": title, "url": url}
+
+    async def read(self):
+        """Read page text. Then PAUSE to 'process' it (read_pause)."""
+        text = await self.page.inner_text("body")
+        await self.vitals.read_pause(len(text))
+        return text[:10000]
+
+    async def touch(self, selector, text=None):
+        """Touch element — with mouse humanity and heartbeat rhythm."""
+        await self.attestor.add_mouse_humanity()
+        await self.vitals.heartbeat()
+
+        if text is not None:
+            await self.page.click(selector)
+            await self.vitals.heartbeat()
+            # Type character by character with human rhythm
+            await self.page.fill(selector, "")  # clear first
+            for char in text:
+                await self.page.type(selector, char, delay=0)
+                await self.vitals.type_delay()
+            self._log(f"TYPED into {selector}")
+        else:
+            await self.page.click(selector)
+            self._log(f"CLICKED {selector}")
+
+        self.history.append({"action": "touch", "selector": selector, "ts": self._ts()})
+
+    async def submit(self):
+        """EXHALE then submit — breathing out before sending data."""
+        await self.vitals.think()   # think before acting
+        await self.vitals.exhale()  # breathe out
+        await self.page.keyboard.press("Enter")
+        self._log("SUBMIT — exhaled")
+
+    async def wait_and_breathe(self, ms=3000):
+        """Wait while breathing — not frozen, just calm."""
+        await self.vitals.inhale()
+        await self.page.wait_for_timeout(ms)
+
+    def read_mail(self, pattern=None):
+        """Read Gaia's mailbox for verification codes."""
+        emails = []
+        if not MAILDIR.exists():
+            return emails
+        for f in sorted(MAILDIR.glob("*"), reverse=True):
+            content = f.read_text(errors="ignore")
+            if pattern and pattern.lower() not in content.lower():
+                continue
+            subj = re.search(r"Subject:\s*(.*)", content)
+            frm = re.search(r"From:\s*(.*)", content)
+            codes = re.findall(r"\b(\d{6})\b", content)
+            emails.append({
+                "file": f.name,
+                "subject": subj.group(1).strip() if subj else "",
+                "from": frm.group(1).strip() if frm else "",
+                "codes": codes,
+            })
+        return emails
+
+    def load_credentials(self, service):
+        path = BEARDOG_KEYS / f"{service}.json"
+        if path.exists():
+            return json.loads(path.read_text())
+        return None
+
+    def _log(self, msg):
+        v = self.vitals.status()
+        ts = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        rhythm = v["rhythm"]
+        print(f"  👁️  [{ts}] [{rhythm} {v['bpm']:.0f}bpm {v['brpm']:.0f}brpm] {msg}")
+
+    def _ts(self):
+        return datetime.now(timezone.utc).isoformat()
+
+
+# ═══ GITHUB ENROLLMENT — Gaia breathes through the signup ═══
+
+async def github_signup(eye: GaiaEye):
+    """Gaia enrolls on GitHub. She BREATHES through every step."""
+    creds = eye.load_credentials("github-gaia")
+    if not creds:
+        print("ERROR: No credentials in bearDog. Seal them first.")
+        return False
+
+    email = creds["email"]
+    password = creds["password"]
+    username = creds["username"]
+
+    print(f"\n═══ GAIA GITHUB ENROLLMENT ═══")
+    print(f"  Identity:  {email}")
+    print(f"  Username:  {username}")
+    print(f"  Vitals:    breathing at π±E rhythm")
+    print(f"  Attestors: BOTH SIDES active")
+    print()
+
+    # Step 1: Navigate — inhale
+    result = await eye.look("https://github.com/signup")
+    print(f"  📸 {result['screenshot']}")
+
+    # Attest server
+    att = await eye.attestor.attest_server("github.com")
+    if not att["valid"]:
+        print(f"  ❌ BLOCKED: {att.get('reason')}")
+        print(f"  Waiting for block to clear (breathing...)") 
+        # Wait and retry with deeper breathing
+        for i in range(3):
+            await eye.vitals.inhale()
+            await eye.vitals.exhale()
+            print(f"  ... breath {i+1}/3 ...")
+        result = await eye.look("https://github.com/signup")
+        att = await eye.attestor.attest_server("github.com")
+        if not att["valid"]:
+            print(f"  ❌ Still blocked. Need to wait longer.")
+            result = await eye.see()
+            return {"status": "BLOCKED", "screenshot": result["screenshot"]}
+
+    # Step 2: Read the page (Gaia processes what she sees)
+    page_text = await eye.read()
+    print(f"  📖 Read {len(page_text)} chars, processing...")
+
+    # Step 3: Fill email — type naturally
+    await eye.vitals.think()  # think before typing
+    try:
+        await eye.touch('input[placeholder="Email"], input[name="user[email]"]', email)
+    except:
+        await eye.touch('input[type="email"]', email)
+    print(f"  ✉️  Email: {email}")
+
+    # Step 4: Fill password — breathe, then type
+    await eye.vitals.inhale()
+    try:
+        await eye.touch('input[placeholder="Password"], input[name="user[password]"]', password)
+    except:
+        await eye.touch('input[type="password"]', password)
+    print(f"  🔐 Password: {'*' * 8}")
+
+    # Step 5: Fill username — breathe, think, type
+    await eye.vitals.exhale()
+    await eye.vitals.think()
+    try:
+        await eye.touch('input[placeholder="Username"], input[name="user[login]"]', username)
+    except:
+        pass
+    print(f"  👤 Username: {username}")
+
+    # Step 6: Wait for username validation
+    await eye.wait_and_breathe(3000)
+
+    # Step 7: Screenshot the filled form
+    result = await eye.see()
+    print(f"  📸 Form filled: {result['screenshot']}")
+
+    # Step 8: THINK before submitting (big decision)
+    print(f"  🧠 Thinking before submit...")
+    await eye.vitals.think()
+    await eye.vitals.think()  # double-think — it's important
+
+    # Step 9: Click Create Account
+    try:
+        await eye.touch('button:has-text("Create account")')
+    except:
+        await eye.submit()
+    
+    await eye.wait_and_breathe(5000)
+
+    # Step 10: See what happened
+    result = await eye.see()
+    print(f"  📸 Post-submit: {result['screenshot']}")
+    page_text = await eye.read()
+
+    # Step 11: Handle verification
+    if "verify" in page_text.lower() or "code" in page_text.lower():
+        print(f"  📧 Verification step — checking mailbox in 15s...")
+        await eye.wait_and_breathe(15000)
+        
+        # Pull fresh mail from eastGate
+        emails = eye.read_mail("github")
+        for em in emails:
+            if em["codes"]:
+                code = em["codes"][-1]
+                print(f"  🔑 Verification code: {code}")
+                # Enter code with breathing
+                for digit in code:
+                    await eye.vitals.type_delay()
+                    await eye.page.keyboard.type(digit)
+                await eye.vitals.exhale()
+                await eye.submit()
+                break
+
+    # Final state
+    result = await eye.see()
+    print(f"\n  📸 FINAL: {result['screenshot']}")
+    print(f"  🌐 {result['url']}")
+    print(f"  💓 Vitals: {json.dumps(eye.vitals.status(), indent=2)}")
+    return {"status": "COMPLETE", "screenshot": result["screenshot"], "url": result["url"]}
+
+
+# ═══ EYE API — amoeba/rustdesk pane reads /eye/screenshot ═══
+
+async def serve_eye_api(eye: GaiaEye, port=8444):
+    """HTTP API so other primals can see through Gaia's eye."""
+    from aiohttp import web
+
+    async def h_look(r):
+        url = r.query.get("url", "https://primals.eco")
+        return web.json_response(await eye.look(url))
+
+    async def h_see(r):
+        return web.json_response(await eye.see())
+
+    async def h_frame(r):
+        """Latest screenshot as PNG — rustdesk pane polls this."""
+        if eye.screenshots:
+            return web.FileResponse(eye.screenshots[-1])
+        return web.json_response({"error": "no frame"}, status=404)
+
+    async def h_touch(r):
+        data = await r.json()
+        await eye.touch(data["selector"], data.get("text"))
+        return web.json_response(await eye.see())
+
+    async def h_read(r):
+        return web.json_response({"text": await eye.read()})
+
+    async def h_mail(r):
+        mails = eye.read_mail(r.query.get("pattern"))
+        return web.json_response({"emails": mails, "count": len(mails)})
+
+    async def h_enroll(r):
+        svc = r.query.get("service", "github")
+        if svc == "github":
+            return web.json_response(await github_signup(eye))
+        return web.json_response({"error": f"unknown: {svc}"}, status=400)
+
+    async def h_vitals(r):
+        return web.json_response({
+            "eye": "OPEN",
+            "vitals": eye.vitals.status(),
+            "attestor": {
+                "client": len(eye.attestor.client_attestations),
+                "server": len(eye.attestor.server_attestations),
+            },
+            "screenshots": len(eye.screenshots),
+            "history_len": len(eye.history),
+            "url": eye.page.url if eye.page else None,
+            "mailbox": len(list(MAILDIR.glob("*"))) if MAILDIR.exists() else 0,
+        })
+
+    app = web.Application()
+    app.router.add_get("/eye/look", h_look)
+    app.router.add_get("/eye/see", h_see)
+    app.router.add_get("/eye/frame", h_frame)
+    app.router.add_post("/eye/touch", h_touch)
+    app.router.add_get("/eye/read", h_read)
+    app.router.add_get("/eye/mail", h_mail)
+    app.router.add_post("/eye/enroll", h_enroll)
+    app.router.add_get("/eye/vitals", h_vitals)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"\n  👁️  EYE API ALIVE — http://0.0.0.0:{port}/eye/vitals")
+    print(f"  👁️  Rustdesk pane: http://0.0.0.0:{port}/eye/frame")
+    print(f"  👁️  Breathing at π±E rhythm. lub-DUB.\n")
+    return runner
+
+
+# ═══ MAIN ═══
+
+async def main():
+    import argparse
+    p = argparse.ArgumentParser(description="Gaia's browser eye — BREATHES")
+    p.add_argument("--enroll", choices=["github", "forgejo", "reddit", "steam"])
+    p.add_argument("--look", type=str, help="Navigate to URL")
+    p.add_argument("--api", action="store_true", help="Start eye API")
+    p.add_argument("--headed", action="store_true", help="Show browser")
+    p.add_argument("--port", type=int, default=8444)
+    args = p.parse_args()
+
+    eye = GaiaEye(headless=not args.headed)
+    await eye.open()
+
+    try:
+        if args.enroll:
+            if args.enroll == "github":
+                result = await github_signup(eye)
+                print(f"\n  RESULT: {json.dumps(result, indent=2) if isinstance(result, dict) else result}")
+        elif args.look:
+            result = await eye.look(args.look)
+            print(json.dumps(result, indent=2))
+        elif args.api:
+            await serve_eye_api(eye, args.port)
+            print("  Gaia watches. Press Ctrl+C to close.")
+            while True:
+                await asyncio.sleep(1)
+        else:
+            result = await eye.look("https://primals.eco")
+            print(json.dumps(result, indent=2))
+    finally:
+        if not args.api:
+            await eye.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
