@@ -538,7 +538,20 @@ async def serve_eye_api(eye: GaiaEye, port=8444):
             "mailbox": len(list(MAILDIR.glob("*"))) if MAILDIR.exists() else 0,
         })
 
+    async def h_polaris(r):
+        """Serve Polaris command center — LAN identity dashboard."""
+        polaris = REPO / "sporePrint" / "public" / "polaris.html"
+        if polaris.exists():
+            return web.FileResponse(polaris, headers={"Content-Type": "text/html"})
+        return web.Response(text="Polaris page not found", status=404)
+
+    async def h_root(r):
+        """Root redirects to Polaris."""
+        raise web.HTTPFound("/polaris")
+
     app = web.Application()
+    app.router.add_get("/", h_root)
+    app.router.add_get("/polaris", h_polaris)
     app.router.add_get("/eye/look", h_look)
     app.router.add_get("/eye/see", h_see)
     app.router.add_get("/eye/frame", h_frame)
