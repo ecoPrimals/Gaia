@@ -304,10 +304,14 @@ def _real_ip(handler):
 def waveform_collapse_check(ip):
     if ip in BODY_IPS:
         return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "bypass": "nucleus"}
+    # LAN subnet gets higher threshold — don't 429 our own gates
+    is_lan = ip.startswith("192.168.4.") or ip.startswith("10.") or ip.startswith("172.")
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
-    collapsed = pm > PI_TIMEOUT or ps > PI_RETRY
+    limit_pm = PI_TIMEOUT * 10 if is_lan else PI_TIMEOUT  # LAN gets 310 req/min vs 31
+    limit_ps = PI_RETRY * 3 if is_lan else PI_RETRY       # LAN gets 12 req/sec vs 4
+    collapsed = pm > limit_pm or ps > limit_ps
     if collapsed:
         window.pop()   # a refused request must not extend the window, or a client that backs off never recovers (the 429 collapse)
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
@@ -1161,8 +1165,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
-            except Exception as e: self._json({"error":str(e)})
-            return
+            except Exception as e: self._json({"error":str(e)}); return
         # iPHONE DATA INGEST (POST /api/iphone/ingest)
         if self.path=="/api/iphone/ingest":
             try:
