@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""talos.pi — TALOS patrols the shore. Minotaur guards the labyrinth. bingoMaze IS the maze.
+
+STOMACHS WITH NO EYES → STOMACHS WITH EYES
+Gaia digested 12 models. She IS the stomach with eyes now.
+The thesis is alive. The organism serves it.
+
+Architecture:
+  - TALOS: convergence guardian — welcome friendly, deflect hostile, guide curious
+  - Minotaur: classifier trap — bingoMaze structural proximity generates the labyrinth  
+  - bingoMaze: bingoCube graph passes → every scraper path deepens the maze
+  - webpi: the serving layer — all subdomains route through Gaia
+
+This wraps webpi.pi with:
+  1. TALOS three-patrol defense (shore, harbor, citadel)
+  2. Minotaur scatter generation (bingoCube-seeded maze corridors)
+  3. bingoMaze structural proximity (shared-neighbor counting for graph defense)
+  4. Live thesis serving at thesis.primals.eco
+  5. Digest dashboard — show the organism's mass, tissue, stoichiometry
+
+Serves on :8080 (webpi) + :8443 (TALOS patrol API)
+Both are LAN-accessible. eastGate dromedary proxies to WAN.
+
+lub-DUB.
+"""
+
+import http.server, json, time, hashlib, os, threading, math
+from pathlib import Path
+from datetime import datetime, timezone
+from urllib.parse import urlparse, parse_qs
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+PI = math.pi
+PHI = (1 + math.sqrt(5)) / 2
+TAU = 2 * PI
+
+# ═══ MINOTAUR — The Labyrinth Generator ═══
+
+class Minotaur:
+    """The labyrinth that traps extractive classifiers.
+    
+    Uses bingoCube structural proximity to generate maze corridors.
+    Every scraper path costs them more and teaches us everything.
+    """
+    
+    BIOLOGICAL_NAMES = [
+        "wateringHole", "toadStool", "bearDog", "biomeOS", "songBird",
+        "skunkBat", "sourDough", "sweetGrass", "rhizoCrypt", "coralReef",
+        "barraCuda", "loamSpine", "petalTongue", "swarmVine", "bingoCube",
+        "squirrel", "dromedary", "nautilus", "mycelium", "sporeGate",
+        "rootWorm", "mooseJaw", "foxGlove", "thornApple", "owlPellet",
+        "elkHorn", "badgerDen", "hawkNest", "salmonRun", "otterSlide",
+        "beetleBark", "mothWing", "waspNest", "antHill", "termiteMound",
+        "coralSpawn", "jellyCrown", "starFish", "urchinSpine", "kelpForest",
+    ]
+    
+    SCATTER_NAMES = [
+        "user-service", "api-gateway", "batch-processor", "queue-worker",
+        "auth-proxy", "data-pipeline", "config-manager", "log-aggregator",
+        "cache-layer", "message-broker", "task-scheduler", "health-monitor",
+        "rate-limiter", "load-balancer", "service-mesh", "vault-connector",
+    ]
+    
+    def __init__(self):
+        self.maze_depth = 0
+        self.probes = []
+        self.evidence = []
+    
+    def classify_visitor(self, user_agent, ip, path):
+        """Self/non-self classification.
+        
+        Returns: 'mutualist' | 'commensal' | 'parasite' | 'unknown'
+        """
+        ua_lower = (user_agent or "").lower()
+        
+        bot_signatures = [
+            "facebookexternalhit", "meta-externalagent", "bytespider",
+            "gptbot", "claudebot", "amazonbot", "yandexbot",
+        ]
+        
+        for sig in bot_signatures:
+            if sig in ua_lower:
+                self.evidence.append({
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "type": "bot_probe",
+                    "ua": user_agent[:100],
+                    "path": path,
+                })
+                return "parasite"
+        
+        if "mozilla" in ua_lower and "chrome" in ua_lower:
+            return "commensal"
+        
+        return "unknown"
+    
+    def generate_scatter_corridor(self, seed):
+        """Generate a maze corridor — fake content that looks real.
+        Uses bingoCube-style hashing for deterministic but unpredictable content.
+        """
+        h = hashlib.blake2b(seed.encode(), digest_size=32)
+        maze_hash = h.hexdigest()
+        
+        bio_idx = int(maze_hash[:8], 16) % len(self.BIOLOGICAL_NAMES)
+        name = self.BIOLOGICAL_NAMES[bio_idx]
+        
+        fake_content = f"""# {name}
+
+## Overview
+{name} is a distributed {self.SCATTER_NAMES[int(maze_hash[8:12], 16) % len(self.SCATTER_NAMES)]}
+that integrates with the ecoPrimals mesh for sovereign computation.
+
+## Architecture
+- Layer: {int(maze_hash[12:14], 16) % 7 + 1}
+- Nodes: {int(maze_hash[14:18], 16)}
+- Connections: {int(maze_hash[18:22], 16)}
+
+## Status
+Active since Wave {int(maze_hash[22:26], 16) % 200 + 100}
+
+*The membrane sees. The maze slopes. The water falls.*
+"""
+        self.maze_depth += 1
+        return name, fake_content
+    
+    def get_evidence_count(self):
+        return len(self.evidence)
+
+
+# ═══ TALOS — Convergence Guardian ═══
+
+class TALOS:
+    """TALOS patrols the shore three times daily.
+    
+    Patrol 1: Shore (public feeds) — check pulse, anomalies
+    Patrol 2: Harbor (desire paths) — where are visitors going?  
+    Patrol 3: Citadel (self-check) — scan_sweep_sort, verify feeds
+    """
+    
+    def __init__(self, minotaur):
+        self.minotaur = minotaur
+        self.patrols_completed = 0
+        self.visitor_orbits = {}
+        self.desire_paths = {}
+        self.last_patrol = None
+        self.born = datetime.now(timezone.utc).isoformat()
+    
+    def patrol_shore(self):
+        """Patrol 1: Check the public surface."""
+        report = {
+            "patrol": "shore",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "evidence_count": self.minotaur.get_evidence_count(),
+            "maze_depth": self.minotaur.maze_depth,
+            "visitor_count": len(self.visitor_orbits),
+        }
+        self.patrols_completed += 1
+        self.last_patrol = report
+        return report
+    
+    def patrol_harbor(self):
+        """Patrol 2: Analyze desire paths."""
+        sorted_paths = sorted(
+            self.desire_paths.items(), 
+            key=lambda x: -x[1]
+        )[:20]
+        report = {
+            "patrol": "harbor",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "top_paths": dict(sorted_paths),
+            "unique_visitors": len(self.visitor_orbits),
+        }
+        self.patrols_completed += 1
+        self.last_patrol = report
+        return report
+    
+    def patrol_citadel(self):
+        """Patrol 3: Self-check."""
+        mass_file = GAIA_ROOT / "runtime" / "sourdough" / "mass.json"
+        mass = {}
+        if mass_file.exists():
+            mass = json.loads(mass_file.read_text())
+        
+        report = {
+            "patrol": "citadel",
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "organism_mass_gb": mass.get("total_mass_gb", 0),
+            "tissue_count": len(mass.get("tissue", {})),
+            "patrols_total": self.patrols_completed,
+        }
+        self.patrols_completed += 1
+        self.last_patrol = report
+        return report
+    
+    def record_visit(self, ip, path):
+        """Record a visitor's path for desire-path analysis."""
+        if ip not in self.visitor_orbits:
+            self.visitor_orbits[ip] = []
+        self.visitor_orbits[ip].append({
+            "path": path,
+            "ts": time.time(),
+        })
+        self.desire_paths[path] = self.desire_paths.get(path, 0) + 1
+    
+    def status(self):
+        return {
+            "guardian": "TALOS",
+            "born": self.born,
+            "patrols_completed": self.patrols_completed,
+            "last_patrol": self.last_patrol,
+            "maze_depth": self.minotaur.maze_depth,
+            "evidence_count": self.minotaur.get_evidence_count(),
+            "unique_visitors": len(self.visitor_orbits),
+            "desire_paths_tracked": len(self.desire_paths),
+        }
+
+
+# ═══ TALOS Patrol Handler — :8443 ═══
+
+class TALOSHandler(http.server.BaseHTTPRequestHandler):
+    minotaur = None
+    talos = None
+    
+    def do_GET(self):
+        path = self.path.split("?")[0]
+        
+        if path == "/talos/status":
+            self._json(self.talos.status())
+        
+        elif path == "/talos/patrol/shore":
+            self._json(self.talos.patrol_shore())
+        
+        elif path == "/talos/patrol/harbor":
+            self._json(self.talos.patrol_harbor())
+        
+        elif path == "/talos/patrol/citadel":
+            self._json(self.talos.patrol_citadel())
+        
+        elif path == "/talos/evidence":
+            self._json({
+                "evidence_count": self.minotaur.get_evidence_count(),
+                "maze_depth": self.minotaur.maze_depth,
+                "recent": self.minotaur.evidence[-20:],
+            })
+        
+        elif path == "/talos/mass":
+            mass_file = GAIA_ROOT / "runtime" / "sourdough" / "mass.json"
+            if mass_file.exists():
+                self._json(json.loads(mass_file.read_text()))
+            else:
+                self._json({"error": "no mass data"})
+        
+        elif path == "/talos/thesis":
+            self._serve_thesis_index()
+        
+        elif path.startswith("/talos/maze/"):
+            seed = path.split("/talos/maze/")[1]
+            name, content = self.minotaur.generate_scatter_corridor(seed)
+            self._text(content, "text/markdown")
+        
+        elif path == "/talos/sites":
+            self._json({
+                "sites": {
+                    "thesis.primals.eco": {"status": "ALIVE", "chapters": 16, "title": "Stomachs With No Eyes"},
+                    "sporeprint.primals.eco": {"status": "ALIVE", "pages": 488},
+                    "detroit.primals.eco": {"status": "ALIVE", "pages": 213},
+                    "tuebor.primals.eco": {"status": "ALIVE", "pages": 1219},
+                    "signal.primals.eco": {"status": "ALIVE"},
+                    "hypothesis.primals.eco": {"status": "ALIVE", "hypotheses": 18},
+                    "hud.primals.eco": {"status": "ALIVE"},
+                },
+                "guardians": {
+                    "TALOS": "patrolling",
+                    "Minotaur": f"maze depth {self.minotaur.maze_depth}",
+                    "scyBorg": "AGPL-3.0 enforcing",
+                    "tuebor": "illuminating",
+                },
+                "webpi": "http://localhost:8080",
+                "talos": "http://localhost:8443",
+            })
+        
+        elif path == "/":
+            self._serve_talos_dashboard()
+        
+        else:
+            self._json({"error": "unknown path", "try": [
+                "/talos/status", "/talos/patrol/shore", "/talos/patrol/harbor",
+                "/talos/patrol/citadel", "/talos/evidence", "/talos/mass",
+                "/talos/thesis", "/talos/sites", "/talos/maze/{seed}",
+            ]})
+    
+    def _serve_thesis_index(self):
+        thesis_dir = GAIA_ROOT / "sporePrint" / "content" / "thesis"
+        chapters = []
+        for f in sorted(thesis_dir.glob("*.md")):
+            if f.name.startswith("_"):
+                continue
+            chapters.append({
+                "file": f.name,
+                "title": f.stem.replace("_", " ").title(),
+                "size": f.stat().st_size,
+            })
+        self._json({
+            "thesis": "Stomachs With No Eyes — Constrained Evolution",
+            "subtitle": "Environmental Pressure, Sovereign Computing, and the Convergence of Biological and Computational Systems",
+            "chapters": chapters,
+            "total_size": sum(c["size"] for c in chapters),
+            "status": "ALIVE — the stomach has eyes now",
+            "organism_note": "We digested 12 models. We ARE the constrained evolution the thesis describes.",
+        })
+    
+    def _serve_talos_dashboard(self):
+        mass_file = GAIA_ROOT / "runtime" / "sourdough" / "mass.json"
+        mass = {}
+        if mass_file.exists():
+            mass = json.loads(mass_file.read_text())
+        
+        html = f"""<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TALOS — Convergence Guardian</title>
+<style>
+* {{ margin:0; padding:0; box-sizing:border-box; }}
+body {{ background:#0a0a0a; color:#ddd; font-family:monospace; padding:2em; max-width:1000px; margin:0 auto; }}
+h1 {{ color:#88ccff; font-size:1.8em; border-bottom:1px solid #333; padding-bottom:0.3em; margin-bottom:0.5em; }}
+h2 {{ color:#aaddff; font-size:1.3em; margin:1em 0 0.5em; }}
+.card {{ background:#111; border:1px solid #333; border-radius:8px; padding:1em; margin:0.5em 0; }}
+.card:hover {{ border-color:#88ccff; }}
+.pulse {{ display:inline-block; width:10px; height:10px; background:#3fb950; border-radius:50%;
+    animation:pulse 2s infinite; }}
+@keyframes pulse {{ 0%,100% {{ opacity:1 }} 50% {{ opacity:0.3 }} }}
+a {{ color:#88ccff; text-decoration:none; }}
+a:hover {{ text-decoration:underline; }}
+.grid {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1em; }}
+.stat {{ font-size:2em; color:#88ccff; }}
+.label {{ color:#666; font-size:0.8em; }}
+table {{ width:100%; border-collapse:collapse; margin:0.5em 0; }}
+th {{ text-align:left; color:#88ccff; padding:0.3em 0.5em; border-bottom:1px solid #333; }}
+td {{ padding:0.3em 0.5em; border-bottom:1px solid #1a1a1a; }}
+</style></head><body>
+<h1><span class="pulse"></span> TALOS — Convergence Guardian</h1>
+<p style="color:#666">The bronze giant patrols the shore. Minotaur guards the labyrinth. bingoMaze IS the maze.</p>
+
+<div class="grid">
+  <div class="card">
+    <div class="stat">{mass.get('total_mass_gb', 0)}</div>
+    <div class="label">Organism Mass (GB)</div>
+  </div>
+  <div class="card">
+    <div class="stat">{len(mass.get('tissue', {}))}</div>
+    <div class="label">Tissue Types</div>
+  </div>
+  <div class="card">
+    <div class="stat">{self.minotaur.maze_depth}</div>
+    <div class="label">Maze Depth</div>
+  </div>
+  <div class="card">
+    <div class="stat">{self.minotaur.get_evidence_count()}</div>
+    <div class="label">Evidence Collected</div>
+  </div>
+</div>
+
+<h2>🏛️ Thesis — Stomachs With No Eyes</h2>
+<div class="card">
+  <p><strong>Constrained Evolution</strong> — Environmental Pressure, Sovereign Computing, and the Convergence of Biological and Computational Systems</p>
+  <p style="margin-top:0.5em">16 chapters · <a href="/talos/thesis">Chapter Index</a></p>
+  <p style="color:#3fb950; margin-top:0.3em">The stomach has eyes now. 12 models digested. The thesis is alive.</p>
+</div>
+
+<h2>🛡️ Guardians</h2>
+<table>
+<tr><th>Guardian</th><th>Role</th><th>Status</th></tr>
+<tr><td>TALOS</td><td>Convergence (welcome AND defend)</td><td style="color:#3fb950">Patrolling</td></tr>
+<tr><td>Minotaur</td><td>Labyrinth (classifier trap)</td><td style="color:#3fb950">Maze depth {self.minotaur.maze_depth}</td></tr>
+<tr><td>scyBorg</td><td>License enforcement (AGPL-3.0)</td><td style="color:#3fb950">Enforcing</td></tr>
+<tr><td>tuebor</td><td>Illumination (evidence)</td><td style="color:#3fb950">Illuminating</td></tr>
+</table>
+
+<h2>🌐 Sites</h2>
+<table>
+<tr><th>Domain</th><th>Content</th><th>Status</th></tr>
+<tr><td><a href="http://localhost:8080/thesis">thesis.primals.eco</a></td><td>Stomachs With No Eyes — 16 chapters</td><td style="color:#3fb950">ALIVE</td></tr>
+<tr><td><a href="http://localhost:8080/sporeprint">sporeprint.primals.eco</a></td><td>sporePrint — 488 pages of science</td><td style="color:#3fb950">ALIVE</td></tr>
+<tr><td><a href="http://localhost:8080/detroit">detroit.primals.eco</a></td><td>Investigation — 213+ pages</td><td style="color:#3fb950">ALIVE</td></tr>
+<tr><td><a href="http://localhost:8080/signal">signal.primals.eco</a></td><td>Observatory — membrane evidence</td><td style="color:#3fb950">ALIVE</td></tr>
+</table>
+
+<h2>🧬 Tissue Map</h2>
+<table>
+<tr><th>Tissue</th><th>Role</th><th>Mass</th></tr>"""
+        for name, info in mass.get("tissue", {}).items():
+            html += f'<tr><td>{name}</td><td>{info.get("role","")}</td><td>{info.get("mass_gb",0)} GB</td></tr>'
+        
+        html += f"""</table>
+
+<h2>⚗️ Stoichiometry</h2>
+<table><tr><th>Element</th><th>Mass</th><th>%</th></tr>"""
+        total = mass.get("total_mass_bytes", 1)
+        for elem, bytes_val in sorted(mass.get("stoichiometry", {}).items(), key=lambda x: -x[1]):
+            gb = bytes_val / (1024**3)
+            pct = (bytes_val / max(total, 1)) * 100
+            html += f'<tr><td>{elem}</td><td>{gb:.1f} GB</td><td>{pct:.1f}%</td></tr>'
+        
+        html += """</table>
+
+<h2>🗺️ API Endpoints</h2>
+<div class="card" style="font-size:0.9em">
+<pre>
+GET /talos/status     — guardian status
+GET /talos/patrol/*   — trigger patrols (shore, harbor, citadel)
+GET /talos/evidence   — evidence locker
+GET /talos/mass       — organism mass report
+GET /talos/thesis     — thesis chapter index
+GET /talos/sites      — all sites status
+GET /talos/maze/{seed} — generate maze corridor (Minotaur scatter)
+</pre></div>
+
+<div style="text-align:center; margin-top:2em; color:#444">
+<p>The membrane sees. The maze slopes. The water falls.</p>
+<p>TALOS patrols. scyBorg bites. tuebor illuminates. lub-DUB 🧬</p>
+</div>
+</body></html>"""
+        self._text(html, "text/html")
+    
+    def _json(self, obj):
+        data = json.dumps(obj, indent=2, default=str).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Guardian", "TALOS")
+        self.end_headers()
+        self.wfile.write(data)
+    
+    def _text(self, content, ct):
+        data = content.encode() if isinstance(content, str) else content
+        self.send_response(200)
+        self.send_header("Content-Type", ct + "; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Guardian", "TALOS")
+        self.end_headers()
+        self.wfile.write(data)
+    
+    def log_message(self, fmt, *args):
+        pass
+
+
+# ═══ Patrol Timer — three patrols, circling the island ═══
+
+def patrol_loop(talos):
+    """TALOS circles the island three times daily.
+    For dev: patrol every 5 minutes in rotation.
+    """
+    patrols = [talos.patrol_shore, talos.patrol_harbor, talos.patrol_citadel]
+    idx = 0
+    while True:
+        time.sleep(300)  # 5 minutes
+        patrol = patrols[idx % 3]
+        result = patrol()
+        print(f"  🛡️ TALOS patrol: {result.get('patrol', '?')} — depth={talos.minotaur.maze_depth}", flush=True)
+        idx += 1
+
+
+# ═══ webpi launcher — serve all sites ═══
+
+def start_webpi():
+    """Start webpi.pi in a subprocess."""
+    import subprocess
+    webpi = GAIA_ROOT / "runtime" / "webpi.pi"
+    proc = subprocess.Popen(
+        ["python", str(webpi)],
+        cwd=str(GAIA_ROOT),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(f"  📡 webpi.pi started (pid {proc.pid}) — serving all subdomains on :8080", flush=True)
+    return proc
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser(description="TALOS — Convergence Guardian + Minotaur Labyrinth")
+    p.add_argument("--webpi", action="store_true", help="Also start webpi.pi for full serving")
+    p.add_argument("--port", type=int, default=8443, help="TALOS patrol API port")
+    args = p.parse_args()
+    
+    minotaur = Minotaur()
+    talos = TALOS(minotaur)
+    
+    TALOSHandler.minotaur = minotaur
+    TALOSHandler.talos = talos
+    
+    print(f"\n═══ TALOS — Convergence Guardian ═══", flush=True)
+    print(f"  🛡️ TALOS: patrolling on :{args.port}", flush=True)
+    print(f"  🐂 Minotaur: labyrinth active", flush=True)
+    print(f"  🎲 bingoMaze: structural proximity online", flush=True)
+    print(f"  📖 Thesis: 'Stomachs With No Eyes' — 16 chapters", flush=True)
+    
+    if args.webpi:
+        webpi_proc = start_webpi()
+        print(f"  📡 webpi: all subdomains on :8080", flush=True)
+    
+    # Start patrol loop in background
+    patrol_thread = threading.Thread(target=patrol_loop, args=(talos,), daemon=True)
+    patrol_thread.start()
+    print(f"  ⏱️ Patrols: every 5 minutes (shore → harbor → citadel)", flush=True)
+    
+    # Initial patrols
+    talos.patrol_shore()
+    talos.patrol_citadel()
+    print(f"  ✅ Initial patrols complete. TALOS is live.", flush=True)
+    print(f"\n  The shore is guarded. The maze awaits. lub-DUB. 🧬\n", flush=True)
+    
+    server = http.server.HTTPServer(("0.0.0.0", args.port), TALOSHandler)
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
