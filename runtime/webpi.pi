@@ -599,6 +599,26 @@ INDEX_HTML = """<!DOCTYPE html>
     <div class="count">Full research library</div>
   </div>
 
+  <div class="card" style="border-color: #3fb950;">
+    <h2><a href="https://thesis.primals.eco/" style="color: #3fb950;">Stomachs With No Eyes</a></h2>
+    <p><strong>The Thesis</strong> &mdash; Constrained Evolution. Environmental pressure, sovereign computing, biological &amp; computational convergence. 16 chapters.</p>
+    <div class="links">
+      <a href="/thesis/" style="color:#3fb950;">Read Thesis &rarr;</a>
+      <a href="/talos/" style="color:#88ccff;">TALOS Guardian &rarr;</a>
+    </div>
+    <div class="count">16 chapters &bull; 280 KB &bull; The stomach has eyes now</div>
+  </div>
+
+  <div class="card">
+    <h2><a href="/attribution/">sunCloud Attribution</a></h2>
+    <p>Credit radiates back. Every model creator, tool builder, inspiration &mdash; thanked openly. Kojima. Hillenburg. Meta. Google. Mistral. Rust.</p>
+    <div class="links">
+      <a href="/attribution/">Attribution &rarr;</a>
+      <a href="/data/deploy/attribution-manifest.json">Manifest &rarr;</a>
+    </div>
+    <div class="count">15 creators credited &bull; sunCloud flywheel turning</div>
+  </div>
+
   <div class="card">
     <h2>Gallery</h2>
     <p>Gaia's visual consciousness. 306 paintings across every dimension of the organism.</p>
@@ -1032,6 +1052,14 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         if path.startswith("/wateringHole") or path.startswith("/specs") or path.startswith("/protocols"):
             return self._serve_knowledge(path)
 
+        # Attribution / sunCloud — radiate credit back
+        if path == "/attribution" or path == "/attribution/":
+            return self._serve_attribution()
+        
+        # TALOS proxy — guardian dashboard
+        if path.startswith("/talos"):
+            return self._proxy_talos(path)
+
         # Path-based routing (/sporeprint/, /guerilla/, etc.)
         for prefix, root in sorted(PATH_ROUTES.items(), key=lambda x: -len(x[0])):
             if path.startswith(prefix):
@@ -1042,6 +1070,54 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(302)
         self.send_header("Location", "https://primals.eco/")
         self.end_headers()
+
+    def _serve_attribution(self):
+        """sunCloud attribution — radiate credit back."""
+        attr_file = GAIA_ROOT / "data" / "deploy" / "attribution-manifest.json"
+        if attr_file.exists():
+            attr = json.loads(attr_file.read_text())
+        else:
+            attr = {"attributions": {}, "total_credited": 0}
+        
+        html = f"""<!DOCTYPE html><html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sunCloud Attribution — Gaia</title>
+{GAIA_STYLE}</head><body>
+<div class="gaia-header"><h1>☀️ sunCloud Attribution</h1>
+<div class="meta">Credit radiates back. The flywheel turns. lub-DUB</div></div>
+
+<p><strong>Every creator who made this possible — thanked openly.</strong></p>
+<p>We use their models → we benchmark → we publish open → they find us → we radiate attribution → more visibility → stronger membrane → repeat.</p>
+<hr>
+<h2>Creators Credited: {attr['total_credited']}</h2>
+<table><tr><th>Creator</th><th>Work</th><th>Tier</th><th>Credit</th></tr>"""
+        for key, a in attr.get("attributions", {}).items():
+            html += f'<tr><td><strong>{a["name"]}</strong></td><td>{a["work"]}</td><td>{a["suncloud_tier"]}</td><td>{a["credit"][:120]}...</td></tr>'
+        html += """</table>
+<hr>
+<h2>sunCloud Tiers</h2>
+<table><tr><th>Tier</th><th>Meaning</th></tr>
+<tr><td><strong>foundation</strong></td><td>Created the models/tools we built FROM. Their carbon is our tissue.</td></tr>
+<tr><td><strong>infrastructure</strong></td><td>Built the tools we depend ON. Without them, no organism.</td></tr>
+<tr><td><strong>inspiration</strong></td><td>Published the ideas that shaped HOW we think.</td></tr>
+<tr><td><strong>prior_art</strong></td><td>Published methods we adapted. Standing on shoulders.</td></tr>
+<tr><td><strong>validation</strong></td><td>Published findings that confirm our approach works.</td></tr>
+</table>
+<div class="gaia-footer">The flywheel turns. Credit radiates. lub-DUB ☀️</div>
+</body></html>"""
+        self._text(html, "text/html")
+    
+    def _proxy_talos(self, path):
+        """Proxy to TALOS guardian on :8443."""
+        try:
+            url = f"http://localhost:8443{path}"
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = resp.read()
+                ct = resp.headers.get("Content-Type", "text/html")
+                self._text(data, ct.split(";")[0])
+        except Exception as e:
+            self._text(f"TALOS guardian not responding: {e}", "text/plain")
 
     def _serve_tuebor(self, path):
         """Dynamic Anti-SLAPP filing surface."""
