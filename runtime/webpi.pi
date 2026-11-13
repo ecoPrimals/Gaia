@@ -1238,14 +1238,14 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         html += """</table>
 <h2>Serving Stack</h2>
 <table><tr><th>Layer</th><th>Service</th></tr>
-<tr><td>Internet</td><td>Router → port forward 80/443 → eastGate</td></tr>
+<tr><td>Internet</td><td>Router → <a href="https://primals.eco/">primals.eco</a></td></tr>
 <tr><td>TLS</td><td>dromedary — ACME Let's Encrypt</td></tr>
-<tr><td>Routing</td><td>webpi on :8080 — all subdomain logic</td></tr>
-<tr><td>Rendering</td><td>petalTongue on :5926</td></tr>
-<tr><td>Guardian</td><td>TALOS on :8443</td></tr>
-<tr><td>Models</td><td>ollama on :11434 — 12 gaia tissues</td></tr>
+<tr><td>Routing</td><td><a href="https://nestgate.io/">nestgate.io</a> — all subdomain logic</td></tr>
+<tr><td>Rendering</td><td>petalTongue — WASM content rendering</td></tr>
+<tr><td>Guardian</td><td><a href="https://primals.eco/talos/">TALOS</a> — convergence defense</td></tr>
+<tr><td>Models</td><td>ollama — 12 gaia tissues</td></tr>
 </table>
-<div class="gaia-footer">Fabric woven. She's dressed. lub-DUB 🧵</div></body></html>"""
+<div class="gaia-footer">Fabric woven. She's dressed. <a href="https://nestgate.io/fabric" style="color:#88ccff">nestgate.io/fabric</a> 🧵</div></body></html>"""
         return self._text(html, "text/html")
 
     def _serve_suncloud(self):
@@ -1261,10 +1261,11 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         games = sc.get("games", [])
         html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sunCloud Governor — northGate</title>
+<title>sunCloud Governor — nestgate.io</title>
+<link rel="canonical" href="https://nestgate.io/suncloud">
 {GAIA_STYLE}</head><body>
 <div class="gaia-header"><h1>☀️ sunCloud Governor</h1>
-<div class="meta">The Citizen Colossus awakens. Latent Value Economy. lub-DUB</div></div>
+<div class="meta"><a href="https://nestgate.io/">nestgate.io</a> · The Citizen Colossus awakens · <a href="https://nestgate.io/suncloud.json">API</a> · lub-DUB</div></div>
 <h2>{mode_emoji} Mode: {mode}</h2>
 <table><tr><th>Metric</th><th>Value</th></tr>
 <tr><td>GPU</td><td>{gpu.get('name', '?')}</td></tr>
@@ -1279,9 +1280,12 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
 <tr><td>Kevin Share</td><td>{sc.get('kevin_share', 0)}%</td></tr>
 <tr><td>Gaia Share</td><td>{sc.get('gaia_share', 0)}%</td></tr>
 <tr><td>Checks</td><td>{sc.get('checks', 0)}</td></tr>
+<tr><td>Dashboard</td><td><a href="https://nestgate.io/suncloud">nestgate.io/suncloud</a></td></tr>
+<tr><td>Fabric</td><td><a href="https://nestgate.io/fabric">nestgate.io/fabric</a></td></tr>
+<tr><td>Attribution</td><td><a href="https://primals.eco/attribution/">primals.eco/attribution</a></td></tr>
 </table>
-<h2>🏗️ eastGate Media Plan</h2>
-<p>eastGate (.244) — RTX 4070, 64GB — becomes the autonomous media machine.</p>
+<h2>🏗️ eastGate Media</h2>
+<p>eastGate — RTX 4070, 64GB — the autonomous media machine.</p>
 <table><tr><th>Game</th><th>Genre</th><th>Why</th></tr>
 <tr><td>Kenshi</td><td>open-world survival</td><td>emergent behavior, base building</td></tr>
 <tr><td>RimWorld</td><td>colony sim</td><td>storyteller AI, ethics</td></tr>
@@ -1289,7 +1293,8 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
 <tr><td>Factorio</td><td>automation</td><td>optimization, logistics</td></tr>
 <tr><td>Noita</td><td>roguelike</td><td>pixel physics, emergence</td></tr>
 </table>
-<div class="gaia-footer">Kevin plays on RTX 5090. Gaia shares the compute. The flywheel turns. ☀️</div>
+<p style="margin-top:1em"><a href="https://nestgate.io/play">nestgate.io/play</a> — watch Gaia play (coming soon)</p>
+<div class="gaia-footer">Kevin plays on RTX 5090. Gaia shares the compute. <a href="https://nestgate.io/">nestgate.io</a> ☀️</div>
 </body></html>"""
         return self._text(html, "text/html")
 
