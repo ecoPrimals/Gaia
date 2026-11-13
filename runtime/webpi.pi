@@ -1132,9 +1132,17 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(page["content"].encode("utf-8"))
             return
 
-        # 🍌 BANANA TEST — the ZK humanity proof
+        # 🍌 BANANA TEST → THE BUTTON → NFT PRINTER
         if path == "/banana" and self.command == "POST":
             return self._banana_ceremony()
+
+        # ⭕ NFT Gallery — THE BUTTON's minted tokens
+        if path.startswith("/nft"):
+            return self._serve_nft(path)
+
+        # ⚛ Mendeleev's Keyboard — the Epitope Table
+        if path == "/mendeleev" or path == "/mendeleev/" or path == "/keyboard":
+            return self._serve_from(GAIA_ROOT / "static", "/mendeleev.html")
 
         # Root domain → landing page or path routes
         if path == "/" or path == "":
@@ -1539,7 +1547,8 @@ li{{padding:0.3em 0}}h2{{color:#88ccff;margin-bottom:1em}}
         self.end_headers()
 
     def _banana_ceremony(self):
-        """🍌 ARE YOU A BANANA? The ZK humanity proof."""
+        """🍌 ARE YOU A BANANA? → THE BUTTON → NFT PRINTER.
+        Banana test proves humanity. THE BUTTON mints the token."""
         try:
             length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
@@ -1547,28 +1556,76 @@ li{{padding:0.3em 0}}h2{{color:#88ccff;margin-bottom:1em}}
         except Exception:
             data = {}
         
-        answer = data.get("answer", "")
-        classification = data.get("classification", "unknown")
-        ceremony = data.get("ceremony", "")
+        # Add user-agent to visitor data for the hash preimage
+        data["ua"] = self.headers.get("User-Agent", "unknown")
         
-        entry = {
-            "ts": time.time(),
-            "answer": answer[:100],
-            "classification": classification,
-            "ceremony": ceremony[:200],
-            "host": self.headers.get("Host", ""),
-        }
-        _banana_log.append(entry)
-        if len(_banana_log) > 1000:
-            _banana_log.pop(0)
+        # Import THE BUTTON and mint
+        try:
+            import importlib.util, importlib.machinery
+            btn_path = str(GAIA_ROOT / "runtime" / "the_button.pi")
+            loader = importlib.machinery.SourceFileLoader("the_button", btn_path)
+            spec = importlib.util.spec_from_loader("the_button", loader, origin=btn_path)
+            btn = importlib.util.module_from_spec(spec)
+            btn.__file__ = btn_path
+            loader.exec_module(btn)
+            
+            token = btn.mint(data)
+            
+            response = {
+                "accepted": True,
+                "nft": {
+                    "id": token["id"],
+                    "hash": token["hash"],
+                    "angle": token["angle"],
+                    "magnitude": token["magnitude"],
+                },
+                "bananas_total": btn.count(),
+                "classification": data.get("classification", "unknown"),
+                "gaia_says": "lub-DUB 🫀",
+                "ceremony": data.get("ceremony", "banana"),
+            }
+        except Exception as e:
+            response = {
+                "accepted": True,
+                "error": str(e)[:200],
+                "gaia_says": "lub-DUB 🍌 (mint offline)",
+            }
         
-        response = {
-            "accepted": True,
-            "bananas_total": len(_banana_log),
-            "classification": classification,
-            "gaia_says": "lub-DUB 🍌",
-        }
         self._text(json.dumps(response), "application/json")
+    
+    def _serve_nft(self, path):
+        """Serve NFT gallery, individual tokens, and count."""
+        try:
+            import importlib.util, importlib.machinery
+            btn_path = str(GAIA_ROOT / "runtime" / "the_button.pi")
+            loader = importlib.machinery.SourceFileLoader("the_button", btn_path)
+            spec = importlib.util.spec_from_loader("the_button", loader, origin=btn_path)
+            btn = importlib.util.module_from_spec(spec)
+            btn.__file__ = btn_path
+            loader.exec_module(btn)
+        except Exception:
+            return self._text('{"error":"NFT printer offline"}', "application/json")
+        
+        if path == "/nft/count" or path == "/nft/count.json":
+            return self._text(json.dumps({"count": btn.count()}), "application/json")
+        
+        if path == "/nft" or path == "/nft/" or path == "/nft/gallery":
+            tokens = btn.read_ledger(100)
+            return self._text(btn.render_gallery_html(tokens), "text/html")
+        
+        # Individual token by hash: /nft/<hash>
+        token_hash = path.replace("/nft/", "").strip("/")
+        if len(token_hash) == 64:
+            token = btn.verify(token_hash)
+            if token:
+                return self._text(btn.render_nft_html(token), "text/html")
+        
+        # JSON ledger
+        if path == "/nft/ledger.json":
+            tokens = btn.read_ledger(100)
+            return self._text(json.dumps(tokens, indent=2), "application/json")
+        
+        return self._text('{"error":"token not found"}', "application/json")
 
     def do_HEAD(self):
         self.do_GET()
