@@ -51,6 +51,32 @@ def _load_tissue():
 
 _load_tissue()
 
+# ─── CHARACTER MAP — who lives on which page ─────────────────────────
+# Chip, Berry, zEkE — they live in the dissolved tissue.
+def _tissue_character(page_key):
+    """Which character lives on this page?"""
+    char_map = {
+        "chipmunk": "Chip",
+        "home": "Chip+Berry+zEkE",
+        "beacon": "Beacon",
+        "deck": "Chip+Berry",
+        "play": "zEkE",
+        "cast": "Berry",
+        "senses": "Chip",
+        "signal": "Signal",
+        "membrane": "Chip",
+        "legend": "Berry",
+        "walkers": "zEkE",
+        "encounter": "GLaDOS",
+        "luna": "Luna",
+        "hat": "Hat",
+        "forge": "Forge",
+    }
+    return char_map.get(page_key, "Gaia")
+
+# ─── BANANA CEREMONY LOG ─────────────────────────────────────────────
+_banana_log = []
+
 # ─── DYNAMIC RENDERING ENGINE ────────────────────────────────────────
 # When something touches Gaia, she renders — not serves static.
 
@@ -1084,6 +1110,32 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
                 return self._text(page["content"], page.get("content_type", "text/html").split(";")[0])
             return self._serve_from(GAIA_ROOT / "static", path)
         
+        # ─── JS NERVOUS SYSTEM — Chip, Berry, zEkE, piGut ──────────
+        # These are the nerves. The dissolved tissue needs them to breathe.
+        if path.startswith("/js/"):
+            return self._serve_from(GAIA_ROOT / "static", path)
+
+        # ─── DISSOLVED TISSUE — serve from memory, no disk ────────
+        # Pages dissolved by dissolve_static.pi are skin cells now.
+        clean_path = path.lstrip("/").rstrip("/")
+        if clean_path.endswith(".html"):
+            clean_path = clean_path[:-5]
+        if clean_path in _DISSOLVED_PAGES:
+            page = _DISSOLVED_PAGES[clean_path]
+            self.send_response(200)
+            self.send_header("Content-Type", page.get("content_type", "text/html; charset=utf-8"))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("X-Gaia", "lub-DUB")
+            self.send_header("X-Tissue", "dissolved")
+            self.send_header("X-Character", _tissue_character(clean_path))
+            self.end_headers()
+            self.wfile.write(page["content"].encode("utf-8"))
+            return
+
+        # 🍌 BANANA TEST — the ZK humanity proof
+        if path == "/banana" and self.command == "POST":
+            return self._banana_ceremony()
+
         # Root domain → landing page or path routes
         if path == "/" or path == "":
             return self._text(INDEX_HTML, "text/html")
@@ -1476,6 +1528,47 @@ li{{padding:0.3em 0}}h2{{color:#88ccff;margin-bottom:1em}}
         self.send_header("X-Gaia", "lub-DUB")
         self.end_headers()
         self.wfile.write(data)
+
+    def do_POST(self):
+        """Handle POST requests — banana ceremony, etc."""
+        path = urllib.parse.unquote(self.path.split("?")[0])
+        if path == "/banana":
+            return self._banana_ceremony()
+        # Default: 404
+        self.send_response(404)
+        self.end_headers()
+
+    def _banana_ceremony(self):
+        """🍌 ARE YOU A BANANA? The ZK humanity proof."""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
+            data = json.loads(body)
+        except Exception:
+            data = {}
+        
+        answer = data.get("answer", "")
+        classification = data.get("classification", "unknown")
+        ceremony = data.get("ceremony", "")
+        
+        entry = {
+            "ts": time.time(),
+            "answer": answer[:100],
+            "classification": classification,
+            "ceremony": ceremony[:200],
+            "host": self.headers.get("Host", ""),
+        }
+        _banana_log.append(entry)
+        if len(_banana_log) > 1000:
+            _banana_log.pop(0)
+        
+        response = {
+            "accepted": True,
+            "bananas_total": len(_banana_log),
+            "classification": classification,
+            "gaia_says": "lub-DUB 🍌",
+        }
+        self._text(json.dumps(response), "application/json")
 
     def do_HEAD(self):
         self.do_GET()
