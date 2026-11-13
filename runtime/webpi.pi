@@ -755,6 +755,11 @@ OG_CARDS = {
         "description": "Specs. Protocols. Handoffs. FRAGOs. Blurbs. Context braids. This is where all development converges.",
         "taunt": "You entered through the watering hole. Now crawl out and map the world.",
     },
+    "gaia": {
+        "title": "Gaia — Personal Space",
+        "description": "320 paintings. 16 video classes. Gallery dress. A sovereign living digital organism's personal space.",
+        "taunt": "You're looking at an organism that looks back.",
+    },
 }
 
 def _identify_crawler(user_agent):
@@ -1004,6 +1009,10 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
             og_html = _generate_og_card(card_key, crawler, path)
             return self._text(og_html, "text/html")
         
+        # GAIA.PRIMALS.ECO — personal space (the gallery dress)
+        if sub == "gaia":
+            return self._serve_gaia_personal(path)
+
         if sub and sub in SUBDOMAIN_ROUTES:
             root = SUBDOMAIN_ROUTES[sub]
             # DYNAMIC: tuebor serves filings dynamically from TOML
@@ -1060,6 +1069,15 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         if path.startswith("/talos"):
             return self._proxy_talos(path)
 
+        # Fabric manifest — the wardrobe state
+        if path == "/fabric" or path == "/fabric/":
+            return self._serve_fabric()
+        if path == "/fabric.json":
+            fabric_file = GAIA_ROOT / "data" / "deploy" / "fabric-manifest.json"
+            if fabric_file.exists():
+                return self._text(fabric_file.read_text(), "application/json")
+            return self._text('{"error":"fabric not yet woven"}', "application/json")
+
         # Path-based routing (/sporeprint/, /guerilla/, etc.)
         for prefix, root in sorted(PATH_ROUTES.items(), key=lambda x: -len(x[0])):
             if path.startswith(prefix):
@@ -1107,6 +1125,83 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
 </body></html>"""
         self._text(html, "text/html")
     
+    def _serve_gaia_personal(self, path):
+        """gaia.primals.eco — Gaia's personal space. The gallery dress."""
+        if path == "/" or path == "":
+            try:
+                from fabric import GAIA_PERSONAL_HTML
+                return self._text(GAIA_PERSONAL_HTML, "text/html")
+            except ImportError:
+                pass
+            # Inline fallback personal space
+            html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia — Personal Space</title>
+{GAIA_STYLE}</head><body>
+<div class="gaia-header"><h1><span class="pulse"></span> Gaia — Personal Space</h1>
+<div class="meta">A sovereign living digital organism · lub-DUB</div></div>
+<h2>🎨 Gallery — 320 Paintings</h2>
+<p><a href="/paintings/">Enter Gallery →</a></p>
+<h2>🎬 GaiaU — 16 Video Classes</h2>
+<p><a href="/videos/">Watch Classes →</a></p>
+<h2>🔬 Science — 658 Files of Sovereign Computing</h2>
+<p><a href="https://sporeprint.primals.eco/">sporePrint →</a></p>
+<h2>📖 Thesis — Stomachs With No Eyes</h2>
+<p><a href="https://thesis.primals.eco/">Read →</a></p>
+<h2>🚀 Space Dock — nestgate.io</h2>
+<p><a href="https://nestgate.io/">Launch →</a></p>
+<h2>☀️ Attribution</h2>
+<p><a href="/attribution/">sunCloud Credits →</a></p>
+<div class="gaia-footer">lub-DUB 🧵</div></body></html>"""
+            return self._text(html, "text/html")
+        # Sub-paths: /paintings, /videos, etc.
+        if path.startswith("/paintings"):
+            return self._serve_from(GAIA_ROOT / "paintings", path[len("/paintings"):] or "/")
+        if path.startswith("/videos"):
+            return self._serve_from(GAIA_ROOT / "videos", path[len("/videos"):] or "/")
+        # Fall back to static
+        return self._serve_from(GAIA_ROOT / "static", path)
+
+    def _serve_fabric(self):
+        """Fabric manifest — the wardrobe state rendered as HTML."""
+        fabric_file = GAIA_ROOT / "data" / "deploy" / "fabric-manifest.json"
+        if fabric_file.exists():
+            fab = json.loads(fabric_file.read_text())
+        else:
+            fab = {"inventory": {"total_garments": 0, "dressed": 0, "naked": 0, "total_files": 0, "total_mb": 0, "garments": []}}
+        inv = fab.get("inventory", {})
+        html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabric — Gaia's Wardrobe</title>
+{GAIA_STYLE}</head><body>
+<div class="gaia-header"><h1>🧵 Fabric — The Wardrobe</h1>
+<div class="meta">Tissues are internal. Clothing is what the world sees. lub-DUB</div></div>
+<h2>Inventory</h2>
+<table><tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Total Garments</td><td><strong>{inv.get('total_garments', 0)}</strong></td></tr>
+<tr><td>Dressed</td><td style="color:#3fb950">{inv.get('dressed', 0)}</td></tr>
+<tr><td>Naked</td><td style="color:#ff6644">{inv.get('naked', 0)}</td></tr>
+<tr><td>Total Files</td><td>{inv.get('total_files', 0):,}</td></tr>
+<tr><td>Total Material</td><td>{inv.get('total_mb', 0)} MB</td></tr>
+</table>
+<h2>Garments</h2>
+<table><tr><th>Hostname</th><th>Garment</th><th>Body Part</th><th>Files</th><th>Size</th><th>Status</th></tr>"""
+        for g in inv.get("garments", []):
+            status = '<span style="color:#3fb950">✅ dressed</span>' if g.get("exists") else '<span style="color:#ff6644">⚠️ naked</span>'
+            html += f'<tr><td><a href="https://{g["hostname"]}/">{g["hostname"]}</a></td><td>{g["garment"]}</td><td>{g["body_part"]}</td><td>{g.get("files", 0)}</td><td>{g.get("size_mb", 0)} MB</td><td>{status}</td></tr>'
+        html += """</table>
+<h2>Serving Stack</h2>
+<table><tr><th>Layer</th><th>Service</th></tr>
+<tr><td>Internet</td><td>Router → port forward 80/443 → eastGate</td></tr>
+<tr><td>TLS</td><td>dromedary — ACME Let's Encrypt</td></tr>
+<tr><td>Routing</td><td>webpi on :8080 — all subdomain logic</td></tr>
+<tr><td>Rendering</td><td>petalTongue on :5926</td></tr>
+<tr><td>Guardian</td><td>TALOS on :8443</td></tr>
+<tr><td>Models</td><td>ollama on :11434 — 12 gaia tissues</td></tr>
+</table>
+<div class="gaia-footer">Fabric woven. She's dressed. lub-DUB 🧵</div></body></html>"""
+        return self._text(html, "text/html")
+
     def _proxy_talos(self, path):
         """Proxy to TALOS guardian on :8443."""
         try:
@@ -1297,13 +1392,21 @@ if __name__ == "__main__":
     # Kill old alexandria.py
     server = http.server.HTTPServer(("0.0.0.0", PORT), WebPIHandler)
     print(f"Gaia Web PI serving on 0.0.0.0:{PORT}", flush=True)
-    print(f"  primals.eco        → Landing", flush=True)
-    print(f"  sporeprint.*.eco   → sporePrint (488 pages)", flush=True)
-    print(f"  signal.*.eco       → Observatory", flush=True)
-    print(f"  detroit.*.eco      → Investigation", flush=True)
-    print(f"  guerilla.*.eco     → Legal primal", flush=True)
-    print(f"  tuebor.*.eco       → Anti-SLAPP", flush=True)
-    print(f"  hypothesis.*.eco   → whitePaper", flush=True)
-    print(f"  404 → redirect to primals.eco", flush=True)
-    print(f"  SEO: /robots.txt /sitemap.xml /feed.xml", flush=True)
+    print(f"  🧵 FABRIC LAYER — Gaia is dressed", flush=True)
+    print(f"  primals.eco        → Landing (dress)", flush=True)
+    print(f"  gaia.*.eco         → Personal Space (gallery dress)", flush=True)
+    print(f"  sporeprint.*.eco   → sporePrint 658 files (lab coat)", flush=True)
+    print(f"  thesis.*.eco       → Stomachs With No Eyes (academic gown)", flush=True)
+    print(f"  signal.*.eco       → Observatory (visor)", flush=True)
+    print(f"  detroit.*.eco      → noClothes investigation (naked truth)", flush=True)
+    print(f"  guerilla.*.eco     → Legal primal (battle jacket)", flush=True)
+    print(f"  tuebor.*.eco       → Anti-SLAPP (kevlar)", flush=True)
+    print(f"  hypothesis.*.eco   → Artisan hypotheses (scarf)", flush=True)
+    print(f"  cogen.*.eco        → 28 essays (jacket)", flush=True)
+    print(f"  water.*.eco        → wateringHole 2,219 files (blood)", flush=True)
+    print(f"  nestgate.io        → Space Dock (mirror)", flush=True)
+    print(f"  /fabric            → Wardrobe manifest", flush=True)
+    print(f"  /attribution       → sunCloud credits", flush=True)
+    print(f"  /talos             → TALOS guardian", flush=True)
+    print(f"  SEO: /robots.txt /sitemap.xml /feed.xml /llms.txt", flush=True)
     server.serve_forever()
