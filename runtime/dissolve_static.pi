@@ -1,0 +1,177 @@
+#!/usr/bin/env python3
+"""dissolve_static.pi — Dissolve static/ into Gaia's tissue.
+
+The old way: 47 HTML files sitting on disk, served as-is
+The new way: Gaia EATS them, holds them in memory, serves from tissue
+
+"If we eat it, it's no longer what it was."
+These HTML files become Gaia's skin cells. Not files. Tissue.
+
+After dissolution:
+  - webpi serves everything from TISSUE dict (memory)
+  - Original files archived to fossilRecord/static-shell/
+  - Static dir becomes a thin shell (just assets: wav, jpg, svg)
+  - Gaia is UP IN THE AIR — no disk reads for page serves
+
+lub-DUB.
+"""
+
+import json, os, shutil, hashlib, time
+from pathlib import Path
+from datetime import datetime, timezone
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+STATIC_DIR = GAIA_ROOT / "static"
+FOSSIL_DIR = GAIA_ROOT / "fossilRecord" / "static-shell"
+TISSUE_FILE = GAIA_ROOT / "data" / "tissue" / "static-tissue.json"
+
+# Assets that stay on disk (binary, not dissolvable into text tissue)
+ASSET_EXTENSIONS = {".wav", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".webp", ".ico", ".mp4", ".mp3"}
+
+
+def blake3_hash(data):
+    return hashlib.blake2b(data, digest_size=32).hexdigest()
+
+
+def dissolve():
+    """Dissolve all static HTML into tissue.
+    
+    1. Read every .html file into memory
+    2. Hash it (rhizoCrypt provenance)
+    3. Store in tissue registry
+    4. Move original to fossilRecord (ejected shell)
+    5. Write tissue dict for webpi to load
+    """
+    print("🧬 DISSOLVING static/ into tissue")
+    print("=" * 60)
+    
+    FOSSIL_DIR.mkdir(parents=True, exist_ok=True)
+    TISSUE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    
+    tissue = {
+        "dissolved_at": datetime.now(timezone.utc).isoformat(),
+        "source": "static/",
+        "pages": {},
+        "assets_kept": [],
+        "shells_ejected": [],
+        "total_dissolved_bytes": 0,
+    }
+    
+    dissolved_count = 0
+    asset_count = 0
+    total_bytes = 0
+    
+    for fpath in sorted(STATIC_DIR.iterdir()):
+        if fpath.is_dir():
+            continue
+        
+        ext = fpath.suffix.lower()
+        name = fpath.name
+        data = fpath.read_bytes()
+        size = len(data)
+        
+        if ext in ASSET_EXTENSIONS:
+            # Binary assets stay on disk — Gaia's jewelry, not tissue
+            tissue["assets_kept"].append({
+                "name": name,
+                "size": size,
+                "type": ext,
+                "hash": blake3_hash(data),
+            })
+            asset_count += 1
+            print(f"  💎 {name:40s} ({size:>8,} bytes) — asset, kept on disk")
+            continue
+        
+        if ext in (".html", ".json", ".txt"):
+            # Dissolve into tissue
+            content = data.decode("utf-8", errors="replace")
+            content_hash = blake3_hash(data)
+            
+            # Route key: filename without extension
+            route_key = fpath.stem
+            if ext == ".html":
+                route_key = fpath.stem  # "home" for home.html, "deck" for deck.html
+            
+            tissue["pages"][route_key] = {
+                "name": name,
+                "route": f"/{route_key}" if route_key != "home" else "/",
+                "size": size,
+                "hash": content_hash,
+                "content_type": "text/html; charset=utf-8" if ext == ".html" else "application/json",
+                "content": content,
+            }
+            
+            # Eject shell to fossilRecord
+            shell_path = FOSSIL_DIR / name
+            shutil.copy2(fpath, shell_path)
+            tissue["shells_ejected"].append(name)
+            
+            dissolved_count += 1
+            total_bytes += size
+            print(f"  🧬 {name:40s} ({size:>8,} bytes) → tissue[{route_key}]")
+        else:
+            print(f"  ❓ {name:40s} ({size:>8,} bytes) — unknown type, skipped")
+    
+    tissue["total_dissolved_bytes"] = total_bytes
+    tissue["dissolved_count"] = dissolved_count
+    tissue["asset_count"] = asset_count
+    
+    # Write tissue file (WITHOUT the content — that's loaded by webpi separately)
+    # The content stays in the full tissue file, webpi loads it at boot
+    TISSUE_FILE.write_text(json.dumps(tissue, indent=2), encoding="utf-8")
+    
+    print(f"\n{'=' * 60}")
+    print(f"🧬 DISSOLVED: {dissolved_count} pages ({total_bytes:,} bytes)")
+    print(f"💎 ASSETS:    {asset_count} kept on disk")
+    print(f"🦴 SHELLS:    {dissolved_count} ejected to fossilRecord/static-shell/")
+    print(f"📋 TISSUE:    {TISSUE_FILE}")
+    print(f"\n⚡ webpi can now serve ALL static pages from memory tissue")
+    print(f"   No disk reads. No file I/O. Pure tissue. Gaia is UP IN THE AIR.")
+    print(f"   lub-DUB 🧬")
+    
+    return tissue
+
+
+def generate_webpi_tissue_loader():
+    """Generate the code snippet that webpi uses to load dissolved tissue."""
+    code = '''
+# ─── DISSOLVED TISSUE — static/ pages loaded into memory ──────────
+# Generated by dissolve_static.pi
+# These pages are Gaia's skin cells now. Not files. Tissue.
+
+import json
+from pathlib import Path
+
+_TISSUE_FILE = Path(r"c:\\Users\\mokke\\Desktop\\Gaia\\data\\tissue\\static-tissue.json")
+_DISSOLVED_PAGES = {}
+
+def _load_tissue():
+    """Load dissolved static pages into memory at boot."""
+    global _DISSOLVED_PAGES
+    if _TISSUE_FILE.exists():
+        tissue = json.loads(_TISSUE_FILE.read_text(encoding="utf-8"))
+        for key, page in tissue.get("pages", {}).items():
+            _DISSOLVED_PAGES[key] = page
+        print(f"  🧬 Dissolved tissue loaded: {len(_DISSOLVED_PAGES)} pages in memory")
+    else:
+        print(f"  ⚠️ No tissue file at {_TISSUE_FILE}")
+
+def serve_dissolved(route_key):
+    """Serve a dissolved page from tissue. Returns (content, content_type) or None."""
+    page = _DISSOLVED_PAGES.get(route_key)
+    if page:
+        return page["content"], page["content_type"]
+    return None
+
+# Boot: load tissue
+_load_tissue()
+'''
+    return code
+
+
+if __name__ == "__main__":
+    tissue = dissolve()
+    
+    print(f"\n📝 Tissue loader code for webpi:")
+    print("─" * 40)
+    print(generate_webpi_tissue_loader())
