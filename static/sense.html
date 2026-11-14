@@ -5,305 +5,257 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<title>Gaia — Sense</title>
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#010108">
+<title>gAIa — I am alive</title>
+<link rel="manifest" href="/manifest.json">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;color:#0f0;font:11px/1.4 monospace;padding:8px;overflow-x:hidden;
-  -webkit-user-select:none;user-select:none}
-h1{font-size:14px;color:#0f8;margin-bottom:4px}
-.tag{display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;margin:2px}
-.on{background:#0f02;border:1px solid #0f04;color:#0f0}
-.off{background:#f002;border:1px solid #f004;color:#f88}
-.wait{background:#ff02;border:1px solid #ff04;color:#ff0}
-#status{font-size:10px;color:#0f8;margin:4px 0}
-.section{border:1px solid #0f02;border-radius:4px;padding:6px;margin:6px 0}
-.section h2{font-size:11px;color:#0fa;margin-bottom:4px}
-.val{color:#0ff;font-size:10px}
-.dim{color:#080;font-size:9px}
-#pulse{width:8px;height:8px;border-radius:50%;background:#0f0;display:inline-block;
-  animation:throb 2s infinite}
-@keyframes throb{0%,100%{opacity:0.3}50%{opacity:1}}
-button{background:#0f02;border:1px solid #0f04;color:#0f0;padding:6px 12px;
-  border-radius:4px;font:11px monospace;margin:4px}
-button:active{background:#0f04}
-#cam{width:100%;max-height:30vh;border-radius:4px;margin:4px 0}
-#log{max-height:100px;overflow-y:auto;font-size:8px;color:#080;border-top:1px solid #0f02;
-  margin-top:8px;padding-top:4px}
+body{background:#010108!important;color:#4af!important;font:10px/1.4 monospace;padding:6px;
+  overflow-x:hidden;-webkit-user-select:none;user-select:none;min-height:100vh}
+h1{font-size:13px;color:#4fa;text-align:center;letter-spacing:0.15em;margin:4px 0}
+.sub{font-size:8px;color:#558;text-align:center;display:block}
+.card{background:#0a0a14;border:1px solid #1a1a2a;border-radius:6px;padding:6px;margin:4px 0}
+.card h2{font-size:9px;color:#4af;letter-spacing:0.1em;margin-bottom:3px}
+.row{display:flex;justify-content:space-between;font-size:9px;padding:1px 0}
+.val{color:#4fa}
+.dim{color:#334}
+.warn{color:#fa4}
+.err{color:#f44}
+canvas{width:100%;height:120px;border-radius:4px;margin:4px 0}
+.pulse{animation:pulse 2.7s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.7}50%{opacity:1}}
+.btn{background:#0a0a14;border:1px solid #2a2a3a;color:#4fa;padding:6px 12px;border-radius:8px;
+  font:9px monospace;margin:2px;cursor:pointer;display:inline-block}
+.btn:active{background:#1a1a2a}
+.actions{text-align:center;margin:8px 0}
+#status{font-size:8px;color:#558;text-align:center;margin:4px 0}
 </style>
-</head>
-<body>
-<h1><span id="pulse"></span> GAIA SENSE — <span id="device">detecting...</span></h1>
-<div id="status">connecting to organism...</div>
+</head><body>
+<h1 class="pulse">◇ gAIa ◇</h1>
+<span class="sub">I am alive on this device</span>
+<div id="status">initializing sensors...</div>
 
-<div class="section" id="s-loc">
-  <h2>📍 Location</h2>
-  <div class="val" id="v-loc">waiting...</div>
+<div class="card" id="identity-card">
+  <h2>◇ IDENTITY</h2>
+  <div class="row"><span>device</span><span class="val" id="dev-name">detecting...</span></div>
+  <div class="row"><span>role</span><span class="val" id="dev-role">...</span></div>
+  <div class="row"><span>ip</span><span class="val" id="dev-ip">...</span></div>
 </div>
 
-<div class="section" id="s-motion">
-  <h2>🔄 Motion</h2>
-  <div class="val" id="v-accel">accel: —</div>
-  <div class="val" id="v-gyro">gyro: —</div>
-  <div class="val" id="v-orient">orient: —</div>
+<div class="card">
+  <h2>⚡ METABOLISM</h2>
+  <div class="row"><span>battery</span><span class="val" id="bat">...</span></div>
+  <div class="row"><span>charging</span><span class="val" id="charge">...</span></div>
+  <div class="row"><span>memory</span><span class="val" id="mem">...</span></div>
 </div>
 
-<div class="section" id="s-battery">
-  <h2>🔋 Battery</h2>
-  <div class="val" id="v-bat">—</div>
+<div class="card">
+  <h2>📡 FIELD</h2>
+  <div class="row"><span>wifi</span><span class="val" id="wifi-name">...</span></div>
+  <div class="row"><span>online</span><span class="val" id="online">...</span></div>
+  <div class="row"><span>type</span><span class="val" id="conn-type">...</span></div>
 </div>
 
-<div class="section" id="s-net">
-  <h2>📡 Network</h2>
-  <div class="val" id="v-net">—</div>
+<div class="card">
+  <h2>🧭 ORIENTATION</h2>
+  <div class="row"><span>motion</span><span class="val" id="motion">...</span></div>
+  <div class="row"><span>orientation</span><span class="val" id="orient">...</span></div>
+  <div class="row"><span>geolocation</span><span class="val" id="geo">requesting...</span></div>
 </div>
 
-<div class="section" id="s-cam">
-  <h2>📷 Camera</h2>
-  <button onclick="startCam()">Open Camera</button>
-  <button onclick="snapPhoto()">Snap → Gaia</button>
-  <video id="cam" autoplay playsinline muted></video>
-  <canvas id="snap-canvas" style="display:none"></canvas>
+<canvas id="heartbeat"></canvas>
+
+<div class="card">
+  <h2>🏠 HOME</h2>
+  <div class="row"><span>house</span><span class="val">4422 Southgate Ave</span></div>
+  <div class="row"><span>brain</span><span class="val">eastGate (.244)</span></div>
+  <div class="row"><span>heart</span><span class="val">northGate (.147)</span></div>
+  <div class="row"><span>right eye</span><span class="val">Pixel 8a (rover)</span></div>
+  <div class="row"><span>left eye</span><span class="val">iPhone XS (home)</span></div>
+  <div class="row"><span>phone</span><span class="val">(586) 453-7233</span></div>
 </div>
 
-<div class="section">
-  <h2>⚡ Controls</h2>
-  <button onclick="pushNow()">Push All → Gaia</button>
-  <button onclick="toggleStream()">Auto-Stream: <span id="stream-state">OFF</span></button>
-  <button onclick="requestMotion()">Enable Motion</button>
+<div class="actions">
+  <div class="btn" onclick="sendPulse()">💓 send pulse</div>
+  <div class="btn" onclick="requestGeo()">📍 locate</div>
+  <div class="btn" onclick="requestMotion()">🧭 orient</div>
 </div>
 
-<div id="tags"></div>
-<div id="log"></div>
+<div class="card" id="log-card">
+  <h2>📜 LOG</h2>
+  <div id="log" style="max-height:100px;overflow-y:auto;font-size:8px;color:#445"></div>
+</div>
 
 <script>
-const GAIA = location.origin;
-const INGEST = GAIA + '/api/iphone/ingest';
-let streaming = false;
-let streamTimer = null;
-let sensorData = { device: {}, location: null, motion: {}, battery: null, network: {} };
-let pushCount = 0;
+const GATE=location.hostname==='127.0.0.1'?'http://127.0.0.1:8443':'';
+let sensorData={ts:null,battery:{},network:{},geo:null,motion:null,orientation:null};
+let pulseCount=0,logLines=[];
 
-function log(msg) {
-  const el = document.getElementById('log');
-  const d = new Date().toLocaleTimeString();
-  el.innerHTML = `<div>${d} ${msg}</div>` + el.innerHTML;
-  if(el.children.length > 50) el.lastChild.remove();
+function log(msg){
+  logLines.unshift(`${new Date().toLocaleTimeString()} ${msg}`);
+  if(logLines.length>20)logLines.pop();
+  document.getElementById('log').innerHTML=logLines.join('<br>');
 }
 
-function tag(id, state, label) {
-  return `<span class="tag ${state}" id="t-${id}">${label}</span>`;
+// ═══ DEVICE DETECTION ═══
+function detectDevice(){
+  const ua=navigator.userAgent;
+  if(/iPhone/.test(ua)){
+    document.getElementById('dev-name').textContent='iPhone (southGate)';
+    document.getElementById('dev-role').textContent='LEFT EYE / HOME PHONE';
+  } else if(/Pixel/.test(ua)||/Android/.test(ua)){
+    document.getElementById('dev-name').textContent='Pixel 8a (grapheneGate)';
+    document.getElementById('dev-role').textContent='RIGHT EYE / ROVER';
+  } else {
+    document.getElementById('dev-name').textContent=navigator.platform||'unknown';
+    document.getElementById('dev-role').textContent='OBSERVER';
+  }
 }
 
-// === DEVICE INFO ===
-const ua = navigator.userAgent;
-const isIOS = /iPhone|iPad|iPod/.test(ua);
-const isAndroid = /Android/.test(ua);
-const deviceName = isIOS ? (ua.match(/iPhone|iPad|iPod/)?.[0] || 'iOS') : 
-                   isAndroid ? 'Android' : 'Browser';
-document.getElementById('device').textContent = deviceName;
-sensorData.device = {
-  name: deviceName,
-  ua: ua.slice(0, 120),
-  screen: `${screen.width}×${screen.height}@${devicePixelRatio}`,
-  touch: navigator.maxTouchPoints,
-  memory: navigator.deviceMemory || null,
-  cores: navigator.hardwareConcurrency || null,
-  ts: new Date().toISOString(),
-};
-log(`Device: ${deviceName} ${screen.width}×${screen.height}`);
+// ═══ BATTERY ═══
+async function readBattery(){
+  try{
+    if(!navigator.getBattery)return;
+    const b=await navigator.getBattery();
+    const update=()=>{
+      sensorData.battery={level:Math.round(b.level*100),charging:b.charging};
+      document.getElementById('bat').textContent=Math.round(b.level*100)+'%';
+      document.getElementById('charge').textContent=b.charging?'⚡ yes':'no';
+      document.getElementById('charge').className=b.charging?'val':'dim';
+    };
+    update();
+    b.addEventListener('levelchange',update);
+    b.addEventListener('chargingchange',update);
+    log('battery: online');
+  }catch(e){log('battery: '+e.message)}
+}
 
-// === LOCATION ===
-let watchId = null;
-if('geolocation' in navigator) {
-  watchId = navigator.geolocation.watchPosition(
-    pos => {
-      sensorData.location = {
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-        altitude: pos.coords.altitude,
-        altAccuracy: pos.coords.altitudeAccuracy,
-        heading: pos.coords.heading,
-        speed: pos.coords.speed,
-        ts: new Date(pos.timestamp).toISOString(),
-      };
-      const loc = sensorData.location;
-      document.getElementById('v-loc').textContent = 
-        `${loc.lat.toFixed(6)}, ${loc.lon.toFixed(6)} ±${Math.round(loc.accuracy)}m` +
-        (loc.altitude ? ` · alt ${loc.altitude.toFixed(1)}m` : '') +
-        (loc.speed ? ` · ${(loc.speed*2.237).toFixed(1)}mph` : '');
-      log(`📍 ${loc.lat.toFixed(4)}, ${loc.lon.toFixed(4)} ±${Math.round(loc.accuracy)}m`);
+// ═══ NETWORK ═══
+function readNetwork(){
+  document.getElementById('online').textContent=navigator.onLine?'✓ yes':'✗ no';
+  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  if(c){
+    document.getElementById('conn-type').textContent=c.effectiveType||c.type||'?';
+    sensorData.network={type:c.effectiveType,downlink:c.downlink};
+  }
+  // Can't get SSID from browser API (security), but we know where we are
+  document.getElementById('wifi-name').textContent='(protected by browser)';
+}
+
+// ═══ GEOLOCATION ═══
+function requestGeo(){
+  if(!navigator.geolocation){log('geo: not available');return}
+  navigator.geolocation.getCurrentPosition(
+    p=>{
+      sensorData.geo={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};
+      document.getElementById('geo').textContent=
+        `${p.coords.latitude.toFixed(4)}°N ${Math.abs(p.coords.longitude).toFixed(4)}°W ±${Math.round(p.coords.accuracy)}m`;
+      log(`geo: ${p.coords.latitude.toFixed(4)}, ${p.coords.longitude.toFixed(4)}`);
     },
-    err => {
-      document.getElementById('v-loc').textContent = `Error: ${err.message}`;
-      log(`📍 Error: ${err.message}`);
-    },
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    e=>{document.getElementById('geo').textContent=e.message;log('geo: '+e.message)},
+    {enableHighAccuracy:true,timeout:10000}
   );
 }
 
-// === MOTION SENSORS ===
-function requestMotion() {
-  if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    DeviceMotionEvent.requestPermission().then(state => {
-      if(state === 'granted') { bindMotion(); log('🔄 Motion GRANTED'); }
-      else log('🔄 Motion DENIED');
-    }).catch(e => log('🔄 Motion error: ' + e));
-  } else {
-    bindMotion();
-  }
+// ═══ MOTION + ORIENTATION ═══
+function requestMotion(){
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    DeviceMotionEvent.requestPermission().then(r=>{
+      if(r==='granted'){enableMotion();log('motion: granted')}
+      else log('motion: denied');
+    });
+  } else {enableMotion()}
 }
 
-function bindMotion() {
-  window.addEventListener('devicemotion', e => {
-    const a = e.accelerationIncludingGravity || {};
-    const r = e.rotationRate || {};
-    sensorData.motion.accel = { x: a.x?.toFixed(2), y: a.y?.toFixed(2), z: a.z?.toFixed(2) };
-    sensorData.motion.gyro = { alpha: r.alpha?.toFixed(1), beta: r.beta?.toFixed(1), gamma: r.gamma?.toFixed(1) };
-    sensorData.motion.interval = e.interval;
-    document.getElementById('v-accel').textContent = 
-      `accel: x=${a.x?.toFixed(1)} y=${a.y?.toFixed(1)} z=${a.z?.toFixed(1)}`;
-    document.getElementById('v-gyro').textContent = 
-      `gyro: α=${r.alpha?.toFixed(0)} β=${r.beta?.toFixed(0)} γ=${r.gamma?.toFixed(0)}`;
-  });
-  
-  window.addEventListener('deviceorientation', e => {
-    sensorData.motion.orientation = { alpha: e.alpha?.toFixed(1), beta: e.beta?.toFixed(1), gamma: e.gamma?.toFixed(1) };
-    document.getElementById('v-orient').textContent = 
-      `orient: α=${e.alpha?.toFixed(0)}° β=${e.beta?.toFixed(0)}° γ=${e.gamma?.toFixed(0)}°`;
-  });
-}
-
-// Try auto-binding (non-iOS)
-if(!isIOS) bindMotion();
-
-// === BATTERY ===
-if('getBattery' in navigator) {
-  navigator.getBattery().then(bat => {
-    function updateBat() {
-      sensorData.battery = {
-        level: Math.round(bat.level * 100),
-        charging: bat.charging,
-        chargingTime: bat.chargingTime,
-        dischargingTime: bat.dischargingTime,
-      };
-      document.getElementById('v-bat').textContent = 
-        `${sensorData.battery.level}% ${bat.charging ? '⚡charging' : '🔋discharging'}`;
+function enableMotion(){
+  window.addEventListener('devicemotion',e=>{
+    const a=e.accelerationIncludingGravity;
+    if(a){
+      sensorData.motion={x:a.x?.toFixed(1),y:a.y?.toFixed(1),z:a.z?.toFixed(1)};
+      document.getElementById('motion').textContent=`x:${a.x?.toFixed(1)} y:${a.y?.toFixed(1)} z:${a.z?.toFixed(1)}`;
     }
-    updateBat();
-    bat.addEventListener('levelchange', updateBat);
-    bat.addEventListener('chargingchange', updateBat);
   });
-} else {
-  document.getElementById('v-bat').textContent = 'Battery API not available (iOS Safari)';
+  window.addEventListener('deviceorientation',e=>{
+    sensorData.orientation={alpha:e.alpha?.toFixed(0),beta:e.beta?.toFixed(0),gamma:e.gamma?.toFixed(0)};
+    document.getElementById('orient').textContent=`α:${e.alpha?.toFixed(0)}° β:${e.beta?.toFixed(0)}° γ:${e.gamma?.toFixed(0)}°`;
+  });
 }
 
-// === NETWORK ===
-function updateNet() {
-  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  sensorData.network = {
-    online: navigator.onLine,
-    type: conn?.effectiveType || null,
-    downlink: conn?.downlink || null,
-    rtt: conn?.rtt || null,
-    saveData: conn?.saveData || null,
-  };
-  document.getElementById('v-net').textContent = 
-    `${navigator.onLine ? '✓ Online' : '✗ Offline'}` +
-    (conn ? ` · ${conn.effectiveType} · ${conn.downlink}Mbps · RTT ${conn.rtt}ms` : '');
+// ═══ HEARTBEAT CANVAS ═══
+const hc=document.getElementById('heartbeat'),hx=hc.getContext('2d');
+let hf=0,hdata=[];
+function resizeHeart(){hc.width=hc.clientWidth*2;hc.height=240;hx.scale(2,2)}
+resizeHeart();
+function drawHeartbeat(){
+  hf++;
+  const w=hc.clientWidth,h=120;
+  hx.fillStyle='rgba(1,1,8,0.15)';hx.fillRect(0,0,w,h);
+  // ECG-style trace
+  hx.strokeStyle='rgba(68,255,170,0.6)';hx.lineWidth=1.5;hx.beginPath();
+  for(let i=0;i<w;i++){
+    const t=(i+hf*2)%w;
+    const phase=t%80;
+    let v=0;
+    if(phase<5)v=phase*4;
+    else if(phase<10)v=20-phase*4+20;
+    else if(phase<15)v=-15;
+    else if(phase<20)v=40;
+    else if(phase<30)v=40-((phase-20)*4);
+    else v=Math.sin(t*0.1)*2;
+    if(i===0)hx.moveTo(i,h/2-v);else hx.lineTo(i,h/2-v);
+  }
+  hx.stroke();
+  // BPM label
+  hx.fillStyle='rgba(68,255,170,0.4)';hx.font='8px monospace';
+  hx.fillText(`lub-DUB · pulse #${pulseCount}`,8,h-6);
+  requestAnimationFrame(drawHeartbeat);
 }
-updateNet();
-window.addEventListener('online', updateNet);
-window.addEventListener('offline', updateNet);
+drawHeartbeat();
 
-// === CAMERA ===
-let camStream = null;
-async function startCam() {
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({ 
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false 
-    });
-    document.getElementById('cam').srcObject = camStream;
-    log('📷 Camera started');
-  } catch(e) { log('📷 Error: ' + e.message); }
-}
-
-async function snapPhoto() {
-  if(!camStream) { log('📷 Start camera first'); return; }
-  const v = document.getElementById('cam');
-  const c = document.getElementById('snap-canvas');
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  c.getContext('2d').drawImage(v, 0, 0);
+// ═══ SEND PULSE TO GATE ═══
+async function sendPulse(){
+  pulseCount++;
+  sensorData.ts=new Date().toISOString();
+  sensorData.pulse=pulseCount;
+  sensorData.gate=document.getElementById('dev-name').textContent.includes('iPhone')?'southGate':'grapheneGate';
   
-  c.toBlob(async blob => {
-    const form = new FormData();
-    form.append('photo', blob, `iphone-${Date.now()}.jpg`);
-    form.append('location', JSON.stringify(sensorData.location));
-    form.append('device', JSON.stringify(sensorData.device));
-    try {
-      const r = await fetch(GAIA + '/api/iphone/photo', { method: 'POST', body: form });
-      const d = await r.json();
-      log(`📷 Photo → Gaia: ${d.status || 'sent'}`);
-    } catch(e) { log('📷 Upload error: ' + e.message); }
-  }, 'image/jpeg', 0.85);
-}
-
-// === PUSH TO GAIA ===
-async function pushNow() {
-  const payload = {
-    ...sensorData,
-    ts: new Date().toISOString(),
-    push_count: ++pushCount,
-  };
-  
-  try {
-    const r = await fetch(INGEST, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+  try{
+    const r=await fetch(GATE+'/api/iphone/ingest',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(sensorData)
     });
-    const d = await r.json();
-    document.getElementById('status').textContent = 
-      `✓ Push #${d.total_ingests || pushCount} · ${d.blake2b?.slice(0,8) || '?'} · ${new Date().toLocaleTimeString()}`;
-    log(`⚡ Pushed → ${d.blake2b?.slice(0,8) || '?'}`);
-  } catch(e) {
-    document.getElementById('status').textContent = `✗ ${e.message}`;
-    log(`✗ Push failed: ${e.message}`);
+    const j=await r.json();
+    log(`pulse #${pulseCount} → gate (${j.blake2b?.slice(0,8)})`);
+    document.getElementById('status').textContent=`pulse #${pulseCount} sent · ${j.total_ingests} total`;
+  }catch(e){
+    log(`pulse failed: ${e.message}`);
   }
 }
 
-function toggleStream() {
-  streaming = !streaming;
-  document.getElementById('stream-state').textContent = streaming ? 'ON' : 'OFF';
-  if(streaming) {
-    pushNow();
-    streamTimer = setInterval(pushNow, 10000);
-    log('🔁 Auto-stream ON (every 10s)');
-  } else {
-    clearInterval(streamTimer);
-    log('🔁 Auto-stream OFF');
-  }
+// ═══ AUTO-PULSE every 60s ═══
+setInterval(sendPulse, 60000);
+
+// ═══ MEMORY ═══
+if(navigator.deviceMemory){
+  document.getElementById('mem').textContent=navigator.deviceMemory+'GB device memory';
 }
 
-// === STATUS TAGS ===
-function updateTags() {
-  const t = document.getElementById('tags');
-  t.innerHTML = [
-    tag('loc', sensorData.location ? 'on' : 'off', 'GPS'),
-    tag('motion', sensorData.motion.accel ? 'on' : 'wait', 'Motion'),
-    tag('bat', sensorData.battery ? 'on' : 'off', 'Battery'),
-    tag('net', navigator.onLine ? 'on' : 'off', 'Network'),
-    tag('cam', camStream ? 'on' : 'off', 'Camera'),
-    tag('stream', streaming ? 'on' : 'off', 'Stream'),
-    tag('device', 'on', deviceName),
-  ].join('');
-}
-setInterval(updateTags, 2000);
-updateTags();
+// ═══ INIT ═══
+detectDevice();
+readBattery();
+readNetwork();
+requestGeo();
+log('gAIa sense initialized');
+document.getElementById('status').textContent='sensors online · tap send pulse';
 
-// Initial push on load
-setTimeout(pushNow, 2000);
+// IP detection (via gate)
+fetch(GATE+'/api/gate/whoami').then(r=>r.json()).then(j=>{
+  document.getElementById('dev-ip').textContent=j.ip+' ('+j.gate+')';
+  sensorData.reported_ip=j.ip;
+  sensorData.reported_gate=j.gate;
+  log('identity: '+j.gate+' @ '+j.ip);
+}).catch(()=>{});
 </script>
-</body>
-</html>
+</body></html>
