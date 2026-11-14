@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>kenshi.reborn — A-Life Engine</title>
+<script src="/js/piGut.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#c8b88a;font-family:'Courier New',monospace;overflow:hidden}
+#ui{display:flex;height:100vh;width:100vw}
+#sidebar{width:260px;background:#111;border-right:1px solid #333;padding:12px;overflow-y:auto;font-size:12px}
+#viewport{flex:1;position:relative}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+#hud-top{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;pointer-events:none}
+#hud-bottom{position:absolute;bottom:8px;left:8px;right:260px;pointer-events:none}
+.hud-panel{background:rgba(10,10,10,0.85);border:1px solid #444;padding:6px 10px;font-size:11px;pointer-events:auto}
+h2{color:#d4a843;font-size:13px;margin-bottom:6px;text-transform:uppercase;letter-spacing:2px}
+h3{color:#999;font-size:11px;margin:8px 0 4px;text-transform:uppercase}
+.entity-row{padding:3px 0;border-bottom:1px solid #222;cursor:pointer}
+.entity-row:hover{background:#1a1a1a}
+.entity-row.selected{background:#1a2a1a;border-left:2px solid #4a4}
+.stat-bar{height:4px;background:#222;margin:2px 0;border-radius:2px}
+.stat-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.hp{background:#944}
+.hunger{background:#a84}
+.fatigue{background:#448}
+.mood{background:#484}
+#log{position:absolute;bottom:8px;right:8px;width:250px;max-height:200px;overflow-y:auto;font-size:10px;opacity:0.8}
+.log-entry{padding:2px 0;border-bottom:1px solid #1a1a1a}
+.log-combat{color:#c44}
+.log-move{color:#888}
+.log-talk{color:#8ac}
+.log-world{color:#ac8}
+.log-system{color:#ca8}
+#minimap{width:120px;height:120px;border:1px solid #444;image-rendering:pixelated}
+.faction-0{color:#6a6} .faction-1{color:#a66} .faction-2{color:#66a}
+.faction-3{color:#aa6} .faction-4{color:#a6a} .faction-neutral{color:#888}
+#controls{position:absolute;top:8px;right:8px;font-size:10px;opacity:0.5}
+#tissue-status{color:#555;font-size:10px;margin-top:8px}
+#world-clock{font-size:14px;color:#d4a843;font-weight:bold}
+</style>
+</head>
+<body>
+<div id="ui">
+<div id="sidebar">
+  <h2>⚔ kenshi.reborn</h2>
+  <div id="world-clock">Day 1 — Dawn</div>
+  <div id="tissue-status">tissue: connecting...</div>
+
+  <h3>Squad</h3>
+  <div id="squad-list"></div>
+
+  <h3>Selected</h3>
+  <div id="selected-info">Click a squad member</div>
+
+  <h3>Nearby</h3>
+  <div id="nearby-list"></div>
+
+  <h3>Minimap</h3>
+  <canvas id="minimap" width="120" height="120"></canvas>
+</div>
+
+<div id="viewport">
+  <canvas id="world"></canvas>
+  <div id="hud-top">
+    <div class="hud-panel" id="world-info">Wasteland — Zone 0,0</div>
+    <div class="hud-panel" id="fps-counter">0 FPS</div>
+  </div>
+  <div id="controls" class="hud-panel">
+    WASD/Arrows: move | Click: select/command | Space: pause<br>
+    1-9: select squad | A: select all | T: talk | E: eat | F: fight
+  </div>
+  <div id="log" class="hud-panel"></div>
+</div>
+</div>
+
+<script>
+'use strict';
+
+var H = location.hostname;
+var TISSUE = 'http://' + H + ':5820';
+
+// --- WORLD CONFIG ---
+var TILE = 16;
+var WORLD_W = 128;
+var WORLD_H = 128;
+var VIEW_W = 0, VIEW_H = 0;
+var CAMERA = { x: 64, y: 64 };
+var PAUSED = false;
+var TICK = 0;
+var DAY_TICKS = 2400;
+var GAME_SPEED = 1;
+
+// --- TERRAIN ---
+var TERRAIN = {
+  OPEN: 0, DIFFICULT: 1, WALL: 2, WATER: 3, SURFACE: 4, SAND: 5, RUIN: 6
+};
+var TERRAIN_COLORS = {
+  0: '#2a2a1a', 1: '#1a2a1a', 2: '#444',
+  3: '#1a2a3a', 4: '#332a1a', 5: '#3a351a', 6: '#2a2222'
+};
+var TERRAIN_BLOCKS = { 2: true };
+
+// --- FACTIONS ---
+var FACTIONS = [
+  { name: 'Wanderers', color: '#6a6', hostile: [] },
+  { name: 'Dust Bandits', color: '#a66', hostile: [0, 2, 3] },
+  { name: 'Holy Nation', color: '#66a', hostile: [1, 3] },
+  { name: 'Traders Guild', color: '#aa6', hostile: [1] },
+  { name: 'Skeletons', color: '#a6a', hostile: [2] },
+];
+
+// --- ENTITY ---
+function Entity(id, name, x, y, faction, isSquad) {
+  this.id = id;
+  this.name = name;
+  this.x = x; this.y = y;
+  this.faction = faction;
+  this.isSquad = isSquad || false;
+  this.hp = 100; this.maxHp = 100;
+  this.hunger = 100;
+  this.fatigue = 0;
+  this.combat = isSquad ? 5 : Math.floor(Math.random() * 30) + 5;
+  this.athletics = isSquad ? 5 : Math.floor(Math.random() * 20) + 1;
+  this.toughness = isSquad ? 5 : Math.floor(Math.random() * 20) + 1;
+  this.alive = true;
+  this.action = 'idle';
+  this.target = null;
+  this.path = [];
+  this.personality = null;
+  this.selected = false;
+}
+
+// --- WORLD STATE ---
+var world = new Uint8Array(WORLD_W * WORLD_H);
+var fogOfWar = new Uint8Array(WORLD_W * WORLD_H);
+var foodMap = new Uint8Array(WORLD_W * WORLD_H);
+var entities = [];
+var selectedEntity = null;
+var nextEntityId = 0;
+
+// --- WORLD GENERATION (Perlin-esque noise) ---
+function simpleNoise(x, y) {
+  var n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+function generateWorld() {
+  for (var y = 0; y < WORLD_H; y++) {
+    for (var x = 0; x < WORLD_W; x++) {
+      var n = simpleNoise(x * 0.08, y * 0.08);
+      var n2 = simpleNoise(x * 0.03 + 100, y * 0.03 + 100);
+      var idx = y * WORLD_W + x;
+
+      if (n2 > 0.85) world[idx] = TERRAIN.WALL;
+      else if (n2 > 0.78) world[idx] = TERRAIN.RUIN;
+      else if (n < 0.15) world[idx] = TERRAIN.WATER;
+      else if (n < 0.3) world[idx] = TERRAIN.DIFFICULT;
+      else if (n > 0.8) world[idx] = TERRAIN.SAND;
+      else world[idx] = TERRAIN.OPEN;
+
+      if (Math.random() < 0.005 && world[idx] === TERRAIN.OPEN) {
+        world[idx] = TERRAIN.SURFACE;
+      }
+    }
+  }
+  spawnFood();
+  gameLog('World generated: ' + WORLD_W + 'x' + WORLD_H + ' tiles', 'world');
+}
+
+function spawnFood() {
+  for (var y = 0; y < WORLD_H; y++) {
+    for (var x = 0; x < WORLD_W; x++) {
+      var t = world[y * WORLD_W + x];
+      if (t === TERRAIN.DIFFICULT && Math.random() < 0.12) {
+        foodMap[y * WORLD_W + x] = 1;
+      } else if (t === TERRAIN.OPEN && Math.random() < 0.04) {
+        foodMap[y * WORLD_W + x] = 1;
+      } else if (t === TERRAIN.SURFACE) {
+        foodMap[y * WORLD_W + x] = 2;
+      }
+    }
+  }
+}
+
+function regrowFood() {
+  if (TICK % 50 !== 0) return;
+  for (var i = 0; i < 40; i++) {
+    var x = Math.floor(Math.random() * WORLD_W);
+    var y = Math.floor(Math.random() * WORLD_H);
+    var t = world[y * WORLD_W + x];
+    if (foodMap[y * WORLD_W + x] === 0 && (t === TERRAIN.DIFFICULT || t === TERRAIN.OPEN)) {
+      if (Math.random() < 0.3) foodMap[y * WORLD_W + x] = 1;
+    }
+  }
+}
+
+// --- SPAWN ENTITIES ---
+function spawnSquad() {
+  var names = ['Beep', 'Agnu', 'Hobbs', 'Ruka', 'Seto'];
+  var cx = 64, cy = 64;
+  for (var i = 0; i < names.length; i++) {
+    var sx = cx + (i % 3) - 1;
+    var sy = cy + Math.floor(i / 3);
+    var e = new Entity(nextEntityId++, names[i], sx, sy, 0, true);
+    e.selected = (i === 0);
+    if (i === 0) selectedEntity = e;
+    entities.push(e);
+  }
+  CAMERA.x = cx; CAMERA.y = cy;
+  gameLog('Squad assembled: ' + names.join(', '), 'system');
+}
+
+function spawnNPCs() {
+  var npcNames = [
+    'Dust Thug', 'Bandit Scout', 'Bandit Captain',
+    'Holy Paladin', 'High Inquisitor', 'Preacher',
+    'Trader Rin', 'Caravan Guard', 'Merchant',
+    'Ancient Unit', 'Broken Shell', 'Sentinel'
+  ];
+  for (var i = 0; i < 40; i++) {
+    var fx = 1 + Math.floor(Math.random() * 4);
+    var nx = Math.floor(Math.random() * WORLD_W);
+    var ny = Math.floor(Math.random() * WORLD_H);
+    if (TERRAIN_BLOCKS[world[ny * WORLD_W + nx]]) continue;
+    var nameIdx = Math.floor(Math.random() * npcNames.length);
+    var e = new Entity(nextEntityId++, npcNames[nameIdx] + ' #' + i, nx, ny, fx, false);
+    e.combat = 5 + Math.floor(Math.random() * 40);
+    entities.push(e);
+  }
+  gameLog('40 A-Life entities spawned across 4 factions', 'world');
+}
+
+// --- FOG OF WAR ---
+function updateFog() {
+  fogOfWar.fill(0);
+  var radius = 8;
+  for (var i = 0; i < entities.length; i++) {
+    var e = entities[i];
+    if (!e.isSquad || !e.alive) continue;
+    for (var dy = -radius; dy <= radius; dy++) {
+      for (var dx = -radius; dx <= radius; dx++) {
+        if (dx * dx + dy * dy > radius * radius) continue;
+        var fx = e.x + dx, fy = e.y + dy;
+        if (fx < 0 || fy < 0 || fx >= WORLD_W || fy >= WORLD_H) continue;
+        fogOfWar[fy * WORLD_W + fx] = 2;
+      }
+    }
+    for (var dy2 = -radius - 4; dy2 <= radius + 4; dy2++) {
+      for (var dx2 = -radius - 4; dx2 <= radius + 4; dx2++) {
+        if (dx2 * dx2 + dy2 * dy2 > (radius + 4) * (radius + 4)) continue;
+        var fx2 = e.x + dx2, fy2 = e.y + dy2;
+        if (fx2 < 0 || fy2 < 0 || fx2 >= WORLD_W || fy2 >= WORLD_H) continue;
+        if (fogOfWar[fy2 * WORLD_W + fx2] === 0) fogOfWar[fy2 * WORLD_W + fx2] = 1;
+      }
+    }
+  }
+}
+
+// --- A-LIFE TICK ---
+var tissueQueue = [];
+var tissueActive = false;
+
+function alifeTick() {
+  TICK++;
+  var hour = Math.floor((TICK % DAY_TICKS) / 100);
+  var day = Math.floor(TICK / DAY_TICKS) + 1;
+  var times = ['Midnight','Dawn','Morning','Midday','Afternoon','Dusk','Evening','Night'];
+  var timeOfDay = times[Math.floor(hour / 3)] || 'Night';
+  document.getElementById('world-clock').textContent = 'Day ' + day + ' — ' + timeOfDay;
+
+  regrowFood();
+
+  for (var i = 0; i < entities.length; i++) {
+    var e = entities[i];
+    if (!e.alive) continue;
+
+    e.hunger = Math.max(0, e.hunger - 0.005 * GAME_SPEED);
+    if (e.fatigue < 100) e.fatigue += 0.003 * GAME_SPEED;
+
+    if (e.hunger <= 0) {
+      e.hp -= 0.1;
+      if (e.hp <= 0) { e.alive = false; gameLog(e.name + ' starved.', 'combat'); }
+    }
+
+    if (e.hp < e.maxHp && e.hunger > 50) {
+      e.hp = Math.min(e.maxHp, e.hp + 0.02);
+    }
+
+    if (!e.isSquad) {
+      npcBehavior(e);
+    } else if (e.hunger < 50 && e.action !== 'player_move') {
+      if (!tryEat(e) && e.hunger < 20) {
+        var wx = e.x + Math.floor(Math.random() * 9) - 4;
+        var wy = e.y + Math.floor(Math.random() * 9) - 4;
+        wx = Math.max(0, Math.min(WORLD_W - 1, wx));
+        wy = Math.max(0, Math.min(WORLD_H - 1, wy));
+        moveToward(e, wx, wy);
+        e.action = 'starving';
+      }
+    }
+  }
+}
+
+function tryEat(e) {
+  var idx = e.y * WORLD_W + e.x;
+  if (foodMap[idx] > 0) {
+    var amt = foodMap[idx] === 2 ? 40 : 20;
+    e.hunger = Math.min(100, e.hunger + amt);
+    foodMap[idx] = 0;
+    e.action = 'eating';
+    return true;
+  }
+  var searchR = e.hunger < 15 ? 12 : 6;
+  var bestDist = Infinity, bestX = -1, bestY = -1;
+  for (var dy = -searchR; dy <= searchR; dy++) {
+    for (var dx = -searchR; dx <= searchR; dx++) {
+      var fx = e.x + dx, fy = e.y + dy;
+      if (fx < 0 || fy < 0 || fx >= WORLD_W || fy >= WORLD_H) continue;
+      if (foodMap[fy * WORLD_W + fx] > 0) {
+        var d = Math.abs(dx) + Math.abs(dy);
+        if (d < bestDist) { bestDist = d; bestX = fx; bestY = fy; }
+      }
+    }
+  }
+  if (bestX >= 0) {
+    moveToward(e, bestX, bestY);
+    e.action = 'foraging';
+    return true;
+  }
+  return false;
+}
+
+function npcBehavior(e) {
+  if (e.path.length > 0) {
+    var next = e.path.shift();
+    if (!TERRAIN_BLOCKS[world[next.y * WORLD_W + next.x]]) {
+      e.x = next.x; e.y = next.y;
+    }
+    return;
+  }
+
+  if (e.hunger < 40) {
+    if (tryEat(e)) return;
+  }
+
+  var hostileFactions = FACTIONS[e.faction] ? FACTIONS[e.faction].hostile : [];
+  var nearestHostile = null, nearDist = Infinity;
+
+  for (var j = 0; j < entities.length; j++) {
+    var other = entities[j];
+    if (other === e || !other.alive) continue;
+    if (hostileFactions.indexOf(other.faction) === -1 && !(other.isSquad && hostileFactions.indexOf(0) !== -1)) continue;
+    var dist = Math.abs(other.x - e.x) + Math.abs(other.y - e.y);
+    if (dist < nearDist && dist < 15) { nearDist = dist; nearestHostile = other; }
+  }
+
+  if (nearestHostile && nearDist <= 1) {
+    resolveCombat(e, nearestHostile);
+  } else if (nearestHostile && nearDist <= 10) {
+    moveToward(e, nearestHostile.x, nearestHostile.y);
+    e.action = 'pursuing';
+  } else if (e.hunger < 60) {
+    if (!tryEat(e)) {
+      var wx = e.x + Math.floor(Math.random() * 15) - 7;
+      var wy = e.y + Math.floor(Math.random() * 15) - 7;
+      wx = Math.max(0, Math.min(WORLD_W - 1, wx));
+      wy = Math.max(0, Math.min(WORLD_H - 1, wy));
+      moveToward(e, wx, wy);
+      e.action = 'foraging';
+    }
+  } else {
+    if (Math.random() < 0.1) {
+      var wx2 = e.x + Math.floor(Math.random() * 11) - 5;
+      var wy2 = e.y + Math.floor(Math.random() * 11) - 5;
+      wx2 = Math.max(0, Math.min(WORLD_W - 1, wx2));
+      wy2 = Math.max(0, Math.min(WORLD_H - 1, wy2));
+      moveToward(e, wx2, wy2);
+      e.action = 'wandering';
+    } else {
+      e.action = 'idle';
+    }
+  }
+}
+
+function moveToward(e, tx, ty) {
+  var dx = Math.sign(tx - e.x);
+  var dy = Math.sign(ty - e.y);
+  var nx = e.x + dx, ny = e.y + dy;
+  if (nx >= 0 && nx < WORLD_W && ny >= 0 && ny < WORLD_H) {
+    if (!TERRAIN_BLOCKS[world[ny * WORLD_W + nx]]) {
+      e.x = nx; e.y = ny;
+    }
+  }
+}
+
+function resolveCombat(attacker, defender) {
+  var atkPower = attacker.combat * (0.5 + Math.random() * 0.5);
+  var defPower = defender.toughness * (0.3 + Math.random() * 0.3);
+  var dmg = Math.max(1, atkPower - defPower);
+
+  defender.hp -= dmg;
+  attacker.combat += 0.01;
+  defender.toughness += 0.02;
+
+  if (defender.hp <= 0) {
+    defender.alive = false;
+    attacker.combat += 0.5;
+    gameLog(attacker.name + ' killed ' + defender.name + ' (combat +0.5)', 'combat');
+  }
+
+  if (Math.random() < 0.05) {
+    queueTissueInference(attacker, defender);
+  }
+}
+
+// --- TISSUE PROXY INTEGRATION ---
+function queueTissueInference(entity, context) {
+  var prompt = entity.name + ' (faction: ' + FACTIONS[entity.faction].name +
+    ', combat: ' + entity.combat.toFixed(1) + ', hp: ' + entity.hp.toFixed(0) +
+    '%) encounters ' + (context ? context.name : 'nothing') +
+    '. What does ' + entity.name + ' do next? One sentence, in-character.';
+
+  tissueQueue.push({ entity: entity, prompt: prompt });
+  if (!tissueActive) processTissueQueue();
+}
+
+function processTissueQueue() {
+  if (tissueQueue.length === 0) { tissueActive = false; return; }
+  tissueActive = true;
+  var item = tissueQueue.shift();
+
+  fetch(TISSUE + '/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gaia-tissue-gut:latest',
+      prompt: item.prompt,
+      stream: false,
+      options: { num_predict: 60, temperature: 0.9 }
+    })
+  }).then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.response) {
+        gameLog('[' + item.entity.name + '] ' + data.response.trim(), 'talk');
+        item.entity.personality = data.response.trim();
+      }
+      processTissueQueue();
+    })
+    .catch(function() {
+      processTissueQueue();
+    });
+}
+
+function checkTissueStatus() {
+  fetch(TISSUE + '/api/tags')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var models = data.models ? data.models.length : 0;
+      document.getElementById('tissue-status').textContent =
+        'tissue: ✓ ' + models + ' models on RTX 5090';
+      document.getElementById('tissue-status').style.color = '#4a4';
+    })
+    .catch(function() {
+      document.getElementById('tissue-status').textContent = 'tissue: offline';
+      document.getElementById('tissue-status').style.color = '#a44';
+    });
+}
+
+// --- GAME LOG ---
+var logEntries = [];
+function gameLog(msg, type) {
+  logEntries.push({ msg: msg, type: type || 'system', tick: TICK });
+  if (logEntries.length > 50) logEntries.shift();
+  var logEl = document.getElementById('log');
+  var html = '';
+  for (var i = logEntries.length - 1; i >= Math.max(0, logEntries.length - 15); i--) {
+    html += '<div class="log-entry log-' + logEntries[i].type + '">' + logEntries[i].msg + '</div>';
+  }
+  logEl.innerHTML = html;
+}
+
+// --- RENDERING ---
+var canvas, ctx, minimapCanvas, minimapCtx;
+
+function initCanvas() {
+  canvas = document.getElementById('world');
+  ctx = canvas.getContext('2d');
+  minimapCanvas = document.getElementById('minimap');
+  minimapCtx = minimapCanvas.getContext('2d');
+  resize();
+  window.addEventListener('resize', resize);
+}
+
+function resize() {
+  var vp = document.getElementById('viewport');
+  canvas.width = vp.clientWidth;
+  canvas.height = vp.clientHeight;
+  VIEW_W = Math.ceil(canvas.width / TILE) + 2;
+  VIEW_H = Math.ceil(canvas.height / TILE) + 2;
+}
+
+function render() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  var ox = Math.floor(CAMERA.x - VIEW_W / 2);
+  var oy = Math.floor(CAMERA.y - VIEW_H / 2);
+
+  for (var sy = 0; sy < VIEW_H; sy++) {
+    for (var sx = 0; sx < VIEW_W; sx++) {
+      var wx = ox + sx, wy = oy + sy;
+      if (wx < 0 || wy < 0 || wx >= WORLD_W || wy >= WORLD_H) continue;
+
+      var fog = fogOfWar[wy * WORLD_W + wx];
+      if (fog === 0) continue;
+
+      var t = world[wy * WORLD_W + wx];
+      var color = TERRAIN_COLORS[t] || '#111';
+
+      if (fog === 1) {
+        var r = parseInt(color.substr(1, 2), 16) >> 1;
+        var g = parseInt(color.substr(3, 2), 16) >> 1;
+        var b = parseInt(color.substr(5, 2), 16) >> 1;
+        color = '#' + r.toString(16).padStart(2, '0') + g.toString(16).padStart(2, '0') + b.toString(16).padStart(2, '0');
+      }
+
+      ctx.fillStyle = color;
+      ctx.fillRect(sx * TILE, sy * TILE, TILE, TILE);
+
+      if (fog === 2 && (t === TERRAIN.WALL || t === TERRAIN.RUIN)) {
+        ctx.fillStyle = t === TERRAIN.WALL ? '#555' : '#3a2a2a';
+        ctx.fillRect(sx * TILE + 1, sy * TILE + 1, TILE - 2, TILE - 2);
+      }
+
+      if (fog === 2 && foodMap[wy * WORLD_W + wx] > 0) {
+        ctx.fillStyle = foodMap[wy * WORLD_W + wx] === 2 ? '#8a6' : '#564';
+        ctx.fillRect(sx * TILE + 5, sy * TILE + 5, 3, 3);
+        if (foodMap[wy * WORLD_W + wx] === 2) {
+          ctx.fillRect(sx * TILE + 3, sy * TILE + 6, 2, 2);
+          ctx.fillRect(sx * TILE + 9, sy * TILE + 4, 2, 2);
+        }
+      }
+    }
+  }
+
+  for (var i = 0; i < entities.length; i++) {
+    var e = entities[i];
+    if (!e.alive) continue;
+    var ex = e.x - ox, ey = e.y - oy;
+    if (ex < -1 || ey < -1 || ex > VIEW_W || ey > VIEW_H) continue;
+
+    var fogg = fogOfWar[e.y * WORLD_W + e.x];
+    if (fogg === 0) continue;
+
+    var fcolor = FACTIONS[e.faction] ? FACTIONS[e.faction].color : '#888';
+    if (fogg === 1) fcolor = '#333';
+
+    ctx.fillStyle = fcolor;
+    if (e.isSquad) {
+      ctx.fillRect(ex * TILE + 2, ey * TILE + 2, TILE - 4, TILE - 4);
+      if (e.selected) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(ex * TILE + 1, ey * TILE + 1, TILE - 2, TILE - 2);
+      }
+    } else {
+      ctx.beginPath();
+      ctx.arc(ex * TILE + TILE / 2, ey * TILE + TILE / 2, TILE / 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (e.hp < e.maxHp && fogg === 2) {
+      var hpRatio = e.hp / e.maxHp;
+      ctx.fillStyle = '#400';
+      ctx.fillRect(ex * TILE, ey * TILE - 3, TILE, 2);
+      ctx.fillStyle = hpRatio > 0.5 ? '#4a4' : hpRatio > 0.25 ? '#aa4' : '#a44';
+      ctx.fillRect(ex * TILE, ey * TILE - 3, TILE * hpRatio, 2);
+    }
+  }
+
+  renderMinimap();
+}
+
+function renderMinimap() {
+  minimapCtx.fillStyle = '#111';
+  minimapCtx.fillRect(0, 0, 120, 120);
+
+  var scale = 120 / WORLD_W;
+  for (var y = 0; y < WORLD_H; y += 2) {
+    for (var x = 0; x < WORLD_W; x += 2) {
+      var fog = fogOfWar[y * WORLD_W + x];
+      if (fog === 0) continue;
+      var t = world[y * WORLD_W + x];
+      minimapCtx.fillStyle = fog === 2 ? (TERRAIN_COLORS[t] || '#222') : '#1a1a1a';
+      minimapCtx.fillRect(x * scale, y * scale, Math.max(1, scale * 2), Math.max(1, scale * 2));
+    }
+  }
+
+  for (var i = 0; i < entities.length; i++) {
+    var e = entities[i];
+    if (!e.alive || fogOfWar[e.y * WORLD_W + e.x] === 0) continue;
+    minimapCtx.fillStyle = FACTIONS[e.faction] ? FACTIONS[e.faction].color : '#888';
+    minimapCtx.fillRect(e.x * scale - 1, e.y * scale - 1, 3, 3);
+  }
+
+  minimapCtx.strokeStyle = '#fff';
+  minimapCtx.strokeRect(
+    (CAMERA.x - VIEW_W / 2) * scale,
+    (CAMERA.y - VIEW_H / 2) * scale,
+    VIEW_W * scale, VIEW_H * scale
+  );
+}
+
+// --- UI ---
+function updateUI() {
+  var squadHtml = '';
+  var squad = entities.filter(function(e) { return e.isSquad && e.alive; });
+  for (var i = 0; i < squad.length; i++) {
+    var e = squad[i];
+    var cls = e.selected ? 'entity-row selected' : 'entity-row';
+    squadHtml += '<div class="' + cls + '" data-id="' + e.id + '">';
+    squadHtml += '<b>' + e.name + '</b> [C:' + e.combat.toFixed(1) + ' A:' + e.athletics.toFixed(1) + ']<br>';
+    squadHtml += '<div class="stat-bar"><div class="stat-fill hp" style="width:' + (e.hp / e.maxHp * 100) + '%"></div></div>';
+    squadHtml += '<div class="stat-bar"><div class="stat-fill hunger" style="width:' + e.hunger + '%"></div></div>';
+    squadHtml += '</div>';
+  }
+  document.getElementById('squad-list').innerHTML = squadHtml;
+
+  if (selectedEntity) {
+    var se = selectedEntity;
+    var info = '<b>' + se.name + '</b><br>';
+    info += 'HP: ' + se.hp.toFixed(0) + '/' + se.maxHp + '<br>';
+    info += 'Combat: ' + se.combat.toFixed(1) + '<br>';
+    info += 'Athletics: ' + se.athletics.toFixed(1) + '<br>';
+    info += 'Toughness: ' + se.toughness.toFixed(1) + '<br>';
+    info += 'Hunger: ' + se.hunger.toFixed(0) + '%<br>';
+    info += 'Action: ' + se.action + '<br>';
+    if (se.personality) info += '<br><i>"' + se.personality + '"</i>';
+    document.getElementById('selected-info').innerHTML = info;
+  }
+
+  var nearby = entities.filter(function(e) {
+    if (e.isSquad || !e.alive || !selectedEntity) return false;
+    var d = Math.abs(e.x - selectedEntity.x) + Math.abs(e.y - selectedEntity.y);
+    return d < 15 && fogOfWar[e.y * WORLD_W + e.x] === 2;
+  });
+  var nearbyHtml = '';
+  for (var j = 0; j < Math.min(nearby.length, 8); j++) {
+    var n = nearby[j];
+    var fc = FACTIONS[n.faction];
+    nearbyHtml += '<div class="entity-row" style="color:' + fc.color + '">';
+    nearbyHtml += n.name + ' [C:' + n.combat.toFixed(0) + '] ' + n.action;
+    nearbyHtml += '</div>';
+  }
+  document.getElementById('nearby-list').innerHTML = nearbyHtml || '<span style="color:#555">Nobody visible</span>';
+}
+
+// --- INPUT ---
+var keys = {};
+document.addEventListener('keydown', function(ev) {
+  keys[ev.key] = true;
+  if (ev.key === ' ') { PAUSED = !PAUSED; gameLog(PAUSED ? 'PAUSED' : 'RESUMED', 'system'); }
+  if (ev.key >= '1' && ev.key <= '9') {
+    var squad = entities.filter(function(e) { return e.isSquad && e.alive; });
+    var idx = parseInt(ev.key) - 1;
+    if (idx < squad.length) {
+      entities.forEach(function(e) { e.selected = false; });
+      squad[idx].selected = true;
+      selectedEntity = squad[idx];
+      CAMERA.x = selectedEntity.x; CAMERA.y = selectedEntity.y;
+    }
+  }
+  if (ev.key === 'a' || ev.key === 'A') {
+    var squad2 = entities.filter(function(e) { return e.isSquad && e.alive; });
+    squad2.forEach(function(e) { e.selected = true; });
+    if (squad2.length > 0) selectedEntity = squad2[0];
+  }
+  if (ev.key === 't' || ev.key === 'T') {
+    if (selectedEntity) queueTissueInference(selectedEntity, null);
+  }
+  if (ev.key === 'e' || ev.key === 'E') {
+    var eaters = entities.filter(function(e) { return e.selected && e.isSquad && e.alive; });
+    eaters.forEach(function(e) { if (tryEat(e)) gameLog(e.name + ' eats. Hunger: ' + e.hunger.toFixed(0) + '%', 'world'); });
+  }
+});
+document.addEventListener('keyup', function(ev) { keys[ev.key] = false; });
+
+canvas = document.getElementById('world');
+canvas.addEventListener('click', function(ev) {
+  var rect = canvas.getBoundingClientRect();
+  var mx = ev.clientX - rect.left;
+  var my = ev.clientY - rect.top;
+  var ox = Math.floor(CAMERA.x - VIEW_W / 2);
+  var oy = Math.floor(CAMERA.y - VIEW_H / 2);
+  var wx = ox + Math.floor(mx / TILE);
+  var wy = oy + Math.floor(my / TILE);
+
+  var clicked = null;
+  for (var i = 0; i < entities.length; i++) {
+    if (entities[i].x === wx && entities[i].y === wy && entities[i].alive) {
+      clicked = entities[i];
+      break;
+    }
+  }
+
+  if (clicked && clicked.isSquad) {
+    entities.forEach(function(e) { e.selected = false; });
+    clicked.selected = true;
+    selectedEntity = clicked;
+  } else {
+    var selected = entities.filter(function(e) { return e.selected && e.isSquad && e.alive; });
+    selected.forEach(function(e) {
+      moveToward(e, wx, wy);
+      e.action = 'moving';
+    });
+    if (clicked && !clicked.isSquad) {
+      gameLog('Target: ' + clicked.name + ' (' + FACTIONS[clicked.faction].name + ')', 'system');
+    }
+  }
+});
+
+document.getElementById('squad-list').addEventListener('click', function(ev) {
+  var row = ev.target.closest('.entity-row');
+  if (!row) return;
+  var id = parseInt(row.dataset.id);
+  var e = entities.find(function(e) { return e.id === id; });
+  if (e) {
+    entities.forEach(function(e) { e.selected = false; });
+    e.selected = true;
+    selectedEntity = e;
+    CAMERA.x = e.x; CAMERA.y = e.y;
+  }
+});
+
+function handleMovement() {
+  if (!selectedEntity) return;
+  var dx = 0, dy = 0;
+  if (keys['ArrowUp'] || keys['w'] || keys['W']) dy = -1;
+  if (keys['ArrowDown'] || keys['s'] || keys['S']) dy = 1;
+  if (keys['ArrowLeft'] || keys['a']) dx = -1;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) dx = 1;
+  if (dx === 0 && dy === 0) return;
+
+  var selected = entities.filter(function(e) { return e.selected && e.isSquad && e.alive; });
+  selected.forEach(function(e) {
+    var nx = e.x + dx, ny = e.y + dy;
+    if (nx >= 0 && nx < WORLD_W && ny >= 0 && ny < WORLD_H) {
+      if (!TERRAIN_BLOCKS[world[ny * WORLD_W + nx]]) {
+        e.x = nx; e.y = ny;
+        e.athletics += 0.001;
+      }
+    }
+  });
+  CAMERA.x = selectedEntity.x;
+  CAMERA.y = selectedEntity.y;
+}
+
+// --- MAIN LOOP ---
+var lastFrame = 0;
+var frames = 0, fpsTime = 0;
+
+function gameLoop(ts) {
+  var dt = ts - lastFrame;
+  lastFrame = ts;
+  frames++;
+  fpsTime += dt;
+  if (fpsTime > 1000) {
+    document.getElementById('fps-counter').textContent = frames + ' FPS';
+    frames = 0; fpsTime = 0;
+  }
+
+  handleMovement();
+
+  if (!PAUSED) {
+    if (TICK % 3 === 0) alifeTick();
+  }
+
+  updateFog();
+  render();
+  if (TICK % 10 === 0) updateUI();
+
+  requestAnimationFrame(gameLoop);
+}
+
+// --- INIT ---
+function init() {
+  initCanvas();
+  generateWorld();
+  spawnSquad();
+  spawnNPCs();
+  updateFog();
+  checkTissueStatus();
+  setInterval(checkTissueStatus, 30000);
+  gameLog('kenshi.reborn — A-Life engine on Gaia fleet', 'system');
+  gameLog('RTX 5090 tissue proxy: ' + TISSUE, 'system');
+  requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
+</body>
+</html>
