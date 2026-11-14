@@ -260,6 +260,27 @@ def handle_post(self, ip, collapsed, wave, G):
             except Exception as e: self._json({"error":str(e)})
         else: self._json({"error":"compiler organ not loaded"})
         return
+    # ═══ DEPLOY — self-update. Pull latest from Forgejo, restart gate. ═══
+    # This is the NERVE that closes the circuit:
+    #   northGate push → GitHub → Forgejo → webhook → /api/deploy → git pull → gate restart
+    #   The public web signal flows IN through RSS and OUT through the same gate.
+    if self.path in ("/api/deploy","/api/webhook","/api/self-update"):
+        try:
+            import subprocess as sp
+            result=sp.run(["git","pull","--no-rebase","--no-edit"],
+                capture_output=True,text=True,timeout=30,cwd=_REPO,
+                env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
+            pulled=result.stdout.strip()
+            changed="Already up to date" not in pulled
+            out={"ok":True,"action":"deploy","pulled":pulled[:500],"changed":changed,
+                 "ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
+            # Log the deploy
+            nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+            with open(os.path.join(nd,"deploys.jsonl"),"a") as f:
+                f.write(json.dumps(out)+"\n")
+            self._json(out)
+        except Exception as e: self._json({"error":str(e)})
+        return
     # NEUTRON
     if self.path in ("/api/discuss","/neutron","/api/neutron"):
         try:
