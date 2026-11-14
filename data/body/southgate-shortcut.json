@@ -1,0 +1,40 @@
+{
+  "name": "gAIa Heartbeat",
+  "description": "southGate → Gaia pulse every 15 min",
+  "trigger": "time_interval_15m",
+  "actions": [
+    {
+      "type": "get_battery_level",
+      "output": "battery"
+    },
+    {
+      "type": "get_wifi_info",
+      "output": "wifi"
+    },
+    {
+      "type": "get_current_location",
+      "output": "location"
+    },
+    {
+      "type": "get_device_details",
+      "output": "device"
+    },
+    {
+      "type": "http_post",
+      "url": "http://192.168.4.244
+192.168.4.244:8443/api/iphone/ingest",
+      "body": {
+        "gate": "southGate",
+        "role": "home_phone",
+        "house": "4422_southgate_ave",
+        "ts": "{{current_date_iso}}",
+        "battery": "{{battery}}",
+        "wifi": "{{wifi}}",
+        "location": "{{location}}",
+        "device": "{{device}}",
+        "phone": "(586) 453-7233",
+        "spore_version": "1.0"
+      }
+    }
+  ]
+}
