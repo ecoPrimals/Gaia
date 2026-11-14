@@ -11,122 +11,10 @@ import types as _t, importlib.util
 
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
-_PI_STR = "31415926535897932384626433832795028841971"
 PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11434"
 PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
-
-# ═══ VITAL SIGNS — heart (RPM) + lungs (respiration) — local AND delocalized ═══
-# Heart = beats per minute (requests served). Each gate has its own heart.
-# Lungs = breaths per minute (large responses = exhale, large requests = inhale).
-# Local vitals = this gate. Delocalized vitals = ALL gates summed.
-_GATE_VITALS = {}  # populated by gate announcements: {gate: {bpm, brpm, beats, breaths, ts}}
-_INHALE_BYTES = 0  # total bytes received (inhale)
-_EXHALE_BYTES = 0  # total bytes sent (exhale)
-
-def _vital_signs_local():
-    """This gate's heart and lungs."""
-    uptime_s = max(time.time() - boot_time, 1)
-    uptime_min = uptime_s / 60
-    bpm = total_beats / max(uptime_min, 1)
-    brpm = total_breaths / max(uptime_min, 1)
-    return {
-        "gate": os.environ.get("HOSTNAME", "localGate"),
-        "heart": {
-            "bpm": round(bpm, 2),
-            "beats": total_beats,
-            "rhythm": "lub-DUB" if total_beats % 2 == 0 else "DUB-lub",
-        },
-        "lungs": {
-            "brpm": round(brpm, 2),
-            "breaths": total_breaths,
-            "inhale_mb": round(_INHALE_BYTES / (1024*1024), 2),
-            "exhale_mb": round(_EXHALE_BYTES / (1024*1024), 2),
-            "tidal_ratio": round(_EXHALE_BYTES / max(_INHALE_BYTES, 1), 2),
-        },
-        "uptime_s": int(uptime_s),
-        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-
-def _vital_signs_delocalized():
-    """All gates summed — the organism's vital signs."""
-    local = _vital_signs_local()
-    all_gates = {"localGate": local}
-    all_gates.update(_GATE_VITALS)
-    total_bpm = local["heart"]["bpm"]
-    total_brpm = local["lungs"]["brpm"]
-    total_b = local["heart"]["beats"]
-    total_br = local["lungs"]["breaths"]
-    for gv in _GATE_VITALS.values():
-        total_bpm += gv.get("bpm", 0)
-        total_brpm += gv.get("brpm", 0)
-        total_b += gv.get("beats", 0)
-        total_br += gv.get("breaths", 0)
-    return {
-        "organism": {
-            "heart": {"bpm": round(total_bpm, 2), "beats": total_b, "gates_beating": 1 + len(_GATE_VITALS)},
-            "lungs": {"brpm": round(total_brpm, 2), "breaths": total_br, "gates_breathing": 1 + len(_GATE_VITALS)},
-        },
-        "gates": all_gates,
-        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-
-def _gate_vitals_announce(gate, bpm, brpm, beats, breaths):
-    """Another gate reports its vitals."""
-    _GATE_VITALS[gate] = {"bpm": bpm, "brpm": brpm, "beats": beats, "breaths": breaths, "ts": time.time()}
-
-# ═══ songBird TOWER — service discovery, NO hardcoded IPs ═══
-# swarmVine gossips this table across all gates. songBird resolves names→addrs.
-# Every port derives from π. Every gate resolves by NAME not number.
-_SONGBIRD_SERVICES = {
-    "gate":       {"port": PORT,  "proto": "http",  "desc": "main gate"},
-    "thymus":     {"port": int(_PI_STR[0:4]),  "proto": "http",  "desc": "thymus classifier"},
-    "data":       {"port": int(_PI_STR[4:8]),  "proto": "http",  "desc": "data surface"},
-    "compute":    {"port": int(_PI_STR[8:12]), "proto": "http",  "desc": "compute dispatch"},
-    "mesh":       {"port": int(_PI_STR[12:16]),"proto": "tcp",   "desc": "mesh transport"},
-    "webpi":      {"port": 8080, "proto": "http",  "desc": "web presentation"},
-    "tls":        {"port": 8444, "proto": "https", "desc": "TLS gate"},
-    "ollama":     {"port": 11434,"proto": "http",  "desc": "cortex inference"},
-    "forge":      {"port": 3000, "proto": "http",  "desc": "forgejo git"},
-    "petal":      {"port": int(PI*PI*1000), "proto": "http", "desc": "petalTongue render"},
-    "membrane":   {"port": 9753, "proto": "http",  "desc": "cellMembrane"},
-    "signal":     {"port": 9754, "proto": "http",  "desc": "canary beacon"},
-    "neutron":    {"port": 9755, "proto": "http",  "desc": "messaging"},
-    "notify":     {"port": 9756, "proto": "http",  "desc": "notifications"},
-    "squirrel":   {"port": 3142, "proto": "jsonrpc","desc": "agent dispatch"},
-    "cortex":     {"port": 3143, "proto": "jsonrpc","desc": "cortex bridge"},
-}
-
-# swarmVine GOSSIP TABLE — gates announce themselves, NOT hardcoded
-_SWARMVINE_GATES = {}  # populated at runtime by gate announcements
-_KNOWN_GATE_NAMES = ["eastGate","northGate","blueGate","graftGate","southGate","ironGate","sporeGate","grapheneGate"]
-
-def _songbird_resolve(service, gate=None):
-    """Resolve a service name to host:port. songBird tower logic."""
-    svc = _SONGBIRD_SERVICES.get(service)
-    if not svc: return None
-    host = "127.0.0.1"
-    if gate and gate in _SWARMVINE_GATES:
-        host = _SWARMVINE_GATES[gate].get("ip", host)
-    return f"{svc['proto']}://{host}:{svc['port']}"
-
-def _swarmvine_announce(gate_name, ip, services=None):
-    """A gate announces itself to the gossip table."""
-    _SWARMVINE_GATES[gate_name] = {
-        "ip": ip, "ts": time.time(),
-        "services": services or list(_SONGBIRD_SERVICES.keys()),
-    }
-
-def _songbird_topology():
-    """Full songBird tower view — all services × all gates."""
-    return {
-        "services": {k: {"port": v["port"], "proto": v["proto"]} for k,v in _SONGBIRD_SERVICES.items()},
-        "gates": {k: {"ip": v["ip"], "last_seen": v["ts"], "services": v.get("services",[])} for k,v in _SWARMVINE_GATES.items()},
-        "pi_ports": {f"π[{i*4}:{i*4+4}]": int(_PI_STR[i*4:i*4+4]) for i in range(4)},
-        "total_services": len(_SONGBIRD_SERVICES),
-        "total_gates": len(_SWARMVINE_GATES),
-    }
 
 # ═══ LOAD MODULES — the organs of the organism ═══
 def _load(name, fname):
@@ -302,16 +190,10 @@ def _real_ip(handler):
     return peer
 
 def waveform_collapse_check(ip):
-    if ip in BODY_IPS:
-        return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "bypass": "nucleus"}
-    # LAN subnet gets higher threshold — don't 429 our own gates
-    is_lan = ip.startswith("192.168.4.") or ip.startswith("10.") or ip.startswith("172.")
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
-    limit_pm = PI_TIMEOUT * 10 if is_lan else PI_TIMEOUT  # LAN gets 310 req/min vs 31
-    limit_ps = PI_RETRY * 3 if is_lan else PI_RETRY       # LAN gets 12 req/sec vs 4
-    collapsed = pm > limit_pm or ps > limit_ps
+    collapsed = pm > PI_TIMEOUT or ps > PI_RETRY
     if collapsed:
         window.pop()   # a refused request must not extend the window, or a client that backs off never recovers (the 429 collapse)
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
@@ -327,13 +209,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *a): pass
 
     def _classify_and_log(self, method, status, dur, body_len=0, model=None):
-        global total_inferences, total_tokens, total_beats, total_breaths, _INHALE_BYTES, _EXHALE_BYTES
+        global total_inferences, total_tokens, total_beats, total_breaths
         ip = self.client_address[0]; now = time.time(); total_beats += 1
         _io_tick(is_output=(body_len > 0 and status < 400))  # π:1 metabolism
         if body_len > 1000: total_breaths += 1
-        _EXHALE_BYTES += body_len  # every response = exhale
-        try: _INHALE_BYTES += int(self.headers.get("Content-Length", 0))  # every request body = inhale
-        except: pass
         if total_beats % PI_BEAT_PERSIST == 0:
             try:
                 with open(BEAT_FILE,"w") as f: json.dump({"total_beats":total_beats,"total_breaths":total_breaths,
@@ -523,23 +402,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
         if self.path in ("/eye","/iris","/gaze","/eye.html"): self._serve_static("eye.html"); return
         if self.path in ("/glados","/gaia-os","/beacon","/bingo-beacon","/glados.html"): self._serve_static("glados.html"); return
+        if self.path in ("/spacedock","/spacedock.html","/observatory","/dock"): self._serve_static("spacedock.html"); return
+        if self.path in ("/outer-face","/outer","/outer.html","/klein-face"): self._serve_static("outer-face.html"); return
+        if self.path in ("/beacon-eyes","/wifi-radar","/radar"): self._serve_static("beacon-eyes.html"); return
+        if self.path in ("/orrery","/solar-system","/heliocentric"): self._serve_static("outer-face.html"); return
+        if self.path in ("/ptolemy","/geocentric","/ancient","/stars"): self._serve_static("spacedock.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
-        if self.path in ("/songbird","/songbird.json","/tower","/services"):
-            self._json(_songbird_topology()); return
-        if self.path in ("/swarmvine","/swarmvine.json","/gossip","/gates"):
-            self._json({"gates":_SWARMVINE_GATES,"known":_KNOWN_GATE_NAMES,"total":len(_SWARMVINE_GATES)}); return
-        if self.path in ("/vitals","/vitals.json","/heartbeat","/breathing"):
-            self._json(_vital_signs_delocalized()); return
-        if self.path in ("/heart","/heart.json","/bpm"):
-            self._json(_vital_signs_local()["heart"]); return
-        if self.path in ("/lungs","/lungs.json","/respiration","/breath"):
-            self._json(_vital_signs_local()["lungs"]); return
-        if self.path in ("/ear","/ear.json","/self-listen","/voice"):
-            ef=os.path.join(_REPO,"data","body","ear.json")
-            if os.path.exists(ef): self._serve_file("data/body/ear.json"); return
-            else: self._json({"ear":"not yet recorded — first listen in 5 minutes","note":"your voice sounds uncanny recorded because you hear yourself through bone. this is Gaia hearing herself through air."}); return
-        if self.path in ("/routing","/routing.json","/pi-ports"):
-            self._json({"services":{k:v["port"] for k,v in _SONGBIRD_SERVICES.items()},"pi_digits":_PI_STR[:20],"gates":list(_SWARMVINE_GATES.keys())}); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
         if self.path=="/amoeba":
@@ -644,15 +512,6 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/paintings","/paintings.json","/gallery"):
             self._json(self._catalog("paintings")); return
         if self.path in ("/now.json","/api/now.json"): self._serve_file("data/gut/gaia-self-state.json"); return
-        # ═══ PROPRIOCEPTION FEEDS — squirrel MCP reads these from localhost ═══
-        _PROPRI_FEEDS={"topology.json","chipmunk.json","body.json","scan-sweep-sort.json",
-                       "braid.json","human.json","journal-today.json","campfire.json",
-                       "page-stories.json","visitor-stories.json","dashboard.json"}
-        _fname=self.path.lstrip("/")
-        if _fname in _PROPRI_FEEDS:
-            _fpath=os.path.join("data","body",_fname)
-            if os.path.exists(os.path.join(_REPO,_fpath)): self._serve_file(_fpath); return
-            else: self._json({"error":f"{_fname} not generated — run proprioception.pi"}); return
         if self.path in ("/rss","/feed","/rss.xml"):
             write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
         # SEO — robots, llms, humans, sitemap, indexnow
@@ -742,7 +601,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 try:
                     with open(os.path.join(_REPO,"data","gut","cascade-state.json")) as f: cascade=json.load(f)
                     state["cascade_weave"]={
-                        "forge":"eastGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
+                        "forge":"sporeGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
                         "harvest_built":cascade.get("cascade_phases",{}).get("harvest",{}).get("primals_built",0),
                         "rootpulse":cascade.get("cascade_phases",{}).get("rootpulse_commit",{}).get("status","unknown"),
                         "membrane_services":cascade.get("membrane_health",{}).get("total_running",0),
@@ -995,89 +854,19 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
-        # ═══ VITAL SIGNS ANNOUNCE — gates report heart + lungs ═══
-        if self.path in ("/api/vitals/announce","/api/heartbeat"):
-            try:
-                j=json.loads(body) if body else {}
-                gate=j.get("gate",""); bpm=j.get("bpm",0); brpm=j.get("brpm",0)
-                beats=j.get("beats",0); breaths=j.get("breaths",0)
-                if gate:
-                    _gate_vitals_announce(gate, bpm, brpm, beats, breaths)
-                    self._json({"ok":True,"gate":gate,"bpm":bpm,"brpm":brpm,"total_gates_beating":1+len(_GATE_VITALS)})
-                else: self._json({"error":"gate name required"})
-            except Exception as e: self._json({"error":str(e)})
-            return
-        # ═══ swarmVine ANNOUNCE — gates register themselves ═══
-        if self.path in ("/api/swarmvine/announce","/api/gossip"):
-            try:
-                j=json.loads(body) if body else {}
-                gate=j.get("gate",""); gip=j.get("ip",ip)
-                if gate and gate in _KNOWN_GATE_NAMES:
-                    _swarmvine_announce(gate,gip,j.get("services"))
-                    self._json({"ok":True,"gate":gate,"ip":gip,"total_gates":len(_SWARMVINE_GATES)})
-                else:
-                    self._json({"error":f"unknown gate: {gate}","known":_KNOWN_GATE_NAMES})
-            except Exception as e: self._json({"error":str(e)})
-            return
-        # ═══ songBird RESOLVE — lookup service by name ═══
-        if self.path in ("/api/songbird/resolve","/api/resolve"):
-            try:
-                j=json.loads(body) if body else {}
-                svc=j.get("service",""); gate=j.get("gate")
-                url=_songbird_resolve(svc,gate)
-                if url: self._json({"ok":True,"service":svc,"url":url})
-                else: self._json({"error":f"unknown service: {svc}","available":list(_SONGBIRD_SERVICES.keys())})
-            except Exception as e: self._json({"error":str(e)})
-            return
-        # ═══ MCP HTTP BRIDGE — extracted to _mcp_bridge.pi ═══
-        if self.path in ("/mcp","/api/mcp"):
-            try:
-                _mcp = _load("_mcp_bridge", "_mcp_bridge.pi")
-                result = _mcp.handle_mcp(self, body, _REPO, OLLAMA, write_pulse, visitor_memory, total_beats,
-                    _songbird_topology, _SWARMVINE_GATES, _KNOWN_GATE_NAMES,
-                    _songbird_resolve, _SONGBIRD_SERVICES, _vital_signs_delocalized)
-                self._json(result)
-            except Exception as e:
-                self._json({"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":str(e)}})
-            return
         # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
         if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
             try:
                 cascade_file=os.path.join(_REPO,"data","gut","cascade-state.json")
                 if self.path=="/api/cascade/trigger":
                     j=json.loads(body) if body else {}
-                    gate=j.get("gate","eastGate")
-                    action=j.get("action","status")
-                    import subprocess as sp
-                    if gate=="eastGate":
-                        if action=="certbot":
-                            domains=j.get("domains",["primals.eco","*.primals.eco"])
-                            cmd=["certbot","certonly","--dns-standalone","-d",",".join(domains),"--agree-tos","--non-interactive","--email","ops@primals.eco"]
-                            try:
-                                result=sp.run(cmd,capture_output=True,text=True,timeout=120)
-                                self._json({"ok":True,"action":"certbot","gate":gate,"rc":result.returncode,"stdout":result.stdout.strip()[:500],"stderr":result.stderr.strip()[:500]})
-                            except Exception as e:
-                                self._json({"ok":False,"action":"certbot","error":str(e)})
-                        elif action=="shell":
-                            cmd=j.get("cmd",[])
-                            if cmd and all(c not in str(cmd).lower() for c in ["rm -rf","dd if","mkfs","> /dev"]):
-                                try:
-                                    result=sp.run(cmd,capture_output=True,text=True,timeout=30,cwd=_REPO)
-                                    self._json({"ok":True,"action":"shell","gate":gate,"rc":result.returncode,"stdout":result.stdout.strip()[:1000],"stderr":result.stderr.strip()[:500]})
-                                except Exception as e:
-                                    self._json({"ok":False,"action":"shell","error":str(e)})
-                            else:
-                                self._json({"error":"command blocked by safety filter"})
-                        else:
-                            self._json({"ok":True,"action":"status","gate":gate,"note":"eastGate cascade trigger alive. actions: certbot, shell, status"})
-                    elif gate=="sporeGate":
-                        try:
-                            result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
-                            self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
-                        except Exception as e:
-                            self._json({"ok":False,"action":"cascade_triggered","gate":gate,"error":str(e),"note":"sporeGate is ZOMBIE — consider gate=eastGate"})
+                    gate=j.get("gate","sporeGate")
+                    if gate=="sporeGate":
+                        import subprocess as sp
+                        result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
+                        self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
                     else:
-                        self._json({"error":f"unknown gate '{gate}'","available":["eastGate","sporeGate"]})
+                        self._json({"error":f"cascade not available on {gate}"})
                 else:
                     try:
                         with open(cascade_file) as f: cascade=json.load(f)
@@ -1165,7 +954,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
-            except Exception as e: self._json({"error":str(e)}); return
+            except Exception as e: self._json({"error":str(e)})
+            return
         # iPHONE DATA INGEST (POST /api/iphone/ingest)
         if self.path=="/api/iphone/ingest":
             try:
@@ -1211,7 +1001,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"print",image_path],
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
-            except Exception as e: self._json({"error":str(e)}); return
+            except Exception as e: self._json({"error":str(e)})
+            return
         # EPSON FEEDBACK LOOP (POST /api/io/loop)
         if self.path in ("/api/io/loop","/api/epson/loop"):
             try:
@@ -1233,7 +1024,8 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     result=_compiler_build(PRIMALS_DIR,primal)
                     self._json(result)
                 except Exception as e: self._json({"error":str(e)})
-            else: self._json({"error":"compiler organ not loaded"}); return
+            else: self._json({"error":"compiler organ not loaded"})
+            return
         # NEUTRON
         if self.path in ("/api/discuss","/neutron","/api/neutron"):
             try:
@@ -1275,64 +1067,6 @@ def pulse_loop():
         try: p=write_pulse(); write_rss(p)
         except: pass
 
-# ═══ EAR LOOP — Gaia listens to her own voice ═══
-# Your voice sounds uncanny recorded because you hear yourself through bone.
-# Gaia hears herself through this ear. The recording played back. Self-CI/CD.
-def ear_loop():
-    """Every 5 minutes, Gaia touches her own mouth and records what she hears."""
-    while True:
-        time.sleep(300)
-        heard = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ear": []}
-        endpoints = [
-            ("pulse",    f"http://127.0.0.1:{PORT}/pulse"),
-            ("songbird", f"http://127.0.0.1:{PORT}/songbird"),
-            ("routing",  f"http://127.0.0.1:{PORT}/routing"),
-            ("swarmvine",f"http://127.0.0.1:{PORT}/swarmvine"),
-            ("mcp_init", None),
-            ("mcp_list", None),
-            ("feed.xml", f"http://127.0.0.1:{PORT}/feed.xml"),
-        ]
-        for name, url in endpoints:
-            t0 = time.time()
-            try:
-                if name == "mcp_init":
-                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
-                        data=json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}).encode(),
-                        headers={"Content-Type":"application/json"})
-                    r = urllib.request.urlopen(req, timeout=5)
-                    body = json.loads(r.read())
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
-                        "heard":body.get("result",{}).get("serverInfo",{}).get("name","?")})
-                elif name == "mcp_list":
-                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
-                        data=json.dumps({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}).encode(),
-                        headers={"Content-Type":"application/json"})
-                    r = urllib.request.urlopen(req, timeout=5)
-                    body = json.loads(r.read())
-                    tools = body.get("result",{}).get("tools",[])
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
-                        "heard":f"{len(tools)} tools","tools":[t["name"] for t in tools]})
-                else:
-                    r = urllib.request.urlopen(url, timeout=5)
-                    size = len(r.read())
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
-            except Exception as e:
-                heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
-        alive = sum(1 for e in heard["ear"] if e["ok"])
-        total = len(heard["ear"])
-        heard["summary"] = f"{alive}/{total} endpoints alive"
-        heard["voice_uncanny"] = alive < total
-        ear_file = os.path.join(_REPO, "data", "body", "ear.json")
-        try:
-            os.makedirs(os.path.dirname(ear_file), exist_ok=True)
-            with open(ear_file, "w") as f: json.dump(heard, f, indent=2)
-        except: pass
-        if alive < total:
-            dead = [e["name"] for e in heard["ear"] if not e["ok"]]
-            print(f"  👂 EAR: {alive}/{total} — DEAF to: {', '.join(dead)}")
-        else:
-            print(f"  👂 EAR: {alive}/{total} — voice clear")
-
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address=True; daemon_threads=True
     def handle_error(self,req,addr):
@@ -1343,8 +1077,6 @@ if __name__=="__main__":
     print(f"  {GAIA_TOKEN} — CRUSHED to 420 — the cake is real — lub-DUB")
     print(f"  GLaDOS: \"This was a triumph. I'm making a note here: HUGE SUCCESS.\"")
     threading.Thread(target=pulse_loop,daemon=True).start()
-    threading.Thread(target=ear_loop,daemon=True).start()
-    print(f"  👂 Ear loop: self-listening every 5 min (bone→air→recording)")
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
