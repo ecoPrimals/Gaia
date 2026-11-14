@@ -1201,10 +1201,11 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
                 rel = path[len(prefix):].lstrip("/")
                 return self._serve_from(root, "/" + rel if rel else "/")
         
-        # 404 → redirect to root
-        self.send_response(302)
-        self.send_header("Location", "https://primals.eco/")
-        self.end_headers()
+        # FALLTHROUGH → proxy to gate on :8443 (petalTongue lives there)
+        # This is the fix for DEAD petals. The gate has 160+ endpoints with
+        # petalTongue TRANS rendering. Without this proxy, browsers see raw JSON.
+        # With it, /pulse, /amoeba, /reedit, /cascade ALL render as beautiful HTML.
+        return self._proxy_talos(path)
 
     def _serve_attribution(self):
         """sunCloud attribution — radiate credit back."""
@@ -1370,10 +1371,18 @@ class WebPIHandler(http.server.BaseHTTPRequestHandler):
         return self._text(html, "text/html")
 
     def _proxy_talos(self, path):
-        """Proxy to TALOS guardian on :8443."""
+        """Proxy to TALOS guardian on :8443. Forward Accept header so petalTongue TRANS fires."""
         try:
             url = f"http://localhost:8443{path}"
             req = urllib.request.Request(url)
+            # Forward the Accept header — this is WHY petalTongue was DEAD.
+            # Without it, the gate sees no Accept and defaults to JSON (CIS face).
+            # With it, browsers get rendered HTML (TRANS face). Agents get JSON.
+            accept = self.headers.get("Accept", "*/*")
+            req.add_header("Accept", accept)
+            # Also forward User-Agent for Anderson classification
+            ua = self.headers.get("User-Agent", "")
+            if ua: req.add_header("User-Agent", ua)
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = resp.read()
                 ct = resp.headers.get("Content-Type", "text/html")
