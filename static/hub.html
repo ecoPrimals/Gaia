@@ -91,6 +91,8 @@ a{color:var(--g);text-decoration:none}a:hover{color:#fff}
   <a class="eye cis-eye" href="/sense"><span class="name">sense (pixel)</span><span class="desc">Left eye — iPhone/Pixel sensor depot</span><span class="dot off"></span></a>
   <a class="eye cis-eye" href="/onboard"><span class="name">onboard</span><span class="desc">Gate onboarding — new device intake</span><span class="dot"></span></a>
   <a class="eye cis-eye" href="/complexity"><span class="name">complexity</span><span class="desc">Complexity — emergent patterns</span><span class="dot"></span></a>
+  <a class="eye cis-eye" href="/api/backscatter/live" style="border-left-color:#f44"><span class="name">backscatter</span><span class="desc">GPU ray capture — RTX 5090 frame learning</span><span class="dot"></span></a>
+  <a class="eye cis-eye" href="/api/polaris/steam" style="border-left-color:#66f"><span class="name">steam library</span><span class="desc">94 games, 2TB — Kevin's gaming catalog</span><span class="dot"></span></a>
 </div>
 
 <!-- ═══ GLOBE CENTER — BOTH FACES ═══ -->
@@ -106,10 +108,12 @@ a{color:var(--g);text-decoration:none}a:hover{color:#fff}
   </div>
   <div class="globe-info">
     <div>inner = CIS (nestgate.io) · outer = TRANS (primals.eco)</div>
-    <div style="margin-top:4px"><span class="val" id="g-tissues">12</span> tissues · <span class="val" id="g-gpu">RTX 5090</span> · <span class="val" id="g-anchors">—</span> anchors</div>
+    <div style="margin-top:4px"><span class="val" id="g-tissues">63</span> tissues · <span class="val" id="g-gpu">RTX 5090</span> · <span class="val" id="g-anchors">—</span> anchors</div>
+    <div style="margin-top:4px;font-size:9px"><span id="g-game" style="color:#f0a">—</span> · <span id="g-gpupct" style="color:#0f0">—</span> GPU · <span id="g-vram" style="color:#0ff">—</span> VRAM</div>
   </div>
   
   <a class="polaris-link" href="/polaris">★ P O L A R I S ★</a>
+  <a class="polaris-link" href="/tamison" style="background:linear-gradient(135deg,#1a0a2a,#2a0a30);border-color:#f0a;color:#f8a;letter-spacing:1px;font-size:11px;margin-top:4px">🎮 T A M I S O N — LIVE BACKSCATTER</a>
   
   <div class="tri-data" id="tri-data">
     <span class="anchor">eastGate: —</span>
@@ -135,6 +139,8 @@ a{color:var(--g);text-decoration:none}a:hover{color:#fff}
   <a class="eye trans-eye" href="/rss"><span class="name">RSS feed</span><span class="desc">Gaia speaks to the Old Web</span><span class="dot"></span></a>
   <a class="eye trans-eye" href="/helix"><span class="name">helix</span><span class="desc">helixVision — data visualization</span><span class="dot"></span></a>
   <a class="eye trans-eye" href="/mendeleev"><span class="name">mendeleev</span><span class="desc">Periodic table — epitope keyboard</span><span class="dot"></span></a>
+  <a class="eye trans-eye" href="/tamison" style="border-left-color:#f0a"><span class="name">tamison.primals.eco</span><span class="desc">LIVE — Gaia watches Kevin game on RTX 5090</span><span class="dot"></span></a>
+  <a class="eye trans-eye" href="/polaris" style="border-left-color:#0af"><span class="name">polaris.primals.eco</span><span class="desc">North Star — 63 tissues, 267GB, compute crown</span><span class="dot"></span></a>
 </div>
 
 <!-- ═══ FOOTER ═══ -->
@@ -181,11 +187,25 @@ async function load(){
     document.getElementById('g-tissues').textContent=ferment.local.tissue_count||12;
     document.getElementById('g-gpu').textContent=ferment.local.compute?.gpu?.replace('NVIDIA GeForce ','')||'RTX 5090';
   }
+  // Backscatter — live GPU data
+  const scatter=await fetchJSON('/api/backscatter/live')||await fetchJSON('/data/backscatter/session.json');
+  if(scatter){
+    const avg=scatter.averages||scatter.peaks||{};
+    document.getElementById('g-gpupct').textContent=(avg.gpu_pct||0)+'%';
+    document.getElementById('g-vram').textContent=Math.round((avg.vram_mb||0)/1024)+'GB';
+    document.getElementById('g-game').textContent=scatter.game_detected||'idle';
+  }
+  // Biome — live tissue count from Polaris
+  const biome=await fetchJSON('/api/polaris/biome')||await fetchJSON('/data/body/polaris-biome.json');
+  if(biome?.tissues){
+    document.getElementById('g-tissues').textContent=biome.tissues.count||63;
+  }
   // Footer stats
   const stats=[];
   if(pulse)stats.push(`${pulse.heart?.total_beats||0} beats`);
   if(amoeba)stats.push(`${amoeba.sensors?.alive||0} sensors`);
-  stats.push('42 eyes → 1 hub');
+  if(scatter)stats.push(`${scatter.total_samples||0} backscatter frames`);
+  stats.push('44 eyes → 1 hub');
   document.getElementById('foot-stats').textContent=stats.join(' · ');
 }
 load();setInterval(load,60000);
