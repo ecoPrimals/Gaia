@@ -601,6 +601,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self._json(self._feed(self.path[8:].rstrip("/").replace(".json",""))); return
         if self.path.startswith("/paintings/"): self._serve_file(self.path[1:]); return
         if self.path in ("/paintings","/paintings.json","/gallery"):
+            if "text/html" in self.headers.get("Accept","") and self.path != "/paintings.json":
+                self._serve_file("data/paintings/index.html"); return
             self._json(self._catalog("paintings")); return
         if self.path in ("/now.json","/api/now.json"): self._serve_file("data/gut/gaia-self-state.json"); return
         if self.path in ("/rss","/feed","/rss.xml"):
@@ -657,7 +659,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path.startswith("/static/"): self._serve_static(self.path[8:]); return
         if self.path.startswith("/data/"): self._serve_file(self.path[1:]); return
         if self.path.startswith("/videos/"): self._serve_file(self.path[1:]); return
-        if self.path in ("/gaiau","/university","/classes","/videos"):
+        if self.path in ("/gaiau","/university","/classes","/videos","/alexandria","/library","/campus"):
+            if "text/html" in self.headers.get("Accept",""):
+                self._serve_file("static/alexandria.html"); return
             self._json(self._catalog("gaiau")); return
         if self.path.startswith("/whitePaper/") or self.path.startswith("/whitepapers/"):
             self._serve_file(self.path[1:]); return
