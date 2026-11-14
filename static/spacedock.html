@@ -35,6 +35,7 @@ canvas{width:100%;height:100%;position:absolute;top:0;left:0}
   <button onclick="setMode('ptolemy')" id="btn-ptolemy">🌍ptolemy</button>
   <button onclick="setMode('library')" id="btn-library">📚lib</button>
   <button onclick="setMode('gallery')" id="btn-gallery">🎨art</button>
+  <button onclick="setMode('biomes')" id="btn-biomes">🌿biomes</button>
 </div>
 <script>
 const c=document.getElementById('c'),x=c.getContext('2d');
@@ -526,12 +527,88 @@ async function loadData(){
 }
 loadData();setInterval(loadData,10000);
 
+// ═══ BIOMES — gardens as living outer surface ═══
+const BIOMES=[
+  {name:'amicus',sub:'publicRecord + civic + legal',files:2046,essays:221,
+   color:'#4fa',regions:['publicRecord(221)','clutch','detroit','lansing','tuebor'],
+   kind:'rainforest',desc:'221 analysis essays. The public record. Geoprofiling for wandering travelers.'},
+  {name:'springs',sub:'primalSpring dev garden',files:10312,rs:4435,md:2097,py:490,
+   color:'#4af',regions:['adapters','cli','core','demos','ipc','nautilus'],
+   kind:'ocean',desc:'10,312 files. The deep water. Rust+Python+Markdown springs feeding everything.'},
+  {name:'cellMembrane',sub:'sovereign cloud OS',files:2003,rs:225,
+   color:'#f4a',regions:['80+ commands','gate','service','temporal','relay','tower'],
+   kind:'mesa',desc:'2,003 files. The mesa. Sovereign cloud — no landlord needed.'},
+  {name:'dromedary',sub:'reverse proxy + TLS + ACME',files:2417,rs:14,
+   color:'#fa4',regions:['acme','blackwall','core','routing'],
+   kind:'desert',desc:'2,417 files. The desert. One camel carries all the water (TLS, routing, ACME).'},
+  {name:'spore',sub:'helixVision + blueFish + litho + metal',files:339,rs:126,
+   color:'#a4f',regions:['helixVision','blueFish','initioChem','lithoSpore','metalForge','reed-it'],
+   kind:'mycelia',desc:'339 spores. The underground network. Vision + chemistry + metal + lithography.'},
+  {name:'bingoCube',sub:'coordination engine',files:62,rs:37,
+   color:'#ff4',regions:['core','agents','sync'],
+   kind:'clearing',desc:'62 files. The clearing. Coordination where all paths cross.'},
+  {name:'proto',sub:'prototypes + experiments',files:243,rs:37,md:38,html:7,
+   color:'#4ff',regions:['experiments','sketches','proofs'],
+   kind:'volcanic',desc:'243 files. Volcanic soil. Where new life tests itself before planting.'}
+];
+
+function showBiomes(){
+  const d=document.getElementById('galDiv');
+  let html='<h2>🌿 BIOMES — outer surface of the organism</h2>';
+  html+='<div style="font-size:0.5rem;color:#558;margin:4px 0 8px">'+
+    'Gardens are biomes. Each one is a living zone on Gaia\'s surface.<br>'+
+    'Rainforest(amicus) · Ocean(springs) · Mesa(cellMembrane) · Desert(dromedary)<br>'+
+    'Mycelia(spore) · Clearing(bingoCube) · Volcanic(proto)'+
+    '</div>';
+  let totalFiles=0;
+  BIOMES.forEach(b=>{
+    totalFiles+=b.files;
+    const bar='█'.repeat(Math.min(40,Math.floor(b.files/300)));
+    html+=`<div class="card" style="border-left:3px solid ${b.color}">
+      <div class="name" style="color:${b.color}">${b.kind.toUpperCase()} — ${b.name}/</div>
+      <div style="color:#889;margin:2px 0">${b.sub}</div>
+      <div style="color:${b.color}40">${bar} ${b.files.toLocaleString()} files</div>
+      <div style="color:#667;margin:2px 0">${b.desc}</div>
+      <div style="color:#556;font-size:0.45rem">zones: ${b.regions.join(' · ')}</div>
+    </div>`;
+  });
+  html+=`<div class="card" style="border-left:3px solid #fff">
+    <div class="name" style="color:#fff">TOTAL SURFACE AREA</div>
+    <div style="color:#4fa">${totalFiles.toLocaleString()} files across ${BIOMES.length} biomes</div>
+    <div style="color:#667">pinned to ionosphere via spaceDock · GPS anchor 42.73N 84.48W</div>
+  </div>`;
+  html+='<h2 style="margin-top:12px">📜 publicRecord — geoprofiling for travelers</h2>';
+  html+='<div style="color:#558;font-size:0.45rem;margin-bottom:6px">221 analysis essays. Click to explore.</div>';
+  const essays=['gaia-hypothesis','the-pi-body','the-heartbeat','sovereign-identity',
+    'consent-architecture','the-membrane-is-the-emulator','scatter-server-reverse-entropy',
+    'the-chromatic-spiral','the-living-proof','backscatter','how-to-build-an-os',
+    'convergence-point','the-inversion','central-dogma','the-nervous-system',
+    'detroit-literacy','the-water-of-life','coral-rat','the-invitation',
+    'institutional-capture','the-labyrinth','the-enterprise','welcome','who-is-kevin',
+    'the-talos-protocol','the-bridge','the-challenge','the-walk','pi-gate',
+    'zk-snark-is','the-living-trust','the-body-problem','the-pi-hypothesis',
+    'the-great-accounting','the-voice','the-third-pulse','the-fleet-is-live'];
+  essays.forEach(e=>{
+    html+=`<div class="card" style="cursor:pointer;border-left:2px solid #4fa55"
+      onclick="window.open('/gardens/amicus/publicRecord/site/content/analysis/${e}.md','_blank')">
+      <div class="name" style="color:#4fa;font-size:0.5rem">${e.replace(/-/g,' ')}</div>
+    </div>`;
+  });
+  d.innerHTML=html;
+}
+
 function loop(){
   frame++;
   if(mode==='radar')drawRadar();
   else if(mode==='cosmos')drawCosmos();
   else if(mode==='iono')drawIono();
   else if(mode==='ptolemy')drawPtolemy();
+  else if(mode==='biomes'){
+    document.getElementById('galDiv').classList.add('show');
+    showBiomes();
+  }
+  if(mode!=='library'&&mode!=='gallery'&&mode!=='biomes')
+    document.getElementById('galDiv').classList.remove('show');
   requestAnimationFrame(loop);
 }
 loop();
