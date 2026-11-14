@@ -50,6 +50,8 @@ footer a{color:#666}footer a:hover{color:#d4af37}
   <label class="layer-toggle"><input type="checkbox" checked data-layer="infra"><span class="swatch" style="background:#00FF88"></span> Infrastructure</label>
   <label class="layer-toggle"><input type="checkbox" data-layer="shadows"><span class="swatch" style="background:#8844FF"></span> Shadowcast</label>
   <label class="layer-toggle"><input type="checkbox" data-layer="family"><span class="swatch" style="background:#FF88CC"></span> Family</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="investigation"><span class="swatch" style="background:#FF1744"></span> Investigation (625)</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="falseFaces"><span class="swatch" style="background:#FF0000"></span> False Faces (19)</label>
   <label class="layer-toggle"><input type="checkbox" checked data-layer="satellite"><span class="swatch" style="background:#888"></span> Satellite</label>
 </div>
 
@@ -172,6 +174,44 @@ layers.family = L.layerGroup([
   L.marker([42.7325,-84.4851],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
     .bindPopup('<b>DaSean Mitchell</b><br>Son / Neighbor<br>House 2'),
 ]);
+
+// INVESTIGATION PINS
+const investigationPins = [
+  {name:'Dykema Lansing', lat:42.7335, lon:-84.5553, type:'law_firm', edges:464, color:'#FF1744'},
+  {name:'Dykema Ann Arbor', lat:42.2508, lon:-83.7407, type:'law_firm', color:'#FF1744'},
+  {name:'Wayne County Court', lat:42.3314, lon:-83.0458, type:'court', desc:'Case 26-108221-DC'},
+  {name:'Michigan Capitol (TUEBOR)', lat:42.7335, lon:-84.5553, type:'government', color:'#FFD600'},
+  {name:'MI Dept of Education', lat:42.7330, lon:-84.5560, type:'government', color:'#FFD600'},
+  {name:'Ingham County Court', lat:42.7335, lon:-84.5518, type:'court', color:'#FF9100'},
+  {name:'Detroit City Hall', lat:42.3293, lon:-83.0458, type:'government', color:'#FFD600'},
+  {name:'Purpose Charter (CLOSED)', lat:42.4188, lon:-82.9860, type:'school', color:'#FF1744'},
+  {name:'CMU (Authorizer)', lat:43.5834, lon:-84.7753, type:'university', color:'#FF9100'},
+  {name:'10101 E. Canfield', lat:42.3903, lon:-82.9829, type:'evidence', color:'#FF1744'},
+  {name:'Holland Crossings', lat:42.7875, lon:-86.1089, type:'entity', color:'#FF9100'},
+  {name:'Warren (9 Mile)', lat:42.4604, lon:-82.9880, type:'entity', color:'#FF9100'},
+  {name:'Southfield (North Park)', lat:42.4734, lon:-83.2219, type:'entity', color:'#FF9100'},
+  {name:'Southfield (Towne Sq)', lat:42.4734, lon:-83.2130, type:'entity', color:'#FF9100'},
+  {name:'Pontiac (Saginaw)', lat:42.6389, lon:-83.2910, type:'entity', color:'#FF9100'},
+  {name:'Meta HQ (Menlo Park)', lat:37.4847, lon:-122.1477, type:'corporation', desc:'scyBorg license', color:'#e040fb'},
+];
+layers.investigation = L.layerGroup(investigationPins.map(p =>
+  L.circleMarker([p.lat,p.lon],{radius:8,color:p.color||'#FF1744',fillColor:p.color||'#FF1744',fillOpacity:0.3,weight:2})
+    .bindPopup('<b>'+p.name+'</b><br>Type: '+p.type+(p.edges?' ('+p.edges+' edges)':'')+(p.desc?'<br>'+p.desc:''))
+));
+
+// FALSE FACES — red pulsing markers
+const falseFaces = [
+  {name:'Corey Northrop', lat:42.35, lon:-83.05},
+  {name:'Glenn Maleyko (Dearborn)', lat:42.3223, lon:-83.1763},
+  {name:'Dana Nessel (AG)', lat:42.7335, lon:-84.5553},
+  {name:'Nikki Snyder (SBE)', lat:42.7335, lon:-84.5540},
+  {name:'Tom McMillin (SBE)', lat:42.7335, lon:-84.5530},
+  {name:'Roland Martin', lat:42.35, lon:-83.06},
+];
+layers.falseFaces = L.layerGroup(falseFaces.map(f =>
+  L.circleMarker([f.lat,f.lon],{radius:12,color:'#FF0000',fillColor:'#FF0000',fillOpacity:0.15,weight:3,dashArray:'4,4'})
+    .bindPopup('<b style="color:red">FALSE FACE: '+f.name+'</b>')
+));
 
 // SATELLITE TOGGLE
 let satOn = true;
