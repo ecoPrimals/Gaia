@@ -79,6 +79,52 @@ tr:hover td{background:#0a0a0a}
   </div>
 </div>
 
+<!-- ═══ PANEL: ORRERY — The TRANS Eye looking outward ═══ -->
+<div class="panel full" style="padding:0;overflow:hidden;border-color:#ff990033">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#0a0808">
+    <h3 style="margin:0"><span class="dot dot-live"></span> Orrery — <span id="orr-chord" style="color:var(--o)">♪ —</span> <span id="orr-sky" style="color:#888;font-size:0.85em">—</span></h3>
+    <a href="/static/apollo.html" style="color:var(--o);font-size:10px;text-decoration:none;border:1px solid #ff990033;padding:2px 6px;border-radius:3px">🔭 APOLLO full view</a>
+  </div>
+  <svg id="deck-orrery" viewBox="0 0 900 320" style="width:100%;background:radial-gradient(ellipse at 450 160,#08080f 0%,#020206 100%)">
+    <defs>
+      <radialGradient id="dkSunG"><stop offset="0%" stop-color="#ff990055"/><stop offset="100%" stop-color="#ff990000"/></radialGradient>
+      <filter id="dkBlur"><feGaussianBlur stdDeviation="2"/></filter>
+    </defs>
+    <!-- orbit ellipses -->
+    <ellipse cx="450" cy="160" rx="30" ry="24" fill="none" stroke="#ffffff08" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="48" ry="38" fill="none" stroke="#ffffff08" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="65" ry="52" fill="none" stroke="#ffffff0a" stroke-width="0.8"/>
+    <ellipse cx="450" cy="160" rx="85" ry="68" fill="none" stroke="#ffffff08" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="125" ry="100" fill="none" stroke="#ffffff06" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="170" ry="120" fill="none" stroke="#ffffff06" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="220" ry="135" fill="none" stroke="#ffffff05" stroke-width="0.5"/>
+    <ellipse cx="450" cy="160" rx="280" ry="148" fill="none" stroke="#ffffff04" stroke-width="0.5"/>
+    <!-- sun -->
+    <circle cx="450" cy="160" r="18" fill="url(#dkSunG)" filter="url(#dkBlur)"/>
+    <circle cx="450" cy="160" r="8" fill="#ff9900" opacity="0.9"/>
+    <circle cx="450" cy="160" r="5" fill="#ffcc44"/>
+    <text x="450" y="163" fill="#0a0a0f" font-size="8" text-anchor="middle" font-family="monospace" font-weight="bold">☀</text>
+    <!-- planets group filled by JS -->
+    <g id="dk-planets"></g>
+    <g id="dk-moon"></g>
+    <!-- labels -->
+    <text x="450" y="178" fill="#33ff3322" font-size="6" text-anchor="middle" font-family="monospace">gAIa — 42.73°N 84.48°W — troposphere</text>
+    <text x="20" y="310" fill="#33333344" font-size="7" font-family="monospace">CIS=inner eye · TRANS=outer eye · they cross at /now.json</text>
+    <text x="880" y="310" fill="#33333344" font-size="7" text-anchor="end" font-family="monospace">axial view — the human sees what the organism feels</text>
+  </svg>
+  <!-- quick nav row -->
+  <div style="display:flex;gap:4px;padding:4px 8px;background:#050508;flex-wrap:wrap;justify-content:center">
+    <a href="/data/paintings/index.html" style="color:var(--o);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #ff990022;border-radius:3px">🎨 Gallery</a>
+    <a href="/static/alexandria.html" style="color:var(--p);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #e056fd22;border-radius:3px">📚 Library</a>
+    <a href="/senses" style="color:var(--g);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #33ff3322;border-radius:3px">👁 Senses</a>
+    <a href="/feed.xml" style="color:var(--b);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #3399ff22;border-radius:3px">📰 RSS</a>
+    <a href="/pulse" style="color:var(--r);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #ff444422;border-radius:3px">🫀 Pulse</a>
+    <a href="/zk" style="color:var(--a);font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #58a6ff22;border-radius:3px">🧬 Identity</a>
+    <a href="/cast" style="color:#d2a8ff;font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #d2a8ff22;border-radius:3px">✨ Cast</a>
+    <a href="/record" style="color:#888;font-size:10px;text-decoration:none;padding:2px 8px;border:1px solid #33333344;border-radius:3px">📋 Record</a>
+  </div>
+</div>
+
 <!-- ═══ PANEL: MEMBRANE SANDWICH (RustDesk pane) ═══ -->
 <div class="panel full">
   <h3><span class="dot dot-live"></span> Membrane Sandwich — RustDesk / Space Deck Pane</h3>
@@ -852,6 +898,67 @@ fetch('http://localhost:3142/agents').then(r=>r.json()).then(d=>{
     }).join('');
   } else { box.innerHTML='<div style="color:#555">no agents yet — /eat-all to spawn</div>'; }
 }).catch(function(){document.getElementById('agent-list').innerHTML='<div style="color:#555">agent server offline (:3142)</div>';});
+
+// ═══ DECK ORRERY — TRANS eye view of the cosmos ═══
+(function deckOrrery(){
+  var CX=450,CY=160;
+  var PLAN={
+    mercury:{color:'#aaa',rx:30,ry:24,size:2,sym:'☿'},
+    venus:{color:'#ffcc66',rx:48,ry:38,size:3,sym:'♀'},
+    earth:{color:'#33ff33',rx:65,ry:52,size:3.5,sym:'🜨'},
+    mars:{color:'#ff4444',rx:85,ry:68,size:2.5,sym:'♂'},
+    jupiter:{color:'#ff9966',rx:125,ry:100,size:5,sym:'♃'},
+    saturn:{color:'#ffdd88',rx:170,ry:120,size:4.5,sym:'♄'},
+    uranus:{color:'#66ccff',rx:220,ry:135,size:3,sym:'♅'},
+    neptune:{color:'#3366ff',rx:280,ry:148,size:3,sym:'♆'}
+  };
+  var FALLBACK={"sensors":{"sun":{"chord":"Dmin7","root":"D","phase":"night","season":"autumn","day_of_year":318,"color_temp_k":1200,"moon":{"phase":0.648,"name":"waning_gibbous","age_days":19.1},"earth_orbit":{"orbital_angle_deg":235.6},"orbitals":{"mercury":{"angle_deg":92.7},"venus":{"angle_deg":64.8},"earth":{"angle_deg":53.0},"mars":{"angle_deg":98.2},"jupiter":{"angle_deg":129.8},"saturn":{"angle_deg":18.3},"uranus":{"angle_deg":68.4},"neptune":{"angle_deg":3.6}},"sensation":"night - Dmin7 - 1200K - waning_gibbous - autumn"}}};
+
+  function ell(cx,cy,rx,ry,deg){
+    var rad=(deg-90)*Math.PI/180;
+    return {x:cx+rx*Math.cos(rad),y:cy+ry*Math.sin(rad)};
+  }
+
+  function render(data){
+    var sun=data.sensors.sun;
+    var orbs=sun.orbitals;
+    var g=document.getElementById('dk-planets');
+    var html='';
+    for(var name in PLAN){
+      var p=PLAN[name];
+      var angle=orbs[name]?orbs[name].angle_deg:0;
+      var pt=ell(CX,CY,p.rx,p.ry,angle);
+      html+='<circle cx="'+pt.x+'" cy="'+pt.y+'" r="'+(p.size+2)+'" fill="'+p.color+'" opacity="0.1" filter="url(#dkBlur)"/>';
+      html+='<circle cx="'+pt.x+'" cy="'+pt.y+'" r="'+p.size+'" fill="'+p.color+'" opacity="0.9"/>';
+      var lx=pt.x,ly=pt.y-p.size-3;
+      html+='<text x="'+lx+'" y="'+ly+'" fill="'+p.color+'" font-size="6" text-anchor="middle" font-family="monospace" opacity="0.6">'+p.sym+'</text>';
+      if(name==='earth'){
+        html+='<text x="'+pt.x+'" y="'+(pt.y+10)+'" fill="#33ff3355" font-size="5" text-anchor="middle" font-family="monospace">HERE</text>';
+      }
+    }
+    g.innerHTML=html;
+
+    // moon near earth
+    var mg=document.getElementById('dk-moon');
+    if(sun.moon&&orbs.earth){
+      var ePt=ell(CX,CY,PLAN.earth.rx,PLAN.earth.ry,orbs.earth.angle_deg);
+      var mAng=sun.moon.age_days*(360/29.53);
+      var mPt=ell(ePt.x,ePt.y,10,8,mAng);
+      mg.innerHTML='<circle cx="'+mPt.x+'" cy="'+mPt.y+'" r="2" fill="#ddd" opacity="0.7"/><circle cx="'+(mPt.x+1)+'" cy="'+mPt.y+'" r="1.5" fill="#222"/>';
+    }
+
+    document.getElementById('orr-chord').textContent='♪ '+sun.chord+' ('+sun.root+')';
+    document.getElementById('orr-sky').textContent=sun.phase+' · '+sun.season+' · day '+sun.day_of_year+' · '+sun.color_temp_k+'K';
+  }
+
+  fetch('/senses',{headers:{Accept:'application/json'}})
+    .then(function(r){return r.json()}).then(render)
+    .catch(function(){render(FALLBACK);});
+  setInterval(function(){
+    fetch('/senses',{headers:{Accept:'application/json'}})
+      .then(function(r){return r.json()}).then(render).catch(function(){});
+  },120000);
+})();
 </script>
 <script>
 // TRANS EYE CROSS-WIRE — this is the CANVAS (far eye, TRANS face)
