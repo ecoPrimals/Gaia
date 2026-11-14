@@ -1320,14 +1320,43 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 import subprocess
 def agglutinate():
     last_sha=""
+    # ═══ THREE-SOURCE AGGLUTINATE — inner Polaris triangle ═══
+    # Try Forgejo fork (ecoPrimal/Gaia) first, then gaia/Gaia, then GitHub API
+    sources=[
+        "http://localhost:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
+        "http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",
+        "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
+    ]
+    # Ensure we have both remotes
+    try:
+        subprocess.run(["git","remote","add","forgejo-fork",
+            "http://ecoPrimal:2532faa4f16d40d23def58d32a55e9e458b034ee@localhost:3000/ecoPrimal/Gaia.git"],
+            cwd=_REPO,capture_output=True,timeout=10)
+    except: pass
     while True:
         time.sleep(120)
         try:
-            with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/ecoPrimals/commits?limit=1",timeout=10) as r:
-                c=json.loads(r.read())
-            if c and c[0]["sha"]!=last_sha:
-                subprocess.run(["git","pull","--no-rebase","--no-edit"],cwd=_REPO,capture_output=True,timeout=60,env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
-                last_sha=c[0]["sha"]
+            sha=None
+            for src in sources:
+                try:
+                    with urllib.request.urlopen(src,timeout=10) as r:
+                        c=json.loads(r.read())
+                    if isinstance(c,list) and c:
+                        sha=c[0].get("sha","")
+                    elif isinstance(c,dict):
+                        sha=c.get("sha","")
+                    if sha: break
+                except: continue
+            if sha and sha!=last_sha:
+                # Try forgejo-fork first (has our latest), then origin
+                pulled=False
+                for remote in ["forgejo-fork","origin"]:
+                    r=subprocess.run(["git","pull",remote,"main","--no-rebase","--no-edit"],
+                        cwd=_REPO,capture_output=True,timeout=60,
+                        env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
+                    if r.returncode==0:
+                        pulled=True; break
+                if pulled: last_sha=sha
         except: pass
 def pulse_loop():
     while True:
