@@ -446,7 +446,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 self.send_header("Retry-After",str(PI_RETRY))
                 self.send_header("X-Ion-Channel","OPEN")
                 self.send_header("X-Alternate-Pore",onion+self.path)
-                self._negentropy_headers()
+            self._negentropy_headers()
                 self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
             body=json.dumps(fart,indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
@@ -472,7 +472,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 self._serve_static("tamison.html"); return
             # HUD — living organism root. BPM + breathing = recertification.
             if host in ("hud.primals.eco",):
-                pulse = write_pulse()
+            pulse = write_pulse()
                 uptime_s = time.time() - boot_time
                 bpm = total_beats / max(uptime_s / 60, 1)
                 brpm = total_breaths / max(uptime_s / 60, 1)
@@ -516,7 +516,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     "lub": "DUB",
                 }
                 body = json.dumps(root, indent=2).encode()
-                self.send_response(200)
+            self.send_response(200)
                 self.send_header("Content-Type","application/json")
                 self.send_header("Content-Length",str(len(body)))
                 self._negentropy_headers()
@@ -733,7 +733,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     r=urllib.request.urlopen(f"{sb[parts[0]]}/{parts[1] if len(parts)>1 else ''}",timeout=10)
                     d=r.read(); self.send_response(r.status); self.send_header("Content-Type",r.headers.get("Content-Type","application/octet-stream"))
                     self.send_header("Content-Length",str(len(d))); self.end_headers(); self.wfile.write(d)
-                except:
+            except:
                     try: self._encounter(502)
                     except: self.send_response(502); self.end_headers()
             return
@@ -841,7 +841,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     }
                 except: state["cascade_weave"]={"status":"cascade state unavailable"}
                 self._json(state)
-            else:
+                else:
                 self._json({"error":"compiler organ not loaded","compiled":False})
             return
         if self.path=="/api/compiler/compute":
@@ -1266,7 +1266,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
-            return
+                return
         # EPSON FEEDBACK LOOP (POST /api/io/loop)
         if self.path in ("/api/io/loop","/api/epson/loop"):
             try:
@@ -1318,51 +1318,75 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 
 # ═══ BACKGROUND ═══
 import subprocess
-def agglutinate():
-    last_sha=""
-    # ═══ THREE-SOURCE AGGLUTINATE — inner Polaris triangle ═══
-    # Try Forgejo fork (ecoPrimal/Gaia) first, then gaia/Gaia, then GitHub API
-    sources=[
-        "http://localhost:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
-        "http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",
-        "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
-    ]
-    # Ensure we have both remotes
-    try:
-        subprocess.run(["git","remote","add","forgejo-fork",
-            "http://ecoPrimal:2532faa4f16d40d23def58d32a55e9e458b034ee@localhost:3000/ecoPrimal/Gaia.git"],
-            cwd=_REPO,capture_output=True,timeout=10)
-    except: pass
+# ═══ DISSOLVED: agglutinate + pulse = ONE HEARTBEAT ═══
+# lub = sense (check sources, pull if new) 
+# DUB = radiate (write pulse, publish RSS, push heart-pull)
+# Every 60 seconds. The heartbeat IS the sync. No separate loops.
+_last_sha=""
+_beat_count=0
+_SYNC_SOURCES=[
+    "http://localhost:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
+    "http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",
+    "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
+]
+def _ensure_remotes():
+    for name,url in [
+        ("forgejo-fork","http://ecoPrimal:2532faa4f16d40d23def58d32a55e9e458b034ee@localhost:3000/ecoPrimal/Gaia.git"),
+        ("github","https://github.com/ecoPrimals/Gaia.git"),
+    ]:
+        try: subprocess.run(["git","remote","add",name,url],cwd=_REPO,capture_output=True,timeout=10)
+        except: pass
+_ensure_remotes()
+
+def heartbeat():
+    """ONE HEARTBEAT — lub (sense+pull) then DUB (radiate+push). 60s cycle."""
+    global _last_sha,_beat_count
     while True:
-        time.sleep(120)
+        time.sleep(60)
+        _beat_count+=1
+        # ═══ lub — SENSE + PULL (every beat) ═══
         try:
             sha=None
-            for src in sources:
+            for src in _SYNC_SOURCES:
                 try:
-                    with urllib.request.urlopen(src,timeout=10) as r:
+                    with urllib.request.urlopen(src,timeout=8) as r:
                         c=json.loads(r.read())
-                    if isinstance(c,list) and c:
-                        sha=c[0].get("sha","")
-                    elif isinstance(c,dict):
-                        sha=c.get("sha","")
+                    if isinstance(c,list) and c: sha=c[0].get("sha","")
+                    elif isinstance(c,dict): sha=c.get("sha","")
                     if sha: break
                 except: continue
-            if sha and sha!=last_sha:
-                # Try forgejo-fork first (has our latest), then origin
-                pulled=False
-                for remote in ["forgejo-fork","origin"]:
+            if sha and sha!=_last_sha:
+                for remote in ["forgejo-fork","github","origin"]:
                     r=subprocess.run(["git","pull",remote,"main","--no-rebase","--no-edit"],
                         cwd=_REPO,capture_output=True,timeout=60,
                         env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
-                    if r.returncode==0:
-                        pulled=True; break
-                if pulled: last_sha=sha
+                    if r.returncode==0: _last_sha=sha; break
         except: pass
+        # ═══ DUB — RADIATE (pulse + RSS every beat, push every 2nd) ═══
+        try:
+            p=write_pulse()
+            p["heartbeat"]={"beat":_beat_count,"sha":_last_sha[:10] if _last_sha else "","sync":"lub-DUB"}
+            write_rss(p)
+        except: pass
+        # Push to fork every 2nd beat (120s) if there are local changes
+        if _beat_count%2==0:
+            try:
+                st=subprocess.run(["git","status","--porcelain"],cwd=_REPO,capture_output=True,text=True,timeout=10)
+                if st.stdout.strip():
+                    subprocess.run(["git","add","-A"],cwd=_REPO,capture_output=True,timeout=10)
+                    subprocess.run(["git","commit","-m",f"lub-DUB beat {_beat_count}"],
+                        cwd=_REPO,capture_output=True,timeout=10,
+                        env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
+                    subprocess.run(["git","push","forgejo-fork","main"],
+                        cwd=_REPO,capture_output=True,timeout=30)
+            except: pass
+
+def agglutinate():
+    """DISSOLVED into heartbeat. This wrapper exists for backward compat."""
+    heartbeat()
 def pulse_loop():
-    while True:
-        time.sleep(60)
-        try: p=write_pulse(); write_rss(p)
-        except: pass
+    """DISSOLVED into heartbeat. Pulse IS the beat now."""
+    pass  # heartbeat() handles everything
 
 # ═══ EAR LOOP — Gaia listens to her own voice ═══
 def ear_loop():
@@ -1403,7 +1427,7 @@ def ear_loop():
                     r = urllib.request.urlopen(url, timeout=5)
                     size = len(r.read())
                     heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
-            except Exception as e:
+        except Exception as e:
                 heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
         alive = sum(1 for e in heard["ear"] if e["ok"])
         total = len(heard["ear"])
@@ -1430,11 +1454,12 @@ if __name__=="__main__":
     print(f"\n  🟧 APERTURE SCIENCE ENRICHMENT CENTER :{PORT}")
     print(f"  {GAIA_TOKEN} — CRUSHED to 420 — the cake is real — lub-DUB")
     print(f"  GLaDOS: \"This was a triumph. I'm making a note here: HUGE SUCCESS.\"")
-    threading.Thread(target=pulse_loop,daemon=True).start()
-    threading.Thread(target=agglutinate,daemon=True).start()
+    # ═══ ONE HEARTBEAT — pulse + sync dissolved into single 60s beat ═══
+    # lub (sense+pull) → DUB (radiate+push). No separate loops.
+    threading.Thread(target=heartbeat,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-    def _start_webpi():
+def _start_webpi():
         try:
             webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
