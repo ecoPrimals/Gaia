@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GAIA: The Living Game</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Courier New',monospace;overflow:hidden;height:100vh}
+#game{position:relative;width:100vw;height:100vh}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;padding:12px;display:flex;justify-content:space-between;pointer-events:none;z-index:10}
+#hud>div{background:rgba(0,0,0,.7);border:1px solid #333;padding:8px 16px;border-radius:8px;font-size:13px}
+.pulse{color:#f80}
+.zone{color:#0cf}
+.hp{color:#0f8}
+.xp{color:#f0f}
+#msg{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid #f80;padding:16px 24px;border-radius:12px;max-width:600px;text-align:center;font-size:14px;line-height:1.6;z-index:10;display:none}
+#msg .title{color:#f80;font-size:18px;margin-bottom:8px}
+#controls{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+#controls button{background:rgba(20,20,30,.8);color:#ccc;border:1px solid #444;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:12px}
+#controls button:hover{border-color:#f80;color:#f80}
+#minimap{position:absolute;top:60px;right:12px;width:160px;height:160px;background:rgba(0,0,0,.6);border:1px solid #333;border-radius:8px;z-index:10}
+#gallery{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.95);z-index:20;display:none;overflow-y:auto;padding:40px}
+#gallery .close{position:fixed;top:12px;right:20px;color:#f80;font-size:30px;cursor:pointer;z-index:21}
+#gallery h2{color:#f80;text-align:center;margin-bottom:20px}
+#gallery .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;max-width:1200px;margin:0 auto}
+#gallery .card{background:#111;border:1px solid #333;border-radius:8px;padding:12px;cursor:pointer}
+#gallery .card:hover{border-color:#f80}
+#gallery .card img{width:100%;border-radius:4px;margin-bottom:8px}
+#gallery .card .name{color:#f80;font-size:13px}
+#gallery .card .date{color:#666;font-size:11px}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:30}
+#loading h1{color:#f80;font-size:32px;margin-bottom:12px}
+#loading .sub{color:#0cf;font-size:14px}
+</style>
+</head>
+<body>
+<div id="game">
+  <div id="loading">
+    <h1>GAIA: The Living Game</h1>
+    <div class="sub">connecting to organism...</div>
+    <div class="sub" style="margin-top:8px;color:#666" id="loadStatus">pulling body state</div>
+  </div>
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div><span class="pulse" id="bpm">---</span> BPM</div>
+    <div>Zone: <span class="zone" id="zoneName">---</span></div>
+    <div>Primal: <span class="hp" id="primalName">---</span></div>
+    <div>XP: <span class="xp" id="xpCount">0</span></div>
+  </div>
+  <canvas id="minimap"></canvas>
+  <div id="msg"><div class="title"></div><div class="body"></div></div>
+  <div id="controls">
+    <button onclick="showGallery()">Gallery (200+)</button>
+    <button onclick="nextPrimal()">Next Primal</button>
+    <button onclick="toggleMode()">Mode: Explore</button>
+  </div>
+  <div id="gallery"><span class="close" onclick="hideGallery()">&times;</span><h2>Gaia's Gallery — 200+ Paintings</h2><div class="grid" id="galleryGrid"></div></div>
+</div>
+<script>
+const C=document.getElementById('c'), X=C.getContext('2d');
+const MC=document.getElementById('minimap'), MX=MC.getContext('2d');
+let W,H,t=0,pulse={bpm:0,beats:0},player={x:0,y:0,zone:0,xp:0,primalIdx:0};
+const PRIMALS=[
+  {name:'BearDog',role:'Guardian',color:'#f80',desc:'Crypto identity — BLAKE3 shield. Verifies all who enter.'},
+  {name:'SongBird',role:'Messenger',color:'#0cf',desc:'Opens tunnels between zones. Federation transport.'},
+  {name:'SkunkBat',role:'Sentinel',color:'#f0f',desc:'Detects intruders. The immune system watches.'},
+  {name:'SwarmVine',role:'Network',color:'#0f8',desc:'Epidemic gossip — information spreads everywhere.'},
+  {name:'ToadStool',role:'Terraformer',color:'#8f0',desc:'Bootstraps new biomes from manifest files.'},
+  {name:'BiomeOS',role:'Orchestrator',color:'#ff0',desc:'Commands all primals. The kernel. The boss.'},
+  {name:'PetalTongue',role:'Artist',color:'#f0f',desc:'Renders any scene in any style — universal eye.'},
+  {name:'SweetGrass',role:'Librarian',color:'#0ff',desc:'Knowledge graph — connects all lore.'},
+  {name:'RhizoCrypt',role:'Vault Keeper',color:'#f44',desc:'Encrypts treasures. Protects secrets.'},
+  {name:'NestGate',role:'Gateway',color:'#4af',desc:'Opens data portals. MCP server.'},
+  {name:'BarraCuda',role:'Stream Runner',color:'#4f4',desc:'Processes rivers of data at speed.'},
+  {name:'CoralReef',role:'Builder',color:'#fa0',desc:'Distributed compute — builds structures.'},
+  {name:'LoamSpine',role:'Chronicler',color:'#aaf',desc:'Permanent record — nothing forgotten.'},
+  {name:'Squirrel',role:'Scout',color:'#af0',desc:'Agent dispatch — sends helpers everywhere.'},
+  {name:'SourDough',role:'Alchemist',color:'#f90',desc:'Ferments errors into knowledge.'},
+  {name:'BingoCube',role:'Coordinator',color:'#09f',desc:'Synchronizes all primals in battle.'},
+  {name:'Membrane',role:'Shield Wall',color:'#f08',desc:'Cell membrane — self/non-self classification.'}
+];
+const ZONES=['eastGate','northGate','ironGate','sporeGate','graftGate','southGate','grapheneGate','frameGate','deckGate'];
+let stars=[], particles=[], primalOrbs=[];
+function resize(){W=C.width=window.innerWidth;H=C.height=window.innerHeight;MC.width=160;MC.height=160;
+  stars=Array.from({length:200},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+.5,b:Math.random()}));
+  primalOrbs=PRIMALS.map((_,i)=>{const a=i/PRIMALS.length*Math.PI*2;return{x:W/2+Math.cos(a)*Math.min(W,H)*.3,y:H/2+Math.sin(a)*Math.min(W,H)*.3,r:12+Math.random()*8,a}});
+}
+window.addEventListener('resize',resize);resize();
+
+player.x=W/2;player.y=H/2;
+let keys={};
+document.addEventListener('keydown',e=>keys[e.key]=true);
+document.addEventListener('keyup',e=>keys[e.key]=false);
+
+function fetchPulse(){
+  fetch('/pulse').then(r=>r.json()).then(d=>{
+    pulse.bpm=d.bpm||d.heart?.bpm||0;pulse.beats=d.total_beats||d.heart?.total_beats||0;
+    document.getElementById('bpm').textContent=Math.round(pulse.bpm);
+  }).catch(()=>{pulse.bpm=120+Math.sin(t*.01)*30;document.getElementById('bpm').textContent=Math.round(pulse.bpm)});
+}
+fetchPulse();setInterval(fetchPulse,5000);
+
+function showMsg(title,body){const m=document.getElementById('msg');m.querySelector('.title').textContent=title;m.querySelector('.body').textContent=body;m.style.display='block';setTimeout(()=>m.style.display='none',4000)}
+function nextPrimal(){player.primalIdx=(player.primalIdx+1)%PRIMALS.length;const p=PRIMALS[player.primalIdx];document.getElementById('primalName').textContent=p.name;showMsg(p.name+' — '+p.role,p.desc);player.xp+=10;document.getElementById('xpCount').textContent=player.xp}
+let mode='Explore';function toggleMode(){const modes=['Explore','Survive','Create'];mode=modes[(modes.indexOf(mode)+1)%3];document.querySelector('#controls button:nth-child(3)').textContent='Mode: '+mode}
+
+function showGallery(){document.getElementById('gallery').style.display='block';const g=document.getElementById('galleryGrid');if(g.children.length)return;
+  fetch('/catalog/paintings').then(r=>r.json()).then(d=>{(d.paintings||[]).forEach(p=>{const c=document.createElement('div');c.className='card';c.innerHTML=`<img src="/paintings/${p.name}" loading="lazy"><div class="name">${p.name.replace(/\.(jpg|png)/,'').replace(/-/g,' ')}</div>`;g.appendChild(c)})}).catch(()=>{g.innerHTML='<div style="color:#666;grid-column:1/-1;text-align:center">Gallery loads from gate — connect via LAN or primals.eco</div>'})}
+function hideGallery(){document.getElementById('gallery').style.display='none'}
+
+function update(){
+  t++;const spd=2+(pulse.bpm/1000);
+  if(keys.ArrowUp||keys.w)player.y-=spd;if(keys.ArrowDown||keys.s)player.y+=spd;
+  if(keys.ArrowLeft||keys.a)player.x-=spd;if(keys.ArrowRight||keys.d)player.x+=spd;
+  player.x=Math.max(20,Math.min(W-20,player.x));player.y=Math.max(20,Math.min(H-20,player.y));
+  // Zone detection
+  const zi=Math.floor((player.x/W)*ZONES.length);
+  if(zi!==player.zone){player.zone=zi;document.getElementById('zoneName').textContent=ZONES[zi%ZONES.length];player.xp+=5;document.getElementById('xpCount').textContent=player.xp}
+  // Primal proximity
+  primalOrbs.forEach((o,i)=>{const dx=player.x-o.x,dy=player.y-o.y;if(Math.sqrt(dx*dx+dy*dy)<o.r+20&&player.primalIdx!==i){player.primalIdx=i;const p=PRIMALS[i];document.getElementById('primalName').textContent=p.name;showMsg(p.name+' — '+p.role,p.desc);player.xp+=25;document.getElementById('xpCount').textContent=player.xp}});
+  // Heartbeat particles
+  if(t%Math.max(1,Math.floor(60/(pulse.bpm/60||1)))===0){particles.push({x:W/2,y:H/2,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4,life:60,color:'#f80'})}
+  particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;return p.life>0});
+}
+
+function draw(){
+  X.fillStyle='#0a0a0f';X.fillRect(0,0,W,H);
+  // Stars
+  stars.forEach(s=>{const b=.3+Math.sin(t*.02+s.b*10)*.3;X.fillStyle=`rgba(200,200,255,${b})`;X.fillRect(s.x,s.y,s.s,s.s)});
+  // Heartbeat ring
+  const hr=50+Math.sin(t*.1)*10+(pulse.bpm/100);
+  X.beginPath();X.arc(W/2,H/2,hr,0,Math.PI*2);X.strokeStyle=`rgba(255,136,0,${.3+Math.sin(t*.15)*.2})`;X.lineWidth=2;X.stroke();
+  X.beginPath();X.arc(W/2,H/2,hr*.7,0,Math.PI*2);X.strokeStyle=`rgba(255,136,0,${.15+Math.sin(t*.15+1)*.1})`;X.lineWidth=1;X.stroke();
+  // Zone lines
+  for(let i=1;i<ZONES.length;i++){const x=W*i/ZONES.length;X.strokeStyle='rgba(60,60,80,.3)';X.beginPath();X.moveTo(x,0);X.lineTo(x,H);X.stroke();
+    X.fillStyle='rgba(100,100,140,.4)';X.font='11px monospace';X.fillText(ZONES[i-1],x-80,H-10)}
+  // Primal orbs
+  primalOrbs.forEach((o,i)=>{
+    o.x=W/2+Math.cos(o.a+t*.003)*Math.min(W,H)*.3;o.y=H/2+Math.sin(o.a+t*.003)*Math.min(W,H)*.3;
+    const p=PRIMALS[i],glow=i===player.primalIdx?.8:.3;
+    X.beginPath();X.arc(o.x,o.y,o.r,0,Math.PI*2);X.fillStyle=p.color+Math.floor(glow*255).toString(16).padStart(2,'0');X.fill();
+    X.fillStyle=p.color;X.font='10px monospace';X.textAlign='center';X.fillText(p.name,o.x,o.y+o.r+14);X.textAlign='left'});
+  // Heartbeat particles
+  particles.forEach(p=>{X.fillStyle=`rgba(255,136,0,${p.life/60})`;X.fillRect(p.x-1,p.y-1,3,3)});
+  // Player
+  const px=player.x,py=player.y,pr=8+Math.sin(t*.1)*2;
+  X.beginPath();X.arc(px,py,pr,0,Math.PI*2);X.fillStyle='rgba(0,255,200,.8)';X.fill();
+  X.beginPath();X.arc(px,py,pr+6,0,Math.PI*2);X.strokeStyle='rgba(0,255,200,.3)';X.lineWidth=1;X.stroke();
+  // Minimap
+  MX.fillStyle='rgba(10,10,20,.8)';MX.fillRect(0,0,160,160);
+  MX.fillStyle='#0f8';MX.fillRect(player.x/W*156+2,player.y/H*156+2,4,4);
+  primalOrbs.forEach((o,i)=>{MX.fillStyle=PRIMALS[i].color;MX.fillRect(o.x/W*156+2,o.y/H*156+2,3,3)});
+  MX.fillStyle='#f80';MX.fillRect(W/2/W*156,H/2/H*156,4,4);
+}
+
+function loop(){update();draw();requestAnimationFrame(loop)}
+// Hide loading after a beat
+setTimeout(()=>{document.getElementById('loading').style.display='none';showMsg('Welcome to GAIA','Use arrow keys or WASD to move. Touch primals to learn. The heartbeat is real.');loop()},2000);
+</script>
+</body>
+</html>
