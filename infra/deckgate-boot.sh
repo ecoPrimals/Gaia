@@ -69,7 +69,9 @@ fi
 # Step 4: Create Gaia kiosk launcher
 echo ""
 echo "[4/6] Gaia Kiosk"
-GAIA_URL="http://192.168.4.244:8080/diamond-lens.html"
+# π-port: brain resolves at boot — no hardcoded IP
+BRAIN="$(ip route show default | awk '/via/{print $3}' | sed 's/\.1$/.244/')"  # self-discover via gateway  # eastGate brain — single source
+GAIA_URL="http://${BRAIN}:8080/diamond-lens.html"
 KIOSK_SCRIPT="$HOME/gaia-kiosk.sh"
 cat > "$KIOSK_SCRIPT" << KIOSK
 #!/bin/bash
@@ -123,8 +125,8 @@ PHOME=$(cat << JSON
 JSON
 )
 # Try to register with eastGate
-curl -s -X POST "http://192.168.4.244:8080/data/deckgate-status.json" -d "$PHOME" 2>/dev/null || \
-    echo "$PHOME" | curl -s -T - "http://192.168.4.244:8080/data/deckgate-status.json" 2>/dev/null || \
+curl -s -X POST "http://${BRAIN}:8080/data/deckgate-status.json" -d "$PHOME" 2>/dev/null || \
+    echo "$PHOME" | curl -s -T - "http://${BRAIN}:8080/data/deckgate-status.json" 2>/dev/null || \
     echo "  (can't POST to data server — will register via rover scan)"
 echo "  Registered: deckGate @ $IP"
 

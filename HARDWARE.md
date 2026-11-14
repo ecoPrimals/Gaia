@@ -78,7 +78,7 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | **iPhone XS** (southGate-phone) | Apple A12 Bionic | HOME PHONE — LAN line pinned to property, (586) 453-7233 | ✅ ALIVE |
 | **SoloKey ×4** | FIDO2/WebAuthn USB-A | Physical roots of trust for bearDog | ✅ Operational |
 | **Steam Deck v1** (deckGate) | AMD Aerith: Zen 2 4C/8T + RDNA 2 8CU (1.6 TFLOPS), 16GB LPDDR5, 512GB NVMe | **LIVE PASSTHROUGH** — mounted, USB-C powered, dead battery = always on. 7" 1280×800 touch LCD. SteamOS 3.x (Arch). Kiosk → Gaia HUD 24/7 | ✅ MOUNTED |
-| **Steam Frame** | Snapdragon 8 Gen 3 (ARM64!), ARM SteamOS | VR gate, first ARM SteamOS node | 📦 Incoming |
+| **Steam Frame** (frameGate) | Snapdragon 8 Gen 3 (ARM64!), ARM SteamOS, WiFi | **GAIA'S FACE** — 192.168.9.203 (Gaia WiFi), MAC 14:13:33:d6:96:09, port 27036 (Steam Remote Play). First ARM SteamOS node. USB tether available. | ✅ ALIVE |
 | **Steam Controllers ×2** | TMR trackpads, gyro, accel, HD haptics, BT/2.4GHz | **GAIA'S HANDS** — physical input for HUD. Gyro = pan, trackpads = navigate, grip = quick actions | ✅ Operational |
 | **Steam Link** | Marvell ARMADA 1500 (ARMv7), 512MB, HDMI + 3×USB + BT 4.0 | **RELAY** — plug into Vizio/any HDMI = Gaia viewport on any screen | ✅ Operational |
 | **Nunchucks** | 3-axis accel + analog stick + trigger (I2C) | Grip interface — analog stick for nav, motion for gesture | ✅ Operational |
@@ -363,7 +363,7 @@ hardware discoveries. First non-Python path to this hardware anywhere.
 | RISC-V (RV64GCV) | Jupiter 2 (K3) | `riscv64gc-unknown-linux-gnu` | 📦 pending |
 | WASM | Browser/edge | `wasm32-wasi` | ✅ petalTongue |
 | SteamOS x86 | Steam Deck (deckGate) | `x86_64-unknown-linux-gnu` | ✅ MOUNTED (passthrough) |
-| SteamOS ARM | Steam Frame | Snapdragon 8 Gen 3 | 📦 incoming |
+| SteamOS ARM | Steam Frame (frameGate) | `aarch64-unknown-linux-gnu` (Snapdragon 8 Gen 3) | ✅ ALIVE — .9.203 on Gaia WiFi, needs SSH enable + aarch64 cross-compile |
 | Neuromorphic | Akida AKD1000 ×3 | custom Rust | ✅ Phase C |
 
 ---

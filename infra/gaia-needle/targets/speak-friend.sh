@@ -9,7 +9,7 @@
 SU="/debug_ramdisk/su"
 TYPE="/data/local/tmp/type.sh"
 GATE="${NEEDLE_GATE:?Set NEEDLE_GATE to the gate name (lowercase)}"
-EASTGATE="${NEEDLE_EASTGATE:-192.168.4.244}"
+EASTGATE="${NEEDLE_EASTGATE:-primals.eco}"
 
 run() { $SU -c "sh $TYPE $*"; }
 

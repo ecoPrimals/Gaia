@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>gAIa · spaceDeck</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#0a0a0f!important;color:#c8d0e0!important;font-family:'Courier New',monospace;min-height:100vh;overflow-x:hidden}
+
+.hdr{text-align:center;padding:1.2rem 0 0.3rem}
+.hdr h1{font-size:1.4rem;letter-spacing:0.3em;color:#4af;text-shadow:0 0 20px rgba(68,170,255,0.4)}
+.hdr .sub{font-size:0.65rem;color:#556;margin-top:0.2rem}
+
+canvas{width:100%;height:180px;display:block}
+
+.bars{padding:0.3rem 0.8rem}
+.bar-row{display:flex;align-items:center;gap:4px;margin:2px 0}
+.bar-row .lbl{font-size:0.55rem;color:#556;width:50px;text-align:right}
+.bar-row .track{flex:1;height:8px;background:#111;border-radius:4px;overflow:hidden}
+.bar-row .fill{height:100%;border-radius:4px;transition:width 0.6s}
+.bar-row .val{font-size:0.55rem;color:#778;width:42px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:3px;padding:0.4rem 0.8rem}
+.cell{background:#111;border:1px solid #1a1a1a;border-radius:3px;padding:3px 5px;font-size:0.5rem;text-align:center;color:#4fa}
+
+.stats{padding:0.4rem 0.8rem;font-size:0.6rem}
+.stat{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #0d0d12}
+.stat .k{color:#445}.stat .v{color:#aab}
+
+.foot{text-align:center;padding:0.8rem;margin-top:auto;font-size:0.55rem;color:#334}
+.foot .id{color:#4af;font-size:0.7rem}
+
+@keyframes breathe{0%,100%{opacity:0.75}50%{opacity:1}}
+.br{animation:breathe 4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(68,255,170,0)}50%{box-shadow:0 0 8px rgba(68,255,170,0.3)}}
+</style>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw-gaia.js')</script>
+</head><body>
+
+<div class="hdr br"><h1>◇ spaceDeck ◇</h1><div class="sub">untethered · gradient-anchored · Klein face</div></div>
+<canvas id="fc" height="180"></canvas>
+<div class="bars" id="bars"></div>
+<div class="grid" id="grid"></div>
+<div class="stats" id="stats"></div>
+<div class="foot"><div class="id">gAIa · not tethered · anchored by field</div><div id="ts">loading…</div></div>
+
+<script>
+const P=['biomeos','beardog','songbird','toadstool','barracuda','coralreef','nestgate',
+'squirrel','loamspine','sweetgrass','rhizocrypt','skunkbat','swarmvine','bingocube','petaltongue','sourdough'];
+function pct(r){return Math.max(0,Math.min(100,(r+90)*(100/60)))}
+
+function drawField(f){
+  const c=document.getElementById('fc');
+  const x=c.getContext('2d');
+  c.width=c.offsetWidth*2;c.height=360;x.scale(2,2);
+  const W=c.offsetWidth,H=180;
+  x.fillStyle='#0a0a0f';x.fillRect(0,0,W,H);
+  const aps=[
+    {n:'Gaia5G',r:f.gaia_5ghz,c:'68,170,255'},
+    {n:'Mesa5G',r:f.black_mesa_5ghz,c:'170,68,255'},
+    {n:'Aperture',r:f.aperture_2ghz,c:'68,255,170'},
+    {n:'Gaia2G',r:f.gaia_2ghz,c:'255,170,68'},
+    {n:'ATT',r:f.att_neighbor,c:'255,68,68'}
+  ];
+  const cx=W/2,cy=H/2;
+  aps.forEach((a,i)=>{
+    const R=(90+a.r)*1.8;
+    const an=(i/aps.length)*Math.PI*2-Math.PI/2;
+    const ox=Math.cos(an)*25,oy=Math.sin(an)*25;
+    const g=x.createRadialGradient(cx+ox,cy+oy,0,cx+ox,cy+oy,R);
+    g.addColorStop(0,`rgba(${a.c},0.35)`);g.addColorStop(1,`rgba(${a.c},0)`);
+    x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.fillStyle=`rgba(${a.c},0.7)`;x.font='7px monospace';
+    x.fillText(`${a.n} ${a.r}`,cx+ox-18,cy+oy-R/2+4);
+  });
+  x.beginPath();x.arc(cx,cy,3,0,Math.PI*2);x.fillStyle='#fff';x.fill();
+  x.font='9px monospace';x.fillStyle='#4af';x.fillText('gAIa',cx+6,cy+3);
+  const gl=Math.min((f.gradient||0)*1.5,50);
+  x.strokeStyle='#4fa';x.lineWidth=1.5;x.beginPath();x.moveTo(cx,cy);x.lineTo(cx,cy-gl);x.stroke();
+  x.fillStyle='#4fa';x.font='8px monospace';x.fillText(`∇${f.gradient}dB`,cx+5,cy-gl);
+}
+
+async function update(){
+  try{
+    const r=await fetch('/sensorium/gradient-field.json');
+    const d=await r.json();
+    drawField(d.field);
+    const f=d.field;
+    document.getElementById('bars').innerHTML=[
+      ['Gaia 5G',f.gaia_5ghz,'#4af'],['Mesa 5G',f.black_mesa_5ghz,'#a4f'],
+      ['Gaia 2G',f.gaia_2ghz,'#fa4'],['Aperture',f.aperture_2ghz,'#4fa'],
+      ['ATT edge',f.att_neighbor,'#f44']
+    ].map(([n,r,c])=>`<div class="bar-row"><span class="lbl">${n}</span><div class="track"><div class="fill" style="width:${pct(r)}%;background:${c}"></div></div><span class="val">${r}dBm</span></div>`).join('');
+    document.getElementById('ts').textContent=`${d.ts} · ${d.self_ip} · ∇${f.gradient}dB ${f.gradient_direction}`;
+  }catch(e){document.getElementById('ts').textContent='field: '+e}
+
+  try{
+    const r2=await fetch('/sensorium/full-body.json');
+    const b=await r2.json();
+    const m=b.metabolic||{},s=b.spatial||{},mi=b.mind||{},ci=b.circulation||{};
+    document.getElementById('stats').innerHTML=[
+      ['⚡ Battery',`${m.battery_pct||'?'}% · ${((m.temperature_deci_c||0)/10).toFixed(1)}°C`],
+      ['📡 WiFi',`${'Gaia'||'?'} · ${s.wifi_rssi||0}dBm · ${s.wifi_mbps||0}Mbps`],
+      ['∇ Gradient',`${s.gradient||0}dB ${s.gradient_direction||'?'}`],
+      ['🧠 Memory',`${mi.mem_pct||0}% free · CPU ${mi.cpu_load||'?'}`],
+      ['💎 Primals',`${mi.primals||0} alive`],
+      ['⏱ Up',`${(parseFloat(b.consciousness?.uptime_sec||0)/60).toFixed(0)}min`],
+      ['🔄 Net',`↓${((ci.rx_bytes||0)/1048576).toFixed(0)}MB ↑${((ci.tx_bytes||0)/1048576).toFixed(0)}MB`]
+    ].map(([k,v])=>`<div class="stat"><span class="k">${k}</span><span class="v">${v}</span></div>`).join('');
+  }catch(e){}
+
+  document.getElementById('grid').innerHTML=P.map(p=>`<div class="cell">${p}</div>`).join('');
+  setTimeout(update,10000);
+}
+update();
+</script>
+</body></html>

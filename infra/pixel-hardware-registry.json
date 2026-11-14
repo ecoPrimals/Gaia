@@ -1,0 +1,90 @@
+{
+  "node": "gAIa",
+  "hardware_version": "pixel-8a-akita",
+  "soc": {
+    "name": "Google Tensor G3 (Exynos)",
+    "codename": "akita",
+    "process": "Samsung 4nm",
+    "clusters": {
+      "LITTLE": {"cores": [0,1,2,3], "type": "Cortex-A510", "freq_mhz": [324,1704]},
+      "MID":    {"cores": [4,5,6],   "type": "Cortex-A715", "freq_mhz": [402,2367]},
+      "BIG":    {"cores": [7,8],     "type": "Cortex-X3",   "freq_mhz": [402,2367]}
+    },
+    "total_cores": 9
+  },
+  "accelerators": {
+    "GPU":  {"name": "Mali-G715", "api": "Vulkan 1.1, GLES 3.2", "path": "/sys/devices/platform/1f000000.mali"},
+    "TPU":  {"name": "Tensor Processing Unit", "path": "/sys/devices/platform/100b0000.TPU", "note": "ML inference accelerator"},
+    "AUR":  {"name": "Advanced Unstructured Reasoning", "path": "/sys/devices/platform/100b0000.AUR", "note": "Google custom AI core"},
+    "ISP":  {"name": "Image Signal Processor", "path": "/sys/devices/platform/100b0000.ISP", "note": "Camera pipeline"}
+  },
+  "memory": {
+    "ram_kb": 7505204,
+    "storage_type": "UFS",
+    "partitions": ["sda","sdb","sdc","sdd"],
+    "swap": "zram0"
+  },
+  "display": {
+    "panel": "OLED",
+    "resolution": "1080x2400",
+    "refresh": [60, 120],
+    "density": 420,
+    "hdr": ["HLG","HDR10","HDR10+"],
+    "drm": "card0-DSI-1",
+    "dp_out": "card0-DP-1",
+    "brightness_max": 1400,
+    "note": "OLED = each pixel is its own light. No backlight. gAIa controls every photon."
+  },
+  "cameras": {
+    "count": 7,
+    "devices": ["/dev/video6","/dev/video7","/dev/video8","/dev/video9","/dev/video10","/dev/video11","/dev/video12"],
+    "touch": "v4l-touch0",
+    "isp": "Tensor G3 ISP (dedicated silicon)"
+  },
+  "audio": {
+    "pcm_streams": 34,
+    "playback": "pcmC0D0p through pcmC0D31p",
+    "capture": "pcmC0D8c through pcmC0D32c",
+    "compressed": "comprC0D6",
+    "note": "34 audio paths — speaker, earpiece, mic, USB audio, BT audio"
+  },
+  "sensors": {
+    "count": 37,
+    "chips": {
+      "accelerometer": {"name": "STMicro LSM6DSV", "bus": "I2C/SPI", "rate_hz": 480},
+      "gyroscope":     {"name": "STMicro LSM6DSV", "bus": "I2C/SPI", "rate_hz": 480},
+      "magnetometer":  {"name": "MEMSIC MMC56X3X", "bus": "I2C", "rate_hz": 100},
+      "barometer":     {"name": "InvenSense ICP20100", "bus": "I2C/SPI", "rate_hz": 40},
+      "light":         {"name": "AMS TMD3719", "bus": "I2C"},
+      "proximity":     {"name": "AMS TMD3719", "bus": "I2C"}
+    },
+    "virtual": ["gravity","linear_acceleration","rotation_vector","game_rotation_vector",
+                "geomagnetic_rotation","orientation","step_counter","step_detector",
+                "significant_motion","tilt","lift_to_wake","face_down"]
+  },
+  "power": {
+    "pmic_main": "Maxim MAX77759",
+    "pmic_secondary": "Maxim MAX77729",
+    "charger": "MAX77759chrg",
+    "fuel_gauge": "maxfg",
+    "usbc_controller": "MAX77759tcpc",
+    "note": "5 power management ICs — gAIa knows every electron"
+  },
+  "network": {
+    "wifi": {"interface": "wlan0", "p2p": "wlan1", "aware": "aware_nmi0"},
+    "cellular": {"rmnet_count": 30, "baseband": "g5300o"},
+    "usb_net": "ncm0"
+  },
+  "buses": {
+    "i2c": {"devices": 15, "buses": 5},
+    "spi": {"devices": 5, "buses": 4},
+    "usb": "USB 3.1 Gen 1 (Type-C)"
+  },
+  "security": {
+    "titan_m2": true,
+    "selinux": "enforcing",
+    "verified_boot": true,
+    "mte": true,
+    "ptrauth": true
+  }
+}

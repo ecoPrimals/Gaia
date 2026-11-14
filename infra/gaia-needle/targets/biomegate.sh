@@ -33,7 +33,7 @@ sleep 3
 
 # Install SSH and run chipmunk
 echo "Phase 3: Inject chipmunk"
-run --line "curl -s http://192.168.4.244:8080/data/biomegate-chipmunk.sh | bash"
+run --line "curl -s http://primals.eco:8080/data/biomegate-chipmunk.sh | bash"
 
 echo "=== INJECTION SENT ==="
 echo "biomeGate should now be installing SSH and running chipmunk"

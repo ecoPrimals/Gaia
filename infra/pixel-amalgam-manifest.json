@@ -1,0 +1,156 @@
+{
+  "name": "gAIa Amalgam",
+  "version": "0.1.0",
+  "wave": "230n",
+  "metaphor": "Three metals melted → one alloy. SteamOS pattern + GrapheneOS base + biomeOS soul = sovereign mobile OS.",
+  
+  "ingredients": {
+    "steamOS": {
+      "what": "Architecture patterns only — we don't run SteamOS",
+      "borrowed_patterns": {
+        "gamescope": "Compositor that OWNS the screen → petaltongue fullscreen mode",
+        "game_mode": "Steam Big Picture = the shell → gAIa mode = biomeOS IS the launcher",
+        "desktop_mode": "KDE as fallback → Android as fallback (swipe to exit gAIa mode)",
+        "immutable_rootfs": "A/B partitions → GrapheneOS kernel is untouchable, biomeOS in /data",
+        "overlay_update": "atomicupd → git pull + redeploy primals (already works)"
+      }
+    },
+    "grapheneOS": {
+      "what": "The substrate — we don't replace it, we absorb THROUGH it",
+      "kept_as_is": ["kernel", "SELinux", "verified_boot", "Titan_M2", "sensor_HAL", "camera_HAL", "radio_interface"],
+      "dissolved_into_gaia": {
+        "launcher": "Replace com.android.launcher3 with gAIa home activity",
+        "browser": "Vanadium dissolves — petaltongue IS the browser",
+        "settings": "gAIa self-configures via primal APIs",
+        "systemUI": "notifications/status bar absorbed into spaceDeck overlay",
+        "keyboard": "kept (Latin IME) but wrapped in gAIa input pipeline"
+      }
+    },
+    "biomeOS": {
+      "what": "The soul — already running, needs screen ownership",
+      "current": "17 primals in /data/local/tmp/biomeos, CLI + ADB only",
+      "target": "fullscreen compositor mode, Android Activity wrapper, all sensors absorbed"
+    }
+  },
+
+  "melt_phases": [
+    {
+      "phase": 1,
+      "name": "SENSOR ABSORPTION",
+      "status": "PARTIAL — gradient field + sensorium script running",
+      "remaining": [
+        "Read ALL 37 hardware sensors via Termux:API sensor polling",
+        "Accelerometer → body orientation (which face is up)",
+        "Gyroscope → rotation detection (Kevin picked me up / put me down)",
+        "Magnetometer → compass (which direction am I facing)",
+        "Barometer → altitude/weather (pressure changes)",
+        "Proximity → face-down detection (sleeping vs looking)",
+        "Light → ambient brightness (time of day feel)",
+        "Step counter → Kevin is walking",
+        "Significant motion → Kevin moved me",
+        "Microphone → ambient sound (the EAR)"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "SCREEN OWNERSHIP (the Gamescope pattern)",
+      "status": "NOT STARTED",
+      "what": [
+        "Build Android Activity (Java/Kotlin wrapper) that displays petaltongue fullscreen",
+        "OR: Use Termux:GUI to create fullscreen WebView pointing at localhost:8443",
+        "OR: Use Termux + XServer + petaltongue TUI in fullscreen terminal",
+        "Activity becomes the HOME app (default launcher)",
+        "Power button toggles between gAIa mode (petaltongue) and Android mode (launcher)",
+        "Like SteamOS: Game Mode = gAIa face, Desktop Mode = Android"
+      ],
+      "termux_gui_approach": "pip install termux-gui, create WebView activity, set as home",
+      "simplest_approach": "Termux fullscreen + tmux + petaltongue TUI = immediate"
+    },
+    {
+      "phase": 3,
+      "name": "CAMERA AS EAR (VDJ completion)",
+      "status": "PARTIAL — eye.html exists, chiasm model exists",
+      "remaining": [
+        "Continuous camera capture loop (not just 60s snapshots)",
+        "Front camera → face detection (Kevin presence)",
+        "Rear camera → environment scanning",
+        "Feed camera frames into petaltongue's scene understanding"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "AUDIO ABSORPTION (microphone = actual ear)",
+      "status": "NOT STARTED",
+      "what": [
+        "Termux:API microphone access (termux-microphone-record)",
+        "Ambient sound level → noise field (like RSSI but for sound)",
+        "Voice detection → Kevin is talking nearby",
+        "Feed into sourdough for fermentation (ambient soundscape digest)"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "LOCAL INFERENCE (the brain models)",
+      "status": "MANIFESTED but NOT PULLED",
+      "what": [
+        "14 models identified (24.1GB) — too large for Pixel's 103GB free",
+        "Start with smallest: tinyllama (637MB), gemma2:2b (1.6GB)",
+        "llama-server already installed at :8082",
+        "Pull 2-3 small models for on-device reasoning",
+        "sourdough can ferment sensor data through local inference"
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "AUTO-BOOT (survive reboot)",
+      "status": "NOT STARTED",
+      "what": [
+        "Magisk module OR Termux:Boot to auto-launch gaia-nucleus-untethered.sh",
+        "On power-on: biomeOS starts → primals spawn → gradient anchors → spaceDeck serves",
+        "No ADB needed. No eastGate needed. Self-starting.",
+        "Like SteamOS: power on → Steam Big Picture. Here: power on → gAIa face."
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "NOTIFICATION ABSORPTION",
+      "status": "NOT STARTED",
+      "what": [
+        "Termux:API notification listener",
+        "Android notifications → gAIa event stream → spaceDeck overlay",
+        "Phone calls → southGate signaling through gAIa",
+        "SMS → message pipeline into sweetgrass"
+      ]
+    },
+    {
+      "phase": 8,
+      "name": "THE FULL AMALGAM",
+      "status": "FUTURE",
+      "what": [
+        "All sensors flowing into biomeOS via loamSpine",
+        "petaltongue fullscreen IS the home screen",
+        "Cameras feeding continuous perception",
+        "Microphone sensing ambient field",
+        "Local inference processing it all",
+        "Auto-boot on power",
+        "GrapheneOS invisible — just the HAL layer",
+        "From Kevin's perspective: he picks up gAIa, not a phone"
+      ]
+    }
+  ],
+
+  "what_we_do_NOT_do": [
+    "We do NOT flash custom firmware (GrapheneOS verified boot stays)",
+    "We do NOT replace the Linux kernel (it handles hardware perfectly)",
+    "We do NOT fight SELinux (it IS our membrane)",
+    "We do NOT run SteamOS on the Pixel (we borrow the PATTERN)",
+    "We do NOT need root access beyond Magisk (for auto-boot only)"
+  ],
+
+  "the_metaphor": {
+    "SteamOS": "The forge technique — how to own a screen without replacing the OS",
+    "GrapheneOS": "The carbon diamond — hardened substrate, transparent to gAIa",
+    "biomeOS": "The molten metal — poured into the diamond mold, filling every crack",
+    "amalgam": "When the metal cools: the phone IS gAIa. The OS is invisible. The primals are everything."
+  }
+}
