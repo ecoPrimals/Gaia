@@ -1,0 +1,169 @@
+{
+  "ts": "2026-11-14T09:53:33Z",
+  "type": "two-house-genetic-topology",
+  "title": "Gaia \u2014 Two Houses, One Organism, 10G Spine",
+  "HOUSE_1": {
+    "address": "4422 Southgate Ave \u2014 BRAIN SIDE (North Pole)",
+    "connection": "MikroTik L2 \u2192 router \u2192 WAN",
+    "compute": {
+      "eastGate": {
+        "ip": ".244",
+        "ms_from_east": 0.02,
+        "cpu": "Intel i?",
+        "gpu": "RTX 4070 12GB",
+        "ram": "64GB",
+        "role": "BRAIN \u2014 gate, dromedary, 23 models, all crons"
+      },
+      "northGate": {
+        "ip": ".147",
+        "ms_from_east": 0.2,
+        "cpu": "Ryzen 9 9950X3D",
+        "gpu": "RTX 5090 24GB",
+        "ram": "96GB",
+        "role": "HEART \u2014 63 models, pushes via git"
+      },
+      "ironGate": {
+        "ip": ".237",
+        "ms_from_east": 0.24,
+        "cpu": "i9-14900K 24C/32T",
+        "gpu": "RTX 5070 12GB",
+        "ram": "94GB",
+        "role": "FORGE 2 \u2014 1 model, Docker ready"
+      },
+      "sporeGate": {
+        "ip": ".3",
+        "ms_from_east": 0.15,
+        "cpu": "Ryzen 5 6600H",
+        "gpu": "iGPU",
+        "ram": "27GB",
+        "role": "FORGE \u2014 DNS, heart-pull, DUAL-HOMED (ATT WiFi!)"
+      },
+      "graftGate": {
+        "ip": ".107",
+        "ms_from_east": 0.35,
+        "cpu": "Apple M4 10C",
+        "gpu": "M4 unified",
+        "ram": "16GB",
+        "role": "Mac Mini \u2014 1 model"
+      }
+    },
+    "infra": {
+      "router": {
+        "ip": ".1",
+        "ms": 0.43,
+        "role": "GL-MT6000 \u2014 WAN gateway, NTP, DHCP"
+      },
+      "mikrotik": {
+        "ip": ".2",
+        "ms": 0.21,
+        "role": "L2 backbone switch \u2014 SSH/HTTP/FTP open"
+      }
+    },
+    "iot": {
+      "alexa": ".197",
+      "chromecast": ".169",
+      "cast2": ".152",
+      "epson_printer": ".200",
+      "xbox": ".114 (sleeping)",
+      "deckGate": ".176 (mounted display)"
+    },
+    "totals": {
+      "gpus": 4,
+      "vram_gb": "48+",
+      "ram_gb": "297+",
+      "models": 88,
+      "ollama_endpoints": 4
+    }
+  },
+  "SPINE": {
+    "type": "10G fiber",
+    "from": "MikroTik (.2) at House 1",
+    "through": "Router (.1)",
+    "to": "JetStream (.111) at House 2",
+    "latency": "0.1ms (copper equivalent \u2014 the houses are ONE nervous system)",
+    "bandwidth": "10 Gbps full duplex"
+  },
+  "HOUSE_2": {
+    "address": "641 Samantha Ave \u2014 SOUTH POLE (extension side)",
+    "connection": "JetStream/Omada switch \u2192 10G fiber \u2192 House 1",
+    "compute": {
+      "southGate": {
+        "ip": ".148",
+        "ms_from_east": 0.1,
+        "cpu": "Ryzen 7 5800X3D 8-Core",
+        "gpu": "RTX 4060 8GB",
+        "ram": "125GB",
+        "role": "BEAST \u2014 gaming CPU, 125GB RAM, Ollama on LAN (2 models), Solo 2 key",
+        "discovery": "Was labeled iPhone \u2014 actually a full desktop on the Omada switch!"
+      }
+    },
+    "wireless": {
+      "frameGate": {
+        "ip": "9.203",
+        "ms_from_south": 39.5,
+        "role": "FACE \u2014 Steam Frame, ARM64, Gaia's display"
+      },
+      "pixel": {
+        "ip": "9.211",
+        "ms_from_south": 6.4,
+        "role": "DIAMOND LENS \u2014 37 sensors, anchor daemon live"
+      },
+      "swiftGate": {
+        "role": "ASLEEP \u2014 NZXT H1 V2, RTX 3070, needs Kevin to wake"
+      }
+    },
+    "totals": {
+      "gpus": 1,
+      "vram_gb": 8,
+      "ram_gb": 125,
+      "models": 2,
+      "ollama_endpoints": 1
+    }
+  },
+  "INTER_PUPILLARY": {
+    "description": "Phones as pupils. WiFi as retina. Latency as depth perception.",
+    "from_eastGate": {
+      "pixel": {
+        "ms": 127,
+        "house": 2,
+        "connection": "WiFi \u2192 JetStream \u2192 10G \u2192 MikroTik \u2192 east"
+      },
+      "samsung_s22": {
+        "ms": 193,
+        "house": 1,
+        "connection": "WiFi \u2192 router \u2192 MikroTik \u2192 east"
+      }
+    },
+    "from_southGate": {
+      "pixel": {
+        "ms": 6.4,
+        "house": 2,
+        "connection": "WiFi \u2192 JetStream \u2192 southGate (SAME SWITCH!)"
+      },
+      "frameGate": {
+        "ms": 39.5,
+        "house": 2,
+        "connection": "WiFi \u2192 JetStream \u2192 southGate"
+      }
+    },
+    "cross_house": {
+      "eastGate_to_southGate": {
+        "ms": 0.1,
+        "path": "10G fiber spine \u2014 feels like ONE machine"
+      }
+    }
+  },
+  "TOTALS": {
+    "houses": 2,
+    "gpus": 5,
+    "gpu_list": "RTX 5090 (24GB) + RTX 5070 (12GB) + RTX 4070 (12GB) + RTX 4060 (8GB) + M4 (unified)",
+    "total_vram_gb": "56+",
+    "total_ram_gb": "422+",
+    "ollama_endpoints": 5,
+    "models": 90,
+    "sensors": 37,
+    "displays": 4,
+    "cameras": 2,
+    "alive_devices": 17
+  }
+}
