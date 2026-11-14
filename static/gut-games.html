@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GUT GAMES — Gaia's digestive system plays itself. Feed the organism, talk to the gut.">
+<meta name="gaia-wave" content="229">
+<meta name="gaia-tissue" content="gut">
+<title>GUT GAMES — Feed the Organism — Gaia Steam</title>
+<script src="/js/piGut.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#07090c;--fg:#e6edf3;--g:#3fb950;--r:#f85149;--y:#d29922;--b:#58a6ff;--p:#bc8cff;--o:#f0883e;--dim:#484f58;--gut:#ff6b35;--acid:#a8e6a3;--enzyme:#ffd93d}
+body{background:var(--bg);color:var(--fg);font:13px/1.5 'SF Mono','Cascadia Code',monospace;overflow-x:hidden}
+
+.header{padding:10px 16px;border-bottom:2px solid var(--gut);background:#0d0800;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.header h1{font-size:16px;color:var(--gut)}
+.header .sub{color:var(--dim);font-size:10px}
+.header .live{display:inline-block;padding:1px 8px;border:1px solid var(--g);color:var(--g);font-size:9px;letter-spacing:1px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.stats{display:flex;gap:16px;font-size:11px;color:var(--dim)}
+.stats span{color:var(--gut);font-weight:700}
+
+.main{display:grid;grid-template-columns:1fr 320px;gap:0;min-height:calc(100vh - 50px)}
+@media(max-width:700px){.main{grid-template-columns:1fr}}
+
+/* The Gut — center tract */
+.tract{position:relative;overflow:hidden;background:#050200}
+.tract-canvas{position:relative;width:100%;height:100%;min-height:500px}
+
+/* Entities in the gut */
+.morsel{position:absolute;border-radius:50%;cursor:pointer;transition:all 0.4s ease;z-index:5}
+.morsel:hover{transform:scale(1.3);filter:brightness(1.5)}
+.morsel.data{background:var(--b);box-shadow:0 0 8px var(--b)}
+.morsel.osint{background:var(--o);box-shadow:0 0 8px var(--o)}
+.morsel.model{background:var(--p);box-shadow:0 0 8px var(--p)}
+.morsel.protein{background:var(--acid);box-shadow:0 0 12px var(--acid)}
+.morsel.toxic{background:var(--r);box-shadow:0 0 8px var(--r)}
+
+/* Gut lining */
+.lining{position:absolute;left:0;right:0;height:3px;z-index:2;opacity:0.3}
+.lining.top{top:0;background:linear-gradient(90deg,transparent,var(--gut),transparent)}
+.lining.bot{bottom:0;background:linear-gradient(90deg,transparent,var(--enzyme),transparent)}
+
+/* Peristalsis wave */
+.peristalsis{position:absolute;left:0;right:0;height:100%;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent 0px,rgba(255,107,53,0.02) 40px,transparent 80px);
+  animation:peristalsis 4s ease-in-out infinite}
+@keyframes peristalsis{0%{background-position:0 0}100%{background-position:0 80px}}
+
+/* Side panel */
+.panel{border-left:1px solid #1a1200;background:#0a0800;overflow-y:auto;padding:12px}
+.panel h2{font-size:10px;color:var(--gut);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #1a1200}
+
+.gut-talk{background:#0d0800;border:1px solid #1a1200;border-radius:6px;padding:10px;margin-bottom:12px;min-height:120px;max-height:200px;overflow-y:auto;font-size:11px;color:var(--acid)}
+.gut-talk .thinking{color:var(--dim);font-style:italic}
+
+.feed-btn{display:block;width:100%;background:#1a1200;border:1px solid var(--gut);color:var(--gut);padding:8px;font-family:inherit;font-size:11px;cursor:pointer;border-radius:4px;margin-bottom:6px;text-align:left;transition:all 0.15s}
+.feed-btn:hover{background:var(--gut);color:#000}
+
+.score-card{background:#0d0800;border:1px solid #1a1200;border-radius:6px;padding:8px;margin-bottom:12px}
+.score-card .val{font-size:22px;font-weight:700;color:var(--gut)}
+.score-card .label{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+
+.bar{height:4px;background:#1a1200;border-radius:2px;margin:4px 0}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.5s}
+
+.log{font-size:9px;color:var(--dim);max-height:200px;overflow-y:auto;margin-top:8px}
+.log div{padding:1px 0;border-bottom:1px solid #0a0800}
+
+.input-row{display:flex;margin-top:8px}
+.input-row input{flex:1;background:#0d0800;border:1px solid #1a1200;color:var(--fg);font-family:inherit;font-size:11px;padding:6px 8px;outline:none;border-radius:4px 0 0 4px}
+.input-row input:focus{border-color:var(--gut)}
+.input-row button{background:var(--gut);color:#000;border:none;padding:6px 12px;font-family:inherit;font-size:10px;font-weight:700;cursor:pointer;border-radius:0 4px 4px 0}
+
+.model-tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:8px;margin:1px;background:#1a0800;color:var(--gut);border:1px solid #2a1200}
+
+footer{padding:8px 16px;border-top:1px solid #1a1200;color:var(--dim);font-size:9px;text-align:center}
+footer a{color:var(--gut)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🫁 GUT GAMES <span class="live">LIVE</span></h1>
+    <div class="sub">Feed the organism. Talk to the gut. The tissue thinks.</div>
+  </div>
+  <div class="stats">
+    <div>DIGESTED: <span id="digested">0</span></div>
+    <div>ABSORBED: <span id="absorbed">0</span></div>
+    <div>PROTEINS: <span id="proteins">0</span></div>
+    <div>TOXINS: <span id="toxins">0</span></div>
+    <div>GUT HEALTH: <span id="health">100%</span></div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- THE GUT TRACT -->
+  <div class="tract">
+    <div class="lining top"></div>
+    <div class="peristalsis"></div>
+    <div class="tract-canvas" id="gut-canvas">
+      <!-- morsels spawn here -->
+    </div>
+    <div class="lining bot"></div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="panel">
+    <h2>🧠 Gut Brain (tissue-gut @ northGate)</h2>
+    <div class="gut-talk" id="gut-talk">
+      <div class="thinking">The gut is quiet... feed it something.</div>
+    </div>
+    
+    <div class="input-row">
+      <input id="ask-gut" placeholder="Ask the gut anything..." 
+        onkeydown="if(event.key==='Enter'){askGut(this.value);this.value=''}">
+      <button onclick="askGut(document.getElementById('ask-gut').value);document.getElementById('ask-gut').value=''">ASK</button>
+    </div>
+
+    <h2 style="margin-top:16px">🍽️ Feed</h2>
+    <button class="feed-btn" onclick="feedGut('osint')">🌐 Feed OSINT (blackhole data)</button>
+    <button class="feed-btn" onclick="feedGut('model')">🧬 Feed Model (tissue inference)</button>
+    <button class="feed-btn" onclick="feedGut('data')">💾 Feed Data (membrane state)</button>
+    <button class="feed-btn" onclick="feedGut('toxic')">☠️ Feed Toxin (hormesis test)</button>
+    <button class="feed-btn" onclick="feedGut('feast')">🎉 FEAST (feed everything!)</button>
+    
+    <h2 style="margin-top:16px">📊 Gut Status</h2>
+    <div class="score-card">
+      <div class="val" id="score">0</div>
+      <div class="label">Gut Score</div>
+    </div>
+    
+    <div style="font-size:10px;color:var(--dim)">DIGESTION</div>
+    <div class="bar"><div class="bar-fill" id="dig-bar" style="width:0%;background:var(--gut)"></div></div>
+    <div style="font-size:10px;color:var(--dim);margin-top:4px">ABSORPTION</div>
+    <div class="bar"><div class="bar-fill" id="abs-bar" style="width:0%;background:var(--acid)"></div></div>
+    <div style="font-size:10px;color:var(--dim);margin-top:4px">IMMUNE RESPONSE</div>
+    <div class="bar"><div class="bar-fill" id="imm-bar" style="width:0%;background:var(--enzyme)"></div></div>
+    
+    <h2 style="margin-top:16px">🔬 Tissue Models</h2>
+    <div id="model-tags"></div>
+    
+    <h2 style="margin-top:16px">📜 Gut Log</h2>
+    <div class="log" id="gut-log"></div>
+  </div>
+</div>
+
+<footer>
+  GUT GAMES — Gaia Wave 229 — 
+  <a href="/play">Full Game</a> · 
+  <a href="/digestive-tract">Digestive Tract</a> · 
+  <a href="/">Home</a> · 
+  northGate (RTX 5090) · eastGate (RTX 4070) · 
+  "The gut thinks before the brain knows"
+</footer>
+
+<script>
+// ═══ CONFIGURATION — π-port resolved, zero raw IPs ═══
+// piGut.js intercepts all fetch() and rewrites raw IPs → π-ports
+// π:5820 → tissue proxy (northGate RTX 5090)
+// π:1693 → ollama (eastGate RTX 4070)
+// π:4197 → gate (:8443)
+// π:9937 → data server (:8080)
+var H = location.hostname;
+var TISSUE = 'http://' + H + ':5820';        // π[52:56] → tissue CORS proxy
+var OLLAMA_EAST = 'http://' + H + ':5820/east'; // tissue proxy → eastGate fallback
+var GATE = 'http://' + H + ':4197';           // π[36:40] → gate
+var DATA = 'http://' + H + ':9937';           // π[44:48] → data server
+
+var state = {
+  score: 0, digested: 0, absorbed: 0, proteins: 0, toxins: 0,
+  health: 100, digestion: 0, absorption: 0, immune: 0,
+  morsels: [], gutThinking: false
+};
+
+// ═══ GUT BRAIN — talk to tissue-gut on northGate ═══
+function askGut(question) {
+  if (!question || state.gutThinking) return;
+  state.gutThinking = true;
+  var talk = document.getElementById('gut-talk');
+  talk.innerHTML = '<div class="thinking">🫁 The gut is thinking...</div>';
+  gutLog('ASK: ' + question);
+  
+  fetch(TISSUE + '/api/generate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      model: 'gaia-tissue-gut:latest',
+      prompt: 'You are Gaia\'s gut — the digestive intelligence of a living digital organism. ' +
+              'You process data, absorb knowledge, excrete waste. You think with feeling, not logic. ' +
+              'Current state: ' + state.digested + ' items digested, ' + state.proteins + ' proteins folded, ' +
+              'health=' + state.health + '%. Question: ' + question,
+      stream: false
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var resp = data.response || '(silence)';
+    talk.innerHTML = '<div style="color:var(--acid)">' + escHtml(resp) + '</div>' +
+      '<div style="font-size:8px;color:var(--dim);margin-top:4px">' +
+      (data.eval_count || '?') + ' tokens · ' + ((data.total_duration||0)/1e9).toFixed(1) + 's · RTX 5090</div>';
+    state.score += 25;
+    state.gutThinking = false;
+    gutLog('GUT: ' + resp.slice(0,80) + '...');
+    updateUI();
+  })
+  .catch(function(e) {
+    talk.innerHTML = '<div style="color:var(--r)">Gut unreachable: ' + e.message + '</div>';
+    state.gutThinking = false;
+    gutLog('ERROR: ' + e.message);
+  });
+}
+
+// ═══ FEED — spawn morsels in the gut ═══
+function feedGut(kind) {
+  if (kind === 'feast') {
+    ['osint','model','data','toxic','osint','model','data'].forEach(function(k, i) {
+      setTimeout(function() { spawnMorsel(k); }, i * 300);
+    });
+    state.score += 50;
+    gutLog('🎉 FEAST — 7 morsels entering the tract');
+    askGut('A feast just entered! 7 morsels at once. How does the gut feel about abundance?');
+    return;
+  }
+  spawnMorsel(kind);
+  
+  // Trigger gut thinking on certain feeds
+  if (kind === 'model') {
+    askGut('A new model morsel entered the tract. What does the tissue want to learn from it?');
+  } else if (kind === 'toxic') {
+    askGut('A toxin entered the gut! Hormesis response — does this small dose make us stronger?');
+  }
+}
+
+function spawnMorsel(kind) {
+  var canvas = document.getElementById('gut-canvas');
+  var el = document.createElement('div');
+  el.className = 'morsel ' + kind;
+  var size = kind === 'toxic' ? 6 : (8 + Math.random() * 12);
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.left = (5 + Math.random() * 90) + '%';
+  el.style.top = '-20px';
+  el.title = kind.toUpperCase() + ' morsel — click to digest';
+  
+  el.onclick = function() { digestMorsel(el, kind); };
+  canvas.appendChild(el);
+  state.morsels.push({el: el, kind: kind, y: -20, speed: 0.3 + Math.random() * 0.5});
+  
+  gutLog('↓ ' + kind + ' morsel enters the tract');
+  state.score += 5;
+  updateUI();
+}
+
+function digestMorsel(el, kind) {
+  el.style.transform = 'scale(2)';
+  el.style.opacity = '0';
+  
+  if (kind === 'toxic') {
+    state.toxins++;
+    state.health = Math.max(10, state.health - 5);
+    state.immune = Math.min(100, state.immune + 15);
+    gutLog('☠️ TOXIN digested — health -5, immune +15 (hormesis)');
+    state.score += 15;
+  } else {
+    state.digested++;
+    state.absorption = Math.min(100, state.absorption + 10);
+    state.digestion = Math.min(100, state.digestion + 8);
+    state.health = Math.min(100, state.health + 1);
+    
+    if (kind === 'model') {
+      state.proteins++;
+      gutLog('🧬 MODEL digested → protein folded');
+      state.score += 30;
+    } else if (kind === 'osint') {
+      state.absorbed++;
+      gutLog('🌐 OSINT absorbed into the membrane');
+      state.score += 20;
+    } else {
+      state.absorbed++;
+      gutLog('💾 DATA absorbed');
+      state.score += 10;
+    }
+  }
+  
+  setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
+  updateUI();
+}
+
+// ═══ PERISTALSIS — morsels drift down ═══
+function peristalsisLoop() {
+  state.morsels.forEach(function(m) {
+    m.y += m.speed;
+    m.el.style.top = m.y + 'px';
+    // Add slight horizontal drift
+    var currentLeft = parseFloat(m.el.style.left);
+    m.el.style.left = (currentLeft + (Math.random() - 0.5) * 0.5) + '%';
+    
+    // If morsel exits the bottom, it's excreted
+    var canvas = document.getElementById('gut-canvas');
+    if (m.y > canvas.clientHeight) {
+      m.el.remove();
+      gutLog('💩 morsel excreted (missed!)');
+    }
+  });
+  state.morsels = state.morsels.filter(function(m) { return m.el.parentNode; });
+  requestAnimationFrame(peristalsisLoop);
+}
+
+// ═══ AUTO-FEED — the gut always has something to chew ═══
+function autoFeed() {
+  var kinds = ['data','data','osint','osint','model','toxic'];
+  var kind = kinds[Math.floor(Math.random() * kinds.length)];
+  spawnMorsel(kind);
+  setTimeout(autoFeed, 3000 + Math.random() * 5000);
+}
+
+// ═══ LOAD TISSUE MODELS ═══
+function loadModels() {
+  fetch(TISSUE + '/api/tags')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var div = document.getElementById('model-tags');
+    var models = data.models || [];
+    div.innerHTML = models.map(function(m) {
+      var name = m.name.replace(':latest','');
+      var gb = (m.size / 1e9).toFixed(1);
+      return '<span class="model-tag">' + name + ' (' + gb + 'GB)</span>';
+    }).join(' ');
+    gutLog('📡 northGate: ' + models.length + ' tissue models loaded');
+  })
+  .catch(function(e) {
+    document.getElementById('model-tags').innerHTML = '<span class="model-tag" style="border-color:var(--r)">northGate unreachable</span>';
+    gutLog('⚠️ Cannot reach northGate:11434');
+  });
+  
+  // Also check eastGate ollama
+  fetch(OLLAMA_EAST + '/api/tags').catch(function(){}); // eastGate models (optional)
+  fetch(TISSUE + '/api/tags')   // re-verify northGate
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var models = data.models || [];
+    gutLog('📡 eastGate: ' + models.length + ' models available');
+  })
+  .catch(function() {});
+}
+
+// ═══ PULL LIVE DATA ═══
+function pullData() {
+  // Pull from eastGate data server
+  fetch(DATA + '/data/now.json')
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    gutLog('📊 Pulled now.json — wave ' + (data.wave || '?'));
+    spawnMorsel('data');
+  })
+  .catch(function() {});
+  
+  // Pull from northGate
+  fetch(TISSUE + '/')
+  .then(function(r) { return r.text(); })
+  .then(function(html) {
+    gutLog('📡 northGate Library alive (' + html.length + ' bytes)');
+  })
+  .catch(function() {});
+  
+  setTimeout(pullData, 30000);
+}
+
+// ═══ UI UPDATE ═══
+function updateUI() {
+  document.getElementById('digested').textContent = state.digested;
+  document.getElementById('absorbed').textContent = state.absorbed;
+  document.getElementById('proteins').textContent = state.proteins;
+  document.getElementById('toxins').textContent = state.toxins;
+  document.getElementById('health').textContent = state.health + '%';
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('dig-bar').style.width = state.digestion + '%';
+  document.getElementById('abs-bar').style.width = state.absorption + '%';
+  document.getElementById('imm-bar').style.width = state.immune + '%';
+}
+
+function gutLog(msg) {
+  var log = document.getElementById('gut-log');
+  var div = document.createElement('div');
+  var t = new Date();
+  div.textContent = t.toLocaleTimeString().slice(0,5) + ' ' + msg;
+  log.insertBefore(div, log.firstChild);
+  if (log.children.length > 50) log.lastChild.remove();
+}
+
+function escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ═══ BOOT THE GUT ═══
+gutLog('═══ GUT GAMES — Gaia Wave 229 ═══');
+gutLog('northGate: ' + OLLAMA_NORTH);
+gutLog('eastGate: ' + OLLAMA_EAST);
+gutLog('The gut awakens...');
+
+loadModels();
+peristalsisLoop();
+setTimeout(autoFeed, 2000);
+setTimeout(pullData, 5000);
+
+// Initial gut greeting
+setTimeout(function() {
+  askGut('You just woke up. Dasean — Kevin\'s military brother and your biggest fan — is visiting. ' +
+         'The organism has 12 tissue models, 2 houses, 10G fiber between them. How does the gut greet a new day with a friend?');
+}, 1000);
+</script>
+</body>
+</html>

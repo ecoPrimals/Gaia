@@ -12,6 +12,12 @@
   // Dimension 1: BODY  (pulse, model, thymus, barriers)
   // Dimension 2: MIND  (agents, spawn, identity, feed)
   // Dimension 3: SPINE (throat, shout, one-feed, rss)
+  // ═══ π-PORT CONSTANTS ═══
+  const PI_TISSUE = 5820;  // π[52:56] → tissue proxy (northGate RTX 5090)
+  const PI_OLLAMA = 1693;  // π[40:44] → ollama
+  const PI_DATA   = 9937;  // π[44:48] → data server
+  const PI_GATE   = 4197;  // π[36:40] → gate
+
   const R = {
     // DIM 0 — SENSE
     '3144/sense':    '/eyes',
@@ -44,6 +50,14 @@
   // ═══ INTERCEPT — old port refs → relative paths ═══
   const _oldPorts = /localhost:(314[1-5]|9878|31415)/;
   const _ollamaPort = /localhost:11434/;
+  // ZK SMASH: catch ANY raw IP:port pattern on the LAN
+  const _rawIP = /https?:\/\/192\.168\.\d+\.\d+:(\d+)(\/.*)?/;
+  const _tissuePort = /[:\/]11437/;
+
+  // π-host resolver: same host, different π-port
+  function piHost(piPort) {
+    return location.protocol + '//' + location.hostname + ':' + piPort;
+  }
 
   function resolve(url) {
     if (typeof url !== 'string') return url;
@@ -53,11 +67,34 @@
         return v + (q > -1 ? url.slice(q) : '');
       }
     }
-    if (_ollamaPort.test(url)) {
-      try { return '/ollama' + new URL(url).pathname; } catch(e) {}
+    // ZK SMASH: tissue proxy → π:5820
+    if (_tissuePort.test(url)) {
+      try {
+        const u = new URL(url);
+        return piHost(PI_TISSUE) + u.pathname + u.search;
+      } catch(e) {}
+    }
+    // ZK SMASH: ollama → π:1693
+    if (_ollamaPort.test(url) || /[:\/]11436/.test(url)) {
+      try {
+        const u = new URL(url);
+        return piHost(PI_OLLAMA) + u.pathname + u.search;
+      } catch(e) {}
     }
     if (_oldPorts.test(url)) {
       try { return new URL(url).pathname; } catch(e) {}
+    }
+    // ZK SMASH: any raw 192.168.x.x:port → same host, π-port or passthrough
+    if (_rawIP.test(url)) {
+      try {
+        const u = new URL(url);
+        const port = parseInt(u.port);
+        // Map known ports to π-ports
+        const portMap = {11437: PI_TISSUE, 11434: PI_OLLAMA, 11436: PI_OLLAMA,
+                         8080: PI_DATA, 8443: PI_GATE, 3000: 3383};
+        const piPort = portMap[port] || port;
+        return piHost(piPort) + u.pathname + u.search;
+      } catch(e) {}
     }
     return url;
   }

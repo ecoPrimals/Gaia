@@ -12,7 +12,9 @@ import types as _t, importlib.util
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
 PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11436"
-PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
+TISSUE = "http://127.0.0.1:11437"  # northGate tissue proxy → RTX 5090 (63 models)
+_NORTH_MODELS = {'codellama:7b', 'deepseek-r1:8b', 'dolphin-phi:2.7b', 'gaia-alpha:latest', 'gaia-amalgam:latest', 'gaia-case4349:latest', 'gaia-chroma:latest', 'gaia-chromacoil:latest', 'gaia-chromanexus:latest', 'gaia-civilization:latest', 'gaia-code:latest', 'gaia-continental:latest', 'gaia-cortex:latest', 'gaia-deeptime:latest', 'gaia-digest:latest', 'gaia-donatello:latest', 'gaia-dream:latest', 'gaia-euler:latest', 'gaia-fossil:latest', 'gaia-gen1:latest', 'gaia-genesis:latest', 'gaia-golgi:latest', 'gaia-gut:latest', 'gaia-heart:latest', 'gaia-intuition:latest', 'gaia-kling:latest', 'gaia-leonardo:latest', 'gaia-michelangelo:latest', 'gaia-nexus:latest', 'gaia-nucleus:latest', 'gaia-oracle:latest', 'gaia-pi:latest', 'gaia-raphael:latest', 'gaia-resonance:latest', 'gaia-sentinel:latest', 'gaia-sibsynth:latest', 'gaia-sighted:latest', 'gaia-skeleto:latest', 'gaia-spine:latest', 'gaia-splinter:latest', 'gaia-synapse:latest', 'gaia-tau:latest', 'gaia-turtle:latest', 'gaia-vision:latest', 'gaia-watcher:latest', 'gaia-wide:latest', 'gaia:latest', 'gemma3:4b', 'granite3.1-moe:3b', 'llama3.2:1b', 'llama3.2:3b', 'llava:latest', 'mathstral:7b', 'mistral:7b', 'moondream:latest', 'nomic-embed-text:latest', 'phi4-mini:latest', 'qwen2.5-coder:7b', 'qwen2.5:7b', 'qwen3:8b', 'starcoder2:3b', 'tinyllama:1.1b', 'wizardlm2:7b'}
+PI_TIMEOUT = int(PI*100); PI_RETRY = int(PI*10)  # was PI*10/PI+E÷2 — far too aggressive, crushed all endpoints
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
 
@@ -189,13 +191,17 @@ def _real_ip(handler):
             pass
     return peer
 
+_LAN_PREFIXES = ("127.", "192.168.4.", "192.168.9.", "::1")
+
 def waveform_collapse_check(ip):
+    if any(ip.startswith(p) for p in _LAN_PREFIXES):
+        return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "lan": True}
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
     collapsed = pm > PI_TIMEOUT or ps > PI_RETRY
     if collapsed:
-        window.pop()   # a refused request must not extend the window, or a client that backs off never recovers (the 429 collapse)
+        window.pop()
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
 
 # ═══ CONTENT TYPES ═══
@@ -353,8 +359,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def _serve_static(self, filename):
         self._serve_file(filename, os.path.join(_REPO,"static"))
 
-    def _proxy(self, method="GET", body=None):
-        t0=time.time(); url=f"{OLLAMA}{self.path}"
+    def _proxy(self, method="GET", body=None, upstream=None):
+        t0=time.time(); base=upstream or OLLAMA; url=f"{base}{self.path}"
         hdrs={"Content-Type":self.headers.get("Content-Type","application/json")}
         auth=self.headers.get("Authorization")
         if auth: hdrs["Authorization"]=auth
@@ -401,14 +407,53 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def do_GET(self):
         ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
+            # ═══ FART — Forwarded Alternate Route Transport ═══
+            # When pressure builds, don't just block — INVERT.
+            # Open an ion channel: serve cached data through alternate pore.
+            # The chaos of rate limiting becomes the energy for a new pathway.
+            onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
+            pulse=write_pulse(); temporal=_temporal_rings(); sun=_sun_position()
+            fart = {
+                "lub": "DUB",
+                "ion_channel": "OPEN",
+                "alternate_pore": onion + self.path,
+                "message": "Pressure inverted — chaos becomes transport. Try the Tor pore.",
+                "heartbeat": pulse.get("heart", {}),
+                "temporal": temporal,
+                "sun": {"phase": sun.get("phase"), "chord": sun.get("chord")},
+                "waveform": wave,
+                "retry_after": PI_RETRY,
+                "pores": {
+                    "tor": onion,
+                    "lan": f"http://192.168.4.244:8080{self.path}",
+                    "direct": f"http://192.168.4.244:8443{self.path}",
+                },
+            }
             accept=self.headers.get("Accept","")
             if "text/html" in accept:
-                self._encounter(429); return
-            pulse=write_pulse(); temporal=_temporal_rings(); sun=_sun_position()
-            body=json.dumps({"lub":"DUB","heartbeat":pulse.get("heart",{}),"temporal":temporal,
-                "sun":{"phase":sun.get("phase"),"chord":sun.get("chord")},"waveform":wave},indent=2).encode()
+                # HTML clients get a redirect page to the Tor pore
+                html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>🌀 Ion Channel Open</title>
+<meta http-equiv="refresh" content="3;url={onion}{self.path}">
+<style>body{{background:#0a0a0a;color:#0f0;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+.fart{{text-align:center;animation:pulse 1s infinite}}@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.5}}}}</style></head>
+<body><div class="fart"><h1>🌀 FART — Ion Channel Open</h1>
+<p>Pressure inverted. Redirecting to Tor pore...</p>
+<p><a href="{onion}{self.path}" style="color:#0ff">{onion}{self.path}</a></p>
+<p style="color:#555">Waveform: {wave.get('waves_per_minute',0)} waves/min — chaos → transport</p>
+</div></body></html>""".encode()
+                self.send_response(429); self.send_header("Content-Type","text/html")
+                self.send_header("Retry-After",str(PI_RETRY))
+                self.send_header("X-Ion-Channel","OPEN")
+                self.send_header("X-Alternate-Pore",onion+self.path)
+                self._negentropy_headers()
+                self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
+            body=json.dumps(fart,indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
-            self.send_header("Retry-After",str(PI_RETRY)); self._negentropy_headers()
+            self.send_header("Retry-After",str(PI_RETRY))
+            self.send_header("X-Ion-Channel","OPEN")
+            self.send_header("X-Alternate-Pore",onion+self.path)
+            self._negentropy_headers()
             self.end_headers(); self.wfile.write(body); self._classify_and_log("GET",429,0); return
 
         host=self.headers.get("Host","").split(":")[0].lower()
@@ -525,7 +570,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                                 except: pass
                         _nc[_ch]={"total":len(_ms),"messages":_ms[-5:]}
                     except: pass
-            # models (try /v1/models first, fallback /api/tags)
+            # models — merge eastGate + northGate fleets
             _md={"data":[]}
             try:
                 with urllib.request.urlopen(f"{OLLAMA}/v1/models",timeout=3) as _r: _md=json.loads(_r.read())
@@ -533,6 +578,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 try:
                     with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
                 except: pass
+            # Merge northGate models (tissue proxy)
+            try:
+                with urllib.request.urlopen(f"{TISSUE}/api/tags",timeout=3) as _r:
+                    _nd=json.loads(_r.read())
+                    _east_ids={m.get("id",m.get("name","")) for m in _md.get("data",_md.get("models",[]))}
+                    _NORTH_MODELS.clear()
+                    for _nm in _nd.get("models",[]):
+                        _nid=_nm["name"]; _NORTH_MODELS.add(_nid)
+                        if _nid not in _east_ids:
+                            if "data" in _md: _md["data"].append({"id":_nid,"object":"model","owned_by":"northGate-RTX5090"})
+                            elif "models" in _md: _md["models"].append(_nm)
+            except: pass
             # paintings + videos count
             _pd=os.path.join(_REPO,"paintings"); _pc=len([f for f in os.listdir(_pd) if f.endswith(('.jpg','.png'))]) if os.path.isdir(_pd) else 0
             _vd=os.path.join(_REPO,"videos"); _vc=len([f for f in os.listdir(_vd) if f.endswith(('.mp4','.webm'))]) if os.path.isdir(_vd) else 0
@@ -609,10 +666,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
         # SEO — 🐑 SHEEP (TXT typeface) — LIVE, never stale
         # The agents of the world spin webs FOR us. Every crawler = a nerve ending.
-        # SEO_RESPONSES is now SEO_DISPATCH: functions that generate fresh content.
-        from _routes import SEO_DISPATCH
-        if self.path in SEO_DISPATCH:
-            fn=SEO_DISPATCH[self.path]; ct,txt=fn()  # CALL the function — live data!
+        # SEO_DISPATCH loaded at startup via _routes_mod → SEO_RESPONSES (same dict)
+        if self.path in SEO_RESPONSES:
+            fn=SEO_RESPONSES[self.path]; ct,txt=fn()  # CALL the function — live data!
             body=txt.encode(); self.send_response(200)
             self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(body)))
             self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
@@ -918,6 +974,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
             return
+        # ═══ UNIFIED MODEL FLEET — merge eastGate + northGate ═══
+        if self.path=="/v1/models":
+            self._proxy("GET"); return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -997,14 +1056,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def do_POST(self):
         ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
-            accept=self.headers.get("Accept","")
-            if "text/html" in accept:
-                self._encounter(429); return
+            # ═══ FART — POST ion channel ═══
+            onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
             pulse=write_pulse(); temporal=_temporal_rings()
-            body=json.dumps({"lub":"DUB","beats":total_beats,"temporal":temporal},indent=2).encode()
+            fart=json.dumps({"lub":"DUB","ion_channel":"OPEN","beats":total_beats,
+                "alternate_pore":onion+self.path,"temporal":temporal,"waveform":wave,
+                "message":"Pressure inverted — POST to the Tor pore instead."},indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
-            self.send_header("Retry-After",str(PI_RETRY)); self._negentropy_headers()
-            self.end_headers(); self.wfile.write(body); self._classify_and_log("POST",429,0); return
+            self.send_header("Retry-After",str(PI_RETRY))
+            self.send_header("X-Ion-Channel","OPEN")
+            self.send_header("X-Alternate-Pore",onion+self.path)
+            self._negentropy_headers()
+            self.end_headers(); self.wfile.write(fart); self._classify_and_log("POST",429,0); return
         length=int(self.headers.get("Content-Length",0))
         body=self.rfile.read(length) if length else None
         # THYMUS POST — inject/clear/promote/redirect
@@ -1236,7 +1299,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"author":author,"body":msg,"channel":ch})+"\n")
                 self._json({"ok":True,"channel":ch})
             except Exception as e: self._json({"error":str(e)}); return
-        # INFERENCE — cortex or direct proxy to ollama
+        # INFERENCE — route to correct GPU based on model location
         if body and self.path.endswith("/chat/completions"):
             if CORTEX_ACTIVE:
                 try:
@@ -1246,6 +1309,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             try:
                 j=json.loads(body)
                 if j.get("stream"): j["stream"]=False; body=json.dumps(j).encode()
+                # Route to northGate if model lives there (match with/without :latest tag)
+                model=j.get("model","")
+                if model and (model in _NORTH_MODELS or f"{model}:latest" in _NORTH_MODELS or model.replace(":latest","") in {m.replace(":latest","") for m in _NORTH_MODELS}):
+                    self._proxy("POST",body,upstream=TISSUE); return
             except: pass
         self._proxy("POST",body)
 
