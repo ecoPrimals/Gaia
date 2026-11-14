@@ -88,9 +88,9 @@ def play(token, THYMIC_ORGANISMS, _amoeba_eyes):
 
 def agglutinate(token):
     FORGE_API = "http://eastGate:3000/api/v1"
-    agg = {"ts": _ts(), "token": token, "organ": "agglutination", "mirror": {}, "local": {}}
+    agg = {"ts": _ts(), "token": token, "organ": "agglutination", "mirror": {}, "local": {}, "forges": {}}
     try:
-        req = urllib.request.urlopen(f"{FORGE_API}/repos/ecoPrimal/Gaia/commits?limit=1", timeout=5)
+        req = urllib.request.urlopen(f"{FORGE_API}/repos/gaia/ecoPrimals/commits?limit=1", timeout=5)
         commits = json.loads(req.read())
         if commits: agg["mirror"] = {"tip": commits[0]["sha"][:10], "message": commits[0]["commit"]["message"].split("\n")[0]}
     except Exception as e: agg["mirror"]["error"] = str(e)
@@ -102,6 +102,11 @@ def agglutinate(token):
     mt, lt = agg.get("mirror",{}).get("tip",""), agg.get("local",{}).get("tip","")
     agg["synced"] = mt == lt if mt and lt else None
     agg["circuit"] = "CLOSED" if agg["synced"] else "OPEN"
+    agg["forges"] = {
+        "forgejo": {"url": "eastGate:3000/gaia/ecoPrimals", "role": "heart", "tip": mt or "?"},
+        "github":  {"url": "github.com/ecoPrimals/Gaia", "role": "spore_print"},
+        "origin":  {"url": "origin.cursor.com/ecoprimal/Gaia", "role": "sun_iron_mountain"},
+    }
     globe_f = os.path.join(GAIA_ROOT, "data", "shadows", "globe-walker-predigital.json")
     agg_f = os.path.join(GAIA_ROOT, "data", "shadows", "globe-agglutination.json")
     if os.path.exists(globe_f):

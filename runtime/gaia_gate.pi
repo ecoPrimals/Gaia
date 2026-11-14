@@ -1250,12 +1250,12 @@ import subprocess
 def agglutinate():
     last_sha=""
     while True:
-        time.sleep(300)
+        time.sleep(120)
         try:
-            with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:
+            with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/ecoPrimals/commits?limit=1",timeout=10) as r:
                 c=json.loads(r.read())
             if c and c[0]["sha"]!=last_sha:
-                subprocess.run(["git","pull","origin","main","--no-rebase","--no-edit"],cwd=_REPO,capture_output=True,timeout=60,env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
+                subprocess.run(["git","pull","--no-rebase","--no-edit"],cwd=_REPO,capture_output=True,timeout=60,env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
                 last_sha=c[0]["sha"]
         except: pass
 def pulse_loop():
