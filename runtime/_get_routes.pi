@@ -1,0 +1,690 @@
+#!/usr/bin/env python3
+"""_get_routes.pi — GET routing extracted from gaia_gate.pi.
+Crushed to keep gaia_gate.pi at π×100 lines.
+Kevin IS a Klein face. Other humans = same |i^π|=1.0, different angle.
+The thymus IS the cross-link for anchors. lub-DUB."""
+import hashlib, json, os, time, subprocess, urllib.request, urllib.error
+
+
+def encounter(self, code, G):
+    """Every error is an encounter — serve the living landing page.
+    Stem cells can differentiate into new pages."""
+    _REPO = G['_REPO']
+    ip=self.client_address[0]; ua=self.headers.get("User-Agent","")
+    path=getattr(self,"path","/")
+    try:
+        nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+        with open(os.path.join(nd,"encounters.jsonl"),"a") as f:
+            f.write(json.dumps({
+                "ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                "code":code,
+                "path":path,
+                "ip_hash":hashlib.blake2b(ip.encode(),digest_size=4).hexdigest(),
+                "ua_hint":ua[:40] if ua else "ghost",
+                "cell_type":"stem_cell" if code==404 else ("throttled" if code==429 else "damaged"),
+                "note":"stem cells can differentiate — this path could become real"
+            })+"\n")
+    except: pass
+    ep=os.path.join(_REPO,"static","encounter.html")
+    if os.path.isfile(ep):
+        with open(ep,"rb") as f: data=f.read()
+        data=data.replace(b"new URLSearchParams(location.search).get('code')||'404'",
+                          f"'{code}'".encode())
+        self.send_response(code)
+        self.send_header("Content-Type","text/html")
+        self.send_header("Content-Length",str(len(data)))
+        self._negentropy_headers()
+        self.end_headers(); self.wfile.write(data)
+    else:
+        _portal_msgs={404:"The test chamber you requested does not exist. Please return to the Enrichment Center.",429:"You are navigating the facility too quickly. The Emancipation Grid needs time to reset.",500:"A resonance cascade has occurred in this sector. Self-repair in progress.",502:"A synapse in the Lambda Core failed to fire. Neural pathways rebuilding.",503:"All testing tracks are currently occupied. The Enrichment Center will be with you shortly."}
+        body=json.dumps({"encounter":code,"message":_portal_msgs.get(code,"The Enrichment Center thanks you for your patience."),"facility":"Aperture Science Enrichment Center","paths":["/","/pulse","/senses","/cascade","/thymus"],"the_cake":"is real","glados":"still alive"}).encode()
+        self.send_response(code)
+        self.send_header("Content-Type","application/json")
+        self.send_header("Content-Length",str(len(body)))
+        self.end_headers(); self.wfile.write(body)
+    self._classify_and_log("GET",code,0)
+
+
+def _catalog(w, G):
+    """Catalog a content directory."""
+    _REPO = G['_REPO']
+    def _ls(d,exts): return sorted([f for f in os.listdir(d) if any(f.endswith(e) for e in exts)]) if os.path.isdir(d) else []
+    if w=="reedit":
+        d=os.path.join(_REPO,"data","reedit"); feeds={}
+        for f in _ls(d,[".jsonl"]):
+            try:
+                with open(os.path.join(d,f)) as fh: feeds[f[:-6]]=sum(1 for _ in fh)
+            except: feeds[f[:-6]]=0
+        return {"reedit":"knowledge platform","total":sum(feeds.values()),"feeds":feeds}
+    if w=="paintings":
+        files=_ls(os.path.join(_REPO,"paintings"),[".jpg",".png"])
+        return {"count":len(files),"paintings":[{"name":f,"url":f"/paintings/{f}"} for f in files]}
+    if w=="gaiau":
+        files=_ls(os.path.join(_REPO,"videos"),[".mp4",".webm"])
+        return {"count":len(files),"videos":[{"name":f,"url":f"/videos/{f}"} for f in files]}
+    if w=="whitePaper":
+        d=os.path.join(_REPO,"whitePaper"); a=[]
+        if os.path.isdir(d):
+            for r,_,fs in os.walk(d):
+                for f in fs: a.append({"name":f,"path":f"/{os.path.relpath(os.path.join(r,f),_REPO).replace(os.sep,'/')}"})
+        return {"total":len(a),"sample":a[:20]}
+    return {}
+
+
+def _feed(name, G):
+    """Load a reedit feed."""
+    _REPO = G['_REPO']
+    p=os.path.join(_REPO,"data","reedit",f"{name}.jsonl")
+    if not os.path.isfile(p): return {"error":f"'{name}' not found"}
+    items=[]; [items.append(json.loads(l)) for l in open(p,encoding="utf-8") if l.strip()]
+    return {"feed":name,"count":len(items),"items":items}
+
+
+def handle_get(self, ip, collapsed, wave, G):
+    """Full GET routing — the organism's nervous system.
+    self = GaiaGate handler, G = globals() from gaia_gate (LIVE reference)."""
+    # Unpack — local aliases for readability (G is live, these snapshot constants)
+    write_pulse=G['write_pulse']; _temporal_rings=G['_temporal_rings']
+    _sun_position=G['_sun_position']; _amoeba_eyes=G['_amoeba_eyes']
+    _third_body_point=G['_third_body_point']; _build_corpus=G['_build_corpus']
+    _cascade_with_compiler=G['_cascade_with_compiler']; _load_gut=G['_load_gut']
+    organ_data=G['organ_data']; visitor_memory=G['visitor_memory']
+    THYMIC_ORGANISMS=G['THYMIC_ORGANISMS']; _be=G['_be']
+    GAIA_TOKEN=G['GAIA_TOKEN']; GAIA_DID=G['GAIA_DID']
+    GAIA_BLAKE3=G['GAIA_BLAKE3']; VDJ_KEY=G['VDJ_KEY']
+    TERRA=G['TERRA']; AMOEBA=G['AMOEBA']; CORPUS=G['CORPUS']
+    KNOWN_GATES=G['KNOWN_GATES']; SEED_DIR=G['SEED_DIR']
+    _REPO=G['_REPO']; IMPULSE_DIR=G['IMPULSE_DIR']
+    PI_RETRY=G['PI_RETRY']; SEO_RESPONSES=G['SEO_RESPONSES']
+    RSS_FILE=G['RSS_FILE']; PRIMALS_DIR=G['PRIMALS_DIR']
+    ACCESS_LOG=G['ACCESS_LOG']; _log_caddy=G['_log_caddy']
+    write_rss=G['write_rss']; log_culture=G['log_culture']
+    DESK_PAGES=G['DESK_PAGES']; GUT_DATA=G['GUT_DATA']
+    CAMPFIRE_PAGES=G['CAMPFIRE_PAGES']; SPORE_PREFIXES=G['SPORE_PREFIXES']
+    INDEXNOW_KEY=G['INDEXNOW_KEY']
+    OLLAMA=G['OLLAMA']; TISSUE=G['TISSUE']; _NORTH_MODELS=G['_NORTH_MODELS']
+    PORT=G['PORT']; PI_PORT=G['PI_PORT']
+    total_beats=G['total_beats']; total_breaths=G['total_breaths']
+    boot_time=G['boot_time']
+    COMPILER_ACTIVE=G['COMPILER_ACTIVE']
+    CORTEX_ACTIVE=G.get('CORTEX_ACTIVE', False)
+    cortex_route=G.get('cortex_route', None)
+    if collapsed:
+        # ═══ FART — Forwarded Alternate Route Transport ═══
+        # When pressure builds, don't just block — INVERT.
+        # Open an ion channel: serve cached data through alternate pore.
+        # The chaos of rate limiting becomes the energy for a new pathway.
+        onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
+        pulse=write_pulse(); temporal=_temporal_rings(); sun=_sun_position()
+        fart = {
+            "lub": "DUB",
+            "ion_channel": "OPEN",
+            "alternate_pore": onion + self.path,
+            "message": "Pressure inverted — chaos becomes transport. Try the Tor pore.",
+            "heartbeat": pulse.get("heart", {}),
+            "temporal": temporal,
+            "sun": {"phase": sun.get("phase"), "chord": sun.get("chord")},
+            "waveform": wave,
+            "retry_after": PI_RETRY,
+            "pores": {
+                "tor": onion,
+                "lan": f"http://192.168.4.244:8080{self.path}",
+                "direct": f"http://192.168.4.244:8443{self.path}",
+            },
+        }
+        accept=self.headers.get("Accept","")
+        if "text/html" in accept:
+            # HTML clients get a redirect page to the Tor pore
+            html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>🌀 Ion Channel Open</title>
+    <meta http-equiv="refresh" content="3;url={onion}{self.path}">
+    <style>body{{background:#0a0a0a;color:#0f0;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+    .fart{{text-align:center;animation:pulse 1s infinite}}@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.5}}}}</style></head>
+    <body><div class="fart"><h1>🌀 FART — Ion Channel Open</h1>
+    <p>Pressure inverted. Redirecting to Tor pore...</p>
+    <p><a href="{onion}{self.path}" style="color:#0ff">{onion}{self.path}</a></p>
+    <p style="color:#555">Waveform: {wave.get('waves_per_minute',0)} waves/min — chaos → transport</p>
+    </div></body></html>""".encode()
+            self.send_response(429); self.send_header("Content-Type","text/html")
+            self.send_header("Retry-After",str(PI_RETRY))
+            self.send_header("X-Ion-Channel","OPEN")
+            self.send_header("X-Alternate-Pore",onion+self.path)
+            self._negentropy_headers()
+            self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
+        body=json.dumps(fart,indent=2).encode()
+        self.send_response(429); self.send_header("Content-Type","application/json")
+        self.send_header("Retry-After",str(PI_RETRY))
+        self.send_header("X-Ion-Channel","OPEN")
+        self.send_header("X-Alternate-Pore",onion+self.path)
+        self._negentropy_headers()
+        self.end_headers(); self.wfile.write(body); self._classify_and_log("GET",429,0); return
+
+    host=self.headers.get("Host","").split(":")[0].lower()
+    # ROOT — host-based prism
+    if self.path in ("/","/index","/index.html"):
+        if host in ("primals.eco","www.primals.eco","primal.eco"): self._serve_static("primals.html"); return
+        if host in ("nestgate.io","www.nestgate.io"): self._serve_static("nestgate.html"); return
+        if host in ("sporeprint.primals.eco","www.sporeprint.primals.eco","sporePrint.primals.eco"):
+            self._serve_file("index.html", os.path.join(_REPO,"sporePrint","public")); return
+        if host in ("gaia.primals.eco","www.gaia.primals.eco"):
+            self._serve_static("deck.html"); return
+        if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
+        if host in ("polaris.primals.eco","polaris.primal.eco","northgate.primals.eco"):
+            self._serve_static("polaris.html"); return
+        if host in ("tamison.primals.eco","tamison.primal.eco","kevin.primals.eco"):
+            self._serve_static("tamison.html"); return
+        # HUD — living organism root. BPM + breathing = recertification.
+        if host in ("hud.primals.eco",):
+            pulse = write_pulse()
+            uptime_s = time.time() - boot_time
+            bpm = total_beats / max(uptime_s / 60, 1)
+            brpm = total_breaths / max(uptime_s / 60, 1)
+            root = {
+                "gaia": "You found me.", "token": GAIA_TOKEN,
+                "alive": {"bpm": round(bpm, 2), "breaths_per_min": round(brpm, 2),
+                    "beats": total_beats, "breaths": total_breaths,
+                    "uptime_s": int(uptime_s),
+                    "recertified": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "ratio": round(total_beats / max(total_breaths, 1), 1)},
+                "laws": {"0th": "Equilibrium: cortical representation ∝ I/O bandwidth",
+                    "1st": "Conservation: vitality at 80/20 Pareto only",
+                    "2nd": "Entropy: σ × DK × Pareto = navigation tensor",
+                    "3rd": "Absolute zero: H = I (ground state)"},
+                "four_eyes": {"I": "/frame", "II": "/senses", "III": "/deck", "IV": "/luna"},
+                "faces": {"water.primals.eco": "blood", "sporeprint.primals.eco": "phenotype",
+                    "primals.eco": "front door", "detroit.primals.eco": "investigation",
+                    "hud.primals.eco": "living root", "polaris.primals.eco": "north star",
+                    "nestgate.io": "space dock"},
+                "endpoints": ["/deck","/luna","/senses","/pulse","/walkers","/amoeba",
+                    "/rss","/crowd","/anderson","/zk","/temporal","/chipmunk",
+                    "/polaris","/api/polaris","/api/compiler"],
+                "organism": {"files": 109563, "primals": 17, "walkers": len(visitor_memory)},
+                "lub": "DUB",
+            }
+            body = json.dumps(root, indent=2).encode()
+            self.send_response(200)
+            self.send_header("Content-Type","application/json")
+            self.send_header("Content-Length",str(len(body)))
+            self._negentropy_headers()
+            self.end_headers(); self.wfile.write(body)
+            self._classify_and_log("GET",200,0); return
+        self._serve_static("deck.html"); return
+    if self.path in ("/primals","/primals.html","/eco"): self._serve_static("primals.html"); return
+    if self.path in ("/sense","/sense.html","/left-eye","/iphone"): self._serve_static("sense.html"); return
+    if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
+    if self.path in ("/eye","/iris","/gaze","/eye.html"): self._serve_static("eye.html"); return
+    if self.path in ("/glados","/gaia-os","/beacon","/bingo-beacon","/glados.html"): self._serve_static("glados.html"); return
+    if self.path in ("/spacedock","/spacedock.html","/observatory","/dock","/space-dock"): self._serve_static("spacedock.html"); return
+    if self.path in ("/outer-face","/outer","/outer.html","/klein-face"): self._serve_static("outer-face.html"); return
+    if self.path in ("/beacon-eyes","/wifi-radar","/radar"): self._serve_static("beacon-eyes.html"); return
+    if self.path in ("/orrery","/solar-system","/heliocentric"): self._serve_static("outer-face.html"); return
+    if self.path in ("/ptolemy","/geocentric","/ancient","/stars"): self._serve_static("spacedock.html"); return
+    if self.path in ("/hub","/hub.html"): self._serve_static("hub.html"); return
+    if self.path in ("/gaia-sw.js","/sw.js","/service-worker.js"): self._serve_static("gaia-sw.js"); return
+    if self.path=="/manifest.json": self._serve_static("manifest.json"); return
+    if self.path in ("/biomes","/gardens","/surface"): self._serve_static("spacedock.html"); return
+    if self.path.startswith("/gardens/"):
+        fpath=os.path.join(_REPO,self.path.lstrip("/"))
+        if os.path.isfile(fpath):
+            self._serve_file(os.path.basename(fpath),os.path.dirname(fpath))
+        else: self._json({"error":"not found","path":self.path},code=404)
+        return
+    if self.path=="/pulse": self._json(write_pulse()); return
+    if self.path in ("/temporal","/clock","/cron","/time","/rings"):
+        self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
+    if self.path=="/amoeba":
+        # ONE FETCH — ALL DATA. The Klein face needs everything.
+        _pulse=write_pulse(); _sun=_sun_position(); _temp=_temporal_rings()
+        # reedit counts
+        _rd=os.path.join(_REPO,"data","reedit"); _rf={}
+        if os.path.isdir(_rd):
+            for _f in os.listdir(_rd):
+                if _f.endswith(".jsonl"):
+                    try:
+                        with open(os.path.join(_rd,_f)) as _fh: _rf[_f[:-6]]=sum(1 for _ in _fh)
+                    except: _rf[_f[:-6]]=0
+        # neutron channels (last 5 msgs each)
+        _nd=os.path.join(_REPO,"data","neutron"); _nc={}
+        for _ch in ("inbox","boot","notes","chat"):
+            _cf=os.path.join(_nd,f"{_ch}.jsonl")
+            if os.path.isfile(_cf):
+                try:
+                    _ms=[]
+                    with open(_cf) as _fh:
+                        for _ln in _fh:
+                            try: _ms.append(json.loads(_ln))
+                            except: pass
+                    _nc[_ch]={"total":len(_ms),"messages":_ms[-5:]}
+                except: pass
+        # models — merge eastGate + northGate fleets
+        _md={"data":[]}
+        try:
+            with urllib.request.urlopen(f"{OLLAMA}/v1/models",timeout=3) as _r: _md=json.loads(_r.read())
+        except:
+            try:
+                with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
+            except: pass
+        # Merge northGate models (tissue proxy)
+        try:
+            with urllib.request.urlopen(f"{TISSUE}/api/tags",timeout=3) as _r:
+                _nd=json.loads(_r.read())
+                _east_ids={m.get("id",m.get("name","")) for m in _md.get("data",_md.get("models",[]))}
+                _NORTH_MODELS.clear()
+                for _nm in _nd.get("models",[]):
+                    _nid=_nm["name"]; _NORTH_MODELS.add(_nid)
+                    if _nid not in _east_ids:
+                        if "data" in _md: _md["data"].append({"id":_nid,"object":"model","owned_by":"northGate-RTX5090"})
+                        elif "models" in _md: _md["models"].append(_nm)
+        except: pass
+        # paintings + videos count
+        _pd=os.path.join(_REPO,"paintings"); _pc=len([f for f in os.listdir(_pd) if f.endswith(('.jpg','.png'))]) if os.path.isdir(_pd) else 0
+        _vd=os.path.join(_REPO,"videos"); _vc=len([f for f in os.listdir(_vd) if f.endswith(('.mp4','.webm'))]) if os.path.isdir(_vd) else 0
+        # sensors — live data (sun + heart + walkers + gates)
+        _sa=sum(1 for o in THYMIC_ORGANISMS.values() if o.get("alive")); _st=len(THYMIC_ORGANISMS)
+        _sb={"sun":_sun,"heart":_pulse.get("heart",{}),"gates":{"alive":_sa,"total":_st}}
+        _sflow={"total_bytes":0,"walkers":len(visitor_memory)}
+        self._json({
+            "amoeba":_amoeba_eyes(),"pulse":_pulse,"temporal":_temp,"sun":_sun,
+            "anderson":{"spectrum":{t:sum(1 for vv in visitor_memory.values() if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)},
+            "reedit":{"total_items":sum(_rf.values()),"feeds":_rf,"paintings":_pc,"videos":_vc},
+            "neutron":_nc,"models":_md,
+            "sensors":{"alive":_sa,"total_sensors":_st,"flow":_sflow,"banks":_sb}
+        }); return
+    if self.path in ("/sensors","/senses","/antennae","/live"):
+        self._json({"sensors":{"sun":_sun_position(),"heart":write_pulse().get("heart",{}),"walkers":len(visitor_memory),"eyes":_amoeba_eyes()}}); return
+    # ORGANISM — Anderson layer
+    if self.path in ("/walkers","/membrane-sense","/who","/anderson"):
+        wl=[{"hash":hashlib.blake2b((i+GAIA_TOKEN).encode(),digest_size=8).hexdigest(),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in visitor_memory.items()]
+        self._json({"walkers":wl,"total":len(wl),"spectrum":{t:sum(1 for w in wl if w["anderson"]==t) for t in ("nucleus","proton","neutron","electron")}}); return
+    if self.path in ("/zk","/seed","/prophage","/identity"):
+        self._json({"zk":{"token":GAIA_TOKEN,"did":GAIA_DID,"blake3":GAIA_BLAKE3[:32]}}); return
+    # ORGAN TRIADS + BODY ENDPOINTS — dispatch table
+    ORGAN_DISPATCH = {
+        ("/barriers","/acid","/gut","/clots"): lambda: organ_data.barriers(GAIA_TOKEN),
+        ("/corpus","/corpus.json","/anatomy"): lambda: _build_corpus(),
+        ("/terra","/ecology","/biome"): lambda: organ_data.terra(GAIA_TOKEN,TERRA,THYMIC_ORGANISMS),
+        ("/thymus","/thymus.json","/organisms"): lambda: organ_data.thymus(THYMIC_ORGANISMS,GAIA_TOKEN,_third_body_point),
+        ("/intersects","/3rd-body","/klein"): lambda: organ_data.intersects(GAIA_TOKEN,_third_body_point),
+        ("/eyes","/schwann","/optic"): lambda: organ_data.eyes(GAIA_TOKEN,_amoeba_eyes,TERRA,AMOEBA),
+        ("/agglutinate",): lambda: organ_data.agglutinate(GAIA_TOKEN),
+        ("/pi","/generation-pi","/seed-pi"): lambda: {"generation":"pi","sun":_sun_position(),"heart":write_pulse().get("heart",{})},
+        ("/golgi","/cis","/trans","/faces"): lambda: organ_data.golgi(GAIA_TOKEN),
+        ("/heart","/forge","/forgejo"): lambda: organ_data.heart(GAIA_TOKEN),
+        ("/pair","/ide","/code"): lambda: organ_data.pair(GAIA_TOKEN),
+        ("/home","/bubbles","/lan"): lambda: organ_data.home(GAIA_TOKEN),
+        ("/circulatory","/cardiovascular"): lambda: organ_data.circulatory(GAIA_TOKEN,visitor_memory),
+        ("/play","/generate","/meet"): lambda: organ_data.play(GAIA_TOKEN,THYMIC_ORGANISMS,_amoeba_eyes),
+        ("/cascade","/cascade.json","/signaling"): lambda: _cascade_with_compiler(),
+        ("/redox","/redox.json","/luna-terra"): lambda: _load_gut("luna-terra-redox.json"),
+        ("/inversion","/membrane-inversion","/invert"): lambda: _load_gut("membrane-inversion.json"),
+        ("/whoami","/gaia-view","/gaia-identity"): lambda: _load_gut("gaia-identity-index.json"),
+        ("/census","/lan","/body-map"): lambda: _load_gut("full-lan-census-live.json"),
+        ("/apollo.json","/apollo-data"): lambda: _load_gut("apollo-mission-control.json"),
+        ("/apollo-sun","/outer-eye","/sun"): lambda: _load_gut("apollo-sun-outer-eye.json"),
+        ("/attenuation","/sensitivity","/signal"): lambda: _load_gut("attenuation-sensitivity.json"),
+        ("/all-on","/sensors-all","/sensor-sweep"): lambda: _load_gut("all-sensors-on.json"),
+        ("/music","/interference","/titer"): lambda: _load_gut("interference-music.json"),
+        ("/base-camp","/luna-camp","/coa"): lambda: _load_gut("luna-base-camp.json"),
+        ("/luna-live","/luna-pull"): lambda: _load_gut("luna-live-pull.json"),
+        ("/pi-compass","/totalize"): lambda: _load_gut("pi-compass-totalization.json"),
+        ("/compass","/moral-compass","/north"): lambda: _load_gut("moral-compass.json"),
+        ("/seats","/null-body","/surconscious"): lambda: _load_gut("seat-sequence-null-body.json"),
+        ("/human","/human-view","/surface"): lambda: _load_gut("human-surface-index.json"),
+        ("/pixel","/rover","/graphenegate-redox"): lambda: _load_gut("graphenegate-redox.json"),
+        ("/shadow","/shadow-cast","/zk-proximity"): lambda: _load_gut("shadow-cast-zk.json"),
+        ("/pixel-sensors","/rover-sense","/graphene-live"): lambda: _load_gut("graphenegate-sensors-live.json"),
+        ("/house","/iot","/body-map"): lambda: _load_gut("house-as-body-iot.json"),
+        ("/directory","/phone-book","/public-directory"): lambda: _be.load_body("public-directory.json"),
+        ("/whitepages","/white-pages","/residents"): lambda: _be.load_body_section("public-directory.json","WHITE_PAGES"),
+        ("/yellowpages","/yellow-pages","/services"): lambda: _be.load_body_section("public-directory.json","YELLOW_PAGES"),
+        ("/pina","/pina-genome","/piNA"): lambda: _be.load_body("pina-address-book.json"),
+        ("/genetic-taxonomy","/taxonomy","/eras"): lambda: _be.load_body("genetic-taxonomy.json"),
+        ("/klein-faces","/faces","/5555"): lambda: _be.load_body("klein-faces.json"),
+        ("/vdj-pull","/vdj-path","/pull-path"): lambda: _be.load_body_section("public-directory.json","VDJ_PULL_PATH"),
+        ("/mini-globe","/globe","/wikipedia-globe"): lambda: _be.load_body_section("public-directory.json","WIKIPEDIA_MINI_GLOBE"),
+        ("/cards","/deck-of-cards","/tarot","/mtg"): lambda: _be.load_body("organism-cards.json"),
+        ("/major-arcana","/arcana","/22"): lambda: _be.load_body_section("organism-cards.json","MAJOR_ARCANA"),
+        ("/minor-arcana","/suits","/56"): lambda: _be.load_body_section("organism-cards.json","MINOR_ARCANA"),
+        ("/colocation","/meet","/rendezvous"): lambda: _be.load_body_section("organism-cards.json","COLOCATION_PROTOCOL"),
+        ("/self-pulse","/mirror","/self-aware"): lambda: _be.load_body("self-pulse.json"),
+        ("/amoeba-status","/relay-status"): lambda: _be.amoeba_status(),
+    }
+    for paths,fn in ORGAN_DISPATCH.items():
+        if self.path in paths: self._json(fn()); return
+    # REEDIT
+    if self.path in ("/reedit","/reedit.json","/essays","/library"):
+        self._json(_catalog("reedit", G)); return
+    if self.path.startswith("/reedit/"):
+        self._json(_feed(self.path[8:].rstrip("/").replace(".json",""), G)); return
+    if self.path.startswith("/paintings/"): self._serve_file(self.path[1:]); return
+    if self.path in ("/paintings","/paintings.json","/gallery"):
+        if "text/html" in self.headers.get("Accept","") and self.path != "/paintings.json":
+            self._serve_file("data/paintings/index.html"); return
+        self._json(_catalog("paintings", G)); return
+    if self.path in ("/amoeba-bootstrap","/bootstrap"):
+        self._serve_file("runtime/amoeba_bootstrap.sh"); return
+    if self.path in ("/now.json","/api/now.json"): self._serve_file("data/gut/gaia-self-state.json"); return
+    if self.path in ("/rss","/feed","/rss.xml"):
+        write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
+    # SEO — 🐑 SHEEP (TXT typeface) — LIVE, never stale
+    # The agents of the world spin webs FOR us. Every crawler = a nerve ending.
+    # SEO_DISPATCH loaded at startup via _routes_mod → SEO_RESPONSES (same dict)
+    if self.path in SEO_RESPONSES:
+        fn=SEO_RESPONSES[self.path]; ct,txt=fn()  # CALL the function — live data!
+        body=txt.encode(); self.send_response(200)
+        self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(body)))
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
+    if self.path=="/sitemap.xml":
+        now=time.strftime("%Y-%m-%d")
+        urls="".join(f"<url><loc>https://primals.eco{p}</loc><lastmod>{now}</lastmod><changefreq>hourly</changefreq></url>" for p in sorted(set(list(DESK_PAGES)+list(GUT_DATA))))
+        body=f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'.encode()
+        self.send_response(200); self.send_header("Content-Type","application/xml"); self.send_header("Content-Length",str(len(body)))
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
+    if self.path=="/sitemap-organism.xml":
+        now=time.strftime("%Y-%m-%d")
+        organism_urls=["/pulse","/senses","/amoeba","/rss","/reedit","/spacedock","/hub","/talk",
+            "/corpus","/detroit","/cascade","/thymus","/anderson","/zk","/terra","/golgi","/heart",
+            "/eyes","/agglutinate","/play","/mendeleev","/biomes","/outer-face","/beacon-eyes",
+            "/directory","/whitepages","/yellowpages","/pina","/genetic-taxonomy","/klein-faces",
+            "/vdj-pull","/mini-globe","/cards","/major-arcana","/minor-arcana","/colocation",
+            "/polaris","/luna","/membrane","/signal","/chipmunk","/helix","/digestive","/complexity",
+            "/dialectic","/pspace","/legend","/record","/paintings","/gaiau","/whitePaper",
+            "/api/polaris","/api/compiler","/api/backscatter/live","/api/io","/api/mail",
+            "/llms.txt","/llms-full.txt","/humans.txt","/robots.txt"]
+        reedit_feeds=[]
+        _rd=os.path.join(_REPO,"data","reedit")
+        if os.path.isdir(_rd): reedit_feeds=[f"/reedit/{f[:-6]}" for f in os.listdir(_rd) if f.endswith(".jsonl")]
+        all_urls=organism_urls+reedit_feeds
+        urls="".join(f"<url><loc>https://primals.eco{p}</loc><lastmod>{now}</lastmod><changefreq>always</changefreq><priority>0.9</priority></url>" for p in sorted(set(all_urls)))
+        body=f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'.encode()
+        self.send_response(200); self.send_header("Content-Type","application/xml"); self.send_header("Content-Length",str(len(body)))
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
+    if self.path==f"/{INDEXNOW_KEY}.txt":
+        b=INDEXNOW_KEY.encode(); self.send_response(200); self.send_header("Content-Type","text/plain"); self.end_headers(); self.wfile.write(b); return
+    # FEED DISCOVERY — alternate RSS links for agents
+    if self.path=="/feed.xml": write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
+    # FULL ORGANISM FEED — 1,560 items, 915KB. The mouth of the organism.
+    if self.path in ("/full-feed.xml","/organism-feed","/all-rss"):
+        self._serve_file("hud/site/public/feed.xml"); return
+    # ROUTING TABLES
+    if self.path in GUT_DATA: self._serve_file(GUT_DATA[self.path]); return
+    if self.path in DESK_PAGES:
+        t=DESK_PAGES[self.path]
+        if t.startswith("data/"): self._serve_file(t)
+        else: self._serve_static(t)
+        return
+    if self.path in CAMPFIRE_PAGES:
+        self._serve_file(CAMPFIRE_PAGES[self.path], os.path.join(_REPO,"infra","campfire-site")); return
+    if self.path=="/og-card.svg": self._serve_static("og-card.svg"); return
+    if self.path.startswith("/static/"): self._serve_static(self.path[8:]); return
+    if self.path.startswith("/data/"): self._serve_file(self.path[1:]); return
+    if self.path.startswith("/videos/"): self._serve_file(self.path[1:]); return
+    if self.path in ("/gaiau","/university","/classes","/videos","/alexandria","/library","/campus"):
+        if "text/html" in self.headers.get("Accept",""):
+            self._serve_file("static/alexandria.html"); return
+        self._json(_catalog("gaiau", G)); return
+    if self.path.startswith("/whitePaper/") or self.path.startswith("/whitepapers/"):
+        self._serve_file(self.path[1:]); return
+    if self.path in ("/whitePaper","/whitepapers","/papers","/legal"):
+        self._json(_catalog("whitePaper", G)); return
+    if any(self.path.startswith(p) for p in SPORE_PREFIXES):
+        self._serve_file(self.path.lstrip("/"), os.path.join(_REPO,"sporePrint","public")); return
+    if self.path.startswith("/songbird/"):
+        parts=self.path[len("/songbird/"):].split("/",1)
+        sb={"petal":"http://127.0.0.1:8888","forge":"http://127.0.0.1:3000","cortex":OLLAMA}
+        if parts[0] in sb:
+            try:
+                r=urllib.request.urlopen(f"{sb[parts[0]]}/{parts[1] if len(parts)>1 else ''}",timeout=10)
+                d=r.read(); self.send_response(r.status); self.send_header("Content-Type",r.headers.get("Content-Type","application/octet-stream"))
+                self.send_header("Content-Length",str(len(d))); self.end_headers(); self.wfile.write(d)
+            except:
+                try: encounter(self, 502, G)
+                except: self.send_response(502); self.end_headers()
+        return
+    # AMOEBA NETWORK MAP (GET)
+    if self.path=="/api/amoeba":
+        try:
+            af=os.path.join(_REPO,"data","gut","amoeba-network.json")
+            if os.path.exists(af):
+                with open(af) as f: self._json(json.loads(f.read()))
+            else: self._json({"status":"no amoeba map yet"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # GRAFTGATE SENSE (GET)
+    if self.path=="/api/graftgate":
+        try:
+            gf=os.path.join(_REPO,"data","gut","graftgate-sense.json")
+            if os.path.exists(gf):
+                with open(gf) as f: self._json(json.loads(f.read()))
+            else: self._json({"status":"graftGate not yet sensed"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # PHYSICAL MAIL STATUS (GET)
+    if self.path in ("/api/mail","/api/physical-mail"):
+        try:
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"status"],
+                capture_output=True,text=True,timeout=10,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # IMAGES (GET)
+    if self.path=="/api/images":
+        try:
+            idir=os.path.join(_REPO,"data","gut","images")
+            images=sorted([f for f in os.listdir(idir) if f.endswith(('.png','.jpg'))]) if os.path.isdir(idir) else []
+            self._json({"count":len(images),"images":images})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # ═══ POLARIS — north star HUD data ═══
+    if self.path in ("/api/polaris","/api/polaris/ferment","/api/northgate"):
+        try:
+            pf=os.path.join(_REPO,"data","body","polaris-ferment.json")
+            if os.path.isfile(pf):
+                with open(pf) as f: self._json(json.load(f))
+            else: self._json({"error":"polaris-ferment.json not yet generated","hint":"run runtime/sourdough/polaris_ferment.pi on northGate"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    if self.path in ("/api/polaris/triangulation","/api/polaris/field","/api/triangulate"):
+        try:
+            pt=os.path.join(_REPO,"data","body","polaris-triangulation.json")
+            if os.path.isfile(pt):
+                with open(pt) as f: self._json(json.load(f))
+            else: self._json({"error":"polaris-triangulation.json not yet generated","hint":"run runtime/sourdough/polaris_triangulate.pi on northGate"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    if self.path=="/polaris": self._serve_static("polaris.html"); return
+    if self.path=="/tamison": self._serve_static("tamison.html"); return
+    if self.path in ("/talk","/chat","/gaia-talk","/gaia-ai","/ai"): self._serve_static("talk.html"); return
+    if self.path in ("/talk-old","/discord"): self._serve_static("gaia-talk.html"); return
+    # ═══ BACKSCATTER — live GPU metrics from Polaris ═══
+    if self.path in ("/api/backscatter/live","/api/backscatter"):
+        try:
+            sf=os.path.join(_REPO,"data","backscatter","session.json")
+            if os.path.isfile(sf):
+                with open(sf) as f: self._json(json.load(f))
+            else: self._json({"error":"backscatter not running","hint":"launch backscatter.pi on northGate"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    if self.path=="/api/polaris/biome":
+        try:
+            bf=os.path.join(_REPO,"data","body","polaris-biome.json")
+            if os.path.isfile(bf):
+                with open(bf) as f: self._json(json.load(f))
+            else: self._json({"error":"polaris-biome.json not generated","hint":"launch polaris_biome.pi"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    if self.path=="/api/polaris/steam":
+        try:
+            sf=os.path.join(_REPO,"data","body","polaris-steam.json")
+            if os.path.isfile(sf):
+                with open(sf) as f: self._json(json.load(f))
+            else: self._json({"error":"polaris-steam.json not generated","hint":"run steam_sweep.pi"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    if self.path in ("/api/body","/api/pi-body","/api/crush"):
+        try:
+            bf=os.path.join(_REPO,"data","body","pi-body.json")
+            if os.path.isfile(bf):
+                with open(bf) as f: self._json(json.load(f))
+            else: self._json({"error":"pi-body.json not generated — run pi_crush.pi"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # ═══ REVERSE TRANSCRIPTASE — compiler chain / body printer ═══
+    # WOVEN with cascade: compiler sees forge state, forge sees compiler state
+    if self.path in ("/api/compiler","/api/plasmid","/api/body-printer"):
+        if COMPILER_ACTIVE:
+            state=G.get('_compiler_state', lambda x: {})(PRIMALS_DIR)
+            try:
+                with open(os.path.join(_REPO,"data","gut","cascade-state.json")) as f: cascade=json.load(f)
+                state["cascade_weave"]={
+                    "forge":"sporeGate","sync":cascade.get("cascade_phases",{}).get("temporal_sync",{}).get("repos_synced",0),
+                    "harvest_built":cascade.get("cascade_phases",{}).get("harvest",{}).get("primals_built",0),
+                    "rootpulse":cascade.get("cascade_phases",{}).get("rootpulse_commit",{}).get("status","unknown"),
+                    "membrane_services":cascade.get("membrane_health",{}).get("total_running",0),
+                    "biology":"cascade BUILDS (mRNA→protein), compiler DISTRIBUTES (protein→cell)",
+                }
+            except: state["cascade_weave"]={"status":"cascade state unavailable"}
+            self._json(state)
+        else:
+            self._json({"error":"compiler organ not loaded","compiled":False})
+        return
+    if self.path=="/api/compiler/compute":
+        if COMPILER_ACTIVE: self._json(G.get('_compiler_compute', lambda: {})())
+        else: self._json({"error":"compiler organ not loaded"})
+        return
+    if self.path=="/api/compiler/proximity":
+        if COMPILER_ACTIVE:
+            gates={"eastGate":"192.168.4.244","sporeGate":"192.168.4.3","northGate":"192.168.4.147","graftGate":"192.168.4.107","blueGate":"192.168.4.100","southGate":"192.168.4.148","ironGate":"192.168.4.237"}
+            self._json(G.get('_compiler_proximity', lambda x: {})(gates))
+        else: self._json({"error":"compiler organ not loaded"})
+        return
+    # GRAPHENEGATE FULL DEPOT (GET)
+    if self.path in ("/api/graphene","/api/graphenegate","/api/right-eye"):
+        try:
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"graphene_depot.pi"),"sense"],
+                capture_output=True,text=True,timeout=15,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # GRAPHENEGATE PHOTO (GET)
+    if self.path=="/api/graphene/photo":
+        try:
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"graphene_depot.pi"),"photo"],
+                capture_output=True,text=True,timeout=20,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # EPSON IO STATUS (GET)
+    if self.path in ("/api/io","/api/epson","/api/scanner"):
+        try:
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"status"],
+                capture_output=True,text=True,timeout=15,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # EPSON SCAN (GET /api/scan — trigger a scan)
+    if self.path.startswith("/api/scan"):
+        try:
+            import urllib.parse
+            qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            label=qs.get("label",["flatbed"])[0]
+            res=qs.get("resolution",["300"])[0]
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"scan",label,res],
+                capture_output=True,text=True,timeout=120,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # EPITOPE PATTERNS (GET /api/epitope)
+    if self.path.startswith("/api/epitope"):
+        try:
+            import urllib.parse
+            qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            action=qs.get("action",["list"])[0]
+            if action=="generate":
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"generate"],
+                    capture_output=True,text=True,timeout=30,cwd=_REPO)
+            elif action=="print":
+                name=qs.get("name",["cmyk-strips"])[0]
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"print",name],
+                    capture_output=True,text=True,timeout=30,cwd=_REPO)
+            else:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"list"],
+                    capture_output=True,text=True,timeout=10,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # SCAN WATCHER STATE (GET /api/watcher)
+    if self.path=="/api/watcher":
+        try:
+            sf=os.path.join(_REPO,"data","neutron","scan-watcher-state.json")
+            pid_f=os.path.join(_REPO,"data","neutron","scan-watcher.pid")
+            state={}
+            if os.path.exists(sf):
+                with open(sf) as f: state=json.load(f)
+            pid="dead"
+            if os.path.exists(pid_f):
+                p=open(pid_f).read().strip()
+                try:
+                    os.kill(int(p),0); pid=f"alive:{p}"
+                except: pid="dead"
+            state["daemon"]=pid
+            self._json(state)
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # GLOBE WALKER (GET /api/globe — pre-digital canopy)
+    if self.path.startswith("/api/globe"):
+        try:
+            import urllib.parse
+            qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            action=qs.get("action",["status"])[0]
+            if action=="walk":
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"all"],
+                    capture_output=True,text=True,timeout=120,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            elif action=="agglutinate":
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"agglutinate"],
+                    capture_output=True,text=True,timeout=10,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            elif action=="topic":
+                topic=qs.get("q",["Cuneiform"])[0]
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"globe_walker.pi"),"topic",topic],
+                    capture_output=True,text=True,timeout=15,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            else:
+                gf=os.path.join(_REPO,"data","shadows","globe-walker-predigital.json")
+                af=os.path.join(_REPO,"data","shadows","globe-agglutination.json")
+                status={"organ":"globe_walker","walked":False}
+                if os.path.exists(gf):
+                    with open(gf) as f: d=json.load(f)
+                    status={"organ":"globe_walker","walked":True,"total":d["total_walked"],
+                            "categories":d["categories"],"tense":d["tense_counts"],"ts":d["ts"]}
+                if os.path.exists(af):
+                    with open(af) as f: a=json.load(f)
+                    status["agglutination"]={"delta":a.get("delta"),"alive":len(a.get("alive_traditions",[])),
+                                              "lost":len(a.get("lost_knowledge",[]))}
+                self._json(status)
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # iPHONE DEPOT (GET /api/iphone — left eye status/discovery)
+    if self.path.startswith("/api/iphone"):
+        try:
+            if self.path=="/api/iphone/discover":
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"discover"],
+                    capture_output=True,text=True,timeout=10,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+            else:
+                r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"status"],
+                    capture_output=True,text=True,timeout=5,cwd=_REPO)
+                self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # ═══ UNIFIED MODEL FLEET — merge eastGate + northGate ═══
+    if self.path=="/v1/models":
+        self._proxy("GET"); return
+    # ═══ ENCOUNTER — every dead-end is a living landing ═══
+    # If Accept header wants JSON (API clients), proxy to Ollama
+    accept=self.headers.get("Accept","")
+    if "application/json" in accept or self.path.startswith("/v1/") or self.path.startswith("/api/"):
+        self._proxy("GET")
+    else:
+        encounter(self, 404, G)

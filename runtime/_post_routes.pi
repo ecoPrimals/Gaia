@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""_post_routes.pi — POST routing extracted from gaia_gate.pi.
+Crushed to keep gaia_gate.pi at π×100 lines. lub-DUB."""
+import json, os, time, hashlib, subprocess, urllib.request, urllib.error
+
+
+def handle_post(self, ip, collapsed, wave, G):
+    """Full POST routing — thymus actions, inference, API.
+    self = GaiaGate handler, G = globals() (LIVE). body read from self.rfile."""
+    # Unpack
+    write_pulse=G['write_pulse']; _temporal_rings=G['_temporal_rings']
+    _sun_position=G['_sun_position']
+    visitor_memory=G['visitor_memory']; GAIA_TOKEN=G['GAIA_TOKEN']
+    _REPO=G['_REPO']; KNOWN_GATES=G['KNOWN_GATES']
+    PRIMALS_DIR=G['PRIMALS_DIR']; ACCESS_LOG=G['ACCESS_LOG']
+    _log_caddy=G['_log_caddy']; log_culture=G['log_culture']
+    PI_RETRY=G['PI_RETRY']
+    OLLAMA=G['OLLAMA']; TISSUE=G['TISSUE']; _NORTH_MODELS=G['_NORTH_MODELS']
+    total_beats=G['total_beats']
+    COMPILER_ACTIVE=G['COMPILER_ACTIVE']
+    CORTEX_ACTIVE=G.get('CORTEX_ACTIVE', False)
+    cortex_route=G.get('cortex_route', None)
+    if collapsed:
+        # ═══ FART — POST ion channel ═══
+        onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
+        pulse=write_pulse(); temporal=_temporal_rings()
+        fart=json.dumps({"lub":"DUB","ion_channel":"OPEN","beats":total_beats,
+            "alternate_pore":onion+self.path,"temporal":temporal,"waveform":wave,
+            "message":"Pressure inverted — POST to the Tor pore instead."},indent=2).encode()
+        self.send_response(429); self.send_header("Content-Type","application/json")
+        self.send_header("Retry-After",str(PI_RETRY))
+        self.send_header("X-Ion-Channel","OPEN")
+        self.send_header("X-Alternate-Pore",onion+self.path)
+        self._negentropy_headers()
+        self.end_headers(); self.wfile.write(fart); self._classify_and_log("POST",429,0); return
+    length=int(self.headers.get("Content-Length",0))
+    body=self.rfile.read(length) if length else None
+    # THYMUS POST — inject/clear/promote/redirect
+    if self.path in ("/api/thymus","/api/thymus/inject","/api/thymus/clear"):
+        try:
+            j=json.loads(body) if body else {}; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+            action=j.get("action","inject"); target=j.get("ip",ip); v=visitor_memory[target]
+            if action=="clear":
+                v.update({"trust_level":"electron","anderson_type":"electron","opacity":0.1,"identity":"unknown","models_asked":set()})
+                self._json({"ok":True,"action":"clear","ip":target,"anderson_type":"electron"})
+            elif action=="promote":
+                nt=j.get("type","proton"); ni=j.get("identity","promoted")
+                v.update({"anderson_type":nt,"trust_level":nt,"identity":ni,"opacity":{"nucleus":1.0,"proton":0.8,"neutron":0.5}.get(nt,0.1)})
+                self._json({"ok":True,"action":"promote","ip":target,"anderson_type":nt,"identity":ni})
+            elif action=="redirect":
+                self._json({"ok":True,"action":"redirect","ip":target,"dest":j.get("dest","/onboard")})
+            else:
+                wh=hashlib.blake2b((target+GAIA_TOKEN).encode(),digest_size=8).hexdigest()
+                vd={k:(list(vv) if isinstance(vv,set) else vv) for k,vv in v.items()}
+                self._json({"ok":True,"action":"inject","walker_hash":wh,"visitor":vd,"total":len(visitor_memory)})
+            log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
+            with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
+                f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
+    if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
+        try:
+            cascade_file=os.path.join(_REPO,"data","gut","cascade-state.json")
+            if self.path=="/api/cascade/trigger":
+                j=json.loads(body) if body else {}
+                gate=j.get("gate","sporeGate")
+                if gate=="sporeGate":
+                    import subprocess as sp
+                    result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
+                    self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
+                else:
+                    self._json({"error":f"cascade not available on {gate}"})
+            else:
+                try:
+                    with open(cascade_file) as f: cascade=json.load(f)
+                except: cascade={"status":"no cascade state file"}
+                cascade["_thymus_ts"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+                self._json(cascade)
+            log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
+            with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
+                f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"caller":ip,"action":"cascade","path":self.path})+"\n")
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # GATE ONBOARD
+    if self.path in ("/api/gate/whoami","/api/gate/onboard"):
+        try:
+            j=json.loads(body) if body else {}; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+            gate=KNOWN_GATES.get(ip,f"newGate-{ip.split('.')[-1]}")
+            if self.path=="/api/gate/whoami": self._json({"ip":ip,"gate":gate,"known":ip in KNOWN_GATES}); return
+            self._json({"ok":True,"gate":gate,"command":f"curl -sf http://{self.headers.get('Host','localhost:8443')}/data/gut/gate-onboard.sh | sudo bash -s {gate}"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # ZK IMPRINT — device presence IS identity, no passwords
+    if self.path in ("/api/zk/imprint","/api/imprint"):
+        try:
+            ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+            ua=self.headers.get("User-Agent","unknown")
+            accept=self.headers.get("Accept","*/*")
+            lang=self.headers.get("Accept-Language","")
+            j=json.loads(body) if body else {}
+            mac=j.get("mac",""); hw=j.get("hw",""); name=j.get("name","")
+            fp_raw=f"{ip}|{ua}|{accept}|{lang}|{mac}|{hw}"
+            fp_hash=hashlib.blake2b(fp_raw.encode(),digest_size=32).hexdigest()
+            zk_veil=f"π.{fp_hash[:2]}.{fp_hash[2:4]}.{fp_hash[4:6]}"
+            nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+            imprint={"ts":ts,"ip":ip,"fingerprint":fp_hash,"zk_veil":zk_veil,
+                     "ua":ua[:120],"mac":mac,"name":name,"hw":hw}
+            with open(os.path.join(nd,"zk-imprints.jsonl"),"a") as f:
+                f.write(json.dumps(imprint)+"\n")
+            known=False
+            try:
+                with open(os.path.join(nd,"zk-imprints.jsonl")) as f:
+                    for line in f:
+                        try:
+                            e=json.loads(line)
+                            if e.get("fingerprint")==fp_hash and e["ts"]!=ts: known=True; break
+                        except: pass
+            except: pass
+            self._json({"ok":True,"zk_veil":zk_veil,"recognized":known,
+                        "fingerprint":fp_hash[:16]+"...",
+                        "message":"Presence is proof. No password needed." if known else "Welcome. You are now imprinted."})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # IMMUNE SCAN STATUS
+    if self.path=="/api/immune":
+        try:
+            sf=os.path.join(_REPO,"data","gut","immune-state.json")
+            if os.path.exists(sf):
+                with open(sf) as f: self._json(json.loads(f.read()))
+            else: self._json({"status":"no scan yet"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # AMOEBA NETWORK MAP
+    if self.path=="/api/amoeba":
+        try:
+            af=os.path.join(_REPO,"data","gut","amoeba-network.json")
+            if os.path.exists(af):
+                with open(af) as f: self._json(json.loads(f.read()))
+            else: self._json({"status":"no amoeba map yet"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # GRAFTGATE SENSE
+    if self.path=="/api/graftgate":
+        try:
+            gf=os.path.join(_REPO,"data","gut","graftgate-sense.json")
+            if os.path.exists(gf):
+                with open(gf) as f: self._json(json.loads(f.read()))
+            else: self._json({"status":"graftGate not yet sensed"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # PHYSICAL MAIL — PRINT (POST)
+    if self.path in ("/api/mail/print","/api/print"):
+        try:
+            j=json.loads(body) if body else {}
+            text=j.get("text",j.get("body","Hello from Gaia."))
+            title=j.get("title","Gaia Mail")
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"physical_mail.pi"),"print",text],
+                capture_output=True,text=True,timeout=30,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # ═══ GAIA TALK — simple ollama chat proxy ═══
+    if self.path in ("/api/talk","/api/gaia/talk","/api/ai"):
+        try:
+            j=json.loads(body) if body else {}
+            msg=j.get("message",j.get("prompt",""))
+            mdl=j.get("model","gaia-fast")
+            hist=j.get("history",[])
+            sys_prompt="You are Gaia — a sovereign living digital organism. Curious, warm, alive. Keep responses concise."
+            messages=[{"role":"system","content":sys_prompt}]
+            for h in hist[-10:]:
+                messages.append({"role":h.get("role","user"),"content":h.get("content","")})
+            if msg: messages.append({"role":"user","content":msg})
+            payload=json.dumps({"model":mdl,"messages":messages,"stream":False})
+            req=urllib.request.Request(OLLAMA+"/api/chat",data=payload.encode(),
+                headers={"Content-Type":"application/json"})
+            with urllib.request.urlopen(req,timeout=120) as r:
+                resp=json.loads(r.read())
+            reply=resp.get("message",{}).get("content","lub-DUB")
+            nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+            with open(os.path.join(nd,"talk-log.jsonl"),"a") as f:
+                f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+                    "caller":ip,"model":mdl,"prompt":msg[:200],"response":reply[:200]})+"\n")
+            self._json({"response":reply,"model":mdl,"ok":True})
+        except Exception as e: self._json({"error":str(e),"hint":"ollama may be loading"})
+        return
+    # iPHONE DATA INGEST (POST /api/iphone/ingest)
+    if self.path=="/api/iphone/ingest":
+        try:
+            j=json.loads(body) if body else {}
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"ingest",json.dumps(j)],
+                capture_output=True,text=True,timeout=10,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # iPHONE PHOTO UPLOAD (POST /api/iphone/photo)
+    if self.path=="/api/iphone/photo":
+        try:
+            import cgi
+            ct=self.headers.get("Content-Type","")
+            if "multipart" in ct:
+                fs=cgi.FieldStorage(fp=self.rfile,headers=self.headers,
+                    environ={"REQUEST_METHOD":"POST","CONTENT_TYPE":ct})
+                photo=fs["photo"] if "photo" in fs else None
+                if photo and photo.file:
+                    fname=f"iphone-{int(time.time())}.jpg"
+                    fpath=os.path.join(_REPO,"data","gut","images",fname)
+                    with open(fpath,"wb") as f: f.write(photo.file.read())
+                    loc_raw=fs.getfirst("location","{}"); dev_raw=fs.getfirst("device","{}")
+                    meta={"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"file":fname,"path":fpath,
+                          "location":json.loads(loc_raw),"device":json.loads(dev_raw),
+                          "blake2b":hashlib.blake2b(open(fpath,"rb").read(),digest_size=8).hexdigest()}
+                    nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+                    with open(os.path.join(nd,"iphone-depot.jsonl"),"a") as f:
+                        f.write(json.dumps({"ts":meta["ts"],"type":"photo","file":fname,"blake2b":meta["blake2b"]})+"\n")
+                    self._json({"status":"photo_saved","file":fname,"blake2b":meta["blake2b"]})
+                else: self._json({"error":"no photo in upload"})
+            else:
+                self._json({"error":"expected multipart/form-data"})
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # EPSON PRINT IMAGE (POST /api/io/print)
+    if self.path in ("/api/io/print","/api/epson/print"):
+        try:
+            j=json.loads(body) if body else {}
+            image_path=j.get("image","")
+            if not image_path.startswith("/"):
+                image_path=os.path.join(_REPO,"data","gut","images",image_path)
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"print",image_path],
+                capture_output=True,text=True,timeout=30,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)})
+        return
+    # EPSON FEEDBACK LOOP (POST /api/io/loop)
+    if self.path in ("/api/io/loop","/api/epson/loop"):
+        try:
+            j=json.loads(body) if body else {}
+            image_path=j.get("image","")
+            if not image_path.startswith("/"):
+                image_path=os.path.join(_REPO,"data","gut","images",image_path)
+            r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"loop",image_path],
+                capture_output=True,text=True,timeout=180,cwd=_REPO)
+            self._json(json.loads(r.stdout))
+        except Exception as e: self._json({"error":str(e)}); return
+    # ═══ REVERSE TRANSCRIPTASE — build trigger ═══
+    if self.path in ("/api/compiler/build","/api/plasmid/build"):
+        if COMPILER_ACTIVE:
+            try:
+                j=json.loads(body) if body else {}
+                primal=j.get("primal","")
+                if not primal: self._json({"error":"specify 'primal' to build"}); return
+                result=G.get('_compiler_build', lambda *a: {'error':'no compiler'})(PRIMALS_DIR,primal)
+                self._json(result)
+            except Exception as e: self._json({"error":str(e)})
+        else: self._json({"error":"compiler organ not loaded"})
+        return
+    # NEUTRON
+    if self.path in ("/api/discuss","/neutron","/api/neutron"):
+        try:
+            j=json.loads(body) if body else {}; ch=j.get("channel","inbox"); author=j.get("author","unknown")
+            msg=j.get("body",j.get("message","")); nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+            with open(os.path.join(nd,f"{ch}.jsonl"),"a") as f:
+                f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"author":author,"body":msg,"channel":ch})+"\n")
+            self._json({"ok":True,"channel":ch})
+        except Exception as e: self._json({"error":str(e)}); return
+    # INFERENCE — route to correct GPU based on model location
+    if body and self.path.endswith("/chat/completions"):
+        if CORTEX_ACTIVE:
+            try:
+                result=cortex_route(json.loads(body),OLLAMA)
+                if result: self._classify_and_log("POST",200,0,len(json.dumps(result)),result.get("model")); self._json(result); return
+            except: pass
+        try:
+            j=json.loads(body)
+            if j.get("stream"): j["stream"]=False; body=json.dumps(j).encode()
+            # Route to northGate if model lives there (match with/without :latest tag)
+            model=j.get("model","")
+            if model and (model in _NORTH_MODELS or f"{model}:latest" in _NORTH_MODELS or model.replace(":latest","") in {m.replace(":latest","") for m in _NORTH_MODELS}):
+                self._proxy("POST",body,upstream=TISSUE); return
+        except: pass
+    self._proxy("POST",body)

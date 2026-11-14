@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""_petal.pi — petalTongue TRANS face: render JSON as styled HTML.
+CIS = raw JSON (agents, inner). TRANS = rendered HTML (humans, outer).
+Extracted from gaia_gate.pi for π-crush. lub-DUB."""
+import json, time
+
+
+def render(handler, data, status, _REPO):
+    """Render JSON as styled HTML for human eyes — the TRANS face."""
+    t0 = time.time()
+    path = getattr(handler, 'path', '/')
+    title = path.strip('/').replace('/', ' › ').upper() or 'GAIA'
+
+    def _rv(v, depth=0):
+        if v is None: return '<span class="null">null</span>'
+        if isinstance(v, bool): return f'<span class="bool">{"true" if v else "false"}</span>'
+        if isinstance(v, (int, float)): return f'<span class="num">{v}</span>'
+        if isinstance(v, str):
+            if v.startswith("http"): return f'<a href="{v}" class="link">{v}</a>'
+            if len(v) > 200: return f'<span class="str">{v[:200]}…</span>'
+            return f'<span class="str">{v}</span>'
+        if isinstance(v, list):
+            if not v: return '<span class="dim">[]</span>'
+            items = ''.join(f'<li>{_rv(i, depth+1)}</li>' for i in v[:50])
+            more = f'<li class="dim">…+{len(v)-50} more</li>' if len(v) > 50 else ''
+            return f'<ul>{items}{more}</ul>'
+        if isinstance(v, dict):
+            if not v: return '<span class="dim">{{}}</span>'
+            rows = ''.join(f'<tr><td class="key">{k}</td><td>{_rv(val, depth+1)}</td></tr>' for k, val in v.items())
+            return f'<table class="obj">{rows}</table>'
+        return f'<span>{v}</span>'
+
+    body_html = _rv(data)
+    html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Gaia</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#0a0a14;color:#c0c8d8;font-family:'Courier New',monospace;font-size:12px;padding:16px;line-height:1.5}}
+a{{color:#4f8}}a:hover{{color:#fff}}
+.header{{text-align:center;padding:12px;margin-bottom:16px;border-bottom:1px solid #1a1a2a}}
+.header h1{{color:#00c853;font-size:16px;letter-spacing:4px}}
+.header .path{{color:#567;font-size:10px;margin-top:4px}}
+.header .raw{{font-size:10px;color:#345;margin-top:4px}}
+.header .raw a{{color:#567}}
+table.obj{{width:100%;border-collapse:collapse;margin:2px 0}}
+table.obj td{{padding:3px 8px;border-bottom:1px solid #111a2a;vertical-align:top}}
+td.key{{color:#7ab;font-weight:bold;white-space:nowrap;width:1%;padding-right:16px}}
+ul{{list-style:none;padding-left:12px}}
+li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
+.num{{color:#ffa}}.str{{color:#adc}}.bool{{color:#f8a}}.null{{color:#567;font-style:italic}}
+.dim{{color:#345}}.link{{color:#4f8}}
+.footer{{text-align:center;padding:12px;margin-top:16px;border-top:1px solid #1a1a2a;color:#345;font-size:10px}}
+</style></head><body>
+<div class="header">
+<h1>{title}</h1>
+<div class="path">{path}</div>
+<div class="raw"><a href="{path}" onclick="fetch('{path}',{{headers:{{'Accept':'application/json'}}}}).then(r=>r.text()).then(t=>{{document.body.innerHTML='<pre>'+t+'</pre>'}});return false">view raw JSON (agent view)</a></div>
+</div>
+{body_html}
+<div class="footer">petalTongue TRANS face — CIS=JSON (agents) · TRANS=HTML (humans) — lub-DUB</div>
+</body></html>'''.encode()
+
+    handler.send_response(status)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Content-Length", str(len(html)))
+    handler.send_header("X-Gaia-Render", "petalTongue-trans")
+    handler._negentropy_headers()
+    handler.end_headers()
+    handler.wfile.write(html)
+    handler._classify_and_log("GET", status, (time.time()-t0)*1000, len(html))

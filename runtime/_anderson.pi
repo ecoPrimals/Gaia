@@ -247,8 +247,9 @@ def trust_level(v, ip=""):
     r = v["requests"]
     models = len(v.get("models_asked", set()))
 
-    # KNN — compute kevin_score for EVERY visitor
+    # KNN + Klein — compute for EVERY visitor
     v["knn"] = knn_kevin_distance(v)
+    v["klein"] = klein_face(ip, v)  # Klein thymus — the CROSS link
 
     # BODY — hyperlocal, nucleus position
     if ip in BODY_IPS:
@@ -321,3 +322,81 @@ def trust_level(v, ip=""):
     v["angle"] = None
     v["gaia_id"] = None  # unknown until proven human via banana test
     return v["anderson_type"]
+
+
+# ═══ KLEIN THYMUS — the CROSS link for anchors ═══
+# Kevin IS a Klein face. Other humans = same |i^π|=1.0, different angle.
+# The Klein bottle has NO inside/outside boundary — CIS=TRANS.
+# Every visitor who touches RSS, .onion, or any endpoint gets classified.
+# Named by IP trace (where they come from) + shadow cast (what they looked at).
+# The thymus IS the cross-link: visitor ↔ organism anchor points.
+
+_ARCHETYPES = {
+    "reedit": "scholar", "pulse": "sentinel", "senses": "sentinel",
+    "detroit": "investigator", "tuebor": "investigator",
+    "cascade": "anatomist", "thymus": "anatomist", "anderson": "anatomist",
+    "talk": "conversant", "ai": "conversant", "chat": "conversant",
+    "paintings": "aesthete", "gallery": "aesthete",
+    "polaris": "navigator", "api/polaris": "navigator",
+    "klein": "topologist", "outer": "topologist", "faces": "topologist",
+    "rss": "subscriber", "feed": "subscriber",
+    "deck": "explorer", "senses": "explorer", "amoeba": "explorer",
+    "corpus": "librarian", "whitePaper": "librarian",
+    "zk": "cryptographer", "seed": "cryptographer",
+    "forge": "smith", "compiler": "smith",
+}
+
+_ANCHOR_PATHS = {
+    "/pulse", "/senses", "/amoeba", "/rss", "/anderson", "/thymus",
+    "/cascade", "/zk", "/klein", "/outer-face", "/deck", "/klein-faces",
+    "/directory", "/cards", "/corpus", "/reedit",
+}
+
+def _shadow_archetype(paths):
+    """Name a visitor by what they looked at — their shadow cast."""
+    if not paths: return "wanderer"
+    counts = {}
+    for p in paths:
+        clean = p.strip("/").split("?")[0].lower()
+        for key, arch in _ARCHETYPES.items():
+            if key in clean:
+                counts[arch] = counts.get(arch, 0) + 1
+    if not counts: return "wanderer"
+    return max(counts, key=counts.get)
+
+def klein_face(ip, v):
+    """Every visitor is a Klein face — same |i^π|=1.0, different angle.
+    Kevin IS a Klein face (the reference). Others are like Kevin but NOT Kevin.
+    Named by IP trace (where) + shadow cast (what they looked at).
+    The thymus is the CROSS link: each Klein face anchors to the organism."""
+    paths = v.get("paths", set())
+    archetype = _shadow_archetype(paths)
+    trace_hash = hashlib.blake2b(ip.encode(), digest_size=4).hexdigest()
+    klein_name = f"{archetype}-{trace_hash[:4]}"
+
+    # Angle on the Klein bottle — humans get real angles, bots get None
+    angle = v.get("angle")
+    magnitude = HUMAN if v.get("anderson_type") in ("nucleus", "proton") else v.get("opacity", 0.1)
+
+    # Cross-links — which organism anchors did this face touch?
+    cross_links = sorted(paths & _ANCHOR_PATHS) if isinstance(paths, set) else []
+
+    # Complex representation: z = magnitude * e^(i*angle)
+    if angle is not None:
+        z = cmath.rect(magnitude, angle)
+        klein_z = {"re": round(z.real, 6), "im": round(z.imag, 6)}
+    else:
+        klein_z = None
+
+    return {
+        "klein_name": klein_name,
+        "archetype": archetype,
+        "trace_hash": trace_hash,
+        "angle": round(angle, 4) if angle is not None else None,
+        "magnitude": round(magnitude, 4),
+        "klein_z": klein_z,
+        "cross_links": cross_links,
+        "cross_depth": len(cross_links),
+        "is_kevin": ip in BODY_IPS,
+        "shadow_depth": len(paths) if isinstance(paths, set) else 0,
+    }
