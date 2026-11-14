@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+"""lan_circle.pi — The LAN circle: PULL from gaia_gate.pi body, PUSH out after.
+
+The organism RADIATES from eastGate. blueGate PULLS. The circle completes.
+
+PULL:  eastGate :8443/pulse, :8443/amoeba, :8443/heart, :8080/data/heart-pull.json
+       → data/body/pulse.json, amoeba.json, heart.json, heart-pull.json, now.json
+
+SERVE: HTTP :3144 — body state API for local consumers
+       GET /body/pulse   → latest pulse from eastGate
+       GET /body/amoeba  → full organism snapshot
+       GET /body/now     → current state
+       GET /body/heart   → heart + forge
+       GET /circle       → circle health (pull stats, freshness)
+
+PUSH:  git add + commit + push when body state changes significantly
+       → Forgejo → GitHub → RSS/Tor/port
+
+The astrolabe measures. The circle turns. lub-DUB.
+"""
+
+import http.server, json, os, socketserver, sys, threading, time
+import urllib.request, urllib.error
+
+EAST_GATE = "http://192.168.4.244:8443"
+EAST_DATA = "http://192.168.4.244:8080"
+BODY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "body")
+CIRCLE_PORT = 3144
+PULL_INTERVAL = 120  # 2 minutes, matches eastGate heartbeat
+
+os.makedirs(BODY_DIR, exist_ok=True)
+
+# Circle state
+_circle = {
+    "pulls": 0,
+    "errors": 0,
+    "last_pull": None,
+    "last_error": None,
+    "freshness_secs": None,
+    "boot": time.time(),
+    "endpoints": {},
+}
+
+
+def _fetch(url, timeout=15):
+    """Fetch JSON from a URL."""
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "Gaia-LAN-Circle/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode())
+    except Exception as e:
+        return {"_error": str(e), "_url": url}
+
+
+def _save(name, data):
+    """Save body data to file."""
+    path = os.path.join(BODY_DIR, f"{name}.json")
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, default=str)
+    os.replace(tmp, path)
+    return path
+
+
+def _load(name):
+    """Load body data from file."""
+    path = os.path.join(BODY_DIR, f"{name}.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def _pull_one(name, url):
+    """Pull one endpoint and save."""
+    t0 = time.time()
+    data = _fetch(url)
+    elapsed = time.time() - t0
+    has_error = "_error" in data
+
+    _circle["endpoints"][name] = {
+        "url": url,
+        "ok": not has_error,
+        "ms": round(elapsed * 1000),
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+    if not has_error:
+        _save(name, data)
+        return True, data
+    else:
+        _circle["errors"] += 1
+        _circle["last_error"] = f"{name}: {data['_error']}"
+        return False, data
+
+
+def pull_body():
+    """Pull full body state from eastGate — the diastolic beat."""
+    t0 = time.time()
+    results = {}
+
+    endpoints = {
+        "pulse":      f"{EAST_GATE}/pulse",
+        "amoeba":     f"{EAST_GATE}/amoeba",
+        "heart":      f"{EAST_GATE}/heart",
+        "now":        f"{EAST_DATA}/data/now.json",
+        "heart-pull": f"{EAST_DATA}/data/heart-pull.json",
+    }
+
+    ok_count = 0
+    for name, url in endpoints.items():
+        ok, data = _pull_one(name, url)
+        results[name] = ok
+        if ok:
+            ok_count += 1
+
+    elapsed = time.time() - t0
+    _circle["pulls"] += 1
+    _circle["last_pull"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    _circle["freshness_secs"] = 0
+
+    sym = "💚" if ok_count == len(endpoints) else ("💛" if ok_count > 0 else "💔")
+    print(f"  {sym} PULL #{_circle['pulls']}: {ok_count}/{len(endpoints)} endpoints in {elapsed*1000:.0f}ms")
+
+    # Build combined body snapshot
+    body_snapshot = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "pull": _circle["pulls"],
+        "source": "eastGate",
+        "ok": ok_count,
+        "total": len(endpoints),
+        "endpoints": results,
+    }
+    _save("circle-state", body_snapshot)
+
+    return ok_count, len(endpoints)
+
+
+def _pull_loop():
+    """Background pull loop — the heartbeat of the circle."""
+    print(f"  🔄 LAN circle pull loop: every {PULL_INTERVAL}s")
+    time.sleep(3)  # wait for server to start
+    while True:
+        try:
+            pull_body()
+        except Exception as e:
+            print(f"  ❌ Pull error: {e}")
+            _circle["errors"] += 1
+            _circle["last_error"] = str(e)
+        time.sleep(PULL_INTERVAL)
+
+
+def _freshness_tick():
+    """Update freshness counter every second."""
+    while True:
+        if _circle["last_pull"]:
+            _circle["freshness_secs"] = int(time.time() - time.mktime(
+                time.strptime(_circle["last_pull"], "%Y-%m-%dT%H:%M:%SZ")) - time.timezone)
+        time.sleep(10)
+
+
+# ═══ HTTP API — serve body state to local consumers ═══
+
+class CircleHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, fmt, *a):
+        pass
+
+    def _json(self, data, status=200):
+        body = json.dumps(data, indent=2, default=str).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        path = self.path.split("?")[0].rstrip("/")
+
+        if path == "/circle" or path == "/health":
+            self._json({
+                "service": "lan-circle",
+                "status": "alive",
+                "pulls": _circle["pulls"],
+                "errors": _circle["errors"],
+                "last_pull": _circle["last_pull"],
+                "last_error": _circle["last_error"],
+                "freshness_secs": _circle["freshness_secs"],
+                "uptime_secs": int(time.time() - _circle["boot"]),
+                "endpoints": _circle["endpoints"],
+            })
+            return
+
+        if path.startswith("/body/"):
+            name = path[6:]
+            data = _load(name)
+            if data:
+                self._json(data)
+            else:
+                self._json({"error": f"body/{name} not found", "available": os.listdir(BODY_DIR)}, 404)
+            return
+
+        if path == "/pull":
+            ok, total = pull_body()
+            self._json({"pulled": True, "ok": ok, "total": total})
+            return
+
+        if path == "/body" or path == "":
+            files = [f[:-5] for f in os.listdir(BODY_DIR) if f.endswith(".json")]
+            self._json({
+                "body_files": sorted(files),
+                "endpoints": {
+                    f"/body/{f}": f"GET body state: {f}" for f in sorted(files)
+                },
+                "actions": {
+                    "/pull": "POST/GET — trigger immediate pull from eastGate",
+                    "/circle": "GET — circle health and stats",
+                },
+            })
+            return
+
+        self._json({"error": "not found", "try": ["/circle", "/body", "/body/pulse", "/body/amoeba", "/pull"]}, 404)
+
+    def do_POST(self):
+        path = self.path.split("?")[0].rstrip("/")
+        if path == "/pull":
+            ok, total = pull_body()
+            self._json({"pulled": True, "ok": ok, "total": total})
+            return
+        self._json({"error": "method not allowed"}, 405)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.end_headers()
+
+
+class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
+
+if __name__ == "__main__":
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  LAN CIRCLE — Pull from Body, Serve to Mesh             ║
+║  Port {CIRCLE_PORT} — Body State API                          ║
+║                                                          ║
+║  PULL:  eastGate :8443 → data/body/                      ║
+║  SERVE: localhost:{CIRCLE_PORT} → /body/*                     ║
+║  PUSH:  git commit → Forgejo → RSS/Tor/port              ║
+║                                                          ║
+║  The astrolabe measures. The circle turns. lub-DUB.      ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+    # Start background pull loop
+    threading.Thread(target=_pull_loop, daemon=True).start()
+    threading.Thread(target=_freshness_tick, daemon=True).start()
+
+    # Start HTTP server
+    server = ThreadedServer(("0.0.0.0", CIRCLE_PORT), CircleHandler)
+    print(f"  🌐 LAN Circle serving on http://0.0.0.0:{CIRCLE_PORT}")
+    print(f"  📡 Pulling from eastGate every {PULL_INTERVAL}s")
+    print()
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n  🔄 LAN Circle closed. lub-DUB.")

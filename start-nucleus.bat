@@ -23,10 +23,16 @@ echo Starting Neural API server on :3143...
 start "biomeOS-API" /B primals\biomeOS\target\release\biomeos.exe api --port 3143 --bind 0.0.0.0 --log-level info
 
 echo.
+echo Starting LAN Circle on :3144...
+start "LAN-Circle" /B python runtime\lan_circle.pi
+
+echo.
 echo ═══════════════════════════════════════════
-echo   NUCLEUS STARTED
+echo   NUCLEUS STARTED + LAN CIRCLE TURNING
 echo   Health: http://localhost:3143/health
 echo   Neural API: localhost:3143 (BTSP sovereign)
+echo   LAN Circle: http://localhost:3144/circle
+echo   Body State: http://localhost:3144/body
 echo   Family: 3034463630464339
 echo   Node: blueGate
 echo ═══════════════════════════════════════════
