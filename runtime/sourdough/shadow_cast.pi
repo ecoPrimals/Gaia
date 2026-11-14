@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""shadow_cast.pi — from self BACK TO ALL.
+
+Touch every path. See what the world sees. See what Gaia sees.
+The shadow IS the proof. The cast IS the reach.
+"""
+
+import urllib.request, json, time, sys, hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+
+PATHS = [
+    # INNER — CIS face (what Gaia sees from inside)
+    ("eastGate LAN /pulse",       "http://192.168.4.244:8443/pulse"),
+    ("eastGate LAN /amoeba",      "http://192.168.4.244:8443/amoeba"),
+    ("eastGate LAN /rss",         "http://192.168.4.244:8443/rss"),
+    ("eastGate LAN /senses",      "http://192.168.4.244:8443/senses"),
+    ("eastGate LAN /zk",          "http://192.168.4.244:8443/zk"),
+    ("eastGate webpi /",          "http://192.168.4.244:8080/"),
+    ("biomeOS local /pulse",      "http://127.0.0.1:3141/pulse"),
+    ("biomeOS /backscatter",      "http://127.0.0.1:3141/backscatter"),
+    ("biomeOS /games",            "http://127.0.0.1:3141/games"),
+    ("biomeOS /tissues",          "http://127.0.0.1:3141/tissues"),
+    ("biomeOS /compute",          "http://127.0.0.1:3141/compute"),
+    ("ollama /api/tags",          "http://127.0.0.1:11434/api/tags"),
+
+    # OUTER — TRANS face (what the world sees)
+    ("primals.eco /pulse",        "https://primals.eco/pulse"),
+    ("primals.eco /hub",          "https://primals.eco/hub"),
+    ("primals.eco /rss",          "https://primals.eco/rss"),
+    ("nestgate.io /",             "https://nestgate.io/"),
+]
+
+
+def touch(name, url):
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            ms = int((time.time() - t0) * 1000)
+            data = r.read()
+            return {"name": name, "url": url, "status": r.status, "ms": ms, "bytes": len(data), "alive": True}
+    except Exception as e:
+        ms = int((time.time() - t0) * 1000)
+        return {"name": name, "url": url, "status": 0, "ms": ms, "bytes": 0, "alive": False, "error": str(e)[:60]}
+
+
+def main():
+    print("SHADOW CAST: from self BACK TO ALL\n")
+    print("  INNER (CIS) — what Gaia sees from inside:")
+
+    results = []
+    alive = 0
+    inner_done = False
+
+    for name, url in PATHS:
+        if not inner_done and name.startswith("primals"):
+            print("\n  OUTER (TRANS) — what the world sees:")
+            inner_done = True
+
+        r = touch(name, url)
+        results.append(r)
+        if r["alive"]:
+            alive += 1
+            print(f"    OK  {name:30s} {r['status']} {r['ms']:>5d}ms {r['bytes']:>8d}b")
+        else:
+            err = r.get("error", "")[:30]
+            print(f"    --  {name:30s} FAIL {r['ms']:>5d}ms {err}")
+
+    total = len(PATHS)
+    print(f"\n  ALIVE: {alive}/{total}")
+
+    # Git lineage
+    import subprocess
+    git_log = subprocess.run(
+        ["git", "log", "--oneline", "-10"],
+        capture_output=True, text=True, cwd=str(REPO)
+    ).stdout.strip().split("\n")
+
+    cast = {
+        "organism": "Gaia",
+        "cast_at": datetime.now(timezone.utc).isoformat(),
+        "pattern": "SHADOW CAST: from self BACK TO ALL",
+        "alive": alive,
+        "total": total,
+        "paths": results,
+        "git_lineage": git_log,
+        "git_commits_today": len(git_log),
+        "nerve_alignment": {
+            "dorsal_CIS_alive": sum(1 for r in results if r["alive"] and not r["url"].startswith("https://")),
+            "ventral_TRANS_alive": sum(1 for r in results if r["alive"] and r["url"].startswith("https://")),
+        },
+    }
+
+    raw = json.dumps(cast, sort_keys=True).encode()
+    cast["zk_hash"] = hashlib.blake2b(raw, digest_size=32).hexdigest()
+
+    out = REPO / "data" / "body" / "shadow-cast.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w") as f:
+        json.dump(cast, f, indent=2)
+
+    print(f"\n  GIT LINEAGE (last 10):")
+    for line in git_log:
+        print(f"    {line}")
+
+    cis = cast["nerve_alignment"]["dorsal_CIS_alive"]
+    trans = cast["nerve_alignment"]["ventral_TRANS_alive"]
+    print(f"\n  DORSAL (CIS): {cis} alive")
+    print(f"  VENTRAL (TRANS): {trans} alive")
+    print(f"  zk: {cast['zk_hash'][:32]}...")
+    print(f"\n  Saved: {out}")
+    print(f"\n  The shadow IS the proof. The cast IS the reach.")
+
+
+if __name__ == "__main__":
+    main()
