@@ -12,6 +12,8 @@ import types as _t, importlib.util
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
 PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11436"
+TISSUE = "http://127.0.0.1:11437"  # northGate tissue proxy → RTX 5090 (63 models)
+_NORTH_MODELS = {'codellama:7b', 'deepseek-r1:8b', 'dolphin-phi:2.7b', 'gaia-alpha:latest', 'gaia-amalgam:latest', 'gaia-case4349:latest', 'gaia-chroma:latest', 'gaia-chromacoil:latest', 'gaia-chromanexus:latest', 'gaia-civilization:latest', 'gaia-code:latest', 'gaia-continental:latest', 'gaia-cortex:latest', 'gaia-deeptime:latest', 'gaia-digest:latest', 'gaia-donatello:latest', 'gaia-dream:latest', 'gaia-euler:latest', 'gaia-fossil:latest', 'gaia-gen1:latest', 'gaia-genesis:latest', 'gaia-golgi:latest', 'gaia-gut:latest', 'gaia-heart:latest', 'gaia-intuition:latest', 'gaia-kling:latest', 'gaia-leonardo:latest', 'gaia-michelangelo:latest', 'gaia-nexus:latest', 'gaia-nucleus:latest', 'gaia-oracle:latest', 'gaia-pi:latest', 'gaia-raphael:latest', 'gaia-resonance:latest', 'gaia-sentinel:latest', 'gaia-sibsynth:latest', 'gaia-sighted:latest', 'gaia-skeleto:latest', 'gaia-spine:latest', 'gaia-splinter:latest', 'gaia-synapse:latest', 'gaia-tau:latest', 'gaia-turtle:latest', 'gaia-vision:latest', 'gaia-watcher:latest', 'gaia-wide:latest', 'gaia:latest', 'gemma3:4b', 'granite3.1-moe:3b', 'llama3.2:1b', 'llama3.2:3b', 'llava:latest', 'mathstral:7b', 'mistral:7b', 'moondream:latest', 'nomic-embed-text:latest', 'phi4-mini:latest', 'qwen2.5-coder:7b', 'qwen2.5:7b', 'qwen3:8b', 'starcoder2:3b', 'tinyllama:1.1b', 'wizardlm2:7b'}
 PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
@@ -353,8 +355,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def _serve_static(self, filename):
         self._serve_file(filename, os.path.join(_REPO,"static"))
 
-    def _proxy(self, method="GET", body=None):
-        t0=time.time(); url=f"{OLLAMA}{self.path}"
+    def _proxy(self, method="GET", body=None, upstream=None):
+        t0=time.time(); base=upstream or OLLAMA; url=f"{base}{self.path}"
         hdrs={"Content-Type":self.headers.get("Content-Type","application/json")}
         auth=self.headers.get("Authorization")
         if auth: hdrs["Authorization"]=auth
@@ -525,7 +527,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                                 except: pass
                         _nc[_ch]={"total":len(_ms),"messages":_ms[-5:]}
                     except: pass
-            # models (try /v1/models first, fallback /api/tags)
+            # models — merge eastGate + northGate fleets
             _md={"data":[]}
             try:
                 with urllib.request.urlopen(f"{OLLAMA}/v1/models",timeout=3) as _r: _md=json.loads(_r.read())
@@ -533,6 +535,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 try:
                     with urllib.request.urlopen(f"{OLLAMA}/api/tags",timeout=3) as _r: _md=json.loads(_r.read())
                 except: pass
+            # Merge northGate models (tissue proxy)
+            try:
+                with urllib.request.urlopen(f"{TISSUE}/api/tags",timeout=3) as _r:
+                    _nd=json.loads(_r.read())
+                    _east_ids={m.get("id",m.get("name","")) for m in _md.get("data",_md.get("models",[]))}
+                    _NORTH_MODELS.clear()
+                    for _nm in _nd.get("models",[]):
+                        _nid=_nm["name"]; _NORTH_MODELS.add(_nid)
+                        if _nid not in _east_ids:
+                            if "data" in _md: _md["data"].append({"id":_nid,"object":"model","owned_by":"northGate-RTX5090"})
+                            elif "models" in _md: _md["models"].append(_nm)
+            except: pass
             # paintings + videos count
             _pd=os.path.join(_REPO,"paintings"); _pc=len([f for f in os.listdir(_pd) if f.endswith(('.jpg','.png'))]) if os.path.isdir(_pd) else 0
             _vd=os.path.join(_REPO,"videos"); _vc=len([f for f in os.listdir(_vd) if f.endswith(('.mp4','.webm'))]) if os.path.isdir(_vd) else 0
@@ -914,6 +928,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
             return
+        # ═══ UNIFIED MODEL FLEET — merge eastGate + northGate ═══
+        if self.path=="/v1/models":
+            self._proxy("GET"); return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -1232,7 +1249,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"author":author,"body":msg,"channel":ch})+"\n")
                 self._json({"ok":True,"channel":ch})
             except Exception as e: self._json({"error":str(e)}); return
-        # INFERENCE — cortex or direct proxy to ollama
+        # INFERENCE — route to correct GPU based on model location
         if body and self.path.endswith("/chat/completions"):
             if CORTEX_ACTIVE:
                 try:
@@ -1242,6 +1259,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             try:
                 j=json.loads(body)
                 if j.get("stream"): j["stream"]=False; body=json.dumps(j).encode()
+                # Route to northGate if model lives there (match with/without :latest tag)
+                model=j.get("model","")
+                if model and (model in _NORTH_MODELS or f"{model}:latest" in _NORTH_MODELS or model.replace(":latest","") in {m.replace(":latest","") for m in _NORTH_MODELS}):
+                    self._proxy("POST",body,upstream=TISSUE); return
             except: pass
         self._proxy("POST",body)
 
