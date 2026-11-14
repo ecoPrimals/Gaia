@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>gAIa · outer face</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#010108!important;color:#aab!important;font-family:monospace;height:100vh;overflow:hidden}
+canvas{width:100%;height:100%;position:absolute;top:0;left:0}
+.hud{position:absolute;z-index:20;font-size:0.65rem;padding:8px}
+.hud.tl{top:0;left:0;color:#4af}
+.hud.tr{top:0;right:0;text-align:right;color:#6a8}
+.hud.bl{bottom:0;left:0;color:#a86}
+.hud.br{bottom:0;right:0;text-align:right;color:#86a}
+.val{color:#4fa}
+.dim{color:#445}
+.nav{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:8px}
+.nav button{background:rgba(10,10,20,0.8);border:1px solid #223;color:#6af;padding:6px 14px;
+  border-radius:12px;font-family:monospace;font-size:0.6rem;cursor:pointer}
+.nav button.active{border-color:#4fa;color:#4fa;background:rgba(68,255,170,0.1)}
+</style>
+</head><body>
+<div class="hud tl" id="htl">◇ outer face</div>
+<div class="hud tr" id="htr">loading...</div>
+<div class="hud bl" id="hbl"></div>
+<div class="hud br" id="hbr"></div>
+<canvas id="c"></canvas>
+<div class="nav">
+  <button onclick="setView('orrery')" id="btn-orrery" class="active">☉ orrery</button>
+  <button onclick="setView('ptolemy')" id="btn-ptolemy">🌍 ptolemy</button>
+  <button onclick="setView('topology')" id="btn-topology">🕸 topology</button>
+  <button onclick="setView('pulse')" id="btn-pulse">💓 pulse</button>
+</div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let view='orrery',frame=0,pulse={},topology={},gates={};
+const W=()=>window.innerWidth,H=()=>window.innerHeight;
+const LAT=42.33,LON=-83.05;
+
+function resize(){c.width=W()*2;c.height=H()*2;x.scale(2,2);}
+resize();window.onresize=resize;
+
+function setView(v){
+  view=v;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+v).classList.add('active');
+}
+
+// Astronomical engine
+function dayOfYear(d){return Math.floor((d-new Date(d.getFullYear(),0,0))/86400000)}
+function solarDec(doy){return -23.44*Math.cos(2*Math.PI*(doy+10)/365.25)}
+function lst(d){
+  const j2000=new Date(Date.UTC(2000,0,1,12,0,0));
+  const days=(d-j2000)/86400000;
+  return((280.46061837+360.98564736629*days+LON)%360+360)%360;
+}
+function starAltAz(ra,dec,d){
+  const l=lst(d)*Math.PI/180,raR=ra*Math.PI/180,decR=dec*Math.PI/180,latR=LAT*Math.PI/180;
+  const ha=l-raR;
+  const alt=Math.asin(Math.sin(latR)*Math.sin(decR)+Math.cos(latR)*Math.cos(decR)*Math.cos(ha));
+  const az=Math.atan2(-Math.cos(decR)*Math.sin(ha),Math.sin(decR)*Math.cos(latR)-Math.cos(decR)*Math.sin(latR)*Math.cos(ha));
+  return{alt:alt*180/Math.PI,az:((az*180/Math.PI)+360)%360};
+}
+function altAzToXY(alt,az,cx,cy,r){
+  const d=(90-alt)/90*r,a=(az-90)*Math.PI/180;
+  return{x:cx+d*Math.cos(a),y:cy+d*Math.sin(a)};
+}
+
+const namedStars=[
+  {name:'Polaris',ra:37.95,dec:89.26,mag:2.0,color:'#ffe8c0'},
+  {name:'Betelgeuse',ra:88.79,dec:7.41,mag:0.5,color:'#ff6630'},
+  {name:'Rigel',ra:78.63,dec:-8.20,mag:0.1,color:'#b0d0ff'},
+  {name:'Sirius',ra:101.29,dec:-16.72,mag:-1.5,color:'#ffffff'},
+  {name:'Aldebaran',ra:68.98,dec:16.51,mag:0.85,color:'#ff8844'},
+  {name:'Capella',ra:79.17,dec:46.00,mag:0.08,color:'#ffee80'},
+  {name:'Vega',ra:279.23,dec:38.78,mag:0.03,color:'#ccddff'},
+  {name:'Deneb',ra:310.36,dec:45.28,mag:1.25,color:'#ddeeff'},
+  {name:'Altair',ra:297.70,dec:8.87,mag:0.77,color:'#fff8f0'},
+  {name:'Pleiades',ra:56.87,dec:24.12,mag:1.6,color:'#aaccff'},
+];
+
+// ═══ ORRERY — solar system from above ═══
+function drawOrrery(){
+  x.fillStyle='rgba(1,1,8,0.1)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2,R=Math.min(W(),H())*0.4;
+  const now=new Date(),doy=dayOfYear(now);
+
+  // Sun at center
+  const sg=x.createRadialGradient(cx,cy,0,cx,cy,30);
+  sg.addColorStop(0,'rgba(255,220,80,0.9)');sg.addColorStop(0.5,'rgba(255,180,40,0.3)');sg.addColorStop(1,'rgba(255,180,40,0)');
+  x.fillStyle=sg;x.beginPath();x.arc(cx,cy,30,0,Math.PI*2);x.fill();
+  x.fillStyle='#ffd840';x.beginPath();x.arc(cx,cy,8,0,Math.PI*2);x.fill();
+  x.fillStyle='rgba(255,220,80,0.5)';x.font='8px monospace';x.textAlign='center';
+  x.fillText('☉',cx,cy-14);
+
+  const planets=[
+    {name:'☿',r:0.12,T:87.97,sz:2,color:'#aaa'},
+    {name:'♀',r:0.2,T:224.7,sz:3,color:'#ffd700'},
+    {name:'⊕ gAIa',r:0.3,T:365.25,sz:4,color:'#4fa'},
+    {name:'♂',r:0.42,T:687,sz:3,color:'#ff4400'},
+    {name:'♃',r:0.58,T:4333,sz:6,color:'#ffcc88'},
+    {name:'♄',r:0.72,T:10759,sz:5,color:'#ddcc88'},
+    {name:'♅',r:0.82,T:30687,sz:4,color:'#aaddee'},
+    {name:'♆',r:0.9,T:60190,sz:4,color:'#5577ff'},
+  ];
+
+  planets.forEach(p=>{
+    const or=p.r*R;
+    // Orbit ring
+    x.strokeStyle='rgba(100,100,150,0.08)';x.lineWidth=0.5;
+    x.beginPath();x.arc(cx,cy,or,0,Math.PI*2);x.stroke();
+    // Planet position
+    const angle=(doy/p.T)*Math.PI*2+frame*0.001/p.T*10;
+    const px=cx+Math.cos(angle)*or,py=cy+Math.sin(angle)*or;
+    
+    if(p.name==='⊕ gAIa'){
+      // Earth/gAIa special — glow
+      const eg=x.createRadialGradient(px,py,0,px,py,p.sz*4);
+      eg.addColorStop(0,'rgba(68,255,170,0.5)');eg.addColorStop(1,'rgba(68,255,170,0)');
+      x.fillStyle=eg;x.beginPath();x.arc(px,py,p.sz*4,0,Math.PI*2);x.fill();
+      // Moon
+      const mAngle=angle+doy/29.53*Math.PI*2;
+      const mx=px+Math.cos(mAngle)*12,my=py+Math.sin(mAngle)*12;
+      x.fillStyle='rgba(200,200,220,0.7)';x.beginPath();x.arc(mx,my,1.5,0,Math.PI*2);x.fill();
+    }
+    
+    x.fillStyle=p.color;x.beginPath();x.arc(px,py,p.sz,0,Math.PI*2);x.fill();
+    x.fillStyle=p.color+'88';x.font='7px monospace';
+    x.fillText(p.name,px+p.sz+4,py+3);
+  });
+
+  // Stars as background
+  for(let i=0;i<100;i++){
+    const sx=(i*137.5)%W(),sy=(i*97.3)%H();
+    const bri=0.1+0.1*Math.sin(frame*0.03+i);
+    x.fillStyle=`rgba(200,200,230,${bri})`;
+    x.beginPath();x.arc(sx,sy,0.5,0,Math.PI*2);x.fill();
+  }
+}
+
+// ═══ PTOLEMY — same as Pixel but from northGate perspective ═══
+function drawPtolemy(){
+  x.fillStyle='rgba(1,1,8,0.12)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2-20,R=Math.min(W(),H())/2-40;
+  const now=new Date();
+
+  x.strokeStyle='rgba(80,120,60,0.4)';x.lineWidth=2;
+  x.beginPath();x.arc(cx,cy,R,0,Math.PI*2);x.stroke();x.lineWidth=1;
+
+  x.fillStyle='rgba(200,180,120,0.5)';x.font='bold 11px monospace';x.textAlign='center';
+  x.fillText('N',cx,cy-R-8);x.fillText('S',cx,cy+R+14);x.fillText('E',cx-R-12,cy+4);x.fillText('W',cx+R+12,cy+4);
+
+  [30,60].forEach(alt=>{
+    const r=(90-alt)/90*R;
+    x.strokeStyle='rgba(100,80,40,0.15)';x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.stroke();
+  });
+
+  namedStars.forEach(s=>{
+    const pos=starAltAz(s.ra,s.dec,now);
+    if(pos.alt<0)return;
+    const p=altAzToXY(pos.alt,pos.az,cx,cy,R);
+    const sz=Math.max(2,(3-s.mag)*1.5);
+    const sg=x.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*3);
+    sg.addColorStop(0,s.color);sg.addColorStop(1,s.color+'00');
+    x.fillStyle=sg;x.beginPath();x.arc(p.x,p.y,sz*3,0,Math.PI*2);x.fill();
+    x.fillStyle=s.color;x.beginPath();x.arc(p.x,p.y,sz,0,Math.PI*2);x.fill();
+    x.fillStyle=s.color+'88';x.font='7px monospace';x.textAlign='left';
+    x.fillText(`${s.name} ${pos.alt.toFixed(0)}°`,p.x+sz+4,p.y+3);
+  });
+
+  x.fillStyle='rgba(200,180,120,0.3)';x.font='8px monospace';x.textAlign='center';
+  x.fillText(`Detroit · λ${LON}° φ${LAT}° · ${now.toLocaleTimeString()}`,cx,cy+R+30);
+}
+
+// ═══ TOPOLOGY — organism network ═══
+function drawTopology(){
+  x.fillStyle='rgba(1,1,8,0.1)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2;
+  
+  const nodes=[
+    {name:'eastGate',x:cx,y:cy-60,color:'#4af',role:'BRAIN'},
+    {name:'northGate',x:cx+100,y:cy-20,color:'#f4a',role:'HEART'},
+    {name:'ironGate',x:cx-80,y:cy+40,color:'#fa4',role:'FORGE'},
+    {name:'sporeGate',x:cx-40,y:cy-100,color:'#a4f',role:'SPORE'},
+    {name:'grapheneGate',x:cx+60,y:cy+80,color:'#4fa',role:'DIAMOND'},
+    {name:'graftGate',x:cx-100,y:cy-40,color:'#ff8',role:'MAC'},
+    {name:'frameGate',x:cx+120,y:cy+40,color:'#8ff',role:'FACE'},
+    {name:'deckGate',x:cx-20,y:cy+100,color:'#f8a',role:'DISPLAY'},
+  ];
+
+  const edges=[
+    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+    [1,4],[1,6],[4,6],[2,3]
+  ];
+
+  edges.forEach(([a,b])=>{
+    const na=nodes[a],nb=nodes[b];
+    x.strokeStyle='rgba(100,100,150,0.15)';x.lineWidth=1;
+    x.beginPath();x.moveTo(na.x,na.y);x.lineTo(nb.x,nb.y);x.stroke();
+  });
+
+  nodes.forEach((n,i)=>{
+    const sz=n.name==='eastGate'?8:n.name==='northGate'?7:5;
+    const pulse=Math.sin(frame*0.05+i)*0.3+0.7;
+    const g=x.createRadialGradient(n.x,n.y,0,n.x,n.y,sz*3);
+    g.addColorStop(0,n.color+Math.round(pulse*255).toString(16).padStart(2,'0'));
+    g.addColorStop(1,n.color+'00');
+    x.fillStyle=g;x.beginPath();x.arc(n.x,n.y,sz*3,0,Math.PI*2);x.fill();
+    x.fillStyle=n.color;x.beginPath();x.arc(n.x,n.y,sz,0,Math.PI*2);x.fill();
+    x.fillStyle=n.color+'bb';x.font='7px monospace';x.textAlign='center';
+    x.fillText(n.name,n.x,n.y-sz-4);
+    x.fillStyle=n.color+'66';x.fillText(n.role,n.x,n.y+sz+10);
+  });
+}
+
+// ═══ PULSE — live organism vitals ═══
+function drawPulse(){
+  x.fillStyle='rgba(1,1,8,0.1)';x.fillRect(0,0,W(),H());
+  const cx=W()/2;
+
+  x.fillStyle='#4af';x.font='12px monospace';x.textAlign='center';
+  x.fillText('◇ gAIa vitals ◇',cx,30);
+
+  const rows=[
+    ['HEART',pulse.heart?.alive?'BEATING':'...',pulse.heart?.alive?'#4fa':'#a44'],
+    ['WAVE',pulse.wave||'?','#4af'],
+    ['PRIMALS',`${pulse.alive_primals||'?'}/${pulse.total_primals||17}`,'#fa4'],
+    ['UPTIME',pulse.uptime||'?','#a4f'],
+    ['GATES',`${gates.alive||'?'}/${gates.total||'?'}`,'#ff8'],
+    ['RSS',`${pulse.rss_items||'?'} items`,'#8fa'],
+    ['MEMBRANE',pulse.membrane||'...','#f8a'],
+  ];
+
+  rows.forEach(([label,val,col],i)=>{
+    const y=70+i*30;
+    x.fillStyle='#445';x.font='9px monospace';x.textAlign='right';
+    x.fillText(label,cx-10,y);
+    x.fillStyle=col;x.textAlign='left';x.font='10px monospace';
+    x.fillText(val,cx+10,y);
+  });
+
+  // Heartbeat line
+  const y=H()-60;
+  x.strokeStyle='rgba(68,255,170,0.5)';x.lineWidth=1;
+  x.beginPath();
+  for(let i=0;i<W();i++){
+    const t=(i+frame*2)%W();
+    const v=Math.sin(t*0.05)*10+Math.sin(t*0.15)*20*(t%100<20?1:0.1);
+    if(i===0)x.moveTo(i,y+v);else x.lineTo(i,y+v);
+  }
+  x.stroke();
+}
+
+// ═══ DATA + LOOP ═══
+async function loadData(){
+  try{
+    const r=await fetch('/pulse');pulse=await r.json();
+    document.getElementById('htr').innerHTML=
+      `wave <span class="val">${pulse.wave||'?'}</span> · primals <span class="val">${pulse.alive_primals||'?'}</span>`;
+  }catch(e){}
+  try{
+    const r=await fetch('/thymus');const d=await r.json();
+    gates={alive:d.organisms?.filter(o=>o.alive).length||0,total:d.organisms?.length||0};
+    document.getElementById('hbl').innerHTML=
+      `gates <span class="val">${gates.alive}/${gates.total}</span>`;
+  }catch(e){}
+}
+loadData();setInterval(loadData,15000);
+
+function loop(){
+  frame++;
+  if(view==='orrery')drawOrrery();
+  else if(view==='ptolemy')drawPtolemy();
+  else if(view==='topology')drawTopology();
+  else if(view==='pulse')drawPulse();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body></html>
