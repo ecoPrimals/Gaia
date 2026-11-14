@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>membrane identity — primals.eco</title>
+<meta name="description" content="sovereign identity. no honeypots. proof of existence.">
+<style>
+:root { --bg: #0a0a0f; --fg: #d4d4d8; --accent: #22c55e; --dim: #52525b; --surface: #18181b; --border: #27272a; --pink: #ec4899; --blue: #3b82f6; --warn: #ef4444; --gold: #f59e0b; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: "JetBrains Mono", monospace; background: var(--bg); color: var(--fg); min-height: 100vh; padding: 1.5rem; }
+.container { max-width: 640px; margin: 0 auto; }
+h1 { color: var(--accent); font-size: 1.3rem; margin-bottom: 0.3rem; }
+h2 { color: var(--fg); font-size: 0.95rem; margin: 1.8rem 0 0.4rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+p { color: var(--dim); line-height: 1.6; margin-bottom: 0.8rem; font-size: 0.82rem; }
+.box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; margin: 0.8rem 0; }
+.field { margin: 0.6rem 0; }
+.field label { display: block; color: var(--dim); font-size: 0.7rem; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.field input, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--fg); padding: 0.5rem; border-radius: 4px; font-family: inherit; font-size: 0.82rem; }
+.field textarea { min-height: 60px; resize: vertical; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+button { background: var(--accent); color: var(--bg); border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: bold; font-size: 0.82rem; margin: 0.3rem 0.4rem 0.3rem 0; }
+button:hover { opacity: 0.9; }
+button.danger { background: var(--warn); }
+button.dim { background: var(--dim); }
+button.gold { background: var(--gold); color: #000; }
+.hash { font-family: monospace; color: var(--accent); background: var(--bg); padding: 0.3rem 0.5rem; border-radius: 4px; word-break: break-all; font-size: 0.72rem; border: 1px solid var(--border); margin: 0.4rem 0; display: block; }
+.philosophy { border-left: 2px solid var(--accent); padding-left: 0.8rem; margin: 1.2rem 0; }
+.philosophy p { color: var(--fg); font-style: italic; font-size: 0.8rem; }
+.entry { padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+.entry:last-child { border-bottom: none; }
+.entry .meta { color: var(--dim); font-size: 0.7rem; }
+.status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.4rem; }
+.status.alive { background: var(--accent); }
+.status.forgotten { background: var(--dim); }
+.hidden { display: none; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.tabs { display: flex; gap: 0.5rem; margin: 1rem 0; flex-wrap: wrap; }
+.tabs button { background: var(--surface); color: var(--dim); border: 1px solid var(--border); font-weight: normal; }
+.tabs button.active { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: bold; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.now-bar { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 0.6rem 1rem; margin: 0.8rem 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; flex-wrap: wrap; gap: 0.3rem; }
+.now-bar .pulse { color: var(--accent); font-weight: bold; }
+.links { margin-top: 1.5rem; padding-top: 0.8rem; border-top: 1px solid var(--border); font-size: 0.78rem; }
+.links a { margin-right: 1.2rem; }
+@media(max-width:480px) { body { padding: 0.8rem; } .tabs { gap: 0.3rem; } .tabs button { font-size: 0.7rem; padding: 0.4rem 0.6rem; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>&#8856; membrane identity</h1>
+  <p>sovereign identity. no honeypots. no data hostages. come and go as you please.</p>
+
+  <div id="now-bar" class="now-bar">
+    <span>NOW: <span class="pulse" id="now-pulse">...</span></span>
+    <span id="now-flow">loading...</span>
+  </div>
+
+  <div class="philosophy">
+    <p>present any identity. no lies. proof is hyperlocal to you.
+    your device holds your keys. the membrane holds only hashes.
+    sing your entry. sign your name. be forgotten if you choose.
+    be remembered if you choose. the person is sweetgrass &#8212;
+    your data fingerprint in time. no data honeypots ever again.</p>
+    <p>existence is not binary. you are not 0 or 1. you are a wave &#8212;
+    present, absent, remembered, forgotten, lost, found, regenerated.
+    if someone was lost and then found, their hash can be reborn.
+    like napoleon, like genghis khan &#8212; identity persists through
+    the stories told, the patterns left, the braids woven in time.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="active" onclick="showTab('create',this)">create</button>
+    <button onclick="showTab('story',this)">add story</button>
+    <button onclick="showTab('graph',this)">join graph</button>
+    <button onclick="showTab('services',this)">services</button>
+    <button onclick="showTab('journal',this)">journal</button>
+    <button onclick="showTab('anchor',this)">loam anchor</button>
+    <button onclick="showTab('forget',this)">forget</button>
+    <button onclick="showTab('forge',this)">forge</button>
+  </div>
+
+  <div id="tab-create" class="tab-content active">
+    <h2>create or recall your identity</h2>
+    <div class="box">
+      <p>your secret never leaves this device. only the hash touches the membrane.
+      works on phone, tablet, laptop &#8212; your identity travels with you.</p>
+      <div class="field">
+        <label>your secret (never transmitted &#8212; sing it, sign it, type it)</label>
+        <input type="password" id="secret" placeholder="anything you will remember" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>your name on the membrane (pseudonymous, any identity)</label>
+        <input type="text" id="pseudonym" placeholder="any name, or leave blank" autocomplete="off">
+      </div>
+      <button onclick="generateIdentity()">generate existence proof</button>
+      <button class="dim" onclick="recallIdentity()">recall</button>
+      <div id="proof-result" class="hidden">
+        <div class="field">
+          <label>identity hash (your fingerprint)</label>
+          <span class="hash" id="identity-hash"></span>
+        </div>
+        <div class="field">
+          <label>existence proof (loamspine anchor)</label>
+          <span class="hash" id="existence-proof"></span>
+        </div>
+        <div class="field">
+          <label>existence wave (not binary &#8212; you are a spectrum)</label>
+          <div id="existence-wave" style="background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:0.5rem;margin:0.2rem 0">
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--dim)">
+              <span>absent</span><span>present</span><span>remembered</span><span>regenerated</span>
+            </div>
+            <div style="height:6px;background:var(--border);border-radius:3px;margin-top:0.3rem;overflow:hidden">
+              <div id="wave-bar" style="height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width 0.5s"></div>
+            </div>
+            <div style="text-align:center;font-size:0.72rem;color:var(--accent);margin-top:0.2rem" id="wave-label">generating...</div>
+          </div>
+        </div>
+        <p>existence is not binary. you are a wave. the reverse is NP.
+        if lost, you can be found. if forgotten, you can be regenerated.
+        the person is sweetgrass.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-story" class="tab-content">
+    <h2>add art or story</h2>
+    <div class="box">
+      <p>add from any identity. your story lives on the membrane.
+      unhoused, traveling, between devices &#8212; your voice persists.</p>
+      <div class="field">
+        <label>your story, art, or message</label>
+        <textarea id="story-text" placeholder="write anything. it becomes part of the membrane."></textarea>
+      </div>
+      <div class="field">
+        <label>tag (optional)</label>
+        <input type="text" id="story-tag" placeholder="art, story, song, memory, help, need, offer...">
+      </div>
+      <button class="gold" onclick="addStory()">&#10022; add to membrane</button>
+      <div id="story-result"></div>
+      <h2 style="margin-top:1.5rem">recent stories</h2>
+      <div id="story-feed">loading...</div>
+    </div>
+  </div>
+
+  <div id="tab-graph" class="tab-content">
+    <h2>join the graph</h2>
+    <div class="box">
+      <p>add yourself as a node. the graph remembers connections, not identities.
+      services can confirm you exist without storing who you are.</p>
+      <div class="field">
+        <label>what do you offer? (skills, art, help, presence)</label>
+        <input type="text" id="graph-offer" placeholder="cook, draw, listen, fix bikes, sing...">
+      </div>
+      <div class="field">
+        <label>what do you need? (optional)</label>
+        <input type="text" id="graph-need" placeholder="shelter, food, phone charge, someone to talk to...">
+      </div>
+      <button onclick="joinGraph()">join as node</button>
+      <div id="graph-result"></div>
+      <h2 style="margin-top:1.5rem">active nodes</h2>
+      <div id="graph-feed">loading...</div>
+    </div>
+  </div>
+
+  <div id="tab-journal" class="tab-content">
+    <h2>incarnation journal</h2>
+    <div class="box">
+      <p>each visit is an incarnation. pattern accumulates locally. no IP. no cookies. memory is repeat incarnation.</p>
+      <div id="incarnations">loading...</div>
+    </div>
+  </div>
+
+  <div id="tab-anchor" class="tab-content">
+    <h2>loam anchor &#8212; legal spine</h2>
+    <div class="box">
+      <p>timestamped, hashed, provable record of your existence. like a notarized document &#8212;
+      no notary needed. no address needed. no ID needed. just your secret and the membrane.</p>
+      <div class="field">
+        <label>what are you anchoring?</label>
+        <textarea id="anchor-text" placeholder="I existed here on this date. I am claiming..."></textarea>
+      </div>
+      <button class="gold" onclick="createAnchor()">&#9875; anchor to loamspine</button>
+      <div id="anchor-result"></div>
+      <h2 style="margin-top:1.5rem">your anchors</h2>
+      <div id="anchor-feed">no anchors yet.</div>
+    </div>
+  </div>
+
+  <div id="tab-services" class="tab-content">
+    <h2>services &#8212; housing, health, and more</h2>
+    <div class="box">
+      <p>tie your identity to services without exposing who you are.
+      a shelter can confirm you received a bed. a clinic can confirm
+      you received care. the membrane holds only the hash &#8212; not your
+      name, not your diagnosis, not your address. proof of service,
+      not proof of identity.</p>
+      <div class="field">
+        <label>service type</label>
+        <select id="svc-type" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--fg);padding:0.5rem;border-radius:4px;font-family:inherit;font-size:0.82rem">
+          <option value="housing">housing / shelter</option>
+          <option value="health">health / clinic</option>
+          <option value="food">food / meal</option>
+          <option value="legal">legal aid</option>
+          <option value="education">education / training</option>
+          <option value="employment">employment / work</option>
+          <option value="transit">transit / transport</option>
+          <option value="other">other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>service provider (name or code &#8212; optional)</label>
+        <input type="text" id="svc-provider" placeholder="shelter name, clinic code, or leave blank">
+      </div>
+      <div class="field">
+        <label>notes (optional, private to you)</label>
+        <input type="text" id="svc-notes" placeholder="anything you want to remember about this">
+      </div>
+      <button class="gold" onclick="recordService()">&#10003; record service received</button>
+      <div id="svc-result"></div>
+      <h2 style="margin-top:1.5rem">your service history</h2>
+      <p>stored locally on this device. the membrane only has hashes.</p>
+      <div id="svc-feed">no services recorded yet.</div>
+    </div>
+  </div>
+
+  <div id="tab-forget" class="tab-content">
+    <h2>right to be forgotten</h2>
+    <div class="box">
+      <p>you control your image. tombstone your existence. come and go as you please.
+      be forgotten. or be remembered and sung.</p>
+      <button class="danger" onclick="requestForgetting()" id="forget-btn" disabled>&#8856; be forgotten</button>
+      <p id="forget-status" style="margin-top:0.5rem"></p>
+    </div>
+  </div>
+
+  <div id="tab-forge" class="tab-content">
+    <h2>forge identity</h2>
+    <div class="box">
+      <p>the forge is the full genetic memory. sign in once, everywhere. no email required.</p>
+      <button onclick="signInWithForge()">sign in with forge &#8594;</button>
+      <a href="https://git.primals.eco/user/sign_up" target="_blank"><button class="dim">create forge account &#8594;</button></a>
+    </div>
+  </div>
+
+  <div class="links">
+    <a href="https://hud.primals.eco">hud</a>
+    <a href="https://git.primals.eco/explore/repos">forge</a>
+    <a href="https://signal.primals.eco">signal</a>
+    <a href="https://detroit.primals.eco">detroit</a>
+    <a href="/now.json">now</a>
+  </div>
+</div>
+<script>
+var DISCUSS_API = "https://neutron.primals.eco/api/discuss";
+var BRIDGE_API = "/api";
+var IDENTITY = null;
+
+async function sha256(text) {
+  var data = new TextEncoder().encode("membrane-sovereign-v1:" + text);
+  var buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll(".tab-content").forEach(function(el){el.classList.remove("active")});
+  document.querySelectorAll(".tabs button").forEach(function(el){el.classList.remove("active")});
+  document.getElementById("tab-"+name).classList.add("active");
+  if(btn) btn.classList.add("active");
+  if(name==="story") loadStories();
+  if(name==="graph") loadGraph();
+  if(name==="journal") renderJournal();
+  if(name==="anchor") renderAnchors();
+  if(name==="services") renderServices();
+}
+
+async function generateIdentity() {
+  var secret = document.getElementById("secret").value;
+  if(!secret){alert("enter a secret");return}
+  var pseudonym = document.getElementById("pseudonym").value || "anonymous";
+  var h = await sha256(secret);
+  var ts = Date.now();
+  var proof = await sha256(h+":"+ts+":"+pseudonym);
+  IDENTITY = {hash:h, pseudonym:pseudonym, ts:ts};
+  document.getElementById("identity-hash").textContent = h;
+  document.getElementById("existence-proof").textContent = proof.substring(0,24)+"..."+proof.substring(56);
+  document.getElementById("proof-result").classList.remove("hidden");
+  document.getElementById("forget-btn").disabled = false;
+  var journal = JSON.parse(localStorage.getItem("membrane-incarnations")||"[]");
+  journal.push({hash:h.substring(0,16),pseudonym:pseudonym,timestamp:ts,proof:proof.substring(0,16)});
+  if(journal.length>200) journal=journal.slice(-200);
+  localStorage.setItem("membrane-incarnations",JSON.stringify(journal));
+  localStorage.setItem("membrane-identity",h);
+  localStorage.setItem("membrane-pseudonym",pseudonym);
+  try{var ar=await fetch(BRIDGE_API+"/anchor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:h,pseudonym:pseudonym,statement:"existence proof generated"})});
+  var ad=await ar.json();if(ad.anchored){document.getElementById("existence-proof").textContent="loam #"+ad.entry_index+" "+ad.anchor_hash+"... (ed25519 signed)";
+  journal[journal.length-1].loam_index=ad.entry_index;journal[journal.length-1].receipt=ad.receipt;localStorage.setItem("membrane-incarnations",JSON.stringify(journal))}}catch(e){}
+  computeWave();
+}
+
+function recallIdentity() {
+  var s=localStorage.getItem("membrane-identity");
+  var p=localStorage.getItem("membrane-pseudonym")||"anonymous";
+  if(s){IDENTITY={hash:s,pseudonym:p,ts:Date.now()};document.getElementById("identity-hash").textContent=s;document.getElementById("existence-proof").textContent="(recalled)";document.getElementById("proof-result").classList.remove("hidden");document.getElementById("forget-btn").disabled=false;document.getElementById("pseudonym").value=p;computeWave()}
+  else{alert("no identity stored. create one.")}
+}
+
+async function postDiscuss(page, author, content, metadata) {
+  return fetch(DISCUSS_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:page,author:author,body:content,content:content,metadata:metadata})});
+}
+
+async function addStory() {
+  var text=document.getElementById("story-text").value;
+  if(!text){alert("write something");return}
+  var tag=document.getElementById("story-tag").value||"story";
+  var id=IDENTITY||{hash:"anon",pseudonym:"anonymous"};
+  try{
+  var r=await postDiscuss("membrane-stories",id.pseudonym,text,{tag:tag,identity_hash:id.hash.substring(0,16),ts:Date.now()});
+  var br=await fetch(BRIDGE_API+"/braid",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:id.hash,content:text,type:tag})});
+  var bd=await br.json();
+  if(r.ok){document.getElementById("story-result").innerHTML='<p style="color:var(--accent)">&#10022; added.'+(bd.braided?' braid: '+bd.data_hash:'')+'</p>';document.getElementById("story-text").value="";loadStories()}}
+  catch(e){document.getElementById("story-result").innerHTML='<p style="color:var(--warn)">offline</p>'}
+}
+
+async function loadStories() {
+  try{var r=await fetch(DISCUSS_API+"?page=membrane-stories&limit=20");var d=await r.json();var f=document.getElementById("story-feed");
+  if(!d.comments||!d.comments.length){f.innerHTML='<p style="color:var(--dim)">no stories yet. be the first.</p>';return}
+  f.innerHTML=d.comments.map(function(c){var m=c.metadata||{};return'<div class="entry"><span class="status alive"></span><strong>'+(c.author||"anon")+'</strong> <span style="color:var(--gold)">['+(m.tag||"story")+']</span><br>'+c.content+'<div class="meta">'+new Date(m.ts||0).toLocaleString()+'</div></div>'}).join("")}
+  catch(e){document.getElementById("story-feed").innerHTML='<p style="color:var(--dim)">offline</p>'}
+}
+
+async function joinGraph() {
+  var offer=document.getElementById("graph-offer").value;
+  var need=document.getElementById("graph-need").value;
+  if(!offer&&!need){alert("share what you offer or need");return}
+  var id=IDENTITY||{hash:"anon",pseudonym:"anonymous"};
+  var content=(offer?"offers: "+offer:"")+(need?(offer?" | ":"")+"needs: "+need:"");
+  try{
+  var r=await postDiscuss("membrane-graph",id.pseudonym,content,{offer:offer,need:need,identity_hash:id.hash.substring(0,16),ts:Date.now(),alive:true});
+  fetch(BRIDGE_API+"/anchor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:id.hash,pseudonym:id.pseudonym,statement:"joined graph: "+content})});
+  fetch(BRIDGE_API+"/contribution",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:id.hash,content:content,kind:offer?"offer":"presence"})});
+  if(r.ok){document.getElementById("graph-result").innerHTML='<p style="color:var(--accent)">you are a node. anchored to loamspine. braided in sweetgrass. you exist.</p>';loadGraph()}}
+  catch(e){document.getElementById("graph-result").innerHTML='<p style="color:var(--warn)">offline</p>'}
+}
+
+async function loadGraph() {
+  try{var r=await fetch(DISCUSS_API+"?page=membrane-graph&limit=30");var d=await r.json();var f=document.getElementById("graph-feed");
+  if(!d.comments||!d.comments.length){f.innerHTML='<p style="color:var(--dim)">no nodes yet.</p>';return}
+  f.innerHTML=d.comments.map(function(c){var m=c.metadata||{};return'<div class="entry"><span class="status alive"></span><strong>'+(c.author||"anon")+'</strong><br>'+c.content+'<div class="meta">'+(m.identity_hash||"")+'... '+new Date(m.ts||0).toLocaleDateString()+'</div></div>'}).join("")}
+  catch(e){document.getElementById("graph-feed").innerHTML='<p style="color:var(--dim)">offline</p>'}
+}
+
+async function createAnchor() {
+  var text=document.getElementById("anchor-text").value;
+  if(!text){alert("write what you are anchoring");return}
+  var id=IDENTITY||{hash:"anon",pseudonym:"anonymous"};
+  try{
+  var r=await fetch(BRIDGE_API+"/anchor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:id.hash,pseudonym:id.pseudonym,statement:text})});
+  var d=await r.json();
+  if(d.anchored){
+    var anchors=JSON.parse(localStorage.getItem("membrane-anchors")||"[]");
+    anchors.push({text:text,hash:d.anchor_hash,pseudonym:id.pseudonym,ts:Date.now(),receipt:d.receipt,loam_index:d.entry_index});
+    localStorage.setItem("membrane-anchors",JSON.stringify(anchors));
+    document.getElementById("anchor-result").innerHTML='<p style="color:var(--accent)">&#9875; anchored to loamspine (entry #'+d.entry_index+', ed25519 signed)<br><span class="hash">'+d.anchor_hash+'</span>receipt: <span class="hash">'+d.receipt+'</span></p>';
+    renderAnchors()
+  }}catch(e){document.getElementById("anchor-result").innerHTML='<p style="color:var(--warn)">could not reach loamspine</p>'}
+}
+
+function renderAnchors() {
+  var a=JSON.parse(localStorage.getItem("membrane-anchors")||"[]");var f=document.getElementById("anchor-feed");
+  if(!a.length){f.innerHTML='<p style="color:var(--dim)">no anchors yet.</p>';return}
+  f.innerHTML=a.slice().reverse().map(function(x){return'<div class="entry"><span class="status alive"></span>&#9875; <strong>'+x.pseudonym+'</strong><br><span style="color:var(--dim);font-size:0.75rem">'+x.text.substring(0,100)+'</span><div class="meta">'+new Date(x.ts).toLocaleString()+' '+x.hash.substring(0,16)+'...</div></div>'}).join("")
+}
+
+function renderJournal() {
+  var j=JSON.parse(localStorage.getItem("membrane-incarnations")||"[]");var el=document.getElementById("incarnations");
+  if(!j.length){el.innerHTML='<p style="color:var(--dim)">no incarnations yet.</p>';return}
+  el.innerHTML=j.slice().reverse().map(function(i){return'<div class="entry"><span class="status '+(i.forgotten?"forgotten":"alive")+'"></span>'+(i.pseudonym||"anon")+' &#8212; '+i.hash+'...<div class="meta">'+new Date(i.timestamp).toLocaleString()+'</div></div>'}).join("")
+}
+
+async function requestForgetting() {
+  if(!confirm("erase your membrane identity from this device?\ntombstone all incarnations?\n\ncannot be undone.")) return;
+  var h=IDENTITY?IDENTITY.hash:(localStorage.getItem("membrane-identity")||"");
+  if(h){try{await fetch(BRIDGE_API+"/tombstone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:h})})}catch(e){}}
+  var j=JSON.parse(localStorage.getItem("membrane-incarnations")||"[]");
+  j=j.map(function(i){i.forgotten=true;i.pseudonym="\u2298 forgotten";return i});
+  localStorage.removeItem("membrane-identity");localStorage.removeItem("membrane-pseudonym");
+  localStorage.removeItem("membrane-anchors");
+  localStorage.setItem("membrane-incarnations",JSON.stringify(j));
+  IDENTITY=null;document.getElementById("proof-result").classList.add("hidden");
+  document.getElementById("forget-btn").disabled=true;
+  document.getElementById("forget-status").textContent="\u2298 you have been forgotten. tombstone recorded on loamspine.";
+  document.getElementById("secret").value="";document.getElementById("pseudonym").value=""
+}
+
+function signInWithForge() {
+  var s=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+  sessionStorage.setItem("oauth-state",s);
+  window.location.href="https://git.primals.eco/login/oauth/authorize?client_id=4d13add9-2694-4eb8-804c-b207c915bcd3&redirect_uri="+encodeURIComponent(window.location.origin+"/auth/callback")+"&response_type=code&state="+s+"&scope=read:user"
+}
+
+async function updateNow(){try{var r=await fetch("/now.json");var d=await r.json();document.getElementById("now-pulse").textContent=d.pulse.value.toFixed(4)+" ("+d.pulse.trend+")";document.getElementById("now-flow").textContent=d.flow.human+" human / "+d.flow.bot+" bot"}catch(e){}}
+updateNow();setInterval(updateNow,30000);
+
+(function(){var s=localStorage.getItem("membrane-identity");if(s){IDENTITY={hash:s,pseudonym:localStorage.getItem("membrane-pseudonym")||"anonymous",ts:Date.now()};document.getElementById("pseudonym").value=IDENTITY.pseudonym;setTimeout(computeWave,100)}})();
+
+async function recordService() {
+  var stype=document.getElementById("svc-type").value;
+  var provider=document.getElementById("svc-provider").value;
+  var notes=document.getElementById("svc-notes").value;
+  var id=IDENTITY||{hash:"anon",pseudonym:"anonymous"};
+  var ts=Date.now();
+  var svcs=JSON.parse(localStorage.getItem("membrane-services")||"[]");
+  var svcHash=await sha256(id.hash+":"+stype+":"+ts);
+  svcs.push({type:stype,provider:provider,notes:notes,hash:svcHash.substring(0,16),ts:ts});
+  localStorage.setItem("membrane-services",JSON.stringify(svcs));
+  try{await fetch(BRIDGE_API+"/anchor",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({identity_hash:id.hash,pseudonym:id.pseudonym,statement:"service:"+stype+":"+ts})});
+  document.getElementById("svc-result").innerHTML='<p style="color:var(--accent)">&#10003; recorded. hash '+svcHash.substring(0,16)+'... anchored to loamspine. only you have the details.</p>'}
+  catch(e){document.getElementById("svc-result").innerHTML='<p style="color:var(--warn)">saved locally (offline)</p>'}
+  renderServices()
+}
+
+function renderServices() {
+  var svcs=JSON.parse(localStorage.getItem("membrane-services")||"[]");
+  var f=document.getElementById("svc-feed");
+  if(!svcs.length){f.innerHTML='<p style="color:var(--dim)">no services yet.</p>';return}
+  f.innerHTML=svcs.slice().reverse().map(function(s){return'<div class="entry"><span class="status alive"></span><strong>'+s.type+'</strong>'+(s.provider?' &#8212; '+s.provider:'')+'<br>'+(s.notes?'<span style="color:var(--dim)">'+s.notes+'</span><br>':'')+'<div class="meta">'+new Date(s.ts).toLocaleString()+' &#183; '+s.hash+'...</div></div>'}).join("")
+}
+
+function computeWave() {
+  var journal=JSON.parse(localStorage.getItem("membrane-incarnations")||"[]");
+  var anchors=JSON.parse(localStorage.getItem("membrane-anchors")||"[]");
+  var svcs=JSON.parse(localStorage.getItem("membrane-services")||"[]");
+  var stories=0; try{stories=parseInt(localStorage.getItem("membrane-story-count")||"0")}catch(e){}
+  var active=journal.filter(function(i){return !i.forgotten}).length;
+  var forgotten=journal.filter(function(i){return i.forgotten}).length;
+  var total=active+forgotten;
+  var wave=0; var label="absent";
+  if(total===0){wave=0;label="absent &#8212; no incarnations yet"}
+  else if(forgotten>0&&active===0){wave=15;label="forgotten &#8212; tombstoned, can be regenerated"}
+  else if(active===1){wave=35;label="present &#8212; first incarnation"}
+  else if(active<5){wave=50;label="present &#8212; building pattern ("+active+" incarnations)"}
+  else if(active<20){wave=65;label="remembered &#8212; pattern accumulating ("+active+" incarnations)"}
+  else{wave=85;label="persistent &#8212; deep pattern ("+active+" incarnations)"}
+  if(anchors.length>0) wave=Math.min(100,wave+5);
+  if(svcs.length>0) wave=Math.min(100,wave+5);
+  if(forgotten>0&&active>0) {wave=Math.min(100,wave+10);label="regenerated &#8212; lost and found ("+active+" active, "+forgotten+" forgotten)"}
+  document.getElementById("wave-bar").style.width=wave+"%";
+  document.getElementById("wave-label").innerHTML=label;
+}
+
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(function(){})}
+</script>
+</body>
+</html>

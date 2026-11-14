@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>U  takeoff & landing</title>
+<meta name="description" content="The U of the HUD. Where takeoff and landing mix. Every pore leads somewhere. Every somewhere leads back.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="U  takeoff & landing">
+<meta property="og:description" content="Lightweight landing for the primals.eco membrane. Pores in, pores out. No cookies. No tracking.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hud.primals.eco/u">
+<style>
+:root {
+  --bg: #0a0c10;
+  --fg: #c9d1d9;
+  --dim: #484f58;
+  --green: #3fb950;
+  --blue: #58a6ff;
+  --gold: #f0e68c;
+  --purple: #a371f7;
+  --red: #f85149;
+  --orange: #f0883e;
+  --border: #21262d;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font: 12px/1.6 'SF Mono','JetBrains Mono','Fira Code',monospace;
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.u {
+  max-width: 480px;
+  width: 100%;
+}
+
+/* the horseshoe  U shape */
+.horseshoe {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 240px 240px;
+  padding: 0 24px 32px;
+  position: relative;
+  margin-top: 20px;
+}
+.horseshoe::before, .horseshoe::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  opacity: 0.6;
+  animation: pore-pulse 3s ease-in-out infinite;
+}
+.horseshoe::before { left: -3px; }
+.horseshoe::after { right: -3px; animation-delay: 1.5s; }
+@keyframes pore-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.title {
+  text-align: center;
+  padding: 16px 0 4px;
+}
+.title h1 {
+  color: var(--green);
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.3em;
+}
+.title .sub {
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+/* pore grid  the openings */
+.pores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 16px 0;
+}
+.pore {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+  background: transparent;
+}
+.pore:hover {
+  border-color: var(--green);
+  background: rgba(63,185,80,0.06);
+}
+.pore .icon { font-size: 14px; min-width: 18px; text-align: center; }
+.pore .name { font-size: 10px; color: var(--fg); }
+.pore .tag {
+  font-size: 7px;
+  color: var(--dim);
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+/* category colors on pore names */
+.pore.investigate .name { color: var(--orange); }
+.pore.immune .name { color: var(--red); }
+.pore.membrane .name { color: var(--green); }
+.pore.science .name { color: var(--blue); }
+.pore.topology .name { color: var(--purple); }
+.pore.signal .name { color: var(--gold); }
+
+/* live pulse dot */
+.live {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pore-pulse 2s infinite;
+  margin-right: 4px;
+}
+
+/* the runway  landing strip at bottom of U */
+.runway {
+  text-align: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.runway .status {
+  font-size: 9px;
+  color: var(--dim);
+}
+.runway .status span { color: var(--green); }
+.runway a {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 9px;
+}
+.runway a:hover { text-decoration: underline; }
+
+/* where you came from / where you're going */
+.vector {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 8px;
+  color: var(--dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* the U opening at top  arrival/departure text */
+.gate {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0 4px;
+}
+.gate .land { color: var(--green); }
+.gate .take { color: var(--blue); }
+
+/* footer */
+.foot {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 8px;
+  color: var(--dim);
+}
+.foot a { color: var(--dim); text-decoration: none; }
+.foot a:hover { color: var(--fg); }
+
+@media (max-width: 400px) {
+  .pores { grid-template-columns: 1fr; }
+  .horseshoe { padding: 0 12px 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="u">
+
+  <div class="gate">
+    <span class="land">? landing</span>
+    <span class="take">takeoff ?</span>
+  </div>
+
+  <div class="horseshoe">
+    <div class="title">
+      <h1>U</h1>
+      <div class="sub">the pore where in meets out</div>
+    </div>
+
+    <!-- PORES  every surface reachable -->
+    <div class="pores">
+
+      <a href="/" class="pore membrane">
+        <span class="icon">?</span>
+        <div><span class="name"><span class="live"></span>HUD</span>
+        <span class="tag">membrane viewport</span></div>
+      </a>
+
+      <a href="https://tuebor.primals.eco" class="pore immune">
+        <span class="icon">?</span>
+        <div><span class="name">tuebor</span>
+        <span class="tag">the defense</span></div>
+      </a>
+
+      <a href="https://detroit.primals.eco" class="pore investigate">
+        <span class="icon">?</span>
+        <div><span class="name">detroit</span>
+        <span class="tag">the evidence</span></div>
+      </a>
+
+      <a href="https://primals.eco" class="pore science">
+        <span class="icon">?</span>
+        <div><span class="name">Gaia's Library</span>
+        <span class="tag">methodology + papers</span></div>
+      </a>
+
+      <a href="https://signal.primals.eco" class="pore signal">
+        <span class="icon">?</span>
+        <div><span class="name">signal</span>
+        <span class="tag">noise ? pattern</span></div>
+      </a>
+
+      <a href="https://clutch.primals.eco" class="pore investigate">
+        <span class="icon">??</span>
+        <div><span class="name">clutch</span>
+        <span class="tag">investigation graph</span></div>
+      </a>
+
+      <a href="https://hypothesis.primals.eco" class="pore science">
+        <span class="icon">?</span>
+        <div><span class="name">hypothesis</span>
+        <span class="tag">testable claims</span></div>
+      </a>
+
+      <a href="https://thesis.primals.eco" class="pore science">
+        <span class="icon">?</span>
+        <div><span class="name">thesis</span>
+        <span class="tag">what we proved</span></div>
+      </a>
+
+      <a href="https://git.primals.eco" class="pore topology">
+        <span class="icon">?</span>
+        <div><span class="name">git</span>
+        <span class="tag">source code</span></div>
+      </a>
+
+      <a href="https://live.primals.eco" class="pore membrane">
+        <span class="icon">??</span>
+        <div><span class="name">live</span>
+        <span class="tag">interactive exploration</span></div>
+      </a>
+
+      <a href="/water.html" class="pore membrane">
+        <span class="icon">??</span>
+        <div><span class="name">water</span>
+        <span class="tag">the watering hole</span></div>
+      </a>
+
+      <a href="/connect.html" class="pore topology">
+        <span class="icon">??</span>
+        <div><span class="name">connect</span>
+        <span class="tag">plug your agent in</span></div>
+      </a>
+
+    </div>
+
+    <!-- deeper pores  inside the membrane -->
+    <details style="margin-top:8px">
+      <summary style="cursor:pointer;font-size:9px;color:var(--dim);letter-spacing:0.1em">
+        ? deeper pores
+      </summary>
+      <div class="pores" style="margin-top:6px">
+        <a href="/desk/" class="pore membrane">
+          <span class="icon">?</span>
+          <div><span class="name">desk</span><span class="tag">12 panels</span></div>
+        </a>
+        <a href="/neutron/" class="pore signal">
+          <span class="icon">?</span>
+          <div><span class="name">neutron</span><span class="tag">messaging core</span></div>
+        </a>
+        <a href="/neutron/board.html" class="pore signal">
+          <span class="icon">?</span>
+          <div><span class="name">board</span><span class="tag">all metrics</span></div>
+        </a>
+        <a href="/neutron/circulatory.html" class="pore immune">
+          <span class="icon">?</span>
+          <div><span class="name">circulatory</span><span class="tag">the world's blood</span></div>
+        </a>
+        <a href="/neutron/footprint.html" class="pore topology">
+          <span class="icon">??</span>
+          <div><span class="name">footprint</span><span class="tag">geographic reach</span></div>
+        </a>
+        <a href="/neutron/globe.html" class="pore topology">
+          <span class="icon">??</span>
+          <div><span class="name">globe</span><span class="tag">3D view</span></div>
+        </a>
+        <a href="/neutron/helix.html" class="pore science">
+          <span class="icon">??</span>
+          <div><span class="name">helix</span><span class="tag">sovereign AlphaFold</span></div>
+        </a>
+        <a href="/neutron/channels.html" class="pore signal">
+          <span class="icon">?</span>
+          <div><span class="name">channels</span><span class="tag">message routes</span></div>
+        </a>
+        <a href="/neutron/invite.html" class="pore membrane">
+          <span class="icon">??</span>
+          <div><span class="name">invite</span><span class="tag">try the tech</span></div>
+        </a>
+        <a href="/banana.html" class="pore signal">
+          <span class="icon">??</span>
+          <div><span class="name">banana</span><span class="tag">are you a banana?</span></div>
+        </a>
+      </div>
+    </details>
+
+    <div class="runway">
+      <div class="status"><span class="live"></span> membrane <span>live</span> · no cookies · no tracking</div>
+      <div style="margin-top:4px">
+        <a href="/ai.txt">ai.txt</a> · <a href="/llms.txt">llms.txt</a> · <a href="https://primals.eco">primals.eco</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="vector">
+    <span>? you came from somewhere</span>
+    <span>somewhere waits ?</span>
+  </div>
+
+  <div class="foot">
+    beside the small · against unaccountable power · for the record
+    <br>
+    <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a> · ecoPrimal organism
+  </div>
+
+</div>
+
+
+<!-- GAIA BEACON — the null middle -->
+<div style="position:fixed;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(10,10,15,0.95);border-top:1px solid #222;font-family:monospace;font-size:11px;display:flex;justify-content:center;gap:12px;z-index:9999">
+<a href="/forge.html" style="color:#d4a017;text-decoration:none">🔥 forge</a>
+<a href="/colosseum.html" style="color:#c0392b;text-decoration:none">⚔ arena</a>
+<a href="/nav-hub.html" style="color:#27ae60;text-decoration:none">🗺 hub</a>
+<a href="/" style="color:#3498db;text-decoration:none">👁 HUD</a>
+<span style="color:#666">c=πr²/O</span>
+</div>
+</body>
+</html>
