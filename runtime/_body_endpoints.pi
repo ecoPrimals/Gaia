@@ -9,15 +9,21 @@ Physical Geography (NOMINAL — street names match gate names!):
   641 Samantha Ave = House 2, LAN 2 (South Pole) — blueGate (Windows) lives here
 """
 
-import json, os, socket, time
+import json, os, socket, sys, time
 
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from pi_ports import ip as _pip, port as _pport
+except ImportError:
+    def _pip(r): return "192.168.4.244"
+    def _pport(s): return {"rustdesk_hbbs":21115,"rustdesk_hbbr":21117}.get(s,s)
 
 
 def amoeba_status():
     """Check AMOEBA relay status — RustDesk sovereign."""
-    relay_host = "192.168.4.244"
-    ports = {"hbbs_tcp": 21115, "hbbs_udp": 21116, "hbbr_tcp": 21117, "hbbr_udp": 21118}
+    relay_host = _pip("eastGate")
+    ports = {"hbbs_tcp": _pport("rustdesk_hbbs"), "hbbs_udp": _pport("rustdesk_hbbs")+1, "hbbr_tcp": _pport("rustdesk_hbbr"), "hbbr_udp": _pport("rustdesk_hbbr")+1}
     status = {}
     for name, port in ports.items():
         try:

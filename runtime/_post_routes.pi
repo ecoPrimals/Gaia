@@ -67,7 +67,12 @@ def handle_post(self, ip, collapsed, wave, G):
                 gate=j.get("gate","sporeGate")
                 if gate=="sporeGate":
                     import subprocess as sp
-                    result=sp.run(["ssh","sporegate@192.168.4.3","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
+                    try:
+                        from pi_ports import ip as _pip
+                        _spore_ip = _pip("sporeGate")
+                    except ImportError:
+                        _spore_ip = "192.168.4.3"
+                    result=sp.run(["ssh",f"sporegate@{_spore_ip}","sudo","systemctl","restart","membrane-cascade"],capture_output=True,text=True,timeout=10)
                     self._json({"ok":True,"action":"cascade_triggered","gate":gate,"rc":result.returncode,"stderr":result.stderr.strip()[:200]})
                 else:
                     self._json({"error":f"cascade not available on {gate}"})

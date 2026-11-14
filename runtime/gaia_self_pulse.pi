@@ -2,10 +2,10 @@
 """gaia_self_pulse.pi — Gaia checks HERSELF. Self-awareness via nestgate.io.
 
 The organism looks at her own reflection:
-  CIS:  http://192.168.4.244:8443  (LAN, inner eye)
-  TRANS: https://nestgate.io        (WAN, outer eye)
-  PULSE: /pulse                     (heartbeat)
-  NOW:   /now.json                  (focal point)
+  CIS:  pi_ports.url('eastGate','gate')  (LAN, inner eye — CRUSHED)
+  TRANS: https://nestgate.io              (WAN, outer eye)
+  PULSE: /pulse                           (heartbeat)
+  NOW:   /now.json                        (focal point)
 
 Self-update:
   1. Check Forgejo fork for new commits
@@ -21,36 +21,46 @@ import json, os, sys, time, hashlib, urllib.request, subprocess
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(REPO, "data", "body")
+sys.path.insert(0, os.path.join(REPO, "runtime"))
 
-# ═══ SELF ENDPOINTS — where Gaia looks at herself ═══
+# ═══ CRUSH — all IPs sourced from pi_ports.pi Round Table ═══
+try:
+    from pi_ports import ip, port, url as _url
+    _E = ip("eastGate")   # 192.168.4.244
+    _G = port("gate")     # 8443
+except ImportError:
+    _E = "192.168.4.244"; _G = 8443
+    def _url(r, s, p=""): return f"http://{_E}:{_G}{p}"
+
+# ═══ SELF ENDPOINTS — where Gaia looks at herself (CRUSHED — no hardcoded IPs) ═══
 SELF_EYES = {
-    "cis_pulse":    "http://192.168.4.244:8443/pulse",
-    "cis_now":      "http://192.168.4.244:8443/now.json",
-    "cis_thymus":   "http://192.168.4.244:8443/thymus",
-    "cis_heart":    "http://192.168.4.244:8443/heart",
-    "cis_vdj":      "http://192.168.4.244:8443/vdj",
-    "cis_directory":"http://192.168.4.244:8443/directory",
+    "cis_pulse":    _url("eastGate", "gate", "/pulse"),
+    "cis_now":      _url("eastGate", "gate", "/now.json"),
+    "cis_thymus":   _url("eastGate", "gate", "/thymus"),
+    "cis_heart":    _url("eastGate", "gate", "/heart"),
+    "cis_vdj":      _url("eastGate", "gate", "/vdj"),
+    "cis_directory":_url("eastGate", "gate", "/directory"),
     "trans_root":   "https://nestgate.io/",
     "trans_pulse":  "https://primals.eco/pulse",
     "trans_rss":    "https://primals.eco/rss",
-    "forgejo_api":  "http://192.168.4.244:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
+    "forgejo_api":  _url("eastGate", "forgejo", "/api/v1/repos/ecoPrimal/Gaia/commits?limit=1"),
     "github_api":   "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
 }
 
 AMOEBA_PORTS = {
-    "hbbs_tcp": ("192.168.4.244", 21115),
-    "hbbs_udp": ("192.168.4.244", 21116),
-    "hbbr_tcp": ("192.168.4.244", 21117),
-    "hbbr_udp": ("192.168.4.244", 21118),
+    "hbbs_tcp": (_E, port("rustdesk_hbbs")),
+    "hbbs_udp": (_E, port("rustdesk_hbbs") + 1),
+    "hbbr_tcp": (_E, port("rustdesk_hbbr")),
+    "hbbr_udp": (_E, port("rustdesk_hbbr") + 1),
 }
 
 GATE_PROBES = {
-    "eastGate_brain":  [("192.168.4.244", 8443, "http")],
-    "eastGate_forge":  [("192.168.4.244", 3000, "http")],
-    "sporeGate_relay": [("192.168.4.3", 22, "tcp")],
-    "ironGate_forge":  [("192.168.4.237", 22, "tcp")],
-    "graftGate_mac":   [("192.168.4.107", 11434, "http")],
-    "grapheneGate_px": [("192.168.9.217", 8082, "http")],
+    "eastGate_brain":  [(ip("eastGate"),  port("gate"),    "http")],
+    "eastGate_forge":  [(ip("eastGate"),  port("forgejo"), "http")],
+    "sporeGate_relay": [(ip("sporeGate"), 22,              "tcp")],
+    "ironGate_forge":  [(ip("ironGate"),  22,              "tcp")],
+    "graftGate_mac":   [(ip("graftGate"), port("ollama"),  "http")],
+    "grapheneGate_px": [(ip("grapheneGate"), port("graphene_llama"), "http")],
 }
 
 

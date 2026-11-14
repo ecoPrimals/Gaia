@@ -409,14 +409,23 @@ SEO_DISPATCH = {
 # But now it calls functions on access, never stale
 SEO_RESPONSES = SEO_DISPATCH
 
-# ═══ KNOWN GATES — tensor[body] — hyperlocal topology ═══
-KNOWN_GATES = {
-    "192.168.4.244": "eastGate", "192.168.4.103": "eastGate",
-    "192.168.4.3": "sporeGate", "192.168.4.147": "northGate",
-    "192.168.4.100": "blueGate", "192.168.4.107": "graftGate",
-    "192.168.4.148": "southGate", "192.168.4.237": "ironGate",
-    "192.168.4.249": "grapheneGate", "192.168.4.170": "grapheneGate", "127.0.0.1": "eastGate",
-}
+# ═══ KNOWN GATES — tensor[body] — CRUSHED from pi_ports.pi Round Table ═══
+try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__))))
+    from pi_ports import ROLE_MAP as _RM
+    KNOWN_GATES = {v: k for k, v in _RM.items() if k not in ("router","mikrotik","jetstream","epson","router2")}
+    KNOWN_GATES["127.0.0.1"] = "eastGate"
+    # eastGate secondary NIC
+    KNOWN_GATES[_RM.get("eastGate2", "192.168.4.103")] = "eastGate"
+except ImportError:
+    KNOWN_GATES = {
+        "192.168.4.244": "eastGate", "192.168.4.103": "eastGate",
+        "192.168.4.3": "sporeGate", "192.168.4.147": "northGate",
+        "192.168.4.100": "blueGate", "192.168.4.107": "graftGate",
+        "192.168.4.148": "southGate", "192.168.4.237": "ironGate",
+        "192.168.9.217": "grapheneGate", "127.0.0.1": "eastGate",
+    }
 
 SPORE_PREFIXES = (
     "/science/", "/architecture/", "/products/", "/getting-started/",

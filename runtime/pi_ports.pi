@@ -54,17 +54,81 @@ PI_IP_MAP = {
 
 def round_table_status():
     """Ping all seats at the Round Table. Return who's alive."""
-    import subprocess
+    import subprocess, platform
     table = {}
+    flag = "-n" if platform.system() == "Windows" else "-c"
+    wflag = "-w" if platform.system() == "Windows" else "-W"
     for ip, info in sorted(PI_IP_MAP.items()):
         try:
-            r = subprocess.run(["ping", "-c", "1", "-W", "1", ip],
+            r = subprocess.run(["ping", flag, "1", wflag, "1", ip],
                              capture_output=True, timeout=3)
             alive = r.returncode == 0
         except:
             alive = False
         table[ip] = {**info, "alive": alive}
     return table
+
+
+# ═══ ROLE RESOLVER — crush IPs to names ═══
+# Import this, never hardcode an IP again.
+
+ROLE_MAP = {
+    "router":       "192.168.4.1",
+    "mikrotik":     "192.168.4.2",
+    "sporeGate":    "192.168.4.3",
+    "blueGate":     "192.168.4.100",
+    "eastGate":     "192.168.4.244",
+    "eastGate2":    "192.168.4.103",
+    "graftGate":    "192.168.4.107",
+    "jetstream":    "192.168.4.111",
+    "northGate":    "192.168.4.147",
+    "southGate":    "192.168.4.148",
+    "ironGate":     "192.168.4.237",
+    "grapheneGate": "192.168.9.217",
+    "epson":        "192.168.4.200",
+    "router2":      "192.168.4.250",
+}
+
+PORT_MAP = {
+    "http":       80,
+    "https":      443,
+    "forgejo":    3000,
+    "swarmvine":  7800,
+    "gate":       8443,
+    "ollama":     11434,
+    "ollama_east":11436,
+    "data":       8080,
+    "spine":      9878,
+    "tissue":     11437,
+    "rustdesk_hbbs": 21115,
+    "rustdesk_hbbr": 21117,
+    "neural":     3143,
+    "circle":     3144,
+    "nucleus":    3141,
+    "graphene_llama": 8082,
+}
+
+def ip(role):
+    """Resolve role name → IP. The ONLY way to get an IP."""
+    return ROLE_MAP.get(role, role)
+
+def port(service):
+    """Resolve service name → port. The ONLY way to get a port."""
+    return PORT_MAP.get(service, service)
+
+def url(role, service, path=""):
+    """Build a URL from role + service. crush('eastGate','gate','/pulse') → http://192.168.4.244:8443/pulse"""
+    return f"http://{ip(role)}:{port(service)}{path}"
+
+def body_ips():
+    """All IPs that are SELF — the organism's body. Import this in _anderson.pi."""
+    return {"127.0.0.1", "::1"} | set(ROLE_MAP.values())
+
+def all_gate_ips():
+    """Just the gate IPs (not infra like router/mikrotik/epson)."""
+    gates = {"eastGate","eastGate2","blueGate","northGate","sporeGate",
+             "graftGate","southGate","ironGate","grapheneGate"}
+    return {ROLE_MAP[g] for g in gates if g in ROLE_MAP}
 
 RUNNING = True
 
