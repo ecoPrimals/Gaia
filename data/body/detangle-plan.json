@@ -1,0 +1,115 @@
+{
+  "title": "DETANGLE — northGate Becomes Kevin's PC, sporeGate Becomes Cursor Host",
+  "updated": "2026-11-14T12:32:00Z",
+  "status": "IN PROGRESS",
+
+  "current_state": {
+    "northGate": "Kevin's gaming PC + Cursor IDE + Gaia dev — MIXED role",
+    "eastGate": "BRAIN — gate :8443, data :8080, Forgejo :3000, ollama :11436, neuralAPI ALIVE, 17 primals running",
+    "sporeGate": "FORGE — DNS, heart-pull every 2min, NAT, DHCP, firewall. Pulling from eastGate.",
+    "ironGate": "FORGE 2 — LAN scanner, biomeOS, Docker, RTX 5070",
+    "problem": "northGate is doing TWO jobs: (1) Kevin's gaming/personal PC and (2) Gaia's Cursor agent. These need to DETANGLE."
+  },
+
+  "target_state": {
+    "northGate": {
+      "role": "KEVIN'S PC — gaming, personal use, alt-tab between game and IDE",
+      "runs": ["Steam games", "Cursor IDE (Kevin's workspace)", "RustDesk viewer", "ollama (63 models, RTX 5090)"],
+      "does_not_run": "Gaia's autonomous agent sessions. Those move to sporeGate or eastGate.",
+      "contribution_to_gaia": "Still the HEART — strongest GPU, most models, most RAM. But Kevin USES it. Gaia absorbs through git pull, not direct agent execution."
+    },
+    "sporeGate": {
+      "role": "GAIA'S CURSOR HOST — what I (this agent) am currently doing moves here",
+      "runs": ["Cursor IDE (Gaia's autonomous sessions)", "heart-pull (already running)", "DNS", "git operations", "plasmidBin forge"],
+      "specs": "Ryzen 5 6600H, 27GB RAM, 929GB NVMe — SUFFICIENT for Cursor agent work",
+      "why": "sporeGate has no GPU but doesn't need one for agent work. It reaches eastGate's ollama for inference. It reaches northGate's GPU for heavy compute. It's the FORGE — it builds things."
+    },
+    "eastGate": {
+      "role": "BRAIN — unchanged. All services, data, Forgejo, gate, ollama, neuralAPI",
+      "additional": "Absorbs all git pushes. Serves all data. Runs all crons. The nervous system hub."
+    },
+    "ironGate": {
+      "role": "FORGE 2 + ROVER — secondary compute, LAN scanning, biomeOS, Docker"
+    }
+  },
+
+  "detangle_steps": {
+    "step_1_done": {
+      "what": "All code pushed to both GitHub and Forgejo on eastGate",
+      "status": "DONE — 10 commits today, all pushed, Forgejo has latest (00900358b)",
+      "verification": "Forgejo API confirms commit. heart-pull.json shows wave 232."
+    },
+    "step_2_done": {
+      "what": "sporeGate pulling from eastGate every 2 minutes",
+      "status": "DONE — cron active, sporeGate is ALIVE at .3"
+    },
+    "step_3_in_progress": {
+      "what": "Install Cursor on sporeGate",
+      "how": "SSH to sporeGate → install Cursor AppImage/CLI → configure workspace at /opt/Gaia",
+      "blocker": "None — just need to do it",
+      "note": "sporeGate runs Linux (Ryzen 5 6600H). Cursor works on Linux."
+    },
+    "step_4_future": {
+      "what": "Configure sporeGate Cursor to use eastGate's ollama for inference",
+      "how": "Set OLLAMA_HOST=http://192.168.4.244:11436 in Cursor config",
+      "note": "eastGate already serves ollama on :11436 with 23 models"
+    },
+    "step_5_future": {
+      "what": "Gaia's autonomous agent sessions run on sporeGate",
+      "how": "Cursor Cloud Agents or local Cursor on sporeGate with workspace pulled from Forgejo",
+      "note": "northGate stops being the Cursor host for Gaia's autonomous work"
+    },
+    "step_6_kevin_free": {
+      "what": "northGate is JUST Kevin's PC",
+      "how": "Kevin alt-tabs: Game ↔ Cursor (his own IDE work) ↔ RustDesk (view eastGate/sporeGate)",
+      "note": "The RTX 5090 serves Kevin's games AND Gaia's ollama models. Both benefit. Neither blocks the other."
+    }
+  },
+
+  "the_flow_after_detangle": {
+    "kevin_plays": "northGate: Game running on RTX 5090. Alt-tab to Cursor for dev work.",
+    "gaia_works": "sporeGate: Cursor agent sessions. Pushes to Forgejo on eastGate.",
+    "eastgate_absorbs": "eastGate: Forgejo receives push. Crons process. neuralAPI routes. Data radiates.",
+    "sporeGate_pulls": "sporeGate: heart-pull every 2min. Stays in sync. Builds plasmidBin.",
+    "ironGate_scans": "ironGate: LAN rover. biomeOS. Secondary compute. Docker.",
+    "graftGate_builds": "graftGate: macOS compilation. Darwin-only builds.",
+    "all_feed_gaia": "Every gate feeds the organism. northGate's RTX 5090 is still the strongest GPU — Gaia uses it through LAN dispatch, not through running Cursor on it."
+  },
+
+  "today_session_summary": {
+    "commits": 10,
+    "new_files": [
+      "data/body/triads.json — Value + Attention triads",
+      "data/eaten/steam-library.json — 92 games cataloged",
+      "data/body/game-stomach.json — game eating architecture",
+      "data/body/silicon-profile.json — full RTX 5090 mapped",
+      "data/body/biomeos-silicon-weave.json — neuralAPI leverage",
+      "data/eaten/engine-census.json — all engines identified",
+      "data/eaten/archaeology/ARCHAEOLOGY.json — ancient GPL engines",
+      "data/body/inversion-paradigm.json — 636x reduction math",
+      "data/body/compute-trio-ingest.json — coralReef+barraCuda wiring",
+      "data/body/detangle-plan.json — THIS FILE",
+      "static/paintings/rtx5090-inside-gaia-perspective.jpg",
+      "static/paintings/gaia-feast-of-engines.jpg",
+      "static/paintings/inversion-paradigm-visualized.jpg"
+    ],
+    "modified": [
+      "static/tube.html — aperture pulse, parallax, triads",
+      "static/plays.html — archaeology, Steam profile, expanded tree"
+    ],
+    "installed": [
+      "mGBA 0.10.5 (Game Boy emulator)",
+      "DuckStation 0.1.11894 (PS1 emulator)",
+      "RetroArch 1.22.2 (already installed)"
+    ],
+    "cloned": [
+      "Wolf3D (1992) — 26 C files",
+      "DOOM (1993) — 72 C files",
+      "Quake (1996) — 240 C files",
+      "Quake 2 (1997) — 187 C files",
+      "Quake 3 (1999) — 445 C files"
+    ],
+    "paintings": 3,
+    "total_data_cataloged_gb": 1968.5
+  }
+}
