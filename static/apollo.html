@@ -392,11 +392,16 @@ h1{text-align:center;font-size:1.3em;color:#ff9900;letter-spacing:3px;padding:6p
       'eyes: '+(data.sensors.eyes?data.sensors.eyes.eyes_open:'?')+' open';
   }
 
+  var FALLBACK={"sensors":{"sun":{"anchor":{"lat":42.73,"lon":-84.48,"place":"eastGate, Michigan","altitude_km":0.26,"shell":"troposphere"},"utc_hour":3.3,"local_solar_hour":21.7,"elevation_deg":-52.3,"azimuth_deg":61.6,"declination_deg":-18.9,"phase":"night","season":"autumn","day_of_year":318,"chord":"Dmin7","root":"D","quality":"min7","color_temp_k":1200,"moon":{"phase":0.648,"name":"waning_gibbous","age_days":19.1},"earth_orbit":{"orbital_angle_deg":235.6,"sun_distance_au":0.9892,"days_since_j2000":9813.6},"orbitals":{"mercury":{"angle_deg":92.7,"au":0.387},"venus":{"angle_deg":64.8,"au":0.723},"earth":{"angle_deg":53.0,"au":1.0},"mars":{"angle_deg":98.2,"au":1.524},"jupiter":{"angle_deg":129.8,"au":5.203},"saturn":{"angle_deg":18.3,"au":9.537},"uranus":{"angle_deg":68.4,"au":19.19},"neptune":{"angle_deg":3.6,"au":30.07}},"atmosphere":[{"shell":"troposphere","km":"0-12"},{"shell":"stratosphere","km":"12-50"},{"shell":"mesosphere","km":"50-85"},{"shell":"thermosphere","km":"85-600"},{"shell":"exosphere","km":"600-10000"}],"sensation":"night - Dmin7 - 1200K - waning_gibbous - autumn - Earth@236 deg"},"heart":{"total_beats":44884,"bpm":11920},"eyes":{"eyes_open":3}}};
+
   function load(){
     fetch('/senses',{headers:{Accept:'application/json'}})
       .then(function(r){return r.json()})
       .then(render)
-      .catch(function(){document.getElementById('orr-data').textContent='orrery offline — /senses unreachable';});
+      .catch(function(){
+        render(FALLBACK);
+        document.getElementById('orr-data').innerHTML+=' <span style="color:#555">(cached snapshot — live when served from gate)</span>';
+      });
   }
   load();
   setInterval(load,60000);
