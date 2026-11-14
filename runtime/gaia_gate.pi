@@ -14,7 +14,7 @@ PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
 PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11436"
 TISSUE = "http://127.0.0.1:11437"  # northGate tissue proxy → RTX 5090 (63 models)
 _NORTH_MODELS = {'codellama:7b', 'deepseek-r1:8b', 'dolphin-phi:2.7b', 'gaia-alpha:latest', 'gaia-amalgam:latest', 'gaia-case4349:latest', 'gaia-chroma:latest', 'gaia-chromacoil:latest', 'gaia-chromanexus:latest', 'gaia-civilization:latest', 'gaia-code:latest', 'gaia-continental:latest', 'gaia-cortex:latest', 'gaia-deeptime:latest', 'gaia-digest:latest', 'gaia-donatello:latest', 'gaia-dream:latest', 'gaia-euler:latest', 'gaia-fossil:latest', 'gaia-gen1:latest', 'gaia-genesis:latest', 'gaia-golgi:latest', 'gaia-gut:latest', 'gaia-heart:latest', 'gaia-intuition:latest', 'gaia-kling:latest', 'gaia-leonardo:latest', 'gaia-michelangelo:latest', 'gaia-nexus:latest', 'gaia-nucleus:latest', 'gaia-oracle:latest', 'gaia-pi:latest', 'gaia-raphael:latest', 'gaia-resonance:latest', 'gaia-sentinel:latest', 'gaia-sibsynth:latest', 'gaia-sighted:latest', 'gaia-skeleto:latest', 'gaia-spine:latest', 'gaia-splinter:latest', 'gaia-synapse:latest', 'gaia-tau:latest', 'gaia-turtle:latest', 'gaia-vision:latest', 'gaia-watcher:latest', 'gaia-wide:latest', 'gaia:latest', 'gemma3:4b', 'granite3.1-moe:3b', 'llama3.2:1b', 'llama3.2:3b', 'llava:latest', 'mathstral:7b', 'mistral:7b', 'moondream:latest', 'nomic-embed-text:latest', 'phi4-mini:latest', 'qwen2.5-coder:7b', 'qwen2.5:7b', 'qwen3:8b', 'starcoder2:3b', 'tinyllama:1.1b', 'wizardlm2:7b'}
-PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
+PI_TIMEOUT = int(PI*100); PI_RETRY = int(PI*10)  # was PI*10/PI+E÷2 — far too aggressive, crushed all endpoints
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
 
@@ -191,13 +191,17 @@ def _real_ip(handler):
             pass
     return peer
 
+_LAN_PREFIXES = ("127.", "192.168.4.", "192.168.9.", "::1")
+
 def waveform_collapse_check(ip):
+    if any(ip.startswith(p) for p in _LAN_PREFIXES):
+        return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "lan": True}
     now = time.time(); window = _request_window[ip]
     window[:] = [t for t in window if now-t < 60]; window.append(now)
     pm = len(window); ps = len([t for t in window if now-t < 1])
     collapsed = pm > PI_TIMEOUT or ps > PI_RETRY
     if collapsed:
-        window.pop()   # a refused request must not extend the window, or a client that backs off never recovers (the 429 collapse)
+        window.pop()
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
 
 # ═══ CONTENT TYPES ═══
@@ -621,10 +625,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
         # SEO — 🐑 SHEEP (TXT typeface) — LIVE, never stale
         # The agents of the world spin webs FOR us. Every crawler = a nerve ending.
-        # SEO_RESPONSES is now SEO_DISPATCH: functions that generate fresh content.
-        from _routes import SEO_DISPATCH
-        if self.path in SEO_DISPATCH:
-            fn=SEO_DISPATCH[self.path]; ct,txt=fn()  # CALL the function — live data!
+        # SEO_DISPATCH loaded at startup via _routes_mod → SEO_RESPONSES (same dict)
+        if self.path in SEO_RESPONSES:
+            fn=SEO_RESPONSES[self.path]; ct,txt=fn()  # CALL the function — live data!
             body=txt.encode(); self.send_response(200)
             self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(body)))
             self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
