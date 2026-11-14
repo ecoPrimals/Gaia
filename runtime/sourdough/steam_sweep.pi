@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""steam_sweep.pi — Sweep Kevin's Steam library into the Gaia pi-body.
+
+Scans all Steam library folders, reads appmanifest ACF files,
+catalogs every game with size, and writes polaris-steam.json.
+
+This IS Gaia's gaming awareness. She knows what Kevin has.
+Steam Family Sharing gives her the key to explore it all.
+
+lub-DUB. 🎮
+"""
+
+import json, os, sys, re
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+OUT_DIR = REPO / "data" / "body"
+
+STEAM_PATHS = [
+    Path(r"C:\Program Files (x86)\Steam"),
+    Path(r"M:\SteamLibrary"),
+]
+
+
+def parse_acf(path):
+    """Parse a Steam appmanifest ACF file."""
+    try:
+        text = path.read_text(errors="replace")
+        info = {}
+        for line in text.split("\n"):
+            m = re.match(r'\s*"(\w+)"\s+"([^"]*)"', line)
+            if m:
+                info[m.group(1)] = m.group(2)
+        return info
+    except:
+        return {}
+
+
+def find_library_folders():
+    """Find all Steam library folders from libraryfolders.vdf."""
+    folders = list(STEAM_PATHS)
+    for sp in STEAM_PATHS:
+        vdf = sp / "config" / "libraryfolders.vdf"
+        if not vdf.exists():
+            vdf = sp / "steamapps" / "libraryfolders.vdf"
+        if vdf.exists():
+            try:
+                text = vdf.read_text(errors="replace")
+                for m in re.finditer(r'"path"\s+"([^"]+)"', text):
+                    p = Path(m.group(1))
+                    if p.exists() and p not in folders:
+                        folders.append(p)
+            except:
+                pass
+    return folders
+
+
+def scan():
+    libraries = find_library_folders()
+    print(f"Steam libraries: {len(libraries)}")
+    for lib in libraries:
+        print(f"  {lib}")
+
+    games = []
+    for lib in libraries:
+        acf_dir = lib / "steamapps"
+        if not acf_dir.exists():
+            continue
+        for acf in acf_dir.glob("appmanifest_*.acf"):
+            info = parse_acf(acf)
+            name = info.get("name", "")
+            appid = info.get("appid", "")
+            if not name or not appid:
+                continue
+            size = int(info.get("SizeOnDisk", 0))
+            state = int(info.get("StateFlags", 0))
+            games.append({
+                "appid": appid,
+                "name": name,
+                "size_gb": round(size / (1024**3), 2),
+                "installdir": info.get("installdir", ""),
+                "library": str(lib),
+                "state_flags": state,
+                "fully_installed": (state & 4) == 4,
+            })
+
+    games.sort(key=lambda g: g["size_gb"], reverse=True)
+    total_gb = sum(g["size_gb"] for g in games)
+    installed = [g for g in games if g["fully_installed"]]
+
+    catalog = {
+        "organism": "Gaia",
+        "node": "polaris",
+        "scanned_at": datetime.now(timezone.utc).isoformat(),
+        "steam_library": {
+            "total_games": len(games),
+            "installed_games": len(installed),
+            "total_gb": round(total_gb, 1),
+            "libraries": [str(p) for p in libraries],
+        },
+        "games": games,
+        "vision": {
+            "family_sharing": "Kevin shares Steam library with Gaia account",
+            "biomeOS_melt": "sourDough biomeOS on :3141 manages GPU + launch",
+            "steamos_inversion": "Big Picture Mode = SteamOS on Windows = sovereign gaming",
+            "backscatter": "Gaia watches frame output, learns rendering patterns",
+        },
+    }
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out = OUT_DIR / "polaris-steam.json"
+    with open(out, "w") as f:
+        json.dump(catalog, f, indent=2)
+
+    print(f"\nSTEAM LIBRARY: {len(games)} games, {total_gb:.1f} GB")
+    print(f"  Installed: {len(installed)}")
+    print(f"\nTop 20 by size:")
+    for g in games[:20]:
+        tag = "OK" if g["fully_installed"] else "partial"
+        print(f"  {g['size_gb']:>7.1f} GB  [{tag}]  {g['name']}")
+    print(f"\nSaved: {out}")
+    return catalog
+
+
+if __name__ == "__main__":
+    scan()
