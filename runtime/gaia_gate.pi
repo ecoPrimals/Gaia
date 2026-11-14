@@ -646,6 +646,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             b=INDEXNOW_KEY.encode(); self.send_response(200); self.send_header("Content-Type","text/plain"); self.end_headers(); self.wfile.write(b); return
         # FEED DISCOVERY — alternate RSS links for agents
         if self.path=="/feed.xml": write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
+        # FULL ORGANISM FEED — 1,560 items, 915KB. The mouth of the organism.
+        if self.path in ("/full-feed.xml","/organism-feed","/all-rss"):
+            self._serve_file("hud/site/public/feed.xml"); return
         # ROUTING TABLES
         if self.path in GUT_DATA: self._serve_file(GUT_DATA[self.path]); return
         if self.path in DESK_PAGES:
