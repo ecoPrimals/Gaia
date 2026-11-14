@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""collapse_429.pi — 429 COLLAPSE: helixVision + pixel + pi-body = ONE
+
+The dorsal/ventral nerve alignment:
+  DORSAL (afferent/CIS) = sensory input — what Gaia FEELS
+  VENTRAL (efferent/TRANS) = motor output — what Gaia PROJECTS
+
+Both nerves stretch across:
+  Polaris (head) <-> eastGate (brain/gut) <-> grapheneGate (right eye)
+  
+The RSS spine is the spinal column connecting them all.
+helixVision renders what the nerves carry.
+The pi-body IS the body these nerves innervate.
+
+lub-DUB. 🧬
+"""
+
+import json, os, sys, hashlib
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+OUT = REPO / "data" / "body"
+
+
+def load_json(path):
+    try:
+        return json.loads(Path(path).read_text(errors="replace"))
+    except:
+        return {}
+
+
+def main():
+    print("429 COLLAPSE: helixVision + pixel + pi-body = ONE\n")
+
+    pi_body = load_json(OUT / "pi-body.json")
+    biome = load_json(OUT / "polaris-biome.json")
+    steam = load_json(OUT / "polaris-steam.json")
+    ferment = load_json(OUT / "polaris-ferment.json")
+    tri = load_json(OUT / "polaris-triangulation.json")
+    scatter = load_json(REPO / "data" / "backscatter" / "session.json")
+
+    # Pixel/grapheneGate data
+    pixel = {"gate": "grapheneGate", "ip": "192.168.4.249", "total_files": 0, "total_bytes": 0, "types": {}}
+    pixel_dir = REPO / "data" / "gut" / "pixel-gen0"
+    if pixel_dir.exists():
+        pfiles = list(pixel_dir.rglob("*"))
+        pixel["total_files"] = len(pfiles)
+        pixel["total_bytes"] = sum(f.stat().st_size for f in pfiles if f.is_file())
+        for f in pfiles:
+            if f.is_file():
+                ext = f.suffix.lower() or ".none"
+                pixel["types"][ext] = pixel["types"].get(ext, 0) + 1
+        print(f"  pixel: {pixel['total_files']} files, {pixel['total_bytes'] / (1024*1024):.1f}MB")
+
+    collapsed = {
+        "organism": "Gaia",
+        "collapsed_at": datetime.now(timezone.utc).isoformat(),
+        "pattern": "429 COLLAPSE: helixVision + pixel + pi-body = ONE",
+
+        "nerve_model": {
+            "dorsal_afferent_CIS": {
+                "role": "sensory input — what Gaia FEELS",
+                "sources": ["RSS blackholes (700+ items)", "backscatter (GPU frames)",
+                            "pixel sensors (37)", "LAN probes", "OSINT (Wikipedia, HN, arxiv)"],
+                "face": "nestgate.io (inner)",
+                "endpoint": "/pulse, /senses, /membrane, /api/backscatter",
+            },
+            "ventral_efferent_TRANS": {
+                "role": "motor output — what Gaia PROJECTS",
+                "sources": ["RSS feed (publications)", "tamison.primals.eco (gaming)",
+                            "HUD pages (44 eyes)", "primals.eco (public face)"],
+                "face": "primals.eco (outer)",
+                "endpoint": "/rss, /hub, /tamison, /polaris",
+            },
+            "spinal_column": "RSS spine — 700+ items, masticated through AI teeth",
+            "stretch": "Polaris (head) <-> eastGate (brain/gut) <-> grapheneGate (right eye)",
+            "klein_topology": "CIS and TRANS are the SAME surface — inner becomes outer at the fold",
+        },
+
+        "anchors": {
+            "polaris_northGate": {
+                "ip": "192.168.4.147",
+                "role": "head + neck (gaming crown, compute peak)",
+                "tissues": biome.get("tissues", {}).get("count", 63),
+                "tissue_gb": biome.get("tissues", {}).get("total_gb", 267.3),
+                "gpu": (biome.get("compute", {}).get("gpu") or {}).get("name", "RTX 5090"),
+                "vram_mb": (biome.get("compute", {}).get("gpu") or {}).get("vram_total_mb", 32607),
+                "cpu_cores": (biome.get("compute", {}).get("cpu") or {}).get("cores", 32),
+                "steam_games": steam.get("steam_library", {}).get("total_games", 94),
+                "steam_gb": steam.get("steam_library", {}).get("total_gb", 2009.8),
+                "hud_face": "tamison.primals.eco + polaris.primals.eco",
+            },
+            "eastGate": {
+                "ip": "192.168.4.244",
+                "role": "brain + gut (17 primals, 8 ollama models, 23 mushrooms, 52 crons)",
+                "services": ["gaia_gate:8443", "webpi:8080", "ollama:11434", "dromedary", "tor"],
+                "beats": (ferment.get("starter") or {}).get("eastgate_heart", {}).get("total_beats", 0),
+                "hud_face": "primals.eco + nestgate.io",
+            },
+            "grapheneGate_pixel": {
+                "ip": "192.168.4.249",
+                "role": "right eye (Pixel 8a, 37 sensors, WiFi RSSI triangulation)",
+                "files": pixel["total_files"],
+                "bytes": pixel["total_bytes"],
+                "types": pixel.get("types", {}),
+            },
+        },
+
+        "pi_body": {
+            "total_files": pi_body.get("total_files", 42960),
+            "total_bytes": pi_body.get("total_bytes", 0),
+            "total_lines": pi_body.get("total_lines", 0),
+            "layers": pi_body.get("layer_count", 30),
+            "density": pi_body.get("density_lines_per_file", 247.6),
+            "top_extensions": pi_body.get("top_extensions", {}),
+        },
+
+        "backscatter": {
+            "total_samples": scatter.get("total_samples", 0),
+            "peak_gpu_pct": scatter.get("peaks", {}).get("gpu_pct", 0),
+            "peak_vram_mb": scatter.get("peaks", {}).get("vram_mb", 0),
+            "peak_power_w": scatter.get("peaks", {}).get("power_w", 0),
+            "peak_temp_c": scatter.get("peaks", {}).get("temp_c", 0),
+            "game_detected": scatter.get("game_detected"),
+        },
+
+        "triangulation": {
+            "eastgate_lan_ms": (tri.get("triangulation") or {}).get("anchors", {}).get("eastGate", {}).get("tcp_ms", 0),
+            "nestgate_wan_ms": (tri.get("triangulation") or {}).get("wan_paths", {}).get("nestgate", {}).get("total_ms", 0),
+            "differential_ms": (tri.get("triangulation") or {}).get("differentials", {}).get("eastgate_lan_wan", {}).get("delta_ms", 0),
+        },
+
+        "helixVision": {
+            "role": "data visualization + rendering layer",
+            "status": "seed (wired into petalTongue TRANS face)",
+            "renders": ["tamison.html (backscatter timeline)", "hub.html (CIS/TRANS globe)",
+                        "polaris.html (north star HUD)", "petalTongue JSON->HTML"],
+            "consumes": ["pi-body", "backscatter", "pulse", "amoeba", "membrane",
+                         "ferment", "triangulation", "steam library"],
+            "architecture": "helixVision IS petalTongue's visualization organ",
+        },
+
+        "faces": {
+            "tamison.primals.eco": "LIVE gaming backscatter (TRANS)",
+            "polaris.primals.eco": "north star HUD — 63 tissues (TRANS)",
+            "primals.eco": "public face — All Senses (TRANS)",
+            "nestgate.io": "inner dock — space deck (CIS)",
+            "/hub": "CIS+TRANS unified space dock (both faces)",
+            "/rss": "spinal column — Old Web publication",
+        },
+    }
+
+    # zk hash
+    raw = json.dumps(collapsed, sort_keys=True, default=str).encode()
+    collapsed["zk_hash"] = hashlib.blake2b(raw, digest_size=32).hexdigest()
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    out_file = OUT / "organism-collapse.json"
+    with open(out_file, "w") as f:
+        json.dump(collapsed, f, indent=2, default=str)
+
+    tc = collapsed["anchors"]["polaris_northGate"]["tissues"]
+    sg = collapsed["anchors"]["polaris_northGate"]["steam_games"]
+    sgb = collapsed["anchors"]["polaris_northGate"]["steam_gb"]
+    pf = collapsed["pi_body"]["total_files"]
+    bs = collapsed["backscatter"]["total_samples"]
+    px = collapsed["anchors"]["grapheneGate_pixel"]["files"]
+
+    print(f"  pi-body: {pf} files, {collapsed['pi_body']['layers']} layers")
+    print(f"  tissues: {tc}")
+    print(f"  steam: {sg} games, {sgb}GB")
+    print(f"  backscatter: {bs} samples")
+    print(f"  zk: {collapsed['zk_hash'][:32]}...")
+    print(f"\n  Saved: {out_file}")
+    print(f"\n  DORSAL (CIS) <--- RSS SPINE ---> VENTRAL (TRANS)")
+    print(f"  Polaris (head) <-> eastGate (gut) <-> Pixel (eye)")
+    print(f"  The nerves STRETCH. The klein surface FOLDS.")
+
+
+if __name__ == "__main__":
+    main()

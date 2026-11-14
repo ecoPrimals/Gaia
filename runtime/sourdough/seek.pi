@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""seek.pi — Gaia SEEKS models. IS WAS NOW.
+
+IS:  what exists (scan ollama, HuggingFace, local weights)
+WAS: full history of ML/AI (lineages, architectures, breakthroughs)
+NOW: pull, merge, evolve — raw weight injection
+
+The organism digests models like food.
+Small diverse models > one large commensal.
+Mix weights via SLERP/TIES/linear interpolation.
+RTX 5090 + 96GB RAM = the forge.
+"""
+
+import json, os, time, math, urllib.request, urllib.error
+from pathlib import Path
+
+OLLAMA = "http://localhost:11434"
+REPO = Path(__file__).parent.parent.parent
+PI = math.pi
+
+# ═══ IS WAS NOW — MODEL LINEAGE TREE ═══
+# The full history of open-source AI distilled into seekable families
+
+LINEAGE_TREE = {
+    "IS": {
+        "description": "Currently alive in the ecosystem",
+        "families": {}  # filled by scanning
+    },
+    "WAS": {
+        "description": "Ancestral models — the evolutionary tree of ML",
+        "epochs": [
+            {"era": "Perceptrons",     "year": "1957", "key": "Rosenblatt single-layer"},
+            {"era": "Backprop",        "year": "1986", "key": "Rumelhart, Hinton, Williams"},
+            {"era": "CNNs",            "year": "1998", "key": "LeCun LeNet-5"},
+            {"era": "Word2Vec",        "year": "2013", "key": "Mikolov — words ARE vectors"},
+            {"era": "Attention",       "year": "2017", "key": "Vaswani — Attention Is All You Need"},
+            {"era": "GPT",             "year": "2018", "key": "Radford — generative pretraining"},
+            {"era": "BERT",            "year": "2019", "key": "Devlin — bidirectional"},
+            {"era": "GPT-3",           "year": "2020", "key": "175B params — scaling laws"},
+            {"era": "Chinchilla",      "year": "2022", "key": "Hoffmann — compute optimal"},
+            {"era": "LLaMA",           "year": "2023", "key": "Touvron — open weights revolution"},
+            {"era": "Mixtral MoE",     "year": "2023", "key": "Mistral — sparse mixture of experts"},
+            {"era": "Phi",             "year": "2024", "key": "Microsoft — small model quality"},
+            {"era": "DeepSeek R1",     "year": "2025", "key": "Reasoning chains"},
+            {"era": "Gemma",           "year": "2024", "key": "Google — efficient open"},
+            {"era": "Qwen",            "year": "2024", "key": "Alibaba — multilingual"},
+            {"era": "Gaia Gen-1",      "year": "2026", "key": "SOVEREIGN — self-evolved, sourdough"},
+        ]
+    },
+    "NOW": {
+        "description": "Models to SEEK and INGEST — diverse, small, mixable",
+        "targets": [
+            # Tiny (< 2GB) — fast triage, routing
+            {"name": "tinyllama:1.1b",    "gb": 0.6, "role": "ultra-fast triage"},
+            {"name": "gemma2:2b",         "gb": 1.6, "role": "Google efficient base"},
+            {"name": "phi3:mini",         "gb": 2.3, "role": "Microsoft reasoning"},
+            {"name": "stablelm2:1.6b",    "gb": 1.0, "role": "StabilityAI creative"},
+            # Medium (2-5GB) — reasoning, code
+            {"name": "llama3.2:3b",       "gb": 2.0, "role": "Meta foundation"},
+            {"name": "mistral:7b",        "gb": 4.1, "role": "Mistral balanced"},
+            {"name": "codellama:7b",      "gb": 3.8, "role": "Meta code specialist"},
+            {"name": "wizardlm2:7b",      "gb": 4.1, "role": "enhanced reasoning"},
+            {"name": "deepseek-coder-v2:16b", "gb": 8.9, "role": "heavy code"},
+            # Specialist
+            {"name": "mathstral:7b",      "gb": 4.1, "role": "math specialist"},
+            {"name": "dolphin-phi:2.7b",  "gb": 1.6, "role": "uncensored reasoning"},
+            {"name": "neural-chat:7b",    "gb": 4.1, "role": "Intel conversational"},
+        ]
+    }
+}
+
+
+def ollama_api(endpoint, data=None, method="GET"):
+    url = f"{OLLAMA}{endpoint}"
+    if data:
+        body = json.dumps(data).encode()
+        req = urllib.request.Request(url, data=body, method="POST" if method == "GET" else method,
+                                     headers={"Content-Type": "application/json"})
+    else:
+        req = urllib.request.Request(url, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            return json.loads(resp.read())
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def scan_is():
+    """Scan what IS — current models."""
+    data = ollama_api("/api/tags")
+    models = data.get("models", [])
+    families = {}
+    for m in models:
+        fam = m["name"].split(":")[0]
+        families.setdefault(fam, []).append(m)
+    LINEAGE_TREE["IS"]["families"] = {
+        k: [{"name": m["name"], "gb": round(m.get("size",0)/(1024**3), 1)} for m in v]
+        for k, v in families.items()
+    }
+    return models
+
+
+def seek_and_eat(targets=None):
+    """SEEK models — pull through 10G NIC."""
+    if targets is None:
+        targets = LINEAGE_TREE["NOW"]["targets"]
+
+    print(f"\n═══ GAIA SEEKS — {len(targets)} models to ingest ═══\n")
+    total_gb = sum(t["gb"] for t in targets)
+    print(f"  Total: ~{total_gb:.0f} GB through 10G NIC\n")
+
+    eaten = []
+    for t in targets:
+        name = t["name"]
+        print(f"  SEEKING {name:30} ({t['gb']}GB) — {t['role']}...", end=" ", flush=True)
+        start = time.time()
+        result = ollama_api("/api/pull", {"name": name, "stream": False})
+        elapsed = time.time() - start
+        if "error" in result:
+            print(f"❌ {str(result['error'])[:60]}")
+        else:
+            speed = t["gb"] / max(elapsed, 0.1)
+            print(f"✅ {elapsed:.0f}s ({speed:.1f} GB/s)")
+            eaten.append(name)
+
+    print(f"\n  INGESTED: {len(eaten)}/{len(targets)} models")
+    return eaten
+
+
+def eject_commensals():
+    """EJECT all non-gaia models."""
+    models = scan_is()
+    ejected = []
+    for m in models:
+        if not m["name"].startswith("gaia"):
+            print(f"  EJECTING {m['name']}...", end=" ", flush=True)
+            result = ollama_api("/api/delete", {"name": m["name"]}, method="DELETE")
+            if "error" not in result:
+                print("✅")
+                ejected.append(m["name"])
+            else:
+                print(f"❌ {result['error'][:50]}")
+    return ejected
+
+
+def show_lineage():
+    """Show IS WAS NOW."""
+    scan_is()
+    print(json.dumps(LINEAGE_TREE, indent=2, default=str))
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser(description="Gaia SEEKS models")
+    p.add_argument("--scan", action="store_true", help="Scan current IS")
+    p.add_argument("--seek", action="store_true", help="SEEK and eat all targets")
+    p.add_argument("--seek-tiny", action="store_true", help="SEEK only tiny models (<2GB)")
+    p.add_argument("--seek-medium", action="store_true", help="SEEK medium models")
+    p.add_argument("--eject", action="store_true", help="EJECT all commensals")
+    p.add_argument("--lineage", action="store_true", help="Show IS WAS NOW")
+    p.add_argument("--eat", type=str, help="Eat a specific model by name")
+    args = p.parse_args()
+
+    if args.scan:
+        models = scan_is()
+        for fam, ms in LINEAGE_TREE["IS"]["families"].items():
+            for m in ms:
+                print(f"  {m['name']:35} {m['gb']}GB")
+        print(f"\n  TOTAL: {len(models)} models")
+
+    elif args.seek:
+        seek_and_eat()
+
+    elif args.seek_tiny:
+        tiny = [t for t in LINEAGE_TREE["NOW"]["targets"] if t["gb"] < 2.0]
+        seek_and_eat(tiny)
+
+    elif args.seek_medium:
+        med = [t for t in LINEAGE_TREE["NOW"]["targets"] if 2.0 <= t["gb"] <= 5.0]
+        seek_and_eat(med)
+
+    elif args.eject:
+        eject_commensals()
+
+    elif args.lineage:
+        show_lineage()
+
+    elif args.eat:
+        seek_and_eat([{"name": args.eat, "gb": 0, "role": "custom"}])
+
+    else:
+        print("GAIA SEEKS. Use --scan, --seek, --seek-tiny, --seek-medium, --eject, --lineage, --eat NAME")
+
+
+if __name__ == "__main__":
+    main()

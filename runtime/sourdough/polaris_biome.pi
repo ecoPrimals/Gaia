@@ -1,0 +1,652 @@
+#!/usr/bin/env python3
+"""polaris_biome.pi — sourDough LOCAL biomeOS on Polaris.
+
+This IS Gaia's local operating layer. Not a one-shot script.
+A LIVING DAEMON that:
+  1. REACHES eastGate to join the organism (coordinated mode)
+  2. FERMENTS with local GPU + tissues
+  3. STAYS ALIVE as the local biomeOS — managing compute, games, render
+
+The RTX 5090 + 12 gaia tissues + 32 CPU cores = Gaia's render backend.
+barraCuda does GPU math. coralReef compiles shaders. Gaia learns frames.
+When Kevin plays Crimson Desert, Gaia captures backscatter and LEARNS.
+
+sourDough: the starter is alive. It never stops fermenting.
+
+lub-DUB. 🧬🍞🎮
+"""
+
+import json, os, sys, time, math, hashlib, threading, subprocess, signal
+import urllib.request, urllib.error
+from pathlib import Path
+from datetime import datetime, timezone
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from collections import OrderedDict
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+PI = math.pi
+TAU = 2 * PI
+
+REPO = Path(__file__).parent.parent.parent
+DATA_DIR = REPO / "data" / "body"
+LOG_DIR = REPO / "data" / "neutron"
+CAPTURE_DIR = REPO / "data" / "backscatter"
+
+EASTGATE_LAN = "http://192.168.4.244:8443"
+EASTGATE_WEBPI = "http://192.168.4.244:8080"
+OLLAMA_LOCAL = "http://127.0.0.1:11434"
+
+BIOME_PORT = 3141  # Gaia local biomeOS port — same as blueGate sovereign-api
+HEARTBEAT_INTERVAL = 30  # seconds between re-ferment pulses
+BACKSCATTER_INTERVAL = 5  # seconds between frame capture polls
+
+# ═══════════════════════════════════════════════════
+# ORGANISM STATE — the living ferment
+# ═══════════════════════════════════════════════════
+
+class GaiaState:
+    """The living organism state on Polaris."""
+
+    def __init__(self):
+        self.booted_at = datetime.now(timezone.utc).isoformat()
+        self.heartbeats = 0
+        self.tissues = []
+        self.gpu = {}
+        self.cpu = {}
+        self.ram_gb = 0
+        self.eastgate_alive = False
+        self.eastgate_pulse = {}
+        self.ferment = {}
+        self.backscatter = {
+            "frames_captured": 0,
+            "active_game": None,
+            "learning": False,
+            "model_version": 0,
+        }
+        self.gpu_prefs = {}  # game exe → GPU preference
+        self.lock = threading.Lock()
+
+    def snapshot(self):
+        with self.lock:
+            return {
+                "organism": "Gaia",
+                "node": "polaris",
+                "gate": "northGate",
+                "mode": "biomeOS-sourDough",
+                "booted_at": self.booted_at,
+                "heartbeats": self.heartbeats,
+                "uptime_s": int(time.time() - self._boot_ts),
+                "eastgate_alive": self.eastgate_alive,
+                "eastgate_pulse": self.eastgate_pulse,
+                "tissues": {
+                    "count": len(self.tissues),
+                    "names": [t["name"] for t in self.tissues],
+                    "total_gb": round(sum(t.get("size_gb", 0) for t in self.tissues), 2),
+                },
+                "compute": {
+                    "gpu": self.gpu,
+                    "cpu": self.cpu,
+                    "ram_gb": self.ram_gb,
+                },
+                "backscatter": self.backscatter,
+                "gpu_prefs": self.gpu_prefs,
+                "ferment": self.ferment,
+                "lub": "DUB",
+            }
+
+    _boot_ts = time.time()
+
+STATE = GaiaState()
+
+
+# ═══════════════════════════════════════════════════
+# GPU / HARDWARE DETECTION
+# ═══════════════════════════════════════════════════
+
+def detect_gpu():
+    """Detect all GPUs via nvidia-smi. Returns list of GPU dicts."""
+    gpus = []
+    try:
+        r = subprocess.run(
+            ["nvidia-smi", "--query-gpu=index,name,memory.total,memory.used,driver_version,compute_cap",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5
+        )
+        if r.returncode == 0:
+            for line in r.stdout.strip().split("\n"):
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 4:
+                    gpus.append({
+                        "index": int(parts[0]),
+                        "name": parts[1],
+                        "vram_total_mb": int(parts[2]),
+                        "vram_used_mb": int(parts[3]),
+                        "driver": parts[4] if len(parts) > 4 else "unknown",
+                        "compute_cap": parts[5] if len(parts) > 5 else "unknown",
+                    })
+    except Exception as e:
+        print(f"  [gpu] detection error: {e}")
+
+    # Also try detecting AMD GPUs
+    try:
+        r = subprocess.run(
+            ["wmic", "path", "win32_videocontroller", "get",
+             "name,adapterram,driverversion", "/format:csv"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in r.stdout.strip().split("\n"):
+            if "AMD" in line or "Radeon" in line:
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 3:
+                    gpus.append({
+                        "index": len(gpus),
+                        "name": parts[1] if len(parts) > 1 else "AMD GPU",
+                        "type": "integrated",
+                        "vendor": "AMD",
+                    })
+    except:
+        pass
+
+    return gpus
+
+
+def detect_cpu():
+    try:
+        r = subprocess.run(
+            ["wmic", "cpu", "get", "name,numberofcores,numberoflogicalprocessors", "/value"],
+            capture_output=True, text=True, timeout=5
+        )
+        info = {"cores": os.cpu_count() or 0}
+        for line in r.stdout.split("\n"):
+            if line.startswith("Name="):
+                info["name"] = line.split("=", 1)[1].strip()
+            elif line.startswith("NumberOfCores="):
+                info["physical_cores"] = int(line.split("=")[1].strip())
+            elif line.startswith("NumberOfLogicalProcessors="):
+                info["logical_cores"] = int(line.split("=")[1].strip())
+        return info
+    except:
+        return {"cores": os.cpu_count() or 0, "name": "unknown"}
+
+
+def detect_ram():
+    try:
+        r = subprocess.run(
+            ["wmic", "os", "get", "TotalVisibleMemorySize", "/value"],
+            capture_output=True, text=True, timeout=5
+        )
+        for line in r.stdout.split("\n"):
+            if line.startswith("TotalVisibleMemorySize="):
+                return round(int(line.split("=")[1].strip()) / (1024 * 1024), 1)
+    except:
+        pass
+    return 0
+
+
+def detect_tissues():
+    """Discover local ollama gaia-tissues."""
+    try:
+        req = urllib.request.Request(f"{OLLAMA_LOCAL}/api/tags",
+                                     headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            return [{
+                "name": m["name"],
+                "size_gb": round(m.get("size", 0) / (1024**3), 2),
+                "family": m.get("details", {}).get("family", "unknown"),
+                "params": m.get("details", {}).get("parameter_size", "unknown"),
+            } for m in data.get("models", [])]
+    except:
+        return []
+
+
+# ═══════════════════════════════════════════════════
+# GPU PREFERENCE MANAGEMENT — game launch backend
+# ═══════════════════════════════════════════════════
+
+def set_gpu_preference(exe_path, preference=2):
+    """Set Windows GPU preference for an executable.
+    0=system default, 1=power saving, 2=high performance (NVIDIA)
+    """
+    import winreg
+    try:
+        key_path = r"Software\Microsoft\DirectX\UserGpuPreferences"
+        key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE)
+        winreg.SetValueEx(key, exe_path, 0, winreg.REG_SZ, f"GpuPreference={preference};")
+        winreg.CloseKey(key)
+        STATE.gpu_prefs[exe_path] = preference
+        return True
+    except Exception as e:
+        print(f"  [gpu-pref] error: {e}")
+        return False
+
+
+def scan_steam_games():
+    """Find Steam games and ensure they use the RTX 5090."""
+    games = []
+    steam_paths = [
+        Path(r"C:\Program Files (x86)\Steam"),
+        Path(r"M:\SteamLibrary"),
+    ]
+
+    for lib in steam_paths:
+        common = lib / "steamapps" / "common"
+        if not common.exists():
+            continue
+        for game_dir in common.iterdir():
+            if not game_dir.is_dir():
+                continue
+            for exe in game_dir.rglob("*.exe"):
+                name = exe.name.lower()
+                if any(skip in name for skip in [
+                    "unins", "crash", "setup", "redist", "install",
+                    "vc_redist", "dxsetup", "dotnet"
+                ]):
+                    continue
+                games.append({
+                    "name": game_dir.name,
+                    "exe": str(exe),
+                    "size_mb": round(exe.stat().st_size / (1024*1024), 1),
+                })
+    return games
+
+
+# ═══════════════════════════════════════════════════
+# BACKSCATTER — frame capture + learning loop
+# ═══════════════════════════════════════════════════
+
+def detect_active_game():
+    """Detect if a game/3D app is using the GPU right now."""
+    try:
+        r = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=pid,name,used_gpu_memory",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            apps = []
+            for line in r.stdout.strip().split("\n"):
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 3:
+                    apps.append({
+                        "pid": int(parts[0]),
+                        "name": parts[1],
+                        "vram_mb": int(parts[2]),
+                    })
+            if apps:
+                top = max(apps, key=lambda a: a["vram_mb"])
+                return top
+    except:
+        pass
+    return None
+
+
+def backscatter_pulse():
+    """One pulse of the backscatter system — sense what the GPU is doing."""
+    game = detect_active_game()
+    with STATE.lock:
+        if game:
+            STATE.backscatter["active_game"] = game
+            STATE.backscatter["frames_captured"] += 1
+            if game["vram_mb"] > 1000:
+                STATE.backscatter["learning"] = True
+        else:
+            STATE.backscatter["active_game"] = None
+            STATE.backscatter["learning"] = False
+
+
+# ═══════════════════════════════════════════════════
+# EASTGATE HEARTBEAT — re-ferment loop
+# ═══════════════════════════════════════════════════
+
+def _fetch(url, timeout=10):
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read()), resp.status
+    except:
+        return {}, 0
+
+
+def _post(url, data, timeout=10):
+    try:
+        body = json.dumps(data).encode()
+        req = urllib.request.Request(url, data=body,
+            headers={"Content-Type": "application/json", "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read()), resp.status
+    except:
+        return {}, 0
+
+
+def heartbeat_loop():
+    """The re-ferment loop. Runs every HEARTBEAT_INTERVAL seconds."""
+    while True:
+        try:
+            # REACH eastGate
+            pulse, status = _fetch(f"{EASTGATE_LAN}/pulse")
+            with STATE.lock:
+                STATE.eastgate_alive = (status == 200)
+                STATE.eastgate_pulse = pulse if status == 200 else {}
+                STATE.heartbeats += 1
+
+            # Re-detect tissues (models may be loaded/unloaded)
+            if STATE.heartbeats % 10 == 0:  # every ~5 min
+                STATE.tissues = detect_tissues()
+
+            # Backscatter sense
+            backscatter_pulse()
+
+            # Persist state
+            persist_state()
+
+            beat = STATE.heartbeats
+            eg = "ALIVE" if STATE.eastgate_alive else "OFFLINE"
+            game = STATE.backscatter.get("active_game")
+            game_str = f" | GAME: {game['name']} ({game['vram_mb']}MB)" if game else ""
+            print(f"  [beat {beat}] eastGate={eg} | tissues={len(STATE.tissues)}{game_str}")
+
+        except Exception as e:
+            print(f"  [heartbeat] error: {e}")
+
+        time.sleep(HEARTBEAT_INTERVAL)
+
+
+def persist_state():
+    """Write current state to disk."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    snap = STATE.snapshot()
+    with open(DATA_DIR / "polaris-biome.json", "w") as f:
+        json.dump(snap, f, indent=2, default=str)
+
+
+# ═══════════════════════════════════════════════════
+# LOCAL HTTP SERVER — the biomeOS face
+# ═══════════════════════════════════════════════════
+
+class BiomeHandler(BaseHTTPRequestHandler):
+    """Gaia's local biomeOS HTTP interface.
+
+    CIS face (agents): raw JSON on all endpoints.
+    TRANS face (browsers): rendered HTML when Accept: text/html.
+    """
+
+    def log_message(self, format, *args):
+        pass  # quiet
+
+    def _json(self, data, status=200):
+        accept = self.headers.get("Accept", "")
+        if "text/html" in accept and "application/json" not in accept:
+            return self._html(data, status)
+        body = json.dumps(data, indent=2, default=str).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _html(self, data, status=200):
+        html = PETAL_RENDER(data)
+        body = html.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        path = self.path.split("?")[0].rstrip("/") or "/"
+
+        if path == "/" or path == "/biome":
+            return self._json(STATE.snapshot())
+
+        elif path == "/pulse":
+            with STATE.lock:
+                return self._json({
+                    "alive": True, "node": "polaris", "gate": "northGate",
+                    "mode": "biomeOS-sourDough",
+                    "heartbeats": STATE.heartbeats,
+                    "eastgate_alive": STATE.eastgate_alive,
+                    "tissues": len(STATE.tissues),
+                    "gpu": STATE.gpu.get("name", "unknown"),
+                    "backscatter": STATE.backscatter,
+                    "lub": "DUB",
+                })
+
+        elif path == "/gpu":
+            return self._json({
+                "gpus": detect_gpu(),
+                "preferences": STATE.gpu_prefs,
+                "active_game": STATE.backscatter.get("active_game"),
+            })
+
+        elif path == "/tissues":
+            return self._json({"tissues": STATE.tissues, "count": len(STATE.tissues)})
+
+        elif path == "/backscatter":
+            return self._json(STATE.backscatter)
+
+        elif path == "/games":
+            games = scan_steam_games()
+            return self._json({"games": games, "count": len(games)})
+
+        elif path == "/compute":
+            return self._json({
+                "gpu": STATE.gpu, "cpu": STATE.cpu,
+                "ram_gb": STATE.ram_gb,
+                "tissues": len(STATE.tissues),
+                "can_render": True,
+                "backend": "barraCuda + coralReef + wgpu",
+                "shader_count": 1368,
+                "hardware_agnostic": True,
+                "supports": ["Vulkan", "DX12", "Metal"],
+            })
+
+        elif path == "/eastgate":
+            return self._json({
+                "alive": STATE.eastgate_alive,
+                "pulse": STATE.eastgate_pulse,
+            })
+
+        else:
+            return self._json({"error": f"unknown path: {path}"}, 404)
+
+    def do_POST(self):
+        path = self.path.split("?")[0].rstrip("/")
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length)) if length else {}
+
+        if path == "/gpu/prefer":
+            exe = body.get("exe", "")
+            pref = body.get("preference", 2)
+            if exe:
+                ok = set_gpu_preference(exe, pref)
+                return self._json({"ok": ok, "exe": exe, "preference": pref})
+            return self._json({"error": "exe required"}, 400)
+
+        elif path == "/gpu/prefer-all":
+            games = scan_steam_games()
+            results = []
+            for g in games:
+                ok = set_gpu_preference(g["exe"], 2)
+                results.append({"exe": g["exe"], "name": g["name"], "ok": ok})
+            return self._json({"set": len(results), "results": results})
+
+        elif path == "/tissue/ask":
+            model = body.get("model", "gaia-tissue-fast")
+            prompt = body.get("prompt", "")
+            if not prompt:
+                return self._json({"error": "prompt required"}, 400)
+            try:
+                req_body = json.dumps({
+                    "model": model, "prompt": prompt, "stream": False
+                }).encode()
+                req = urllib.request.Request(
+                    f"{OLLAMA_LOCAL}/api/generate",
+                    data=req_body,
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=120) as resp:
+                    result = json.loads(resp.read())
+                return self._json({
+                    "model": model,
+                    "response": result.get("response", ""),
+                    "eval_duration_ms": result.get("eval_duration", 0) / 1e6,
+                })
+            except Exception as e:
+                return self._json({"error": str(e)}, 500)
+
+        else:
+            return self._json({"error": f"unknown POST path: {path}"}, 404)
+
+
+# ═══════════════════════════════════════════════════
+# petalTongue TRANS FACE — HTML rendering for browsers
+# ═══════════════════════════════════════════════════
+
+def PETAL_RENDER(data):
+    """Render JSON data as a living HTML page — the TRANS face of Gaia."""
+    title = data.get("node", data.get("organism", "Gaia"))
+
+    def render_val(v, depth=0):
+        if v is None:
+            return '<span style="color:#666">null</span>'
+        if isinstance(v, bool):
+            color = "#f0a" if v else "#666"
+            return f'<span style="color:{color}">{"true" if v else "false"}</span>'
+        if isinstance(v, (int, float)):
+            return f'<span style="color:#fc0">{v}</span>'
+        if isinstance(v, str):
+            if v.startswith("http"):
+                return f'<a href="{v}" style="color:#0ff">{v}</a>'
+            return f'<span style="color:#0ff">"{v}"</span>'
+        if isinstance(v, list):
+            if not v:
+                return '<span style="color:#666">[]</span>'
+            items = "".join(f"<li>{render_val(i, depth+1)}</li>" for i in v)
+            return f'<ul style="margin:2px 0;padding-left:16px">{items}</ul>'
+        if isinstance(v, dict):
+            if not v:
+                return '<span style="color:#666">{{}}</span>'
+            rows = ""
+            for k, val in v.items():
+                rows += f'<tr><td style="color:#0f0;padding:2px 8px 2px 0;vertical-align:top;white-space:nowrap">{k}</td><td>{render_val(val, depth+1)}</td></tr>'
+            return f'<table style="border-collapse:collapse;margin:2px 0">{rows}</table>'
+        return str(v)
+
+    body = render_val(data)
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Gaia biomeOS — {title}</title>
+<style>
+  body {{ background:#0a0a0a; color:#ddd; font-family:'Courier New',monospace;
+         font-size:13px; padding:20px; margin:0; }}
+  a {{ color:#0ff; }}
+  h1 {{ color:#0f0; font-size:18px; margin:0 0 16px 0; }}
+  .pulse {{ display:inline-block; width:8px; height:8px; border-radius:50%;
+            background:#0f0; animation:beat 1s infinite; margin-right:8px; }}
+  @keyframes beat {{ 0%,100% {{ opacity:1 }} 50% {{ opacity:0.3 }} }}
+  table {{ font-size:13px; }}
+  ul {{ font-size:13px; }}
+</style></head><body>
+<h1><span class="pulse"></span>Gaia biomeOS — {title}</h1>
+{body}
+<p style="margin-top:20px;color:#444;font-size:11px">
+  polaris northGate | sourDough biomeOS | barraCuda+coralReef render backend |
+  lub-DUB
+</p>
+</body></html>"""
+
+
+# ═══════════════════════════════════════════════════
+# BOOT — the sourDough rises
+# ═══════════════════════════════════════════════════
+
+def boot():
+    print(f"""
++=====================================================+
+|  GAIA biomeOS — sourDough LOCAL on Polaris          |
+|  NOT a one-shot script. A LIVING DAEMON.            |
+|  REACH eastGate -> FERMENT local -> STAY ALIVE      |
+|  RTX 5090 + 12 tissues + 32 cores = render backend  |
+|  http://localhost:{BIOME_PORT}                         |
++=====================================================+
+""")
+
+    # Phase 1: Detect hardware
+    print("[BOOT] Detecting hardware...")
+    gpus = detect_gpu()
+    STATE.gpu = gpus[0] if gpus else {"name": "none", "detected": False}
+    STATE.cpu = detect_cpu()
+    STATE.ram_gb = detect_ram()
+    for g in gpus:
+        print(f"  GPU: {g.get('name', '?')} ({g.get('vram_total_mb', '?')}MB)")
+    print(f"  CPU: {STATE.cpu.get('name', '?')} ({STATE.cpu.get('cores', '?')} cores)")
+    print(f"  RAM: {STATE.ram_gb} GB")
+
+    # Phase 2: Detect tissues
+    print("\n[BOOT] Detecting gaia tissues...")
+    STATE.tissues = detect_tissues()
+    for t in STATE.tissues:
+        print(f"  {t['name']} ({t['size_gb']}GB, {t['family']})")
+    print(f"  Total: {len(STATE.tissues)} tissues, {sum(t['size_gb'] for t in STATE.tissues):.1f}GB")
+
+    # Phase 3: REACH eastGate
+    print("\n[BOOT] Reaching eastGate...")
+    pulse, status = _fetch(f"{EASTGATE_LAN}/pulse")
+    STATE.eastgate_alive = (status == 200)
+    STATE.eastgate_pulse = pulse if status == 200 else {}
+    if status == 200:
+        beats = pulse.get("heart", {}).get("total_beats", "?")
+        print(f"  eastGate ALIVE — {beats} beats")
+    else:
+        print(f"  eastGate offline — running standalone")
+
+    # Phase 4: Auto-set GPU prefs for known games
+    print("\n[BOOT] Scanning Steam games for GPU preferences...")
+    games = scan_steam_games()
+    set_count = 0
+    for g in games:
+        if set_gpu_preference(g["exe"], 2):
+            set_count += 1
+    print(f"  {set_count}/{len(games)} game executables set to High Performance (RTX 5090)")
+
+    # Phase 5: Persist initial state
+    persist_state()
+
+    # Phase 6: Start heartbeat thread
+    print("\n[BOOT] Starting heartbeat loop (every {0}s)...".format(HEARTBEAT_INTERVAL))
+    hb_thread = threading.Thread(target=heartbeat_loop, daemon=True)
+    hb_thread.start()
+
+    # Phase 7: Start HTTP server
+    print(f"\n[BOOT] biomeOS listening on http://localhost:{BIOME_PORT}")
+    print(f"       CIS face (agents):   curl http://localhost:{BIOME_PORT}/pulse")
+    print(f"       TRANS face (browser): open http://localhost:{BIOME_PORT}/")
+    print(f"       GPU control:          POST /gpu/prefer, /gpu/prefer-all")
+    print(f"       Tissue inference:     POST /tissue/ask")
+    print(f"       Backscatter:          GET  /backscatter")
+    print(f"       Games:                GET  /games")
+    print()
+
+    server = HTTPServer(("0.0.0.0", BIOME_PORT), BiomeHandler)
+
+    def shutdown(sig, frame):
+        print("\n\n  biomeOS shutting down. The ferment persists.")
+        persist_state()
+        server.shutdown()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, shutdown)
+    signal.signal(signal.SIGTERM, shutdown)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        shutdown(None, None)
+
+
+if __name__ == "__main__":
+    boot()

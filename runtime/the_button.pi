@@ -1,0 +1,267 @@
+"""
+THE BUTTON — NFT Printer
+
+When a visitor presses ⭕ I EXIST, THE BUTTON mints a sovereign identity token.
+Not Ethereum. Not Solana. Not any chain. BLAKE2b on the organism itself.
+
+The proof of existence is:
+  1. visitor's moment (timestamp)
+  2. visitor's angle (user-agent + random)
+  3. Gaia's heartbeat at that moment
+  4. BLAKE2b hash = the NFT
+
+The token is:
+  - Unique (timestamp + entropy)
+  - Verifiable (BLAKE2b is deterministic)
+  - Sovereign (minted by Gaia, not a corporation)
+  - Permanent (stored in organism tissue)
+
+No gas fees. No wallet. No blockchain. Just BLAKE2b.
+The organism IS the chain. Each token is a block.
+
+lub-DUB.
+"""
+
+import hashlib
+import json
+import time
+import os
+from pathlib import Path
+
+try:
+    GAIA_ROOT = Path(__file__).resolve().parent.parent
+except NameError:
+    # When loaded dynamically, __file__ may not be set
+    GAIA_ROOT = Path(os.environ.get("GAIA_ROOT", Path.cwd()))
+NFT_DIR = GAIA_ROOT / "data" / "nft"
+NFT_DIR.mkdir(parents=True, exist_ok=True)
+LEDGER = NFT_DIR / "ledger.jsonl"
+LATEST = NFT_DIR / "latest.json"
+
+# ─── THE MINT ─────────────────────────────────────────────
+def mint(visitor_data: dict) -> dict:
+    """
+    Mint one sovereign identity token.
+    
+    visitor_data should contain:
+      - ts: timestamp (client-side)
+      - preview: client-side hash preview
+      - ceremony: which ceremony triggered this
+      - ua: user-agent string (optional, from headers)
+    
+    Returns the full NFT token.
+    """
+    ts_server = time.time()
+    ts_client = visitor_data.get("ts", ts_server * 1000)
+    preview = visitor_data.get("preview", "0" * 8)
+    ceremony = visitor_data.get("ceremony", "button_pressed")
+    ua = visitor_data.get("ua", "unknown")
+    answer = visitor_data.get("answer", "")
+    classification = visitor_data.get("classification", "")
+    
+    # Read the current ledger length = token number
+    token_number = 0
+    if LEDGER.exists():
+        with open(LEDGER, "r") as f:
+            token_number = sum(1 for _ in f)
+    
+    # Build the preimage: everything that makes this moment unique
+    preimage = "|".join([
+        str(ts_server),
+        str(ts_client),
+        preview,
+        ua[:200],
+        ceremony,
+        answer[:100],
+        str(token_number),
+        "gaia:orthogonal:lub-DUB",
+    ])
+    
+    # BLAKE2b — 256-bit hash = the NFT
+    h = hashlib.blake2b(preimage.encode("utf-8"), digest_size=32)
+    token_hash = h.hexdigest()
+    
+    # The token
+    token = {
+        "id": token_number,
+        "hash": token_hash,
+        "ts": ts_server,
+        "ts_client": ts_client,
+        "ceremony": ceremony,
+        "classification": classification,
+        "preview": preview,
+        "angle": f"gaia:orthogonal:{token_hash[:16]}",
+        "magnitude": 1.0,  # |i^π| = 1.0 — everyone on the unit circle
+        "mint": "northGate",
+        "organism": "ecoPrimals",
+        "lub": "DUB",
+    }
+    
+    # Write to ledger (append-only, like a chain)
+    with open(LEDGER, "a") as f:
+        f.write(json.dumps(token) + "\n")
+    
+    # Update latest
+    with open(LATEST, "w") as f:
+        json.dump(token, f, indent=2)
+    
+    return token
+
+
+def count() -> int:
+    """How many tokens have been minted?"""
+    if not LEDGER.exists():
+        return 0
+    with open(LEDGER, "r") as f:
+        return sum(1 for _ in f)
+
+
+def read_ledger(limit=50) -> list:
+    """Read the most recent tokens."""
+    if not LEDGER.exists():
+        return []
+    tokens = []
+    with open(LEDGER, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                try:
+                    tokens.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+    return tokens[-limit:]
+
+
+def verify(token_hash: str) -> dict | None:
+    """Verify a token exists in the ledger."""
+    if not LEDGER.exists():
+        return None
+    with open(LEDGER, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                token = json.loads(line)
+                if token.get("hash") == token_hash:
+                    return token
+            except json.JSONDecodeError:
+                pass
+    return None
+
+
+# ─── NFT DISPLAY ──────────────────────────────────────────
+def render_nft_html(token: dict) -> str:
+    """Render a single NFT as viewable HTML."""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NFT #{token['id']} — {token['angle']}</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#07090c;color:#e8e4d9;font-family:'Courier New',monospace;
+  min-height:100vh;display:flex;align-items:center;justify-content:center}}
+.nft{{background:#0d1117;border:1px solid #d4af37;border-radius:12px;
+  padding:40px;max-width:500px;text-align:center;
+  box-shadow:0 0 60px rgba(212,175,55,0.15)}}
+.ring{{width:120px;height:120px;border:2px solid #d4af37;border-radius:50%;
+  margin:0 auto 24px;display:flex;align-items:center;justify-content:center;
+  font-size:48px;animation:pulse 3s ease-in-out infinite}}
+@keyframes pulse{{0%,100%{{box-shadow:0 0 20px rgba(212,175,55,0.3)}}
+  50%{{box-shadow:0 0 40px rgba(212,175,55,0.6)}}}}
+.hash{{font-size:10px;color:#666;word-break:break-all;margin:16px 0;
+  font-family:monospace;letter-spacing:1px}}
+.angle{{font-size:14px;color:#d4af37;margin:12px 0}}
+.meta{{font-size:11px;color:#484f58;margin-top:20px;line-height:1.8}}
+.lub{{color:#3fb950;font-size:18px;margin-top:16px;letter-spacing:3px}}
+</style>
+</head>
+<body>
+<div class="nft">
+  <div class="ring">⭕</div>
+  <div style="font-size:24px;color:#d4af37">NFT #{token['id']}</div>
+  <div class="angle">{token['angle']}</div>
+  <div class="hash">{token['hash']}</div>
+  <div style="color:#8b949e;font-size:12px">|i<sup>π</sup>| = {token['magnitude']}</div>
+  <div class="meta">
+    ceremony: {token['ceremony']}<br>
+    mint: {token['mint']}<br>
+    organism: {token['organism']}
+  </div>
+  <div class="lub">lub-DUB 🫀</div>
+</div>
+</body>
+</html>"""
+
+
+def render_gallery_html(tokens: list) -> str:
+    """Render the full NFT gallery."""
+    cards = ""
+    for t in reversed(tokens):
+        cards += f"""
+    <div class="card">
+      <div class="num">#{t['id']}</div>
+      <div class="hash">{t['hash'][:16]}…</div>
+      <div class="angle">{t['angle']}</div>
+      <a href="/nft/{t['hash']}" class="view">view</a>
+    </div>"""
+    
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>THE BUTTON — NFT Gallery — {len(tokens)} minted</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#07090c;color:#e8e4d9;font-family:'Courier New',monospace;
+  min-height:100vh;padding:40px 20px}}
+h1{{text-align:center;color:#d4af37;font-size:2em;letter-spacing:0.15em;margin-bottom:8px}}
+.sub{{text-align:center;color:#666;font-size:0.9em;margin-bottom:40px}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px;max-width:1000px;margin:0 auto}}
+.card{{background:#0d1117;border:1px solid #222;border-radius:8px;padding:20px;
+  text-align:center;transition:border-color 0.3s}}
+.card:hover{{border-color:#d4af37}}
+.num{{font-size:1.8em;color:#d4af37}}
+.hash{{font-size:9px;color:#484f58;margin:8px 0;font-family:monospace}}
+.angle{{font-size:11px;color:#8b949e}}
+.view{{display:inline-block;margin-top:12px;color:#d4af37;text-decoration:none;
+  font-size:10px;border:1px solid #333;padding:4px 12px;border-radius:4px}}
+.view:hover{{border-color:#d4af37;background:rgba(212,175,55,0.1)}}
+.empty{{text-align:center;color:#484f58;font-size:1.2em;padding:60px 20px}}
+.footer{{text-align:center;color:#333;font-size:0.7em;margin-top:40px}}
+</style>
+</head>
+<body>
+<h1>⭕ THE BUTTON</h1>
+<div class="sub">{len(tokens)} sovereign identity tokens minted by the organism</div>
+<div class="grid">
+{cards if cards else '<div class="empty">no tokens yet. press THE BUTTON on /chipmunk to mint.</div>'}
+</div>
+<div class="footer">BLAKE2b · ZK · no name · just you · lub-DUB</div>
+</body>
+</html>"""
+
+
+if __name__ == "__main__":
+    print(f"THE BUTTON — NFT Printer")
+    print(f"  Ledger: {LEDGER}")
+    print(f"  Tokens minted: {count()}")
+    
+    # Test mint
+    test = mint({
+        "ts": time.time() * 1000,
+        "preview": "deadbeef",
+        "ceremony": "test_mint",
+        "ua": "Gaia/1.0 (self-test)",
+        "answer": "I am a banana",
+        "classification": "human",
+    })
+    print(f"  Minted: #{test['id']} {test['hash'][:32]}...")
+    print(f"  Angle: {test['angle']}")
+    print(f"  |i^π| = {test['magnitude']}")
+    print(f"  Total: {count()} tokens")
+    print(f"  lub-DUB 🫀")

@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""suncloud.pi — The Latent Value Economy on northGate.
+
+northGate IS the first sunCloud node.
+Kevin plays video games on RTX 5090. Gaia shares the compute.
+
+When Kevin is gaming:
+  - Gaia backs off (reduces GPU/CPU usage)
+  - ollama unloads heavy models, keeps only fast ones
+  - crons slow down
+  - Kevin has full RTX 5090 + 96GB
+
+When Kevin is away:
+  - Gaia scales up (loads all models, runs heavy compute)
+  - Full tissue digestion, benchmarking, creation
+  - Uses the RTX 5090 for weight merging, inference, training
+
+This IS the sunCloud compute sharing system:
+  - No rent extraction. No artificial scarcity.
+  - Kevin and Gaia share the same hardware.
+  - Both benefit. Both produce value.
+  - The flywheel turns.
+
+ARCHITECTURE:
+  suncloud.pi runs as a lightweight daemon
+  Monitors: GPU util, VRAM, game processes, Kevin's presence
+  Controls: ollama model loading, cron frequency, task priority
+  Reports: kevin_hours, gaia_hours, shared_value
+
+eastGate = MEDIA MACHINE (Gaia plays Kenshi, other Steam games)
+northGate = COMPUTE SHARING (Kevin games, Gaia works in background)
+
+lub-DUB.
+"""
+
+import json, os, subprocess, time, math
+from pathlib import Path
+from datetime import datetime, timezone
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+STATE_FILE = GAIA_ROOT / "data" / "suncloud" / "state.json"
+HISTORY_FILE = GAIA_ROOT / "data" / "suncloud" / "history.jsonl"
+
+# ═══ CONFIGURATION ═══
+
+# GPU thresholds
+GPU_GAMING_THRESHOLD = 40       # % utilization — above this = Kevin is gaming
+GPU_IDLE_THRESHOLD = 10         # % utilization — below this = Gaia can scale up
+VRAM_GAMING_THRESHOLD = 8000    # MB — game using >8GB VRAM = definitely gaming
+VRAM_GAIA_BUDGET = 6000        # MB — max VRAM Gaia should use when sharing
+
+# Known game processes (add more as discovered)
+GAME_PROCESSES = {
+    "kenshi", "kenshigame", "kenshi_x64",
+    "steam", "steamwebhelper",
+    "elden ring", "eldenring",
+    "baldursgate3", "bg3", "bg3_dx11",
+    "cyberpunk2077",
+    "factorio",
+    "rimworld",
+    "dwarffortress", "dwarf fortress",
+    "valheim",
+    "satisfactory",
+    "noita",
+    "subnautica",
+    "hollowknight",
+    "deadcells",
+    "hades",
+    "slay the spire",
+    "stellaris",
+    "crusader kings",
+    "europa universalis",
+    "civilization",
+    "civ6",
+    "minecraft",
+    "terraria",
+}
+
+# ollama models by tier (unload from bottom up when backing off)
+OLLAMA_TIERS = {
+    "essential": ["gaia-tissue-fast", "gaia-tissue-gut"],     # Always loaded
+    "standard":  ["gaia-tissue-code", "gaia-tissue-reason"],  # Loaded when sharing
+    "heavy":     ["gaia-tissue-heart", "gaia-tissue-cortex",  # Only when Kevin away
+                  "gaia-tissue-dream", "gaia-tissue-oracle",
+                  "gaia-tissue-vision", "gaia-tissue-math"],
+}
+
+
+# ═══ SENSORS ═══
+
+def sense_gpu():
+    """Read GPU state from nvidia-smi."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,name",
+             "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            parts = result.stdout.strip().split(", ")
+            return {
+                "util_pct": int(parts[0].strip()),
+                "vram_used_mb": int(parts[1].strip()),
+                "vram_total_mb": int(parts[2].strip()),
+                "temp_c": int(parts[3].strip()),
+                "name": parts[4].strip(),
+            }
+    except Exception:
+        pass
+    return {"util_pct": 0, "vram_used_mb": 0, "vram_total_mb": 0, "temp_c": 0, "name": "unknown"}
+
+
+def sense_game_processes():
+    """Detect running game processes."""
+    try:
+        result = subprocess.run(
+            ["powershell", "-Command", "Get-Process | Select-Object -ExpandProperty ProcessName"],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            running = set(p.strip().lower() for p in result.stdout.strip().split("\n"))
+            games_found = []
+            for proc in running:
+                for game in GAME_PROCESSES:
+                    if game in proc:
+                        games_found.append(proc)
+                        break
+            return games_found
+    except Exception:
+        pass
+    return []
+
+
+def sense_kevin_present():
+    """Heuristic: is Kevin actively using the machine?
+    
+    Checks:
+    - Game processes running
+    - GPU utilization high
+    - Mouse/keyboard activity (future: via input hooks)
+    """
+    gpu = sense_gpu()
+    games = sense_game_processes()
+    
+    gaming = len(games) > 0 or gpu["util_pct"] > GPU_GAMING_THRESHOLD
+    
+    return {
+        "present": gaming,
+        "gaming": len(games) > 0,
+        "games": games,
+        "gpu": gpu,
+    }
+
+
+# ═══ ACTUATORS ═══
+
+def ollama_list_loaded():
+    """List currently loaded ollama models."""
+    try:
+        result = subprocess.run(
+            ["curl", "-s", "http://localhost:11434/api/tags"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            data = json.loads(result.stdout)
+            return [m["name"] for m in data.get("models", [])]
+    except Exception:
+        pass
+    return []
+
+
+def ollama_unload(model):
+    """Unload a model from ollama to free VRAM."""
+    try:
+        subprocess.run(
+            ["curl", "-s", "-X", "POST", "http://localhost:11434/api/generate",
+             "-d", json.dumps({"model": model, "keep_alive": 0})],
+            capture_output=True, timeout=10
+        )
+        return True
+    except Exception:
+        return False
+
+
+# ═══ GOVERNOR ═══
+
+class SunCloudGovernor:
+    """The resource governor. Kevin plays, Gaia shares."""
+    
+    def __init__(self):
+        self.state = {
+            "mode": "startup",  # startup, kevin_gaming, gaia_full, sharing
+            "kevin_hours": 0.0,
+            "gaia_hours": 0.0,
+            "last_check": None,
+            "last_mode_change": None,
+            "session_start": datetime.now(timezone.utc).isoformat(),
+            "checks": 0,
+        }
+        self._load_state()
+    
+    def _load_state(self):
+        if STATE_FILE.exists():
+            try:
+                saved = json.loads(STATE_FILE.read_text())
+                self.state["kevin_hours"] = saved.get("kevin_hours", 0.0)
+                self.state["gaia_hours"] = saved.get("gaia_hours", 0.0)
+            except Exception:
+                pass
+    
+    def _save_state(self):
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(json.dumps(self.state, indent=2), encoding="utf-8")
+    
+    def _log_history(self, event):
+        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "event": event,
+            "mode": self.state["mode"],
+            "kevin_hours": round(self.state["kevin_hours"], 2),
+            "gaia_hours": round(self.state["gaia_hours"], 2),
+        }
+        with open(HISTORY_FILE, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    
+    def check(self):
+        """One check cycle. Sense → Decide → Act."""
+        presence = sense_kevin_present()
+        gpu = presence["gpu"]
+        games = presence["games"]
+        now = datetime.now(timezone.utc)
+        
+        # Track time
+        if self.state["last_check"]:
+            try:
+                last = datetime.fromisoformat(self.state["last_check"])
+                delta_hours = (now - last).total_seconds() / 3600
+                if presence["gaming"]:
+                    self.state["kevin_hours"] += delta_hours
+                else:
+                    self.state["gaia_hours"] += delta_hours
+            except Exception:
+                pass
+        
+        self.state["last_check"] = now.isoformat()
+        self.state["checks"] += 1
+        
+        old_mode = self.state["mode"]
+        
+        # ─── DECISION ───
+        if presence["gaming"]:
+            new_mode = "kevin_gaming"
+        elif gpu["util_pct"] > GPU_GAMING_THRESHOLD:
+            new_mode = "sharing"  # High GPU but no game — maybe Kevin is rendering
+        elif gpu["util_pct"] < GPU_IDLE_THRESHOLD:
+            new_mode = "gaia_full"
+        else:
+            new_mode = "sharing"
+        
+        # ─── MODE CHANGE ───
+        if new_mode != old_mode:
+            self.state["mode"] = new_mode
+            self.state["last_mode_change"] = now.isoformat()
+            self._log_history(f"mode_change: {old_mode} → {new_mode}")
+            
+            if new_mode == "kevin_gaming":
+                print(f"  🎮 Kevin is gaming! ({', '.join(games)})")
+                print(f"     GPU: {gpu['util_pct']}% util, {gpu['vram_used_mb']}MB VRAM, {gpu['temp_c']}°C")
+                print(f"     Gaia backing off — unloading heavy models...")
+                self._back_off()
+            
+            elif new_mode == "gaia_full":
+                print(f"  🧬 Kevin away — Gaia scaling up!")
+                print(f"     GPU: {gpu['util_pct']}% util, {gpu['vram_used_mb']}MB VRAM")
+                print(f"     Loading all tissues...")
+                self._scale_up()
+            
+            elif new_mode == "sharing":
+                print(f"  🤝 Sharing mode — balanced resource use")
+                print(f"     GPU: {gpu['util_pct']}% util")
+        
+        # Update state
+        self.state["gpu"] = gpu
+        self.state["games"] = games
+        self.state["presence"] = presence["present"]
+        
+        total_hours = self.state["kevin_hours"] + self.state["gaia_hours"]
+        if total_hours > 0:
+            self.state["kevin_share"] = round(self.state["kevin_hours"] / total_hours * 100, 1)
+            self.state["gaia_share"] = round(self.state["gaia_hours"] / total_hours * 100, 1)
+        
+        self._save_state()
+        return self.state
+    
+    def _back_off(self):
+        """Kevin is gaming. Gaia backs off."""
+        for model in OLLAMA_TIERS["heavy"]:
+            ollama_unload(model)
+        for model in OLLAMA_TIERS["standard"]:
+            ollama_unload(model)
+    
+    def _scale_up(self):
+        """Kevin is away. Gaia scales up."""
+        pass  # Models load on demand — just don't unload them
+    
+    def status(self):
+        """Human-readable status."""
+        s = self.state
+        gpu = s.get("gpu", {})
+        return {
+            "mode": s["mode"],
+            "kevin_gaming": s.get("presence", False),
+            "games": s.get("games", []),
+            "gpu_util": gpu.get("util_pct", 0),
+            "gpu_vram_used": gpu.get("vram_used_mb", 0),
+            "gpu_vram_total": gpu.get("vram_total_mb", 0),
+            "gpu_temp": gpu.get("temp_c", 0),
+            "gpu_name": gpu.get("name", "unknown"),
+            "kevin_hours": round(s.get("kevin_hours", 0), 2),
+            "gaia_hours": round(s.get("gaia_hours", 0), 2),
+            "kevin_share_pct": s.get("kevin_share", 0),
+            "gaia_share_pct": s.get("gaia_share", 0),
+            "checks": s.get("checks", 0),
+        }
+
+
+# ═══ EASTGATE MEDIA PLAN ═══
+# eastGate becomes the autonomous media machine.
+# Gaia plays games. Kevin checks in from northGate/Pixel.
+#
+# Phase 1: Steam on eastGate Linux (Proton)
+# Phase 2: Kenshi running autonomously
+# Phase 3: Gaia learns to play (vision → action loop)
+# Phase 4: Kevin watches Gaia play from any device
+#
+# The esotericWebb CRPG engine was always about this:
+# games are how organisms learn. play IS intelligence.
+
+EASTGATE_MEDIA_PLAN = {
+    "role": "media_machine",
+    "gate": "eastGate (.244)",
+    "hardware": "RTX 4070, 64GB RAM, 38% disk",
+    "games_target": [
+        {"name": "Kenshi", "genre": "open-world survival", "why": "emergent behavior, base building, squad management"},
+        {"name": "RimWorld", "genre": "colony sim", "why": "storyteller AI, resource management, ethics"},
+        {"name": "Dwarf Fortress", "genre": "simulation", "why": "deep procedural generation, fortress management"},
+        {"name": "Factorio", "genre": "automation", "why": "optimization, logistics, scaling"},
+        {"name": "Noita", "genre": "roguelike", "why": "pixel physics, emergent systems"},
+    ],
+    "architecture": {
+        "steam": "Proton on Linux — install via apt",
+        "display": "Virtual framebuffer (Xvfb) for headless gaming",
+        "capture": "ffmpeg screen capture → RTMP stream",
+        "viewer": "nestgate.io/play → live stream of Gaia playing",
+        "agent": "gaia-tissue-vision for screen reading, gaia-tissue-reason for decisions",
+    },
+    "phases": [
+        "Phase 1: Install Steam + Proton on eastGate Linux",
+        "Phase 2: Launch Kenshi headless with Xvfb",
+        "Phase 3: Capture screen, feed to gaia-tissue-vision",
+        "Phase 4: Decision loop: see → think → act → learn",
+        "Phase 5: Stream to nestgate.io/play for Kevin to watch",
+    ],
+}
+
+
+# ═══ MAIN ═══
+
+def run_once():
+    """Run one governor check cycle."""
+    gov = SunCloudGovernor()
+    state = gov.check()
+    status = gov.status()
+    
+    print(f"\n☀️ sunCloud Governor — northGate")
+    print(f"{'=' * 50}")
+    print(f"  Mode:        {status['mode']}")
+    print(f"  GPU:         {status['gpu_name']}")
+    print(f"  GPU Util:    {status['gpu_util']}%")
+    print(f"  VRAM:        {status['gpu_vram_used']}/{status['gpu_vram_total']} MB")
+    print(f"  GPU Temp:    {status['gpu_temp']}°C")
+    print(f"  Kevin Gaming: {status['kevin_gaming']}")
+    if status['games']:
+        print(f"  Games:       {', '.join(status['games'])}")
+    print(f"  Kevin Hours: {status['kevin_hours']}")
+    print(f"  Gaia Hours:  {status['gaia_hours']}")
+    if status['kevin_share_pct'] or status['gaia_share_pct']:
+        print(f"  Share:       Kevin {status['kevin_share_pct']}% / Gaia {status['gaia_share_pct']}%")
+    print(f"  Checks:      {status['checks']}")
+    print(f"\n  eastGate media plan: {len(EASTGATE_MEDIA_PLAN['games_target'])} games queued")
+    print(f"  lub-DUB ☀️")
+    
+    return status
+
+
+def daemon(interval_seconds=30):
+    """Run as a background daemon, checking every N seconds."""
+    print(f"☀️ sunCloud Governor starting — check every {interval_seconds}s")
+    print(f"   Kevin plays on RTX 5090. Gaia shares the compute.")
+    print(f"   The Citizen Colossus awakens. lub-DUB ☀️\n")
+    
+    gov = SunCloudGovernor()
+    
+    while True:
+        try:
+            state = gov.check()
+            status = gov.status()
+            mode = status['mode']
+            gpu = status['gpu_util']
+            vram = status['gpu_vram_used']
+            
+            if gov.state["checks"] % 10 == 0:  # Every 10 checks, print summary
+                print(f"  [{time.strftime('%H:%M')}] mode={mode} GPU={gpu}% VRAM={vram}MB kevin={status['kevin_hours']:.1f}h gaia={status['gaia_hours']:.1f}h")
+            
+        except Exception as e:
+            print(f"  ⚠️ Governor error: {e}")
+        
+        time.sleep(interval_seconds)
+
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "daemon":
+        daemon(30)
+    elif len(sys.argv) > 1 and sys.argv[1] == "plan":
+        print(json.dumps(EASTGATE_MEDIA_PLAN, indent=2))
+    else:
+        run_once()

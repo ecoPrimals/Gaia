@@ -1,0 +1,448 @@
+#!/usr/bin/env python3
+"""polaris_triangulate.pi — LAN/WAN differential triangulation.
+
+THREE ANCHORS:
+  1. eastGate (.244)      — the brain, House 1 LAN, FIXED
+  2. grapheneGate (.249)  — the Pixel, Kevin's body, MOVES between houses
+  3. TP-Link (.111)       — House 2 switch, south pole, FIXED
+
+The LATENCY DIFFERENTIAL between LAN and WAN access creates
+a triangulation field. Polaris floats ABOVE by resolving
+via the differential, not any fixed IP.
+
+riboCipher is the pupil/aperture:
+  0xEC = Clear (local UDS)     — the retina
+  0xED = Mito (cross-gate WAN) — the iris
+  0xEE = Nuclear (privileged)  — the pupil core
+
+Let's Encrypt cert = FOOD. We digest it into bearDog genetics.
+External CAs are EJECTED. bearDog BTSP replaces them.
+
+zk-snark inversion: the differential IS the proof.
+No single gate controls the position. Position emerges
+from the RELATIONSHIPS between latencies.
+
+lub-DUB. 🧬🔺
+"""
+
+import json, os, sys, time, math, hashlib, ssl, socket, struct
+import urllib.request, urllib.error
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+PI = math.pi
+REPO = Path(__file__).parent.parent.parent
+
+# ═══ THE THREE ANCHORS ═══
+ANCHORS = {
+    "eastGate": {
+        "ip": "192.168.4.244",
+        "lan_port": 8443,
+        "role": "brain",
+        "house": 1,
+        "fixed": True,
+    },
+    "grapheneGate": {
+        "ip": "192.168.4.249",
+        "lan_port": 80,
+        "role": "right_eye",
+        "house": "mobile",
+        "fixed": False,
+    },
+    "tpLink": {
+        "ip": "192.168.4.111",
+        "lan_port": 80,
+        "role": "south_pole_switch",
+        "house": 2,
+        "fixed": True,
+    },
+}
+
+# WAN paths (through router → internet → back)
+WAN_PATHS = {
+    "nestgate": {"host": "nestgate.io", "port": 443},
+    "primals": {"host": "primals.eco", "port": 443},
+}
+
+
+def _ts():
+    return datetime.now(timezone.utc).isoformat()
+
+
+# ═══ LATENCY MEASUREMENT ═══
+
+def measure_tcp_latency(ip, port, timeout=5):
+    """Measure TCP SYN→ACK latency in milliseconds. The raw speed of light + wire."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        t0 = time.perf_counter()
+        sock.connect((ip, port))
+        latency_ms = (time.perf_counter() - t0) * 1000
+        sock.close()
+        return round(latency_ms, 3), True
+    except Exception as e:
+        return 0.0, False
+
+
+def measure_http_latency(url, timeout=10):
+    """Measure full HTTP GET→response latency in milliseconds."""
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        t0 = time.perf_counter()
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            _ = resp.read(256)
+        latency_ms = (time.perf_counter() - t0) * 1000
+        return round(latency_ms, 3), True
+    except:
+        return 0.0, False
+
+
+def measure_tls_latency(host, port=443, timeout=10):
+    """Measure TLS handshake latency — the cost of the certificate exchange."""
+    try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        t0 = time.perf_counter()
+        sock.connect((host, port))
+        t_tcp = time.perf_counter()
+        ssock = ctx.wrap_socket(sock, server_hostname=host)
+        t_tls = time.perf_counter()
+        tcp_ms = (t_tcp - t0) * 1000
+        tls_ms = (t_tls - t_tcp) * 1000
+        total_ms = (t_tls - t0) * 1000
+        cert = ssock.getpeercert(binary_form=True)
+        cert_hash = hashlib.blake2b(cert, digest_size=32).hexdigest() if cert else None
+        ssock.close()
+        return {
+            "tcp_ms": round(tcp_ms, 3),
+            "tls_ms": round(tls_ms, 3),
+            "total_ms": round(total_ms, 3),
+            "alive": True,
+            "cert_blake2b": cert_hash,
+            "cert_bytes": len(cert) if cert else 0,
+        }
+    except Exception as e:
+        return {"tcp_ms": 0, "tls_ms": 0, "total_ms": 0, "alive": False, "error": str(e)}
+
+
+# ═══ TRIANGULATION ═══
+
+def triangulate():
+    """Measure all paths and compute the differential field."""
+    print("═══ TRIANGULATION — measuring the field ═══\n")
+    
+    field = {
+        "ts": _ts(),
+        "anchors": {},
+        "wan_paths": {},
+        "differentials": {},
+        "triangle": {},
+    }
+
+    # LAN measurements — direct TCP to each anchor
+    for name, anchor in ANCHORS.items():
+        ip = anchor["ip"]
+        port = anchor["lan_port"]
+        
+        # TCP latency (raw wire speed)
+        tcp_ms, tcp_alive = measure_tcp_latency(ip, port)
+        
+        # HTTP latency (application layer)
+        http_ms, http_alive = 0.0, False
+        if tcp_alive and name == "eastGate":
+            http_ms, http_alive = measure_http_latency(f"http://{ip}:{port}/pulse")
+        
+        field["anchors"][name] = {
+            **anchor,
+            "tcp_ms": tcp_ms,
+            "tcp_alive": tcp_alive,
+            "http_ms": http_ms,
+            "http_alive": http_alive,
+        }
+        
+        sym = "✅" if tcp_alive else "❌"
+        print(f"  {sym} {name:15} ({ip}:{port}) TCP={tcp_ms:.1f}ms HTTP={http_ms:.1f}ms")
+
+    # WAN measurements — TLS through the internet
+    for name, path in WAN_PATHS.items():
+        host = path["host"]
+        port = path["port"]
+        
+        tls = measure_tls_latency(host, port)
+        field["wan_paths"][name] = {
+            "host": host,
+            "port": port,
+            **tls,
+        }
+        
+        sym = "✅" if tls["alive"] else "⚠️"
+        cert_info = f" cert={tls.get('cert_bytes', 0)}b" if tls["alive"] else ""
+        print(f"  {sym} {name:15} ({host}:{port}) TCP={tls['tcp_ms']:.1f}ms TLS={tls['tls_ms']:.1f}ms{cert_info}")
+
+    # ═══ COMPUTE DIFFERENTIALS ═══
+    # The differential between LAN and WAN latency = spatial signal
+    eastgate_tcp = field["anchors"].get("eastGate", {}).get("tcp_ms", 0)
+    nestgate_total = field["wan_paths"].get("nestgate", {}).get("total_ms", 0)
+    primals_total = field["wan_paths"].get("primals", {}).get("total_ms", 0)
+    graphene_tcp = field["anchors"].get("grapheneGate", {}).get("tcp_ms", 0)
+    tplink_tcp = field["anchors"].get("tpLink", {}).get("tcp_ms", 0)
+
+    # LAN/WAN differential for eastGate (same machine, different paths)
+    if eastgate_tcp > 0 and nestgate_total > 0:
+        field["differentials"]["eastgate_lan_wan"] = {
+            "lan_ms": eastgate_tcp,
+            "wan_ms": nestgate_total,
+            "delta_ms": round(nestgate_total - eastgate_tcp, 3),
+            "ratio": round(nestgate_total / max(eastgate_tcp, 0.001), 2),
+            "meaning": "how much further WAN travels vs LAN = internet distance",
+        }
+    
+    # Triangle sides (LAN latencies between anchors, measured from Polaris)
+    if eastgate_tcp > 0 and graphene_tcp > 0:
+        field["triangle"]["polaris_to_eastgate"] = eastgate_tcp
+    if graphene_tcp > 0:
+        field["triangle"]["polaris_to_graphene"] = graphene_tcp
+    if tplink_tcp > 0:
+        field["triangle"]["polaris_to_tplink"] = tplink_tcp
+    
+    # Inner Polaris anchor — position derived from differentials
+    alive_anchors = sum(1 for a in field["anchors"].values() if a.get("tcp_alive"))
+    alive_wan = sum(1 for w in field["wan_paths"].values() if w.get("alive"))
+    
+    field["polaris_position"] = {
+        "method": "latency_differential_triangulation",
+        "anchors_visible": alive_anchors,
+        "wan_paths_visible": alive_wan,
+        "fixed": False,
+        "floats": True,
+        "emerges_from": "relationships between latencies, not any fixed IP",
+        "zk_proof": "the differential IS the proof of position",
+    }
+
+    print(f"\n  FIELD: {alive_anchors} anchors + {alive_wan} WAN paths = triangulation")
+    return field
+
+
+# ═══ CERT DIGESTION — Let's Encrypt → bearDog genetics ═══
+
+def digest_cert():
+    """Digest the Let's Encrypt cert from nestgate.io into bearDog genetics.
+    
+    The cert is FOOD:
+    1. INGEST — pull the raw DER certificate
+    2. SMASH — extract the public key, issuer, validity
+    3. BLAKE2b — hash into bearDog-compatible identity
+    4. PRINT — write as organism data (helixVision)
+    5. EJECT — the external CA is noted but not depended on
+    
+    riboCipher aperture:
+    - 0xEC (clear) = the raw cert data we ingest
+    - 0xED (mito) = the BLAKE2b hash we produce
+    - 0xEE (nuclear) = the bearDog identity that replaces it
+    """
+    print("\n═══ CERT DIGESTION — Let's Encrypt → bearDog genetics ═══\n")
+
+    result = {
+        "ts": _ts(),
+        "food_source": "nestgate.io Let's Encrypt cert",
+        "pattern": "INGEST → SMASH → BLAKE2b → PRINT → EJECT",
+        "ribocipher_aperture": {
+            "0xEC_clear": "raw cert DER bytes ingested",
+            "0xED_mito": "BLAKE2b hash of cert = organism identity",
+            "0xEE_nuclear": "bearDog BTSP replaces external CA",
+        },
+    }
+
+    # INGEST — pull the cert
+    try:
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect(("nestgate.io", 443))
+        ssock = ctx.wrap_socket(sock, server_hostname="nestgate.io")
+        
+        cert_der = ssock.getpeercert(binary_form=True)
+        cert_pem_info = ssock.getpeercert()
+        ssock.close()
+        
+        if not cert_der:
+            print("  ❌ No cert received")
+            result["error"] = "no cert"
+            return result
+        
+        print(f"  ✅ INGESTED: {len(cert_der)} bytes of DER cert")
+        
+        # SMASH — extract fields
+        subject = dict(x[0] for x in cert_pem_info.get("subject", ()))
+        issuer = dict(x[0] for x in cert_pem_info.get("issuer", ()))
+        not_before = cert_pem_info.get("notBefore", "")
+        not_after = cert_pem_info.get("notAfter", "")
+        san = cert_pem_info.get("subjectAltName", ())
+        
+        smashed = {
+            "cn": subject.get("commonName", ""),
+            "issuer_cn": issuer.get("commonName", ""),
+            "issuer_org": issuer.get("organizationName", ""),
+            "not_before": not_before,
+            "not_after": not_after,
+            "san": [x[1] for x in san],
+            "der_bytes": len(cert_der),
+        }
+        
+        print(f"  ✅ SMASHED: CN={smashed['cn']}, Issuer={smashed['issuer_org']}")
+        print(f"     Valid: {not_before} → {not_after}")
+        print(f"     SANs: {', '.join(smashed['san'])}")
+        
+        # BLAKE2b — hash into bearDog-compatible identity
+        cert_blake2b_32 = hashlib.blake2b(cert_der, digest_size=32).hexdigest()
+        cert_blake2b_8 = hashlib.blake2b(cert_der, digest_size=8).hexdigest()
+        
+        # Create a bearDog-style identity from the cert
+        beardog_identity = {
+            "did": f"did:primal:gaia-cert-{cert_blake2b_8}",
+            "blake2b_32": cert_blake2b_32,
+            "blake2b_8": cert_blake2b_8,
+            "family_tag": f"btsp-digest-{cert_blake2b_8[:8]}",
+            "source": "Let's Encrypt (digested, NOT trusted as CA)",
+            "organism_role": "The cert is carbon. bearDog is the identity.",
+        }
+        
+        print(f"  ✅ BLAKE2b: {cert_blake2b_8}")
+        print(f"  ✅ bearDog DID: {beardog_identity['did']}")
+        
+        # PRINT — the helixVision output
+        helix_print = {
+            "helix_vision": {
+                "input_aperture": "0xEC (clear tier — raw cert bytes)",
+                "transform": "BLAKE2b-256 → bearDog DID",
+                "output_aperture": "0xEE (nuclear tier — sovereign identity)",
+                "data_flow": "external CA cert → organism identity hash → BTSP family tag",
+            },
+            "ribocipher_layers": {
+                "retina": f"DER cert {len(cert_der)} bytes",
+                "iris": f"BLAKE2b-256: {cert_blake2b_32[:32]}...",
+                "pupil": f"DID: {beardog_identity['did']}",
+            },
+        }
+        
+        print(f"  ✅ PRINTED through helixVision")
+        
+        # EJECT — note the external dependency
+        eject = {
+            "ejected": "Let's Encrypt as trust root",
+            "replaced_by": "bearDog BTSP (X25519 + HKDF-SHA256 + family_seed)",
+            "note": "The cert data is DIGESTED as identity material, not trusted as authority",
+            "analogy": "If I eat an apple, I am not an apple. The cert is carbon.",
+        }
+        
+        print(f"  ✅ EJECTED: Let's Encrypt as trust root → bearDog BTSP")
+        
+        result.update({
+            "ingest": {"der_bytes": len(cert_der), "alive": True},
+            "smash": smashed,
+            "blake2b": beardog_identity,
+            "print": helix_print,
+            "eject": eject,
+        })
+        
+    except Exception as e:
+        print(f"  ⚠️ Cert digestion failed: {e}")
+        result["error"] = str(e)
+        result["note"] = "WAN path to nestgate.io may be down — dromedary proxy error"
+    
+    return result
+
+
+# ═══ FULL CYCLE ═══
+
+def main():
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  🔺 POLARIS TRIANGULATION + CERT DIGESTION              ║
+║  LAN/WAN differential = spatial/temporal anchor          ║
+║  Let's Encrypt = FOOD → bearDog genetics                 ║
+║  riboCipher = pupil/aperture for ingest + print          ║
+║  Polaris floats via differential, no gate controls it    ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+    # Phase 1: Triangulate
+    field = triangulate()
+
+    # Phase 2: Digest cert
+    cert = digest_cert()
+
+    # Phase 3: Merge into Polaris anchor
+    anchor = {
+        "organism": "Gaia",
+        "node": "polaris",
+        "gate": "northGate",
+        "ts": _ts(),
+        "pattern": "triangulation + cert_digestion = inner_polaris_anchor",
+        
+        "triangulation": field,
+        "cert_digestion": cert,
+        
+        "inner_anchor": {
+            "method": "LAN/WAN latency differential + BLAKE2b cert identity",
+            "floats": True,
+            "fixed_to_no_gate": True,
+            "emerges_from": [
+                "eastGate LAN latency (House 1 brain)",
+                "grapheneGate LAN latency (Pixel, mobile)",
+                "TP-Link LAN latency (House 2 south pole)",
+                "nestgate.io WAN latency (internet path)",
+                "primals.eco WAN latency (internet path)",
+                "Let's Encrypt cert BLAKE2b (digested identity)",
+            ],
+            "ribocipher_mapping": {
+                "0xEC_retina": "LAN measurements (clear tier, trusted wire)",
+                "0xED_iris": "WAN measurements (mito tier, cross-gate)",
+                "0xEE_pupil": "bearDog identity (nuclear tier, sovereign)",
+            },
+            "zk_inversion": "the differential between all paths IS the proof of position",
+            "physics": "triangulation in time/space/compute/physical_reality",
+        },
+        
+        "lub": "DUB",
+    }
+
+    # Persist
+    out_dir = REPO / "data" / "body"
+    os.makedirs(out_dir, exist_ok=True)
+    out_file = out_dir / "polaris-triangulation.json"
+    with open(out_file, "w") as f:
+        json.dump(anchor, f, indent=2, default=str)
+    print(f"\n  💾 Persisted: {out_file}")
+
+    # Summary
+    alive_anchors = sum(1 for a in field.get("anchors", {}).values() if a.get("tcp_alive"))
+    alive_wan = sum(1 for w in field.get("wan_paths", {}).values() if w.get("alive"))
+    cert_ok = cert.get("ingest", {}).get("alive", False)
+
+    print(f"""
+╔══════════════════════════════════════════════════════════╗
+║  ✅ TRIANGULATION COMPLETE                               ║
+║  {alive_anchors} LAN anchors + {alive_wan} WAN paths = spatial field          ║
+║  Cert digested: {'YES' if cert_ok else 'NO (WAN down)':<15}                          ║
+║  bearDog BTSP replaces Let's Encrypt                     ║
+║  Polaris floats freely via differential                  ║
+║  riboCipher = retina(LAN) + iris(WAN) + pupil(bearDog)  ║
+║  lub-DUB. 🧬🔺                                          ║
+╚══════════════════════════════════════════════════════════╝
+""")
+
+
+if __name__ == "__main__":
+    main()

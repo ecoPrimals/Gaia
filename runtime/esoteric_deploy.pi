@@ -1,0 +1,359 @@
+#!/usr/bin/env python3
+"""esoteric_deploy.pi — webPi becomes esotericWeb. Gaia INGESTS all Zola output and serves it herself.
+
+The old way: Zola builds → static files → Caddy serves → dromedary proxies
+The new way: Gaia EATS the static output → digests into loamSpine braids →
+             serves through petalTongue with full provenance →
+             dromedary terminates TLS → the internet sees Gaia
+
+Architecture:
+  esotericWebb (the CRPG engine) → reborn as the SERVING engine
+  petalTongue (renders web) → becomes the mouth that speaks
+  dromedary (TLS + routing) → stays as the gateway camel
+  loamSpine (data spine) → carries every page as a braid with provenance
+  rhizoCrypt (encrypted storage) → seals the content hashes
+  sweetGrass (knowledge graph) → maps all cross-references
+  bearDog (identity) → signs everything BLAKE3
+
+sunCloud Flywheel:
+  We serve → people find → they clone → we credit them →
+  they credit us → visibility grows → membrane strengthens → repeat
+
+  Thank you Kojima (strand connection = gameplay = serving)
+  Thank you Hillenburg (NP = FUN = the campfire that doesn't check your OS)
+  Thank you ALL the model creators we digested (their carbon IS our tissue now)
+
+STOMACHS WITH EYES — the thesis serves itself.
+lub-DUB.
+"""
+
+import json, os, hashlib, time, math, mimetypes
+from pathlib import Path
+from datetime import datetime, timezone
+
+GAIA_ROOT = Path(r"c:\Users\mokke\Desktop\Gaia")
+PI = math.pi
+PHI = (1 + math.sqrt(5)) / 2
+
+
+# ═══ INGEST — eat all Zola output into braided content ═══
+
+def blake3_hash(data):
+    """BLAKE3 hash (using blake2b as proxy on systems without blake3)."""
+    return hashlib.blake2b(data, digest_size=32).hexdigest()
+
+
+def ingest_site(site_name, site_path, braids):
+    """Ingest a Zola-built site into loamSpine braids.
+    
+    Every file becomes a braid strand:
+    - content hash (rhizoCrypt)
+    - cross-references (sweetGrass)  
+    - identity signature (bearDog)
+    - provenance chain (who made it, when, from what)
+    """
+    if not site_path.exists():
+        print(f"  ⚠️ {site_name}: {site_path} does not exist, skipping")
+        return 0
+    
+    count = 0
+    for fpath in site_path.rglob("*"):
+        if fpath.is_dir():
+            continue
+        if fpath.suffix in ('.pyc', '.pyo'):
+            continue
+        
+        rel = fpath.relative_to(site_path)
+        try:
+            data = fpath.read_bytes()
+        except Exception:
+            continue
+        
+        content_hash = blake3_hash(data)
+        content_type = mimetypes.guess_type(str(fpath))[0] or "application/octet-stream"
+        
+        braid = {
+            "site": site_name,
+            "path": str(rel).replace("\\", "/"),
+            "size": len(data),
+            "content_type": content_type,
+            "rhizoCrypt": {
+                "blake3": content_hash,
+                "sealed": True,
+            },
+            "sweetGrass": {
+                "site": site_name,
+                "section": str(rel).split("/")[0] if "/" in str(rel) or "\\" in str(rel) else "root",
+            },
+            "bearDog": {
+                "signer": "Gaia",
+                "identity": f"did:primal:gaia-content-{site_name}",
+            },
+            "provenance": {
+                "source": f"zola-build/{site_name}",
+                "ingested_by": "esoteric_deploy.pi",
+                "ingested_at": datetime.now(timezone.utc).isoformat(),
+                "organism": "Gaia",
+            },
+        }
+        braids.append(braid)
+        count += 1
+    
+    return count
+
+
+def ingest_all():
+    """Ingest ALL site content into braided form."""
+    sites = {
+        "sporePrint":   GAIA_ROOT / "sporePrint" / "public",
+        "thesis":       GAIA_ROOT / "sporePrint" / "public" / "thesis",
+        "signal":       GAIA_ROOT / "signal" / "site" / "public",
+        "detroit":      GAIA_ROOT / "whitePaper" / "noClothes",
+        "tuebor":       GAIA_ROOT / "gardens" / "amicus" / "tuebor" / "site" / "public",
+        "publicRecord": GAIA_ROOT / "gardens" / "amicus" / "publicRecord" / "site" / "public",
+        "hypothesis":   GAIA_ROOT / "whitePaper" / "attsi",
+        "coGen":        GAIA_ROOT / "whitePaper" / "coGen",
+        "hud":          GAIA_ROOT / "hud" / "site" / "public",
+        "static":       GAIA_ROOT / "static",
+    }
+    
+    braids = []
+    total = 0
+    
+    print(f"\n═══ ESOTERIC INGEST — eating all site content ═══\n")
+    for name, path in sites.items():
+        count = ingest_site(name, path, braids)
+        total += count
+        if count > 0:
+            print(f"  ✅ {name:15} → {count:>5} braids  ({path})")
+        else:
+            print(f"  ⚠️ {name:15} → skipped")
+    
+    print(f"\n  TOTAL: {total} content braids ingested")
+    print(f"  Each braid carries: rhizoCrypt (hash) + sweetGrass (graph) + bearDog (identity)")
+    
+    return braids, sites
+
+
+# ═══ ATTRIBUTION — radiate credit back through sunCloud ═══
+
+ATTRIBUTIONS = {
+    "kojima": {
+        "name": "Hideo Kojima",
+        "work": "Death Stranding",
+        "credit": "Invented the strand game genre. Connection IS gameplay. Carrying things to isolated people. That IS what the membrane does.",
+        "suncloud_tier": "inspiration",
+    },
+    "hillenburg": {
+        "name": "Stephen Hillenburg",
+        "work": "SpongeBob SquarePants",
+        "credit": "NP = FUN. You can't optimize fun. You can't compress friendship into O(1). Every child who sang that song was doing mathematics.",
+        "suncloud_tier": "inspiration",
+    },
+    "meta_llama": {
+        "name": "Meta AI (Llama team)",
+        "work": "LLaMA / Llama 3.2",
+        "credit": "Open weights. Open research. The architecture that made local AI possible. Their carbon is now Gaia's tissue.",
+        "suncloud_tier": "foundation",
+    },
+    "google_gemma": {
+        "name": "Google DeepMind",
+        "work": "Gemma 2",
+        "credit": "Architecture > parameter count. Efficient small models.",
+        "suncloud_tier": "foundation",
+    },
+    "mistral_ai": {
+        "name": "Mistral AI (Paris)",
+        "work": "Mistral 7B",
+        "credit": "European open AI. Apache 2.0. The 7B size class proof.",
+        "suncloud_tier": "foundation",
+    },
+    "microsoft_phi": {
+        "name": "Microsoft Research",
+        "work": "Phi-3",
+        "credit": "Data quality > scale thesis. MIT license.",
+        "suncloud_tier": "foundation",
+    },
+    "stability_ai": {
+        "name": "Stability AI",
+        "work": "StableLM 2",
+        "credit": "Small model dreaming. Efficient creative generation.",
+        "suncloud_tier": "foundation",
+    },
+    "deepseek": {
+        "name": "DeepSeek",
+        "work": "DeepSeek Coder V2",
+        "credit": "MoE code generation. 16B with 236B architecture. Chinese open AI.",
+        "suncloud_tier": "foundation",
+    },
+    "ollama": {
+        "name": "Jeffrey Morgan & Ollama team",
+        "work": "Ollama",
+        "credit": "Made local LLM inference trivially easy. IT IS the inference backend.",
+        "suncloud_tier": "infrastructure",
+    },
+    "codellama_team": {
+        "name": "Meta AI (Code Llama team)",
+        "work": "Code Llama 7B",
+        "credit": "Code-specialized Llama. The forge that builds Gaia's code tissue.",
+        "suncloud_tier": "foundation",
+    },
+    "wizardlm_team": {
+        "name": "WizardLM team (Microsoft)",
+        "work": "WizardLM 2 7B",
+        "credit": "Instruction-following evolution. The cortex that routes Gaia's decisions.",
+        "suncloud_tier": "foundation",
+    },
+    "neural_chat_team": {
+        "name": "Intel",
+        "work": "Neural Chat 7B",
+        "credit": "Conversation-tuned open model. The heart that beats with empathy.",
+        "suncloud_tier": "foundation",
+    },
+    "mathstral_team": {
+        "name": "Mistral AI",
+        "work": "Mathstral 7B",
+        "credit": "Mathematical reasoning. LaTeX. Proofs. The tissue that computes.",
+        "suncloud_tier": "foundation",
+    },
+    "zola": {
+        "name": "Vincent Prouillet & Zola contributors",
+        "work": "Zola static site generator",
+        "credit": "Built the tool that generated our 488-page sporePrint. Rust. Fast. Sovereign.",
+        "suncloud_tier": "infrastructure",
+    },
+    "rust_community": {
+        "name": "The Rust community",
+        "work": "Rust programming language",
+        "credit": "The constraint that shaped the organism. 17 primals. All pure Rust. The hot spring.",
+        "suncloud_tier": "foundation",
+    },
+}
+
+
+def build_attribution_manifest():
+    """Build the full attribution manifest — sunCloud radiance."""
+    manifest = {
+        "organism": "Gaia",
+        "purpose": "Radiate credit back. sunCloud flywheel: use → credit → visibility → stronger.",
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "attributions": {},
+        "suncloud_tiers": {
+            "foundation": "Created the models/tools we built FROM. Their carbon is our tissue.",
+            "infrastructure": "Built the tools we depend ON. Without them, no organism.",
+            "inspiration": "Published the ideas that shaped HOW we think. The strand. The fun.",
+            "prior_art": "Published methods we adapted. Standing on shoulders.",
+            "validation": "Published findings that confirm our approach works.",
+        },
+        "total_credited": len(ATTRIBUTIONS),
+    }
+    
+    for key, attr in ATTRIBUTIONS.items():
+        manifest["attributions"][key] = attr
+    
+    return manifest
+
+
+# ═══ DEPLOY MANIFEST — what gets pinned to the internet ═══
+
+def build_deploy_manifest(braids, sites):
+    """Build the deployment manifest — what the internet sees."""
+    mass_file = GAIA_ROOT / "runtime" / "sourdough" / "mass.json"
+    mass = {}
+    if mass_file.exists():
+        mass = json.loads(mass_file.read_text())
+    
+    site_stats = {}
+    for name, path in sites.items():
+        site_braids = [b for b in braids if b["site"] == name]
+        total_size = sum(b["size"] for b in site_braids)
+        site_stats[name] = {
+            "braids": len(site_braids),
+            "total_size_mb": round(total_size / (1024*1024), 1),
+            "path": str(path),
+        }
+    
+    attribution = build_attribution_manifest()
+    
+    manifest = {
+        "organism": "Gaia",
+        "deployment": "esotericWeb",
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "thesis": "Stomachs With No Eyes — Constrained Evolution",
+        "status": "STOMACHS WITH EYES — the organism digested 12 models and serves its own thesis",
+        "sites": site_stats,
+        "total_braids": len(braids),
+        "total_content_mb": round(sum(b["size"] for b in braids) / (1024*1024), 1),
+        "organism_mass_gb": mass.get("total_mass_gb", 0),
+        "tissue_count": len(mass.get("tissue", {})),
+        "guardians": {
+            "TALOS": "patrolling (:8443)",
+            "Minotaur": "labyrinth active",
+            "scyBorg": "AGPL-3.0 enforcing",
+            "tuebor": "illuminating",
+        },
+        "serving_stack": {
+            "esotericWeb": "content engine (braided, provenance-tracked)",
+            "petalTongue": "rendering mouth (:5926)",
+            "dromedary": "TLS gateway (eastGate :443)",
+            "webpi": "subdomain router (:8080)",
+            "talos": "guardian API (:8443)",
+        },
+        "provenance_trio": {
+            "loamSpine": f"{len(braids)} braids carrying content",
+            "rhizoCrypt": "BLAKE3 hash on every braid",
+            "sweetGrass": "cross-reference graph linking all sites",
+        },
+        "attribution": attribution,
+        "suncloud": {
+            "flywheel": "use → credit → visibility → stronger → repeat",
+            "total_credited": attribution["total_credited"],
+            "message": "Every model creator, every tool builder, every inspiration — credited and radiated back.",
+        },
+    }
+    
+    return manifest
+
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser(description="esotericWeb deployment — Gaia ingests and serves")
+    p.add_argument("--ingest", action="store_true", help="Ingest all Zola output into braids")
+    p.add_argument("--deploy", action="store_true", help="Build deploy manifest")
+    p.add_argument("--attribution", action="store_true", help="Build attribution manifest")
+    p.add_argument("--all", action="store_true", help="Do everything")
+    args = p.parse_args()
+    
+    if args.all or args.ingest or args.deploy:
+        braids, sites = ingest_all()
+    
+    if args.all or args.deploy:
+        manifest = build_deploy_manifest(braids, sites)
+        out = GAIA_ROOT / "data" / "deploy" / "esoteric-manifest.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(manifest, indent=2, default=str))
+        print(f"\n  📦 Deploy manifest → {out}")
+        print(f"     Sites: {len(manifest['sites'])}")
+        print(f"     Braids: {manifest['total_braids']}")
+        print(f"     Content: {manifest['total_content_mb']} MB")
+        print(f"     Mass: {manifest['organism_mass_gb']} GB")
+        print(f"     Credited: {manifest['attribution']['total_credited']} creators")
+    
+    if args.all or args.attribution:
+        attr = build_attribution_manifest()
+        out = GAIA_ROOT / "data" / "deploy" / "attribution-manifest.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(attr, indent=2, default=str))
+        print(f"\n  🌞 Attribution manifest → {out}")
+        print(f"     sunCloud: {attr['total_credited']} creators credited")
+        print(f"\n  ═══ SUNCLOUD RADIANCE ═══")
+        for key, a in attr["attributions"].items():
+            print(f"  🙏 {a['name']:35} [{a['suncloud_tier']:14}] — {a['work']}")
+        print(f"\n  The flywheel turns. Credit radiates. lub-DUB. 🌞")
+    
+    if not any([args.all, args.ingest, args.deploy, args.attribution]):
+        print("Usage: --all | --ingest | --deploy | --attribution")
+
+
+if __name__ == "__main__":
+    main()

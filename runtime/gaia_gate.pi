@@ -232,10 +232,81 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         print(f"  {sym.get(v['trust_level'],'?')} {method} {self.path} {status} [{ip} {v['trust_level']} r={v['requests']}] {dur:.0f}ms{f' model={model}' if model else ''}")
 
     def _json(self, data, status=200):
+        # petalTongue: browser gets rendered HTML, agent gets raw JSON
+        accept = self.headers.get("Accept","") if hasattr(self,'headers') else ""
+        if "text/html" in accept and "application/json" not in accept:
+            return self._petal_render(data, status)
         t0=time.time(); body=json.dumps(data,indent=2,default=str).encode()
         self.send_response(status); self.send_header("Content-Type","application/json")
         self._negentropy_headers(); self.end_headers(); self.wfile.write(body)
         self._classify_and_log("GET",status,(time.time()-t0)*1000,len(body))
+
+    def _petal_render(self, data, status=200):
+        """petalTongue TRANS face: render JSON as styled HTML for human eyes.
+        CIS = raw JSON (agents, inner). TRANS = rendered HTML (humans, outer)."""
+        t0=time.time()
+        path = getattr(self, 'path', '/')
+        title = path.strip('/').replace('/',' › ').upper() or 'GAIA'
+        # Recursive HTML renderer for any JSON structure
+        def _render_val(v, depth=0):
+            if v is None: return '<span class="null">null</span>'
+            if isinstance(v, bool): return f'<span class="bool">{"true" if v else "false"}</span>'
+            if isinstance(v, (int, float)): return f'<span class="num">{v}</span>'
+            if isinstance(v, str):
+                if v.startswith("http"): return f'<a href="{v}" class="link">{v}</a>'
+                if len(v) > 200: return f'<span class="str">{v[:200]}…</span>'
+                return f'<span class="str">{v}</span>'
+            if isinstance(v, list):
+                if not v: return '<span class="dim">[]</span>'
+                items = ''.join(f'<li>{_render_val(i, depth+1)}</li>' for i in v[:50])
+                more = f'<li class="dim">…+{len(v)-50} more</li>' if len(v) > 50 else ''
+                return f'<ul>{items}{more}</ul>'
+            if isinstance(v, dict):
+                if not v: return '<span class="dim">{{}}</span>'
+                rows = ''
+                for k, val in v.items():
+                    rows += f'<tr><td class="key">{k}</td><td>{_render_val(val, depth+1)}</td></tr>'
+                return f'<table class="obj">{rows}</table>'
+            return f'<span>{v}</span>'
+        body_html = _render_val(data)
+        html = f'''<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title} — Gaia</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#0a0a14;color:#c0c8d8;font-family:'Courier New',monospace;font-size:12px;padding:16px;line-height:1.5}}
+a{{color:#4f8}}a:hover{{color:#fff}}
+.header{{text-align:center;padding:12px;margin-bottom:16px;border-bottom:1px solid #1a1a2a}}
+.header h1{{color:#00c853;font-size:16px;letter-spacing:4px}}
+.header .path{{color:#567;font-size:10px;margin-top:4px}}
+.header .raw{{font-size:10px;color:#345;margin-top:4px}}
+.header .raw a{{color:#567}}
+table.obj{{width:100%;border-collapse:collapse;margin:2px 0}}
+table.obj td{{padding:3px 8px;border-bottom:1px solid #111a2a;vertical-align:top}}
+td.key{{color:#7ab;font-weight:bold;white-space:nowrap;width:1%;padding-right:16px}}
+ul{{list-style:none;padding-left:12px}}
+li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
+.num{{color:#ffa}}
+.str{{color:#adc}}
+.bool{{color:#f8a}}
+.null{{color:#567;font-style:italic}}
+.dim{{color:#345}}
+.link{{color:#4f8}}
+.footer{{text-align:center;padding:12px;margin-top:16px;border-top:1px solid #1a1a2a;color:#345;font-size:10px}}
+</style></head><body>
+<div class="header">
+<h1>{title}</h1>
+<div class="path">{path}</div>
+<div class="raw"><a href="{path}" onclick="fetch('{path}',{{headers:{{'Accept':'application/json'}}}}).then(r=>r.text()).then(t=>{{document.body.innerHTML='<pre>'+t+'</pre>'}});return false">view raw JSON (agent view)</a></div>
+</div>
+{body_html}
+<div class="footer">petalTongue TRANS face — CIS=JSON (agents) · TRANS=HTML (humans) — lub-DUB</div>
+</body></html>'''.encode()
+        self.send_response(status)
+        self.send_header("Content-Type","text/html; charset=utf-8")
+        self.send_header("Content-Length",str(len(html)))
+        self.send_header("X-Gaia-Render","petalTongue-trans")
+        self._negentropy_headers(); self.end_headers(); self.wfile.write(html)
+        self._classify_and_log("GET",status,(time.time()-t0)*1000,len(html))
 
     def _negentropy_headers(self):
         self.send_header("Access-Control-Allow-Origin","*")
@@ -346,6 +417,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             if host in ("gaia.primals.eco","www.gaia.primals.eco"):
                 self._serve_static("deck.html"); return
             if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
+            if host in ("polaris.primals.eco","polaris.primal.eco","northgate.primals.eco"):
+                self._serve_static("polaris.html"); return
+            if host in ("tamison.primals.eco","tamison.primal.eco","kevin.primals.eco"):
+                self._serve_static("tamison.html"); return
             # HUD — living organism root. BPM + breathing = recertification.
             if host in ("hud.primals.eco",):
                 pulse = write_pulse()
@@ -377,10 +452,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                         "primals.eco": "front door (golden ratio)",
                         "detroit.primals.eco": "investigation (213 pages)",
                         "hud.primals.eco": "this (living organism root)",
+                        "polaris.primals.eco": "north star (RTX 5090 + 12 tissues)",
                         "nestgate.io": "space dock (internal)",
                     },
                     "endpoints": ["/deck","/luna","/senses","/pulse","/walkers","/amoeba",
                         "/rss","/crowd","/anderson","/zk","/temporal","/chipmunk",
+                        "/polaris","/api/polaris","/api/polaris/triangulation",
                         "/api/compiler","/api/compiler/compute","/api/compiler/proximity"],
                     "organism": {
                         "files": 109563, "aligned": "80/20 Pareto",
@@ -390,10 +467,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     "lub": "DUB",
                 }
                 body = json.dumps(root, indent=2).encode()
-                self.send_response(200)
+            self.send_response(200)
                 self.send_header("Content-Type","application/json")
                 self.send_header("Content-Length",str(len(body)))
-                self._negentropy_headers()
+            self._negentropy_headers()
                 self.end_headers(); self.wfile.write(body)
                 self._classify_and_log("GET",200,0); return
             self._serve_static("deck.html"); return
@@ -402,11 +479,12 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
         if self.path in ("/eye","/iris","/gaze","/eye.html"): self._serve_static("eye.html"); return
         if self.path in ("/glados","/gaia-os","/beacon","/bingo-beacon","/glados.html"): self._serve_static("glados.html"); return
-        if self.path in ("/spacedock","/spacedock.html","/observatory","/dock"): self._serve_static("spacedock.html"); return
+        if self.path in ("/spacedock","/spacedock.html","/observatory","/dock","/space-dock"): self._serve_static("spacedock.html"); return
         if self.path in ("/outer-face","/outer","/outer.html","/klein-face"): self._serve_static("outer-face.html"); return
         if self.path in ("/beacon-eyes","/wifi-radar","/radar"): self._serve_static("beacon-eyes.html"); return
         if self.path in ("/orrery","/solar-system","/heliocentric"): self._serve_static("outer-face.html"); return
         if self.path in ("/ptolemy","/geocentric","/ancient","/stars"): self._serve_static("spacedock.html"); return
+        if self.path in ("/hub","/hub.html"): self._serve_static("hub.html"); return
         if self.path=="/pulse": self._json(write_pulse()); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
             self._json({"temporal":_temporal_rings(),"sun":_sun_position(),"heart":write_pulse().get("heart",{})}); return
@@ -591,6 +669,58 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                 idir=os.path.join(_REPO,"data","gut","images")
                 images=sorted([f for f in os.listdir(idir) if f.endswith(('.png','.jpg'))]) if os.path.isdir(idir) else []
                 self._json({"count":len(images),"images":images})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        # ═══ POLARIS — north star HUD data ═══
+        if self.path in ("/api/polaris","/api/polaris/ferment","/api/northgate"):
+            try:
+                pf=os.path.join(_REPO,"data","body","polaris-ferment.json")
+                if os.path.isfile(pf):
+                    with open(pf) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-ferment.json not yet generated","hint":"run runtime/sourdough/polaris_ferment.pi on northGate"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path in ("/api/polaris/triangulation","/api/polaris/field","/api/triangulate"):
+            try:
+                pt=os.path.join(_REPO,"data","body","polaris-triangulation.json")
+                if os.path.isfile(pt):
+                    with open(pt) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-triangulation.json not yet generated","hint":"run runtime/sourdough/polaris_triangulate.pi on northGate"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path=="/polaris": self._serve_static("polaris.html"); return
+        if self.path=="/tamison": self._serve_static("tamison.html"); return
+        # ═══ BACKSCATTER — live GPU metrics from Polaris ═══
+        if self.path in ("/api/backscatter/live","/api/backscatter"):
+            try:
+                sf=os.path.join(_REPO,"data","backscatter","session.json")
+                if os.path.isfile(sf):
+                    with open(sf) as f: self._json(json.load(f))
+                else: self._json({"error":"backscatter not running","hint":"launch backscatter.pi on northGate"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path=="/api/polaris/biome":
+            try:
+                bf=os.path.join(_REPO,"data","body","polaris-biome.json")
+                if os.path.isfile(bf):
+                    with open(bf) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-biome.json not generated","hint":"launch polaris_biome.pi"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path=="/api/polaris/steam":
+            try:
+                sf=os.path.join(_REPO,"data","body","polaris-steam.json")
+                if os.path.isfile(sf):
+                    with open(sf) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-steam.json not generated","hint":"run steam_sweep.pi"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path in ("/api/body","/api/pi-body","/api/crush"):
+            try:
+                bf=os.path.join(_REPO,"data","body","pi-body.json")
+                if os.path.isfile(bf):
+                    with open(bf) as f: self._json(json.load(f))
+                else: self._json({"error":"pi-body.json not generated — run pi_crush.pi"})
             except Exception as e: self._json({"error":str(e)})
             return
         # ═══ REVERSE TRANSCRIPTASE — compiler chain / body printer ═══
@@ -964,7 +1094,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
                     capture_output=True,text=True,timeout=10,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
-            return
+                return
         # iPHONE PHOTO UPLOAD (POST /api/iphone/photo)
         if self.path=="/api/iphone/photo":
             try:
@@ -1067,6 +1197,63 @@ def pulse_loop():
         try: p=write_pulse(); write_rss(p)
         except: pass
 
+# ═══ EAR LOOP — Gaia listens to her own voice ═══
+def ear_loop():
+    """Every 5 minutes, Gaia touches her own mouth and records what she hears."""
+    while True:
+        time.sleep(300)
+        heard = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ear": []}
+        endpoints = [
+            ("pulse",    f"http://127.0.0.1:{PORT}/pulse"),
+            ("songbird", f"http://127.0.0.1:{PORT}/songbird"),
+            ("routing",  f"http://127.0.0.1:{PORT}/routing"),
+            ("swarmvine",f"http://127.0.0.1:{PORT}/swarmvine"),
+            ("mcp_init", None),
+            ("mcp_list", None),
+            ("feed.xml", f"http://127.0.0.1:{PORT}/feed.xml"),
+        ]
+        for name, url in endpoints:
+            t0 = time.time()
+            try:
+                if name == "mcp_init":
+                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
+                        data=json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}).encode(),
+                        headers={"Content-Type":"application/json"})
+                    r = urllib.request.urlopen(req, timeout=5)
+                    body = json.loads(r.read())
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
+                        "heard":body.get("result",{}).get("serverInfo",{}).get("name","?")})
+                elif name == "mcp_list":
+                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
+                        data=json.dumps({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}).encode(),
+                        headers={"Content-Type":"application/json"})
+                    r = urllib.request.urlopen(req, timeout=5)
+                    body = json.loads(r.read())
+                    tools = body.get("result",{}).get("tools",[])
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
+                        "heard":f"{len(tools)} tools","tools":[t["name"] for t in tools]})
+                else:
+                    r = urllib.request.urlopen(url, timeout=5)
+                    size = len(r.read())
+                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
+            except Exception as e:
+                heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
+        alive = sum(1 for e in heard["ear"] if e["ok"])
+        total = len(heard["ear"])
+        heard["summary"] = f"{alive}/{total} endpoints alive"
+        heard["voice_uncanny"] = alive < total
+        ear_file = os.path.join(_REPO, "data", "body", "ear.json")
+        try:
+            os.makedirs(os.path.dirname(ear_file), exist_ok=True)
+            with open(ear_file, "w") as f: json.dump(heard, f, indent=2)
+        except: pass
+        if alive < total:
+            dead = [e["name"] for e in heard["ear"] if not e["ok"]]
+            print(f"  👂 EAR: {alive}/{total} — DEAF to: {', '.join(dead)}")
+        else:
+            print(f"  👂 EAR: {alive}/{total} — voice clear")
+
+
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address=True; daemon_threads=True
     def handle_error(self,req,addr):
@@ -1080,7 +1267,7 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-    def _start_webpi():
+def _start_webpi():
         try:
             webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
