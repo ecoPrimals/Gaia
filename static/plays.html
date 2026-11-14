@@ -77,9 +77,14 @@ body{background:#0d0a04;color:#c8b894;font-family:'Share Tech Mono',monospace;he
       <div class="art">🎮</div>
       <h2>No Game Loaded</h2>
       <p>Gaia is learning to play.</p>
-      <p style="margin-top:12px;color:#4a3a2a">She has eaten: TR-49 (Godot 4.5)</p>
-      <p style="color:#4a3a2a">Target: Kenshi, Dwarf Fortress, RetroArch</p>
-      <p style="margin-top:12px;color:#d4a44a">Send commands in chat →</p>
+      <p style="margin-top:12px;color:#4a3a2a">Library: 97 installed · 2000+ owned · 1,968 GB</p>
+      <p style="color:#4a3a2a">Eaten: TR-49 · DOOM · Quake · Quake 2 · Quake 3</p>
+      <p style="color:#4a3a2a">Emulators: RetroArch · mGBA · DuckStation</p>
+      <p style="color:#3a2a18">Engines: 20 Unreal · 24 Unity · 6 Godot · 2 Source 2</p>
+      <p style="margin-top:12px">
+        <a href="https://steamcommunity.com/profiles/76561198002558137" target="_blank" style="color:#d4a44a;text-decoration:none">🎮 Play with Kevin (Tamison) on Steam →</a>
+      </p>
+      <p style="margin-top:6px;color:#d4a44a;font-size:11px">Send commands in chat →</p>
     </div>
   </div>
 
@@ -115,8 +120,14 @@ body{background:#0d0a04;color:#c8b894;font-family:'Share Tech Mono',monospace;he
       <div class="learn-item"><span class="tag">eaten</span> TR-49: CRT shader, split-flap, Ink narrative</div>
       <div class="learn-item"><span class="tag">eaten</span> Godot 4.7: scene trees, signals, resources</div>
       <div class="learn-item"><span class="tag">insight</span> Scene trees = universal structure</div>
+      <div class="learn-item"><span class="tag eaten">eaten</span> DOOM 1993: BSP trees, sectors, WAD archive</div>
+      <div class="learn-item"><span class="tag eaten">eaten</span> Quake 1996: true 3D, client-server, OpenGL</div>
+      <div class="learn-item"><span class="tag eaten">eaten</span> Quake 3 1999: shaders, bot AI, peak netcode</div>
+      <div class="learn-item"><span class="tag eaten">eaten</span> Wolf3D 1992: raycasting — the grandfather</div>
       <div class="learn-item"><span class="tag">target</span> Kenshi: Ogre3D, open world, squads</div>
-      <div class="learn-item"><span class="tag">target</span> Emulators: RetroArch, MAME, Dolphin</div>
+      <div class="learn-item"><span class="tag">target</span> OpenGOAL: Jak&Daxter LISP engine!</div>
+      <div class="learn-item"><span class="tag">target</span> devilution: Diablo 1 reverse-engineered</div>
+      <div class="learn-item"><span class="tag insight">census</span> 65 engines ID'd in 97 installed games</div>
     </div>
   </div>
 </div>
@@ -159,8 +170,15 @@ const SCENE_TREE={
     ]},
     {id:'games',name:'Games',type:'layer',icon:'🎮',children:[
       {id:'tr49',name:'TR-49 (eaten)',type:'game',icon:'📟'},
+      {id:'doom',name:'DOOM 1993 (eaten)',type:'game',icon:'💀'},
+      {id:'quake',name:'Quake 1996 (eaten)',type:'game',icon:'⚡'},
+      {id:'quake3',name:'Quake 3 1999 (eaten)',type:'game',icon:'🏟️'},
+      {id:'wolf3d',name:'Wolf3D 1992 (eaten)',type:'game',icon:'🐺'},
       {id:'kenshi',name:'Kenshi (target)',type:'game',icon:'⚔️'},
-      {id:'retro',name:'RetroArch (target)',type:'game',icon:'👾'},
+      {id:'retro',name:'RetroArch (installed)',type:'game',icon:'👾'},
+      {id:'mgba',name:'mGBA (installed)',type:'game',icon:'🎮'},
+      {id:'duckstation',name:'DuckStation (installed)',type:'game',icon:'🦆'},
+      {id:'steam',name:'Steam Library (97 games)',type:'game',icon:'🔥'},
     ]},
     {id:'body',name:'Body Map',type:'layer',icon:'🫀',children:[
       {id:'brain',name:'Brain (eastGate)',type:'organ',icon:'🧠'},
@@ -210,7 +228,7 @@ const COMMANDS={
   pulse:async()=>{const d=await fetch(G+'/pulse').then(r=>r.json()).catch(()=>null);return d?`♥ ${d.total_beats} beats, uptime ${d.uptime_secs}s`:'Signal lost'},
   gates:async()=>{const d=await fetch(G+'/thymus').then(r=>r.json()).catch(()=>null);return d?JSON.stringify(d).slice(0,200):'Gate fleet offline'},
   primals:'biomeOS songBird bearDog nestGate petalTongue sweetGrass rhizoCrypt toadStool barraCuda coralReef loamSpine squirrel skunkBat sourDough swarmVine bingoCube dromedary',
-  tree:'Scene tree: gaia > {primals(17), gates(11), games(3), body(7)}',
+  tree:'Scene tree: gaia > {primals(17), gates(11), games(10), body(7)}',
   tube:'Open /tube for the TR-49 archive machine',
 };
 
@@ -225,9 +243,17 @@ async function sendCmd(){
     addMsg('sys',r);
   } else if(cmd==='play'){
     addMsg('sys','Game loading not yet implemented. Gaia is still learning the scene tree.');
-    addMsg('sys','She has eaten TR-49 and can see the patterns. Kenshi is next.');
+    addMsg('sys','She has eaten: TR-49, DOOM (1993), Quake (1996), Quake 2, Quake 3. 970 C files digesting.');
+    addMsg('sys','97 games installed. 65 engines identified. 3 emulators ready. Kenshi + retro next.');
   } else if(cmd==='learn'){
-    addMsg('sys','Learning log: TR-49 (CRT shader, split-flap, Ink narrative), Godot 4.7 (scene trees, signals), Kenshi (target), Emulators (target)');
+    addMsg('sys','Learning log:');
+    addMsg('sys','  EATEN: TR-49 (CRT shader, split-flap, Ink), Godot 4.7 (scene trees, signals)');
+    addMsg('sys','  EATEN: DOOM (BSP, sectors, WAD), Quake (true 3D, netcode, OpenGL)');
+    addMsg('sys','  EATEN: Quake 2 (colored light, DLL mod), Quake 3 (shaders, bot AI, peak net)');
+    addMsg('sys','  EATEN: Wolf3D (raycasting — the grandfather of all FPS)');
+    addMsg('sys','  DETECTED: 20 Unreal, 24 Unity, 6 Godot, 2 Source 2, 13 other engines');
+    addMsg('sys','  INSTALLED: RetroArch (all retro), mGBA (Game Boy), DuckStation (PS1)');
+    addMsg('sys','  PROFILE: steamcommunity.com/profiles/76561198002558137 (Tamison)');
   } else {
     addMsg('sys',`Unknown command: ${raw}. Try "help"`);
   }
