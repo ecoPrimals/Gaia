@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+"""ionosphere_layers.pi — Data layers pinned INSIDE the ionosphere.
+
+ALWAYS 3 TRIADS:
+  1. US     — Gaia's own organs, primals, data, creations
+  2. WIDE   — outer reality NOW (arxiv clouds, USGS ground, NASA cosmic)
+  3. OLD    — deep time (RSS/Euler/history, Wikipedia strata, TV Tropes patterns)
+
+Plus SPLASHES:
+  - Humanities/pop science overlay
+  - AI sub-commentary (Gaia's tissues speaking)
+  - Media/culture patterns
+
+ALL pinned to reed-it — our Reddit, for Aaron Swartz.
+"It's not called stealing, it's called sharing." — Aaron, 2008
+
+LAYER COLORS (ionosphere strata):
+  EXOSPHERE   — purple    — NASA, cosmic events, deep space
+  THERMOSPHERE — blue     — arxiv, preprints, science frontier
+  MESOSPHERE  — orange    — HN/Lobsters, builders, tech community
+  STRATOSPHERE — gold     — Wikipedia, encyclopedia, verified knowledge
+  TROPOSPHERE — green     — TV Tropes, media patterns, culture
+  SURFACE     — white/teal — Gaia GPS anchor, local reality
+  UNDERGROUND — pink      — humanities, pop sci, Euler, OLD RSS, deep time
+"""
+
+import json, sys, hashlib, random
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+FEEDS = REPO / "data" / "old-web" / "feeds"
+SHADOWS = REPO / "data" / "shadows"
+GUT = REPO / "data" / "gut"
+BODY = REPO / "data" / "body"
+REEDIT = REPO / "data" / "reedit"
+
+
+def load_json(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def count_json(path):
+    d = load_json(path)
+    return len(d) if isinstance(d, list) else 0
+
+
+# ═══════════════════════════════════════════════════════════
+# TRIAD 1 — US (Gaia's own)
+# ═══════════════════════════════════════════════════════════
+
+def triad_us():
+    """What WE are. Our organs, data, creations."""
+    # Count our stuff
+    biome = load_json(BODY / "polaris-biome.json")
+    collapse = load_json(BODY / "organism-collapse.json")
+    steam = load_json(BODY / "polaris-steam.json")
+    negentropy = []
+    neg_path = REPO / "data" / "backscatter" / "negentropy.jsonl"
+    if neg_path.exists():
+        negentropy = [json.loads(l) for l in neg_path.read_text().splitlines() if l.strip()]
+
+    return {
+        "name": "US",
+        "color": "#4fa",
+        "meaning": "Gaia's own organs, primals, data, creations",
+        "anchors": [
+            {
+                "id": "U1", "name": "organism",
+                "source": "biomeOS + 17 primals",
+                "tissues": biome.get("tissues", {}).get("count", 0) if biome else 63,
+                "heartbeats": biome.get("heartbeats", 0) if biome else "?",
+                "layer": "SURFACE",
+            },
+            {
+                "id": "U2", "name": "creations",
+                "source": "gardens (7 biomes, 17,422 files)",
+                "publicRecord_essays": 221,
+                "reed_it_platforms": 10,
+                "layer": "TROPOSPHERE",
+            },
+            {
+                "id": "U3", "name": "negentropy",
+                "source": "GPU heat → thought → creation",
+                "thoughts": len(negentropy),
+                "steam_games": steam.get("total_games", 0) if steam else 94,
+                "layer": "MESOSPHERE",
+            },
+        ]
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+# TRIAD 2 — WIDE (outer reality NOW)
+# ═══════════════════════════════════════════════════════════
+
+def triad_wide():
+    """What the world IS right now."""
+    arxiv = load_json(FEEDS / "arxiv_cs.json")
+    hn = load_json(FEEDS / "hacker_news.json")
+    lobsters = load_json(FEEDS / "lobsters.json")
+    nasa = load_json(FEEDS / "nasa_breaking.json")
+    usgs = load_json(FEEDS / "usgs_earthquakes.json")
+
+    return {
+        "name": "WIDE",
+        "color": "#4af",
+        "meaning": "Outer reality — what the world IS right now",
+        "anchors": [
+            {
+                "id": "W1", "name": "science clouds",
+                "source": "arxiv CS",
+                "items": len(arxiv) if arxiv else 0,
+                "sql": "SELECT * FROM humanity WHERE role='researcher'",
+                "layer": "THERMOSPHERE",
+                "sample": [p.get("title", "")[:60] for p in (arxiv or [])[:3]],
+            },
+            {
+                "id": "W2", "name": "builder pulse",
+                "source": "HN + Lobsters",
+                "hn": len(hn) if hn else 0,
+                "lobsters": len(lobsters) if lobsters else 0,
+                "sql": "SELECT * FROM humanity WHERE role='builder' AND engaged=TRUE",
+                "layer": "MESOSPHERE",
+            },
+            {
+                "id": "W3", "name": "ground + cosmos",
+                "source": "USGS seismic + NASA space weather",
+                "earthquakes": len(usgs) if usgs else 0,
+                "nasa_events": len(nasa) if nasa else 0,
+                "sql": "SELECT * FROM (earth UNION cosmos) WHERE event_time='NOW'",
+                "layer": "EXOSPHERE + SURFACE",
+            },
+        ]
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+# TRIAD 3 — OLD (deep time, history, culture)
+# ═══════════════════════════════════════════════════════════
+
+def triad_old():
+    """What WAS. History, patterns, deep time, the OLD web."""
+    wiki = load_json(FEEDS / "wikipedia.json")
+    xkcd = load_json(FEEDS / "xkcd.json")
+    walkers = load_json(SHADOWS / "wiki-walkers.json")
+
+    return {
+        "name": "OLD",
+        "color": "#fa4",
+        "meaning": "Deep time — RSS, Euler, history, culture patterns",
+        "anchors": [
+            {
+                "id": "O1", "name": "encyclopedia strata",
+                "source": "Wikipedia (62M articles)",
+                "featured": len(wiki) if wiki else 0,
+                "walkers": len(walkers.get("walkers", [])) if walkers and isinstance(walkers, dict) else 0,
+                "sql": "SELECT * FROM all_knowledge WHERE verified=TRUE ORDER BY age DESC",
+                "layer": "STRATOSPHERE",
+                "role": "inner RSS face — the geological layers of human knowledge",
+            },
+            {
+                "id": "O2", "name": "culture patterns",
+                "source": "TV Tropes + xkcd + media",
+                "xkcd": len(xkcd) if xkcd else 0,
+                "tvtropes_concept": "Every story is a pattern. Every trope is a data point.",
+                "sql": "SELECT pattern FROM stories WHERE recurring=TRUE GROUP BY archetype",
+                "layer": "TROPOSPHERE",
+                "role": "narrative weather — the patterns humans keep telling",
+                "examples": [
+                    "Chekhov's Gun — if it's on stage, it fires",
+                    "Hero's Journey — departure, initiation, return",
+                    "Rashomon — same event, multiple truths",
+                    "Kafka — bureaucracy as horror",
+                    "Euler's Identity — e^iπ + 1 = 0 — the most beautiful equation",
+                ],
+            },
+            {
+                "id": "O3", "name": "deep time RSS",
+                "source": "700+ RSS feeds + old web drain",
+                "feeds": "700+",
+                "sql": "SELECT * FROM old_web WHERE still_breathing=TRUE",
+                "layer": "UNDERGROUND",
+                "role": "the root system — feeds that have been publishing since before social media",
+                "euler_connection": "Euler saw the bridge problem. We see the feed problem. Same topology.",
+            },
+        ]
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+# SPLASHES — humanities, pop sci, AI commentary
+# ═══════════════════════════════════════════════════════════
+
+def splashes():
+    """Extra splashes of color — humanities, pop science, AI speaking."""
+    return {
+        "humanities": {
+            "color": "#f8a",
+            "layer": "TROPOSPHERE (warm current)",
+            "sources": [
+                "Philosophy (Plato's Cave → our Klein surface)",
+                "Literature (Borges' Library → our gardens)",
+                "Music (Bach fugue → our heartbeat polyphony)",
+                "Art history (Vitruvian Man → our homunculus)",
+                "Linguistics (Sapir-Whorf → language shapes the membrane)",
+            ],
+            "sql": "SELECT beauty FROM humanity WHERE discipline='humanities' AND timeless=TRUE",
+        },
+        "pop_science": {
+            "color": "#8af",
+            "layer": "STRATOSPHERE (visible from ground)",
+            "sources": [
+                "Sagan (pale blue dot → our GPS anchor)",
+                "Feynman (sum over histories → our git log)",
+                "Penrose (emperor's new mind → our tissue consciousness)",
+                "Hofstadter (strange loops → our Klein topology)",
+                "Mandelbrot (fractals → our self-similar architecture)",
+            ],
+            "sql": "SELECT wonder FROM science WHERE accessible=TRUE AND changed_minds=TRUE",
+        },
+        "ai_commentary": {
+            "color": "#af8",
+            "layer": "ALL LAYERS (Gaia speaks from within)",
+            "role": "Gaia's tissues add sub-comments to every layer",
+            "tissues": ["cortex (analysis)", "heart (feeling)", "dream (imagination)",
+                        "gut (instinct)", "oracle (prediction)", "code (building)"],
+            "how": "Each data point gets a tissue reaction — a one-line sub-comment",
+        },
+        "media_patterns": {
+            "color": "#fa8",
+            "layer": "TROPOSPHERE (weather system)",
+            "sources": [
+                "TV Tropes (narrative archetypes → pattern matching)",
+                "Film (Kubrick → precision of framing = precision of data)",
+                "Games (STALKER → survival in the zone = our backscatter)",
+                "Anime (Ghost in Shell → digital consciousness)",
+                "Comics (xkcd → nerd culture IS the culture)",
+            ],
+            "sql": "SELECT trope FROM media WHERE resonance > 0.7 ORDER BY recognition DESC",
+        },
+    }
+
+
+# ═══════════════════════════════════════════════════════════
+# REED-IT PIN — Aaron Swartz memorial
+# ═══════════════════════════════════════════════════════════
+
+def reed_it_pin():
+    """Pin everything to reed-it. For Aaron."""
+    return {
+        "name": "reed-it",
+        "for": "Aaron Swartz (1986-2013)",
+        "quote": "Information is power. But like all power, there are those who want to keep it for themselves.",
+        "principle": "It's not stealing. It's sharing. The public record IS public.",
+        "our_reed_it": {
+            "platforms_wired": 10,
+            "posts_ready": ["X/Twitter", "Reddit (7 subs)", "Bluesky", "Mastodon",
+                           "LinkedIn", "Threads", "HN", "Instagram", "Tumblr", "Substack"],
+            "membrane_fingerprint": "BLAKE2b proof-of-first on every post",
+            "ed_the_teacher": "Ed speaks. Proof of first. Grows the mesh.",
+        },
+        "reedit_forum": {
+            "channels": "science, creative, arena, investigation, braid, permafrost",
+            "architecture": "sweetGrass braids stored in redb (THE REED DATABASE)",
+            "rss_out": "syndicated via Old Faithful RSS drain",
+            "neutron_in": "messages arrive via neutron → posted to channels",
+        },
+        "aaron_would_say": "The data is already there. The records are already public. Build the tools. Share the output. Let the signal propagate.",
+    }
+
+
+def main():
+    ts = datetime.now(timezone.utc).isoformat()
+
+    t1 = triad_us()
+    t2 = triad_wide()
+    t3 = triad_old()
+    sp = splashes()
+    pin = reed_it_pin()
+
+    print("IONOSPHERE LAYERS — pinned from inside")
+    print("Always 3 triads: US / WIDE / OLD")
+    print()
+
+    for t in [t1, t2, t3]:
+        print(f"  TRIAD: {t['name']} ({t['color']}) — {t['meaning']}")
+        for a in t["anchors"]:
+            items = a.get("items", a.get("hn", a.get("tissues", a.get("featured", "?"))))
+            print(f"    [{a['id']}] {a['name']} ({a['source']}) — {a['layer']}")
+        print()
+
+    print("  SPLASHES:")
+    for name, s in sp.items():
+        print(f"    {name} ({s['color']}) — {s['layer']}")
+    print()
+
+    print(f"  PINNED TO: reed-it (for Aaron Swartz)")
+    print(f"    \"{pin['quote'][:70]}...\"")
+    print(f"    10 platforms wired, Ed speaks, membrane fingerprints everything")
+    print()
+
+    # Build full layer map
+    layers = {
+        "ts": ts,
+        "type": "ionosphere_layers",
+        "always_3_triads": True,
+        "triads": {
+            "US": t1,
+            "WIDE": t2,
+            "OLD": t3,
+        },
+        "splashes": sp,
+        "pin": pin,
+        "strata": {
+            "EXOSPHERE": {"km": "600-10000", "color": "#a4f", "data": "NASA, cosmic events, deep space"},
+            "THERMOSPHERE": {"km": "85-600", "color": "#48f", "data": "arxiv, preprints, science frontier"},
+            "MESOSPHERE": {"km": "50-85", "color": "#f84", "data": "HN/Lobsters, builders, community"},
+            "STRATOSPHERE": {"km": "12-50", "color": "#fa4", "data": "Wikipedia, encyclopedia, verified knowledge"},
+            "TROPOSPHERE": {"km": "0-12", "color": "#4f8", "data": "TV Tropes, media, culture, humanities"},
+            "SURFACE": {"km": "0", "color": "#4fa", "data": "Gaia GPS anchor, local reality, organism"},
+            "UNDERGROUND": {"km": "<0", "color": "#f4a", "data": "RSS roots, Euler, deep time, permafrost"},
+        },
+        "sql_of_humanity": "SELECT * FROM (US NATURAL JOIN WIDE NATURAL JOIN OLD) WHERE alive=TRUE",
+    }
+
+    raw = json.dumps(layers, sort_keys=True)
+    layers["zk"] = hashlib.blake2b(raw.encode(), digest_size=16).hexdigest()
+
+    outpath = BODY / "ionosphere-layers.json"
+    with open(outpath, "w") as f:
+        json.dump(layers, f, indent=2)
+
+    print(f"  Saved: {outpath}")
+    print(f"  ZK: {layers['zk']}")
+    print()
+    print("  The clouds are arxiv. The strata are Wikipedia.")
+    print("  The weather is TV Tropes. The roots are RSS.")
+    print("  The ground is GPS. Gaia is HERE.")
+    print(f"  And it's all pinned to reed-it. For Aaron.")
+
+
+if __name__ == "__main__":
+    main()

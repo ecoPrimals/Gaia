@@ -1,0 +1,197 @@
+{
+  "ts": "2026-11-14T01:36:43.363293+00:00",
+  "type": "ionosphere_pin",
+  "method": "pi-angulation (3 triads \u00d7 3 anchors)",
+  "triads": [
+    {
+      "name": "PHYSICAL",
+      "primal": "loamSpine",
+      "anchors": [
+        {
+          "anchor": "A",
+          "source": "GPS",
+          "lat": 42.73,
+          "lon": -84.48,
+          "label": "eastGate, Lansing MI",
+          "precision": "WiFi RSSI triangulation",
+          "primal": "loamSpine"
+        },
+        {
+          "anchor": "B",
+          "source": "GoogleMaps",
+          "address_approx": "Lansing, MI 48910",
+          "county": "Ingham",
+          "state": "Michigan",
+          "country": "US",
+          "timezone": "America/Detroit (UTC-5)",
+          "elevation_m": 256,
+          "primal": "loamSpine"
+        },
+        {
+          "anchor": "C",
+          "source": "USGS",
+          "items": 36,
+          "type": "seismic events \u2014 the ground IS moving",
+          "nearest_context": "Michigan Basin, stable craton, low seismicity",
+          "primal": "loamSpine",
+          "latest": {
+            "title": "M 4.6 - 114 km W of Petrolia, CA",
+            "date": "2026-11-05T05:04:29.482Z",
+            "link": "https://earthquake.usgs.gov/earthquakes/eventpage/nc75462637"
+          }
+        }
+      ]
+    },
+    {
+      "name": "KNOWLEDGE",
+      "primals": [
+        "sweetGrass",
+        "esotericWebb"
+      ],
+      "anchors": [
+        {
+          "anchor": "D",
+          "source": "arxiv",
+          "items": 1348,
+          "type": "CS preprints \u2014 science frontier, the CLOUDS",
+          "sql_query": "SELECT * FROM humanity WHERE role='researcher' AND published=TRUE",
+          "sample_topics": [
+            "VAR-Q: Tuning-free KV Cache Quantization for Visual Autoregressive Image and Vid",
+            "Discourse Analysis of Legislative Bill Discussions",
+            "DS@GT ARC at CheckThat! 2026: A Verdict-Anchored Pipeline for Generating Fact-Ch",
+            "CCDWIKI: Decoupling Case Formulation from Response Generation in Longitudinal CB",
+            "Human-like cross-language generalisation in deep neural speaker embeddings and i"
+          ],
+          "primal": "sweetGrass",
+          "domains_detected": [
+            "diffusion",
+            "generative",
+            "graph",
+            "language",
+            "medical",
+            "neural",
+            "quantum",
+            "reinforcement",
+            "robot",
+            "security",
+            "vision"
+          ]
+        },
+        {
+          "anchor": "E",
+          "source": "Wikipedia",
+          "items": 10,
+          "type": "featured articles \u2014 encyclopedia of IS, inner RSS face",
+          "sql_query": "SELECT * FROM humanity WHERE knowledge='verified' AND scope='universal'",
+          "total_articles": "62,000,000+",
+          "primal": "sweetGrass",
+          "recent": [
+            "October 27 Wikipedia featured article",
+            "October 28 Wikipedia featured article",
+            "October 29 Wikipedia featured article",
+            "October 30 Wikipedia featured article",
+            "October 31 Wikipedia featured article"
+          ]
+        },
+        {
+          "anchor": "F",
+          "source": "HackerNews + Lobsters",
+          "hn_items": 30,
+          "lobsters_items": 25,
+          "type": "tech community pulse \u2014 what builders care about NOW",
+          "sql_query": "SELECT * FROM humanity WHERE role='builder' AND engaged=TRUE AND era='now'",
+          "primal": "esotericWebb",
+          "hn_hot": [
+            "Residential proxies detected on White House network",
+            "AMD expects to outsell Intel in Q4 for the first time in history",
+            "Kimi K3.1 Pro model weights are out"
+          ],
+          "lobsters_hot": [
+            "So my ISP was hijacking my DNS",
+            "Shlemiel the Painter Is Back: How Zig\u2019s libc Rewrite Made SQLite Slower",
+            "Your Cryptography Conspiracy Theory Is Wrong"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TEMPORAL",
+      "primal": "rhizoCrypt",
+      "anchors": [
+        {
+          "anchor": "G",
+          "source": "NASA",
+          "items": 10,
+          "type": "space weather \u2014 solar events, ISS, cosmic NOW",
+          "sql_query": "SELECT * FROM cosmos WHERE observable=TRUE AND epoch='now'",
+          "primal": "rhizoCrypt",
+          "latest": [
+            "NASA Announces X-70 Experimental Aircraft to Advance Flight Research",
+            "NASA Shares Plans to Accelerate Artemis, Return to Moon",
+            "NASA Announces Ka-Band Satellite Relay Awards for Space Communications"
+          ]
+        },
+        {
+          "anchor": "H",
+          "source": "RSS drain + xkcd",
+          "xkcd_items": 4,
+          "rss_total": "700+ feeds",
+          "type": "the old web stream \u2014 culture, nerd signals, long-form",
+          "sql_query": "SELECT * FROM old_web WHERE feed_active=TRUE ORDER BY date DESC",
+          "primal": "rhizoCrypt",
+          "latest_xkcd": [
+            "House Majority",
+            "Elevators",
+            "Earth Sized Planets"
+          ]
+        },
+        {
+          "anchor": "I",
+          "source": "OSINT P+NP",
+          "type": "the full scope \u2014 8.5B IS + 117B WAS humans",
+          "sql_query": "SELECT COUNT(*) FROM humanity; -- answer: 125,500,000,000",
+          "coverage": "66,000 / 8,500,000,000 = 0.000776%",
+          "primal": "rhizoCrypt"
+        }
+      ]
+    }
+  ],
+  "position": {
+    "triads": 3,
+    "anchors": 9,
+    "total_data_points": 1463,
+    "physical_bearing": "42.73N, 84.48W",
+    "knowledge_bearing": "1358 papers+articles",
+    "temporal_bearing": "10 events",
+    "primals_used": [
+      "loamSpine",
+      "sweetGrass",
+      "esotericWebb",
+      "rhizoCrypt"
+    ],
+    "sql_of_humanity": "SELECT * FROM (physical JOIN knowledge JOIN temporal) WHERE gaia_sees = TRUE",
+    "resolution": "3 triads \u00d7 3 anchors = 9-point fix in data-space"
+  },
+  "topology": {
+    "inner_face": "Wikipedia + arxiv (RSS) \u2014 knowledge clouds INSIDE ionosphere",
+    "outer_face": "gardens/biomes \u2014 living surface BELOW ionosphere",
+    "pin_point": "GPS anchor + knowledge + temporal = ONE location in data-space",
+    "google_maps": "street-level OSINT reality overlay",
+    "arxiv_clouds": "science preprints floating above like weather systems",
+    "wiki_strata": "encyclopedia layers like geological formations",
+    "seismic": "USGS earthquakes = the ground truth MOVES"
+  },
+  "sql_of_humanity": {
+    "concept": "Every OSINT source is a TABLE. Pi-angulation is the JOIN.",
+    "tables": {
+      "arxiv": "1,348 rows \u2014 researchers who published",
+      "wikipedia": "62M rows \u2014 verified human knowledge",
+      "hackernews": "500K users \u2014 tech builders",
+      "nasa": "cosmic events \u2014 space weather",
+      "usgs": "seismic events \u2014 earth moving",
+      "rss": "700+ feeds \u2014 old web culture"
+    },
+    "query": "SELECT position FROM (physical NATURAL JOIN knowledge NATURAL JOIN temporal) WHERE organism='gaia'"
+  },
+  "zk": "204f81b6a85f00eede1f2665af81f4c7"
+}

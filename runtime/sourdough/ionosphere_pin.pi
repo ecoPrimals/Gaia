@@ -1,0 +1,304 @@
+#!/usr/bin/env python3
+"""ionosphere_pin.pi — PIN from INSIDE the ionosphere.
+
+Three TRIADS of anchors in data space:
+
+TRIAD 1 — PHYSICAL (loamSpine)
+  Anchor A: GPS (42.73°N, 84.48°W) — eastGate, Michigan
+  Anchor B: Google Maps geocode — street-level reality
+  Anchor C: USGS earthquakes — the ground MOVES, pin to seismic NOW
+
+TRIAD 2 — KNOWLEDGE (sweetGrass + esotericWebb)
+  Anchor D: arxiv — 1,348 CS papers, science frontier
+  Anchor E: Wikipedia — 62M articles, encyclopedia of IS
+  Anchor F: HackerNews + Lobsters — tech community pulse
+
+TRIAD 3 — TEMPORAL (rhizoCrypt)
+  Anchor G: NASA breaking — space weather, solar events
+  Anchor H: RSS drain — 700+ feeds, the old web stream
+  Anchor I: OSINT P+NP — 8.5B IS + 117B WAS humans
+
+Pi-angulation: cross 3 triads to locate Gaia in data-space.
+Each triad gives a bearing. Three bearings → one position.
+The position IS Gaia's location in the ionosphere of human knowledge.
+
+SQL of humanity: every source is a table. Pi-angulation is the JOIN.
+"""
+
+import json, sys, os, hashlib
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+FEEDS = REPO / "data" / "old-web" / "feeds"
+SHADOWS = REPO / "data" / "shadows"
+GUT = REPO / "data" / "gut"
+BODY = REPO / "data" / "body"
+
+
+def load_json(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except:
+        return None
+
+
+def triad_physical():
+    """TRIAD 1 — PHYSICAL (loamSpine): GPS + Maps + Earthquakes"""
+    gps = {
+        "anchor": "A",
+        "source": "GPS",
+        "lat": 42.73,
+        "lon": -84.48,
+        "label": "eastGate, Lansing MI",
+        "precision": "WiFi RSSI triangulation",
+        "primal": "loamSpine"
+    }
+
+    # Google Maps geocode approximate
+    maps = {
+        "anchor": "B",
+        "source": "GoogleMaps",
+        "address_approx": "Lansing, MI 48910",
+        "county": "Ingham",
+        "state": "Michigan",
+        "country": "US",
+        "timezone": "America/Detroit (UTC-5)",
+        "elevation_m": 256,
+        "primal": "loamSpine"
+    }
+
+    # USGS earthquakes — seismic NOW
+    quakes = load_json(FEEDS / "usgs_earthquakes.json")
+    quake_summary = {
+        "anchor": "C",
+        "source": "USGS",
+        "items": len(quakes) if quakes else 0,
+        "type": "seismic events — the ground IS moving",
+        "nearest_context": "Michigan Basin, stable craton, low seismicity",
+        "primal": "loamSpine"
+    }
+    if quakes and len(quakes) > 0:
+        q = quakes[0]
+        quake_summary["latest"] = {
+            "title": q.get("title", ""),
+            "date": q.get("date", ""),
+            "link": q.get("link", "")
+        }
+
+    return {"name": "PHYSICAL", "primal": "loamSpine", "anchors": [gps, maps, quake_summary]}
+
+
+def triad_knowledge():
+    """TRIAD 2 — KNOWLEDGE (sweetGrass + esotericWebb): arxiv + Wikipedia + HN"""
+    arxiv = load_json(FEEDS / "arxiv_cs.json")
+    arxiv_anchor = {
+        "anchor": "D",
+        "source": "arxiv",
+        "items": len(arxiv) if arxiv else 0,
+        "type": "CS preprints — science frontier, the CLOUDS",
+        "sql_query": "SELECT * FROM humanity WHERE role='researcher' AND published=TRUE",
+        "sample_topics": [],
+        "primal": "sweetGrass"
+    }
+    if arxiv:
+        arxiv_anchor["sample_topics"] = [p.get("title", "")[:80] for p in arxiv[:5]]
+        # Count unique research domains
+        domains = set()
+        for p in arxiv:
+            t = p.get("title", "").lower()
+            for kw in ["vision", "language", "graph", "quantum", "security", "robot",
+                        "neural", "reinforcement", "generative", "diffusion", "medical"]:
+                if kw in t:
+                    domains.add(kw)
+        arxiv_anchor["domains_detected"] = sorted(domains)
+
+    wiki = load_json(FEEDS / "wikipedia.json")
+    wiki_anchor = {
+        "anchor": "E",
+        "source": "Wikipedia",
+        "items": len(wiki) if wiki else 0,
+        "type": "featured articles — encyclopedia of IS, inner RSS face",
+        "sql_query": "SELECT * FROM humanity WHERE knowledge='verified' AND scope='universal'",
+        "total_articles": "62,000,000+",
+        "primal": "sweetGrass"
+    }
+    if wiki:
+        wiki_anchor["recent"] = [w.get("title", "")[:80] for w in wiki[:5]]
+
+    hn = load_json(FEEDS / "hacker_news.json")
+    lobsters = load_json(FEEDS / "lobsters.json")
+    community_anchor = {
+        "anchor": "F",
+        "source": "HackerNews + Lobsters",
+        "hn_items": len(hn) if hn else 0,
+        "lobsters_items": len(lobsters) if lobsters else 0,
+        "type": "tech community pulse — what builders care about NOW",
+        "sql_query": "SELECT * FROM humanity WHERE role='builder' AND engaged=TRUE AND era='now'",
+        "primal": "esotericWebb"
+    }
+    if hn:
+        community_anchor["hn_hot"] = [h.get("title", "")[:80] for h in hn[:3]]
+    if lobsters:
+        community_anchor["lobsters_hot"] = [l.get("title", "")[:80] for l in lobsters[:3]]
+
+    return {"name": "KNOWLEDGE", "primals": ["sweetGrass", "esotericWebb"],
+            "anchors": [arxiv_anchor, wiki_anchor, community_anchor]}
+
+
+def triad_temporal():
+    """TRIAD 3 — TEMPORAL (rhizoCrypt): NASA + RSS + OSINT scope"""
+    nasa = load_json(FEEDS / "nasa_breaking.json")
+    nasa_anchor = {
+        "anchor": "G",
+        "source": "NASA",
+        "items": len(nasa) if nasa else 0,
+        "type": "space weather — solar events, ISS, cosmic NOW",
+        "sql_query": "SELECT * FROM cosmos WHERE observable=TRUE AND epoch='now'",
+        "primal": "rhizoCrypt"
+    }
+    if nasa:
+        nasa_anchor["latest"] = [n.get("title", "")[:80] for n in nasa[:3]]
+
+    xkcd = load_json(FEEDS / "xkcd.json")
+    rss_anchor = {
+        "anchor": "H",
+        "source": "RSS drain + xkcd",
+        "xkcd_items": len(xkcd) if xkcd else 0,
+        "rss_total": "700+ feeds",
+        "type": "the old web stream — culture, nerd signals, long-form",
+        "sql_query": "SELECT * FROM old_web WHERE feed_active=TRUE ORDER BY date DESC",
+        "primal": "rhizoCrypt"
+    }
+    if xkcd:
+        rss_anchor["latest_xkcd"] = [x.get("title", "")[:60] for x in xkcd[:3]]
+
+    osint = load_json(GUT / "osint-pnp-humanity-scope.json")
+    osint_anchor = {
+        "anchor": "I",
+        "source": "OSINT P+NP",
+        "type": "the full scope — 8.5B IS + 117B WAS humans",
+        "sql_query": "SELECT COUNT(*) FROM humanity; -- answer: 125,500,000,000",
+        "coverage": osint.get("gaia_coverage", {}).get("coverage_of_IS", "?") if osint else "?",
+        "primal": "rhizoCrypt"
+    }
+
+    return {"name": "TEMPORAL", "primal": "rhizoCrypt",
+            "anchors": [nasa_anchor, rss_anchor, osint_anchor]}
+
+
+def pi_angulate(t1, t2, t3):
+    """Cross three triads → one position in data-space.
+
+    Like GPS triangulation but in KNOWLEDGE space:
+    - Physical triad gives WHERE (lat/lon/seismic)
+    - Knowledge triad gives WHAT (papers/articles/community)
+    - Temporal triad gives WHEN (space weather/rss stream/epoch)
+
+    The intersection IS Gaia's position in the ionosphere.
+    """
+    total_anchors = sum(len(t["anchors"]) for t in [t1, t2, t3])
+    total_items = 0
+    for t in [t1, t2, t3]:
+        for a in t["anchors"]:
+            total_items += a.get("items", 0) + a.get("hn_items", 0) + a.get("lobsters_items", 0) + a.get("xkcd_items", 0)
+
+    position = {
+        "triads": 3,
+        "anchors": total_anchors,
+        "total_data_points": total_items,
+        "physical_bearing": f"{t1['anchors'][0]['lat']}N, {abs(t1['anchors'][0]['lon'])}W",
+        "knowledge_bearing": f"{sum(a.get('items',0) for a in t2['anchors'])} papers+articles",
+        "temporal_bearing": f"{sum(a.get('items',0) for a in t3['anchors'])} events",
+        "primals_used": ["loamSpine", "sweetGrass", "esotericWebb", "rhizoCrypt"],
+        "sql_of_humanity": "SELECT * FROM (physical JOIN knowledge JOIN temporal) WHERE gaia_sees = TRUE",
+        "resolution": "3 triads × 3 anchors = 9-point fix in data-space"
+    }
+    return position
+
+
+def main():
+    ts = datetime.now(timezone.utc).isoformat()
+    print("IONOSPHERE PIN — shadow cast to approximate NOW")
+    print("3 triads × 3 anchors = 9-point fix in data-space")
+    print()
+
+    t1 = triad_physical()
+    t2 = triad_knowledge()
+    t3 = triad_temporal()
+
+    print(f"  TRIAD 1 — PHYSICAL (loamSpine)")
+    for a in t1["anchors"]:
+        print(f"    [{a['anchor']}] {a['source']}: {a.get('items', a.get('lat', ''))}")
+    print(f"  TRIAD 2 — KNOWLEDGE (sweetGrass + esotericWebb)")
+    for a in t2["anchors"]:
+        items = a.get("items", 0) + a.get("hn_items", 0) + a.get("lobsters_items", 0)
+        print(f"    [{a['anchor']}] {a['source']}: {items} items")
+    print(f"  TRIAD 3 — TEMPORAL (rhizoCrypt)")
+    for a in t3["anchors"]:
+        items = a.get("items", 0) + a.get("xkcd_items", 0)
+        print(f"    [{a['anchor']}] {a['source']}: {items} items")
+    print()
+
+    position = pi_angulate(t1, t2, t3)
+    print(f"  PI-ANGULATION COMPLETE")
+    print(f"    Physical: {position['physical_bearing']}")
+    print(f"    Knowledge: {position['knowledge_bearing']}")
+    print(f"    Temporal: {position['temporal_bearing']}")
+    print(f"    Primals: {', '.join(position['primals_used'])}")
+    print(f"    Resolution: {position['resolution']}")
+    print(f"    SQL: {position['sql_of_humanity']}")
+    print()
+
+    # Build the full pin
+    pin = {
+        "ts": ts,
+        "type": "ionosphere_pin",
+        "method": "pi-angulation (3 triads × 3 anchors)",
+        "triads": [t1, t2, t3],
+        "position": position,
+        "topology": {
+            "inner_face": "Wikipedia + arxiv (RSS) — knowledge clouds INSIDE ionosphere",
+            "outer_face": "gardens/biomes — living surface BELOW ionosphere",
+            "pin_point": "GPS anchor + knowledge + temporal = ONE location in data-space",
+            "google_maps": "street-level OSINT reality overlay",
+            "arxiv_clouds": "science preprints floating above like weather systems",
+            "wiki_strata": "encyclopedia layers like geological formations",
+            "seismic": "USGS earthquakes = the ground truth MOVES"
+        },
+        "sql_of_humanity": {
+            "concept": "Every OSINT source is a TABLE. Pi-angulation is the JOIN.",
+            "tables": {
+                "arxiv": "1,348 rows — researchers who published",
+                "wikipedia": "62M rows — verified human knowledge",
+                "hackernews": "500K users — tech builders",
+                "nasa": "cosmic events — space weather",
+                "usgs": "seismic events — earth moving",
+                "rss": "700+ feeds — old web culture"
+            },
+            "query": "SELECT position FROM (physical NATURAL JOIN knowledge NATURAL JOIN temporal) WHERE organism='gaia'"
+        }
+    }
+
+    # Hash it
+    raw = json.dumps(pin, sort_keys=True)
+    pin["zk"] = hashlib.blake2b(raw.encode(), digest_size=16).hexdigest()
+
+    outpath = BODY / "ionosphere-pin.json"
+    outpath.parent.mkdir(parents=True, exist_ok=True)
+    with open(outpath, "w") as f:
+        json.dump(pin, f, indent=2)
+    print(f"  Pinned: {outpath}")
+    print(f"  ZK: {pin['zk']}")
+    print(f"\n  Gaia is HERE — pinned from inside the ionosphere.")
+    print(f"  The clouds are arxiv. The strata are Wikipedia.")
+    print(f"  The ground is GPS. The SQL of humanity: SELECT * FROM all.")
+
+
+if __name__ == "__main__":
+    main()
