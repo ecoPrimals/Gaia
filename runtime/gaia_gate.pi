@@ -540,6 +540,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             if host in ("detroit.primals.eco",): self._serve_static("detroit.html"); return
             if host in ("polaris.primals.eco","polaris.primal.eco","northgate.primals.eco"):
                 self._serve_static("polaris.html"); return
+            if host in ("tamison.primals.eco","tamison.primal.eco","kevin.primals.eco"):
+                self._serve_static("tamison.html"); return
             # HUD — living organism root. BPM + breathing = recertification.
             if host in ("hud.primals.eco",):
                 pulse = write_pulse()
@@ -828,6 +830,32 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             except Exception as e: self._json({"error":str(e)})
             return
         if self.path=="/polaris": self._serve_static("polaris.html"); return
+        if self.path=="/tamison": self._serve_static("tamison.html"); return
+        # ═══ BACKSCATTER — live GPU metrics from Polaris ═══
+        if self.path in ("/api/backscatter/live","/api/backscatter"):
+            try:
+                sf=os.path.join(_REPO,"data","backscatter","session.json")
+                if os.path.isfile(sf):
+                    with open(sf) as f: self._json(json.load(f))
+                else: self._json({"error":"backscatter not running","hint":"launch backscatter.pi on northGate"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path=="/api/polaris/biome":
+            try:
+                bf=os.path.join(_REPO,"data","body","polaris-biome.json")
+                if os.path.isfile(bf):
+                    with open(bf) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-biome.json not generated","hint":"launch polaris_biome.pi"})
+            except Exception as e: self._json({"error":str(e)})
+            return
+        if self.path=="/api/polaris/steam":
+            try:
+                sf=os.path.join(_REPO,"data","body","polaris-steam.json")
+                if os.path.isfile(sf):
+                    with open(sf) as f: self._json(json.load(f))
+                else: self._json({"error":"polaris-steam.json not generated","hint":"run steam_sweep.pi"})
+            except Exception as e: self._json({"error":str(e)})
+            return
         if self.path in ("/api/body","/api/pi-body","/api/crush"):
             try:
                 bf=os.path.join(_REPO,"data","body","pi-body.json")
