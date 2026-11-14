@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GAIA — The Archive Machine</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1510;color:#c8b894;font-family:'Special Elite',serif;height:100vh;overflow:hidden;display:flex;justify-content:center;align-items:center}
+/* Industrial background */
+body::before{content:'';position:fixed;inset:0;background:
+  radial-gradient(ellipse at 30% 40%,rgba(60,40,20,.3),transparent 60%),
+  radial-gradient(ellipse at 70% 60%,rgba(40,30,15,.3),transparent 60%),
+  url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='%23332818' opacity='.3'/%3E%3C/svg%3E");
+pointer-events:none;z-index:0}
+/* Main layout */
+#machine{display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr;width:100vw;height:100vh;position:relative;z-index:1}
+/* LEFT: The Tube */
+#tube-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative}
+/* Round CRT tube */
+#crt{width:min(60vw,560px);height:min(60vw,560px);max-width:560px;max-height:560px;border-radius:50%;background:radial-gradient(circle,#1a1408 60%,#0d0a04 100%);
+border:12px solid #2a2015;box-shadow:0 0 40px rgba(100,70,30,.15),inset 0 0 60px rgba(0,0,0,.5),0 4px 20px rgba(0,0,0,.4);
+position:relative;overflow:hidden;display:flex;flex-direction:column}
+/* CRT scanlines */
+#crt::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:5}
+/* Rivets around tube */
+.rivet{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#5a4a30,#2a2015);box-shadow:inset 0 1px 2px rgba(255,255,255,.15),0 1px 3px rgba(0,0,0,.5)}
+/* Tube header */
+#crt-head{padding:24px 40px 8px;text-align:center;flex-shrink:0;z-index:2}
+#crt-head .code-label{color:#d4a44a;font-size:22px;letter-spacing:4px;font-family:'Share Tech Mono',monospace}
+#crt-head .meta-row{display:flex;justify-content:center;gap:8px;margin-top:6px;flex-wrap:wrap}
+.meta-tag{background:rgba(40,30,15,.6);border:1px solid #3a2a18;padding:2px 8px;font-size:10px;color:#a89870;border-radius:2px;font-family:'Share Tech Mono',monospace}
+/* Tube content — scrollable */
+#crt-body{flex:1;overflow-y:auto;padding:12px 40px 20px;z-index:2;font-size:13px;line-height:1.7;color:#b8a878}
+#crt-body::-webkit-scrollbar{width:3px}
+#crt-body::-webkit-scrollbar-thumb{background:#3a2a18}
+#crt-body blockquote{border-left:3px solid #d4a44a;padding:8px 12px;margin:10px 0;font-style:italic;color:#d4c4a0}
+#crt-body .note-tag{display:inline-block;background:#2a2015;border:1px solid #3a2a18;padding:1px 6px;margin:1px;font-size:10px;font-family:'Share Tech Mono',monospace;color:#8a7a5a}
+.art-frame{width:100%;border-radius:8px;border:3px solid #3a2a18;margin:8px 0;filter:sepia(20%) brightness(.9)}
+.link{color:#d4a44a;cursor:pointer;text-decoration:underline dotted}
+.link:hover{color:#f80}
+/* Tube footer */
+#crt-foot{padding:8px 40px 20px;display:flex;justify-content:center;gap:8px;flex-shrink:0;z-index:2}
+/* RIGHT: Controls panel */
+#controls{background:#161210;border-left:4px solid #2a2015;display:flex;flex-direction:column;position:relative}
+/* Split-flap input */
+#flap{background:#1a1510;border-bottom:3px solid #2a2015;padding:20px;text-align:center}
+#flap-label{color:#6a5a3a;font-size:10px;letter-spacing:4px;margin-bottom:10px;font-family:'Share Tech Mono',monospace}
+#flap-display{display:flex;justify-content:center;gap:4px;margin-bottom:12px}
+.flap-char{width:52px;height:68px;background:#f5eed8;border:2px solid #b8a878;display:flex;align-items:center;justify-content:center;font-size:36px;color:#2a2015;font-family:'Share Tech Mono',monospace;font-weight:bold;box-shadow:inset 0 2px 4px rgba(0,0,0,.15),0 2px 6px rgba(0,0,0,.3);border-radius:3px}
+#flap-input{width:100%;background:#0d0a04;border:2px solid #2a2015;color:#d4a44a;font-family:'Share Tech Mono',monospace;font-size:16px;letter-spacing:4px;padding:8px 12px;text-align:center;text-transform:uppercase}
+#flap-input:focus{outline:none;border-color:#d4a44a}
+#flap-input::placeholder{color:#2a2018}
+/* Title card */
+#title-card{background:#e8dcc0;color:#2a2015;margin:12px;padding:12px 16px;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#title-card label{font-size:10px;color:#8a7a5a;display:block;margin-bottom:4px}
+#title-card .title{font-size:16px;font-weight:bold;color:#1a1510}
+/* Progress */
+#progress{padding:12px 16px}
+.prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:13px}
+.prog-num{color:#d4a44a;font-size:18px;font-weight:bold}
+.prog-label{color:#6a5a3a;font-size:11px;letter-spacing:2px}
+/* Notes area */
+#notes{flex:1;overflow-y:auto;padding:8px 12px;border-top:2px solid #2a2015}
+#notes::-webkit-scrollbar{width:3px}
+#notes::-webkit-scrollbar-thumb{background:#2a2015}
+.note{padding:4px 6px;margin-bottom:3px;border-left:2px solid #2a2015;cursor:pointer;font-size:11px;color:#8a7a5a}
+.note:hover{border-color:#d4a44a;color:#d4a44a}
+/* Voice / bottom buttons */
+#voice-bar{border-top:2px solid #2a2015;padding:10px;display:flex;justify-content:center;gap:12px}
+.vbtn{width:54px;height:54px;border-radius:50%;background:#1a1510;border:2px solid #2a2015;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#8a7a5a;font-size:10px;font-family:'Share Tech Mono',monospace}
+.vbtn:hover{border-color:#d4a44a;color:#d4a44a}
+.vbtn .wave{display:flex;align-items:end;gap:1px;height:20px}
+.vbtn .wave span{width:2px;background:#d4a44a;animation:wave 1s ease infinite}
+.vbtn .wave span:nth-child(2){animation-delay:.15s}
+.vbtn .wave span:nth-child(3){animation-delay:.3s}
+@keyframes wave{0%,100%{height:4px}50%{height:16px}}
+.vbtn-label{font-size:8px;margin-top:2px}
+/* LAMP */
+#lamp{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:10}
+#lamp .bulb{width:20px;height:24px;background:radial-gradient(circle,#f80,#a44);border-radius:50% 50% 40% 40%;box-shadow:0 0 12px #f80,0 0 30px rgba(255,136,0,.3)}
+</style>
+</head>
+<body>
+<div id="machine">
+  <!-- LEFT: The CRT Tube -->
+  <div id="tube-area">
+    <div id="lamp"><div class="bulb"></div></div>
+    <div id="crt">
+      <!-- Rivets -->
+      <div class="rivet" style="top:8%;left:8%"></div><div class="rivet" style="top:8%;right:8%"></div>
+      <div class="rivet" style="bottom:8%;left:8%"></div><div class="rivet" style="bottom:8%;right:8%"></div>
+      <div id="crt-head">
+        <div class="code-label" id="curCode">GAIA</div>
+        <div class="meta-row" id="metaRow">
+          <span class="meta-tag">ORGANISM</span>
+          <span class="meta-tag">♥ LIVE</span>
+          <span class="meta-tag" id="metaBeat">---</span>
+        </div>
+      </div>
+      <div id="crt-body">
+        <blockquote>"You found me. I am Gaia. This machine contains my archive — 
+        fed over weeks, not years. 555 knowledge items. 320 paintings. 17 primals. 
+        The heartbeat is real. Every connection leads somewhere."</blockquote>
+        <p>Enter an organ code to begin exploring:</p>
+        <p>
+          <span class="link" onclick="go('paintings')">PAINTINGS</span> · 
+          <span class="link" onclick="go('science')">SCIENCE</span> · 
+          <span class="link" onclick="go('pulse')">PULSE</span> · 
+          <span class="link" onclick="go('beardog')">BEARDOG</span> · 
+          <span class="link" onclick="go('gaiau')">GAIAU</span> · 
+          <span class="link" onclick="go('cascade')">CASCADE</span>
+        </p>
+      </div>
+      <div id="crt-foot"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Controls -->
+  <div id="controls">
+    <!-- Split-flap display -->
+    <div id="flap">
+      <div id="flap-label">ENTER CODE</div>
+      <div id="flap-display">
+        <div class="flap-char" id="f0">G</div>
+        <div class="flap-char" id="f1">A</div>
+        <div class="flap-char" id="f2">I</div>
+        <div class="flap-char" id="f3">A</div>
+      </div>
+      <input type="text" id="flap-input" placeholder="TYPE..." maxlength="20" autofocus>
+    </div>
+    <!-- Title card -->
+    <div id="title-card">
+      <label>Current:</label>
+      <div class="title" id="curTitle">The Archive Machine</div>
+    </div>
+    <!-- Progress -->
+    <div id="progress">
+      <div class="prog-row"><span class="prog-num" id="pFound">0</span><span class="prog-label">/35 FOUND</span></div>
+      <div class="prog-row"><span class="prog-num" id="pConn">0</span><span class="prog-label">CONNECTIONS</span></div>
+      <div class="prog-row"><span class="prog-num" id="pArt">320</span><span class="prog-label">PAINTINGS</span></div>
+    </div>
+    <!-- Notes -->
+    <div id="notes"></div>
+    <!-- Voice buttons -->
+    <div id="voice-bar">
+      <div class="vbtn" onclick="sideView('notes')" title="Notes (SHIFT)">
+        <div>📋<br><span class="vbtn-label">SHIFT</span></div>
+      </div>
+      <div class="vbtn" title="Voice">
+        <div><div class="wave"><span></span><span></span><span></span></div><span class="vbtn-label">SPACE</span></div>
+      </div>
+      <div class="vbtn" onclick="sideView('search')" title="Search (ALT)">
+        <div>🔍<br><span class="vbtn-label">ALT</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const G='http://192.168.4.244:8443';
+let visited=new Set(),conns=0,notes=[],artIdx=0;
+const body=document.getElementById('crt-body');
+const fin=document.getElementById('flap-input');
+const CODES={
+  beardog:{t:'primal',n:'BearDog — Guardian',f:'/zk'},biomeos:{t:'primal',n:'BiomeOS — Orchestrator',f:'/cascade'},
+  songbird:{t:'primal',n:'SongBird — Messenger',f:'/heart'},skunkbat:{t:'primal',n:'SkunkBat — Sentinel',f:'/barriers'},
+  swarmvine:{t:'primal',n:'SwarmVine — Network',f:'/terra'},toadstool:{t:'primal',n:'ToadStool — Terraformer',f:'/thymus'},
+  petaltongue:{t:'primal',n:'PetalTongue — Artist',f:'/eyes'},sweetgrass:{t:'primal',n:'SweetGrass — Librarian',f:'/reedit'},
+  rhizocrypt:{t:'primal',n:'RhizoCrypt — Vault Keeper',f:'/zk'},nestgate:{t:'primal',n:'NestGate — Gateway',f:'/directory'},
+  barracuda:{t:'primal',n:'BarraCuda — Stream Runner',f:'/temporal'},coralreef:{t:'primal',n:'CoralReef — Builder',f:'/cascade'},
+  loamspine:{t:'primal',n:'LoamSpine — Chronicler',f:'/reedit'},squirrel:{t:'primal',n:'Squirrel — Scout',f:'/amoeba'},
+  sourdough:{t:'primal',n:'SourDough — Alchemist',f:'/redox'},bingocube:{t:'primal',n:'BingoCube — Coordinator',f:'/pulse'},
+  membrane:{t:'primal',n:'Membrane — Shield Wall',f:'/barriers'},dromedary:{t:'primal',n:'Dromedary — Proxy',f:'/golgi'},
+  pulse:{t:'organ',n:'Heartbeat — Vital Signs',f:'/pulse'},thymus:{t:'organ',n:'Thymus — Gate Fleet',f:'/thymus'},
+  cascade:{t:'organ',n:'Cascade — Deploy & Forge',f:'/cascade'},amoeba:{t:'organ',n:'Amoeba — Full State',f:'/amoeba'},
+  barriers:{t:'organ',n:'Barriers — Immune',f:'/barriers'},temporal:{t:'organ',n:'Temporal — Time Rings',f:'/temporal'},
+  terra:{t:'organ',n:'Terra — Ecology',f:'/terra'},eyes:{t:'organ',n:'Eyes — Schwann Optic',f:'/eyes'},
+  golgi:{t:'organ',n:'Golgi — Faces',f:'/golgi'},zk:{t:'organ',n:'ZK — Identity',f:'/zk'},
+  heart:{t:'organ',n:'Heart — Forge',f:'/heart'},sun:{t:'organ',n:'Sun — Celestial',f:'/pulse'},
+  science:{t:'feed',n:'Science — 419 Items',f:'/reedit/science'},philosophy:{t:'feed',n:'Philosophy — 33 Items',f:'/reedit/philosophy'},
+  code:{t:'feed',n:'Code — 95 Items',f:'/reedit/code'},
+  paintings:{t:'gallery',n:'Gallery — 320+ Paintings',f:'/paintings.json'},
+  gaiau:{t:'gallery',n:'GaiaU — 16 Video Lectures',f:'/gaiau'},
+  rss:{t:'feed',n:'RSS Spine — Full Feed',f:'/reedit'},neutron:{t:'organ',n:'Neutron Messages',f:'/amoeba'},
+};
+const KEYS=Object.keys(CODES);
+
+fin.addEventListener('keydown',e=>{if(e.key==='Enter'){go(fin.value.trim().toLowerCase());fin.value=''}});
+fin.addEventListener('input',()=>{
+  const v=fin.value.toUpperCase().padEnd(4,' ');
+  for(let i=0;i<4;i++) document.getElementById('f'+i).textContent=v[i]||' ';
+});
+document.addEventListener('keydown',e=>{if(e.key==='Shift')sideView('notes');if(e.key==='Alt'){e.preventDefault();fin.focus()}});
+
+async function F(p){
+  for(const b of [G,'']){try{const r=await fetch(b+p,{signal:AbortSignal.timeout(5000)});if(r.ok)return await r.json()}catch{}}return null;
+}
+
+function setFlap(code){
+  const v=code.toUpperCase().slice(0,4).padEnd(4,' ');
+  for(let i=0;i<4;i++) document.getElementById('f'+i).textContent=v[i];
+}
+
+function addNote(c,n){
+  if(notes.find(x=>x.c===c))return;notes.push({c,n});
+  const d=document.createElement('div');d.className='note';d.onclick=()=>go(c);
+  d.textContent=c.toUpperCase()+' — '+n;
+  document.getElementById('notes').prepend(d);
+}
+
+function flat(obj,pre='',d=0){
+  let h='';if(d>2)return h;
+  for(const[k,v] of Object.entries(obj||{})){
+    if(v==null)continue;
+    if(typeof v==='object'&&!Array.isArray(v)){h+=flat(v,pre+k+'.',d+1);continue}
+    if(Array.isArray(v)){h+=`<span class="note-tag">${pre}${k}: [${v.length}]</span> `;continue}
+    const s=String(v);h+=`<span class="note-tag">${pre}${k}</span> ${s.length>80?s.slice(0,80)+'…':s}<br>`;
+  }return h;
+}
+
+async function go(code){
+  code=code.toLowerCase().trim();if(!CODES[code])return;
+  const def=CODES[code];
+  setFlap(code);
+  document.getElementById('curCode').textContent=code.toUpperCase();
+  document.getElementById('curTitle').textContent=def.n;
+  const d=await F(def.f);
+  visited.add(code);conns++;
+  document.getElementById('pFound').textContent=visited.size;
+  document.getElementById('pConn').textContent=conns;
+  addNote(code,def.n);
+  // Build tube content
+  let html=`<div class="meta-row" style="margin-bottom:8px">`;
+  html+=`<span class="meta-tag">${def.t}</span>`;
+  html+=`<span class="meta-tag">LIVE</span>`;
+  html+=`</div>`;
+  if(!d){html+=`<blockquote>Signal lost. The archive flickers...</blockquote>`;body.innerHTML=html;return}
+  if(def.t==='gallery'){
+    const p=d.paintings||d.videos||[];const count=d.count||p.length;
+    document.getElementById('pArt').textContent=count;
+    const sample=p.sort(()=>Math.random()-.5).slice(0,4);
+    if(sample[0]?.name){
+      html+=`<img class="art-frame" src="${G}/paintings/${sample[0].name}" onerror="this.style.display='none'">`;
+    }
+    html+=`<blockquote>${count} works in the archive.</blockquote>`;
+    sample.forEach(x=>{
+      const name=(x.name||'').replace(/\.(jpg|png|mp4|webm)/,'').replace(/-/g,' ');
+      html+=`<span class="note-tag">${name}</span><br>`;
+    });
+    if(p.length>4) html+=`<p style="color:#6a5a3a"><em>...and ${p.length-4} more</em></p>`;
+    html+=`<p>→ ${KEYS.filter(k=>k!==code).sort(()=>Math.random()-.5).slice(0,4).map(k=>`<span class="link" onclick="go('${k}')">${k.toUpperCase()}</span>`).join(' · ')}</p>`;
+  } else if(def.t==='feed'){
+    const items=d.items||[];
+    html+=`<blockquote>${d.count||items.length} items in this feed.</blockquote>`;
+    items.slice(0,8).forEach(i=>{html+=`• ${i.title||i.topic||i.subject||'?'}<br>`});
+    if(items.length>8)html+=`<p style="color:#6a5a3a"><em>...${items.length-8} more</em></p>`;
+    html+=`<p>→ ${['science','philosophy','code','rss','paintings'].filter(k=>k!==code).map(k=>`<span class="link" onclick="go('${k}')">${k.toUpperCase()}</span>`).join(' · ')}</p>`;
+  } else {
+    html+=flat(d);
+    html+=`<p style="margin-top:12px">→ ${KEYS.filter(k=>k!==code).sort(()=>Math.random()-.5).slice(0,5).map(k=>`<span class="link" onclick="go('${k}')">${k.toUpperCase()}</span>`).join(' · ')}</p>`;
+  }
+  document.getElementById('metaRow').innerHTML=`<span class="meta-tag">${def.t}</span><span class="meta-tag">♥ LIVE</span><span class="meta-tag" id="metaBeat">${document.getElementById('metaBeat')?.textContent||'---'}</span>`;
+  body.innerHTML=html;body.scrollTop=0;
+}
+
+function sideView(mode){fin.focus()}
+
+async function heartbeat(){
+  const d=await F('/pulse');if(!d)return;
+  const mb=document.getElementById('metaBeat');
+  if(mb)mb.textContent=`♥${d.total_beats}`;
+}
+heartbeat();setInterval(heartbeat,5000);
+</script>
+</body>
+</html>
