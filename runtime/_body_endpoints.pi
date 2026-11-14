@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""_body_endpoints.pi — Body data endpoints for the organism card deck, directory, genome.
+
+Extracted from gaia_gate.pi to stay under the 1000-line cap.
+Max file size: 1000 lines, working target ~800.
+
+Physical Geography (NOMINAL — street names match gate names!):
+  4422 Southgate Ave = House 1, LAN 1 (Brain Side) — southGate (iPhone) lives here
+  641 Samantha Ave = House 2, LAN 2 (South Pole) — blueGate (Windows) lives here
+"""
+
+import json, os, socket, time
+
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def amoeba_status():
+    """Check AMOEBA relay status — RustDesk sovereign."""
+    relay_host = "192.168.4.244"
+    ports = {"hbbs_tcp": 21115, "hbbs_udp": 21116, "hbbr_tcp": 21117, "hbbr_udp": 21118}
+    status = {}
+    for name, port in ports.items():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
+            s.connect((relay_host, port))
+            s.close()
+            status[name] = {"open": True, "port": port}
+        except:
+            status[name] = {"open": False, "port": port}
+    alive = sum(1 for v in status.values() if v["open"])
+    return {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "relay": f"{relay_host}:21116", "ports": status,
+        "alive": f"{alive}/4", "healthy": alive == 4,
+        "bootstrap": "/amoeba-bootstrap (curl | bash on any Linux gate)",
+        "geography": {
+            "house_1": "4422 Southgate Ave — LAN 1, Brain Side (southGate lives here!)",
+            "house_2": "641 Samantha Ave — LAN 2, South Pole (blueGate lives here!)",
+            "nominal": "Street names match gate names — coincidence IS data"
+        }
+    }
+
+
+def load_body(filename):
+    """Load any body JSON file as a first-class endpoint."""
+    p = os.path.join(_REPO, "data", "body", filename)
+    try:
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return {"error": f"body file not found: {filename}"}
+
+
+def load_body_section(filename, section):
+    """Load a section from a body JSON file."""
+    d = load_body(filename)
+    if section in d:
+        return {"section": section, "data": d[section], "source": filename}
+    return {"error": f"section {section} not found in {filename}"}
+
+
+def load_gut(filename, repo=None):
+    """Load any gut JSON file as a first-class endpoint."""
+    r = repo or _REPO
+    p = os.path.join(r, "data", "gut", filename)
+    try:
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return {"error": f"gut file not found: {filename}"}
+
+
+
+# Usage from gaia_gate.pi:
+#   _be = _load("_body_endpoints", "_body_endpoints.pi")
+#   ("/directory",): lambda: _be.load_body("public-directory.json"),
+#   ("/amoeba-status",): lambda: _be.amoeba_status(),

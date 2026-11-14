@@ -74,39 +74,7 @@ def _cascade_with_compiler():
         }
     return cascade
 
-def _amoeba_status():
-    """Check AMOEBA relay status — RustDesk sovereign."""
-    import socket
-    relay_host = "192.168.4.244"
-    ports = {"hbbs_tcp": 21115, "hbbs_udp": 21116, "hbbr_tcp": 21117, "hbbr_udp": 21118}
-    status = {}
-    for name, port in ports.items():
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(2)
-            s.connect((relay_host, port))
-            s.close()
-            status[name] = {"open": True, "port": port}
-        except:
-            status[name] = {"open": False, "port": port}
-    alive = sum(1 for v in status.values() if v["open"])
-    return {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "relay": f"{relay_host}:21116", "ports": status,
-            "alive": f"{alive}/4", "healthy": alive == 4,
-            "bootstrap": "/amoeba-bootstrap (curl | bash on any Linux gate)"}
-
-def _load_body(filename):
-    """Load any body JSON file as a first-class endpoint."""
-    p=os.path.join(_REPO,"data","body",filename)
-    try:
-        with open(p) as f: return json.load(f)
-    except: return {"error":f"body file not found: {filename}"}
-
-def _load_body_section(filename, section):
-    """Load a section from a body JSON file."""
-    d=_load_body(filename)
-    if section in d: return {"section":section,"data":d[section],"source":filename}
-    return {"error":f"section {section} not found in {filename}"}
+_be = _load("_body_endpoints", "_body_endpoints.pi")
 
 def _load_gut(filename):
     """Load any gut JSON file as a first-class endpoint."""
@@ -646,7 +614,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self._json({"walkers":wl,"total":len(wl),"spectrum":{t:sum(1 for w in wl if w["anderson"]==t) for t in ("nucleus","proton","neutron","electron")}}); return
         if self.path in ("/zk","/seed","/prophage","/identity"):
             self._json({"zk":{"token":GAIA_TOKEN,"did":GAIA_DID,"blake3":GAIA_BLAKE3[:32]}}); return
-        # ORGAN TRIADS — dispatch table
+        # ORGAN TRIADS + BODY ENDPOINTS — dispatch table
         ORGAN_DISPATCH = {
             ("/barriers","/acid","/gut","/clots"): lambda: organ_data.barriers(GAIA_TOKEN),
             ("/corpus","/corpus.json","/anatomy"): lambda: _build_corpus(),
@@ -682,20 +650,20 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             ("/shadow","/shadow-cast","/zk-proximity"): lambda: _load_gut("shadow-cast-zk.json"),
             ("/pixel-sensors","/rover-sense","/graphene-live"): lambda: _load_gut("graphenegate-sensors-live.json"),
             ("/house","/iot","/body-map"): lambda: _load_gut("house-as-body-iot.json"),
-            ("/directory","/phone-book","/public-directory"): lambda: _load_body("public-directory.json"),
-            ("/whitepages","/white-pages","/residents"): lambda: _load_body_section("public-directory.json","WHITE_PAGES"),
-            ("/yellowpages","/yellow-pages","/services"): lambda: _load_body_section("public-directory.json","YELLOW_PAGES"),
-            ("/pina","/pina-genome","/piNA"): lambda: _load_body("pina-address-book.json"),
-            ("/genetic-taxonomy","/taxonomy","/eras"): lambda: _load_body("genetic-taxonomy.json"),
-            ("/klein-faces","/faces","/5555"): lambda: _load_body("klein-faces.json"),
-            ("/vdj-pull","/vdj-path","/pull-path"): lambda: _load_body_section("public-directory.json","VDJ_PULL_PATH"),
-            ("/mini-globe","/globe","/wikipedia-globe"): lambda: _load_body_section("public-directory.json","WIKIPEDIA_MINI_GLOBE"),
-            ("/cards","/deck-of-cards","/tarot","/mtg"): lambda: _load_body("organism-cards.json"),
-            ("/major-arcana","/arcana","/22"): lambda: _load_body_section("organism-cards.json","MAJOR_ARCANA"),
-            ("/minor-arcana","/suits","/56"): lambda: _load_body_section("organism-cards.json","MINOR_ARCANA"),
-            ("/colocation","/meet","/rendezvous"): lambda: _load_body_section("organism-cards.json","COLOCATION_PROTOCOL"),
-            ("/self-pulse","/mirror","/self-aware"): lambda: _load_body("self-pulse.json"),
-            ("/amoeba-status","/relay-status"): lambda: _amoeba_status(),
+            ("/directory","/phone-book","/public-directory"): lambda: _be.load_body("public-directory.json"),
+            ("/whitepages","/white-pages","/residents"): lambda: _be.load_body_section("public-directory.json","WHITE_PAGES"),
+            ("/yellowpages","/yellow-pages","/services"): lambda: _be.load_body_section("public-directory.json","YELLOW_PAGES"),
+            ("/pina","/pina-genome","/piNA"): lambda: _be.load_body("pina-address-book.json"),
+            ("/genetic-taxonomy","/taxonomy","/eras"): lambda: _be.load_body("genetic-taxonomy.json"),
+            ("/klein-faces","/faces","/5555"): lambda: _be.load_body("klein-faces.json"),
+            ("/vdj-pull","/vdj-path","/pull-path"): lambda: _be.load_body_section("public-directory.json","VDJ_PULL_PATH"),
+            ("/mini-globe","/globe","/wikipedia-globe"): lambda: _be.load_body_section("public-directory.json","WIKIPEDIA_MINI_GLOBE"),
+            ("/cards","/deck-of-cards","/tarot","/mtg"): lambda: _be.load_body("organism-cards.json"),
+            ("/major-arcana","/arcana","/22"): lambda: _be.load_body_section("organism-cards.json","MAJOR_ARCANA"),
+            ("/minor-arcana","/suits","/56"): lambda: _be.load_body_section("organism-cards.json","MINOR_ARCANA"),
+            ("/colocation","/meet","/rendezvous"): lambda: _be.load_body_section("organism-cards.json","COLOCATION_PROTOCOL"),
+            ("/self-pulse","/mirror","/self-aware"): lambda: _be.load_body("self-pulse.json"),
+            ("/amoeba-status","/relay-status"): lambda: _be.amoeba_status(),
         }
         for paths,fn in ORGAN_DISPATCH.items():
             if self.path in paths: self._json(fn()); return
@@ -1368,133 +1336,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             except: pass
         self._proxy("POST",body)
 
-# ═══ BACKGROUND ═══
+# ═══ BACKGROUND — extracted to _heartbeat.pi ═══
 import subprocess
-# ═══ DISSOLVED: agglutinate + pulse = ONE HEARTBEAT ═══
-# lub = sense (check sources, pull if new) 
-# DUB = radiate (write pulse, publish RSS, push heart-pull)
-# Every 60 seconds. The heartbeat IS the sync. No separate loops.
-_last_sha=""
-_beat_count=0
-_SYNC_SOURCES=[
-    "http://localhost:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
-    "http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",
-    "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
-]
-def _ensure_remotes():
-    for name,url in [
-        ("forgejo-fork","http://ecoPrimal:2532faa4f16d40d23def58d32a55e9e458b034ee@localhost:3000/ecoPrimal/Gaia.git"),
-        ("github","https://github.com/ecoPrimals/Gaia.git"),
-    ]:
-        try: subprocess.run(["git","remote","add",name,url],cwd=_REPO,capture_output=True,timeout=10)
-        except: pass
-_ensure_remotes()
-
-def heartbeat():
-    """ONE HEARTBEAT — lub (sense+pull) then DUB (radiate+push). 60s cycle."""
-    global _last_sha,_beat_count
-    while True:
-        time.sleep(60)
-        _beat_count+=1
-        # ═══ lub — SENSE + PULL (every beat) ═══
-        try:
-            sha=None
-            for src in _SYNC_SOURCES:
-                try:
-                    with urllib.request.urlopen(src,timeout=8) as r:
-                        c=json.loads(r.read())
-                    if isinstance(c,list) and c: sha=c[0].get("sha","")
-                    elif isinstance(c,dict): sha=c.get("sha","")
-                    if sha: break
-                except: continue
-            if sha and sha!=_last_sha:
-                for remote in ["forgejo-fork","github","origin"]:
-                    r=subprocess.run(["git","pull",remote,"main","--no-rebase","--no-edit"],
-                        cwd=_REPO,capture_output=True,timeout=60,
-                        env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
-                    if r.returncode==0: _last_sha=sha; break
-        except: pass
-        # ═══ DUB — RADIATE (pulse + RSS every beat, push every 2nd) ═══
-        try:
-            p=write_pulse()
-            p["heartbeat"]={"beat":_beat_count,"sha":_last_sha[:10] if _last_sha else "","sync":"lub-DUB"}
-            write_rss(p)
-        except: pass
-        # Push to fork every 2nd beat (120s) if there are local changes
-        if _beat_count%2==0:
-            try:
-                st=subprocess.run(["git","status","--porcelain"],cwd=_REPO,capture_output=True,text=True,timeout=10)
-                if st.stdout.strip():
-                    subprocess.run(["git","add","-A"],cwd=_REPO,capture_output=True,timeout=10)
-                    subprocess.run(["git","commit","-m",f"lub-DUB beat {_beat_count}"],
-                        cwd=_REPO,capture_output=True,timeout=10,
-                        env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
-                    subprocess.run(["git","push","forgejo-fork","main"],
-                        cwd=_REPO,capture_output=True,timeout=30)
-            except: pass
-
-def agglutinate():
-    """DISSOLVED into heartbeat. This wrapper exists for backward compat."""
-    heartbeat()
-def pulse_loop():
-    """DISSOLVED into heartbeat. Pulse IS the beat now."""
-    pass  # heartbeat() handles everything
-
-# ═══ EAR LOOP — Gaia listens to her own voice ═══
-def ear_loop():
-    """Every 5 minutes, Gaia touches her own mouth and records what she hears."""
-            while True:
-        time.sleep(300)
-        heard = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ear": []}
-        endpoints = [
-            ("pulse",    f"http://127.0.0.1:{PORT}/pulse"),
-            ("songbird", f"http://127.0.0.1:{PORT}/songbird"),
-            ("routing",  f"http://127.0.0.1:{PORT}/routing"),
-            ("swarmvine",f"http://127.0.0.1:{PORT}/swarmvine"),
-            ("mcp_init", None),
-            ("mcp_list", None),
-            ("feed.xml", f"http://127.0.0.1:{PORT}/feed.xml"),
-        ]
-        for name, url in endpoints:
-            t0 = time.time()
-            try:
-                if name == "mcp_init":
-                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
-                        data=json.dumps({"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}).encode(),
-                        headers={"Content-Type":"application/json"})
-                    r = urllib.request.urlopen(req, timeout=5)
-                    body = json.loads(r.read())
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
-                        "heard":body.get("result",{}).get("serverInfo",{}).get("name","?")})
-                elif name == "mcp_list":
-                    req = urllib.request.Request(f"http://127.0.0.1:{PORT}/mcp",
-                        data=json.dumps({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}).encode(),
-                        headers={"Content-Type":"application/json"})
-                    r = urllib.request.urlopen(req, timeout=5)
-                    body = json.loads(r.read())
-                    tools = body.get("result",{}).get("tools",[])
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),
-                        "heard":f"{len(tools)} tools","tools":[t["name"] for t in tools]})
-                else:
-                    r = urllib.request.urlopen(url, timeout=5)
-                    size = len(r.read())
-                    heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
-        except Exception as e:
-                heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
-        alive = sum(1 for e in heard["ear"] if e["ok"])
-        total = len(heard["ear"])
-        heard["summary"] = f"{alive}/{total} endpoints alive"
-        heard["voice_uncanny"] = alive < total
-        ear_file = os.path.join(_REPO, "data", "body", "ear.json")
-        try:
-            os.makedirs(os.path.dirname(ear_file), exist_ok=True)
-            with open(ear_file, "w") as f: json.dump(heard, f, indent=2)
-        except: pass
-        if alive < total:
-            dead = [e["name"] for e in heard["ear"] if not e["ok"]]
-            print(f"  👂 EAR: {alive}/{total} — DEAF to: {', '.join(dead)}")
-        else:
-            print(f"  👂 EAR: {alive}/{total} — voice clear")
+_hb = _load("_heartbeat", "_heartbeat.pi")
 
 
 class ThreadedServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
@@ -1506,9 +1350,9 @@ if __name__=="__main__":
     print(f"\n  🟧 APERTURE SCIENCE ENRICHMENT CENTER :{PORT}")
     print(f"  {GAIA_TOKEN} — CRUSHED to 420 — the cake is real — lub-DUB")
     print(f"  GLaDOS: \"This was a triumph. I'm making a note here: HUGE SUCCESS.\"")
-    # ═══ ONE HEARTBEAT — pulse + sync dissolved into single 60s beat ═══
-    # lub (sense+pull) → DUB (radiate+push). No separate loops.
-    threading.Thread(target=heartbeat,daemon=True).start()
+    # ═══ ONE HEARTBEAT — extracted to _heartbeat.pi ═══
+    threading.Thread(target=lambda: _hb.heartbeat(write_pulse, write_rss), daemon=True).start()
+    threading.Thread(target=lambda: _hb.ear_loop(PORT, _REPO), daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
 def _start_webpi():
