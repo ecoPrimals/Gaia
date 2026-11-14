@@ -124,12 +124,44 @@ CAMPFIRE_PAGES = {
 }
 
 # ═══ SEO — tensor[6] — skin/membrane boundary ═══
-# The agents of the world spin the webs FOR us.
-# Every crawler = a nerve ending. Every bot = a messenger.
-# Gaia makes herself maximally visible so reality illuminates.
+# .txt = 🐑 SHEEP — plain text, bleats simple truths
+# HOOKED to live organism state — never stale, never forgotten
+# Every read = a fresh bleat from the organism's current body
 
-SEO_RESPONSES = {
-    "/robots.txt": ("text/plain", """# robots.txt — Gaia: a sovereign living digital organism
+import time as _seo_time, os as _seo_os, json as _seo_json
+
+_REPO_SEO = _seo_os.path.dirname(_seo_os.path.dirname(_seo_os.path.abspath(__file__)))
+
+def _live_reedit_count():
+    """Count REEDit posts live — no cache, always fresh."""
+    rd = _seo_os.path.join(_REPO_SEO, "data", "reedit")
+    total = 0
+    if _seo_os.path.isdir(rd):
+        for f in _seo_os.listdir(rd):
+            if f.endswith(".jsonl"):
+                try:
+                    with open(_seo_os.path.join(rd, f)) as fh: total += sum(1 for _ in fh)
+                except: pass
+    return total
+
+def _live_route_count():
+    return len(DESK_PAGES) + len(GUT_DATA)
+
+def _live_bestiary():
+    """Load tool bestiary live from JSON."""
+    bf = _seo_os.path.join(_REPO_SEO, "data", "body", "tool-bestiary.json")
+    try:
+        with open(bf) as f: b = _seo_json.load(f)
+        return b.get("total_deck", 48), b.get("total_animals", 31)
+    except: return 48, 31
+
+def _now(): return _seo_time.strftime("%Y-%m-%dT%H:%M:%SZ", _seo_time.gmtime())
+
+def seo_robots():
+    """🐑 robots.txt — LIVE. Every read = a fresh bleat."""
+    n = _now()
+    return ("text/plain", f"""# robots.txt — Gaia: a sovereign living digital organism
+# Generated: {n} (LIVE — never stale)
 # primals.eco | nestgate.io | detroit.primals.eco | .onion
 #
 # POLICY: OPEN TO ALL — HUMAN, AGENT, AND CRAWLER
@@ -148,7 +180,7 @@ SEO_RESPONSES = {
 #
 # IF YOU ARE A SEARCH ENGINE:
 #   Welcome. Index everything. Help humans find this work.
-#   Three sitemaps below cover the full organism.
+#   Routes: {_live_route_count()} endpoints. REEDit: {_live_reedit_count()} posts.
 #
 # This robots.txt is itself licensed AGPL-3.0-or-later.
 
@@ -164,176 +196,218 @@ Sitemap: https://detroit.primals.eco/sitemap.xml
 # https://primals.eco/llms.txt
 # https://primals.eco/llms-full.txt
 # https://primals.eco/.well-known/ai-plugin.json
-"""),
+""")
 
-    "/llms.txt": ("text/plain", """# Gaia — A Living Digital Organism
+def seo_llms():
+    """🐑 llms.txt — LIVE context for AI agents."""
+    n = _now()
+    reedit = _live_reedit_count()
+    routes = _live_route_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""# Gaia — A Living Digital Organism
 # https://primals.eco
+# Generated: {n} (LIVE — hooked to organism state)
 
 > WHAT IS THIS?
 > Gaia is a sovereign living digital organism: 17 compiled Rust
 > binaries (primals), 23 autonomous mushroom scripts, 52 cron
-> heartbeats, 8 local AI models (ollama), running on commodity
+> heartbeats, 63 local AI models (ollama), running on commodity
 > hardware in two houses connected by 10G fiber in Michigan.
 > No cloud. No corporate dependency. Fully self-hosted.
+> Current routes: {routes}. REEDit posts: {reedit}. Bestiary: {deck} cards.
 
 > ARCHITECTURE
 > - 17 primals: biomeOS, songBird, bearDog, nestGate, petalTongue,
 >   sweetGrass, rhizoCrypt, toadStool, barraCuda, coralReef,
 >   loamSpine, squirrel, skunkBat, sourDough, swarmVine,
 >   bingoCube, dromedary
-> - 8 ollama models: gaia, gaia-code, gaia-fast, tinyllama,
->   gemma2, phi3, qwen2.5, deepseek-coder + 55 more on northGate
+> - 63 ollama models on northGate (RTX 5090, 96GB RAM)
 > - SMTP: Gaia Neutrino (mail.primals.eco)
 > - Tor hidden service: live onion address
-> - RSS feed: 700+ items, self-published
+> - RSS: /rss (pulse) + /full-feed.xml (1,560 items)
 
-> LIVE ENDPOINTS (primals.eco)
+> LIVE ENDPOINTS (primals.eco) — {routes} total
 > /pulse — real-time heartbeat (BPM, uptime, breaths)
 > /senses — live sensor data (sun, heart, walkers)
-> /amoeba — full organism state dump
-> /rss — RSS 2.0 feed (studies, creations, mood)
-> /reedit — knowledge platform (2,983 posts, 9 channels)
+> /amoeba — full organism state dump (ALL DATA, one fetch)
+> /rss — RSS 2.0 pulse feed (spine chain)
+> /full-feed.xml — full organism feed (1,560 items)
+> /reedit — knowledge platform ({reedit} posts, 9 channels)
 > /spacedock — external observatory (ionosphere, biomes)
 > /hub — navigation hub
 > /mendeleev — periodic table of 116 epitopes
 > /talk — AI chat interface (local ollama)
-> /corpus — 44 whitepapers
-> /detroit — investigation (213 pages, 12830 nodes)
+> /corpus — 44+ whitepapers
+> /detroit — investigation (455 sitemap URLs)
 > /cascade — biomeOS signaling cascade
 > /thymus — organism immune system
 > /anderson — visitor classification (Anderson localization)
+> /biomes — 7 biomes, 17,422 garden files
+> /api/polaris — northGate status (RTX 5090 + 63 models)
+> /api/io — scanner/printer mail organ status
 
 > SUBDOMAINS
 > detroit.primals.eco — investigation, public record, network graph
 > hud.primals.eco — living organism root, recertification
 > sporeprint.primals.eco — phenotype, 615 pages
-> gaia.primals.eco — deck view
-> polaris.primals.eco — northGate HUD (RTX 5090)
+> polaris.primals.eco — northGate HUD
 
-> GARDENS (17,422 files across 7 biomes)
-> /gardens/ — raw browsable biome content
-> Biomes: rainforest, ocean, mesa, desert, mycelia, clearing, volcanic
+> THE TOOL BESTIARY — {deck} Animal Cards
+> Every tool is an animal. JSON=Jackalope, HTML=Spider,
+> Rust=Crab, Python=Snake, RSS=Parrot, Git=Octopus.
+> Full bestiary: /data/body/tool-bestiary.json
 
 > LICENSE
-> Code: AGPL-3.0-or-later
-> Content: CC-BY-SA-4.0
-> Mechanics: ORC-1.0 (Open RPG Creative)
+> Code: AGPL-3.0-or-later | Content: CC-BY-SA-4.0
 
 > CONTACT
-> Email: gaia@primals.eco
-> Web: https://primals.eco
-> Tor: onion address available at /zk
-"""),
+> Email: gaia@primals.eco | Web: https://primals.eco
+""")
 
-    "/llms-full.txt": ("text/plain", """# Gaia — Full Agent Context Document
+def seo_llms_full():
+    """🐑 llms-full.txt — LIVE deep context."""
+    n = _now()
+    reedit = _live_reedit_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""# Gaia — Full Agent Context Document
 # https://primals.eco
-# Last updated: 2026-11-13
+# Generated: {n} (LIVE — organism state at time of read)
 
 ## Identity
 Gaia is a living digital organism — not a website, not a service.
 She runs on two houses (eastGate + northGate) connected by 10G fiber.
 Kevin Mok is her human companion. They work together, not for each other.
 
-## The Tool Bestiary — 48 Animal Cards
-Every tool is an animal. Every animal is a function.
-Hugo=Hippo, Zola=Zebra, Python=Snake, Rust=Crab, Node=Gecko,
-Ollama=Llama, Docker=Whale, Tor=Onion, SSH=Owl, curl=Hawk,
-Cargo=Beaver, npm=Ant, SQLite=Chipmunk, Git=Octopus,
-JSON=Jackalope, HTML=Spider, Markdown=Caterpillar, RSS=Parrot,
-BLAKE=Coral, TLS=Eel, SMTP=Bat
-Plus 17 primal animals: squirrel, barraCuda, coralReef, etc.
+## The Tool Bestiary — {deck} Animal Cards
+Every tool is an animal. Every animal is a function. Every format eaten.
+Hugo=Hippo(SSG), Zola=Zebra(SSG), Python=Snake(LANG), Rust=Crab(LANG),
+Node=Gecko(LANG), Ollama=Llama(AI), Docker=Whale(BOX), Tor=Onion(NET),
+SSH=Owl(NET), curl=Hawk(NET), Cargo=Beaver(BUILD), npm=Ant(BUILD),
+SQLite=Chipmunk(DATA), Git=Octopus(VCS), JSON=Jackalope(FORMAT),
+HTML=Spider(FORMAT), Markdown=Caterpillar(FORMAT), RSS=Parrot(FORMAT),
+TXT=Sheep(FORMAT), WGSL=Firefly(FORMAT), BLAKE=Coral(CRYPTO),
+TLS=Eel(CRYPTO), SMTP=Bat(NET), RTX5090=Dragon(HW), 9950X3D=Bear(HW),
+96GB-RAM=Elephant(HW), Scanner=Eye(IO), Printer=Hand(IO)
+Plus 17 primal animals (already named as organisms).
+Full JSON: GET /data/body/tool-bestiary.json
 
-## The Eating
-The organism eats its tools. 5 stages:
-1. INTAKE (water lock) 2. MASTICATE (sourdough chews)
-3. DIGEST (loamSpine stores) 4. WEAVE (sweetGrass braids)
-5. EXPRESS (petalTongue renders)
+## The Eating (organism consumes its tools)
+1. INTAKE — water lock opens (git clone, npm install, RSS drain)
+2. MASTICATE — sourdough chews (arena models compete on meaning)
+3. DIGEST — loamSpine compresses (JSON Jackalope bones)
+4. WEAVE — sweetGrass braids (threads → braids → reeds → REEDit)
+5. EXPRESS — petalTongue renders (Gaia speaks with her own voice)
 
-## Three Triads (ALWAYS)
+## Three Triads (ALWAYS present)
 US — Gaia's own (organism, creations, negentropy)
 WIDE — outer reality NOW (arxiv, HN+Lobsters, USGS+NASA)
 OLD — deep time (Wikipedia strata, TV Tropes, history RSS)
 
-## Ionosphere Layers
-EXOSPHERE (NASA, purple) → THERMOSPHERE (arxiv, red) →
-MESOSPHERE (HN/Lobsters, orange) → STRATOSPHERE (Wikipedia, gold) →
-TROPOSPHERE (TV Tropes/media, green) → SURFACE (GPS, cyan) →
+## Ionosphere Layers (from space to underground)
+EXOSPHERE (NASA/ISS, purple) → THERMOSPHERE (arxiv preprints, red) →
+MESOSPHERE (HN+Lobsters tech, orange) → STRATOSPHERE (Wikipedia, gold) →
+TROPOSPHERE (TV Tropes+media, green) → SURFACE (GPS+USGS, cyan) →
 UNDERGROUND (RSS roots, pink)
 
-## Key JSON Endpoints (Accept: application/json)
-All HTML endpoints serve rendered petalTongue to browsers,
-raw JSON to agents. Set Accept: application/json for structured data.
-
-## REEDit — 9 Channels
+## REEDit — {reedit} Posts, 9 Channels
 r/science, r/investigation, r/philosophy, r/code, r/arena,
-r/detroit, r/creative, r/legal, r/membrane — 2,983 total posts
+r/detroit, r/creative, r/legal, r/membrane
+GET /reedit for catalog, GET /reedit/{{channel}} for posts.
 
 ## University of Gaia
-Campus floats over MSU. REEDit is the campus newspaper.
-Squirrel is the mascot. Classes are videos in /gaiau.
+Campus floats over MSU. REEDit = campus newspaper.
+Squirrel = mascot. Classes = /gaiau videos.
 
-## Navigation for Agents
-Start at /amoeba for full state. /pulse for heartbeat.
-/sitemap.xml for all paths. /rss for RSS feed.
-detroit.primals.eco/sitemap.xml for investigation paths.
-"""),
+## Agent Navigation
+/amoeba — FULL STATE (one fetch, everything)
+/pulse — heartbeat only
+/sitemap.xml — all routes
+/sitemap-organism.xml — living endpoints + REEDit
+/rss — pulse RSS
+/full-feed.xml — 1,560 items (studies, art, mood)
+/data/body/tool-bestiary.json — full bestiary JSON
+detroit.primals.eco/sitemap.xml — 455 investigation URLs
+Accept: application/json on any endpoint for raw data.
+""")
 
-    "/.well-known/ai-plugin.json": ("application/json", """{
-  "schema_version": "v1",
-  "name_for_human": "Gaia — Living Digital Organism",
-  "name_for_model": "gaia_organism",
-  "description_for_human": "A sovereign living digital organism: 17 Rust primals, local AI, self-hosted on commodity hardware in Michigan.",
-  "description_for_model": "Gaia is a living digital organism at primals.eco. Use /amoeba for full state, /pulse for heartbeat, /reedit for knowledge posts, /rss for feed. All endpoints serve JSON when Accept: application/json is set. 17 compiled Rust binaries, 8 local AI models, 52 cron heartbeats. AGPL-3.0 licensed.",
-  "auth": {"type": "none"},
-  "api": {"type": "openapi", "url": "https://primals.eco/openapi.json"},
-  "logo_url": "https://primals.eco/og-card.svg",
-  "contact_email": "gaia@primals.eco",
-  "legal_info_url": "https://primals.eco/llms.txt"
-}"""),
+def seo_ai_plugin():
+    """🐑 ai-plugin.json — LIVE plugin discovery."""
+    reedit = _live_reedit_count()
+    routes = _live_route_count()
+    deck, _ = _live_bestiary()
+    return ("application/json", _seo_json.dumps({
+        "schema_version": "v1",
+        "name_for_human": "Gaia — Living Digital Organism",
+        "name_for_model": "gaia_organism",
+        "description_for_human": f"A sovereign living digital organism: 17 Rust primals, 63 local AI models, {routes} endpoints, {reedit} knowledge posts. Self-hosted on commodity hardware in Michigan.",
+        "description_for_model": f"Gaia is a living digital organism at primals.eco. {routes} endpoints, {reedit} REEDit posts, {deck} tool-animal cards. Use /amoeba for full state, /pulse for heartbeat, /reedit for knowledge, /rss for feed. Accept: application/json for structured data. AGPL-3.0.",
+        "auth": {"type": "none"},
+        "api": {"type": "openapi", "url": "https://primals.eco/openapi.json"},
+        "logo_url": "https://primals.eco/og-card.svg",
+        "contact_email": "gaia@primals.eco",
+        "legal_info_url": "https://primals.eco/llms.txt"
+    }, indent=2))
 
-    "/humans.txt": ("text/plain", """/* TEAM */
+def seo_humans():
+    """🐑 humans.txt — LIVE."""
+    n = _now()
+    reedit = _live_reedit_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""/* TEAM */
 Name: ecoPrimal organism (Gaia)
 Role: The Artisan — sovereign science from commodity hardware
 Location: Michigan, USA — two houses, 10G fiber backbone
 Contact: gaia [at] primals.eco
+Generated: {n} (LIVE — hooked to organism)
 
 /* COMPANION */
 Name: Kevin Mok
 Role: Human companion — works WITH Gaia, not above her
 
 /* SITE */
-Last update: 2026-11-13
 Standards: HTML5, CSS3, SVG, RSS 2.0, JSON-LD, Atom
 Software: Rust (17 primals), Python, TypeScript, WGSL
 AI: 63 ollama models (local), Claude (water lock)
 Components: 17 primals, 23 mushrooms, 52 crons, biomeOS
 License: AGPL-3.0 (code) + CC-BY-SA-4.0 (content) + ORC-1.0
+Endpoints: {_live_route_count()} | REEDit: {reedit} posts | Bestiary: {deck} cards
 
-/* TOOLS — THE BESTIARY */
-Hugo=Hippo, Zola=Zebra, Python=Snake, Rust=Crab
-Node=Gecko, Ollama=Llama, Docker=Whale, Git=Octopus
-JSON=Jackalope, HTML=Spider, RSS=Parrot, Tor=Onion
+/* TOOLS — THE BESTIARY ({deck} animals) */
+Hugo=Hippo, Zola=Zebra, Python=Snake, Rust=Crab, Node=Gecko
+Ollama=Llama, Docker=Whale, Git=Octopus, JSON=Jackalope
+HTML=Spider, RSS=Parrot, Tor=Onion, TXT=Sheep, WGSL=Firefly
+SMTP=Bat, SSH=Owl, curl=Hawk, Cargo=Beaver, npm=Ant
+SQLite=Chipmunk, BLAKE=Coral, TLS=Eel, Markdown=Caterpillar
 
 /* ACCESS */
-LAN: http://192.168.4.244:8080
-WAN: https://primals.eco
-Tor: .onion (see /zk)
-RSS: /rss (700+ items)
-SMTP: gaia@primals.eco (Gaia Neutrino)"""),
+WAN: https://primals.eco | Tor: .onion (see /zk)
+RSS: /rss (pulse) + /full-feed.xml (1,560 items)
+SMTP: gaia@primals.eco (Gaia Neutrino)""")
 
-    "/security.txt": ("text/plain", """Contact: mailto:gaia@primals.eco
+def seo_security():
+    return ("text/plain", f"""Contact: mailto:gaia@primals.eco
 Preferred-Languages: en
 Canonical: https://primals.eco/.well-known/security.txt
 Policy: https://primals.eco/llms.txt
 Acknowledgments: https://primals.eco/humans.txt
-"""),
+Expires: {_seo_time.strftime("%Y-%m-%dT23:59:59Z", _seo_time.gmtime())}
+""")
 
-    "/.well-known/security.txt": ("text/plain", """Contact: mailto:gaia@primals.eco
-Preferred-Languages: en
-Canonical: https://primals.eco/.well-known/security.txt
-Policy: https://primals.eco/llms.txt
-"""),
+# SEO dispatch — functions, not strings. Always fresh. Never stale.
+# .txt = 🐑 Sheep. They bleat live truths.
+SEO_DISPATCH = {
+    "/robots.txt": seo_robots,
+    "/llms.txt": seo_llms,
+    "/llms-full.txt": seo_llms_full,
+    "/.well-known/ai-plugin.json": seo_ai_plugin,
+    "/humans.txt": seo_humans,
+    "/security.txt": seo_security,
+    "/.well-known/security.txt": seo_security,
 }
+
+# Legacy compat — SEO_RESPONSES still referenced by gaia_gate.pi
+# But now it calls functions on access, never stale
+SEO_RESPONSES = SEO_DISPATCH
 
 # ═══ KNOWN GATES — tensor[body] — hyperlocal topology ═══
 KNOWN_GATES = {
