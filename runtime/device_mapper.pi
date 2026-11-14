@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+"""device_mapper.pi — Map inner LAN + outer WAN + per-device hardware.
+
+Three axes:
+  1. INNER (LAN) — gate topology, IP addresses, latency
+  2. OUTER (WAN) — public IP, primals.eco, Tor onion, RSS
+  3. HARDWARE — GPU, RAM, PCIe, USB, disk per device
+
+The neutron is the ONE messenger. All device states flow through it.
+The gate maps the topology. This script fills in the hardware per device.
+
+Used by: LAN circle, spacedock, amoeba, organism views.
+"""
+
+import json, os, platform, subprocess, sys, time, urllib.request
+
+BODY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "body")
+EAST_GATE = "http://192.168.4.244:8443"
+os.makedirs(BODY_DIR, exist_ok=True)
+
+
+def _run(cmd, timeout=10):
+    """Run a command and return stdout."""
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, shell=True)
+        return r.stdout.strip()
+    except:
+        return ""
+
+
+def _wmic(cls, fields):
+    """Query WMI on Windows."""
+    if sys.platform != "win32":
+        return []
+    cmd = f'powershell -NoProfile -Command "Get-CimInstance {cls} | Select-Object {",".join(fields)} | ConvertTo-Json"'
+    raw = _run(cmd, 15)
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return [data]
+        return data
+    except:
+        return []
+
+
+def map_local_hardware():
+    """Map THIS device's hardware — the 3rd axis."""
+    hw = {
+        "hostname": platform.node(),
+        "os": f"{platform.system()} {platform.release()}",
+        "arch": platform.machine(),
+        "python": platform.python_version(),
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    }
+
+    if sys.platform == "win32":
+        # CPU
+        cpus = _wmic("Win32_Processor", ["Name", "NumberOfCores", "NumberOfLogicalProcessors", "MaxClockSpeed"])
+        if cpus:
+            c = cpus[0]
+            hw["cpu"] = {
+                "model": c.get("Name", "?").strip(),
+                "cores": c.get("NumberOfCores", 0),
+                "threads": c.get("NumberOfLogicalProcessors", 0),
+                "max_mhz": c.get("MaxClockSpeed", 0),
+            }
+
+        # GPU
+        gpus = _wmic("Win32_VideoController", ["Name", "AdapterRAM", "DriverVersion"])
+        hw["gpus"] = []
+        for g in gpus:
+            vram = g.get("AdapterRAM", 0)
+            hw["gpus"].append({
+                "name": g.get("Name", "?").strip(),
+                "vram_gb": round(vram / (1024**3), 1) if vram else 0,
+                "driver": g.get("DriverVersion", "?"),
+            })
+
+        # RAM
+        rams = _wmic("Win32_PhysicalMemory", ["Capacity", "Speed", "Manufacturer"])
+        total = sum(r.get("Capacity", 0) for r in rams)
+        hw["ram"] = {
+            "total_gb": round(total / (1024**3), 1),
+            "sticks": len(rams),
+            "speed_mhz": rams[0].get("Speed", 0) if rams else 0,
+        }
+
+        # Disks
+        disks = _wmic("Win32_DiskDrive", ["Model", "Size", "MediaType"])
+        hw["disks"] = []
+        for d in disks:
+            sz = d.get("Size", 0)
+            hw["disks"].append({
+                "model": d.get("Model", "?").strip(),
+                "size_gb": round(sz / (1024**3), 1) if sz else 0,
+                "type": d.get("MediaType", "?"),
+            })
+
+        # USB controllers
+        usbs = _wmic("Win32_USBController", ["Name", "Status"])
+        hw["usb"] = {
+            "controllers": len(usbs),
+            "usb4": any("USB4" in u.get("Name", "") for u in usbs),
+            "usb3": any("3." in u.get("Name", "") for u in usbs),
+            "details": [u.get("Name", "?").strip() for u in usbs],
+        }
+
+        # PCIe (via PnP devices)
+        pcie_raw = _run('powershell -NoProfile -Command "(Get-CimInstance Win32_PnPEntity | Where-Object { $_.Name -match \'PCI|NVMe|NVIDIA|AMD\' } | Select-Object Name).Name | Select-Object -First 20"', 15)
+        hw["pcie_devices"] = [l.strip() for l in pcie_raw.split("\n") if l.strip()] if pcie_raw else []
+
+        # Network
+        nets = _wmic("Win32_NetworkAdapterConfiguration", ["Description", "IPAddress", "MACAddress"])
+        hw["network"] = []
+        for n in nets:
+            ips = n.get("IPAddress", [])
+            if ips:
+                hw["network"].append({
+                    "adapter": n.get("Description", "?").strip(),
+                    "ips": ips if isinstance(ips, list) else [ips],
+                    "mac": n.get("MACAddress", "?"),
+                })
+
+    elif sys.platform == "linux":
+        hw["cpu"] = {"model": _run("cat /proc/cpuinfo | grep 'model name' | head -1 | cut -d: -f2").strip()}
+        hw["ram"] = {"total_gb": round(os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES') / (1024**3), 1)}
+        gpu_info = _run("nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null")
+        if gpu_info:
+            hw["gpus"] = [{"name": l.split(",")[0].strip(), "vram": l.split(",")[1].strip()} for l in gpu_info.split("\n") if "," in l]
+        usb_info = _run("lsusb 2>/dev/null")
+        hw["usb"] = {"devices": len(usb_info.split("\n"))} if usb_info else {}
+
+    return hw
+
+
+def map_lan_topology():
+    """Map the inner LAN — axis 1."""
+    try:
+        req = urllib.request.Request(f"{EAST_GATE}/pulse", headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            pulse = json.loads(r.read())
+    except:
+        pulse = {}
+
+    visitors = pulse.get("visitors", {})
+    gates = {}
+    for ip, v in visitors.items():
+        gates[ip] = {
+            "trust": v.get("trust_level", "?"),
+            "requests": v.get("requests", 0),
+            "last_seen": v.get("last_seen", 0),
+        }
+
+    return {
+        "source": "eastGate-pulse",
+        "total_nodes": len(visitors),
+        "gates": gates,
+        "heartbeat": pulse.get("heart", {}),
+        "uptime": pulse.get("uptime_secs", 0),
+    }
+
+
+def map_wan_face():
+    """Map the outer WAN — axis 2."""
+    return {
+        "public_ip": "162.226.225.148",
+        "domains": ["primals.eco", "nestgate.io", "sporeprint.primals.eco",
+                     "detroit.primals.eco", "hud.primals.eco", "polaris.primals.eco"],
+        "tor": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+        "rss": "https://primals.eco/rss",
+        "ports": {"80": "HTTP", "443": "HTTPS", "25": "SMTP", "53": "DNS"},
+        "isp": "AT&T AS7018",
+        "geo": "Lansing MI, 42.7008/-84.5490",
+    }
+
+
+def build_full_map():
+    """Build the 3-axis device map."""
+    hw = map_local_hardware()
+    lan = map_lan_topology()
+    wan = map_wan_face()
+
+    device_map = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "mapper": "device_mapper.pi",
+        "node": hw.get("hostname", "unknown"),
+        "three_axes": {
+            "inner_lan": lan,
+            "outer_wan": wan,
+            "hardware": hw,
+        },
+        "usb_spine_viable": hw.get("usb", {}).get("usb4", False) or hw.get("usb", {}).get("usb3", False),
+        "usb_note": "RSS spine over USB: ADB serial pipe to grapheneGate, USB4 to northGate. Protocol-agnostic.",
+    }
+
+    path = os.path.join(BODY_DIR, "device-map.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(device_map, f, indent=2, default=str)
+    print(f"  📡 Device map written: {path}")
+    return device_map
+
+
+if __name__ == "__main__":
+    print("🗺️  Device Mapper — 3-axis topology")
+    dm = build_full_map()
+    hw = dm["three_axes"]["hardware"]
+    print(f"  CPU: {hw.get('cpu', {}).get('model', '?')}")
+    print(f"  GPUs: {len(hw.get('gpus', []))}")
+    for g in hw.get("gpus", []):
+        print(f"    → {g['name']} ({g.get('vram_gb', '?')} GB)")
+    print(f"  RAM: {hw.get('ram', {}).get('total_gb', '?')} GB")
+    print(f"  Disks: {len(hw.get('disks', []))}")
+    print(f"  USB4: {hw.get('usb', {}).get('usb4', False)}")
+    print(f"  USB spine viable: {dm['usb_spine_viable']}")
+    print(f"  LAN nodes: {dm['three_axes']['inner_lan'].get('total_nodes', 0)}")

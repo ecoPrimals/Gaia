@@ -1,0 +1,66 @@
+{
+  "title": "petalTongue Unification — ZK Cut All Surfaces into ONE",
+  "wave": 232,
+  "ts": "2026-11-14T11:10:00Z",
+  "current_state": {
+    "binary": "petaltongue.exe",
+    "size_mb": 14.9,
+    "total_lines": 189295,
+    "total_crates": 19,
+    "total_files": 815,
+    "design": "UniBin — 1 binary, 7 subcommands (ui, tui, web, headless, server, live, status)",
+    "features": {
+      "default": ["ui", "tui"],
+      "ui": "egui/eframe — OpenGL/Vulkan native GUI (64,148 lines, 323 files)",
+      "tui": "ratatui/crossterm — terminal UI (6,495 lines, 36 files)",
+      "wasm": "browser WASM module (1,144 lines, 9 files)",
+      "headless": "no display (1,531 lines, 7 files)",
+      "cli": "command line (1,200 lines, 9 files)"
+    }
+  },
+  "fragmentation": {
+    "5_surfaces": {
+      "petal-tongue-ui": {"lines": 64148, "files": 323, "role": "Native GUI (egui)"},
+      "petal-tongue-tui": {"lines": 6495, "files": 36, "role": "Terminal UI (ratatui)"},
+      "petal-tongue-wasm": {"lines": 1144, "files": 9, "role": "Browser WASM"},
+      "petal-tongue-headless": {"lines": 1531, "files": 7, "role": "No display"},
+      "petal-tongue-cli": {"lines": 1200, "files": 9, "role": "Command line"}
+    },
+    "shared_core": {
+      "petal-tongue-core": {"lines": 36108, "files": 167, "role": "Config, platform, data"},
+      "petal-tongue-scene": {"lines": 20525, "files": 71, "role": "Declarative scene graph — THE UNIFIER"},
+      "petal-tongue-ipc": {"lines": 23150, "files": 116, "role": "IPC + JSON-RPC"},
+      "petal-tongue-discovery": {"lines": 9932, "files": 45, "role": "Neural API discovery"}
+    }
+  },
+  "unification_plan": {
+    "principle": "petal-tongue-scene IS the ONE renderer. All surfaces compile scene → output.",
+    "zk_cut": [
+      "Scene graph defines the WHAT (topology, data, layout)",
+      "Each surface is a COMPILER from scene → pixels/characters/bytes",
+      "UI compiler: scene → egui draw calls (still separate for GPU rendering)",
+      "TUI compiler: scene → ratatui widgets (character grid)",
+      "WASM compiler: scene → DOM/canvas (browser)",
+      "Headless compiler: scene → JSON/metrics (monitoring)",
+      "CLI compiler: scene → stdout (plain text)"
+    ],
+    "what_melts": [
+      "64K lines of UI-specific layout logic → shared scene layout",
+      "Duplicate data fetching in each surface → unified DataService (already exists)",
+      "Per-surface state management → scene graph IS the state",
+      "Custom widget implementations → scene primitives that compile everywhere"
+    ],
+    "rss_usb_viable": true,
+    "usb_note": "Scene graph serializes to JSON. JSON flows over USB/ADB. grapheneGate renders locally. The spine IS the scene."
+  },
+  "devices_it_runs_on": {
+    "northGate": "RTX 5090 + egui (ui mode) — full GPU rendering",
+    "eastGate": "RTX 4070 + egui or tui — gate display",
+    "ironGate": "RTX 5070 + egui — forge display",
+    "grapheneGate": "Mali-G715 Vulkan + WASM — phone browser",
+    "deckGate": "RDNA 2 + Steam Deck display — console mode",
+    "frameGate": "Snapdragon 8 Gen 3 + ARM SteamOS — face display",
+    "sporeGate": "headless — DNS + heart-pull, no display",
+    "graftGate": "M4 GPU + egui — Mac Mini display"
+  }
+}
