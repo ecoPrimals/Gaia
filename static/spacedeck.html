@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GAIA SpaceDeck — Observation Windows</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080810;color:#e0e0e0;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column}
+header{background:#0a0a14;border-bottom:1px solid #222;padding:8px 16px;display:flex;align-items:center;gap:16px}
+header h1{color:#f80;font-size:16px}
+header .pulse-dot{width:8px;height:8px;border-radius:50%;background:#f80;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+header .bpm{color:#0f8;font-size:14px}
+header .status{margin-left:auto;color:#666;font-size:12px}
+.grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:2px;padding:2px}
+.panel{background:#0c0c16;border:1px solid #222;border-radius:4px;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.panel.active{border-color:#f80}
+.panel-head{background:#0a0a14;padding:6px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #1a1a2a;flex-shrink:0}
+.panel-head .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.panel-head .dot.alive{background:#0f8}
+.panel-head .dot.dead{background:#f44}
+.panel-head .dot.unknown{background:#666}
+.panel-head .name{color:#0cf;font-size:12px;font-weight:bold}
+.panel-head .role{color:#666;font-size:11px;margin-left:auto}
+.panel-body{flex:1;padding:8px;overflow-y:auto;font-size:11px;line-height:1.5;color:#aaa;min-height:0}
+.panel-body pre{white-space:pre-wrap;word-break:break-all}
+.panel-body .k{color:#f80}
+.panel-body .v{color:#0f8}
+.panel-body .dim{color:#555}
+.panel-body .err{color:#f44}
+.panel-body .highlight{color:#ff0;font-weight:bold}
+footer{background:#0a0a14;border-top:1px solid #222;padding:4px 16px;display:flex;gap:16px;font-size:11px;color:#555}
+footer span{cursor:pointer}
+footer span:hover{color:#f80}
+.gate-row{display:flex;gap:4px;margin-bottom:2px}
+.gate-pill{padding:2px 6px;border-radius:3px;font-size:10px;border:1px solid #333}
+.gate-pill.alive{border-color:#0f8;color:#0f8}
+.gate-pill.dead{border-color:#f44;color:#f44}
+</style>
+</head>
+<body>
+<header>
+  <div class="pulse-dot"></div>
+  <h1>GAIA SpaceDeck</h1>
+  <div class="bpm" id="hdrBpm">--- BPM</div>
+  <div class="status" id="hdrStatus">connecting...</div>
+</header>
+<div class="grid">
+  <!-- Panel 1: Heartbeat -->
+  <div class="panel active" id="p-heart">
+    <div class="panel-head"><div class="dot alive"></div><span class="name">HEARTBEAT</span><span class="role">pulse + vital signs</span></div>
+    <div class="panel-body" id="heart-body">loading...</div>
+  </div>
+  <!-- Panel 2: Gates -->
+  <div class="panel" id="p-gates">
+    <div class="panel-head"><div class="dot alive"></div><span class="name">GATE FLEET</span><span class="role">topology</span></div>
+    <div class="panel-body" id="gates-body">loading...</div>
+  </div>
+  <!-- Panel 3: Models -->
+  <div class="panel" id="p-models">
+    <div class="panel-head"><div class="dot alive"></div><span class="name">OLLAMA FLEET</span><span class="role">AI models</span></div>
+    <div class="panel-body" id="models-body">loading...</div>
+  </div>
+  <!-- Panel 4: Cascade / Deploy -->
+  <div class="panel" id="p-cascade">
+    <div class="panel-head"><div class="dot unknown"></div><span class="name">CASCADE</span><span class="role">deploy + forge</span></div>
+    <div class="panel-body" id="cascade-body">loading...</div>
+  </div>
+  <!-- Panel 5: RSS / Reedit -->
+  <div class="panel" id="p-rss">
+    <div class="panel-head"><div class="dot alive"></div><span class="name">RSS SPINE</span><span class="role">knowledge + feeds</span></div>
+    <div class="panel-body" id="rss-body">loading...</div>
+  </div>
+  <!-- Panel 6: Neutron / Messages -->
+  <div class="panel" id="p-neutron">
+    <div class="panel-head"><div class="dot alive"></div><span class="name">NEUTRON</span><span class="role">messages</span></div>
+    <div class="panel-body" id="neutron-body">loading...</div>
+  </div>
+</div>
+<footer>
+  <span onclick="refresh()">⟳ Refresh All</span>
+  <span onclick="window.open('/play-gaia','_blank')">🎮 Game</span>
+  <span onclick="window.open('/paintings','_blank')">🎨 Gallery</span>
+  <span onclick="window.open('/gaiau','_blank')">🎓 GaiaU</span>
+  <span onclick="window.open('/rss','_blank')">📡 RSS</span>
+  <span id="ftrTs">---</span>
+</footer>
+<script>
+const GATE='http://192.168.4.244:8443';
+const SOURCES=['/pulse',GATE+'/pulse','https://primals.eco/pulse'];
+let srcIdx=0,pulseOk=false;
+
+async function tryFetch(path,timeout=5000){
+  const bases=['http://192.168.4.244:8443','https://primals.eco',''];
+  for(const b of bases){
+    try{
+      const r=await fetch(b+path,{signal:AbortSignal.timeout(timeout)});
+      if(r.ok){pulseOk=true;return await r.json();}
+    }catch{}
+  }
+  return null;
+}
+
+function kv(k,v,cls=''){return `<span class="k">${k}:</span> <span class="${cls||'v'}">${v}</span>\n`}
+
+async function loadHeart(){
+  const el=document.getElementById('heart-body');
+  const d=await tryFetch('/pulse');
+  if(!d){el.innerHTML='<span class="err">pulse unreachable</span>';return}
+  pulseOk=true;
+  const h=d.heart||{};const s=d.sun||{};
+  document.getElementById('hdrBpm').textContent=Math.round(h.bpm||d.bpm||0)+' BPM';
+  document.getElementById('hdrStatus').textContent=`beats:${d.total_beats} vis:${d.unique_visitors} up:${d.uptime_secs}s`;
+  el.innerHTML=
+    kv('total_beats',d.total_beats,'highlight')+
+    kv('bpm',Math.round(h.bpm||d.bpm||0))+
+    kv('breaths',d.lung?.total_breaths)+
+    kv('brpm',Math.round(d.lung?.brpm||0))+
+    kv('ratio','1:'+Math.round(d.lung?.ratio||0))+
+    kv('uptime',Math.round((d.uptime_secs||0)/60)+'m')+
+    kv('restarts',d.restarts)+
+    kv('visitors',d.unique_visitors)+
+    kv('sun',s.phase)+
+    kv('chord',s.chord)+
+    kv('moon',s.moon?.name+' '+Math.round((s.moon?.phase||0)*100)+'%')+
+    kv('season',s.season)+
+    kv('pi_ratio',d.pi_ratio);
+}
+
+async function loadGates(){
+  const el=document.getElementById('gates-body');
+  const d=await tryFetch('/thymus');
+  if(!d){el.innerHTML='<span class="err">thymus unreachable</span>';return}
+  const orgs=d.organisms||d.thymic_organisms||{};
+  let html='';
+  for(const[name,info]of Object.entries(orgs)){
+    const alive=info.alive||info.status==='alive';
+    html+=`<div class="gate-row"><span class="gate-pill ${alive?'alive':'dead'}">${name}</span> <span class="dim">${info.ip||''} ${info.role||''}</span></div>`;
+  }
+  html+=`\n<span class="dim">total: ${Object.keys(orgs).length} organisms</span>`;
+  el.innerHTML=html;
+}
+
+async function loadModels(){
+  const el=document.getElementById('models-body');
+  const d=await tryFetch('/amoeba');
+  if(!d){el.innerHTML='<span class="err">amoeba unreachable</span>';return}
+  const models=d.models?.data||d.models?.models||[];
+  let html=kv('total',models.length,'highlight');
+  models.slice(0,30).forEach(m=>{
+    const name=m.id||m.name||'?';
+    const owner=m.owned_by||'';
+    const tag=owner.includes('northGate')?'<span style="color:#f0f"> ★north</span>':'';
+    html+=`<span class="dim">• ${name}</span>${tag}\n`;
+  });
+  if(models.length>30) html+=`<span class="dim">...+${models.length-30} more</span>\n`;
+  html+='\n'+kv('paintings',d.reedit?.paintings)+kv('videos',d.reedit?.videos);
+  el.innerHTML=html;
+}
+
+async function loadCascade(){
+  const el=document.getElementById('cascade-body');
+  const d=await tryFetch('/cascade');
+  if(!d){el.innerHTML='<span class="err">cascade unreachable</span>';return}
+  const cp=d.cascade_phases||{};const mh=d.membrane_health||{};
+  let html=kv('gate',d.signaling_cascade?.gate||'?')+
+    kv('wave',d.signaling_cascade?.wave||'?')+
+    kv('synced',cp.temporal_sync?.repos_synced+'/'+cp.temporal_sync?.repos_total)+
+    kv('harvest',cp.harvest?.primals_built+' primals built')+
+    kv('services',mh.total_running+' running','highlight')+
+    '\n<span class="k">membrane:</span>\n';
+  for(const[svc,st]of Object.entries(mh.services||{})){
+    const c=st==='active'?'alive':'dead';
+    html+=`  <span class="gate-pill ${c}">${svc}</span> `;
+  }
+  el.innerHTML=html;
+}
+
+async function loadRss(){
+  const el=document.getElementById('rss-body');
+  const d=await tryFetch('/reedit');
+  if(!d){el.innerHTML='<span class="err">reedit unreachable</span>';return}
+  let html=kv('total_items',d.total_items||d.total||0,'highlight');
+  for(const[feed,count]of Object.entries(d.feeds||{})){
+    html+=`<span class="dim">• ${feed}: ${count}</span>\n`;
+  }
+  el.innerHTML=html;
+}
+
+async function loadNeutron(){
+  const el=document.getElementById('neutron-body');
+  const d=await tryFetch('/amoeba');
+  if(!d||!d.neutron){el.innerHTML='<span class="dim">no neutron channels</span>';return}
+  let html='';
+  for(const[ch,info]of Object.entries(d.neutron)){
+    html+=`<span class="k">${ch}</span> (${info.total} msgs)\n`;
+    (info.messages||[]).slice(-3).forEach(m=>{
+      html+=`  <span class="dim">${m.ts?.slice(11,19)||'?'}</span> <span class="v">${(m.body||m.message||'').slice(0,80)}</span>\n`;
+    });
+  }
+  el.innerHTML=html||'<span class="dim">silent</span>';
+}
+
+async function refresh(){
+  document.getElementById('ftrTs').textContent=new Date().toLocaleTimeString();
+  await Promise.all([loadHeart(),loadGates(),loadModels(),loadCascade(),loadRss(),loadNeutron()]);
+}
+
+refresh();
+setInterval(refresh,10000);
+</script>
+</body>
+</html>
