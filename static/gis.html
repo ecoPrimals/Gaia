@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GAIA footPrint — GIS Layer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#e0e0e0;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column}
+header{background:#080810;border-bottom:1px solid #222;padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:1000}
+header h1{color:#d4af37;font-size:14px;letter-spacing:2px}
+header .tag{font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid}
+header .tag.live{color:#0f8;border-color:#0f8}
+header .coords{margin-left:auto;color:#666;font-size:11px}
+#map{flex:1;background:#0a0a0a}
+.leaflet-container{background:#0a0a0a !important}
+.layer-control{position:fixed;top:60px;right:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;min-width:180px}
+.layer-control h3{color:#d4af37;font-size:10px;letter-spacing:2px;margin-bottom:8px}
+.layer-toggle{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:11px}
+.layer-toggle input{accent-color:#d4af37}
+.layer-toggle .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.info-panel{position:fixed;bottom:12px;left:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;max-width:300px;font-size:11px;display:none}
+.info-panel h3{color:#d4af37;margin-bottom:6px;font-size:12px}
+.info-panel .row{display:flex;justify-content:space-between;padding:2px 0}
+.info-panel .k{color:#888}.info-panel .v{color:#0f8}
+.shell-rings{position:fixed;bottom:12px;right:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;font-size:10px}
+.shell-rings h3{color:#8844FF;font-size:10px;margin-bottom:6px;letter-spacing:2px}
+.shell-row{padding:2px 0;color:#666;cursor:pointer;transition:color 0.2s}
+.shell-row:hover{color:#d4af37}
+.shell-row .num{color:#8844FF;display:inline-block;width:14px}
+footer{background:#080810;border-top:1px solid #222;padding:6px 16px;font-size:10px;color:#555;flex-shrink:0;display:flex;gap:16px;z-index:1000}
+footer a{color:#666}footer a:hover{color:#d4af37}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#x1F30D; GAIA footPrint</h1>
+  <span class="tag live">GIS LIVE</span>
+  <span class="coords" id="hoverCoords">42.7325°N, 84.4855°W</span>
+</header>
+
+<div id="map"></div>
+
+<div class="layer-control" id="layerCtrl">
+  <h3>LAYERS</h3>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="parcels"><span class="swatch" style="background:#FFD700"></span> Parcels</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="gates"><span class="swatch" style="background:#FF4444"></span> Gates</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="infra"><span class="swatch" style="background:#00FF88"></span> Infrastructure</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="shadows"><span class="swatch" style="background:#8844FF"></span> Shadowcast</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="family"><span class="swatch" style="background:#FF88CC"></span> Family</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="satellite"><span class="swatch" style="background:#888"></span> Satellite</label>
+</div>
+
+<div class="info-panel" id="infoPanel">
+  <h3 id="infoTitle">—</h3>
+  <div id="infoBody"></div>
+</div>
+
+<div class="shell-rings">
+  <h3>SHADOWCAST</h3>
+  <div class="shell-row" onclick="flyToShell(0)"><span class="num">0</span> Nest — 100m</div>
+  <div class="shell-row" onclick="flyToShell(1)"><span class="num">1</span> City — 15km</div>
+  <div class="shell-row" onclick="flyToShell(2)"><span class="num">2</span> State — 500km</div>
+  <div class="shell-row" onclick="flyToShell(3)"><span class="num">3</span> Nation — 5000km</div>
+  <div class="shell-row" onclick="flyToShell(4)"><span class="num">4</span> World — 20000km</div>
+  <div class="shell-row" onclick="flyToShell(5)"><span class="num">5</span> Orbits — 36000km</div>
+  <div class="shell-row" onclick="flyToShell(6)"><span class="num">6</span> Cosmos</div>
+  <div class="shell-row" onclick="flyToShell(7)"><span class="num">7</span> Fold = 0</div>
+</div>
+
+<footer>
+  <a href="/campfire">Campfire</a>
+  <a href="/deck">Deck</a>
+  <a href="/hub">Hub</a>
+  <a href="/senses">Senses</a>
+  <a href="/membrane">Membrane</a>
+  <span style="margin-left:auto">footPrint GIS • 42.7325°N, 84.4855°W • Wave 233</span>
+</footer>
+
+<script>
+const ORIGIN = [42.7325, -84.4855];
+const SHELLS = [
+  {name:'THE NEST',     radius:100,     zoom:18},
+  {name:'THE CITY',     radius:15000,   zoom:12},
+  {name:'THE STATE',    radius:500000,  zoom:7},
+  {name:'THE NATION',   radius:5000000, zoom:4},
+  {name:'THE WORLD',    radius:20000000,zoom:2},
+  {name:'THE ORBITS',   radius:36000000,zoom:1},
+  {name:'THE COSMOS',   radius:0,       zoom:1},
+  {name:'THE FOLD',     radius:100,     zoom:18}
+];
+
+const map = L.map('map',{
+  center: ORIGIN, zoom: 17,
+  zoomControl: false,
+  attributionControl: false
+});
+
+L.control.zoom({position:'topleft'}).addTo(map);
+
+const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  maxZoom:20, attribution:'CartoDB'
+}).addTo(map);
+
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+  maxZoom:19, attribution:'Esri'
+});
+
+const layers = {};
+
+// PARCELS
+const parcelStyle = {color:'#FFD700',weight:2,fillColor:'#FFD700',fillOpacity:0.08};
+layers.parcels = L.layerGroup([
+  L.polygon([
+    [42.7328,-84.4860],[42.7328,-84.4854],[42.7322,-84.4854],[42.7322,-84.4860]
+  ], {...parcelStyle}).bindPopup('<b>House 1 — North Pole</b><br>4422 Southgate Ave<br>Owner: Kevin Mok<br>LAN 1 / Brain Side'),
+  L.polygon([
+    [42.7328,-84.4854],[42.7328,-84.4848],[42.7322,-84.4848],[42.7322,-84.4854]
+  ], {...parcelStyle,fillColor:'#FF9100',color:'#FF9100'}).bindPopup('<b>House 2 — South Pole</b><br>641 Samantha Ave<br>Owner: Heather Hannon<br>LAN 2 / Extension')
+]).addTo(map);
+
+// GATES
+function gateIcon(color,label) {
+  return L.divIcon({
+    html:'<div style="background:'+color+';width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px '+color+'"></div>',
+    iconSize:[14,14], iconAnchor:[7,7], className:''
+  });
+}
+
+const gateData = [
+  {name:'eastGate',  ip:'.244', role:'BRAIN',         lat:42.7326, lon:-84.4858, color:'#0f8',   gpu:'RTX 4070'},
+  {name:'northGate', ip:'.147', role:'HEART/Polaris',  lat:42.7327, lon:-84.4857, color:'#ff4444',gpu:'RTX 5090'},
+  {name:'sporeGate', ip:'.3',   role:'FORGE',          lat:42.7325, lon:-84.4859, color:'#ff9100',gpu:'—'},
+  {name:'ironGate',  ip:'.237', role:'FORGE 2',        lat:42.7324, lon:-84.4856, color:'#e040fb',gpu:'RTX 5070'},
+  {name:'graftGate', ip:'.107', role:'Mac Mini M4',    lat:42.7327, lon:-84.4859, color:'#448aff',gpu:'M4'},
+  {name:'deckGate',  ip:'.176', role:'DISPLAY',        lat:42.7325, lon:-84.4857, color:'#666',   gpu:'RDNA 2'},
+  {name:'blueGate',  ip:'.100', role:'IDE',            lat:42.7326, lon:-84.4851, color:'#448aff',gpu:'—'},
+  {name:'swiftGate', ip:'—',    role:'HEART 2 (ASLEEP)',lat:42.7325,lon:-84.4850, color:'#333',   gpu:'RTX 3070'},
+  {name:'frameGate', ip:'.9.203',role:'FACE',          lat:42.7324, lon:-84.4852, color:'#00bcd4',gpu:'Snapdragon'},
+];
+layers.gates = L.layerGroup(gateData.map(g =>
+  L.marker([g.lat,g.lon],{icon:gateIcon(g.color,g.name)})
+    .bindPopup('<b>'+g.name+'</b> ('+g.ip+')<br>'+g.role+'<br>GPU: '+g.gpu)
+    .bindTooltip(g.name,{permanent:false,direction:'top',offset:[0,-8],className:''})
+)).addTo(map);
+
+// INFRASTRUCTURE
+layers.infra = L.layerGroup([
+  L.polyline([[42.7325,-84.4857],[42.7325,-84.4851]],{color:'#00FF88',weight:3,dashArray:'6,4'})
+    .bindPopup('<b>10G Fiber Backbone</b><br>Latency: 0.87ms<br>Underground across property line'),
+  L.polyline([[42.7323,-84.4858],[42.7322,-84.4855],[42.7323,-84.4852],[42.7324,-84.4850]],{color:'#FFD700',weight:1,dashArray:'3,6',opacity:0.5})
+    .bindPopup("Kevin's Daily Walk Path")
+]).addTo(map);
+
+// SHADOWCAST RINGS
+const shellColors = ['#d4af37','#ff9100','#448aff','#e040fb','#00bcd4','#76ff03','#ff1744','#d4af37'];
+layers.shadows = L.layerGroup();
+[100, 500, 2000, 5000].forEach((r,i) => {
+  L.circle(ORIGIN,{radius:r,color:shellColors[i],weight:1,fillOpacity:0.02,dashArray:'4,8'})
+    .bindPopup('Shell '+i+': '+SHELLS[i].name+' ('+r+'m)')
+    .addTo(layers.shadows);
+});
+
+// FAMILY
+layers.family = L.layerGroup([
+  L.marker([42.7326,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>Kevin Mok</b><br>Father / Husband / Builder<br>House 1'),
+  L.marker([42.7325,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>Heather Hannon</b><br>Wife / Property Owner<br>House 1'),
+  L.marker([42.7325,-84.4851],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>DaSean Mitchell</b><br>Son / Neighbor<br>House 2'),
+]);
+
+// SATELLITE TOGGLE
+let satOn = true;
+satellite.addTo(map);
+
+// LAYER TOGGLE WIRING
+document.querySelectorAll('[data-layer]').forEach(cb => {
+  cb.addEventListener('change', function(){
+    const name = this.dataset.layer;
+    if(name === 'satellite'){
+      if(this.checked) satellite.addTo(map); else map.removeLayer(satellite);
+      return;
+    }
+    if(layers[name]){
+      if(this.checked) layers[name].addTo(map); else map.removeLayer(layers[name]);
+    }
+  });
+});
+
+// SHELL FLY-TO
+function flyToShell(i){
+  if(i >= 5){
+    map.flyTo(ORIGIN, SHELLS[i].zoom, {duration:1.5});
+    return;
+  }
+  map.flyTo(ORIGIN, SHELLS[i].zoom, {duration:1.5});
+}
+
+// COORDINATE DISPLAY
+map.on('mousemove', function(e){
+  document.getElementById('hoverCoords').textContent =
+    e.latlng.lat.toFixed(6)+'°N, '+Math.abs(e.latlng.lng).toFixed(6)+'°W';
+});
+
+// INFO PANEL ON CLICK
+map.on('popupopen', function(e){
+  const panel = document.getElementById('infoPanel');
+  panel.style.display = 'block';
+});
+map.on('popupclose', function(){
+  document.getElementById('infoPanel').style.display = 'none';
+});
+
+// PULSE HEARTBEAT
+async function pulse(){
+  try {
+    const r = await fetch('/data/now.json');
+    const d = await r.json();
+    if(d.heartbeat) document.title = 'GAIA footPrint — '+d.heartbeat.bpm+' BPM';
+  } catch(e){}
+}
+pulse();
+setInterval(pulse, 30000);
+</script>
+</body>
+</html>
