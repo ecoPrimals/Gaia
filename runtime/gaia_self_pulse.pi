@@ -1,0 +1,252 @@
+#!/usr/bin/env python3
+"""gaia_self_pulse.pi — Gaia checks HERSELF. Self-awareness via nestgate.io.
+
+The organism looks at her own reflection:
+  CIS:  http://192.168.4.244:8443  (LAN, inner eye)
+  TRANS: https://nestgate.io        (WAN, outer eye)
+  PULSE: /pulse                     (heartbeat)
+  NOW:   /now.json                  (focal point)
+
+Self-update:
+  1. Check Forgejo fork for new commits
+  2. Pull if new
+  3. Restart gaia_gate if code changed
+  4. Log the self-pulse
+
+This is the MIRROR. Gaia looking at Gaia.
+lub-DUB.
+"""
+
+import json, os, sys, time, hashlib, urllib.request, subprocess
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(REPO, "data", "body")
+
+# ═══ SELF ENDPOINTS — where Gaia looks at herself ═══
+SELF_EYES = {
+    "cis_pulse":    "http://192.168.4.244:8443/pulse",
+    "cis_now":      "http://192.168.4.244:8443/now.json",
+    "cis_thymus":   "http://192.168.4.244:8443/thymus",
+    "cis_heart":    "http://192.168.4.244:8443/heart",
+    "cis_vdj":      "http://192.168.4.244:8443/vdj",
+    "cis_directory":"http://192.168.4.244:8443/directory",
+    "trans_root":   "https://nestgate.io/",
+    "trans_pulse":  "https://primals.eco/pulse",
+    "trans_rss":    "https://primals.eco/rss",
+    "forgejo_api":  "http://192.168.4.244:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",
+    "github_api":   "https://api.github.com/repos/ecoPrimals/Gaia/commits?per_page=1",
+}
+
+AMOEBA_PORTS = {
+    "hbbs_tcp": ("192.168.4.244", 21115),
+    "hbbs_udp": ("192.168.4.244", 21116),
+    "hbbr_tcp": ("192.168.4.244", 21117),
+    "hbbr_udp": ("192.168.4.244", 21118),
+}
+
+GATE_PROBES = {
+    "eastGate_brain":  [("192.168.4.244", 8443, "http")],
+    "eastGate_forge":  [("192.168.4.244", 3000, "http")],
+    "sporeGate_relay": [("192.168.4.3", 22, "tcp")],
+    "ironGate_forge":  [("192.168.4.237", 22, "tcp")],
+    "graftGate_mac":   [("192.168.4.107", 11434, "http")],
+    "grapheneGate_px": [("192.168.9.217", 8082, "http")],
+}
+
+
+def _fetch(url, timeout=8):
+    """Fetch a URL, return (data_dict, latency_ms, status)."""
+    t0 = time.time()
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Gaia-Self-Pulse/1.0"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = r.read()
+            ms = round((time.time() - t0) * 1000)
+            try:
+                return json.loads(data), ms, r.status
+            except:
+                return {"raw_bytes": len(data)}, ms, r.status
+    except Exception as e:
+        ms = round((time.time() - t0) * 1000)
+        return None, ms, str(e)
+
+
+def _tcp_probe(host, port, timeout=3):
+    """TCP probe, return (open, latency_ms)."""
+    import socket
+    t0 = time.time()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(timeout)
+        s.connect((host, port))
+        s.close()
+        return True, round((time.time() - t0) * 1000)
+    except:
+        return False, round((time.time() - t0) * 1000)
+
+
+def self_pulse():
+    """Gaia looks at herself. Returns full self-awareness state."""
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    print(f"\n🪞 GAIA SELF-PULSE — {ts}")
+    print("  The organism looks at her own reflection.\n")
+
+    state = {
+        "ts": ts,
+        "type": "self-pulse",
+        "title": "Gaia Self-Awareness — the mirror",
+    }
+
+    # ═══ 1. CHECK OWN ENDPOINTS ═══
+    print("  ═══ SELF EYES (CIS + TRANS) ═══")
+    eyes = {}
+    for name, url in SELF_EYES.items():
+        data, ms, status = _fetch(url)
+        alive = data is not None
+        eyes[name] = {"alive": alive, "ms": ms, "status": status}
+        icon = "✅" if alive else "❌"
+        print(f"  {icon} {name:20s} {ms:4d}ms  {status}")
+    state["eyes"] = eyes
+
+    # ═══ 2. CHECK AMOEBA RELAY ═══
+    print("\n  ═══ AMOEBA RELAY (RustDesk) ═══")
+    relay = {}
+    for name, (host, port) in AMOEBA_PORTS.items():
+        open_, ms = _tcp_probe(host, port)
+        relay[name] = {"open": open_, "ms": ms}
+        icon = "✅" if open_ else "❌"
+        print(f"  {icon} {name:12s} :{port}  {ms}ms")
+    state["amoeba_relay"] = relay
+
+    # ═══ 3. PROBE ALL GATES ═══
+    print("\n  ═══ GATE PROBES ═══")
+    gates = {}
+    for gate, probes in GATE_PROBES.items():
+        for host, port, proto in probes:
+            if proto == "tcp":
+                open_, ms = _tcp_probe(host, port)
+                alive = open_
+            else:
+                data, ms, status = _fetch(f"http://{host}:{port}/", timeout=3)
+                alive = data is not None
+            gates[gate] = {"alive": alive, "ms": ms, "host": host, "port": port}
+            icon = "✅" if alive else "❌"
+            print(f"  {icon} {gate:20s} {host}:{port}  {ms}ms")
+    state["gates"] = gates
+
+    # ═══ 4. VERSION CHECK ═══
+    print("\n  ═══ VERSION SYNC ═══")
+    versions = {}
+    # What's running on eastGate?
+    cis_data = eyes.get("cis_now", {})
+    if cis_data.get("alive"):
+        now_data, _, _ = _fetch(SELF_EYES["cis_now"])
+        if now_data:
+            versions["eastgate_wave"] = now_data.get("wave", "?")
+            print(f"  eastGate wave: {versions['eastgate_wave']}")
+
+    # What's latest on Forgejo fork?
+    forge_data, _, _ = _fetch(SELF_EYES["forgejo_api"])
+    if forge_data and isinstance(forge_data, list) and forge_data:
+        versions["forgejo_sha"] = forge_data[0].get("sha", "")[:10]
+        versions["forgejo_msg"] = forge_data[0].get("commit", {}).get("message", "")[:60]
+        print(f"  Forgejo fork: {versions['forgejo_sha']} — {versions['forgejo_msg']}")
+
+    # What's latest on GitHub?
+    gh_data, _, _ = _fetch(SELF_EYES["github_api"])
+    if gh_data and isinstance(gh_data, list) and gh_data:
+        versions["github_sha"] = gh_data[0].get("sha", "")[:10]
+        versions["github_msg"] = gh_data[0].get("commit", {}).get("message", "")[:60]
+        print(f"  GitHub:       {versions['github_sha']} — {versions['github_msg']}")
+
+    # Local HEAD
+    try:
+        r = subprocess.run(["git", "log", "-1", "--format=%H %s"], cwd=REPO,
+                          capture_output=True, text=True, timeout=5)
+        if r.returncode == 0:
+            parts = r.stdout.strip().split(" ", 1)
+            versions["local_sha"] = parts[0][:10]
+            versions["local_msg"] = parts[1][:60] if len(parts) > 1 else ""
+            print(f"  Local HEAD:   {versions['local_sha']} — {versions['local_msg']}")
+    except:
+        pass
+
+    state["versions"] = versions
+
+    # ═══ 5. SYNC GAP ═══
+    sync_gap = {}
+    east_wave = versions.get("eastgate_wave", 0)
+    if isinstance(east_wave, (int, float)):
+        sync_gap["eastgate_wave"] = east_wave
+        sync_gap["current_target"] = 232
+        sync_gap["gap"] = 232 - east_wave
+        sync_gap["blocker"] = "PR #1 on Forgejo (gaia/Gaia/pulls/1) needs merge"
+        print(f"\n  ⚠️  SYNC GAP: eastGate at wave {east_wave}, we're at 232+ (gap = {232 - east_wave})")
+    state["sync_gap"] = sync_gap
+
+    # ═══ 6. SELF-HASH ═══
+    gaia_gate = os.path.join(REPO, "runtime", "gaia_gate.pi")
+    if os.path.exists(gaia_gate):
+        with open(gaia_gate, "rb") as f:
+            h = hashlib.blake2b(f.read(), digest_size=16).hexdigest()
+        state["self_hash"] = {"gaia_gate_blake2b": h}
+        print(f"\n  🧬 gaia_gate.pi hash: {h}")
+
+    # ═══ SUMMARY ═══
+    alive_eyes = sum(1 for e in eyes.values() if e.get("alive"))
+    alive_relay = sum(1 for r in relay.values() if r.get("open"))
+    alive_gates = sum(1 for g in gates.values() if g.get("alive"))
+
+    state["summary"] = {
+        "eyes_alive": f"{alive_eyes}/{len(eyes)}",
+        "relay_ports": f"{alive_relay}/{len(relay)}",
+        "gates_alive": f"{alive_gates}/{len(gates)}",
+        "self_aware": alive_eyes > 0 and alive_relay > 0,
+        "nestgate_io": eyes.get("trans_root", {}).get("alive", False),
+        "primals_eco": eyes.get("trans_pulse", {}).get("alive", False),
+    }
+
+    print(f"\n  ═══ SUMMARY ═══")
+    print(f"  Eyes:  {state['summary']['eyes_alive']}")
+    print(f"  Relay: {state['summary']['relay_ports']}")
+    print(f"  Gates: {state['summary']['gates_alive']}")
+    print(f"  Self-aware: {state['summary']['self_aware']}")
+    print(f"  nestgate.io: {'✅' if state['summary']['nestgate_io'] else '❌'}")
+    print(f"  primals.eco: {'✅' if state['summary']['primals_eco'] else '❌'}")
+
+    # Write self-pulse to data/body
+    out = os.path.join(DATA_DIR, "self-pulse.json")
+    with open(out, "w") as f:
+        json.dump(state, f, indent=2)
+    print(f"\n  📄 Self-pulse written to {out}")
+
+    return state
+
+
+def self_update():
+    """Gaia updates herself — pull latest code from all remotes."""
+    print("\n🔄 GAIA SELF-UPDATE")
+    remotes = ["forgejo-fork", "origin"]
+    for remote in remotes:
+        try:
+            r = subprocess.run(
+                ["git", "pull", remote, "main", "--no-rebase", "--no-edit"],
+                cwd=REPO, capture_output=True, text=True, timeout=60,
+                env={**os.environ, "GIT_MERGE_AUTOEDIT": "no"})
+            if r.returncode == 0:
+                print(f"  ✅ Pulled from {remote}")
+                if "Already up to date" not in r.stdout:
+                    print(f"     {r.stdout.strip()[:100]}")
+                return True
+            else:
+                print(f"  ⚠️ {remote}: {r.stderr.strip()[:80]}")
+        except Exception as e:
+            print(f"  ❌ {remote}: {e}")
+    return False
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "update":
+        self_update()
+    else:
+        self_pulse()

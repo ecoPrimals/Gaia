@@ -74,6 +74,27 @@ def _cascade_with_compiler():
         }
     return cascade
 
+def _amoeba_status():
+    """Check AMOEBA relay status — RustDesk sovereign."""
+    import socket
+    relay_host = "192.168.4.244"
+    ports = {"hbbs_tcp": 21115, "hbbs_udp": 21116, "hbbr_tcp": 21117, "hbbr_udp": 21118}
+    status = {}
+    for name, port in ports.items():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
+            s.connect((relay_host, port))
+            s.close()
+            status[name] = {"open": True, "port": port}
+        except:
+            status[name] = {"open": False, "port": port}
+    alive = sum(1 for v in status.values() if v["open"])
+    return {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "relay": f"{relay_host}:21116", "ports": status,
+            "alive": f"{alive}/4", "healthy": alive == 4,
+            "bootstrap": "/amoeba-bootstrap (curl | bash on any Linux gate)"}
+
 def _load_body(filename):
     """Load any body JSON file as a first-class endpoint."""
     p=os.path.join(_REPO,"data","body",filename)
@@ -673,6 +694,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             ("/major-arcana","/arcana","/22"): lambda: _load_body_section("organism-cards.json","MAJOR_ARCANA"),
             ("/minor-arcana","/suits","/56"): lambda: _load_body_section("organism-cards.json","MINOR_ARCANA"),
             ("/colocation","/meet","/rendezvous"): lambda: _load_body_section("organism-cards.json","COLOCATION_PROTOCOL"),
+            ("/self-pulse","/mirror","/self-aware"): lambda: _load_body("self-pulse.json"),
+            ("/amoeba-status","/relay-status"): lambda: _amoeba_status(),
         }
         for paths,fn in ORGAN_DISPATCH.items():
             if self.path in paths: self._json(fn()); return
@@ -686,6 +709,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             if "text/html" in self.headers.get("Accept","") and self.path != "/paintings.json":
                 self._serve_file("data/paintings/index.html"); return
             self._json(self._catalog("paintings")); return
+        if self.path in ("/amoeba-bootstrap","/bootstrap"):
+            self._serve_file("runtime/amoeba_bootstrap.sh"); return
         if self.path in ("/now.json","/api/now.json"): self._serve_file("data/gut/gaia-self-state.json"); return
         if self.path in ("/rss","/feed","/rss.xml"):
             write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
