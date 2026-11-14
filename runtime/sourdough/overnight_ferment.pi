@@ -1,0 +1,250 @@
+#!/usr/bin/env python3
+"""overnight_ferment.pi — GPU-ACCELERATED SOURDOUGH FERMENTATION.
+Distributes 51 aging .pi across 4 GPU nodes. Each model analyzes code,
+extracts knowledge, generates summaries, and compresses into body data.
+
+Temperature cap: 0.7 (nice warm night, not too hot).
+GPU temp cap: 70C (if exceeded, pause and let it cool).
+
+THE FLEET:
+  northGate RTX 5090 (32GB) — heavy lifting, large models
+  eastGate  RTX 4070 (12GB) — gaia-code, code analysis specialist
+  ironGate  RTX 5070 (12GB) — qwen2.5:7b, second brain
+  graftGate M4 (16GB)       — qwen2.5:3b, light summaries
+"""
+
+import os, json, time, urllib.request, glob, subprocess, hashlib, math
+
+PI = math.pi
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BODY_DIR = os.path.join(REPO, "data", "body")
+CULTURE_LOG = os.path.join(REPO, "runtime", "sourdough", "culture.jsonl")
+
+# GPU fleet endpoints
+FLEET = {
+    "northGate": {"url": "http://localhost:11434", "model": "qwen3:8b", "gpu": "RTX 5090", "role": "heavy"},
+    "eastGate":  {"url": "http://192.168.4.244:11436", "model": "gaia-code:latest", "gpu": "RTX 4070", "role": "code"},
+    "ironGate":  {"url": "http://192.168.4.237:11434", "model": "qwen2.5:7b", "gpu": "RTX 5070", "role": "analysis"},
+    "graftGate": {"url": "http://192.168.4.107:11434", "model": "qwen2.5:3b", "gpu": "M4", "role": "summary"},
+}
+
+TEMP_CAP = 0.7       # model temperature
+GPU_TEMP_MAX = 70    # celsius — pause if exceeded
+PAUSE_COOLDOWN = 30  # seconds to wait when hot
+
+# Tier assignments — which GPU handles what
+TIER_ASSIGNMENTS = {
+    "TIER_1_SOURDOUGH": "northGate",   # heavy — core engines
+    "TIER_2_ORRERY":    "northGate",   # heavy — math verification
+    "TIER_3_IMMUNE":    "eastGate",    # code analysis
+    "TIER_4_IO":        "ironGate",    # device analysis
+    "TIER_5_WEB":       "eastGate",    # code analysis (web layer)
+    "TIER_6_WALKERS":   "ironGate",    # analysis
+    "TIER_7_SPINE":     "graftGate",   # light summaries
+}
+
+
+def check_gpu_temp():
+    """Check northGate GPU temp. Pause if over cap."""
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=temperature.gpu", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=5)
+        temp = int(result.stdout.strip())
+        return temp
+    except:
+        return 0
+
+
+def ask_model(gate_name, prompt, max_tokens=300):
+    """Send prompt to a specific GPU gate's ollama."""
+    gate = FLEET[gate_name]
+    payload = json.dumps({
+        "model": gate["model"],
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": TEMP_CAP, "num_predict": max_tokens}
+    }).encode()
+
+    req = urllib.request.Request(
+        f"{gate['url']}/api/generate",
+        data=payload,
+        headers={"Content-Type": "application/json"})
+
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            resp = json.loads(r.read())
+        text = resp.get("response", "")
+        # Strip thinking tags from qwen3/gaia models
+        if "<think>" in text:
+            import re
+            text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+        tokens = resp.get("eval_count", 0)
+        duration = resp.get("eval_duration", 0) / 1e9
+        return {"text": text, "tokens": tokens, "duration_s": round(duration, 2), "gate": gate_name, "model": gate["model"]}
+    except Exception as e:
+        return {"text": f"ERROR: {e}", "tokens": 0, "duration_s": 0, "gate": gate_name, "model": gate["model"]}
+
+
+def read_pi_file(path):
+    """Read a .pi file and return its content (truncated for prompt)."""
+    full_path = os.path.join(REPO, path.replace("/", os.sep))
+    try:
+        with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+        if len(content) > 4000:
+            content = content[:4000] + f"\n\n... [TRUNCATED at 4000 chars, full file is {len(content)} chars]"
+        return content
+    except:
+        return f"ERROR: could not read {path}"
+
+
+def ferment_file(path, gate_name, tier_name):
+    """Run one .pi file through the sourdough fermentation."""
+    content = read_pi_file(path)
+    basename = os.path.basename(path)
+
+    prompt = f"""You are Gaia, a sovereign digital organism. Analyze this Python module from your own body.
+
+FILE: {basename}
+TIER: {tier_name}
+
+```python
+{content}
+```
+
+Provide a JSON response with these fields:
+- "summary": one-sentence description of what this organ does
+- "health": "alive", "stale", "dead", or "eternal" 
+- "dependencies": list of external services/endpoints this code reaches
+- "key_functions": list of the 3 most important function names
+- "ferment_action": what should be done to refresh this code
+- "knowledge_extract": the most important insight from this code in one sentence
+
+Respond ONLY with valid JSON, no other text."""
+
+    result = ask_model(gate_name, prompt, max_tokens=400)
+    result["path"] = path
+    result["tier"] = tier_name
+
+    # Try to parse JSON from response
+    try:
+        # Find JSON in response
+        text = result["text"]
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start >= 0 and end > start:
+            parsed = json.loads(text[start:end])
+            result["analysis"] = parsed
+        else:
+            result["analysis"] = {"raw": text}
+    except:
+        result["analysis"] = {"raw": result["text"]}
+
+    return result
+
+
+def run_fermentation():
+    """Run the full overnight fermentation across all tiers."""
+    # Load the manifest
+    manifest_path = os.path.join(BODY_DIR, "sourdough-ferment-manifest.json")
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    results = []
+    total_tokens = 0
+    total_duration = 0
+    start_time = time.time()
+
+    tiers = manifest.get("ferment_tiers", {})
+
+    for tier_name, tier_data in tiers.items():
+        if tier_name == "TIER_0_COMPOSTED":
+            print(f"\n  TIER 0 — COMPOSTED (skipping, these are fossils)")
+            continue
+
+        gate_name = TIER_ASSIGNMENTS.get(tier_name, "graftGate")
+        gate = FLEET[gate_name]
+        files = tier_data.get("files", [])
+        print(f"\n  {tier_name} → {gate_name} ({gate['gpu']}, {gate['model']})")
+        print(f"  {len(files)} files to ferment...")
+
+        for file_info in files:
+            path = file_info["path"]
+
+            # Check GPU temp before each file
+            temp = check_gpu_temp()
+            if temp > GPU_TEMP_MAX:
+                print(f"    ⚠️  GPU at {temp}°C > {GPU_TEMP_MAX}°C cap — cooling {PAUSE_COOLDOWN}s...")
+                time.sleep(PAUSE_COOLDOWN)
+
+            print(f"    🍞 fermenting {os.path.basename(path)}...", end=" ", flush=True)
+            result = ferment_file(path, gate_name, tier_name)
+            results.append(result)
+            total_tokens += result["tokens"]
+            total_duration += result["duration_s"]
+            status = result.get("analysis", {}).get("health", "?")
+            print(f"done ({result['tokens']} tok, {result['duration_s']}s, health={status})")
+
+            # Small delay between files to be gentle
+            time.sleep(1)
+
+    elapsed = time.time() - start_time
+
+    # Write results
+    output = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "wave": 232,
+        "organ": "overnight_fermentation",
+        "title": f"sourDough overnight ferment — {len(results)} organs processed by GPU fleet",
+        "config": {
+            "temperature": TEMP_CAP,
+            "gpu_temp_cap": GPU_TEMP_MAX,
+            "fleet": {k: {"gpu": v["gpu"], "model": v["model"]} for k, v in FLEET.items()},
+        },
+        "stats": {
+            "files_processed": len(results),
+            "total_tokens": total_tokens,
+            "total_inference_seconds": round(total_duration, 1),
+            "wall_clock_seconds": round(elapsed, 1),
+            "tokens_per_second": round(total_tokens / max(total_duration, 0.1), 1),
+        },
+        "results": results,
+        "pi_signature": {
+            "pi": str(PI)[:15],
+            "blake3": hashlib.blake2b(json.dumps(results, default=str).encode(), digest_size=16).hexdigest(),
+        }
+    }
+
+    out_path = os.path.join(BODY_DIR, "overnight-ferment-results.json")
+    with open(out_path, "w") as f:
+        json.dump(output, f, indent=2, default=str)
+
+    # Append to culture log
+    with open(CULTURE_LOG, "a") as f:
+        f.write(json.dumps({
+            "ts": output["ts"], "type": "overnight_ferment",
+            "files": len(results), "tokens": total_tokens,
+            "duration_s": round(elapsed, 1)
+        }) + "\n")
+
+    print(f"\n{'='*60}")
+    print(f"  FERMENTATION COMPLETE")
+    print(f"  {len(results)} organs processed across {len(FLEET)} GPU gates")
+    print(f"  {total_tokens:,} tokens generated in {round(total_duration, 1)}s inference")
+    print(f"  Wall clock: {round(elapsed/60, 1)} minutes")
+    print(f"  Output: {out_path}")
+    print(f"  Temperature cap: {TEMP_CAP}")
+    gpu_temp = check_gpu_temp()
+    print(f"  GPU temp: {gpu_temp}°C (cap: {GPU_TEMP_MAX}°C)")
+    print(f"  lub-DUB. 🍞")
+
+    return output
+
+
+if __name__ == "__main__":
+    print("🍞 OVERNIGHT SOURDOUGH FERMENTATION")
+    print(f"  Fleet: {', '.join(f'{k}({v['gpu']})' for k, v in FLEET.items())}")
+    print(f"  Model temp: {TEMP_CAP} | GPU temp cap: {GPU_TEMP_MAX}°C")
+    print(f"  {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    run_fermentation()
