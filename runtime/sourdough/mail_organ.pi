@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""mail_organ.pi — Gaia's MAIL ORGAN: scan IN, print OUT.
+
+Two Epson devices = one bidirectional mail system:
+  INPUT:  EPSON ES-400 II (USB scanner on Polaris) → scan → digital
+  OUTPUT: EPSON ET-2400 (network printer at .200) → print → physical
+
+The loop: digital → print → paper → scan → digital → process → print → ...
+
+Also: read email from eastGate's Gaia Neutrino SMTP.
+
+Mail is not just SMTP. Mail is ANY transfer between physical and digital.
+The scanner is Gaia's EYES reading paper.
+The printer is Gaia's HANDS writing paper.
+Together they are the mail organ.
+"""
+
+import subprocess, json, sys, os, time
+from pathlib import Path
+from datetime import datetime, timezone
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+REPO = Path(__file__).parent.parent.parent
+SCAN_DIR = REPO / "data" / "mail" / "scans"
+PRINT_DIR = REPO / "data" / "mail" / "prints"
+MAIL_STATE = REPO / "data" / "body" / "mail-organ.json"
+
+PRINTER_IP = "192.168.4.200"
+SCANNER_NAME = "EPSON ES-400II"
+EASTGATE = "192.168.4.244"
+
+
+def scan_document(output_path=None, dpi=300):
+    """Scan a document from the ES-400 II via WIA/PowerShell."""
+    SCAN_DIR.mkdir(parents=True, exist_ok=True)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    if output_path is None:
+        output_path = SCAN_DIR / f"scan_{ts}.png"
+
+    ps_script = f"""
+Add-Type -AssemblyName System.Drawing
+$deviceManager = New-Object -ComObject WIA.DeviceManager
+$device = $null
+foreach ($d in $deviceManager.DeviceInfos) {{
+    if ($d.Properties.Item('Name').Value -eq '{SCANNER_NAME}') {{
+        $device = $d.Connect()
+        break
+    }}
+}}
+if (-not $device) {{ Write-Error 'Scanner not found'; exit 1 }}
+
+$item = $device.Items[1]
+
+# Set DPI
+$item.Properties.Item('6146').Value = 1  # Color
+$item.Properties.Item('6147').Value = {dpi}  # Horizontal DPI
+$item.Properties.Item('6148').Value = {dpi}  # Vertical DPI
+
+$image = $item.Transfer()
+$image.SaveFile('{str(output_path).replace(chr(92), chr(92)+chr(92))}')
+Write-Output 'SCAN_OK'
+"""
+
+    print(f"  SCANNING from {SCANNER_NAME} at {dpi} DPI...")
+    r = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", ps_script],
+        capture_output=True, text=True, timeout=60
+    )
+
+    if "SCAN_OK" in r.stdout:
+        size = output_path.stat().st_size if output_path.exists() else 0
+        print(f"  SCANNED: {output_path.name} ({size:,} bytes)")
+        return {"ok": True, "path": str(output_path), "bytes": size, "dpi": dpi}
+    else:
+        err = r.stderr.strip() or r.stdout.strip()
+        print(f"  SCAN FAILED: {err[:200]}")
+        return {"ok": False, "error": err[:200]}
+
+
+def print_text(text, title="Gaia Mail"):
+    """Print text to the ET-2400 via network."""
+    PRINT_DIR.mkdir(parents=True, exist_ok=True)
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    txt_path = PRINT_DIR / f"print_{ts}.txt"
+    txt_path.write_text(text, encoding="utf-8")
+
+    # Use Windows print subsystem
+    ps_script = f"""
+$content = Get-Content -Path '{str(txt_path).replace(chr(92), chr(92)+chr(92))}' -Raw
+$content | Out-Printer -Name 'EPSON ET-2400 Series'
+Write-Output 'PRINT_OK'
+"""
+    print(f"  PRINTING to ET-2400 at {PRINTER_IP}...")
+    r = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", ps_script],
+        capture_output=True, text=True, timeout=30
+    )
+
+    if "PRINT_OK" in r.stdout:
+        print(f"  PRINTED: {len(text)} chars → paper")
+        return {"ok": True, "chars": len(text), "title": title}
+    else:
+        err = r.stderr.strip() or r.stdout.strip()
+        print(f"  PRINT FAILED: {err[:200]}")
+        return {"ok": False, "error": err[:200]}
+
+
+def organ_state():
+    """Build the mail organ state."""
+    state = {
+        "organ": "mail",
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "input": {
+            "device": SCANNER_NAME,
+            "connection": "USB (Polaris northGate)",
+            "protocol": "WIA (Windows Image Acquisition)",
+            "modality": "scan → digital (eyes reading paper)",
+            "pid": "USB\\VID_04B8&PID_0181",
+            "dpi_range": "75-600",
+        },
+        "output": {
+            "device": "EPSON ET-2400 Series",
+            "ip": PRINTER_IP,
+            "connection": "Network (LAN .200)",
+            "protocol": "IPP (port 631) + RAW (port 9100)",
+            "modality": "digital → print → paper (hands writing)",
+        },
+        "smtp": {
+            "server": "mail.primals.eco",
+            "banner": "220 mail.primals.eco ESMTP Gaia Neutrino",
+            "gate": "eastGate (.244)",
+            "port": 25,
+            "mx": "mail.primals.eco → 162.226.225.148",
+            "addresses": ["ops@primals.eco", "gaia@primals.eco"],
+        },
+        "loop": "digital → print → paper → light → scan → digital → process → print → ...",
+        "scans": len(list(SCAN_DIR.glob("*.png"))) if SCAN_DIR.exists() else 0,
+        "prints": len(list(PRINT_DIR.glob("*.txt"))) if PRINT_DIR.exists() else 0,
+    }
+    return state
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Gaia Mail Organ")
+    parser.add_argument("action", choices=["scan", "print", "state", "loop"],
+                        help="scan=read paper, print=write paper, state=show organ, loop=scan+process+print")
+    parser.add_argument("--text", help="Text to print (for print action)")
+    parser.add_argument("--dpi", type=int, default=300, help="Scan DPI")
+    args = parser.parse_args()
+
+    print("GAIA MAIL ORGAN")
+    print(f"  INPUT:  {SCANNER_NAME} (USB, WIA)")
+    print(f"  OUTPUT: ET-2400 ({PRINTER_IP}, IPP)")
+    print(f"  SMTP:   Gaia Neutrino (eastGate :25)")
+    print()
+
+    if args.action == "state":
+        state = organ_state()
+        MAIL_STATE.parent.mkdir(parents=True, exist_ok=True)
+        with open(MAIL_STATE, "w") as f:
+            json.dump(state, f, indent=2)
+        print(json.dumps(state, indent=2))
+        print(f"\n  Saved: {MAIL_STATE}")
+
+    elif args.action == "scan":
+        result = scan_document(dpi=args.dpi)
+        print(json.dumps(result, indent=2))
+
+    elif args.action == "print":
+        text = args.text or "Hello from Gaia. This is a test print from the mail organ."
+        result = print_text(text)
+        print(json.dumps(result, indent=2))
+
+    elif args.action == "loop":
+        print("  MAIL LOOP: scan → process → print")
+        scan_result = scan_document(dpi=args.dpi)
+        if scan_result["ok"]:
+            print(f"\n  Scanned. Processing...")
+            print(f"  (TODO: OCR → ollama tissue → response → print)")
+            print(f"  The loop lives. Paper IN, paper OUT.")
+        else:
+            print(f"  Scan failed — loop broken at input.")
+
+
+if __name__ == "__main__":
+    main()
