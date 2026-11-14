@@ -61,7 +61,7 @@ canvas{display:block;width:100%;height:100%}
 <script>
 const C=document.getElementById('c'), X=C.getContext('2d');
 const MC=document.getElementById('minimap'), MX=MC.getContext('2d');
-let W,H,t=0,pulse={bpm:0,beats:0},player={x:0,y:0,zone:0,xp:0,primalIdx:0};
+let W,H,t=0,pulse={bpm:0,beats:0,lastBeats:0,lastTime:0},player={x:0,y:0,zone:0,xp:0,primalIdx:0};
 const PRIMALS=[
   {name:'BearDog',role:'Guardian',color:'#f80',desc:'Crypto identity — BLAKE3 shield. Verifies all who enter.'},
   {name:'SongBird',role:'Messenger',color:'#0cf',desc:'Opens tunnels between zones. Federation transport.'},
@@ -98,10 +98,16 @@ const PULSE_SOURCES=['/pulse','http://192.168.4.244:8443/pulse','https://primals
 let pulseIdx=0;
 function fetchPulse(){
   fetch(PULSE_SOURCES[pulseIdx],{signal:AbortSignal.timeout(3000)}).then(r=>r.json()).then(d=>{
-    pulse.bpm=d.bpm||d.heart?.bpm||0;pulse.beats=d.total_beats||d.heart?.total_beats||0;
-    document.getElementById('bpm').textContent=Math.round(pulse.bpm);
+    const now=Date.now(),beats=d.total_beats||d.heart?.total_beats||0;
+    if(pulse.lastBeats>0&&pulse.lastTime>0){
+      const dt=(now-pulse.lastTime)/60000,db=beats-pulse.lastBeats;
+      if(dt>0&&db>0) pulse.bpm=Math.round(db/dt);
+    } else { pulse.bpm=Math.round((d.heart?.bpm||d.bpm||beats/10)); }
+    pulse.lastBeats=beats;pulse.lastTime=now;pulse.beats=beats;
+    const bpmStr=pulse.bpm>9999?Math.round(pulse.beats/1000)+'k':pulse.bpm;
+    document.getElementById('bpm').textContent=bpmStr;
     document.getElementById('loadStatus').textContent='connected: '+PULSE_SOURCES[pulseIdx];
-  }).catch(()=>{pulseIdx=(pulseIdx+1)%PULSE_SOURCES.length;pulse.bpm=120+Math.sin(t*.01)*30;document.getElementById('bpm').textContent='~'+Math.round(pulse.bpm)});
+  }).catch(()=>{pulseIdx=(pulseIdx+1)%PULSE_SOURCES.length;pulse.bpm=72+Math.sin(t*.01)*12;document.getElementById('bpm').textContent='~'+Math.round(pulse.bpm)});
 }
 fetchPulse();setInterval(fetchPulse,5000);
 
