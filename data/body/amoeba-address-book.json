@@ -1,0 +1,64 @@
+{
+  "type": "amoeba-address-book",
+  "ts": "2026-11-14T09:51:00Z",
+  "title": "AMOEBA Address Book — ALL gates, both sides of the relay",
+  "relay": "192.168.4.244:21116 (eastGate sovereign, moving to sporeGate)",
+
+  "gates": {
+    "LAN_1": {
+      "description": "House 1 — Brain Side (4422 Southgate Ave)",
+      "subnet": "192.168.4.0/24",
+      "nodes": [
+        {"ip": "192.168.4.244", "name": "eastGate", "role": "BRAIN+GUT", "os": "Linux", "rustdesk": "relay+client", "ports": [22, 3000, 8080, 8443, 11436, 21115, 21116, 21117, 21118]},
+        {"ip": "192.168.4.147", "name": "northGate", "role": "HEART/Kevin PC", "os": "Windows", "rustdesk": "client", "ports": [22]},
+        {"ip": "192.168.4.100", "name": "blueGate", "role": "IDE/Cursor", "os": "Windows", "rustdesk": "client", "ports": [22, 3141]},
+        {"ip": "192.168.4.3", "name": "sporeGate", "role": "RELAY/FORGE (future inner Polaris)", "os": "Linux", "rustdesk": "needs install", "ports": [22]},
+        {"ip": "192.168.4.237", "name": "ironGate", "role": "FORGE2 i9-14900K+RTX5070", "os": "Linux", "rustdesk": "needs install", "ports": [22]},
+        {"ip": "192.168.4.107", "name": "graftGate", "role": "GRAFT MacMini-M4", "os": "macOS", "rustdesk": "needs install", "ports": []},
+        {"ip": "192.168.4.148", "name": "southGate", "role": "EDGE iPhone-XS HOME PHONE", "os": "iOS", "rustdesk": "n/a", "ports": []},
+        {"ip": "192.168.4.176", "name": "deckGate", "role": "DISPLAY SteamDeck", "os": "SteamOS", "rustdesk": "needs install", "ports": []}
+      ]
+    },
+    "LAN_2": {
+      "description": "House 2 — South Pole (641 Samantha Ave)",
+      "subnet": "192.168.9.0/24",
+      "nodes": [
+        {"ip": "192.168.9.217", "name": "grapheneGate", "role": "DIAMOND Pixel 8a 37sensors", "os": "GrapheneOS", "rustdesk": "needs install", "ports": [8082]},
+        {"ip": "192.168.9.203", "name": "frameGate", "role": "FACE SteamFrame ARM64", "os": "SteamOS ARM", "rustdesk": "needs install", "ports": []}
+      ]
+    },
+    "INFRA": {
+      "description": "Network infrastructure",
+      "nodes": [
+        {"ip": "192.168.4.1", "name": "Router", "role": "GL-MT6000 gateway", "ssh": "root / ExoticPanda714!!"},
+        {"ip": "192.168.4.2", "name": "MikroTik", "role": "L2 bridge/switch"},
+        {"ip": "192.168.4.111", "name": "JetStream", "role": "10G fiber House 2 switch"},
+        {"ip": "192.168.4.200", "name": "EPSON ET-2400", "role": "PRINTER — physical output"}
+      ]
+    }
+  },
+
+  "relay_topology": {
+    "current": {
+      "relay": "eastGate (.244) — hbbs:21115-21116, hbbr:21117-21118",
+      "clients": ["northGate (.147)", "blueGate (.100)"]
+    },
+    "target": {
+      "relay": "sporeGate (.3) — inner Polaris, AMOEBA sovereign",
+      "clients": "ALL gates",
+      "reason": "eastGate is the brain, not the relay. sporeGate is the go-between."
+    }
+  },
+
+  "deploy_to_both_sides": {
+    "method": "This JSON is in the git repo. Heartbeat pushes to Forgejo fork. All gates that pull get the address book. The AMOEBA relay serves it to connecting clients.",
+    "client_config": {
+      "rendezvous_server": "192.168.4.244:21116",
+      "direct-server": "Y",
+      "local-ip-addr": "auto-detect"
+    }
+  },
+
+  "alive": true,
+  "lub": "DUB"
+}
