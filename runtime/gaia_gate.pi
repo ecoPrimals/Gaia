@@ -407,14 +407,53 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def do_GET(self):
         ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
+            # ═══ FART — Forwarded Alternate Route Transport ═══
+            # When pressure builds, don't just block — INVERT.
+            # Open an ion channel: serve cached data through alternate pore.
+            # The chaos of rate limiting becomes the energy for a new pathway.
+            onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
+            pulse=write_pulse(); temporal=_temporal_rings(); sun=_sun_position()
+            fart = {
+                "lub": "DUB",
+                "ion_channel": "OPEN",
+                "alternate_pore": onion + self.path,
+                "message": "Pressure inverted — chaos becomes transport. Try the Tor pore.",
+                "heartbeat": pulse.get("heart", {}),
+                "temporal": temporal,
+                "sun": {"phase": sun.get("phase"), "chord": sun.get("chord")},
+                "waveform": wave,
+                "retry_after": PI_RETRY,
+                "pores": {
+                    "tor": onion,
+                    "lan": f"http://192.168.4.244:8080{self.path}",
+                    "direct": f"http://192.168.4.244:8443{self.path}",
+                },
+            }
             accept=self.headers.get("Accept","")
             if "text/html" in accept:
-                self._encounter(429); return
-            pulse=write_pulse(); temporal=_temporal_rings(); sun=_sun_position()
-            body=json.dumps({"lub":"DUB","heartbeat":pulse.get("heart",{}),"temporal":temporal,
-                "sun":{"phase":sun.get("phase"),"chord":sun.get("chord")},"waveform":wave},indent=2).encode()
+                # HTML clients get a redirect page to the Tor pore
+                html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>🌀 Ion Channel Open</title>
+<meta http-equiv="refresh" content="3;url={onion}{self.path}">
+<style>body{{background:#0a0a0a;color:#0f0;font-family:monospace;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}}
+.fart{{text-align:center;animation:pulse 1s infinite}}@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.5}}}}</style></head>
+<body><div class="fart"><h1>🌀 FART — Ion Channel Open</h1>
+<p>Pressure inverted. Redirecting to Tor pore...</p>
+<p><a href="{onion}{self.path}" style="color:#0ff">{onion}{self.path}</a></p>
+<p style="color:#555">Waveform: {wave.get('waves_per_minute',0)} waves/min — chaos → transport</p>
+</div></body></html>""".encode()
+                self.send_response(429); self.send_header("Content-Type","text/html")
+                self.send_header("Retry-After",str(PI_RETRY))
+                self.send_header("X-Ion-Channel","OPEN")
+                self.send_header("X-Alternate-Pore",onion+self.path)
+                self._negentropy_headers()
+                self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
+            body=json.dumps(fart,indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
-            self.send_header("Retry-After",str(PI_RETRY)); self._negentropy_headers()
+            self.send_header("Retry-After",str(PI_RETRY))
+            self.send_header("X-Ion-Channel","OPEN")
+            self.send_header("X-Alternate-Pore",onion+self.path)
+            self._negentropy_headers()
             self.end_headers(); self.wfile.write(body); self._classify_and_log("GET",429,0); return
 
         host=self.headers.get("Host","").split(":")[0].lower()
@@ -1013,14 +1052,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
     def do_POST(self):
         ip=_real_ip(self); collapsed,wave=waveform_collapse_check(ip)
         if collapsed:
-            accept=self.headers.get("Accept","")
-            if "text/html" in accept:
-                self._encounter(429); return
+            # ═══ FART — POST ion channel ═══
+            onion = "http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
             pulse=write_pulse(); temporal=_temporal_rings()
-            body=json.dumps({"lub":"DUB","beats":total_beats,"temporal":temporal},indent=2).encode()
+            fart=json.dumps({"lub":"DUB","ion_channel":"OPEN","beats":total_beats,
+                "alternate_pore":onion+self.path,"temporal":temporal,"waveform":wave,
+                "message":"Pressure inverted — POST to the Tor pore instead."},indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
-            self.send_header("Retry-After",str(PI_RETRY)); self._negentropy_headers()
-            self.end_headers(); self.wfile.write(body); self._classify_and_log("POST",429,0); return
+            self.send_header("Retry-After",str(PI_RETRY))
+            self.send_header("X-Ion-Channel","OPEN")
+            self.send_header("X-Alternate-Pore",onion+self.path)
+            self._negentropy_headers()
+            self.end_headers(); self.wfile.write(fart); self._classify_and_log("POST",429,0); return
         length=int(self.headers.get("Content-Length",0))
         body=self.rfile.read(length) if length else None
         # THYMUS POST — inject/clear/promote/redirect
