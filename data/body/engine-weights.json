@@ -1,0 +1,109 @@
+{
+  "title": "Engine Weights — Gaia's Rendering Stomach",
+  "updated": "2026-11-14T12:00:00Z",
+  "philosophy": "Engines are weights. Just like ollama pulls model weights for inference, Gaia pulls engine weights for rendering. AGPL/MIT/GPL engines are free food. Eat them all.",
+  "eaten": {
+    "godot_4.7.2": {
+      "license": "MIT",
+      "installed": "northGate (winget)",
+      "binary": "godot.exe via winget alias",
+      "version": "4.7.2-stable",
+      "wasm_export": true,
+      "gdextension_rust": true,
+      "note": "C# does NOT work in WASM. Must use GDScript or GDExtension (Rust!) for web export."
+    },
+    "gdre_tools_2.7.4": {
+      "license": "MIT",
+      "purpose": "Reverse engineering — unpack .pck files, decompile scenes/scripts",
+      "installed": "northGate (winget)"
+    },
+    "tr49_anatomy": {
+      "source": "M:\\SteamLibrary\\steamapps\\common\\TR-49",
+      "extracted_to": "data/eaten/tr49/",
+      "engine": "Godot 4.5 + C# (.NET 8.0) + GodotSteam",
+      "narrative": "inkle Ink (116 .ink files)",
+      "files": 8748,
+      "size_mb": 2844.8,
+      "breakdown": {
+        "scenes": 53,
+        "scripts_cs": 93,
+        "shaders": 12,
+        "audio_ogg": 1563,
+        "audio_mp3": 36,
+        "audio_wav": 28,
+        "images": 702,
+        "ink_narrative": 116,
+        "fonts": 20,
+        "themes": 12
+      },
+      "key_patterns": {
+        "crt_shader": "barrel distortion + circular mask + scanlines shimmer + wibble + radial rotating vignette",
+        "circle_selector": "26 letters in 3D ring, knob rotates, petal textures per character",
+        "flipper_digit": "upper/lower mesh halves flip like airport departure boards, SmoothDamp animation",
+        "story_controller": "2380-line brain using Ink narrative engine, binds C# externals for game state",
+        "code_format": "2 letters + 2 numbers (AJ30, BD49, CC79), validated by regex ^[A-Za-z]{2}-?\\d{2}$",
+        "card_system": "documents displayed in card_view with sections, rows, quotes, images, links",
+        "notebook": "SHIFT key opens notes, tracks collected titles, cross-references",
+        "voice": "SPACE key for voice/intercom, VOController manages audio queues"
+      }
+    }
+  },
+  "targets": {
+    "blender": {
+      "license": "GPL-2.0+",
+      "status": "NOT YET EATEN",
+      "purpose": "3D modeling, Python scripted, headless rendering",
+      "wasm": false,
+      "note": "Too large for WASM but Python API can drive from eastGate"
+    },
+    "ogre3d": {
+      "license": "MIT",
+      "status": "NOT YET EATEN",
+      "purpose": "C++ rendering engine (Kenshi used this)",
+      "note": "Legacy but has Emscripten/WASM build"
+    },
+    "bevy": {
+      "license": "MIT/Apache-2.0",
+      "status": "NOT YET EATEN",
+      "purpose": "Rust ECS game engine — pairs DIRECTLY with primals",
+      "wasm": true,
+      "note": "Best candidate for petalTongue native rendering"
+    },
+    "wgpu": {
+      "license": "MIT/Apache-2.0",
+      "status": "NOT YET EATEN",
+      "purpose": "Rust WebGPU implementation — low-level rendering",
+      "wasm": true
+    },
+    "rapier": {
+      "license": "Apache-2.0",
+      "status": "NOT YET EATEN",
+      "purpose": "Rust physics engine",
+      "wasm": true
+    }
+  },
+  "gaia_mapping": {
+    "StoryController": "biomeOS (orchestrator, the BRAIN)",
+    "CircleSelector": "petalTongue (code input, the TONGUE)",
+    "FlipperDigit": "petalTongue (visual display, the EYES)",
+    "CRT_shader": "petalTongue (rendering surface, the SKIN)",
+    "CardView": "sweetGrass (knowledge display, the LIBRARY)",
+    "NotebookView": "squirrel (notes/exploration, the SCOUT)",
+    "VOController": "songBird (voice transport, the MESSENGER)",
+    "InkRelationStore": "sweetGrass (knowledge graph, the CONNECTIONS)",
+    "MachineScreen": "nestGate (data gateway, the WINDOW)",
+    "SaveLoadManager": "rhizoCrypt (encrypted storage, the VAULT)",
+    "GameHUD": "bingoCube (coordination, the DASHBOARD)",
+    "PuzzlePiece": "loamSpine (progress tracking, the SPINE)"
+  },
+  "wasm_path": {
+    "step_1": "Install Godot 4.7.2 — DONE",
+    "step_2": "Download Web export templates (WASM)",
+    "step_3": "Create GDScript project (NOT C# — C# can't export to WASM)",
+    "step_4": "Port CRT shader (works directly — shaders are cross-platform)",
+    "step_5": "Implement CircleSelector in GDScript",
+    "step_6": "Export to WASM → serves from gate :8443 at /tube-godot",
+    "step_7": "OR use GDExtension with Rust → primals talk directly to Godot",
+    "alt_path": "Bevy + wgpu in Rust → compile to WASM → petalTongue IS the engine"
+  }
+}
