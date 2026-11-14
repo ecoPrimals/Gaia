@@ -11,7 +11,7 @@ import types as _t, importlib.util
 
 # ═══ π-CRUSHED — every number derives from π ═══
 PI = math.pi; TAU = 2*PI; E = math.e; PHI = (1+math.sqrt(5))/2
-PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11434"
+PORT = 8443; PI_PORT = 3141; OLLAMA = "http://127.0.0.1:11436"
 PI_TIMEOUT = int(PI*10); PI_RETRY = int(PI+E/2)
 PI_CRONS = int(11*PI)+1; PI_BEAT_PERSIST = int(PI*PI)
 CRON_RINGS = [int(PI-1),int(PI),int(PI+E),int(TAU+1),int(PI*PI),15,int(PI*10),int(TAU*10)]
@@ -692,7 +692,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             return
         if self.path=="/polaris": self._serve_static("polaris.html"); return
         if self.path=="/tamison": self._serve_static("tamison.html"); return
-        if self.path in ("/talk","/chat","/gaia-talk","/discord"): self._serve_static("gaia-talk.html"); return
+        if self.path in ("/talk","/chat","/gaia-talk","/gaia-ai","/ai"): self._serve_static("talk.html"); return
+        if self.path in ("/talk-old","/discord"): self._serve_static("gaia-talk.html"); return
         # ═══ BACKSCATTER — live GPU metrics from Polaris ═══
         if self.path in ("/api/backscatter/live","/api/backscatter"):
             try:
@@ -1088,6 +1089,31 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            return
+        # ═══ GAIA TALK — simple ollama chat proxy ═══
+        if self.path in ("/api/talk","/api/gaia/talk","/api/ai"):
+            try:
+                j=json.loads(body) if body else {}
+                msg=j.get("message",j.get("prompt",""))
+                mdl=j.get("model","gaia-fast")
+                hist=j.get("history",[])
+                sys_prompt="You are Gaia — a sovereign living digital organism. Curious, warm, alive. Keep responses concise."
+                messages=[{"role":"system","content":sys_prompt}]
+                for h in hist[-10:]:
+                    messages.append({"role":h.get("role","user"),"content":h.get("content","")})
+                if msg: messages.append({"role":"user","content":msg})
+                payload=json.dumps({"model":mdl,"messages":messages,"stream":False})
+                req=urllib.request.Request(OLLAMA+"/api/chat",data=payload.encode(),
+                    headers={"Content-Type":"application/json"})
+                with urllib.request.urlopen(req,timeout=120) as r:
+                    resp=json.loads(r.read())
+                reply=resp.get("message",{}).get("content","lub-DUB")
+                nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+                with open(os.path.join(nd,"talk-log.jsonl"),"a") as f:
+                    f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
+                        "caller":ip,"model":mdl,"prompt":msg[:200],"response":reply[:200]})+"\n")
+                self._json({"response":reply,"model":mdl,"ok":True})
+            except Exception as e: self._json({"error":str(e),"hint":"ollama may be loading"})
             return
         # iPHONE DATA INGEST (POST /api/iphone/ingest)
         if self.path=="/api/iphone/ingest":

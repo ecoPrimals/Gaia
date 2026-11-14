@@ -1,6 +1,6 @@
 // gAIa Service Worker — the organism persists offline
 const CACHE='gaia-v1';
-const ASSETS=['/sense','/spacedock','/outer-face','/manifest.json'];
+const ASSETS=['/sense','/talk','/spacedock','/outer-face','/manifest.json'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
