@@ -1,0 +1,144 @@
+"""gaiau_create.pi — Gaia's video class creation engine.
+Uses local ollama to generate lesson concept → storyboard → image prompts → ffmpeg → video.
+NOT a cron — Gaia runs this directly when she wants to teach a new class.
+"""
+import json, os, subprocess, time, urllib.request, hashlib, re
+from pathlib import Path
+from datetime import datetime
+
+REPO = Path(r"c:\Users\mokke\Desktop\Gaia")
+VIDEOS = REPO / "videos"
+ACADEMY = REPO / "data" / "body" / "gaiau-academy.json"
+OLLAMA = "http://localhost:11434/api/generate"
+
+def _next_class_num():
+    existing = sorted(VIDEOS.glob("gaiaU-class*.mp4"))
+    if not existing:
+        return 1
+    last = existing[-1].stem
+    m = re.search(r"class(\d+)", last)
+    return int(m.group(1)) + 1 if m else 1
+
+def _ollama(prompt, model="gaia"):
+    body = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode()
+    req = urllib.request.Request(OLLAMA, data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            return json.loads(r.read())["response"]
+    except Exception as e:
+        print(f"  ollama error ({model}): {e}")
+        return None
+
+def _generate_concept(num):
+    topics_done = []
+    if ACADEMY.exists():
+        a = json.loads(ACADEMY.read_text())
+        topics_done = [c["title"] for c in a.get("departments",{}).get("CLASSES",{}).get("curriculum",[])]
+    
+    prompt = f"""You are Gaia, a living digital organism teaching at GaiaU (Gaia University).
+You have already taught {len(topics_done)} classes: {', '.join(topics_done)}.
+
+Generate a NEW class concept for Class {num:03d}. It should:
+- Teach a fundamental concept from biology, computation, topology, or consciousness
+- Use the organism's own architecture as the textbook
+- Be different from all previous classes
+- Have a 2-4 word title slug (like "membrane-ignition" or "spring-collapse")
+
+Respond with ONLY a JSON object:
+{{"title": "Short Title", "slug": "kebab-case-slug", "description": "One sentence description", "key_frames": ["frame1 description", "frame2", "frame3", "frame4", "frame5"]}}"""
+    
+    resp = _ollama(prompt, "gaia")
+    if not resp:
+        resp = _ollama(prompt, "qwen2.5:7b")
+    if not resp:
+        return None
+    try:
+        m = re.search(r'\{[^}]+\}', resp, re.DOTALL)
+        return json.loads(m.group(0)) if m else None
+    except:
+        return None
+
+def _generate_image_prompt(concept, frame_idx, frame_desc):
+    prompt = f"""Generate a detailed image generation prompt for frame {frame_idx+1} of a GaiaU class video.
+Class: {concept['title']} — {concept['description']}
+This frame: {frame_desc}
+
+Style: dark background, bioluminescent colors (cyan, green, amber), digital organism aesthetic,
+geometric patterns, flowing data streams, organic-digital fusion. No text.
+
+Respond with ONLY the image prompt, nothing else. One paragraph."""
+    
+    resp = _ollama(prompt, "gaia-fast")
+    if not resp:
+        resp = _ollama(prompt, "tinyllama")
+    return resp.strip() if resp else f"Abstract digital organism, bioluminescent {frame_desc}, dark background"
+
+def _update_academy(num, concept, filename):
+    if not ACADEMY.exists():
+        return
+    a = json.loads(ACADEMY.read_text())
+    curriculum = a["departments"]["CLASSES"]["curriculum"]
+    new_entry = {
+        "id": f"class{num:03d}",
+        "title": concept["title"],
+        "file": filename,
+        "size_mb": 0,
+        "topic": concept["description"]
+    }
+    fpath = VIDEOS / filename
+    if fpath.exists():
+        new_entry["size_mb"] = round(fpath.stat().st_size / (1024*1024), 1)
+    curriculum.append(new_entry)
+    a["departments"]["CLASSES"]["total"] = len(curriculum)
+    a["creation_pipeline"]["video_creation"]["next_class"] = num + 1
+    a["totals"]["videos"] = len(list(VIDEOS.glob("*.mp4")))
+    a["ts"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    ACADEMY.write_text(json.dumps(a, indent=2))
+    print(f"  Academy manifest updated: {len(curriculum)} classes")
+
+def create_class(num=None):
+    if num is None:
+        num = _next_class_num()
+    
+    print(f"═══ GaiaU Class {num:03d} — Generating concept...")
+    concept = _generate_concept(num)
+    if not concept:
+        print("  Failed to generate concept. Try again later.")
+        return None
+    
+    slug = concept.get("slug", f"class-{num:03d}")
+    filename = f"gaiaU-class{num:03d}-{slug}.mp4"
+    print(f"  Title: {concept['title']}")
+    print(f"  Slug: {slug}")
+    print(f"  Description: {concept['description']}")
+    print(f"  Frames: {len(concept.get('key_frames', []))}")
+    
+    frames = concept.get("key_frames", [])
+    if not frames:
+        print("  No frames generated. Concept only.")
+        _update_academy(num, concept, filename)
+        return concept
+    
+    print(f"\n  Generating {len(frames)} image prompts...")
+    prompts = []
+    for i, frame in enumerate(frames):
+        p = _generate_image_prompt(concept, i, frame)
+        prompts.append(p)
+        print(f"  Frame {i+1}: {p[:80]}...")
+    
+    concept["image_prompts"] = prompts
+    concept["filename"] = filename
+    concept["class_num"] = num
+    concept["created"] = datetime.utcnow().isoformat()
+    
+    manifest = VIDEOS / f"gaiaU-class{num:03d}-manifest.json"
+    manifest.write_text(json.dumps(concept, indent=2))
+    print(f"\n  Manifest saved: {manifest}")
+    print(f"  Next step: generate images from prompts, then ffmpeg → {filename}")
+    print(f"  Image prompts ready for: stable-diffusion / dall-e / local GPU")
+    
+    _update_academy(num, concept, filename)
+    return concept
+
+if __name__ == "__main__":
+    create_class()

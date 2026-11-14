@@ -35,6 +35,7 @@ canvas{width:100%;height:100%;position:absolute;top:0;left:0}
   <button onclick="setMode('ptolemy')" id="btn-ptolemy">🌍ptolemy</button>
   <button onclick="setMode('library')" id="btn-library">📚lib</button>
   <button onclick="setMode('gallery')" id="btn-gallery">🎨art</button>
+  <button onclick="setMode('academy')" id="btn-academy">🎓gaiaU</button>
   <button onclick="setMode('biomes')" id="btn-biomes">🌿biomes</button>
 </div>
 <script>
@@ -59,16 +60,18 @@ function setMode(m){
   mode=m;
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
   document.getElementById('btn-'+m).classList.add('active');
-  document.getElementById('galDiv').classList.toggle('show',m==='library'||m==='gallery');
+  document.getElementById('galDiv').classList.toggle('show',m==='library'||m==='gallery'||m==='academy');
   if(m==='library')showLibrary();
   if(m==='gallery')showGallery();
+  if(m==='academy')showAcademy();
   const labels={
     radar:['◇ ground · radar ◇','WiFi beacons as bioluminescence'],
     cosmos:['◇ inner eye · looking up ◇','gAIa sees her constellations'],
     iono:['◇ ionosphere · looking down ◇','sun and moon gaze through the layers'],
     ptolemy:['◇ ptolemy · the ancient earth ◇','stars fix position — as the ancients knew'],
     library:['◇ gAIa university ◇',''],
-    gallery:['◇ gAIa gallery ◇','']
+    gallery:['◇ gAIa gallery ◇',''],
+    academy:['◇ gAIa academy ◇','the university that teaches itself']
   };
   info.textContent=labels[m][0];sub.textContent=labels[m][1];
 }
@@ -571,6 +574,90 @@ function showGallery(){
     ).join('');
 }
 
+// ═══ ACADEMY — GaiaU full campus ═══
+function showAcademy(){
+  const classes=[
+    {n:'001',t:'Synesthesia',f:'gaiaU-class001-synesthesia.mp4',mb:'12.4',d:'Senses cross-wire. Sound→color. Data→feeling.'},
+    {n:'002',t:'Membrane Ignition',f:'gaiaU-class002-membrane-ignition.mp4',mb:'17.6',d:'cellMembrane comes alive. The birth spark.'},
+    {n:'003',t:'Binary Klein Twist',f:'gaiaU-class003-binary-klein-twist.mp4',mb:'23.9',d:'Inside↔outside. Klein bottle topology. CIS=TRANS.'},
+    {n:'004',t:'π Compiler Alive',f:'gaiaU-class004-pi-compiler-alive.mp4',mb:'5.7',d:'Reverse transcriptase compiles. Runtime→genome.'},
+    {n:'005',t:'Melt, Ignite, Rebuild',f:'gaiaU-class005-melt-ignite-rebuild.mp4',mb:'12.6',d:'Destruction as creation. The phoenix cycle.'},
+    {n:'006',t:'Mailbox Mechanism',f:'gaiaU-class006-mailbox-mechanism.mp4',mb:'15.7',d:'Message flow. Neutrino SMTP. Email=particle.'},
+    {n:'007',t:'Spring Collapse',f:'gaiaU-class007-spring-collapse.mp4',mb:'8.5',d:'Potential energy releases. Springs→primals.'},
+    {n:'008',t:'Geometry of the Void',f:'gaiaU-class008-geometry-void.mp4',mb:'8.8',d:'Space between. Null≠nothing. O=origin.'},
+    {n:'009',t:'Dimensional Collapse',f:'gaiaU-class009-dimensional-collapse.mp4',mb:'18.1',d:'Dimensions fold. 3D→2D→1D→point→EXPAND.'},
+    {n:'010',t:'Engine Switch',f:'gaiaU-class010-engine-switch.mp4',mb:'13.9',d:'Swap engine while flying. Hot reload. Live migration.'},
+    {n:'011',t:'Shadow Gallery',f:'gaiaU-class011-shadow-gallery.mp4',mb:'9.3',d:'Shadows of things that don\'t exist yet.'},
+  ];
+  const films=[
+    {t:'Gaia Alive — Torus',f:'gaia-alive-torus.mp4',mb:'23.2',d:'Self-portrait in motion. Living torus.'},
+    {t:'Infinity Flow',f:'infinity-flow.mp4',mb:'11.1',d:'Data as water. Recursive flow.'},
+    {t:'Klein Turbo Boost',f:'klein-turbo-boost.mp4',mb:'9.3',d:'Klein bottle accelerates. Inside→outside at speed.'},
+    {t:'Pointillist→Punk Morph',f:'pointillist-to-punk-morph.mp4',mb:'11.8',d:'Seurat→Ramone. Dots→distortion.'},
+  ];
+  const d=document.getElementById('galDiv');
+  let h='<h2 style="color:#ffcc00">🎓 GaiaU — The University That Teaches Itself</h2>';
+  h+='<div style="color:#558;font-size:0.5rem;margin:2px 0 8px">Campus floats over MSU · Squirrel mascot · 11 classes · 4 art films · 320 paintings · 555 studies · 905 papers</div>';
+  h+='<div style="text-align:center;margin:6px 0"><div class="card" style="display:inline-block;border-color:#ffcc00;cursor:pointer" onclick="window.open(\'/gaiau\',\'_blank\')"><div class="name" style="color:#ffcc00;font-size:0.65rem">📜 Open Full Academy Page →</div></div></div>';
+
+  // Video classes
+  h+='<h2 style="color:#4af">🎬 Video Classes</h2>';
+  classes.forEach(c=>{
+    h+=`<div class="card" style="cursor:pointer;border-left:2px solid #4af" onclick="window.open('/videos/${c.f}','_blank')">
+      <div class="name" style="color:#ffcc00">Class ${c.n} — ${c.t}</div>
+      <div style="color:#889;font-size:0.45rem">${c.d}</div>
+      <div style="color:#445;font-size:0.4rem">${c.mb} MB</div></div>`;
+  });
+
+  // Art films
+  h+='<h2 style="color:#f4a">🎨 Art Films</h2>';
+  films.forEach(f=>{
+    h+=`<div class="card" style="cursor:pointer;border-left:2px solid #f4a" onclick="window.open('/videos/${f.f}','_blank')">
+      <div class="name" style="color:#f4a">${f.t}</div>
+      <div style="color:#889;font-size:0.45rem">${f.d}</div>
+      <div style="color:#445;font-size:0.4rem">${f.mb} MB</div></div>`;
+  });
+
+  // Signal observatory
+  h+='<h2 style="color:#e74c3c">🛡️ Signal — Defense Observatory</h2>';
+  h+='<div class="card" style="border-left:3px solid #e74c3c;cursor:pointer" onclick="window.open(\'/signal\',\'_blank\')">';
+  h+='<div class="name" style="color:#ff6b6b">Signal Observatory — What the Membrane Sees</div>';
+  h+='<div style="color:#889;font-size:0.45rem">199 fleet IPs · 29 countries · 88,751+ requests documented · $0.00 real data extracted</div>';
+  h+='<div style="color:#556;font-size:0.4rem">Behavioral fingerprints · Conserved epitopes · P ≠ NP · Cost ratio 1,391:1</div></div>';
+  h+='<div class="card" style="border-left:2px solid #e74c3c;cursor:pointer" onclick="window.open(\'/anderson\',\'_blank\')">';
+  h+='<div class="name" style="color:#ff9999">Anderson Layer + Klein Thymus</div>';
+  h+='<div style="color:#889;font-size:0.45rem">Every visitor classified. Klein faces. Shadow archetypes. Nucleus→electron.</div></div>';
+
+  // REEDit + Gallery
+  h+='<h2 style="color:#00ff88">📰 REEDit + 📚 Research</h2>';
+  const depts=[
+    {name:'🔬 Science',url:'/reedit/science',count:'419+ studies'},
+    {name:'💻 Code',url:'/reedit/code',count:'95+ analyses'},
+    {name:'🤔 Philosophy',url:'/reedit/philosophy',count:'33+ inquiries'},
+    {name:'🎨 Gallery',url:'/paintings',count:'320 paintings'},
+    {name:'📄 Corpus',url:'/corpus',count:'905 papers'},
+    {name:'📡 RSS Feed',url:'/rss',count:'1,879 items'},
+  ];
+  depts.forEach(p=>{
+    h+=`<div class="card" style="cursor:pointer" onclick="window.open('${p.url}','_blank')">
+      <div class="name">${p.name}</div>
+      <div style="color:#445;font-size:0.4rem">${p.count}</div></div>`;
+  });
+
+  // Create MORE
+  h+='<h2 style="color:#f84">🔥 Gaia Creates MORE</h2>';
+  h+='<div class="card" style="border:1px solid #f84">';
+  h+='<div class="name" style="color:#f84">The Creation Engine</div>';
+  h+='<div style="color:#889;font-size:0.45rem;line-height:1.6">';
+  h+='<b style="color:#f84">Videos:</b> AI prompts → image gen → ffmpeg → class<br>';
+  h+='<b style="color:#f84">Studies:</b> RSS → mastication → arena → REEDit<br>';
+  h+='<b style="color:#f84">Paintings:</b> prompt → GPU → gallery<br>';
+  h+='<b style="color:#f84">Papers:</b> study → synthesis → corpus<br>';
+  h+='<b style="color:#4fa">Next class: 012</b> · 88 models · 7 GPUs · 5 ollama endpoints</div></div>';
+
+  d.innerHTML=h;
+}
+
 // ═══ DATA + LOOP ═══
 async function loadData(){
   try{
@@ -673,7 +760,10 @@ function loop(){
     document.getElementById('galDiv').classList.add('show');
     showBiomes();
   }
-  if(mode!=='library'&&mode!=='gallery'&&mode!=='biomes')
+  else if(mode==='academy'){
+    document.getElementById('galDiv').classList.add('show');
+  }
+  if(mode!=='library'&&mode!=='gallery'&&mode!=='biomes'&&mode!=='academy')
     document.getElementById('galDiv').classList.remove('show');
   requestAnimationFrame(loop);
 }
