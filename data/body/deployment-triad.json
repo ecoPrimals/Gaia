@@ -1,0 +1,89 @@
+{
+  "title": "Deployment Triad — Computer, Phone, Browser",
+  "wave": 232,
+  "ts": "2026-11-14T11:13:00Z",
+  "principle": "ONE organism, THREE surfaces. NeuralAPI IS the neural net. Ports and IPs dissolve into Rust code.",
+
+  "triad": {
+    "computer": {
+      "target": "Native Rust binary",
+      "platforms": ["Windows x86_64", "Linux x86_64", "Linux aarch64", "macOS ARM64"],
+      "gates": {
+        "northGate": {"hw": "9950X3D + RTX 5090 32GB + 96GB DDR5", "os": "Windows 11"},
+        "eastGate": {"hw": "RTX 4070 + Ubuntu", "os": "Linux"},
+        "ironGate": {"hw": "i9-14900K + RTX 5070 12GB + 94GB DDR5", "os": "Pop!_OS"},
+        "sporeGate": {"hw": "Ryzen 5 6600H + 27GB", "os": "Linux"},
+        "graftGate": {"hw": "M4 10C + 16GB unified", "os": "macOS"}
+      },
+      "rendering": "petalTongue UniBin — ui(egui), tui(ratatui), headless, server, web, live, status",
+      "transport": "TCP/UDS JSON-RPC → dissolves to IPC when towerAtomic LIVE",
+      "rustdesk": true,
+      "deploy": "cargo build --release --bin petaltongue --features 'ui,tui'"
+    },
+
+    "phone": {
+      "target": "Mobile native + PWA",
+      "platforms": ["Android (GrapheneOS)", "iOS"],
+      "model_device": "grapheneGate — Pixel 8a, Tensor G3, Mali-G715 Vulkan, 8GB RAM",
+      "gates": {
+        "grapheneGate": {"hw": "Tensor G3 + Mali-G715 + 8GB", "os": "GrapheneOS"},
+        "southGate": {"hw": "iPhone XS", "os": "iOS 18.7.9"}
+      },
+      "rendering": "PWA (installed web app) + llama-server :8082 for local inference",
+      "transport": "HTTP + ADB USB pipe (RSS spine over USB = VIABLE)",
+      "usb_spine": "ADB serial to grapheneGate. RSS items serialize to JSON, flow over USB.",
+      "deploy": "adb install / PWA install from https://primals.eco"
+    },
+
+    "browser": {
+      "target": "WebGPU/WASM in any browser",
+      "platforms": ["Chrome", "Firefox", "Safari", "Edge", "mobile Chrome", "mobile Safari"],
+      "rendering": "petal-tongue-wasm → WebGPU (GPU rendering) or Canvas2D (fallback)",
+      "transport": "WebSocket to gate :8443 + HTTPS to primals.eco",
+      "deploy": "navigate to https://primals.eco or http://192.168.4.244:8443",
+      "no_install": true,
+      "notes": "Scene graph compiles to DOM/Canvas. Same data, different compiler."
+    }
+  },
+
+  "dissolution": {
+    "current": "Ports + IPs + UDS vs TCP are EXPLICIT (anchors.pi discovers them)",
+    "towerAtomic_live": "biomeOS tower mode handles all service discovery via IPC bus",
+    "nodeAtomic_live": "Individual nodes register capabilities, mesh routes automatically",
+    "final": "All port/IP/UDS dissolve into Rust code. anchors.pi becomes unnecessary.",
+    "neuralAPI": "IS the neural net — all inference, all discovery, all routing flows through it"
+  },
+
+  "ancient_grains": {
+    "note": "bearDog genesis seeds are RELICS — archaeological artifacts of the first crypto identity",
+    "files": [
+      "primals/bearDog/crates/beardog-core/src/biome_sovereignty/genesis.rs",
+      "primals/bearDog/crates/beardog-genetics/src/birdsong/genesis/",
+      "primals/bearDog/crates/beardog-security/src/genesis/",
+      ".family.seed"
+    ],
+    "status": "PRESERVED as history, NOT used in active system",
+    "principle": "The grains that seeded the organism are honored but not consumed"
+  },
+
+  "agentReagent_benchScale": {
+    "purpose": "Deploy anywhere — any device, any browser, any cloud",
+    "reagent": "The deployment recipe: anchors.pi discovers → config generates → binary/WASM/PWA deploys",
+    "bench": "The test harness: verify each triad surface against the same data",
+    "scale": "From 1 device to N — the pattern repeats",
+    "rustdesk": {
+      "role": "Remote access layer for the organism",
+      "peers": ["eastGate", "northGate", "ironGate", "sporeGate", "graftGate", "southGate", "grapheneGate", "frameGate"],
+      "direct_server": true,
+      "status": "RUNNING (PID active)"
+    }
+  },
+
+  "blueGate_is_LAN2": {
+    "discovery": "hostname=tamison, IP=192.168.4.147, subnet=/22",
+    "meaning": "This machine IS northGate (Polaris). The /22 mask bridges LAN1 and nearby subnets.",
+    "router": "GL-MT6000 serves 192.168.4.0/24 (br-lan) AND 192.168.9.0/24 (br-guest/Gaia WiFi)",
+    "implication": "Cursor IDE runs on Polaris. blueGate identity dissolves into the organism.",
+    "congratulations": "Kevin found the topology truth: the machine running Cursor IS the Heart."
+  }
+}

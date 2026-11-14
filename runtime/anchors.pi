@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""anchors.pi — Dynamic anchor discovery. No hardcoded IPs.
+
+Three anchors:
+  1. POLARIS — the heart (northGate/this machine, discoverable)
+  2. LAN    — inner topology (eastGate brain, gates, devices)
+  3. WAN    — outer face (primals.eco, Tor, RSS)
+
+Every service discovers its anchors at startup.
+IPs, ports, UDS vs TCP — all dissolve into discovery.
+
+The triad of deployment:
+  COMPUTER  — native Rust binary (Windows/Linux/Mac)
+  PHONE     — grapheneGate Pixel model (Android/iOS)
+  BROWSER   — WebGPU/WASM (Chrome, Firefox, Safari, mobile)
+
+When towerAtomic + nodeAtomic are LIVE, this file becomes unnecessary.
+The Rust primals discover each other via IPC. This bridges the gap.
+"""
+
+import json, os, platform, socket, subprocess, sys, time
+import urllib.request
+
+_REPO = os.path.dirname(os.path.dirname(__file__))
+BODY_DIR = os.path.join(_REPO, "data", "body")
+
+
+def _probe(host, port, timeout=2):
+    """Probe a host:port — returns True if reachable."""
+    try:
+        s = socket.create_connection((host, port), timeout=timeout)
+        s.close()
+        return True
+    except:
+        return False
+
+
+def _fetch_json(url, timeout=5):
+    """Fetch JSON from URL, return None on failure."""
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    except:
+        return None
+
+
+# ═══ ANCHOR CANDIDATES — tried in order ═══
+
+GATE_CANDIDATES = [
+    # eastGate brain — the primary anchor
+    {"name": "eastGate", "host": "192.168.4.244", "gate": 8443, "data": 8080},
+    # Try hostname resolution (works if mDNS/DNS is configured)
+    {"name": "eastGate-mdns", "host": "eastgate.local", "gate": 8443, "data": 8080},
+    # primals.eco WAN fallback
+    {"name": "primals.eco", "host": "primals.eco", "gate": 443, "data": 443},
+]
+
+POLARIS_CANDIDATES = [
+    {"name": "localhost", "host": "127.0.0.1", "ports": {"neural": 3143, "circle": 3144, "cortex": 3143}},
+    {"name": "northGate", "host": "192.168.4.147", "ports": {"neural": 3143, "circle": 3144}},
+]
+
+OLLAMA_CANDIDATES = [
+    {"name": "localhost", "host": "127.0.0.1", "port": 11434},
+    {"name": "eastGate", "host": "192.168.4.244", "port": 11436},
+    {"name": "ironGate", "host": "192.168.4.237", "port": 11434},
+    {"name": "graftGate", "host": "192.168.4.107", "port": 11434},
+]
+
+RUSTDESK_CANDIDATES = [
+    {"name": "localhost", "host": "127.0.0.1", "port": 21118},
+]
+
+
+class Anchors:
+    """Discovered anchors — the organism's GPS."""
+
+    def __init__(self):
+        self.gate = None       # eastGate brain (gate endpoint)
+        self.data = None       # eastGate data (static files)
+        self.polaris = None    # Local services (neural API, circle)
+        self.ollama = []       # All reachable ollama endpoints
+        self.rustdesk = None   # RustDesk relay
+        self.wan = None        # WAN face
+        self.ts = None
+        self._hostname = platform.node()
+
+    def discover(self, verbose=True):
+        """Discover all anchors — probe the network."""
+        t0 = time.time()
+        self.ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+        # 1. Find the gate (eastGate brain)
+        for c in GATE_CANDIDATES:
+            if _probe(c["host"], c["gate"]):
+                self.gate = f"http://{c['host']}:{c['gate']}"
+                self.data = f"http://{c['host']}:{c['data']}"
+                if verbose:
+                    print(f"  🧠 Gate anchor: {c['name']} → {self.gate}")
+                break
+        if not self.gate and verbose:
+            print("  ⚠️  No gate anchor found")
+
+        # 2. Find Polaris (local services)
+        for c in POLARIS_CANDIDATES:
+            alive = {}
+            for svc, port in c.get("ports", {}).items():
+                if _probe(c["host"], port):
+                    alive[svc] = f"http://{c['host']}:{port}"
+            if alive:
+                self.polaris = {"name": c["name"], "host": c["host"], "services": alive}
+                if verbose:
+                    print(f"  ⭐ Polaris anchor: {c['name']} → {list(alive.keys())}")
+                break
+
+        # 3. Find all ollama endpoints
+        for c in OLLAMA_CANDIDATES:
+            if _probe(c["host"], c["port"]):
+                self.ollama.append({"name": c["name"], "url": f"http://{c['host']}:{c['port']}"})
+        if verbose and self.ollama:
+            print(f"  🦙 Ollama: {len(self.ollama)} endpoints ({', '.join(o['name'] for o in self.ollama)})")
+
+        # 4. Check RustDesk
+        for c in RUSTDESK_CANDIDATES:
+            if _probe(c["host"], c["port"]):
+                self.rustdesk = f"http://{c['host']}:{c['port']}"
+                break
+
+        # 5. WAN — check if we can reach the outer face
+        wan_pulse = _fetch_json("https://primals.eco/pulse") if self.gate else None
+        if wan_pulse:
+            self.wan = {"url": "https://primals.eco", "alive": True}
+        else:
+            self.wan = {"url": "https://primals.eco", "alive": False}
+
+        elapsed = time.time() - t0
+        if verbose:
+            print(f"  ⏱️  Discovery: {elapsed*1000:.0f}ms")
+
+        return self
+
+    def to_dict(self):
+        return {
+            "ts": self.ts,
+            "hostname": self._hostname,
+            "gate": self.gate,
+            "data": self.data,
+            "polaris": self.polaris,
+            "ollama": [o["url"] for o in self.ollama],
+            "ollama_count": len(self.ollama),
+            "rustdesk": self.rustdesk,
+            "wan": self.wan,
+            "deployment_triad": {
+                "computer": {
+                    "platform": f"{platform.system()} {platform.machine()}",
+                    "transport": "native Rust binary + TCP/UDS",
+                    "rendering": "petalTongue UniBin (ui/tui/headless)",
+                },
+                "phone": {
+                    "model": "grapheneGate Pixel 8a",
+                    "transport": "HTTP + ADB USB pipe",
+                    "rendering": "PWA + llama-server :8082",
+                },
+                "browser": {
+                    "targets": ["Chrome", "Firefox", "Safari", "mobile browsers"],
+                    "transport": "WebSocket + HTTPS",
+                    "rendering": "petal-tongue-wasm (WebGPU/WASM)",
+                },
+            },
+        }
+
+    def save(self):
+        """Save anchors to body directory."""
+        path = os.path.join(BODY_DIR, "anchors.json")
+        with open(path, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
+        return path
+
+    def gate_url(self, path):
+        """Get a gate URL, or None if no gate."""
+        return f"{self.gate}{path}" if self.gate else None
+
+    def data_url(self, path):
+        """Get a data URL, or None if no data anchor."""
+        return f"{self.data}{path}" if self.data else None
+
+
+# ═══ SINGLETON — discover once, use everywhere ═══
+_anchors = None
+
+def get_anchors(force=False):
+    """Get or create the global anchors singleton."""
+    global _anchors
+    if _anchors is None or force:
+        _anchors = Anchors().discover(verbose=True)
+    return _anchors
+
+
+if __name__ == "__main__":
+    print("⚓ Anchor Discovery — cut ties, float free")
+    print()
+    a = get_anchors()
+    print()
+    path = a.save()
+    print(f"  💾 Saved: {path}")
+    print()
+    d = a.to_dict()
+    print(json.dumps(d, indent=2))

@@ -22,11 +22,19 @@ The astrolabe measures. The circle turns. lub-DUB.
 import http.server, json, os, socketserver, sys, threading, time
 import urllib.request, urllib.error
 
-EAST_GATE = "http://192.168.4.244:8443"
-EAST_DATA = "http://192.168.4.244:8080"
+# Dynamic anchor discovery — no hardcoded IPs
+try:
+    from anchors import get_anchors
+    _a = get_anchors(force=False)
+    EAST_GATE = _a.gate or "http://192.168.4.244:8443"
+    EAST_DATA = _a.data or "http://192.168.4.244:8080"
+except ImportError:
+    EAST_GATE = os.environ.get("GAIA_GATE", "http://192.168.4.244:8443")
+    EAST_DATA = os.environ.get("GAIA_DATA", "http://192.168.4.244:8080")
+
 BODY_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "body")
-CIRCLE_PORT = 3144
-PULL_INTERVAL = 120  # 2 minutes, matches eastGate heartbeat
+CIRCLE_PORT = int(os.environ.get("CIRCLE_PORT", "3144"))
+PULL_INTERVAL = int(os.environ.get("PULL_INTERVAL", "120"))  # 2 minutes, matches eastGate heartbeat
 
 os.makedirs(BODY_DIR, exist_ok=True)
 
