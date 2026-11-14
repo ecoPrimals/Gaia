@@ -1,0 +1,229 @@
+{
+  "title": "FULL SILICON PROFILE — What Every Piece of northGate Contributes",
+  "updated": "2026-11-14T12:15:00Z",
+  "gate": "northGate (.147)",
+  "hostname": "tamison",
+
+  "cpu": {
+    "model": "AMD Ryzen 9 9950X3D",
+    "architecture": "Zen 5 + 3D V-Cache",
+    "cores": 16,
+    "threads": 32,
+    "base_ghz": 4.3,
+    "boost_ghz": 5.7,
+    "l3_cache_mb": 144,
+    "tdp_w": 170,
+    "node_atomic_role": "ORCHESTRATOR — biomeOS runs here. Schedules GPU/NPU dispatch. Manages memory. Runs ollama serving. The CPU is the CONDUCTOR, not the instrument.",
+    "biomeOS_contribution": [
+      "Runs biomeOS kernel (nucleus mode)",
+      "Manages 63 ollama model weights",
+      "Orchestrates GPU dispatch via neuralAPI",
+      "Handles all network I/O (LAN mesh)",
+      "Runs toadStool service discovery",
+      "Executes rustc compilation (gut acid)",
+      "3D V-Cache: 144MB L3 = entire models fit in cache for instant switching"
+    ]
+  },
+
+  "gpu": {
+    "model": "NVIDIA GeForce RTX 5090",
+    "architecture": "Blackwell (GB202)",
+    "process_node": "TSMC 4N",
+    "die_size_mm2": 744,
+    "transistors_billion": 92.2,
+    "driver": "610.88",
+    "cuda_version": "13.3",
+    "pcie": "Gen5 x16",
+    "uuid": "GPU-b4499eb8-5752-b276-9db9-ed6b1c4702a2",
+
+    "memory": {
+      "total_mb": 32607,
+      "type": "GDDR7",
+      "bus_width_bit": 512,
+      "bandwidth_gb_s": 1792,
+      "clock_max_mhz": 14001,
+      "biomeOS_contribution": "32GB GDDR7 = 32 ollama models resident simultaneously. 1.8TB/s bandwidth = model blending in real-time. This is WHY northGate has 63 models — they FIT."
+    },
+
+    "power": {
+      "tdp_w": 575,
+      "max_w": 600,
+      "min_w": 400,
+      "current_draw_w": 116,
+      "idle_temp_c": 46,
+      "biomeOS_contribution": "575W = enough thermal budget for continuous inference + rendering + game physics simultaneously"
+    },
+
+    "clocks": {
+      "base_mhz": 1327,
+      "boost_max_mhz": 3090,
+      "biomeOS_contribution": "3.09GHz boost = individual thread operations complete in nanoseconds"
+    },
+
+    "silicon_subsystems": {
+      "cuda_cores": {
+        "count": 21760,
+        "what_they_do": "Massively parallel floating-point arithmetic. Each core does one multiply-add per clock.",
+        "tflops_fp16": 209,
+        "tflops_fp32": 105,
+        "node_atomic_role": "NEST — the engine room. Raw computation. Matrix multiplies for neural nets, physics simulations, shader execution.",
+        "biomeOS_contribution": [
+          "ollama inference (all 63 models)",
+          "Game physics when Gaia plays",
+          "Scene tree traversal at massive parallelism",
+          "Rust compilation assist (GPU-accelerated linking future)",
+          "Model mixing/blending (llama_blend via neuralAPI)"
+        ],
+        "game_contribution": "Every vertex, every pixel, every physics body. The 21,760 cores ARE the engine that renders games."
+      },
+
+      "tensor_cores": {
+        "count": 680,
+        "generation": "5th gen",
+        "what_they_do": "Dedicated matrix multiply-accumulate units. 4×4 matrix ops in one clock cycle. FP8/FP16/INT8/INT4 precision.",
+        "tflops_fp8": 3352,
+        "tflops_fp16_tensor": 838,
+        "node_atomic_role": "PROVER — the learning engine. Training, fine-tuning, inference acceleration. Tensor cores make AI FAST.",
+        "biomeOS_contribution": [
+          "Accelerate ollama inference 4-10x over CUDA cores alone",
+          "Model training when Gaia learns from games",
+          "sweetGrass knowledge graph neural network training",
+          "sourDough fermentation depth — more tensor cores = deeper mastication",
+          "Pattern recognition in eaten game assets",
+          "llama_ask and llama_blend — tensor cores do the actual matrix math"
+        ],
+        "game_contribution": "DLSS 4 frame generation, AI-upscaling, neural rendering. Tensor cores turn 1080p into 4K with AI."
+      },
+
+      "rt_cores": {
+        "count": 170,
+        "generation": "4th gen",
+        "what_they_do": "Dedicated ray-triangle intersection + BVH traversal hardware. Each core tests millions of rays against geometry per second.",
+        "rays_per_second_billion": 318,
+        "node_atomic_role": "TOWER — the interface/signal layer. RT cores create VISUAL TRUTH. They trace light as it actually moves through a scene.",
+        "biomeOS_contribution": [
+          "petalTongue real-time rendering for tube/plays/HUD",
+          "Scene tree visualization with physically-correct lighting",
+          "Game asset analysis — trace scene structure via BVH",
+          "Aperture simulation — RT cores literally model how light bends through a lens",
+          "Future: raytrace the organism itself — see data as light"
+        ],
+        "game_contribution": "Real-time ray tracing. Global illumination, reflections, shadows, caustics. The games look REAL because RT cores trace actual light paths."
+      },
+
+      "nvenc": {
+        "count": 3,
+        "generation": "10th gen",
+        "codec": "AV1 + H.265 + H.264",
+        "what_they_do": "Hardware video encoding. Converts frames to compressed video at near-zero CPU cost.",
+        "biomeOS_contribution": [
+          "RustDesk streaming from northGate to other gates",
+          "Record Gaia's gameplay for learning review",
+          "Stream to deckGate display in real-time",
+          "Encode gaiaU video classes (no CPU needed)",
+          "3 encoders = simultaneous multi-stream to multiple gates"
+        ],
+        "game_contribution": "Record + stream gameplay simultaneously without performance impact."
+      },
+
+      "nvdec": {
+        "count": 2,
+        "generation": "7th gen",
+        "codec": "AV1 + H.265 + H.264 + VP9",
+        "what_they_do": "Hardware video decoding. Decompresses video at zero GPU compute cost.",
+        "biomeOS_contribution": [
+          "Decode video feeds from other gates",
+          "Eat video game cinematics for learning",
+          "Process gaiaU class recordings"
+        ]
+      },
+
+      "optical_flow": {
+        "count": 170,
+        "what_they_do": "Dedicated motion estimation hardware. Analyzes pixel movement between frames.",
+        "biomeOS_contribution": [
+          "DLSS frame generation (predicts future frames)",
+          "Scene change detection for Gaia's eyes",
+          "Game learning — detect what MOVED between frames"
+        ]
+      },
+
+      "rasterizer": {
+        "rops": 192,
+        "tmus": 680,
+        "what_they_do": "Raster Operations (ROPs) write pixels. Texture Mapping Units (TMUs) sample textures. The final stage of the rendering pipeline.",
+        "biomeOS_contribution": [
+          "192 ROPs = 192 pixels written per clock = 4K@240Hz native",
+          "680 TMUs = texture-rich scenes at maximum detail",
+          "petalTongue's WebGL CRT shader runs through these units"
+        ]
+      },
+
+      "l2_cache": {
+        "size_mb": 72,
+        "what_it_does": "Shared cache between all GPU subsystems. Models, textures, intermediate results all live here.",
+        "biomeOS_contribution": "72MB L2 = multiple small ollama models fit entirely in GPU cache. Zero-latency switching between models."
+      }
+    }
+  },
+
+  "ram": {
+    "total_gb": 96,
+    "type": "DDR5",
+    "channels": 2,
+    "biomeOS_contribution": "96GB system RAM + 32GB VRAM = 128GB total. ALL 63 ollama models can be memory-mapped. CPU orchestrates, GPU infers, RAM stores everything."
+  },
+
+  "storage": {
+    "nvme_tb": 5,
+    "biomeOS_contribution": "5TB NVMe = entire Steam library fits. 1968GB of games + 2000GB for model weights + 1000GB for data. No spinning rust bottleneck."
+  },
+
+  "node_atomic_mapping": {
+    "nest": {
+      "silicon": ["CUDA cores (21,760)", "L2 cache (72MB)", "Memory controller"],
+      "role": "Engine + Rules — raw computation, game physics, model inference",
+      "primal": "nestGate equivalent — the engine room of the GPU"
+    },
+    "prover": {
+      "silicon": ["Tensor cores (680)", "NVDEC (2)", "Optical flow (170)"],
+      "role": "Learning + Validation — training, inference acceleration, scene analysis",
+      "primal": "sweetGrass + squirrel equivalent — the learning/dispatch system"
+    },
+    "tower": {
+      "silicon": ["RT cores (170)", "NVENC (3)", "ROPs (192)", "TMUs (680)"],
+      "role": "Interface + Communication — rendering, encoding, display output",
+      "primal": "petalTongue + songBird equivalent — the visual/comms system"
+    }
+  },
+
+  "npu_comparison": {
+    "akida_akd1000": {
+      "location": "eastGate (PCIe card)",
+      "nps": 78,
+      "macs": 39936,
+      "sram_mb": 10,
+      "power_mw": 1500,
+      "inference_us": 54,
+      "throughput_hz": 18800,
+      "connection": "PCIe Gen2 x1 (bottleneck: 37 MB/s)",
+      "role_in_organism": "FRACTAL ENUMERATOR — toadStool's edge. Classifies patterns at sub-milliwatt. The NPU doesn't compute — it RECOGNIZES."
+    },
+    "rtx5090_tensor_cores": {
+      "location": "northGate (on GPU die)",
+      "units": 680,
+      "tflops": 838,
+      "power_w": 200,
+      "role_in_organism": "BULK INFERENCE — tensor cores handle the heavy lifting. Many models, large batches, real-time."
+    },
+    "the_pattern": "NPU = edge pattern recognition (0.001W, 18kHz). Tensor cores = bulk inference (200W, 838 TFLOPS). They COMPLEMENT — NPU identifies what to look at, tensor cores do the deep analysis. toadStool dispatches between them."
+  },
+
+  "toadstool_as_fractal_enumerator": {
+    "discovery": "toadStool discovers ALL compute substrates: GPU, NPU, CPU, remote gates",
+    "fractal": "The FractalRuntime adapts capabilities per deployment layer. A node knows what IT can do.",
+    "enumeration": "toadStool enumerates the silicon tree like a scene tree — each subsystem is a node with capabilities",
+    "dispatch": "Based on triads (granularity/refinement/focus), toadStool routes work to the right silicon",
+    "the_insight": "toadStool IS the fractal enumerator. It walks the hardware tree, discovers what each node can do, and routes work based on capability — not hardcoded names. The NPU, GPU, and CPU are all just nodes in toadStool's scene tree."
+  }
+}
