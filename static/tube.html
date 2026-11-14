@@ -18,10 +18,17 @@ pointer-events:none;z-index:0}
 #machine{display:grid;grid-template-columns:1fr 340px;grid-template-rows:1fr;width:100vw;height:100vh;position:relative;z-index:1}
 /* LEFT: The Tube */
 #tube-area{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;position:relative}
-/* Round CRT tube */
+/* Round CRT tube — THE APERTURE */
 #crt{width:min(60vw,560px);height:min(60vw,560px);max-width:560px;max-height:560px;border-radius:50%;background:radial-gradient(circle,#1a1408 60%,#0d0a04 100%);
 border:12px solid #2a2015;box-shadow:0 0 40px rgba(100,70,30,.15),inset 0 0 60px rgba(0,0,0,.5),0 4px 20px rgba(0,0,0,.4);
-position:relative;overflow:hidden;display:flex;flex-direction:column}
+position:relative;overflow:hidden;display:flex;flex-direction:column;
+transition:transform .3s ease,border-color .3s ease}
+/* Aperture pulse — the O breathes with the heartbeat */
+@keyframes aperture-pulse{
+  0%,100%{border-color:#2a2015;box-shadow:0 0 40px rgba(100,70,30,.15),inset 0 0 60px rgba(0,0,0,.5)}
+  50%{border-color:#3a3020;box-shadow:0 0 50px rgba(120,80,30,.2),inset 0 0 50px rgba(0,0,0,.4)}
+}
+#crt.breathing{animation:aperture-pulse 2s ease infinite}
 /* CRT scanlines */
 #crt::after{content:'';position:absolute;inset:0;border-radius:50%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:5}
 /* Rivets around tube */
@@ -97,6 +104,26 @@ border:6px solid #3a2a18;box-shadow:0 0 0 3px #1a1510,0 0 0 6px #2a2015,0 0 60px
 #coherence-bar{height:4px;background:#1a1510;border:1px solid #2a2015;border-radius:2px;overflow:hidden;margin-top:4px}
 #coherence-fill{height:100%;background:linear-gradient(90deg,#d44,#d4a44a,#4a4);width:0%;transition:width .5s ease}
 #coherence-label{font-size:9px;color:#6a5a3a;display:flex;justify-content:space-between}
+/* Parallax layers inside the tube */
+#parallax-bg{position:absolute;inset:-20px;border-radius:50%;pointer-events:none;z-index:1;opacity:.15;
+background:radial-gradient(circle at 40% 35%,rgba(212,164,74,.08),transparent 50%),
+radial-gradient(circle at 65% 70%,rgba(100,70,30,.06),transparent 40%);
+transition:transform .5s ease}
+#parallax-mid{position:absolute;inset:-10px;border-radius:50%;pointer-events:none;z-index:1;opacity:.1;
+background:radial-gradient(circle at 55% 45%,rgba(180,140,60,.05),transparent 45%);
+transition:transform .3s ease}
+/* Aperture zoom */
+#crt.zoomed-in{transform:scale(1.15)}
+#crt.zoomed-out{transform:scale(.88)}
+/* Value Triad meter */
+#triad{padding:6px 16px;font-family:'Share Tech Mono',monospace;font-size:9px}
+#triad .triad-row{display:flex;justify-content:space-between;margin-bottom:3px;align-items:center}
+#triad .triad-label{color:#6a5a3a;letter-spacing:1px}
+#triad .triad-bar{flex:1;height:3px;background:#1a1510;border:1px solid #2a2015;border-radius:1px;margin-left:8px;overflow:hidden}
+#triad .triad-fill{height:100%;transition:width .5s ease}
+.fill-gran{background:linear-gradient(90deg,#4a6a8a,#6a9aba)}
+.fill-refi{background:linear-gradient(90deg,#8a6a4a,#baa46a)}
+.fill-focu{background:linear-gradient(90deg,#6a8a4a,#9aba6a)}
 </style>
 </head>
 <body>
@@ -108,7 +135,9 @@ border:6px solid #3a2a18;box-shadow:0 0 0 3px #1a1510,0 0 0 6px #2a2015,0 0 60px
       <div class="pipe pipe-h"></div>
       <div class="pipe pipe-v"></div>
     </div>
-    <div id="crt">
+    <div id="crt" class="breathing">
+      <div id="parallax-bg"></div>
+      <div id="parallax-mid"></div>
       <canvas id="crt-gl"></canvas>
       <!-- Rivets -->
       <div class="rivet" style="top:8%;left:8%"></div><div class="rivet" style="top:8%;right:8%"></div>
@@ -169,6 +198,12 @@ border:6px solid #3a2a18;box-shadow:0 0 0 3px #1a1510,0 0 0 6px #2a2015,0 0 60px
     <div id="coherence">
       <div id="coherence-label"><span>COHERENCE</span><span id="coh-pct">100%</span></div>
       <div id="coherence-bar"><div id="coherence-fill" style="width:100%"></div></div>
+    </div>
+    <!-- Value Triad: Granularity / Refinement / Focus -->
+    <div id="triad">
+      <div class="triad-row"><span class="triad-label">GRANULARITY</span><div class="triad-bar"><div class="triad-fill fill-gran" id="t-gran" style="width:20%"></div></div></div>
+      <div class="triad-row"><span class="triad-label">REFINEMENT</span><div class="triad-bar"><div class="triad-fill fill-refi" id="t-refi" style="width:10%"></div></div></div>
+      <div class="triad-row"><span class="triad-label">FOCUS</span><div class="triad-bar"><div class="triad-fill fill-focu" id="t-focu" style="width:5%"></div></div></div>
     </div>
     <!-- Notes -->
     <div id="notes"></div>
@@ -260,6 +295,7 @@ async function go(code){
   document.getElementById('pConn').textContent=conns;
   addNote(code,def.n);
   updateCoherence();
+  updateTriad(code);
   // Build tube content
   let html=`<div class="meta-row" style="margin-bottom:8px">`;
   html+=`<span class="meta-tag">${def.t}</span>`;
@@ -320,6 +356,49 @@ function updateCoherence(){
   document.getElementById('coherence-fill').style.width=pct+'%';
 }
 
+// VALUE TRIAD: Granularity / Refinement / Focus
+// Granularity = how many codes explored (breadth)
+// Refinement = how many revisits (depth of repeat)
+// Focus = consecutive visits to same category (attention)
+let revisits=0,lastCat='',streak=0;
+function updateTriad(code){
+  const def=CODES[code];if(!def)return;
+  // Granularity grows with unique visits
+  const gran=Math.min(100,Math.round((visited.size/KEYS.length)*100));
+  // Refinement grows with revisits
+  if(notes.filter(n=>n.c===code).length>0) revisits++;
+  const refi=Math.min(100,Math.round((revisits/Math.max(1,conns))*100));
+  // Focus grows with category streaks
+  if(def.t===lastCat) streak++; else streak=1;
+  lastCat=def.t;
+  const focu=Math.min(100,streak*15);
+  document.getElementById('t-gran').style.width=gran+'%';
+  document.getElementById('t-refi').style.width=refi+'%';
+  document.getElementById('t-focu').style.width=focu+'%';
+}
+
+// APERTURE ZOOM — scroll wheel changes perspective
+let zoomLevel=0; // -2 to +2
+document.getElementById('crt').addEventListener('wheel',e=>{
+  e.preventDefault();
+  zoomLevel=Math.max(-2,Math.min(2,zoomLevel+(e.deltaY>0?-1:1)));
+  const crt=document.getElementById('crt');
+  crt.classList.remove('zoomed-in','zoomed-out');
+  if(zoomLevel>0) crt.classList.add('zoomed-in');
+  if(zoomLevel<0) crt.classList.add('zoomed-out');
+},{passive:false});
+
+// PARALLAX — mouse movement shifts background layers
+document.getElementById('tube-area').addEventListener('mousemove',e=>{
+  const rect=e.currentTarget.getBoundingClientRect();
+  const x=(e.clientX-rect.left)/rect.width-.5;
+  const y=(e.clientY-rect.top)/rect.height-.5;
+  const bg=document.getElementById('parallax-bg');
+  const mid=document.getElementById('parallax-mid');
+  if(bg) bg.style.transform=`translate(${x*20}px,${y*20}px)`;
+  if(mid) mid.style.transform=`translate(${x*10}px,${y*10}px)`;
+});
+
 // CRT WebGL shader — ported from TR-49's crt2d.gdshader
 function initCRT(){
   const c=document.getElementById('crt-gl');
@@ -368,6 +447,22 @@ async function heartbeat(){
   const bulb=document.querySelector('#lamp .bulb');
   if(bulb){bulb.style.boxShadow='0 0 20px #f80,0 0 40px rgba(255,136,0,.5)';
     setTimeout(()=>bulb.style.boxShadow='0 0 12px #f80,0 0 30px rgba(255,136,0,.3)',300);
+  }
+  // Sync aperture breathing to real BPM
+  const crt=document.getElementById('crt');
+  if(d.heart && d.heart.bpm && d.heart.bpm>0 && d.heart.bpm<200){
+    const dur=(60/d.heart.bpm)+'s';
+    crt.style.animationDuration=dur;
+  }
+  // Aperture border pulse — the O is a boundary that breathes
+  const frame=document.getElementById('tube-frame');
+  if(frame){
+    frame.style.borderColor='#4a3a22';
+    frame.style.boxShadow='0 0 0 3px #1a1510,0 0 0 6px #3a2a18,0 0 80px rgba(120,80,30,.15)';
+    setTimeout(()=>{
+      frame.style.borderColor='#3a2a18';
+      frame.style.boxShadow='0 0 0 3px #1a1510,0 0 0 6px #2a2015,0 0 60px rgba(100,70,30,.1)';
+    },400);
   }
 }
 heartbeat();setInterval(heartbeat,5000);
