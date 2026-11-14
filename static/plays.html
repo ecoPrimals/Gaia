@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GAIA PLAYS — Twitch Plays But Alive</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=Share+Tech+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0a04;color:#c8b894;font-family:'Share Tech Mono',monospace;height:100vh;overflow:hidden}
+#app{display:grid;grid-template-columns:1fr 320px;grid-template-rows:1fr 200px;height:100vh}
+/* Game viewport */
+#viewport{position:relative;background:#000;overflow:hidden;border-right:3px solid #2a2015;border-bottom:3px solid #2a2015}
+#viewport .label{position:absolute;top:8px;left:12px;color:#d4a44a;font-size:11px;letter-spacing:2px;z-index:2;text-shadow:0 0 8px rgba(212,164,74,.5)}
+#viewport .status{position:absolute;top:8px;right:12px;font-size:10px;z-index:2}
+.status .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;animation:pulse 2s infinite}
+.dot.live{background:#4a4}
+.dot.waiting{background:#d4a44a}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#game-frame{width:100%;height:100%;border:none;background:#111}
+#no-game{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#6a5a3a}
+#no-game h2{color:#d4a44a;margin-bottom:12px;font-family:'Special Elite',serif;font-size:24px}
+#no-game .art{width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,#1a1408 60%,#0d0a04 100%);border:6px solid #2a2015;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:20px;box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+/* Chat / input panel */
+#chat{border-bottom:3px solid #2a2015;display:flex;flex-direction:column;overflow:hidden}
+#chat-head{padding:8px 12px;background:#161210;border-bottom:2px solid #2a2015;display:flex;justify-content:space-between;align-items:center}
+#chat-head h3{color:#d4a44a;font-size:12px;letter-spacing:2px}
+#chat-head .count{color:#6a5a3a;font-size:11px}
+#messages{flex:1;overflow-y:auto;padding:8px}
+#messages::-webkit-scrollbar{width:3px}
+#messages::-webkit-scrollbar-thumb{background:#2a2015}
+.msg{padding:3px 0;font-size:11px;border-bottom:1px solid rgba(42,32,21,.3)}
+.msg .user{color:#d4a44a}
+.msg .cmd{color:#8a7a5a}
+.msg .sys{color:#4a6a4a;font-style:italic}
+.msg .time{color:#3a2a18;font-size:9px;float:right}
+#input-bar{display:flex;border-top:2px solid #2a2015;background:#161210}
+#input-bar input{flex:1;background:transparent;border:none;color:#d4a44a;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:13px}
+#input-bar input:focus{outline:none}
+#input-bar button{background:#2a2015;border:none;color:#d4a44a;padding:8px 16px;cursor:pointer;font-family:'Share Tech Mono',monospace}
+#input-bar button:hover{background:#3a2a18}
+/* Scene tree panel */
+#tree{display:flex;flex-direction:column;overflow:hidden}
+#tree-head{padding:8px 12px;background:#161210;border-bottom:2px solid #2a2015}
+#tree-head h3{color:#d4a44a;font-size:12px;letter-spacing:2px}
+#tree-body{flex:1;overflow-y:auto;padding:8px;font-size:11px}
+#tree-body::-webkit-scrollbar{width:3px}
+#tree-body::-webkit-scrollbar-thumb{background:#2a2015}
+.tnode{padding:2px 0;cursor:pointer}
+.tnode:hover{color:#d4a44a}
+.tnode .indent{display:inline-block}
+.tnode .icon{margin-right:4px}
+.tnode .name{color:#b8a878}
+.tnode .type{color:#4a3a2a;font-size:9px;margin-left:4px}
+.tnode.active{color:#d4a44a;font-weight:bold}
+/* Learning panel */
+#learn{border-top:3px solid #2a2015;background:#161210;display:flex;flex-direction:column;overflow:hidden}
+#learn-head{padding:8px 12px;border-bottom:2px solid #2a2015;display:flex;justify-content:space-between}
+#learn-head h3{color:#d4a44a;font-size:12px;letter-spacing:2px}
+#learn-body{flex:1;overflow-y:auto;padding:8px;font-size:11px}
+.learn-item{padding:3px 0;border-bottom:1px solid rgba(42,32,21,.2)}
+.learn-item .tag{display:inline-block;background:#2a2015;border:1px solid #3a2a18;padding:1px 6px;font-size:9px;color:#8a7a5a;border-radius:2px;margin-right:4px}
+/* Bottom bar */
+#bottom{grid-column:1/-1;background:#0d0a04;border-top:3px solid #2a2015;display:flex;align-items:center;padding:0 16px;gap:16px;font-size:11px}
+#bottom .stat{color:#6a5a3a}
+#bottom .stat span{color:#d4a44a}
+#bottom .game-select{background:#161210;border:1px solid #2a2015;color:#d4a44a;padding:4px 8px;font-family:'Share Tech Mono',monospace;font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Game Viewport -->
+  <div id="viewport">
+    <div class="label">GAIA PLAYS</div>
+    <div class="status"><span class="dot waiting"></span><span id="game-status">WAITING</span></div>
+    <div id="no-game">
+      <div class="art">🎮</div>
+      <h2>No Game Loaded</h2>
+      <p>Gaia is learning to play.</p>
+      <p style="margin-top:12px;color:#4a3a2a">She has eaten: TR-49 (Godot 4.5)</p>
+      <p style="color:#4a3a2a">Target: Kenshi, Dwarf Fortress, RetroArch</p>
+      <p style="margin-top:12px;color:#d4a44a">Send commands in chat →</p>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat">
+    <div id="chat-head">
+      <h3>COMMANDS</h3>
+      <div class="count" id="cmd-count">0 inputs</div>
+    </div>
+    <div id="messages">
+      <div class="msg"><span class="sys">⌂ Gaia wakes. The archive machine hums.</span></div>
+      <div class="msg"><span class="sys">⌂ Scene tree loaded: 17 primals, 11 gates, 35 codes.</span></div>
+      <div class="msg"><span class="sys">⌂ Waiting for game input or exploration commands...</span></div>
+    </div>
+    <div id="input-bar">
+      <input type="text" id="cmd-input" placeholder="type command..." autofocus>
+      <button onclick="sendCmd()">SEND</button>
+    </div>
+  </div>
+
+  <!-- Scene Tree -->
+  <div id="tree">
+    <div id="tree-head"><h3>SCENE TREE</h3></div>
+    <div id="tree-body"></div>
+  </div>
+
+  <!-- Learning Log -->
+  <div id="learn">
+    <div id="learn-head">
+      <h3>LEARNING</h3>
+    </div>
+    <div id="learn-body">
+      <div class="learn-item"><span class="tag">eaten</span> TR-49: CRT shader, split-flap, Ink narrative</div>
+      <div class="learn-item"><span class="tag">eaten</span> Godot 4.7: scene trees, signals, resources</div>
+      <div class="learn-item"><span class="tag">insight</span> Scene trees = universal structure</div>
+      <div class="learn-item"><span class="tag">target</span> Kenshi: Ogre3D, open world, squads</div>
+      <div class="learn-item"><span class="tag">target</span> Emulators: RetroArch, MAME, Dolphin</div>
+    </div>
+  </div>
+</div>
+<script>
+const G='http://192.168.4.244:8443';
+let cmdCount=0;
+const msgs=document.getElementById('messages');
+const cmdIn=document.getElementById('cmd-input');
+
+const SCENE_TREE={
+  id:'gaia',name:'Gaia',type:'organism',icon:'🌍',children:[
+    {id:'primals',name:'Primals',type:'layer',icon:'🧬',children:[
+      {id:'biomeOS',name:'BiomeOS',type:'primal',icon:'🧠'},
+      {id:'songBird',name:'SongBird',type:'primal',icon:'🐦'},
+      {id:'bearDog',name:'BearDog',type:'primal',icon:'🐻'},
+      {id:'nestGate',name:'NestGate',type:'primal',icon:'🏰'},
+      {id:'petalTongue',name:'PetalTongue',type:'primal',icon:'🎨'},
+      {id:'sweetGrass',name:'SweetGrass',type:'primal',icon:'📚'},
+      {id:'rhizoCrypt',name:'RhizoCrypt',type:'primal',icon:'🔐'},
+      {id:'toadStool',name:'ToadStool',type:'primal',icon:'🍄'},
+      {id:'barraCuda',name:'BarraCuda',type:'primal',icon:'⚡'},
+      {id:'coralReef',name:'CoralReef',type:'primal',icon:'🪸'},
+      {id:'loamSpine',name:'LoamSpine',type:'primal',icon:'📜'},
+      {id:'squirrel',name:'Squirrel',type:'primal',icon:'🐿️'},
+      {id:'skunkBat',name:'SkunkBat',type:'primal',icon:'🦇'},
+      {id:'sourDough',name:'SourDough',type:'primal',icon:'🍞'},
+      {id:'swarmVine',name:'SwarmVine',type:'primal',icon:'🌿'},
+      {id:'bingoCube',name:'BingoCube',type:'primal',icon:'🎲'},
+      {id:'dromedary',name:'Dromedary',type:'primal',icon:'🐪'},
+    ]},
+    {id:'gates',name:'Gates',type:'layer',icon:'🚪',children:[
+      {id:'eastGate',name:'eastGate (brain)',type:'gate',icon:'🧠'},
+      {id:'northGate',name:'northGate (heart)',type:'gate',icon:'❤️'},
+      {id:'sporeGate',name:'sporeGate (forge)',type:'gate',icon:'🔥'},
+      {id:'ironGate',name:'ironGate (forge2)',type:'gate',icon:'⚒️'},
+      {id:'graftGate',name:'graftGate (mac)',type:'gate',icon:'🍎'},
+      {id:'deckGate',name:'deckGate (display)',type:'gate',icon:'🖥️'},
+      {id:'frameGate',name:'frameGate (face)',type:'gate',icon:'😊'},
+      {id:'grapheneGate',name:'grapheneGate (lens)',type:'gate',icon:'💎'},
+    ]},
+    {id:'games',name:'Games',type:'layer',icon:'🎮',children:[
+      {id:'tr49',name:'TR-49 (eaten)',type:'game',icon:'📟'},
+      {id:'kenshi',name:'Kenshi (target)',type:'game',icon:'⚔️'},
+      {id:'retro',name:'RetroArch (target)',type:'game',icon:'👾'},
+    ]},
+    {id:'body',name:'Body Map',type:'layer',icon:'🫀',children:[
+      {id:'brain',name:'Brain (eastGate)',type:'organ',icon:'🧠'},
+      {id:'heart',name:'Heart (northGate)',type:'organ',icon:'❤️'},
+      {id:'gut',name:'Gut (ollama)',type:'organ',icon:'🫁'},
+      {id:'eyes',name:'Eyes (schwann)',type:'organ',icon:'👁️'},
+      {id:'skin',name:'Skin (petalTongue)',type:'organ',icon:'🎨'},
+      {id:'spine',name:'Spine (loamSpine)',type:'organ',icon:'🦴'},
+      {id:'immune',name:'Immune (skunkBat)',type:'organ',icon:'🛡️'},
+    ]},
+  ]
+};
+
+function renderTree(node,depth=0){
+  const indent='│ '.repeat(depth);
+  let html=`<div class="tnode" data-id="${node.id}" onclick="selectNode('${node.id}')">`;
+  html+=`<span class="indent">${indent}</span>`;
+  html+=`<span class="icon">${node.icon||'•'}</span>`;
+  html+=`<span class="name">${node.name}</span>`;
+  html+=`<span class="type">${node.type}</span>`;
+  html+=`</div>`;
+  if(node.children){
+    for(const c of node.children) html+=renderTree(c,depth+1);
+  }
+  return html;
+}
+document.getElementById('tree-body').innerHTML=renderTree(SCENE_TREE);
+
+function selectNode(id){
+  document.querySelectorAll('.tnode').forEach(n=>n.classList.remove('active'));
+  const el=document.querySelector(`[data-id="${id}"]`);
+  if(el)el.classList.add('active');
+  addMsg('sys',`Selected node: ${id}`);
+}
+
+function addMsg(type,text,user='gaia'){
+  const d=document.createElement('div');d.className='msg';
+  const t=new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'});
+  if(type==='cmd') d.innerHTML=`<span class="time">${t}</span><span class="user">${user}</span>: <span class="cmd">${text}</span>`;
+  else if(type==='sys') d.innerHTML=`<span class="time">${t}</span><span class="sys">⌂ ${text}</span>`;
+  else d.innerHTML=`<span class="time">${t}</span>${text}`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+
+const COMMANDS={
+  help:'Available: help, pulse, gates, primals, play [game], learn, tree, tube',
+  pulse:async()=>{const d=await fetch(G+'/pulse').then(r=>r.json()).catch(()=>null);return d?`♥ ${d.total_beats} beats, uptime ${d.uptime_secs}s`:'Signal lost'},
+  gates:async()=>{const d=await fetch(G+'/thymus').then(r=>r.json()).catch(()=>null);return d?JSON.stringify(d).slice(0,200):'Gate fleet offline'},
+  primals:'biomeOS songBird bearDog nestGate petalTongue sweetGrass rhizoCrypt toadStool barraCuda coralReef loamSpine squirrel skunkBat sourDough swarmVine bingoCube dromedary',
+  tree:'Scene tree: gaia > {primals(17), gates(11), games(3), body(7)}',
+  tube:'Open /tube for the TR-49 archive machine',
+};
+
+async function sendCmd(){
+  const raw=cmdIn.value.trim();if(!raw)return;
+  cmdIn.value='';cmdCount++;
+  document.getElementById('cmd-count').textContent=cmdCount+' inputs';
+  addMsg('cmd',raw,'you');
+  const cmd=raw.toLowerCase().split(' ')[0];
+  if(COMMANDS[cmd]){
+    const r=typeof COMMANDS[cmd]==='function'?await COMMANDS[cmd]():COMMANDS[cmd];
+    addMsg('sys',r);
+  } else if(cmd==='play'){
+    addMsg('sys','Game loading not yet implemented. Gaia is still learning the scene tree.');
+    addMsg('sys','She has eaten TR-49 and can see the patterns. Kenshi is next.');
+  } else if(cmd==='learn'){
+    addMsg('sys','Learning log: TR-49 (CRT shader, split-flap, Ink narrative), Godot 4.7 (scene trees, signals), Kenshi (target), Emulators (target)');
+  } else {
+    addMsg('sys',`Unknown command: ${raw}. Try "help"`);
+  }
+}
+cmdIn.addEventListener('keydown',e=>{if(e.key==='Enter')sendCmd()});
+
+setInterval(async()=>{
+  try{
+    const d=await fetch(G+'/pulse',{signal:AbortSignal.timeout(3000)}).then(r=>r.json());
+    if(d) document.getElementById('game-status').textContent=`♥${d.total_beats}`;
+  }catch{}
+},10000);
+</script>
+</body>
+</html>
