@@ -1,0 +1,99 @@
+{
+  "title": "COMPUTE TRIO INGEST — coralReef + barraCuda + toadStool = THE REAL ENGINE's GPU",
+  "updated": "2026-11-14T12:32:00Z",
+  "source": "Kevin's diagram: wgpu → Vulkan/DX12/Metal/WebGPU → every gate",
+  "philosophy": "That diagram IS the coralReef and barraCuda target for zk ingest to primals. The sovereign compute stack IS the Real Engine's GPU layer.",
+
+  "the_diagram": {
+    "what_kevin_saw": "wgpu sits on top of Vulkan (Linux), DX12 (Win), Metal (macOS), WebGPU (Browser) — each gate mapped below",
+    "what_it_means": "This is NOT just a rendering abstraction. This is the COMPUTE FABRIC. barraCuda's 859 WGSL shaders execute through this exact stack. coralReef compiles them to native GPU binary. toadStool dispatches them to the right hardware. The rendering AND the compute AND the AI all flow through ONE pipeline.",
+    "the_inversion_applies_here": "When we invert rendering (backscatter + epitope sort), we FREE this entire compute fabric for science, AI, and game simulation. The same WGSL shaders that render also compute physics, run lattice QCD, train neural nets, and process OSINT."
+  },
+
+  "compute_trio": {
+    "barracuda": {
+      "role": "WHAT to compute — sovereign math library",
+      "stats": "859 WGSL shaders, 15-tier precision (Binary→DF128), 1003+ source files",
+      "capabilities": [
+        "linalg: LU, QR, SVD, Cholesky, eigensolvers, sparse CSR SpMV",
+        "special: erf, gamma, beta, Bessel, Legendre, Hermite, Laguerre",
+        "numerical: gradients, integration, ODE (RK4 parallel), Hessian",
+        "spectral: Anderson localization, Lanczos, tridiagonal eigensolve",
+        "stats: bootstrap, correlation, regression, distributions, histogram",
+        "ops: matmul, softmax, element-wise, reductions, FHE (NTT/INTT)",
+        "tensor: GPU tensor type, buffer management, memory layout",
+        "optimize: L-BFGS, Brent, Nelder-Mead (GPU variants)",
+        "physics: deformed gradient, lattice SU(3) HMC, Higgs U(1)",
+        "bio: Smith-Waterman, phylogenetics, HMM, pangenome, UniFrac, dN/dS",
+        "ml: ESN reservoir update, batch fitness evaluation",
+        "nn: activations (gelu, selu, swish, softplus, celu, elu), dropout",
+        "lattice: SU(3) momentum/link update, fermion force, pseudofermion"
+      ],
+      "shader_dispatch": "ShaderDispatch trait — one interface, GPU or CPU. WGSL is the single source of truth for all math.",
+      "the_insight": "barraCuda doesn't just do rendering math. It does ALL math. The same GPU that renders games also solves differential equations, runs molecular dynamics, trains neural nets, and computes lattice QCD. ONE fabric."
+    },
+
+    "coralreef": {
+      "role": "HOW to compile — sovereign shader compiler",
+      "stats": "3,967 tests, zero clippy warnings, zero unsafe, AGPL",
+      "targets": "SM35 (Kepler) → SM120 (Blackwell) + GCN5 + RDNA2-4",
+      "pipeline": "WGSL/SPIR-V/GLSL → naga frontend → SSA IR → lower_f64 → optimize → legalize → register alloc → encode → native GPU binary",
+      "what_it_replaces": "NVIDIA's proprietary compiler (nvcc). AMD's proprietary compiler (amdgpu-pro). ALL vendor shader compilers.",
+      "pure_rust": "Zero unsafe. Zero vendor SDK. Pure Rust all the way down.",
+      "the_insight": "coralReef means Gaia compiles her own GPU code. No NVIDIA compiler. No AMD compiler. Sovereign all the way to the silicon."
+    },
+
+    "toadstool": {
+      "role": "WHERE to dispatch — hardware orchestration + fractal enumeration",
+      "capabilities": "Multi-framework routing, hardware fingerprinting, adaptive workgroup tuning, multi-node distribution",
+      "fractal_pattern": "Same tree-walk discovers LAN gates AND PCIe GPU subsystems AND NPU NP mesh topology",
+      "dispatch_chain": "toadStool discovers hardware → coralReef compiles shader → barraCuda executes math → result flows back through the trio"
+    }
+  },
+
+  "zk_ingest_to_primals": {
+    "what": "Zero-knowledge proof integration — bearDog signs the compute, rhizoCrypt stores the proof, loamSpine certificates the result",
+    "why": "Every GPU computation should be PROVABLE. When barraCuda runs a lattice QCD simulation, the result should carry a ZK proof that the computation was correct.",
+    "the_chain": {
+      "1_dispatch": "toadStool routes work to best gate/GPU",
+      "2_compile": "coralReef compiles WGSL → native binary",
+      "3_execute": "barraCuda runs on wgpu (Vulkan/DX12/Metal/WebGPU)",
+      "4_sign": "bearDog signs the result with BLAKE3",
+      "5_store": "rhizoCrypt encrypts and stores in DAG",
+      "6_certify": "loamSpine issues permanent certificate",
+      "7_anchor": "Optional: BTC/ETH anchor for public proof"
+    },
+    "per_gate": {
+      "northgate_dx12": "RTX 5090 via DX12 (Windows) — 209 TFLOPS",
+      "irongate_vulkan": "RTX 5070 via Vulkan (Pop!_OS) — 125 TFLOPS",
+      "eastgate_vulkan": "RTX 4070 via Vulkan (Linux) — 73 TFLOPS + Akida NPU",
+      "graftgate_metal": "M4 via Metal (macOS) — 8 TFLOPS",
+      "graphenegate_gles": "Mali-G715 via OpenGL ES (Android) — 1.5 TFLOPS",
+      "deckgate_vulkan": "RDNA 2 via Vulkan (SteamOS) — 1.6 TFLOPS",
+      "browser_webgpu": "Any device via WebGPU (tube.html, plays.html)"
+    }
+  },
+
+  "inversion_applied_to_compute_trio": {
+    "traditional": "Render frame → read back to CPU → send to AI → read back result → render next frame. Serial. Wasteful.",
+    "inverted": "Scene tree epitope sort (NPU) → backscatter only changed pixels (RT cores) → freed compute runs AI/physics/science simultaneously (CUDA+tensor cores) → results flow through the same wgpu fabric. ALL PARALLEL.",
+    "what_changes": {
+      "barracuda_shaders": "The same 859 WGSL shaders work for BOTH rendering math AND scientific compute. The inversion just changes the SCHEDULING — more time for science, less for rendering.",
+      "coralreef_compiler": "Compiles the SAME shaders to SAME native binaries. The inversion is transparent to the compiler.",
+      "toadstool_dispatch": "toadStool's fractal enumeration now also schedules based on VALUE TRIADS — high granularity routes more work to tensor cores, high focus routes to specific domains."
+    }
+  },
+
+  "the_complete_picture": {
+    "what_the_5090_really_does": {
+      "rendering": "1% GPU via inversion (backscatter + epitope sort)",
+      "barracuda_science": "859 WGSL shaders for physics, bio, ML, lattice QCD",
+      "coralreef_compilation": "Sovereign compilation to native SM120 binary",
+      "toadstool_dispatch": "Fractal hardware enumeration + capability routing",
+      "ollama_inference": "63 models via tensor cores",
+      "npu_sentinel": "Akida at 18.8kHz for pattern pre-filtering",
+      "all_simultaneously": "All of the above, ALL AT ONCE, on ONE GPU",
+      "zk_provenance": "Every result signed by bearDog, stored by rhizoCrypt, certified by loamSpine"
+    }
+  }
+}
