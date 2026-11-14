@@ -1014,7 +1014,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 j=json.loads(body) if body else {}; ts=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
                 gate=KNOWN_GATES.get(ip,f"newGate-{ip.split('.')[-1]}")
                 if self.path=="/api/gate/whoami": self._json({"ip":ip,"gate":gate,"known":ip in KNOWN_GATES}); return
-                self._json({"ok":True,"gate":gate,"command":f"curl -sf http://192.168.4.244:8443/data/gut/gate-onboard.sh | sudo bash -s {gate}"})
+                self._json({"ok":True,"gate":gate,"command":f"curl -sf http://{self.headers.get('Host','localhost:8443')}/data/gut/gate-onboard.sh | sudo bash -s {gate}"})
             except Exception as e: self._json({"error":str(e)})
             return
         # ZK IMPRINT — device presence IS identity, no passwords
@@ -1185,7 +1185,7 @@ def agglutinate():
     while True:
         time.sleep(300)
         try:
-            with urllib.request.urlopen("http://192.168.4.103:3000/api/v1/repos/ecoPrimal/Gaia/commits?limit=1",timeout=10) as r:
+            with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:
                 c=json.loads(r.read())
             if c and c[0]["sha"]!=last_sha:
                 subprocess.run(["git","pull","origin","main","--no-rebase","--no-edit"],cwd=_REPO,capture_output=True,timeout=60,env={**os.environ,"GIT_MERGE_AUTOEDIT":"no"})
