@@ -74,6 +74,19 @@ def _cascade_with_compiler():
         }
     return cascade
 
+def _load_body(filename):
+    """Load any body JSON file as a first-class endpoint."""
+    p=os.path.join(_REPO,"data","body",filename)
+    try:
+        with open(p) as f: return json.load(f)
+    except: return {"error":f"body file not found: {filename}"}
+
+def _load_body_section(filename, section):
+    """Load a section from a body JSON file."""
+    d=_load_body(filename)
+    if section in d: return {"section":section,"data":d[section],"source":filename}
+    return {"error":f"section {section} not found in {filename}"}
+
 def _load_gut(filename):
     """Load any gut JSON file as a first-class endpoint."""
     p=os.path.join(_REPO,"data","gut",filename)
@@ -648,6 +661,14 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             ("/shadow","/shadow-cast","/zk-proximity"): lambda: _load_gut("shadow-cast-zk.json"),
             ("/pixel-sensors","/rover-sense","/graphene-live"): lambda: _load_gut("graphenegate-sensors-live.json"),
             ("/house","/iot","/body-map"): lambda: _load_gut("house-as-body-iot.json"),
+            ("/directory","/phone-book","/public-directory"): lambda: _load_body("public-directory.json"),
+            ("/whitepages","/white-pages","/residents"): lambda: _load_body_section("public-directory.json","WHITE_PAGES"),
+            ("/yellowpages","/yellow-pages","/services"): lambda: _load_body_section("public-directory.json","YELLOW_PAGES"),
+            ("/pina","/pina-genome","/piNA"): lambda: _load_body("pina-address-book.json"),
+            ("/genetic-taxonomy","/taxonomy","/eras"): lambda: _load_body("genetic-taxonomy.json"),
+            ("/klein-faces","/faces","/5555"): lambda: _load_body("klein-faces.json"),
+            ("/vdj-pull","/vdj-path","/pull-path"): lambda: _load_body_section("public-directory.json","VDJ_PULL_PATH"),
+            ("/mini-globe","/globe","/wikipedia-globe"): lambda: _load_body_section("public-directory.json","WIKIPEDIA_MINI_GLOBE"),
         }
         for paths,fn in ORGAN_DISPATCH.items():
             if self.path in paths: self._json(fn()); return
@@ -683,6 +704,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             organism_urls=["/pulse","/senses","/amoeba","/rss","/reedit","/spacedock","/hub","/talk",
                 "/corpus","/detroit","/cascade","/thymus","/anderson","/zk","/terra","/golgi","/heart",
                 "/eyes","/agglutinate","/play","/mendeleev","/biomes","/outer-face","/beacon-eyes",
+                "/directory","/whitepages","/yellowpages","/pina","/genetic-taxonomy","/klein-faces",
+                "/vdj-pull","/mini-globe",
                 "/polaris","/luna","/membrane","/signal","/chipmunk","/helix","/digestive","/complexity",
                 "/dialectic","/pspace","/legend","/record","/paintings","/gaiau","/whitePaper",
                 "/api/polaris","/api/compiler","/api/backscatter/live","/api/io","/api/mail",
@@ -1391,7 +1414,7 @@ def pulse_loop():
 # ═══ EAR LOOP — Gaia listens to her own voice ═══
 def ear_loop():
     """Every 5 minutes, Gaia touches her own mouth and records what she hears."""
-    while True:
+            while True:
         time.sleep(300)
         heard = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ear": []}
         endpoints = [
