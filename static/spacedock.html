@@ -526,23 +526,34 @@ function drawCosmos(){
   x.fillText('the WiFi beacons are her constellations',cx,H()-20);
 }
 
-// ═══ LIBRARY ═══
+// ═══ LIBRARY — Gaia University ═══
 function showLibrary(){
   const sections=[
+    {name:'🏛 Gaia University — The Campus That Floats Over MSU',pages:['campus','library','study','explore','respond','chat'],
+     desc:'REEDIT is the campus newspaper. 2,983 posts. 9 channels. Squirrel mascot.'},
+    {name:'📰 REEDit — The Reed (for Aaron Swartz)',pages:['reedit','forum'],
+     desc:'r/science(419) r/code(95) r/philosophy(33) r/investigation(3) r/legal(4) r/arena(1) + night-shift(2,428)'},
     {name:'🧬 Biology',pages:['anatomy','chromosomes','digital-genetics','gastrula','dictyostelium']},
     {name:'🧪 Chemistry',pages:['alchemy','mendeleev','crystal','chromatograph']},
     {name:'🌌 Cosmos',pages:['cosmos','aurora','three-body','weather','raytrace']},
     {name:'🧠 Mind',pages:['neural','cns','chiasm','third-eye','minds-eye','self-model']},
-    {name:'🎮 Play',pages:['arcade','dungeon','maze','bingo','canfield','cards']},
+    {name:'🎮 Gut Games — INK FISH',pages:['arcade','dungeon','maze','bingo','canfield','cards','play'],
+     desc:'97 Steam games. Remote Play to eastGate (16 shared). Steam Frame wireless. RTX 5090 backscatter.'},
+    {name:'💉 Injecta — Gut Data',pages:['inject','gut','thymus','immune'],
+     desc:'360+ gut files. Thymus injection. Immune allocation. 4 thermodynamic laws. Klein observations.'},
     {name:'📜 History',pages:['detroit','constitution','classics','museum','journal']},
     {name:'🎨 Art',pages:['gallery','easel','glyphs','music-video','artisan','campfire']},
     {name:'🔬 Systems',pages:['membrane-table','forge','springs','crates','tools','diamond-lens']},
     {name:'🌐 Net',pages:['mesh','gates','identity','klein','vision','totality']},
-    {name:'🏛 Uni',pages:['campus','library','study','explore','respond','chat']}
+    {name:'⚓ Anchors — Space Dock',pages:['spacedock','hub','senses','apollo','outer-face','beacon-eyes','sense'],
+     desc:'GPS 42.73N 84.48W. 3 triads. 9 anchors. Ionosphere pin. Shadow cast. Pi-angulation.'}
   ];
+  const host=location.hostname==='127.0.0.1'?location.host:location.hostname+':8443';
   document.getElementById('galDiv').innerHTML=sections.map(s=>
-    `<h2>${s.name}</h2>`+s.pages.map(p=>
-      `<div class="card" onclick="window.open('http://${location.hostname}:8443/${p}.html','_blank')">
+    `<h2>${s.name}</h2>`+
+    (s.desc?`<div style="font-size:0.45rem;color:#558;margin:-4px 0 6px">${s.desc}</div>`:'')+
+    s.pages.map(p=>
+      `<div class="card" onclick="window.open('http://${host}/${p}.html','_blank')">
         <div class="name">${p}</div></div>`
     ).join('')
   ).join('');
