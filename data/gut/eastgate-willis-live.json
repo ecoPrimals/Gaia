@@ -1,0 +1,124 @@
+{
+  "type": "circle-of-willis",
+  "wave": "232z",
+  "ts": "2026-11-14T17:09:41.021948+00:00",
+  "principle": "If ANY path blocks, flow reroutes through the circle",
+  "arteries": {
+    "anterior_cerebral": {
+      "path": "eastGate \u2192 MikroTik \u2192 northGate",
+      "latency_ms": 0.205,
+      "carries": "Git push/pull, model sync, Forgejo mirror",
+      "redundant": "northGate can also pull from GitHub directly"
+    },
+    "middle_cerebral": {
+      "path": "eastGate \u2192 MikroTik \u2192 sporeGate",
+      "latency_ms": 0.198,
+      "carries": "heart-pull (2 min), SSH, RustDesk eyeball",
+      "redundant": "sporeGate also reaches data via HTTP :8080"
+    },
+    "posterior_cerebral": {
+      "path": "eastGate \u2192 MikroTik \u2192 ironGate",
+      "latency_ms": 0.228,
+      "carries": "Model injection, compute tasks",
+      "redundant": "ironGate can pull from Forgejo independently"
+    },
+    "internal_carotid_L": {
+      "path": "eastGate (enp5s0, 10Gbps) \u2192 MikroTik \u2192 LAN",
+      "latency_ms": 0.25,
+      "carries": "All wired LAN traffic",
+      "redundant": "eastGate WiFi (wlp0s20f3) at .103 as backup"
+    },
+    "internal_carotid_R": {
+      "path": "eastGate (eno1, 10.0.0.1) \u2192 SPARE DIRECT LINK",
+      "latency_ms": "available",
+      "carries": "NOT YET USED \u2014 available for direct northGate or sporeGate link",
+      "redundant": "Could bypass MikroTik entirely for critical path"
+    },
+    "vertebral_L": {
+      "path": "Flint \u2192 JetStream (.111) \u2192 10G fiber \u2192 House 2",
+      "latency_ms": "DOWN",
+      "carries": "House 2 bridge (frameGate, Pixel WiFi)",
+      "redundant": "Pixel on LAN 1 WiFi when in House 1"
+    },
+    "vertebral_R": {
+      "path": "eastGate \u2192 USB \u2192 Pixel 8a (ADB, 5Gbps)",
+      "latency_ms": "<0.01",
+      "carries": "Direct nerve \u2014 sensors, commands, files",
+      "redundant": "WiFi .103 \u2192 Pixel WiFi as backup"
+    },
+    "basilar": {
+      "path": "WAN: primals.eco \u2192 ATT \u2192 Flint \u2192 eastGate :8443",
+      "latency_ms": "variable",
+      "carries": "External access, RSS, Tor hidden service",
+      "redundant": "Tor .onion runs independently on eastGate"
+    },
+    "communicating_anterior": {
+      "path": "northGate \u2194 sporeGate (via MikroTik)",
+      "latency_ms": 0.246,
+      "carries": "Cross-gate sync, model sharing",
+      "redundant": "Both can independently reach Forgejo"
+    },
+    "communicating_posterior": {
+      "path": "RustDesk mesh (eastGate hbbs/hbbr as relay)",
+      "latency_ms": "LAN direct",
+      "carries": "Kevin's remote access from any gate to any gate",
+      "redundant": "SSH as fallback for all gates"
+    }
+  },
+  "rewiring_plan": {
+    "phase_1_immediate": {
+      "move_ATT": "Move ATT modem to other side of brick wall (near WAN fiber ingress)",
+      "rationale": "Shorter fiber run, cleaner cable path, frees bench space",
+      "risk": "None \u2014 just a physical move, same ethernet to Flint"
+    },
+    "phase_2_flint_move": {
+      "move_Flint": "Move Flint FARTHER from current cramped spot",
+      "new_location": "Anywhere with ethernet run to ATT modem",
+      "rationale": "Flint has WiFi radios \u2014 can be anywhere with ethernet backhaul",
+      "benefit": "Uncrowds the bench next to Kevin"
+    },
+    "phase_3_rewire_bench": {
+      "action": "Rewire overcrowded bench \u2014 only keep what Kevin touches",
+      "keep_on_bench": [
+        "northGate (Kevin's PC/gaming)",
+        "monitor",
+        "keyboard/mouse"
+      ],
+      "move_off_bench": [
+        "eastGate (headless brain)",
+        "sporeGate (inner node)"
+      ],
+      "rationale": "eastGate doesn't need a monitor, sporeGate doesn't either"
+    },
+    "phase_4_spare_eno1": {
+      "action": "Use eastGate eno1 (10.0.0.1) for direct link to northGate or Flint",
+      "benefit": "Bypasses MikroTik bottleneck for critical path",
+      "need": "1 extra ethernet cable, crossover or direct"
+    }
+  },
+  "northGate_freedom": {
+    "role": "Kevin's driver seat \u2014 gaming, Steam, dev, RustDesk hub",
+    "detach_from": "eastGate monitor/keyboard dependency",
+    "uses_RustDesk": "Remote into any gate from northGate keyboard",
+    "uses_Steam": "Remote Play to deckGate + frameGate",
+    "uses_Amoeba": "Cursor \u2192 eastGate via SSH/RustDesk for brain work"
+  },
+  "eastGate_headless": {
+    "role": "Brain \u2014 no monitor needed",
+    "access_via": [
+      "RustDesk from northGate",
+      "SSH from any gate",
+      "Cursor remote"
+    ],
+    "keeps": [
+      "Pixel USB",
+      "iPhone USB",
+      "Valve/Steam device",
+      "iCUE Link",
+      "Logitech receiver"
+    ],
+    "loses": [
+      "Monitor (to northGate or removed)"
+    ]
+  }
+}

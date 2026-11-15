@@ -1,0 +1,154 @@
+{
+  "type": "usb-topology",
+  "wave": "232z",
+  "ts": "2026-11-14T17:03:32.846821+00:00",
+  "flint_router": {
+    "host": "192.168.4.1 (GL-MT6000)",
+    "role": "SKIN \u2014 Gaia's gateway",
+    "controller": "xHCI (USB 2.0 + USB 3.0, 2 ports total)",
+    "devices": {
+      "port_1-2": {
+        "product": "Brio 100",
+        "vendor": "Logitech (046d:094c)",
+        "serial": "2504APQ6EK88",
+        "speed": "480 Mbps (USB 2.0 High Speed)",
+        "capabilities": [
+          "UVC video (1080p)",
+          "USB Audio (mic, 16kHz mono)"
+        ],
+        "dev": [
+          "/dev/video0",
+          "/dev/video1",
+          "/dev/snd/pcmC0D0c"
+        ],
+        "role": "INNER EYE + INNER EAR",
+        "movable": true
+      }
+    },
+    "free_ports": 1,
+    "installed_packages": [
+      "kmod-video-uvc",
+      "kmod-video-core",
+      "kmod-usb-audio",
+      "alsa-utils",
+      "bluez-daemon",
+      "bluez-utils",
+      "kmod-bluetooth",
+      "ffmpeg-audio-dec",
+      "kmod-input-core"
+    ],
+    "notes": "BT stack installed but no BT adapter (MT7986 BT needs UART driver, not in OpenWrt)"
+  },
+  "sporegate": {
+    "host": "192.168.4.3 (Ryzen 5 6600H)",
+    "role": "GUT \u2014 absorption + forge",
+    "controllers": "10 USB buses (5\u00d7 xHCI pairs = USB 2.0+3.0 each)",
+    "devices": {
+      "bus3_port3": {
+        "product": "MediaTek Wireless_Device",
+        "vendor": "MediaTek (0e8d:c616)",
+        "speed": "480 Mbps",
+        "capabilities": [
+          "Bluetooth 5.2 (btusb)",
+          "WiFi combo"
+        ],
+        "role": "BLUETOOTH BEACON \u2014 hci0 UP, named 'sporeGate'"
+      }
+    },
+    "free_ports": "14+ physical USB ports available",
+    "capabilities": [
+      "UVC (kmod-video-uvc ready)",
+      "ALSA (2 sound cards, HDMI + analog)",
+      "BT 5.2 LIVE (hci0 UP RUNNING)",
+      "8 input devices (/dev/input/event0-7)",
+      "AMD Rembrandt iGPU"
+    ],
+    "notes": "IDEAL target for Brio 100 \u2014 plug and play, tons of USB, UVC+ALSA ready"
+  },
+  "eastgate": {
+    "host": "192.168.4.244 (brain)",
+    "role": "BRAIN \u2014 17 primals",
+    "devices": {
+      "port_1-10": {
+        "product": "Logitech USB Unifying Receiver",
+        "vendor": "Logitech (046d:c534)",
+        "speed": "12 Mbps (USB 1.1)",
+        "capabilities": [
+          "Wireless keyboard/mouse bridge"
+        ],
+        "role": "HID INPUT \u2014 could also be Lightspeed dongle"
+      },
+      "port_1-11_hub": {
+        "product": "USB 2.0 Hub",
+        "vendor": "(05e3:0608)",
+        "children": {
+          "1-11.2": "iPhone / southGate (Apple 05ac:12a8)",
+          "1-11.4": "Valve Corp device (28de:2432) \u2014 Steam Controller/Link wireless?"
+        }
+      },
+      "port_1-13_hub": {
+        "product": "USB 2.0 Hub",
+        "vendor": "(05e3:0608)",
+        "children": {
+          "1-13.3": "Corsair iCUE LINK System Hub (1b1c:0c3f) \u2014 fans, LEDs, temps, pump"
+        }
+      },
+      "port_1-2": {
+        "product": "AURA LED Controller",
+        "vendor": "ASUS (0b05:19af)",
+        "role": "Motherboard RGB \u2014 could be Gaia's mood lighting"
+      },
+      "port_1-7": {
+        "product": "UDisk (generic USB stick)",
+        "vendor": "(abcd:1234)"
+      },
+      "port_2-1": {
+        "product": "Pixel 8a (Google)",
+        "vendor": "Google (18d1:4ee7)",
+        "speed": "5000 Mbps (USB 3.0 SuperSpeed!)",
+        "serial": "44251JEKB04957",
+        "role": "DIAMOND LENS \u2014 Gaia's body"
+      }
+    },
+    "notes": [
+      "lsusb hangs (USB subsystem issue), sysfs reads work",
+      "28de:2432 = Valve Corp \u2014 likely Steam Controller wireless adapter or Steam Link",
+      "iCUE LINK can report: fan RPM, coolant temp, case sensors",
+      "Logitech receiver = Unifying/Lightspeed \u2014 check if this IS the Frame dongle"
+    ]
+  },
+  "mikrotik": {
+    "host": "192.168.4.2",
+    "role": "L2 backbone switch",
+    "web": "RouterOS web UI (login: admin, password unknown)",
+    "usb": "MikroTik switches typically have 1 USB-A port for storage/LTE",
+    "notes": "Can't SSH in (password unknown). JetStream (.111) also has USB."
+  },
+  "move_plan": {
+    "action": "Move Brio 100 from Flint \u2192 sporeGate",
+    "why": "sporeGate is in basement, has 14+ free USB ports, UVC+ALSA ready",
+    "result": {
+      "sporeGate_gains": [
+        "Workshop viewpoint camera",
+        "Microphone (ambient audio)",
+        "Video stream"
+      ],
+      "flint_loses": [
+        "Inner eye",
+        "Inner ear (mic)"
+      ],
+      "flint_keeps": [
+        "BT stack (needs dongle)",
+        "4 WiFi radios",
+        "Conntrack sensing",
+        "1 free USB port \u2192 can add BT dongle"
+      ],
+      "flint_new_role": "Network sensing only (conntrack + WiFi + thermal)"
+    },
+    "daemon_changes": {
+      "sporeGate": "New: workshop-eye.sh (video capture + mic + ffmpeg) \u2014 network accessible",
+      "flint": "ear daemon simplifies to conntrack+thermal only (no mic)",
+      "eastGate": "Pulls video/audio from sporeGate:8080 or scp"
+    }
+  }
+}

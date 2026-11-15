@@ -1,0 +1,100 @@
+[graph]
+coordination = "sequential"
+description = "Probe hardware → validate compute → check shaders. Cross-platform via wgpu."
+id = "node_discover_hardware"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "compute",
+    "hardware.discover_gpus",
+    "hardware.discover_cpus",
+]
+dependencies = []
+depends_on = []
+id = "probe_hardware"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "compute"
+name = "probe_hardware"
+primal = "toadstool"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "compute"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "compute"
+by_name = "toadstool"
+
+[[graph.nodes]]
+capabilities = [
+    "tensor",
+    "math.check_precision",
+]
+dependencies = []
+depends_on = ["probe_hardware"]
+id = "validate_compute"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "tensor"
+name = "validate_compute"
+primal = "barracuda"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "tensor"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "tensor"
+by_name = "barracuda"
+
+[[graph.nodes]]
+capabilities = [
+    "shader",
+    "shader.backends",
+]
+dependencies = []
+depends_on = ["probe_hardware"]
+id = "check_shaders"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "shader"
+name = "check_shaders"
+primal = "coralreef"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "shader"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "shader"
+by_name = "coralreef"

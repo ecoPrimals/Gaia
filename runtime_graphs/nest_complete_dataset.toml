@@ -1,0 +1,155 @@
+[graph]
+coordination = "sequential"
+description = "Finalize dataset acquisition: dehydrate DAG → commit spine → sign → create final braid."
+id = "nest_complete_dataset"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.dehydration.trigger",
+]
+dependencies = []
+depends_on = []
+id = "dehydrate_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "dehydrate_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "session.commit",
+]
+dependencies = []
+depends_on = ["dehydrate_session"]
+id = "commit_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "commit_session"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "crypto",
+    "crypto.sign_ed25519",
+]
+dependencies = []
+depends_on = ["commit_session"]
+id = "sign_dataset"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "crypto"
+name = "sign_dataset"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "crypto"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "crypto"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["sign_dataset"]
+id = "create_final_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "create_final_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "coordination",
+    "content.publish",
+]
+dependencies = []
+depends_on = ["create_final_braid"]
+id = "announce_dataset"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "coordination"
+name = "announce_dataset"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "coordination"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "coordination"
+by_name = "nestgate"

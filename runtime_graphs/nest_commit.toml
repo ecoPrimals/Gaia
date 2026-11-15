@@ -1,0 +1,155 @@
+[graph]
+coordination = "sequential"
+description = "Dehydrate → sign → store → commit → attribute. RootPulse temporal collapse."
+id = "nest_commit"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "event.append",
+]
+dependencies = []
+depends_on = []
+id = "dehydrate"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "dehydrate"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "crypto.sign",
+]
+dependencies = []
+depends_on = ["dehydrate"]
+id = "sign"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "sign"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+]
+dependencies = []
+depends_on = ["sign"]
+id = "store"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "session.commit",
+]
+dependencies = []
+depends_on = ["sign"]
+id = "commit"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "commit"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "commit",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["commit"]
+id = "attribute"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "commit"
+name = "attribute"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "commit"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "commit"
+by_name = "sweetgrass"

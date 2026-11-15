@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Poll interaction → AI query/plan → capability dispatch. The agentic intent loop."
+id = "meta_intent"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "visualization",
+    "interaction.poll",
+]
+dependencies = []
+depends_on = []
+id = "capture_intent"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "visualization"
+name = "capture_intent"
+primal = "petaltongue"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "visualization"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "visualization"
+by_name = "petaltongue"
+
+[[graph.nodes]]
+capabilities = [
+    "ai",
+    "ai.query",
+]
+dependencies = []
+depends_on = ["capture_intent"]
+id = "plan_signals"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ai"
+name = "plan_signals"
+primal = "squirrel"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ai"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ai"
+by_name = "squirrel"
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "graph.execute",
+]
+dependencies = []
+depends_on = ["plan_signals"]
+id = "dispatch"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "dispatch"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"

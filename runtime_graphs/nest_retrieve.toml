@@ -1,0 +1,99 @@
+[graph]
+coordination = "parallel"
+description = "Parallel: content.get + dag.session.get + provenance.query."
+id = "nest_retrieve"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "content",
+    "content.get",
+]
+dependencies = []
+depends_on = []
+id = "get_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "content"
+name = "get_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "content"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "content"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "session.state",
+]
+dependencies = []
+depends_on = []
+id = "get_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "get_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "commit",
+    "provenance.attribute",
+]
+dependencies = []
+depends_on = []
+id = "get_provenance"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "commit"
+name = "get_provenance"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "commit"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "commit"
+by_name = "sweetgrass"

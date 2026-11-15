@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Select hardware target → optional shader compile → execute workload."
+id = "node_dispatch"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "compute",
+    "compute.dispatch",
+]
+dependencies = []
+depends_on = []
+id = "select_target"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "compute"
+name = "select_target"
+primal = "toadstool"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "compute"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "compute"
+by_name = "toadstool"
+
+[[graph.nodes]]
+capabilities = [
+    "shader",
+    "shader.compile.wgsl",
+]
+dependencies = []
+depends_on = ["select_target"]
+id = "compile_shader"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "shader"
+name = "compile_shader"
+primal = "coralreef"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "shader"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "shader"
+by_name = "coralreef"
+
+[[graph.nodes]]
+capabilities = [
+    "tensor",
+    "compute.execute",
+]
+dependencies = []
+depends_on = ["select_target"]
+id = "execute_workload"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "tensor"
+name = "execute_workload"
+primal = "barracuda"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "tensor"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "tensor"
+by_name = "barracuda"

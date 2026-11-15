@@ -1,0 +1,101 @@
+[graph]
+coordination = "parallel"
+description = "Mesh peers + crypto health + threat posture. Composed trust boundary status."
+id = "tower_mesh_status"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "mesh.peers",
+    "mesh.health_check",
+]
+dependencies = []
+depends_on = []
+id = "mesh_peers"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "mesh_peers"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "health.liveness",
+    "crypto.status",
+]
+dependencies = []
+depends_on = []
+id = "crypto_health"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "crypto_health"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "defense.posture",
+]
+dependencies = []
+depends_on = []
+id = "threat_posture"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "threat_posture"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

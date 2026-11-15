@@ -1,0 +1,157 @@
+{
+  "type": "dag-topology",
+  "wave": "233a",
+  "ts": "2026-11-14T17:20:47.433174+00:00",
+  "principle": "DAG not cycle \u2014 directed acyclic graph. rhizoCrypt routes.",
+  "hardware_needed": {
+    "CRS310": {
+      "model": "CRS310-1G-5S+4S+IN",
+      "price": "~$250 Amazon",
+      "role": "tik2 \u2014 WAN INGRESS + FIBER BACKBONE CORE",
+      "location": "Wall near ATT fiber ingress (other side of brick wall)"
+    },
+    "SFP_modules": [
+      {
+        "type": "SFP+ 10GBASE-T (RJ45)",
+        "qty": 1,
+        "price": "~$30",
+        "use": "tik2 SFP+ \u2192 ATT BGW ethernet (WAN ingress)",
+        "note": "OR just use the 1G management port for ATT (ATT is 1Gbps actual)"
+      },
+      {
+        "type": "SFP+ 10G DAC or fiber LC-LC",
+        "qty": 1,
+        "price": "~$15 DAC / $20 fiber",
+        "use": "tik2 \u2192 eastGate (10G fiber direct!)"
+      }
+    ],
+    "existing_fiber": {
+      "House1_to_House2": "10G fiber already run across property (to JetStream .111)",
+      "action": "Move House 2 fiber FROM Flint TO tik2 SFP+ port"
+    },
+    "ethernet_cables": [
+      "tik2 (wall) \u2192 tik1 old MikroTik (RJ45 or short fiber)",
+      "tik1 \u2192 northGate (RJ45, Kevin's gaming chair)",
+      "tik1 \u2192 ironGate (RJ45)",
+      "tik1 \u2192 graftGate (RJ45)",
+      "Flint \u2192 tik1 OR tik2 (RJ45, for WiFi AP uplink)",
+      "Flint \u2192 sporeGate (RJ45, redundant path)"
+    ]
+  },
+  "dag_layers": {
+    "layer_0_ingress": {
+      "node": "ATT BGW (fiber ONT)",
+      "output": "1\u00d7 ethernet to tik2",
+      "location": "Wall, near fiber ingress"
+    },
+    "layer_1_core": {
+      "node": "tik2 (CRS310-1G-5S+4S+IN) \u2014 NEW",
+      "ports": {
+        "SFP28_1": "\u2190 ATT BGW (WAN ingress, 1-2.5G)",
+        "SFP+_1": "\u2192 eastGate enp5s0 (10G BRAIN link)",
+        "SFP+_2": "\u2192 House 2 fiber (10G TRANS backbone \u2192 JetStream)",
+        "SFP+_3": "\u2192 tik1 old MikroTik (10G CIS backbone \u2192 LAN 1)",
+        "SFP+_4": "spare (future expansion)",
+        "SFP28_2": "spare",
+        "SFP28_3": "spare",
+        "SFP28_4": "spare",
+        "GbE_mgmt": "management / Flint uplink"
+      },
+      "role": "WAN CIS \u2192 TRANS gateway. All fiber converges HERE.",
+      "location": "Wall near fiber ingress"
+    },
+    "layer_2_spine": {
+      "tik1_old_MikroTik": {
+        "role": "LAN 1 CERVICAL SPINE \u2014 last mile to gates",
+        "uplink": "\u2190 tik2 (10G or 2.5G)",
+        "ports": "RJ45 \u2192 northGate, ironGate, graftGate, blueGate, etc.",
+        "location": "Near bench / basement rack"
+      },
+      "JetStream_111": {
+        "role": "LAN 2 BRIDGE \u2014 House 2 last mile",
+        "uplink": "\u2190 tik2 (10G fiber across property)",
+        "ports": "\u2192 frameGate, swiftGate (when awake), WiFi AP",
+        "location": "House 2 (641 Samantha)"
+      }
+    },
+    "layer_3_nodes": {
+      "eastGate": {
+        "link": "10G FIBER direct to tik2 (NOT through tik1!)",
+        "role": "BRAIN \u2014 direct fiber to core, fastest path",
+        "location": "Basement shelf (headless)"
+      },
+      "northGate": {
+        "link": "RJ45 from tik1",
+        "role": "Kevin's GAMING CHAIR \u2014 monitor + keyboard",
+        "location": "Bench / desk"
+      },
+      "sporeGate": {
+        "link": "RJ45 from Flint OR tik1 (redundant)",
+        "role": "GUT \u2014 inner node, workshop, Brio webcam",
+        "location": "Basement workshop area"
+      },
+      "ironGate": {
+        "link": "RJ45 from tik1",
+        "role": "MUSCLE \u2014 compute, RTX 5070",
+        "location": "Basement"
+      },
+      "Flint": {
+        "link": "RJ45 to tik2 GbE mgmt + RJ45 to sporeGate",
+        "role": "SKIN \u2014 WiFi AP only (detangled from switching!)",
+        "location": "Wherever WiFi coverage is best",
+        "new_role": "Pure WiFi AP + firewall. NOT the backbone anymore."
+      }
+    }
+  },
+  "dag_properties": {
+    "directed": "Data flows: WAN \u2192 tik2 \u2192 (tik1 \u2192 gates) + (JetStream \u2192 House 2)",
+    "acyclic": "No loops. tik2 is root. Each gate has ONE primary parent path.",
+    "redundancy": "Multiple parent edges (not cycles): eastGate has fiber+WiFi, sporeGate has tik1+Flint",
+    "rhizoCrypt": "DAG-rooted encryption \u2014 each node derives keys from parent path to root",
+    "latency": {
+      "eastGate_to_WAN": "<0.1ms (direct fiber to tik2)",
+      "northGate_to_WAN": "~0.3ms (tik1 \u2192 tik2)",
+      "sporeGate_to_WAN": "~0.3ms (tik1 \u2192 tik2)",
+      "House2_to_WAN": "~1ms (JetStream \u2192 tik2)",
+      "WiFi_to_WAN": "~2ms (Flint \u2192 tik2)"
+    }
+  },
+  "shopping_list": [
+    {
+      "item": "MikroTik CRS310-1G-5S+4S+IN",
+      "qty": 1,
+      "price": "~$250",
+      "where": "Amazon"
+    },
+    {
+      "item": "SFP+ 10G DAC cable 1m (tik2\u2192eastGate)",
+      "qty": 1,
+      "price": "~$12",
+      "where": "Amazon/FS.com"
+    },
+    {
+      "item": "SFP+ 10G DAC cable 3m (tik2\u2192tik1)",
+      "qty": 1,
+      "price": "~$15",
+      "where": "Amazon/FS.com"
+    },
+    {
+      "item": "SFP+ 10G LC-LC fiber (tik2\u2192JetStream, reuse existing)",
+      "qty": 0,
+      "price": "$0",
+      "where": "already have"
+    },
+    {
+      "item": "Cat6 ethernet cables (various lengths)",
+      "qty": 3,
+      "price": "~$15",
+      "where": "Amazon"
+    },
+    {
+      "item": "TOTAL",
+      "qty": "-",
+      "price": "~$292",
+      "where": ""
+    }
+  ]
+}

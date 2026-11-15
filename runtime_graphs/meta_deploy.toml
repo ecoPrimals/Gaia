@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "AI plan → graph deploy → audit. Agentic deployment via Tower agent."
+id = "meta_deploy"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "ai",
+    "ai.query",
+]
+dependencies = []
+depends_on = []
+id = "plan_deployment"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ai"
+name = "plan_deployment"
+primal = "squirrel"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ai"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ai"
+by_name = "squirrel"
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "graph.deploy",
+]
+dependencies = []
+depends_on = ["plan_deployment"]
+id = "execute_deployment"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "execute_deployment"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "security.audit_log",
+]
+dependencies = []
+depends_on = ["execute_deployment"]
+id = "audit_deployment"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "audit_deployment"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

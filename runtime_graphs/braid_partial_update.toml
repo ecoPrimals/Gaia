@@ -1,0 +1,127 @@
+[graph]
+coordination = "sequential"
+description = "Propagate partial Merkle root from sealed DAG nodes to downstream consumers."
+id = "braid_partial_update"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.session.state",
+]
+dependencies = []
+depends_on = []
+id = "verify_dag_state"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "verify_dag_state"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.partial_dehydrate",
+]
+dependencies = []
+depends_on = ["verify_dag_state"]
+id = "partial_dehydrate"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "partial_dehydrate"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "commit",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["partial_dehydrate"]
+id = "weave_partial_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "commit"
+name = "weave_partial_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "commit"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "commit"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "entry.append",
+]
+dependencies = []
+depends_on = ["weave_partial_braid"]
+id = "record_aglet"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "record_aglet"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"

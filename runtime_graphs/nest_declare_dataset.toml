@@ -1,0 +1,214 @@
+[graph]
+coordination = "sequential"
+description = "Pre-braid: hash manifest, open DAG session, create spine, create intent braid. No data moves."
+id = "nest_declare_dataset"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+]
+dependencies = []
+depends_on = []
+id = "store_manifest"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store_manifest"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.session.create",
+]
+dependencies = []
+depends_on = ["store_manifest"]
+id = "create_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "create_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.event.append",
+]
+dependencies = []
+depends_on = ["create_session"]
+id = "record_genesis_event"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "record_genesis_event"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "spine.create",
+]
+dependencies = []
+depends_on = ["create_session"]
+id = "create_spine"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "create_spine"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "entry.append",
+]
+dependencies = []
+depends_on = ["create_spine"]
+id = "anchor_intent"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "anchor_intent"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "braid.create",
+]
+dependencies = []
+depends_on = [
+    "record_genesis_event",
+    "anchor_intent",
+]
+id = "create_intent_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "create_intent_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "crypto",
+    "crypto.sign_ed25519",
+]
+dependencies = []
+depends_on = ["create_intent_braid"]
+id = "sign_intent"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "crypto"
+name = "sign_intent"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "crypto"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "crypto"
+by_name = "beardog"

@@ -53,7 +53,7 @@ class NeutrinoSMTP:
             if not chunk:
                 return None
             data += chunk
-        return data.decode("utf-8", errors="replace").strip()
+        return data.decode("utf-8", errors="replace").rstrip("\r\n")
 
     def handle(self):
         global TLS_CTX
@@ -62,7 +62,7 @@ class NeutrinoSMTP:
             line = self.recv_line()
             if line is None:
                 break
-            cmd = line.upper()
+            cmd = line.strip().upper()
 
             if cmd.startswith("EHLO") or cmd.startswith("HELO"):
                 self.send(f"250-{HOSTNAME}")
@@ -90,11 +90,11 @@ class NeutrinoSMTP:
                     break
 
             elif cmd.startswith("MAIL FROM:"):
-                self.mail_from = line[10:].strip().strip("<>")
+                self.mail_from = line.strip()[10:].strip().strip("<>")
                 self.send("250 OK")
 
             elif cmd.startswith("RCPT TO:"):
-                addr = line[8:].strip().strip("<>")
+                addr = line.strip()[8:].strip().strip("<>")
                 domain = addr.split("@")[-1] if "@" in addr else ""
                 if domain.lower() not in [d.lower() for d in LOCAL_DOMAINS]:
                     self.send("550 Relay denied")
@@ -154,22 +154,47 @@ class NeutrinoSMTP:
 
 
 def _pony_log(mail_from, rcpt_to, body, tls):
-    """Log each delivery to pony-express for inter-gate relay."""
+    """Log each delivery to BOTH mail-log AND pony-express for unified mail train."""
     try:
         PONY_ROOT.mkdir(parents=True, exist_ok=True)
         ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         msg_hash = hashlib.blake2b(body.encode(), digest_size=16).hexdigest()
-        entry = {
-            "ts": ts,
-            "type": "mail-delivery",
-            "from": mail_from,
-            "to": rcpt_to,
-            "tls": tls,
-            "size": len(body),
-            "blake2b": msg_hash,
+
+        import email as email_mod
+        msg = email_mod.message_from_string(body)
+        subject = msg.get("Subject", "(no subject)")
+        body_text = ""
+        if msg.is_multipart():
+            for part in msg.walk():
+                if part.get_content_type() == "text/plain":
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body_text = payload.decode("utf-8", errors="replace")
+                    break
+        else:
+            payload = msg.get_payload(decode=True)
+            if payload:
+                body_text = payload.decode("utf-8", errors="replace")
+
+        meta_entry = {
+            "ts": ts, "type": "mail-delivery",
+            "from": mail_from, "to": rcpt_to,
+            "tls": tls, "size": len(body), "blake2b": msg_hash,
         }
         with open(PONY_ROOT / "mail-log.jsonl", "a") as f:
-            f.write(json.dumps(entry) + "\n")
+            f.write(json.dumps(meta_entry) + "\n")
+
+        pony_entry = {
+            "ts": ts, "author": mail_from, "channel": "pony-express",
+            "source": "smtp", "train": "smtp",
+            "subject": str(subject),
+            "to": rcpt_to,
+            "body": body_text[:500] if body_text else f"[{len(body)} bytes, no plaintext]",
+            "blake2b": msg_hash,
+        }
+        with open(PONY_ROOT / "pony-express.jsonl", "a") as f:
+            f.write(json.dumps(pony_entry) + "\n")
+        print(f"  🐴 PONY: {mail_from} → {rcpt_to} '{subject}' → mail bag")
     except Exception as e:
         print(f"  ⚠️ Pony log error: {e}")
 

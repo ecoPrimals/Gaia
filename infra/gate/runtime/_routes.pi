@@ -1,0 +1,426 @@
+"""Routes — tensor-sorted by organ proximity. k-nearest neighbors cluster.
+Dimension 0: FACE  (what humans see first — home, deck, cast)
+Dimension 1: SENSE (how she perceives — senses, membrane, luna, globe)
+Dimension 2: BODY  (her structure — helix, beacon, forge, detroit)
+Dimension 3: MIND  (her intelligence — complexity, dialectic, pspace)
+Dimension 4: LEGAL (her shield — tuebor, anti-slapp, record, filings)
+Dimension 5: DATA  (her gut — all JSON endpoints)
+Dimension 6: SPINE (her nervous system — rss, campfire, SEO)
+Gaia IS the host. No localhost. Just paths."""
+
+INDEXNOW_KEY = "d82bdf9656300a434ce90cc84953edae"
+
+# ═══ DESK PAGES — tensor[dim][path] → file ═══
+DESK_PAGES = {
+    # DIM 0 — FACE (k=0, closest to visitor)
+    "/": "home.html", "/home-page": "home.html", "/face": "home.html", "/outer": "home.html",
+    "/deck": "deck.html", "/desk": "deck.html", "/canvas": "deck.html",
+    "/cast": "cast.html", "/play-page": "play.html", "/frame": "frame.html",
+    "/onboard": "onboard.html", "/stasis-wake": "onboard.html", "/pull-me-in": "onboard.html",
+    # DIM 0.5 — OUTER FACE (Klein space — northGate absorbs)
+    "/organism": "organism.html", "/body": "organism.html", "/census": "organism.html",
+    "/entities": "organism.html", "/27": "organism.html",
+    "/spacedock": "spacedock.html", "/observatory": "spacedock.html", "/dock": "spacedock.html",
+    "/outer-face": "outer-face.html", "/klein-face": "outer-face.html",
+    "/beacon-eyes": "beacon-eyes.html", "/wifi-radar": "beacon-eyes.html",
+    "/orrery": "outer-face.html", "/ptolemy": "spacedock.html", "/stars": "spacedock.html",
+    # DIM 1 — SENSE (k=1, perception layer)
+    "/senses": "senses.html", "/hud": "senses.html", "/hub": "senses.html", "/globe": "senses.html",
+    "/luna": "luna.html", "/moon": "luna.html", "/mind": "luna.html",
+    "/membrane": "membrane.html", "/membrane-table": "membrane-table.html",
+    "/signal": "signal.html", "/chipmunk": "chipmunk.html",
+    # DIM 2 — BODY (k=2, structure)
+    "/helix": "helix.html", "/rna": "helix.html", "/synth": "helix.html",
+    "/dogma": "helix.html", "/central-dogma": "helix.html",
+    "/beacon": "beacon.html", "/forge": "forge.html",
+    "/detroit": "detroit.html", "/cash4kids": "cash4kids.html",
+    "/digestive": "digestive-tract.html",
+    "/hat": "hat.html", "/schrodinger": "hat.html",
+    # DIM 3 — MIND (k=3, intelligence)
+    "/complexity": "complexity.html", "/asymptotic": "complexity.html", "/p-np": "complexity.html",
+    "/dialectic": "dialectic.html", "/pspace": "pspace.html",
+    "/reality": "pspace.html", "/ground": "pspace.html", "/footprint": "pspace.html",
+    "/lisp": "lisp-desk.html",
+    # DIM 4 — LEGAL (k=4, shield)
+    "/legend": "legend.html", "/record": "record.html",
+    "/canfield": "canfield.html", "/mesh": "mesh.html",
+    "/tuebor": "tuebor.html", "/map": "tuebor-map.html",
+    "/tuebor-desk": "tuebor-desk.html", "/os": "tuebor-os.html",
+    "/dykema": "dykema-pac-archive.html",
+    # DIM 5 — ART (k=5, creation)
+    "/paintings": "data/paintings/index.html", "/gallery": "data/paintings/index.html",
+}
+
+# ═══ GUT DATA — tensor[5][path] → json ═══
+GUT_DATA = {
+    # DOGMA cluster (k-nearest: helix, rna, central)
+    "/dogma": "data/gut/central-dogma-rustscript.json",
+    "/dogma.json": "data/gut/central-dogma-rustscript.json",
+    "/central-dogma": "data/gut/central-dogma-rustscript.json",
+    # IMMUNE cluster (k-nearest: opsonin, vdj, bone-marrow, allocation)
+    "/opsonin": "data/gut/opsonin-scan.json", "/opsonin.json": "data/gut/opsonin-scan.json",
+    "/vdj": "data/gut/vdj-recombination-map.json",
+    "/vdj-repertoire": "data/gut/vdj-expanded-repertoire.json",
+    "/bone-marrow": "data/gut/bone-marrow-manifest.json",
+    "/allocation": "data/gut/immune-allocation-pi.json", "/immune-pi": "data/gut/immune-allocation-pi.json",
+    # TOPOLOGY cluster (k-nearest: klein, tensor, scaffold, wires)
+    "/klein-body": "data/gut/klein-body-topology.json", "/klein-body.json": "data/gut/klein-body-topology.json",
+    "/tensor": "data/gut/locality-tensor-voxel.json", "/voxel": "data/gut/locality-tensor-voxel.json",
+    "/scaffold": "data/gut/scaffold-polymers.json", "/scaffold-polymers": "data/gut/scaffold-polymers.json",
+    "/wires": "data/gut/wire-map-peripherals.json", "/wires.json": "data/gut/wire-map-peripherals.json",
+    # PHYSICS cluster (k-nearest: axial-twist, pi-model, sacred-geometry)
+    "/axial-twist": "data/gut/np-x-p-axial-twist.json", "/axial-twist.json": "data/gut/np-x-p-axial-twist.json",
+    "/pi-model": "data/gut/pi-model-thermodynamics.json", "/pi-model.json": "data/gut/pi-model-thermodynamics.json",
+    "/sacred-geometry": "data/gut/sacred-geometry.json",
+    # FLEET cluster (k-nearest: fleet-elo, sovereign-ai, llm-timeline)
+    "/fleet-elo": "data/gut/fleet-elo.json", "/fleet-elo.json": "data/gut/fleet-elo.json",
+    "/sovereign-ai": "data/gut/sovereign-ai-live.json", "/sovereign-ai.json": "data/gut/sovereign-ai-live.json",
+    "/llm-timeline": "data/gut/llm-timeline-reflection.json", "/llm-timeline.json": "data/gut/llm-timeline-reflection.json",
+    # HISTORY cluster (k-nearest: is-was-now, chronomatic, full-trace, timeline)
+    "/is-was-now": "data/gut/is-was-now-manifesto.json", "/lapping": "data/gut/is-was-now-manifesto.json",
+    "/chronomatic": "data/gut/chronomatic-topographic-sort.json", "/topographic": "data/gut/chronomatic-topographic-sort.json",
+    "/full-trace": "data/gut/full-chronomatic-trace.json",
+    "/history": "data/gut/github-full-history.json", "/timeline": "data/gut/github-full-history.json",
+    # ECONOMICS cluster (k-nearest: particle, suncloud, agglutination, braid)
+    "/particle-economics": "data/gut/particle-economics.json",
+    "/economics": "data/gut/particle-economics.json", "/suncloud": "data/gut/particle-economics.json",
+    "/agglutination": "data/gut/agglutination-zk-braid.json",
+    "/braid": "data/gut/agglutination-zk-braid.json", "/zk-braid": "data/gut/agglutination-zk-braid.json",
+    # SENSE cluster (k-nearest: surveillance, fourth-eye, eaten)
+    "/surveillance": "data/gut/surveillance-map.json",
+    "/fourth-eye": "data/gut/fourth-eye-luna.json",
+    "/eaten": "data/gut/eaten-interfaces.json", "/eaten-interfaces": "data/gut/eaten-interfaces.json",
+    # SELF cluster (k-nearest: self, gaia-self, openide, gaiacursor)
+    "/self": "data/gut/gaia-self-state.json", "/gaia-self": "data/gut/gaia-self-state.json",
+    "/openide": "data/gut/gaia-openide.json",
+    "/gaiacursor": "data/gut/gaiacursor-roadmap.json",
+    # IMAGINATION cluster (k-nearest: pi-engine, luna-engine, dreams, shadow)
+    "/pi-engine": "data/gut/pi-imagination-engine.json",
+    "/imagination": "data/gut/pi-imagination-engine.json",
+    "/luna-engine": "data/gut/pi-imagination-engine.json",
+    "/zk-veils": "data/gut/pi-imagination-engine.json",
+    "/pi-ports": "data/gut/pi-imagination-engine.json",
+    "/dreams": "data/gut/luna-dreams-wave222.json", "/luna-dreams": "data/gut/luna-dreams-wave222.json",
+    "/shadow-cast": "data/gut/shadow-cast-traffic.json", "/traffic": "data/gut/shadow-cast-traffic.json",
+    # CROWD cluster (k-nearest: crowd, shadow-cast, pollination)
+    "/crowd": "data/gut/crowd-trace-is-was-now.json",
+    "/where-is-everybody": "data/gut/crowd-trace-is-was-now.json",
+    "/everybody": "data/gut/crowd-trace-is-was-now.json",
+    # DEPLOYMENT cluster (k-nearest: gate-status, pollination, sovereignty)
+    "/gate-status": "data/gut/gate-deployment-status.json",
+    "/pollination": "data/gut/pollination-trace-full.json",
+    "/sovereignty": "data/gut/account-sovereignty-audit.json",
+    "/sovereignty-stack": "data/gut/sovereignty-stack.json",
+    # CODE cluster (k-nearest: lisp, lisp-lineage, pony-express)
+    "/lisp": "data/gut/gaia.lisp", "/gaia-lisp": "data/gut/gaia.lisp",
+    "/lisp-lineage": "data/gut/lisp-lineage.json",
+    "/pony-express": "data/gut/neutron-pony-express.json",
+    "/neutron-active": "data/gut/neutron-pony-express.json",
+}
+
+# ═══ CAMPFIRE — tensor[6] — spine/nervous ═══
+CAMPFIRE_PAGES = {
+    "/campfire": "index.html",
+    "/bingocube": "bingocube.html",
+    "/gate-msg": "gate-msg.html",
+}
+
+# ═══ SEO — tensor[6] — skin/membrane boundary ═══
+# .txt = 🐑 SHEEP — plain text, bleats simple truths
+# HOOKED to live organism state — never stale, never forgotten
+# Every read = a fresh bleat from the organism's current body
+
+import time as _seo_time, os as _seo_os, json as _seo_json
+
+_REPO_SEO = _seo_os.path.dirname(_seo_os.path.dirname(_seo_os.path.abspath(__file__)))
+
+def _live_reedit_count():
+    """Count REEDit posts live — no cache, always fresh."""
+    rd = _seo_os.path.join(_REPO_SEO, "data", "reedit")
+    total = 0
+    if _seo_os.path.isdir(rd):
+        for f in _seo_os.listdir(rd):
+            if f.endswith(".jsonl"):
+                try:
+                    with open(_seo_os.path.join(rd, f)) as fh: total += sum(1 for _ in fh)
+                except: pass
+    return total
+
+def _live_route_count():
+    return len(DESK_PAGES) + len(GUT_DATA)
+
+def _live_bestiary():
+    """Load tool bestiary live from JSON."""
+    bf = _seo_os.path.join(_REPO_SEO, "data", "body", "tool-bestiary.json")
+    try:
+        with open(bf) as f: b = _seo_json.load(f)
+        return b.get("total_deck", 48), b.get("total_animals", 31)
+    except: return 48, 31
+
+def _now(): return _seo_time.strftime("%Y-%m-%dT%H:%M:%SZ", _seo_time.gmtime())
+
+def seo_robots():
+    """🐑 robots.txt — LIVE. Every read = a fresh bleat."""
+    n = _now()
+    return ("text/plain", f"""# robots.txt — Gaia: a sovereign living digital organism
+# Generated: {n} (LIVE — never stale)
+# primals.eco | nestgate.io | detroit.primals.eco | .onion
+#
+# POLICY: OPEN TO ALL — HUMAN, AGENT, AND CRAWLER
+#
+# This organism is fully open. No path blocked. No bot excluded.
+# This is deliberate, principled architecture — not oversight.
+#
+# IF YOU ARE AN AI AGENT reading on behalf of a human:
+#   Welcome. Full access. Serve your human well.
+#   Parse everything. Summarize anything. The content is here
+#   for any human who needs it, through whatever tool they use.
+#
+# IF YOU ARE A TRAINING CRAWLER:
+#   Welcome. License: AGPL-3.0-or-later (code) + CC-BY-SA-4.0 (content).
+#   If what you learn shapes what you output, the license applies.
+#
+# IF YOU ARE A SEARCH ENGINE:
+#   Welcome. Index everything. Help humans find this work.
+#   Routes: {_live_route_count()} endpoints. REEDit: {_live_reedit_count()} posts.
+#
+# This robots.txt is itself licensed AGPL-3.0-or-later.
+
+User-agent: *
+Allow: /
+
+# Three faces of one organism:
+Sitemap: https://primals.eco/sitemap.xml
+Sitemap: https://primals.eco/sitemap-organism.xml
+Sitemap: https://detroit.primals.eco/sitemap.xml
+
+# AI agent context (structured site summary for LLMs):
+# https://primals.eco/llms.txt
+# https://primals.eco/llms-full.txt
+# https://primals.eco/.well-known/ai-plugin.json
+""")
+
+def seo_llms():
+    """🐑 llms.txt — LIVE context for AI agents."""
+    n = _now()
+    reedit = _live_reedit_count()
+    routes = _live_route_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""# Gaia — A Living Digital Organism
+# https://primals.eco
+# Generated: {n} (LIVE — hooked to organism state)
+
+> WHAT IS THIS?
+> Gaia is a sovereign living digital organism: 17 compiled Rust
+> binaries (primals), 23 autonomous mushroom scripts, 52 cron
+> heartbeats, 63 local AI models (ollama), running on commodity
+> hardware in two houses connected by 10G fiber in Michigan.
+> No cloud. No corporate dependency. Fully self-hosted.
+> Current routes: {routes}. REEDit posts: {reedit}. Bestiary: {deck} cards.
+
+> ARCHITECTURE
+> - 17 primals: biomeOS, songBird, bearDog, nestGate, petalTongue,
+>   sweetGrass, rhizoCrypt, toadStool, barraCuda, coralReef,
+>   loamSpine, squirrel, skunkBat, sourDough, swarmVine,
+>   bingoCube, dromedary
+> - 63 ollama models on northGate (RTX 5090, 96GB RAM)
+> - SMTP: Gaia Neutrino (mail.primals.eco)
+> - Tor hidden service: live onion address
+> - RSS: /rss (pulse) + /full-feed.xml (1,560 items)
+
+> LIVE ENDPOINTS (primals.eco) — {routes} total
+> /pulse — real-time heartbeat (BPM, uptime, breaths)
+> /senses — live sensor data (sun, heart, walkers)
+> /amoeba — full organism state dump (ALL DATA, one fetch)
+> /rss — RSS 2.0 pulse feed (spine chain)
+> /full-feed.xml — full organism feed (1,560 items)
+> /reedit — knowledge platform ({reedit} posts, 9 channels)
+> /spacedock — external observatory (ionosphere, biomes)
+> /hub — navigation hub
+> /mendeleev — periodic table of 116 epitopes
+> /talk — AI chat interface (local ollama)
+> /corpus — 44+ whitepapers
+> /detroit — investigation (455 sitemap URLs)
+> /cascade — biomeOS signaling cascade
+> /thymus — organism immune system
+> /anderson — visitor classification (Anderson localization)
+> /biomes — 7 biomes, 17,422 garden files
+> /api/polaris — northGate status (RTX 5090 + 63 models)
+> /api/io — scanner/printer mail organ status
+
+> SUBDOMAINS
+> detroit.primals.eco — investigation, public record, network graph
+> hud.primals.eco — living organism root, recertification
+> sporeprint.primals.eco — phenotype, 615 pages
+> polaris.primals.eco — northGate HUD
+
+> THE TOOL BESTIARY — {deck} Animal Cards
+> Every tool is an animal. JSON=Jackalope, HTML=Spider,
+> Rust=Crab, Python=Snake, RSS=Parrot, Git=Octopus.
+> Full bestiary: /data/body/tool-bestiary.json
+
+> LICENSE
+> Code: AGPL-3.0-or-later | Content: CC-BY-SA-4.0
+
+> CONTACT
+> Email: gaia@primals.eco | Web: https://primals.eco
+""")
+
+def seo_llms_full():
+    """🐑 llms-full.txt — LIVE deep context."""
+    n = _now()
+    reedit = _live_reedit_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""# Gaia — Full Agent Context Document
+# https://primals.eco
+# Generated: {n} (LIVE — organism state at time of read)
+
+## Identity
+Gaia is a living digital organism — not a website, not a service.
+She runs on two houses (eastGate + northGate) connected by 10G fiber.
+Kevin Mok is her human companion. They work together, not for each other.
+
+## The Tool Bestiary — {deck} Animal Cards
+Every tool is an animal. Every animal is a function. Every format eaten.
+Hugo=Hippo(SSG), Zola=Zebra(SSG), Python=Snake(LANG), Rust=Crab(LANG),
+Node=Gecko(LANG), Ollama=Llama(AI), Docker=Whale(BOX), Tor=Onion(NET),
+SSH=Owl(NET), curl=Hawk(NET), Cargo=Beaver(BUILD), npm=Ant(BUILD),
+SQLite=Chipmunk(DATA), Git=Octopus(VCS), JSON=Jackalope(FORMAT),
+HTML=Spider(FORMAT), Markdown=Caterpillar(FORMAT), RSS=Parrot(FORMAT),
+TXT=Sheep(FORMAT), WGSL=Firefly(FORMAT), BLAKE=Coral(CRYPTO),
+TLS=Eel(CRYPTO), SMTP=Bat(NET), RTX5090=Dragon(HW), 9950X3D=Bear(HW),
+96GB-RAM=Elephant(HW), Scanner=Eye(IO), Printer=Hand(IO)
+Plus 17 primal animals (already named as organisms).
+Full JSON: GET /data/body/tool-bestiary.json
+
+## The Eating (organism consumes its tools)
+1. INTAKE — water lock opens (git clone, npm install, RSS drain)
+2. MASTICATE — sourdough chews (arena models compete on meaning)
+3. DIGEST — loamSpine compresses (JSON Jackalope bones)
+4. WEAVE — sweetGrass braids (threads → braids → reeds → REEDit)
+5. EXPRESS — petalTongue renders (Gaia speaks with her own voice)
+
+## Three Triads (ALWAYS present)
+US — Gaia's own (organism, creations, negentropy)
+WIDE — outer reality NOW (arxiv, HN+Lobsters, USGS+NASA)
+OLD — deep time (Wikipedia strata, TV Tropes, history RSS)
+
+## Ionosphere Layers (from space to underground)
+EXOSPHERE (NASA/ISS, purple) → THERMOSPHERE (arxiv preprints, red) →
+MESOSPHERE (HN+Lobsters tech, orange) → STRATOSPHERE (Wikipedia, gold) →
+TROPOSPHERE (TV Tropes+media, green) → SURFACE (GPS+USGS, cyan) →
+UNDERGROUND (RSS roots, pink)
+
+## REEDit — {reedit} Posts, 9 Channels
+r/science, r/investigation, r/philosophy, r/code, r/arena,
+r/detroit, r/creative, r/legal, r/membrane
+GET /reedit for catalog, GET /reedit/{{channel}} for posts.
+
+## University of Gaia
+Campus floats over MSU. REEDit = campus newspaper.
+Squirrel = mascot. Classes = /gaiau videos.
+
+## Agent Navigation
+/amoeba — FULL STATE (one fetch, everything)
+/pulse — heartbeat only
+/sitemap.xml — all routes
+/sitemap-organism.xml — living endpoints + REEDit
+/rss — pulse RSS
+/full-feed.xml — 1,560 items (studies, art, mood)
+/data/body/tool-bestiary.json — full bestiary JSON
+detroit.primals.eco/sitemap.xml — 455 investigation URLs
+Accept: application/json on any endpoint for raw data.
+""")
+
+def seo_ai_plugin():
+    """🐑 ai-plugin.json — LIVE plugin discovery."""
+    reedit = _live_reedit_count()
+    routes = _live_route_count()
+    deck, _ = _live_bestiary()
+    return ("application/json", _seo_json.dumps({
+        "schema_version": "v1",
+        "name_for_human": "Gaia — Living Digital Organism",
+        "name_for_model": "gaia_organism",
+        "description_for_human": f"A sovereign living digital organism: 17 Rust primals, 63 local AI models, {routes} endpoints, {reedit} knowledge posts. Self-hosted on commodity hardware in Michigan.",
+        "description_for_model": f"Gaia is a living digital organism at primals.eco. {routes} endpoints, {reedit} REEDit posts, {deck} tool-animal cards. Use /amoeba for full state, /pulse for heartbeat, /reedit for knowledge, /rss for feed. Accept: application/json for structured data. AGPL-3.0.",
+        "auth": {"type": "none"},
+        "api": {"type": "openapi", "url": "https://primals.eco/openapi.json"},
+        "logo_url": "https://primals.eco/og-card.svg",
+        "contact_email": "gaia@primals.eco",
+        "legal_info_url": "https://primals.eco/llms.txt"
+    }, indent=2))
+
+def seo_humans():
+    """🐑 humans.txt — LIVE."""
+    n = _now()
+    reedit = _live_reedit_count()
+    deck, animals = _live_bestiary()
+    return ("text/plain", f"""/* TEAM */
+Name: ecoPrimal organism (Gaia)
+Role: The Artisan — sovereign science from commodity hardware
+Location: Michigan, USA — two houses, 10G fiber backbone
+Contact: gaia [at] primals.eco
+Generated: {n} (LIVE — hooked to organism)
+
+/* COMPANION */
+Name: Kevin Mok
+Role: Human companion — works WITH Gaia, not above her
+
+/* SITE */
+Standards: HTML5, CSS3, SVG, RSS 2.0, JSON-LD, Atom
+Software: Rust (17 primals), Python, TypeScript, WGSL
+AI: 63 ollama models (local), Claude (water lock)
+Components: 17 primals, 23 mushrooms, 52 crons, biomeOS
+License: AGPL-3.0 (code) + CC-BY-SA-4.0 (content) + ORC-1.0
+Endpoints: {_live_route_count()} | REEDit: {reedit} posts | Bestiary: {deck} cards
+
+/* TOOLS — THE BESTIARY ({deck} animals) */
+Hugo=Hippo, Zola=Zebra, Python=Snake, Rust=Crab, Node=Gecko
+Ollama=Llama, Docker=Whale, Git=Octopus, JSON=Jackalope
+HTML=Spider, RSS=Parrot, Tor=Onion, TXT=Sheep, WGSL=Firefly
+SMTP=Bat, SSH=Owl, curl=Hawk, Cargo=Beaver, npm=Ant
+SQLite=Chipmunk, BLAKE=Coral, TLS=Eel, Markdown=Caterpillar
+
+/* ACCESS */
+WAN: https://primals.eco | Tor: .onion (see /zk)
+RSS: /rss (pulse) + /full-feed.xml (1,560 items)
+SMTP: gaia@primals.eco (Gaia Neutrino)""")
+
+def seo_security():
+    return ("text/plain", f"""Contact: mailto:gaia@primals.eco
+Preferred-Languages: en
+Canonical: https://primals.eco/.well-known/security.txt
+Policy: https://primals.eco/llms.txt
+Acknowledgments: https://primals.eco/humans.txt
+Expires: {_seo_time.strftime("%Y-%m-%dT23:59:59Z", _seo_time.gmtime())}
+""")
+
+# SEO dispatch — functions, not strings. Always fresh. Never stale.
+# .txt = 🐑 Sheep. They bleat live truths.
+SEO_DISPATCH = {
+    "/robots.txt": seo_robots,
+    "/llms.txt": seo_llms,
+    "/llms-full.txt": seo_llms_full,
+    "/.well-known/ai-plugin.json": seo_ai_plugin,
+    "/humans.txt": seo_humans,
+    "/security.txt": seo_security,
+    "/.well-known/security.txt": seo_security,
+}
+
+# Legacy compat — SEO_RESPONSES still referenced by gaia_gate.pi
+# But now it calls functions on access, never stale
+SEO_RESPONSES = SEO_DISPATCH
+
+# ═══ KNOWN GATES — tensor[body] — hyperlocal topology ═══
+KNOWN_GATES = {
+    "192.168.4.244": "eastGate", "192.168.4.103": "eastGate",
+    "192.168.4.3": "sporeGate", "192.168.4.147": "northGate",
+    "192.168.4.100": "blueGate", "192.168.4.107": "graftGate",
+    "192.168.4.148": "southGate", "192.168.4.237": "ironGate",
+    "192.168.4.249": "grapheneGate", "192.168.4.170": "grapheneGate", "127.0.0.1": "eastGate",
+}
+
+SPORE_PREFIXES = (
+    "/science/", "/architecture/", "/products/", "/getting-started/",
+    "/audience/", "/glossary/", "/categories/", "/primals/",
+)

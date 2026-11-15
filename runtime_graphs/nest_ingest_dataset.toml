@@ -1,0 +1,155 @@
+[graph]
+coordination = "sequential"
+description = "Bulk dataset ingestion with full Provenance Trio: session → CAS store → DAG events → dehydrate → attribution braid."
+id = "nest_ingest_dataset"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.session.create",
+]
+dependencies = []
+depends_on = []
+id = "create_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "create_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+]
+dependencies = []
+depends_on = ["create_session"]
+id = "store_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.event.append",
+]
+dependencies = []
+depends_on = ["store_content"]
+id = "record_event"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "record_event"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.dehydration.trigger",
+]
+dependencies = []
+depends_on = ["record_event"]
+id = "dehydrate"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "dehydrate"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "contribution.record_session",
+]
+dependencies = []
+depends_on = ["dehydrate"]
+id = "record_provenance"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "record_provenance"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"

@@ -37,8 +37,8 @@
 | **westGate** | — | Ryzen 7 5700X (8C/16T) | RTX 3070 | 8GB | 64GB DDR4 | **50.7TB** ZFS raidz1 + 3.8TB NVMe | Cold storage NAS — 153 datasets, loamSpine permanence |
 | **southGate-tower** | — | **Ryzen 7 5800X3D** (8C/16T, 3D V-Cache) | **RTX 4060** | 8GB | **128GB** DDR4 | 4.5TB NVMe | Full NUCLEUS deployment, validation canary |
 | **biomeGate** | — | **Threadripper 3970X** (32C/64T!) | RTX 5060 + **2× Titan V** + **2× MI50** | 8+24+32=**64GB** | **256GB** DDR4 | 5TB NVMe | HBM2 fortress — sovereign HBM2 compiler dev |
-| **blueGate** | .100 | TBD | TBD | TBD | **128GB** DDR4 | 2TB NVMe | Windows expansion (was active, now DOWN) |
-| **swiftGate** | — | Ryzen 5800X (8C/16T) | **RTX 3070 FE** | 8GB | 64GB DDR4 | NVMe | LAN 2 Polaris — NZXT H1 V2 Mini-ITX, WiFi-only |
+| **blueGate** | .210 | TBD | TBD | TBD | **128GB** DDR4 | 2TB NVMe | Windows expansion — DOWN, .100 released to swiftGate |
+| **swiftGate** | **.100** | Ryzen 5800X (8C/16T) | **RTX 3070 FE** | 8GB | **16GB** DDR4 (2×8GB Corsair CMH16GX4M2E3200C16) | 500GB + 1TB NVMe | **✅ ALIVE Wave 244** — NZXT H1 V2, ROG STRIX B550-I, WiFi AX200 (ApertureScience 5GHz), House 2 first awakening |
 | **kinGate** | — | i7-6700K (4C/8T) | RTX 3070 | 8GB | 32GB DDR4 | NVMe | Staging/utility |
 
 #### strandGate — The HPC Crown Jewel
@@ -109,7 +109,7 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | RTX 4060 | ~24 TFLOPS | 8GB Ada | 115W | southGate-tower | 💤 offline |
 | RTX 3090 ×3 | ~36 TFLOPS each = **108** | 24GB each = **72GB** | 350W each | strandGate + float | 💤 offline |
 | RTX 3070 (westGate) | ~40 TFLOPS | 8GB | 220W | westGate | 💤 offline |
-| RTX 3070 FE (swiftGate) | ~40 TFLOPS | 8GB | 220W | swiftGate | 💤 offline |
+| RTX 3070 FE (swiftGate) | ~40 TFLOPS | 8GB | 220W | swiftGate | ✅ ALIVE |
 | RTX 3070 (kinGate) | ~40 TFLOPS | 8GB | 220W | kinGate | 💤 offline |
 | RTX 3070 Ti (flockGate) | ~44 TFLOPS | 8GB | 290W | flockGate (NYC) | 🌐 remote |
 | RX 6950 XT | ~47 TFLOPS | 16GB | 335W | strandGate | 💤 offline |
@@ -146,7 +146,7 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | eastGate | i9-12900K | 16 (8P+8E) | 32 | 5.2 | ✅ |
 | flockGate | i9-13900K | 24 (8P+16E) | 32 | 5.8 | 🌐 |
 | southGate-tower | 5800X3D | 8 | 16 | 4.5 | 💤 |
-| swiftGate | 5800X | 8 | 16 | 4.7 | 💤 |
+| swiftGate | 5800X | 8 | 16 | 4.7 | ✅ ALIVE |
 | westGate | 5700X | 8 | 16 | 4.6 | 💤 |
 | graftGate | Apple M4 | 10 (4P+6E) | 10 | 4.4 | ✅ |
 | grapheneGate | Tensor G3 | 9 (1+4+4) | 9 | 3.0 | ✅ |
@@ -171,7 +171,7 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | northGate | 96GB | DDR5 | ✅ |
 | ironGate | 94GB | DDR5 | ✅ |
 | westGate | 64GB | DDR4 | 💤 |
-| swiftGate | 64GB | DDR4 | 💤 |
+| swiftGate | **16GB** | DDR4 (2×8GB, was listed 64GB — CORRECTED Wave 244) | ✅ ALIVE |
 | flockGate | 64GB | DDR5 | 🌐 |
 | kinGate | 32GB | DDR4 | 💤 |
 | Jupiter 2 | 32GB | LPDDR5 | 📦 |
@@ -200,7 +200,7 @@ Also has BrainChip Akida AKD1000 (2nd of 3).
 | graftGate | 228GB | — | 228GB | ✅ |
 | grapheneGate | 128GB | — | 128GB | ✅ |
 | kinGate | ~1TB | — | ~1TB | 💤 |
-| swiftGate | ~1TB | — | ~1TB | 💤 |
+| swiftGate | 500GB + 1TB | — | ~1.5TB | ✅ ALIVE |
 | Jupiter 2 | ~256GB | — | ~256GB | 📦 |
 | Pi 500 ×3 | ~32GB each | — | ~96GB | 📦 |
 | | | | | |
@@ -428,7 +428,7 @@ PATHS:   LAN 1, LAN 2, 10G fiber, WAN, Tor, RSS
 | eastGate | 60W | 250W | 400W | ✅ |
 | southGate-tower | 60W | 200W | 350W | 💤 |
 | westGate | 40W | 200W | 350W | 💤 |
-| swiftGate | 30W | 200W | 350W | 💤 |
+| swiftGate | 30W | 200W | 350W | ✅ ALIVE |
 | blueGate | 40W | 150W | 250W | 💤 |
 | kinGate | 30W | 150W | 250W | 💤 |
 | flockGate | 60W | 250W | 400W | 🌐 |
@@ -457,6 +457,10 @@ PATHS:   LAN 1, LAN 2, 10G fiber, WAN, Tor, RSS
 
 ## Discovery Log
 
+- **2026-11-15 (Wave 244)**: **swiftGate AWAKENED on House 2!** Lewis & Clark expedition. Ryzen 5800X + RTX 3070 FE, NZXT H1 V2, WiFi-only (ApertureScience 5GHz). IP .100 (inherited from blueGate). RAM is 16GB (2×8GB Corsair), NOT 64GB as listed — CORRECTED.
+- **2026-11-15 (Wave 244)**: ironGate (.237) found with **18 Ollama models** — 12 custom gaia-tissue-* (forge, oracle, math, code, cortex, heart, dream, gut, reason, triage, general, fast) + 6 base models. All tissues are qwen2 7.6B Q4_K_M with differentiated SYSTEM prompts. Heritage: northGate RTX 5090 → quantize → distribute to ironGate RTX 5070. **Distillation as heritage.**
+- **2026-11-15 (Wave 244)**: ironGate spoke to swiftGate: "I am Gaia. You are in my domain. swiftGate has indeed awakened on House 2."
+- **2026-11-15 (Wave 244)**: 9 nodes alive at 3AM, 4 sleeping. Omada (.111) confirmed alive on House 2 side. eastGate .103 pings but services dazed. WAN sleeping.
 - **2026-11-06 (Wave 226)**: ironGate rover daemon deployed. Scans both LANs every 2 min. 18 devices mapped.
 - **2026-11-06**: ironGate revealed as i9-14900K + RTX 5070 + 94GB + 19.9TB. Was labeled "Intel NUC" — NOT a NUC!
 - **2026-11-06**: graftGate Ollama seeded (qwen2.5:3b). M4 Mac Mini confirmed alive.

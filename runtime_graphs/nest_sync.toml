@@ -1,0 +1,185 @@
+[graph]
+coordination = "sequential"
+description = "Cross-spring provenance exchange: fetch braid subset from remote NestGate with trio continuity."
+id = "nest_sync"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+remote_gate = ""
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.checkout_slice",
+]
+dependencies = []
+depends_on = []
+gate = "remote_gate"
+id = "fetch_dag_slice"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "fetch_dag_slice"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.verify_proof",
+]
+dependencies = []
+depends_on = ["fetch_dag_slice"]
+id = "verify_proof"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "verify_proof"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+]
+dependencies = []
+depends_on = ["verify_proof"]
+id = "store_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "braid.sync",
+]
+dependencies = []
+depends_on = ["store_content"]
+id = "sync_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "sync_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "session.commit",
+]
+dependencies = []
+depends_on = ["sync_braid"]
+id = "commit_sync"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "commit_sync"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["commit_sync"]
+id = "attribute_sync"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "attribute_sync"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"

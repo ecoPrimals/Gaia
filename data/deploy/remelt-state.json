@@ -1,0 +1,72 @@
+{
+  "event": "remelt",
+  "wave": "232h",
+  "timestamp": "2026-11-14T12:37:00Z",
+  "devices": {
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "status": "REBOOTED",
+      "uptime_s": 120,
+      "boot_chain": {
+        "xorg-headless": "active",
+        "rustdesk": "active",
+        "ion-channel": "active",
+        "gdm3": "active",
+        "gdm-autologin": "sporegate"
+      },
+      "ionChannel": {
+        "capture_tier": "Dmabuf",
+        "mode": "Full",
+        "ion_type": "Ca2+",
+        "gpu_vendor": "AMD"
+      },
+      "rustdesk": {
+        "id": "1871544996",
+        "relay": "192.168.4.244",
+        "bingoCube": true,
+        "eyeball": "CONNECTED"
+      }
+    },
+    "grapheneGate": {
+      "ip": "192.168.9.217",
+      "status": "REBOOTED",
+      "adb": "connected",
+      "device": "44251JEKB04957",
+      "biomeOS_processes": 31,
+      "services": {
+        "sensorium": "running",
+        "organism": "running",
+        "gradient_anchor": "running",
+        "petaltongue": "running",
+        "biomeos_seed": "running"
+      },
+      "rustdesk_config": "bingoCube_identity_set"
+    },
+    "southGate": {
+      "ip": "192.168.4.148",
+      "status": "ALIVE_NOT_REBOOTED",
+      "ssh": "open",
+      "note": "iPhone needs physical button — cannot remote reboot"
+    },
+    "eastGate": {
+      "ip": "192.168.4.244",
+      "status": "RELAY_HOST",
+      "hbbs": "running",
+      "hbbr": "running",
+      "rustdesk_client": "connected_to_sporeGate",
+      "ionChannel": {
+        "capture_tier": "Dmabuf",
+        "mode": "Full",
+        "ion_type": "K+",
+        "gpu_vendor": "NVIDIA"
+      }
+    }
+  },
+  "boot_chain_verified": true,
+  "pattern": "power → systemd → xorg-headless → rustdesk → gdm-autologin → ion-channel-gate.sh → bingoCube → eyeball LIVE",
+  "fixes_applied": {
+    "wave_232h": "HOME unbound variable in ion-channel-gate.sh under systemd",
+    "cause": "set -u strict mode + systemd runs without HOME",
+    "fix": "set -eo pipefail + HOME fallback to /root"
+  }
+}

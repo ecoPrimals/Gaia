@@ -1,0 +1,71 @@
+[graph]
+coordination = "sequential"
+description = "BTSP negotiate → verify lineage. Establishes trust between primals."
+id = "tower_authenticate"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "btsp.negotiate",
+]
+dependencies = []
+depends_on = []
+id = "negotiate"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "negotiate"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "defense.audit",
+]
+dependencies = []
+depends_on = ["negotiate"]
+id = "verify_lineage"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "verify_lineage"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

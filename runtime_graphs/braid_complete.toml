@@ -1,0 +1,127 @@
+[graph]
+coordination = "sequential"
+description = "Seal final braid from completed DAG session and propagate to downstream."
+id = "braid_complete"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.session.complete",
+]
+dependencies = []
+depends_on = []
+id = "seal_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "seal_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "commit",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["seal_session"]
+id = "weave_final_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "commit"
+name = "weave_final_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "commit"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "commit"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "session.commit",
+]
+dependencies = []
+depends_on = ["weave_final_braid"]
+id = "commit_to_ledger"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "commit_to_ledger"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "composition.status",
+]
+dependencies = []
+depends_on = ["commit_to_ledger"]
+id = "notify_rootpulse"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "notify_rootpulse"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"

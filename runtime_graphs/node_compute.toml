@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Authenticate → dispatch → compile → execute. Full compute pipeline."
+id = "node_compute"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "compute",
+    "compute.dispatch",
+]
+dependencies = []
+depends_on = []
+id = "dispatch"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "compute"
+name = "dispatch"
+primal = "toadstool"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "compute"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "compute"
+by_name = "toadstool"
+
+[[graph.nodes]]
+capabilities = [
+    "shader",
+    "shader.compile.wgsl",
+]
+dependencies = []
+depends_on = ["dispatch"]
+id = "compile"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "shader"
+name = "compile"
+primal = "coralreef"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "shader"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "shader"
+by_name = "coralreef"
+
+[[graph.nodes]]
+capabilities = [
+    "tensor",
+    "tensor.matmul",
+]
+dependencies = []
+depends_on = ["compile"]
+id = "execute"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "tensor"
+name = "execute"
+primal = "barracuda"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "tensor"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "tensor"
+by_name = "barracuda"

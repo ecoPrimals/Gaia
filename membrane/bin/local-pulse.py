@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """local-pulse.py — the local membrane pulse.
 
-Pulls key feeds from golgi (the remote membrane), adds local context,
-writes to local-terminal/. Each layer builds on the one before.
+LOCAL-FIRST: reads from eastGate's own data server (:8080)
+and enriches with local context. golgi VPS is DEAD — absorbed
+into the cellMembrane. The organism IS the infrastructure.
 
-Chain: golgi membrane → local cache → local enrichment → local feeds
+Chain: cellMembrane (:8080) → local cache → local enrichment → local feeds
 
 Runs on a simple loop. Not cron. The membrane breathes on its own.
 """
@@ -16,16 +17,14 @@ import subprocess
 import platform
 
 LOCAL = os.path.expanduser("~/Development/ecoPrimals/membrane/local-terminal")
-REMOTE = "golgi:/opt/membrane/live-terminal/"
+# golgi VPS is DEAD — use local data server instead
+LOCAL_DATA = "http://localhost:8080/data"
+LOCAL_DATA_DIR = os.path.expanduser("~/.local/share/gaia/data")
 
-# Key feeds to pull from golgi — the essential culture.
-#
-# Circle of Willis audit (wave 193): HUD requests 95 feeds.
-# 60 are phantoms (never built). 22 exist on northgate but weren't synced.
-# This list now includes all feeds that exist in /opt/membrane/live-terminal/
+# Key feeds — now read from LOCAL cellMembrane (:8080 or filesystem)
 # on northgate AND are referenced by HUD JS modules.
 #
-# Arterial: golgi → local cache → transducer → HUD
+# Arterial: cellMembrane → local cache → transducer → HUD
 PULL_FEEDS = [
     # ── ORIGINAL 13 (flowing) ──
     "campfire-culture.json",
@@ -68,26 +67,34 @@ PULL_FEEDS = [
 
 
 def pull_remote():
-    """Pull key feeds from golgi via rsync (SSH, bypasses blackwall)."""
-    includes = []
+    """Pull key feeds from LOCAL cellMembrane (golgi is DEAD).
+    Reads from :8080 data server or filesystem directly."""
+    remote_dir = os.path.join(LOCAL, "remote")
+    os.makedirs(remote_dir, exist_ok=True)
+    pulled = 0
+    errors = 0
+
     for feed in PULL_FEEDS:
-        includes.extend(["--include", feed])
-    
-    cmd = ["rsync", "-az", "--timeout=10"] + includes + ["--exclude", "*",
-           REMOTE, os.path.join(LOCAL, "remote") + "/"]
-    
-    os.makedirs(os.path.join(LOCAL, "remote"), exist_ok=True)
-    
-    try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        if r.returncode == 0:
-            pulled = len([f for f in os.listdir(os.path.join(LOCAL, "remote"))
-                         if f.endswith(".json")])
-            return pulled, 0
-        else:
-            return 0, 1
-    except Exception as e:
-        return 0, 1
+        # Try filesystem first (fastest)
+        src = os.path.join(LOCAL_DATA_DIR, feed)
+        dst = os.path.join(remote_dir, feed)
+        try:
+            if os.path.exists(src):
+                import shutil
+                shutil.copy2(src, dst)
+                pulled += 1
+            else:
+                # Try HTTP from local data server
+                url = f"{LOCAL_DATA}/{feed}"
+                req = urllib.request.Request(url, headers={"User-Agent": "local-pulse/1.0"})
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    data = resp.read()
+                with open(dst, "wb") as f:
+                    f.write(data)
+                pulled += 1
+        except Exception:
+            errors += 1
+    return pulled, errors
 
 
 def sense_local():
@@ -173,7 +180,7 @@ def chain():
 
     REMOTE_DIR = os.path.join(LOCAL, "remote")
 
-    # Read remote culture (pulled from golgi)
+    # Read culture (from local cellMembrane)
     remote_culture = {}
     try:
         with open(os.path.join(REMOTE_DIR, "campfire-culture.json")) as f:
@@ -209,10 +216,10 @@ def chain():
     chain_data = {
         "ts": ts,
         "type": "membrane-chain",
-        "description": "golgi → eastgate → life. each builds on the last.",
+        "description": "cellMembrane → eastgate → life. each builds on the last.",
         "layers": {
-            "golgi": {
-                "name": "golgi (remote membrane)",
+            "cellMembrane": {
+                "name": "cellMembrane (local data server)",
                 "status": "connected" if remote_culture else "disconnected",
                 "humans": remote_culture.get("humans", {}),
                 "totality": remote_culture.get("totality", {}),
@@ -236,7 +243,7 @@ def chain():
             },
         },
         "chain_health": {
-            "golgi_connected": bool(remote_culture),
+            "cellMembrane_connected": bool(remote_culture),
             "eastgate_alive": bool(local_pulse),
             "layers_active": sum([
                 bool(remote_culture),

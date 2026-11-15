@@ -1,0 +1,186 @@
+[graph]
+coordination = "sequential"
+description = "Per-file data acquisition: bandwidth check -> content.fetch or content.put -> CAS -> DAG event -> spine entry. Bandwidth-governed."
+id = "nest_acquire_file"
+version = "2.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "topology",
+    "topology.bandwidth.request",
+]
+dependencies = []
+depends_on = []
+id = "check_bandwidth"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "topology"
+name = "check_bandwidth"
+primal = "cellmembrane"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "topology"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "topology"
+by_name = "cellmembrane"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.fetch",
+]
+dependencies = []
+depends_on = ["check_bandwidth"]
+id = "fetch_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "fetch_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+]
+dependencies = []
+depends_on = ["check_bandwidth"]
+id = "store_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.event.append",
+]
+dependencies = []
+depends_on = [
+    "fetch_content",
+    "store_content",
+]
+id = "record_event"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "record_event"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "entry.append",
+]
+dependencies = []
+depends_on = ["record_event"]
+id = "record_entry"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "record_entry"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "topology",
+    "topology.bandwidth.release",
+]
+dependencies = []
+depends_on = ["record_entry"]
+id = "release_bandwidth"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "topology"
+name = "release_bandwidth"
+primal = "cellmembrane"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "topology"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "topology"
+by_name = "cellmembrane"

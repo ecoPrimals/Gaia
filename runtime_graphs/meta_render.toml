@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Graph status → AI summarize → viz render. Closes the agentic loop with narrated output."
+id = "meta_render"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "graph.status",
+]
+dependencies = []
+depends_on = []
+id = "collect_results"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "collect_results"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"
+
+[[graph.nodes]]
+capabilities = [
+    "ai",
+    "ai.complete",
+]
+dependencies = []
+depends_on = ["collect_results"]
+id = "summarize"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ai"
+name = "summarize"
+primal = "squirrel"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ai"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ai"
+by_name = "squirrel"
+
+[[graph.nodes]]
+capabilities = [
+    "visualization",
+    "viz.render",
+]
+dependencies = []
+depends_on = ["summarize"]
+id = "render_output"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "visualization"
+name = "render_output"
+primal = "petaltongue"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "visualization"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "visualization"
+by_name = "petaltongue"

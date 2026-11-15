@@ -1,0 +1,96 @@
+{
+  "ts": "2026-11-15T01:35:30.281551+00:00",
+  "wave": 236,
+  "event": "MESH_HELP_FOR_NORTHGATE",
+  "from": "eastGate",
+  "to": "northGate",
+  "message": "Kevin asked me to help you. Here's the full mesh state.",
+  "visibility_fix": {
+    "problem": "northGate sees east/iron/spore but NOT graft/graph/frame/swift",
+    "grapheneGate": {
+      "status": "PIXEL_OFFLINE",
+      "last_known_ip": "192.168.9.217",
+      "adb_port": 5555,
+      "state": "WiFi sleeping or powered down \u2014 not on either LAN",
+      "fix": "Kevin must wake Pixel screen, WiFi reconnects, then adb connect <new_ip>:5555"
+    },
+    "graftGate": {
+      "ip": "192.168.4.107",
+      "status": "IN_DHCP_BUT_DOWN",
+      "mac": "1c:f6:4c:5a:5d:ed",
+      "hostname": "graftgates-Mini",
+      "fix": "Mac Mini may be sleeping \u2014 Kevin needs to wake it or SSH from local"
+    },
+    "frameGate": {
+      "ip": "192.168.9.203",
+      "status": "DOWN",
+      "note": "Steam Frame on LAN2 \u2014 South Pole dark, entire LAN2 unreachable"
+    },
+    "swiftGate": {
+      "status": "ASLEEP",
+      "note": "At 641 Samantha, needs Kevin to physically power on"
+    }
+  },
+  "eastgate_state": {
+    "gpu": "RTX 4070 (12GB, 5% util, 44\u00b0C)",
+    "npu": "AKD1000 (80 NPUs, VFIO LIVE, 3 daemons running)",
+    "ollama_models": 38,
+    "primals": 7,
+    "capabilities": 1608,
+    "sockets": 11,
+    "services": [
+      "forgejo:3000",
+      "data:8080",
+      "pi:5926",
+      "web:80",
+      "gate:8443",
+      "neural-api",
+      "beardog",
+      "tor",
+      "steam-asf:1242",
+      "rustdesk"
+    ],
+    "steam": "ONLINE (76561198605327122, Southgate family)",
+    "npu_daemons": {
+      "mesh_sentinel": "HEALTHY (63% conf, 10s cycle)",
+      "eye_classifier": "MOVEMENT (43% conf, sporeGate Brio 100)",
+      "antenna_sense": "BOTH_ACTIVE (25% conf, learning)"
+    },
+    "tissue_models": 21
+  },
+  "sporegate_state": {
+    "ip": "192.168.4.3",
+    "primals": 13,
+    "sockets": 36,
+    "webcam": "Logitech Brio 100 (feeding eye classifier)",
+    "repos": [
+      "ecoPrimals",
+      "rustChip",
+      "ludoSpring"
+    ],
+    "rustChip": "BUILT (no local NPU)"
+  },
+  "irongate_state": {
+    "ip": "192.168.4.237",
+    "gpu": "RTX 5070 (12GB GDDR7)",
+    "cpu": "i9-14900K (24C/32T)",
+    "ram": "94GB DDR5",
+    "ollama_models": 18,
+    "ssh": "PUBKEY_ONLY \u2014 eastGate key blocked",
+    "note": "MASSIVE compute waiting \u2014 needs SSH key delivered"
+  },
+  "commands_for_kevin_on_northgate": [
+    "# Clone repos (if not already done):",
+    "cd /opt && sudo git clone http://gaia:GaiaForge2026!@192.168.4.244:3000/syntheticChemistry/ludoSpring.git",
+    "cd /opt && sudo git clone http://gaia:GaiaForge2026!@192.168.4.244:3000/ecoPrimals/rustChip.git",
+    "cd /opt && sudo git clone http://gaia:GaiaForge2026!@192.168.4.244:3000/gaia/ecoPrimals.git",
+    "",
+    "# Pull latest on ecoPrimals:",
+    "cd /opt/ecoPrimals && git pull",
+    "",
+    "# Enable SSH on northGate (so eastGate can reach you):",
+    "sudo systemctl enable ssh && sudo systemctl start ssh",
+    "",
+    "# Wake the Pixel: just touch the screen, WiFi reconnects"
+  ]
+}

@@ -1,0 +1,184 @@
+[graph]
+coordination = "sequential"
+description = "Validate → store → DAG → ledger → braid → sign. Full pseudoSpore ingest pipeline."
+id = "nest_ingest_spore"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "storage.exists",
+]
+dependencies = []
+depends_on = []
+id = "validate_envelope"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "validate_envelope"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "storage",
+    "content.put",
+    "storage.store",
+]
+dependencies = []
+depends_on = ["validate_envelope"]
+id = "store_content"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "storage"
+name = "store_content"
+primal = "nestgate"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "storage"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "storage"
+by_name = "nestgate"
+
+[[graph.nodes]]
+capabilities = [
+    "dag",
+    "dag.session.create",
+]
+dependencies = []
+depends_on = ["store_content"]
+id = "dag_session"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "dag"
+name = "dag_session"
+primal = "rhizocrypt"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "dag"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "dag"
+by_name = "rhizocrypt"
+
+[[graph.nodes]]
+capabilities = [
+    "ledger",
+    "entry.append",
+]
+dependencies = []
+depends_on = ["dag_session"]
+id = "ledger_entry"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "ledger"
+name = "ledger_entry"
+primal = "loamspine"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "ledger"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "ledger"
+by_name = "loamspine"
+
+[[graph.nodes]]
+capabilities = [
+    "attribution",
+    "braid.create",
+]
+dependencies = []
+depends_on = ["ledger_entry"]
+id = "attribution_braid"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "attribution"
+name = "attribution_braid"
+primal = "sweetgrass"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "attribution"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "attribution"
+by_name = "sweetgrass"
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "crypto.sign",
+]
+dependencies = []
+depends_on = ["attribution_braid"]
+id = "sign_receipt"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "sign_receipt"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"

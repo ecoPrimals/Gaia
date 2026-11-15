@@ -1,0 +1,92 @@
+{
+  "type": "latency-baseline",
+  "wave": "232z",
+  "ts": "2026-11-14T17:09:15.329043+00:00",
+  "test": "pre-rewiring baseline",
+  "from_eastGate": {
+    "Flint (.1)": {
+      "avg_ms": 0.536,
+      "path": "enp5s0 \u2192 MikroTik \u2192 lan1 \u2192 Flint"
+    },
+    "MikroTik (.2)": {
+      "avg_ms": 0.258,
+      "path": "enp5s0 \u2192 MikroTik (direct)"
+    },
+    "sporeGate (.3)": {
+      "avg_ms": 0.198,
+      "path": "enp5s0 \u2192 MikroTik \u2192 sporeGate"
+    },
+    "northGate (.147)": {
+      "avg_ms": 0.205,
+      "path": "enp5s0 \u2192 MikroTik \u2192 northGate"
+    },
+    "ironGate (.237)": {
+      "avg_ms": 0.228,
+      "path": "enp5s0 \u2192 MikroTik \u2192 ironGate"
+    },
+    "graftGate (.107)": {
+      "avg_ms": 0.351,
+      "path": "enp5s0 \u2192 MikroTik \u2192 graftGate"
+    },
+    "deckGate (.176)": {
+      "avg_ms": 1.556,
+      "path": "enp5s0 \u2192 Flint lan3 \u2192 deckGate (WiFi?)"
+    },
+    "Epson (.200)": {
+      "avg_ms": 2.346,
+      "path": "WiFi"
+    }
+  },
+  "from_sporeGate": {
+    "eastGate (.244)": {
+      "avg_ms": 0.195
+    },
+    "northGate (.147)": {
+      "avg_ms": 0.246
+    },
+    "ironGate (.237)": {
+      "avg_ms": 0.218
+    },
+    "Flint (.1)": {
+      "avg_ms": 0.453
+    },
+    "MikroTik (.2)": {
+      "avg_ms": 0.268
+    }
+  },
+  "eastGate_interfaces": {
+    "enp5s0": {
+      "speed": "10 Gbps",
+      "state": "UP",
+      "ip": "192.168.4.244",
+      "role": "primary LAN"
+    },
+    "wlp0s20f3": {
+      "speed": "WiFi",
+      "state": "UP",
+      "ip": "192.168.4.103",
+      "role": "backup/redundant"
+    },
+    "eno1": {
+      "speed": "?",
+      "state": "UP",
+      "ip": "10.0.0.1",
+      "role": "SPARE (direct link available!)"
+    },
+    "virbr0": {
+      "speed": "virtual",
+      "state": "down",
+      "ip": "192.168.122.1",
+      "role": "libvirt (unused)"
+    }
+  },
+  "wired_topology": {
+    "ATT_modem": "WAN ingress \u2192 Flint eth1 (2.5Gbps)",
+    "Flint_lan1": "\u2192 MikroTik (ALL wired devices through here)",
+    "Flint_lan3": "\u2192 deckGate (Steam Deck) DIRECT",
+    "Flint_lan5": "\u2192 unknown device DIRECT",
+    "Flint_to_JetStream": "\u2192 10G fiber to House 2 (currently DOWN)"
+  },
+  "bottleneck": "ALL wired traffic funnels through MikroTik on Flint lan1",
+  "opportunity": "deckGate is on lan3 (direct!), lan5 has a mystery device, lan2+lan4 are EMPTY"
+}

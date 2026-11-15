@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Sign → announce → audit. Atomic Tower signal for authenticated broadcast."
+id = "tower_publish"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "crypto.sign",
+]
+dependencies = []
+depends_on = []
+id = "sign"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "sign"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "discovery.announce",
+]
+dependencies = []
+depends_on = ["sign"]
+id = "announce"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "announce"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "security.audit_event",
+]
+dependencies = []
+depends_on = ["announce"]
+id = "audit"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "audit"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

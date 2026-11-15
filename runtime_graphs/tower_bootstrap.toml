@@ -1,0 +1,187 @@
+[graph]
+coordination = "sequential"
+description = "Two-phase cold start: static Tower startup then graph-driven expansion. Resolves the bootstrap paradox."
+id = "tower_bootstrap"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "crypto.identity",
+    "btsp.handshake",
+]
+dependencies = []
+depends_on = []
+id = "beardog_identity"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "beardog_identity"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "ipc.register",
+    "discovery.announce",
+]
+dependencies = []
+depends_on = ["beardog_identity"]
+id = "songbird_discovery"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "songbird_discovery"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "security.audit_event",
+    "defense.status",
+]
+dependencies = []
+depends_on = ["beardog_identity"]
+id = "skunkbat_audit"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "skunkbat_audit"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "graph.list",
+    "topology.rescan",
+]
+dependencies = []
+depends_on = ["songbird_discovery"]
+id = "biomeos_discover"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "biomeos_discover"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "ipc.register",
+]
+dependencies = []
+depends_on = ["biomeos_discover"]
+id = "registry_seed"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "registry_seed"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "orchestration",
+    "health.liveness",
+]
+dependencies = []
+depends_on = ["registry_seed"]
+id = "health_verify"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "orchestration"
+name = "health_verify"
+primal = "biomeos"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "orchestration"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "orchestration"
+by_name = "biomeos"

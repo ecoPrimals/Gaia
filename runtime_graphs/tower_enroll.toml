@@ -1,0 +1,100 @@
+[graph]
+coordination = "sequential"
+description = "Physical proof → mesh peer registration → audit trail. Autonomous gate enrollment."
+id = "tower_enroll"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "fido2.verify_attestation",
+    "beacon.verify_proximity",
+]
+dependencies = []
+depends_on = []
+id = "verify_proof"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "verify_proof"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "mesh.gate_enroll",
+]
+dependencies = []
+depends_on = ["verify_proof"]
+id = "register_peer"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "register_peer"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "defense.audit",
+]
+dependencies = []
+depends_on = ["register_peer"]
+id = "audit_enrollment"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "audit_enrollment"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

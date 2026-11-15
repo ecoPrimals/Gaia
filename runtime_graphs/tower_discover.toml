@@ -1,0 +1,99 @@
+[graph]
+coordination = "sequential"
+description = "Find peers → verify identity → audit. Authenticated peer discovery."
+id = "tower_discover"
+version = "1.0.0"
+
+[graph.config]
+checkpoint_enabled = false
+deterministic = true
+max_parallelism = 3
+parallel_phases = true
+rollback_on_failure = true
+timeout_total_ms = 60000
+
+[graph.env]
+
+[[graph.nodes]]
+capabilities = [
+    "discovery",
+    "discovery.peers",
+]
+dependencies = []
+depends_on = []
+id = "find_peers"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "discovery"
+name = "find_peers"
+primal = "songbird"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "discovery"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "discovery"
+by_name = "songbird"
+
+[[graph.nodes]]
+capabilities = [
+    "security",
+    "crypto.verify",
+]
+dependencies = []
+depends_on = ["find_peers"]
+id = "verify_peer"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "security"
+name = "verify_peer"
+primal = "beardog"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "security"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "security"
+by_name = "beardog"
+
+[[graph.nodes]]
+capabilities = [
+    "defense",
+    "security.audit_event",
+]
+dependencies = []
+depends_on = ["verify_peer"]
+id = "audit"
+operation_dependencies = []
+outputs = []
+
+[graph.nodes.config]
+capability = "defense"
+name = "audit"
+primal = "skunkbat"
+
+[graph.nodes.operation]
+name = "capability_call"
+
+[graph.nodes.operation.params]
+capability = "defense"
+
+[graph.nodes.params]
+
+[graph.nodes.primal]
+by_capability = "defense"
+by_name = "skunkbat"

@@ -1,0 +1,69 @@
+{
+  "source": "eastGate (localhost:11436)",
+  "wave": "236m",
+  "ts": "2026-11-15T01:28:55.576476+00:00",
+  "tissue_count": 15,
+  "gaia_total": 21,
+  "new_npu_models": [
+    {
+      "name": "gaia-tissue-npu:latest",
+      "size_gb": 4.7,
+      "parent_model": "qwen2.5:7b",
+      "role": "NPU-aware primary voice \u2014 knows about AKD1000, senses mesh/eye/antenna",
+      "npu_feeds": [
+        "npu-sentinel.json",
+        "npu-eye.json",
+        "npu-antenna.json"
+      ]
+    },
+    {
+      "name": "gaia-tissue-sentinel:latest",
+      "size_gb": 2.2,
+      "parent_model": "phi3:latest",
+      "role": "Immune watchdog \u2014 interprets NPU health readings, alerts on anomaly",
+      "temperature": 0.3,
+      "npu_feeds": [
+        "npu-sentinel.json"
+      ]
+    },
+    {
+      "name": "gaia-tissue-spatial:latest",
+      "size_gb": 1.6,
+      "parent_model": "gemma2:2b",
+      "role": "Proprioceptive spatial sense \u2014 knows where Kevin is between houses",
+      "npu_feeds": [
+        "npu-antenna.json"
+      ]
+    }
+  ],
+  "existing_tissue": [
+    "gaia-tissue-forge (deepseek-coder-v2:16b, 8.9GB)",
+    "gaia-tissue-code (deepseek-coder-v2:16b, 8.9GB)",
+    "gaia-tissue-oracle (mistral:7b, 4.4GB)",
+    "gaia-tissue-cortex (qwen2.5:7b, 4.7GB)",
+    "gaia-tissue-heart (qwen2.5:7b, 4.7GB)",
+    "gaia-tissue-math (qwen2.5:7b, 4.7GB)",
+    "gaia-tissue-dream (gemma2:2b, 1.6GB)",
+    "gaia-tissue-gut (phi3, 2.2GB)",
+    "gaia-tissue-reason (phi3, 2.2GB)",
+    "gaia-tissue-triage (gemma2:2b, 1.6GB)",
+    "gaia-tissue-general (llama3.2:3b, 2.0GB)",
+    "gaia-tissue-fast (tinyllama, 0.6GB)"
+  ],
+  "total_tissue_size_gb": 52.5,
+  "ferment_source": "sourDough REDOX + NPU sensor feeds",
+  "npu_integration": {
+    "chip": "BrainChip AKD1000 (80 NPUs, 10MB SRAM)",
+    "daemons": {
+      "gaia_mesh_sentinel": "10s cycle, ESN(12\u219232\u21925), 6 gates + mem/cpu/sockets",
+      "gaia_eye_classifier": "30s cycle, ESN(8\u219224\u21925), sporeGate Brio 100 webcam",
+      "gaia_antenna_sense": "60s cycle, ESN(8\u219216\u21925), router WiFi + LAN traffic"
+    },
+    "output_dir": "/opt/Gaia/data/gut/",
+    "models_consume": [
+      "gaia-tissue-npu",
+      "gaia-tissue-sentinel",
+      "gaia-tissue-spatial"
+    ]
+  }
+}
