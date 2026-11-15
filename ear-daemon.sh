@@ -173,7 +173,8 @@ EOF
     ELAPSED=$((CYCLE_END - CYCLE_START))
     echo "[$(date)] ear: rms=$RMS peak=$PEAK db=${DB}dB state=$STATE loud=$LOUD printer=$PRINTER (${ELAPSED}s)"
 
-    # Run Akida classification pipeline on this cycle's WAV
+    # Run spectral analysis + Akida classification on this cycle's WAV
+    python3 /opt/Gaia/ear-spectral.py 2>/dev/null &
     python3 /opt/Gaia/akida-ear-pipe.py 2>/dev/null &
 
     # If cycle took less than CYCLE_S, the sleep was in the recording itself — no extra wait needed

@@ -179,7 +179,7 @@ def _sense_eyes():
     return {"sense": "vision", "lenses": 0, "status": "no vision data"}
 
 def _sense_ears():
-    """Real ear: sporeGate Brio 100 mic + inner ear (conntrack) + outer ear (Pixel)."""
+    """Real ear: sporeGate Brio 100 mic + spectral chorus + inner ear + outer ear."""
     ear = {"sense": "hearing"}
     # PRIMARY EAR — sporeGate Brio 100 USB mic (the REAL cochlea)
     brio = _read_json_safe(os.path.join(_REPO, "data", "ear", "ear-state.json"))
@@ -198,6 +198,19 @@ def _sense_ears():
         }
     else:
         ear["cochlea"] = {"device": "sporeGate:brio100", "state": "deaf", "error": "no ear-state.json"}
+    # SPECTRAL CHORUS — frequency band analysis, source classification
+    spectral = _read_json_safe(os.path.join(_REPO, "data", "ear", "spectral-state.json"))
+    if spectral:
+        chorus = spectral.get("chorus", {})
+        ear["chorus"] = {
+            "dominant_source": spectral.get("dominant_source", "unknown"),
+            "voices": chorus.get("voices", 0),
+            "motor_pct": chorus.get("motor_pct", 0),
+            "printer_singing": spectral.get("printer_singing", False),
+            "diversity": chorus.get("diversity", []),
+            "events": spectral.get("events", [])[:5],
+            "db": spectral.get("db", -96)
+        }
     # INNER EAR — Flint router conntrack (network hearing)
     inner = _read_json_safe(os.path.join(os.path.expanduser("~"), ".local", "share", "gaia", "data", "inner-eye.json"))
     if inner:
@@ -500,7 +513,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 self.send_header("X-Ion-Channel","OPEN")
                 self.send_header("X-Alternate-Pore",onion+self.path)
             self._negentropy_headers()
-                self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
+            self.end_headers(); self.wfile.write(html); self._classify_and_log("GET",429,0); return
             body=json.dumps(fart,indent=2).encode()
             self.send_response(429); self.send_header("Content-Type","application/json")
             self.send_header("Retry-After",str(PI_RETRY))
@@ -525,7 +538,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 self._serve_static("tamison.html"); return
             # HUD — living organism root. BPM + breathing = recertification.
             if host in ("hud.primals.eco",):
-            pulse = write_pulse()
+                pulse = write_pulse()
                 uptime_s = time.time() - boot_time
                 bpm = total_beats / max(uptime_s / 60, 1)
                 brpm = total_breaths / max(uptime_s / 60, 1)
@@ -569,7 +582,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     "lub": "DUB",
                 }
                 body = json.dumps(root, indent=2).encode()
-            self.send_response(200)
+                self.send_response(200)
                 self.send_header("Content-Type","application/json")
                 self.send_header("Content-Length",str(len(body)))
                 self._negentropy_headers()
@@ -782,7 +795,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     r=urllib.request.urlopen(f"{sb[parts[0]]}/{parts[1] if len(parts)>1 else ''}",timeout=10)
                     d=r.read(); self.send_response(r.status); self.send_header("Content-Type",r.headers.get("Content-Type","application/octet-stream"))
                     self.send_header("Content-Length",str(len(d))); self.end_headers(); self.wfile.write(d)
-            except:
+                except:
                     try: self._encounter(502)
                     except: self.send_response(502); self.end_headers()
             return
@@ -890,7 +903,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     }
                 except: state["cascade_weave"]={"status":"cascade state unavailable"}
                 self._json(state)
-                else:
+            else:
                 self._json({"error":"compiler organ not loaded","compiled":False})
             return
         if self.path=="/api/compiler/compute":
@@ -1318,7 +1331,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
-                return
+            return
         # EPSON FEEDBACK LOOP (POST /api/io/loop)
         if self.path in ("/api/io/loop","/api/epson/loop"):
             try:
@@ -1426,7 +1439,7 @@ def ear_loop():
                     r = urllib.request.urlopen(url, timeout=5)
                     size = len(r.read())
                     heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
-        except Exception as e:
+            except Exception as e:
                 heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
         alive = sum(1 for e in heard["ear"] if e["ok"])
         total = len(heard["ear"])
@@ -1457,7 +1470,7 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-def _start_webpi():
+    def _start_webpi():
         try:
             webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
