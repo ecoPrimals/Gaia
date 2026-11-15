@@ -211,6 +211,19 @@ def _sense_ears():
             "events": spectral.get("events", [])[:5],
             "db": spectral.get("db", -96)
         }
+        # KLEIN TRIAD — 3 prisms forming the sensation rest point
+        triad = spectral.get("triad", {})
+        if triad:
+            ear["klein_triad"] = {
+                "α_machinery": triad.get("α_machinery", 0),
+                "β_media": triad.get("β_media", 0),
+                "γ_human": triad.get("γ_human", 0),
+                "deviation": triad.get("deviation", 0),
+                "at_rest": triad.get("at_rest", False),
+                "dominant_prism": triad.get("dominant_prism", ""),
+                "triggers": triad.get("triggers", []),
+                "bingocube_pos": triad.get("bingocube_pos", [5,5,5])
+            }
     # INNER EAR — Flint router conntrack (network hearing)
     inner = _read_json_safe(os.path.join(os.path.expanduser("~"), ".local", "share", "gaia", "data", "inner-eye.json"))
     if inner:

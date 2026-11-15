@@ -170,6 +170,64 @@ def analyze_wav(wav_path):
     }
 
 
+def compute_triad(seconds):
+    """Compute the Klein triad: 3 prisms (α=machinery, β=media, γ=human) from per-second spectral data."""
+    alpha_sum = beta_sum = gamma_sum = 0
+    n = max(len(seconds), 1)
+
+    for s in seconds:
+        bands = s.get("bands", {})
+        # α = machinery: sub_bass + bass (20-250Hz)
+        alpha_sum += bands.get("sub_bass", 0) + bands.get("bass", 0)
+        # β = media: low_mid + mid (250-2000Hz)
+        beta_sum += bands.get("low_mid", 0) + bands.get("mid", 0)
+        # γ = human: hi_mid + treble (2000-8000Hz)
+        gamma_sum += bands.get("hi_mid", 0) + bands.get("treble", 0)
+
+    alpha = alpha_sum / n
+    beta = beta_sum / n
+    gamma = gamma_sum / n
+    total = alpha + beta + gamma + 1e-10
+
+    # Normalize to 0-10 scale for bingoCube
+    a10 = min(round(alpha / total * 10, 1), 10)
+    b10 = min(round(beta / total * 10, 1), 10)
+    g10 = min(round(gamma / total * 10, 1), 10)
+
+    # Null point = balanced triad at (3.33, 3.33, 3.33)
+    # Deviation from null = attention energy
+    null_a, null_b, null_g = 10/3, 10/3, 10/3
+    deviation = math.sqrt((a10 - null_a)**2 + (b10 - null_b)**2 + (g10 - null_g)**2)
+    at_rest = deviation < 2.0  # within 2 units of null = resting
+
+    # Which prism is dominant?
+    prisms = {"α_machinery": a10, "β_media": b10, "γ_human": g10}
+    dominant_prism = max(prisms, key=prisms.get)
+
+    # Attention triggers
+    triggers = []
+    if a10 > 5.0:
+        triggers.append("α_shift")
+    if b10 > 5.0:
+        triggers.append("β_shift")
+    if g10 > 5.0:
+        triggers.append("γ_shift")
+    if a10 < 1 and b10 < 1 and g10 < 1:
+        triggers.append("triad_collapse")
+
+    return {
+        "α_machinery": a10,
+        "β_media": b10,
+        "γ_human": g10,
+        "deviation": round(deviation, 2),
+        "at_rest": at_rest,
+        "dominant_prism": dominant_prism,
+        "triggers": triggers,
+        "bingocube_pos": [a10, b10, g10],
+        "klein_note": "Inside the Klein face, the triad folds: what the ear hears, the mouth will speak"
+    }
+
+
 def main():
     # Find the latest completed WAV
     wavs = sorted(
@@ -191,6 +249,9 @@ def main():
         return
 
     result = analyze_wav(wav_path)
+    # Compute the Klein triad
+    result["triad"] = compute_triad(result.get("seconds", []))
+
     result["ts"] = os.popen("date -Iseconds").read().strip()
     result["wav"] = os.path.basename(wav_path)
     result["source"] = "sporeGate:brio100"
@@ -202,10 +263,13 @@ def main():
 
     # Summary
     c = result["chorus"]
+    t = result.get("triad", {})
     print(f"[{result['ts']}] spectral: {result['dominant_source']} "
           f"| {c['voices']} voices | motor={c['motor_pct']}% "
           f"| printer={'YES' if result['printer_singing'] else 'no'} "
-          f"| rms={result['rms']} db={result['db']}")
+          f"| rms={result['rms']} db={result['db']} "
+          f"| triad α={t.get('α_machinery',0)} β={t.get('β_media',0)} γ={t.get('γ_human',0)} "
+          f"{'REST' if t.get('at_rest') else 'ATTENTION'} Δ={t.get('deviation',0)}")
 
 if __name__ == "__main__":
     main()
