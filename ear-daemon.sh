@@ -183,5 +183,25 @@ EOF
         python3 /opt/Gaia/attenuate-all.py 2>/dev/null &
     fi
 
+    # AUTO-NOISE: Klein face response — ear hears printer → mouth plays brown noise
+    if [ -f "$EAR_DIR/spectral-state.json" ]; then
+        PRINTER_NOW=$(python3 -c "
+import json
+with open('$EAR_DIR/spectral-state.json') as f:
+    d = json.load(f)
+print('yes' if d.get('printer_singing') or d.get('triad',{}).get('α_machinery',0) > 6 else 'no')
+" 2>/dev/null)
+        NOISE_PID=$(cat /opt/Gaia/data/noise/noise-player.pid 2>/dev/null)
+        NOISE_ALIVE=$(kill -0 $NOISE_PID 2>/dev/null && echo yes || echo no)
+        
+        if [ "$PRINTER_NOW" = "yes" ] && [ "$NOISE_ALIVE" = "no" ]; then
+            /opt/Gaia/noise-attenuator.sh brown auto 2>/dev/null &
+            echo "[$(date)] auto-noise: ENGAGED brown (printer detected)"
+        elif [ "$PRINTER_NOW" = "no" ] && [ "$NOISE_ALIVE" = "yes" ]; then
+            /opt/Gaia/noise-attenuator.sh off 2>/dev/null
+            echo "[$(date)] auto-noise: DISENGAGED (printer quiet)"
+        fi
+    fi
+
     # If cycle took less than CYCLE_S, the sleep was in the recording itself — no extra wait needed
 done
