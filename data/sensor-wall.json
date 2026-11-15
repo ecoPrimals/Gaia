@@ -1,0 +1,170 @@
+{
+  "ts": "2026-11-15T09:04:59.040778",
+  "type": "sensor-wall",
+  "description": "Every sensor and actuator on eastGate's physical face",
+  "sensors": {
+    "eyes": {
+      "inner_eye": {
+        "device": "Logitech Brio 100",
+        "bus": "USB via Flint router",
+        "sees": "Kevin desk, House 1 brain room",
+        "resolution": "1280x720",
+        "cycle_s": 60
+      },
+      "outer_left": {
+        "device": "Pixel 8a front camera",
+        "sees": "what faces Kevin"
+      },
+      "outer_right": {
+        "device": "Pixel 8a rear camera",
+        "sees": "what Kevin points at"
+      },
+      "display": {
+        "device": "HDMI-0",
+        "resolution": "1920x1080",
+        "type": "output \u2014 what Gaia shows Kevin"
+      }
+    },
+    "ears": {
+      "analog_mic": {
+        "device": "Built-in Audio Analog Stereo",
+        "bus": "PCI 00:1f.3",
+        "sample_rate": 48000,
+        "state": "always-on",
+        "daemon": "ear-daemon",
+        "purpose": "room sound \u2014 hears Kevin, printer, ambient"
+      },
+      "spdif_monitor": {
+        "device": "IEC958 Digital Stereo",
+        "bus": "PCI 00:1f.3",
+        "sample_rate": 44100,
+        "state": "RUNNING",
+        "purpose": "system audio \u2014 hears what Gaia plays through speakers"
+      },
+      "bluetooth": {
+        "device": "Intel AX201 BT",
+        "bus": "USB 8087:0026",
+        "state": "available",
+        "purpose": "Corsair headset pairing pending"
+      }
+    },
+    "voice": {
+      "fluidsynth": {
+        "device": "MIDI Synthesizer \u2192 SPDIF out",
+        "soundfont": "default-GM.sf3",
+        "volume_pct": 89,
+        "purpose": "Gaia's VOICE \u2014 can play MIDI through speakers"
+      },
+      "spdif_out": {
+        "device": "IEC958 Digital Stereo Output",
+        "connected_to": "case speaker / digital out"
+      }
+    },
+    "touch": {
+      "printer": {
+        "device": "Epson ET-2400",
+        "bus": "USB 04b8:11b5 + Network .200",
+        "serial": "584248413437363601",
+        "ports": "80/443/515/631/9100",
+        "status": "idle/available",
+        "ink": "tank system (no cartridges)",
+        "purpose": "physical output \u2014 Gaia prints"
+      },
+      "scanner": {
+        "device": "Epson ES-400II",
+        "bus": "USB 04b8:0181",
+        "serial": "5838505A3238323888",
+        "sane": "epsonds:libusb:002:003",
+        "purpose": "document scanner \u2014 Gaia reads paper"
+      },
+      "scanNcut": {
+        "device": "Brother ScanNCut Machine",
+        "bus": "USB 04f9:210f",
+        "serial": "U65542M8G168878",
+        "purpose": "cutting/plotting \u2014 Gaia cuts physical material"
+      },
+      "keyboard_mouse": {
+        "device": "Logitech Unifying Receiver",
+        "bus": "USB 046d:c534"
+      }
+    },
+    "body": {
+      "rgb_case": {
+        "device": "ASUS AURA LED Controller",
+        "bus": "USB 0b05:19af",
+        "serial": "9876543210",
+        "purpose": "case lighting \u2014 visible mood indicator"
+      },
+      "fans_cooling": {
+        "device": "Corsair iCUE LINK System Hub",
+        "bus": "USB 1b1c:0c3f",
+        "serial": "85A1661D87692A50A470FE93AB223CA3",
+        "purpose": "thermal regulation \u2014 fan speed, pump, RGB"
+      },
+      "gpu_temp": {
+        "device": "RTX 4070",
+        "bus": "PCI 01:00.0",
+        "purpose": "compute heat"
+      },
+      "akida_npu": {
+        "device": "BrainChip AKD1000",
+        "bus": "PCI 08:00.0",
+        "purpose": "78 NPUs, 1.5 TOPS, always-on neural inference \u2014 DRIVER PENDING"
+      }
+    },
+    "network": {
+      "sfp_10g": {
+        "device": "Intel 82599ES 10G",
+        "bus": "PCI 05:00.0",
+        "speed": "10 Gbps",
+        "purpose": "spine backbone to MikroTik"
+      },
+      "ethernet_2g5": {
+        "device": "Realtek RTL8125",
+        "bus": "PCI 07:00.0",
+        "speed": "2.5 Gbps"
+      },
+      "wifi": {
+        "device": "Intel AX201",
+        "bus": "PCI 00:14.3",
+        "purpose": "WiFi available but unused (wired primary)"
+      }
+    }
+  },
+  "usb_hubs": {
+    "belkin_usb3": {
+      "bus": "002:002",
+      "vid": "050d:090c"
+    },
+    "belkin_usb2": {
+      "bus": "001:003",
+      "vid": "050d:090b"
+    },
+    "genesys_hub_1": {
+      "bus": "001:006",
+      "vid": "05e3:0608"
+    },
+    "genesys_hub_2": {
+      "bus": "001:004",
+      "vid": "05e3:0608"
+    }
+  },
+  "storage": {
+    "nvme0": {
+      "model": "Samsung SSD 990 EVO Plus 2TB",
+      "size": "1.8TB",
+      "mount": "/",
+      "role": "boot + root"
+    },
+    "nvme1": {
+      "model": "Crucial CT2000T500SSD8",
+      "size": "1.8TB",
+      "role": "data"
+    },
+    "nvme2": {
+      "model": "Crucial CT2000T500SSD8",
+      "size": "1.8TB",
+      "role": "data"
+    }
+  }
+}

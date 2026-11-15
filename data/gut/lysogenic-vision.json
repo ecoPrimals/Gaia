@@ -1,0 +1,85 @@
+{
+    "project": "ludoSpring — Lysogenic Game Engine",
+    "principle": "Every game in the library becomes a world inside Gaia's body",
+    "license": "scyBorg triple-copyleft (AGPL3 + ORC + CC-BY-SA 4.0)",
+    "method": "Clean-room reimplementation — read data files, never copy code, players bring own games",
+    "precedents": 845,
+    "legal_basis": "Sega v. Accolade (US fair use), EU Software Directive Art.6, 17 USC 1201(f)",
+    
+    "active_bridges": [
+        {
+            "game": "Kenshi",
+            "engine": "OGRE 1.x (D3D11)",
+            "format": "Ogre v1.100 binary .mesh",
+            "status": "ACTIVE — 21 creatures loaded, world map pinned",
+            "bridge": "kenshi-bridge (Rust cdylib)",
+            "assets_eaten": 34,
+            "reference": "clean-room observation of Ogre binary format"
+        }
+    ],
+    
+    "planned_bridges": [
+        {
+            "game": "KOTOR 1 & 2",
+            "engine": "Aurora/Odyssey",
+            "reference_projects": ["reone (C++/GPL)", "KotOR.js (TS/GPL)", "xoreos (C++/GPL)", "PyKotor (Python/LGPL)"],
+            "formats": ["MDL/MDX (models)", "TPC (textures)", "2DA (data tables)", "GFF (game files)", "NCS (scripts)"],
+            "status": "PLANNED — specs fully documented by 4 open source projects"
+        },
+        {
+            "game": "Morrowind / TES III",
+            "engine": "NetImmerse/Gamebryo",
+            "reference_projects": ["OpenMW (C++/GPLv3)"],
+            "formats": ["NIF (models)", "BSA (archives)", "ESP/ESM (plugins)", "DDS (textures)"],
+            "status": "PLANNED — OpenMW is feature-complete reference"
+        },
+        {
+            "game": "Diablo I/II",
+            "engine": "Storm/Diablo engine",
+            "reference_projects": ["DevilutionX", "Freeablo"],
+            "formats": ["MPQ (archives)", "CEL/CL2 (sprites)", "DUN (dungeons)"],
+            "status": "PLANNED"
+        },
+        {
+            "game": "Command & Conquer",
+            "engine": "SAGE/Westwood",
+            "reference_projects": ["OpenRA (C#/GPLv3)", "OpenSAGE (C#/LGPL)", "Vanilla Conquer (C/GPLv3)"],
+            "status": "PLANNED"
+        },
+        {
+            "game": "Warhammer 40K (tabletop)",
+            "engine": "Physical → AR pipeline",
+            "method": "Camera scan minis → mesh overlay → pin to world map",
+            "formats": ["STL (3D print files)", "OBJ (community models)"],
+            "license_note": "ORC license covers game mechanics — GW IP is separate from rules",
+            "status": "CONCEPT"
+        }
+    ],
+    
+    "nemesis_system": {
+        "patent": "US10926179 / US11660540B2",
+        "owner": "Warner Bros. Entertainment Inc.",
+        "expires": "2036-08-11",
+        "covers": "SPECIFIC combo: promotion-on-death + hierarchy + forts + vendettas + followers",
+        "does_NOT_cover": ["generic enemy memory", "persistent NPC behavior", "evolving difficulty", "reputation systems"],
+        "our_approach": "Gaia's immune system (thymus/B-cell/epitope) IS a nemesis system — biologically inspired, not patent-infringing"
+    },
+    
+    "kenshi_lore": {
+        "setting": "Nameless tidally locked moon",
+        "planet_in_sky": "Parent planet (unnamed) — possibly humanity's old home",
+        "first_empire": "Space elevators, genetic engineering, AI, orbital weapons (the Eyes)",
+        "current_era": "~1000 years after Second Empire collapse",
+        "races": ["Greenlanders", "Scorchlanders", "Shek", "Hive", "Skeletons"],
+        "kenshi2_status": "UE5, no release date, 33 devs, 3M copies sold (May 2026)"
+    },
+    
+    "architecture": {
+        "renderer": "WGPU/Vulkan on RTX 5090",
+        "language": "Rust (sovereign, no runtime)",
+        "snow_globe": "All game worlds rendered as biomes in orbital constellation",
+        "gps": "Unified coordinate system via ludospring-geodesic.json",
+        "gates": "6 LAN gate nodes orbiting at constellation edge",
+        "data_flow": "Steam library → mesh readers → GPU → snow globe → organism"
+    }
+}

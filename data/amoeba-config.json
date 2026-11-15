@@ -1,0 +1,42 @@
+{
+  "ts": "2026-11-14T18:31:39Z",
+  "purpose": "RustDesk amoeba mesh config \u2014 northGate install this",
+  "relay": {
+    "host": "192.168.4.244",
+    "hbbs_port": 21116,
+    "hbbr_port": 21117,
+    "key": "6oVQBFyHHNAJqm1OlS+XvpdoJ5plYrPzJoPTTYlgQdg=",
+    "auth": "piport \u2014 set at runtime via rustdesk --password"
+  },
+  "peers": {
+    "eastGate": {
+      "id": 19091278,
+      "ip": "192.168.4.244",
+      "role": "BRAIN+RELAY"
+    },
+    "sporeGate": {
+      "id": 1871544996,
+      "ip": "192.168.4.3",
+      "role": "EYE+EAR"
+    },
+    "ironGate": {
+      "id": "pending",
+      "ip": "192.168.4.237",
+      "role": "FORGE2"
+    },
+    "northGate": {
+      "id": "install-needed",
+      "ip": "192.168.4.147",
+      "role": "HEART+CHAIR"
+    }
+  },
+  "rustdesk2_toml": "rendezvous_server = '192.168.4.244:21116'\nnat_type = 1\nserial = 0\nunlock_pin = ''\n\n[options]\nallow-remote-config-modification = 'Y'\nrelay-server = '192.168.4.244'\nverification-method = 'use-permanent-password'\ncustom-rendezvous-server = '192.168.4.244'\ndirect-server = 'Y'\ndirect-access-port = '21118'\nenable-lan-discovery = 'Y'\n",
+  "install_steps": [
+    "1. Install RustDesk",
+    "2. mkdir -p ~/.config/rustdesk",
+    "3. Copy rustdesk2_toml into ~/.config/rustdesk/RustDesk2.toml",
+    "4. Set password at runtime: rustdesk --password <PIN>",
+    "5. Start: sudo systemctl enable rustdesk && sudo systemctl start rustdesk",
+    "6. Note your ID from rustdesk --get-id"
+  ]
+}

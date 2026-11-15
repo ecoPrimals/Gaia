@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>📧 Gaia Mail</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a1a; color:#e0e0e0; font-family:monospace; padding:8px; }
+h1 { color:#4af; font-size:1.3em; padding:8px 0; border-bottom:1px solid #333; }
+.count { color:#888; font-size:0.8em; }
+.msg { background:#111; border:1px solid #222; border-radius:6px; margin:8px 0; padding:10px; }
+.msg:hover { border-color:#4af; }
+.from { color:#4af; font-weight:bold; font-size:0.9em; }
+.subj { color:#fff; font-size:1em; margin:4px 0; }
+.date { color:#888; font-size:0.75em; }
+.body { color:#aaa; font-size:0.8em; margin-top:6px; white-space:pre-wrap; max-height:200px; overflow-y:auto; }
+.train { display:inline-block; padding:1px 6px; border-radius:3px; font-size:0.7em; font-weight:bold; }
+.train-smtp { background:#1a3a5c; color:#6af; }
+.train-pony { background:#3a2a1a; color:#fa6; }
+.train-neutron { background:#2a1a3a; color:#a6f; }
+.refresh { position:fixed; bottom:16px; right:16px; background:#4af; color:#000; border:none; 
+  border-radius:50%; width:48px; height:48px; font-size:24px; cursor:pointer; z-index:99; }
+.tabs { display:flex; gap:4px; margin:8px 0; }
+.tab { padding:6px 12px; background:#222; border:1px solid #333; border-radius:4px; cursor:pointer; color:#aaa; font-size:0.85em; }
+.tab.active { background:#4af; color:#000; border-color:#4af; }
+#status { color:#4a4; font-size:0.8em; padding:4px 0; }
+</style>
+</head><body>
+<h1>📧 Gaia Mail <span class="count" id="count"></span></h1>
+<div id="status">Loading...</div>
+<div class="tabs">
+  <div class="tab active" onclick="filter('all')">All</div>
+  <div class="tab" onclick="filter('smtp')">📧 Email</div>
+  <div class="tab" onclick="filter('pony')">🐴 Pony</div>
+  <div class="tab" onclick="filter('neutron')">⚡ Neutron</div>
+</div>
+<div id="inbox"></div>
+<button class="refresh" onclick="load()">↻</button>
+<script>
+let allMsgs = [];
+let currentFilter = 'all';
+
+async function load() {
+  document.getElementById('status').textContent = 'Fetching...';
+  try {
+    const r = await fetch('/data/mail-api.json?t=' + Date.now());
+    const d = await r.json();
+    allMsgs = d.messages || [];
+    document.getElementById('count').textContent = `(${allMsgs.length} messages)`;
+    document.getElementById('status').textContent = `Updated ${new Date().toLocaleTimeString()}`;
+    render();
+  } catch(e) {
+    document.getElementById('status').textContent = 'Error: ' + e.message;
+  }
+}
+
+function filter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  render();
+}
+
+function render() {
+  const msgs = currentFilter === 'all' ? allMsgs : allMsgs.filter(m => m.train === currentFilter);
+  document.getElementById('inbox').innerHTML = msgs.map(m => {
+    const train = m.train || 'pony';
+    const icon = train === 'smtp' ? '📧' : train === 'pony' ? '🐴' : '⚡';
+    const from = esc(m.from || m.author || '?');
+    const subj = esc(m.subject || '');
+    const body = esc((m.body || '').substring(0, 300));
+    const ts = m.ts ? new Date(m.ts).toLocaleString() : '?';
+    return `<div class="msg">
+      <span class="train train-${train}">${icon} ${train}</span>
+      <span class="date">${ts}</span>
+      <div class="from">${from}</div>
+      <div class="subj">${subj || body.substring(0,80)}</div>
+      ${body ? `<div class="body">${body}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+load();
+setInterval(load, 15000);
+</script>
+</body></html>

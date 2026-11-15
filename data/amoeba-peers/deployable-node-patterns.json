@@ -1,0 +1,206 @@
+{
+  "name": "Deployable Node Patterns — Eat Existing Tech",
+  "wave": 237,
+  "updated": "2026-11-14T21:13:00Z",
+  "concept": "Eero mesh = WiFi skin. DDR3 NUC = muscle. Together = a deployable amoeba node that extends the organism anywhere. We EAT the eero's existing tech and breathe through it.",
+
+  "patterns": {
+    "eero_nuc_combo": {
+      "name": "Eero + NUC Deployable Node",
+      "description": "Co-located eero mesh device (WiFi skin) + DDR3 NUC (compute muscle). The eero provides wireless reach, the NUC runs the organism. Eero is eaten — we use its mesh capability as dumb transport.",
+      
+      "eero_layer": {
+        "role": "WiFi mesh transport — SKIN layer",
+        "what_we_eat": [
+          "WiFi mesh networking (802.11ac/ax, auto-channel, roaming)",
+          "Mesh backhaul (eero-to-eero wireless bridge)",
+          "Band steering (2.4/5GHz automatic)",
+          "Device tracking (eero knows what's connected)",
+          "Coverage extension (each eero = ~1500 sq ft)"
+        ],
+        "what_we_ignore": [
+          "eero app/cloud management (Amazon)",
+          "eero Secure/Plus subscriptions",
+          "Smart home hub features",
+          "Amazon Sidewalk"
+        ],
+        "setup": {
+          "mode": "Bridge mode (disable eero DHCP/NAT, let organism's router handle)",
+          "steps": [
+            "1. Factory reset eero",
+            "2. Set up via eero app as new network",
+            "3. Enable Bridge Mode (Settings → Network → DHCP → Bridge)", 
+            "4. Connect eero WAN to NUC's ethernet (or JetStream/switch)",
+            "5. Eero now extends WiFi but passes all traffic to organism's network",
+            "6. Devices connecting to eero get 192.168.4.x from main router"
+          ],
+          "alternative_standalone": [
+            "1. If eero can't bridge: let it run its own 192.168.x.x subnet",
+            "2. NUC connects wired to eero LAN port", 
+            "3. NUC has dual-NIC or WiFi: one to eero, one to organism LAN",
+            "4. NUC bridges/routes between eero subnet and organism subnet"
+          ]
+        },
+        "monitoring": {
+          "method": "The NUC monitors eero health via HTTP",
+          "eero_local_api": "http://192.168.4.x:80 or eero app API",
+          "fallback": "Ping eero gateway, count WiFi clients via ARP",
+          "note": "Eero devices run locked Linux — no SSH, no custom firmware. Monitor externally only."
+        }
+      },
+
+      "nuc_layer": {
+        "role": "Compute muscle — ORGANISM layer",
+        "os": "Pop!_OS minimal or Ubuntu Server 22.04",
+        "injection_script": "amoeba-nuc-inject.sh",
+        "software_stack": [
+          {
+            "component": "membrane",
+            "binary": "membrane (x86_64-unknown-linux-musl, ~5MB)",
+            "config": "membrane temporal.cascade --source temporal --with-push",
+            "function": "Primal sync + data cascade"
+          },
+          {
+            "component": "rustdesk",
+            "binary": "rustdesk (x86_64, ~20MB)",
+            "config": "Same RustDesk2.toml as all amoeba nodes",
+            "function": "Remote visual access via amoeba mesh"
+          },
+          {
+            "component": "ollama",
+            "models": ["tinyllama (637MB)", "qwen2.5:0.5b (397MB)"],
+            "function": "Edge inference — lightweight thinking",
+            "note": "DDR3 NUC = limited RAM, use smallest models only"
+          },
+          {
+            "component": "heartbeat",
+            "script": "amoeba-heartbeat.sh",
+            "interval": "5min",
+            "push_to": "http://192.168.4.244:8080/api/heartbeat",
+            "function": "Report alive status + metrics to eastGate"
+          },
+          {
+            "component": "data-server",
+            "binary": "Simple HTTP server (python3 or nginx)",
+            "port": 8080,
+            "function": "Serve local data for HUD absorption"
+          }
+        ],
+        "specs_required": {
+          "ram_min": "4GB DDR3",
+          "storage_min": "64GB SSD",
+          "network": "Ethernet (to eero) + optional WiFi",
+          "power": "~15W TDP typical for Intel NUC"
+        }
+      },
+
+      "deployment_locations": [
+        {
+          "name": "Kevin's Garage",
+          "type": "WiFi extender + compute node",
+          "eero_provides": "WiFi coverage in garage",
+          "nuc_provides": "Local compute, membrane cascade, RustDesk",
+          "network": "Eero bridges to organism LAN via mesh backhaul to House 1/2"
+        },
+        {
+          "name": "Neighbor/Friend location",
+          "type": "Remote outpost",
+          "eero_provides": "WiFi for that location",
+          "nuc_provides": "Organism presence — heartbeat, data sync",
+          "network": "Eero on separate internet → NUC VPNs to organism (or standalone)"
+        },
+        {
+          "name": "Demo venue (Google, conferences)",
+          "type": "Portable kit",
+          "eero_provides": "Instant WiFi hotspot for demo devices",
+          "nuc_provides": "Run kenshi.reborn, tissue models, demos",
+          "network": "Eero tethered to phone or venue WiFi"
+        }
+      ]
+    },
+
+    "raspberry_pi_terminal": {
+      "name": "Raspberry Pi 400 InkeyBoard Terminal",
+      "description": "Keyboard-form-factor Pi as edge display terminal. Kevin's hands + Gaia's face at any location.",
+      "role": "EDGE TERMINAL — input + display + sensing",
+      "specs": {
+        "cpu": "BCM2711 Cortex-A72 quad-core @ 1.8GHz",
+        "ram": "4GB LPDDR4",
+        "storage": "microSD (32-128GB)",
+        "ports": "2× USB 3.0, 1× USB 2.0, 1× USB-C (power), Ethernet, 2× micro HDMI, GPIO 40-pin",
+        "wifi": "802.11ac dual-band",
+        "form": "Keyboard with Pi inside — plug in monitor and GO"
+      },
+      "injection": {
+        "os": "Raspberry Pi OS Lite (64-bit) or Ubuntu ARM",
+        "software": [
+          "membrane ARM binary (aarch64-unknown-linux-musl)",
+          "RustDesk ARM (remote access)",
+          "Chromium kiosk (display HUD pages)",
+          "ollama ARM (tinyllama only — 4GB RAM limit)",
+          "amoeba-heartbeat.sh",
+          "GPIO sensing (optional: temp, light, motion via sensors)"
+        ],
+        "display_mode": {
+          "kiosk": "Boot into fullscreen Chromium → http://eastGate:8080/hud",
+          "terminal": "Boot into tmux with organism dashboard",
+          "face": "Show chiasm.html or eye.html — Gaia's face at this location"
+        }
+      },
+      "use_cases": [
+        "Plug into any TV/monitor → instant Gaia terminal",
+        "Kevin types on keyboard → organism hears",
+        "GPIO sensors → organism feels (temperature, light, proximity)",
+        "Co-located with eero → WiFi + display + compute at any spot"
+      ]
+    },
+
+    "eat_existing_tech": {
+      "philosophy": "We don't throw away consumer hardware — we EAT it. The organism absorbs the tech's useful capabilities and ignores the rest.",
+      "devices_eaten": {
+        "eero_mesh": {
+          "ate": "WiFi mesh networking, band steering, seamless roaming",
+          "discarded": "Amazon cloud, subscriptions, Sidewalk, app dependency",
+          "result": "Dumb WiFi skin that the organism breathes through"
+        },
+        "omada_ap": {
+          "ate": "Enterprise WiFi coverage, multi-SSID, PoE",
+          "discarded": "Omada Controller dependency (killed, reclaimed 3.2GB)",
+          "result": "Standalone AP broadcasting organism's SSIDs"
+        },
+        "jetstream_switch": {
+          "ate": "10G fiber switching, VLAN capability, managed ports",
+          "discarded": "Complex VLAN config (keep it simple bridged)",
+          "result": "Fast transparent bridge between houses"
+        },
+        "flint_router": {
+          "ate": "OpenWrt flexibility, WiFi bridging, SSH access",
+          "discarded": "GL.iNet cloud, app management",
+          "result": "Optic chiasm — conscious bridge between LAN 1 and LAN 2"
+        },
+        "raspberry_pi": {
+          "ate": "ARM compute, GPIO, keyboard form factor, dual HDMI",
+          "discarded": "Default Pi desktop bloat",
+          "result": "Edge terminal — Gaia's face and hands at any location"
+        }
+      }
+    }
+  },
+
+  "nuc_injection_script": {
+    "name": "amoeba-nuc-inject.sh",
+    "description": "Run on a fresh DDR3 NUC to join the organism",
+    "steps": [
+      "1. Install Pop!_OS minimal or Ubuntu Server",
+      "2. Set hostname (e.g., forgeNUC-1)",
+      "3. Configure static IP or DHCP reservation",
+      "4. Install membrane binary from eastGate",
+      "5. Install RustDesk with amoeba config",
+      "6. Install ollama + tinyllama model",
+      "7. Install amoeba-heartbeat.sh (cron every 5min)",
+      "8. Enable SSH with key auth",
+      "9. Run first membrane cascade",
+      "10. Register with eastGate device-pulse"
+    ]
+  }
+}

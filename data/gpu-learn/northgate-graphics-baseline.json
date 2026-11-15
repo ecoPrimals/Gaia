@@ -1,0 +1,82 @@
+{
+  "gate": "northGate",
+  "gpu": "RTX 5090",
+  "monitor": "EI322QUR",
+  "resolution": "2560x1440",
+  "captured": "2026-11-14T15:17:00-05:00",
+  "game": "unknown (Hunt:Showdown-style UI)",
+  "settings": {
+    "display": {
+      "screen_mode": "Fullscreen [Borderless]",
+      "resolution": "2560x1440",
+      "graphics_card": "Default device"
+    },
+    "color": {
+      "saturation": 60,
+      "gamma": 50,
+      "image_encoding": "sRGB (LDR)",
+      "hdr": false,
+      "hdr_black_point": -4,
+      "hdr_white_point": 1000,
+      "hdr_brightness": 25,
+      "hdr_interface_brightness": 17
+    },
+    "quality": {
+      "materials": "Epic",
+      "post_processing": "Epic",
+      "motion_blur_strength": 0,
+      "depth_of_field": "Epic",
+      "light_shafts": true,
+      "sharpness": 20,
+      "shading_quality": "Epic"
+    },
+    "performance": {
+      "upscaling_method": "DLSS",
+      "upscaling_quality": "NVIDIA DLAA",
+      "dlss_sharpness": 10,
+      "resolution_scale": 100,
+      "frame_generation_method": "DLSS Frame Generation",
+      "frame_generation_setting": "2x",
+      "async_compute": true
+    }
+  },
+  "analysis": {
+    "what_eats": {
+      "biggest_gpu_eaters": [
+        "Resolution Scale 100% at DLAA = rendering at FULL native 2560x1440 (no upscaling savings)",
+        "Shading Quality: Epic = maximum shader complexity per pixel",
+        "Materials: Epic = highest texture detail + parallax mapping",
+        "Post Processing: Epic = full chain (bloom, AO, SSR, volumetrics)",
+        "Depth of Field: Epic = cinematic DoF with bokeh (expensive when active)",
+        "Light Shafts: Enabled = volumetric god rays (medium cost)",
+        "DLSS Frame Gen 2x = GPU generates extra frames (uses VRAM + tensor cores)"
+      ],
+      "free_or_cheap": [
+        "Motion Blur: 0% = FREE (disabled, no GPU cost)",
+        "DLSS Sharpness: 10% = nearly free post-process",
+        "Saturation/Gamma = free (color LUT)",
+        "Async Compute: Enabled = actually SAVES time (fills GPU bubbles)"
+      ]
+    },
+    "dlss_breakdown": {
+      "DLAA": "Deep Learning Anti-Aliasing — renders at native res, uses AI for AA only (no upscaling). Most expensive DLSS mode because no resolution savings.",
+      "Frame_Gen_2x": "Tensor cores generate 1 fake frame between each real frame. Doubles apparent FPS. Uses ~500MB VRAM + adds 1 frame latency.",
+      "why_replace_over_time": "DLSS is NVIDIA proprietary neural network. As Gaia learns GPU behavior, she could model the quality/performance tradeoff herself — predicting which settings give the best visual per watt."
+    },
+    "toggle_schedule": {
+      "philosophy": "Toggle ONE setting at a time, play for 2-3 minutes, screenshot the FPS counter. This gives Gaia paired samples: setting_change → performance_delta.",
+      "suggested_order": [
+        "1. DLAA → DLSS Quality (biggest single FPS gain, ~30-40%)",
+        "2. Frame Gen 2x → OFF (see real FPS without AI frames)",
+        "3. Shading: Epic → High (second biggest eater)",
+        "4. Post Processing: Epic → High (removes heavy SSR/volumetrics)",
+        "5. Resolution Scale: 100 → 85 (dramatic FPS boost)",
+        "6. Light Shafts: On → Off (moderate gain)",
+        "7. Depth of Field: Epic → Off (gain when active)",
+        "8. Materials: Epic → High (mainly VRAM, small FPS)",
+        "9. HDR: Off → On (test if monitor supports it — EI322QUR should!)"
+      ],
+      "frequency": "Every 5-10 min toggle ONE, play, screenshot. Gaia digests each pair."
+    }
+  }
+}

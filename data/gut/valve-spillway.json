@@ -1,0 +1,125 @@
+{
+  "architecture": "VALVE SPILLWAY — fluid dynamics of game engine distribution",
+  "version": "0.3.0",
+  "wave": 258,
+  "metaphor": {
+    "reservoir": "KenshiReborn engine + all parsed game data (9.3 GB)",
+    "pump": "RTX 5090 GPU compute (1.6M verts/sec)",
+    "pid_controller": "Flow rate management — cost/value optimization",
+    "intake_valves": {
+      "nexus_api": {
+        "type": "OSINT intake",
+        "rate": "~100 calls/hour (Premium)",
+        "data": "1,749 Kenshi mods, 10.9M total downloads",
+        "status": "OPEN"
+      },
+      "steam_workshop": {
+        "type": "game data intake",
+        "rate": "local filesystem scan (8.2 GB/s)",
+        "data": "17 workshop mods installed",
+        "status": "OPEN"
+      },
+      "game_files": {
+        "type": "raw data intake",
+        "rate": "3,328 meshes parsed in 13.7s",
+        "data": "22.4M vertices, 7.6M triangles, 701 zones",
+        "status": "OPEN"
+      }
+    },
+    "output_valves": {
+      "nexus_mods": {
+        "type": "community distribution",
+        "capacity": "36,000 mods/hour forge rate",
+        "audience": "Kenshi: 1,749 mods, 10.9M downloads",
+        "friction": "LOW — API + binary generation",
+        "status": "READY (need account verification)"
+      },
+      "steam_valve": {
+        "type": "SPILLWAY — high-volume overflow distribution",
+        "capacity": "UNLIMITED (Valve handles scale)",
+        "audience": "ALL Steam users (132M+ monthly active)",
+        "friction": "MEDIUM — needs Steamworks SDK + app listing",
+        "status": "PLANNED",
+        "notes": "Valve IS the spillway valve. When pressure builds, overflow goes here."
+      },
+      "forgejo_git": {
+        "type": "source distribution",
+        "capacity": "unlimited pushes",
+        "audience": "Gaia organism + any LAN device",
+        "friction": "ZERO — already flowing",
+        "status": "LIVE"
+      },
+      "github_mirror": {
+        "type": "public source distribution",
+        "capacity": "unlimited",
+        "audience": "global open source community",
+        "friction": "LOW — push to esotericWebb/KenshiReborn",
+        "status": "PLANNED"
+      }
+    },
+    "physical_endpoints": {
+      "northgate": {
+        "ip": "192.168.4.147",
+        "gpu": "RTX 5090 (32GB VRAM)",
+        "role": "PRIMARY FORGE — builds + runs engine",
+        "status": "ALIVE"
+      },
+      "irongate": {
+        "ip": "192.168.4.237",
+        "gpu": "RTX 5070 (12GB VRAM)",
+        "role": "LINUX FORGE — builds for SteamOS/Deck",
+        "os": "Pop!_OS 22.04",
+        "models": 18,
+        "status": "ALIVE"
+      },
+      "deckgate": {
+        "ip": "192.168.4.176",
+        "gpu": "RDNA 2 (1.6 TFLOPS)",
+        "role": "DISPLAY — Steam Deck, Gaia's mounted screen",
+        "os": "SteamOS 3.x (Arch Linux)",
+        "note": "Dead battery = permanent USB-C passthrough. Needs power to wake.",
+        "status": "ASLEEP"
+      },
+      "framegate": {
+        "ip": "192.168.9.203",
+        "gpu": "Adreno 750 (Snapdragon 8 Gen 3)",
+        "role": "FACE — ARM SteamOS, Gaia's face at South Pole",
+        "os": "ARM SteamOS",
+        "status": "ALIVE"
+      }
+    }
+  },
+  "flow_equation": {
+    "description": "Q = A × v × (1 - f), where Q=flow, A=area(GPU capacity), v=velocity(throughput), f=friction",
+    "Q_northgate": "32GB × 1.6Mverts/s × (1 - 0.17) = HIGH FLOW",
+    "Q_irongate": "12GB × TBD × (1 - TBD) = MEDIUM FLOW",
+    "Q_deckgate": "16GB × TBD × (1 - TBD) = DISPLAY FLOW (rendering only)",
+    "total_capacity": "44GB+ GPU memory across active gates"
+  },
+  "valve_is_the_valve": {
+    "insight": "Steam/Valve IS the spillway valve in Gaia's fluid dynamics",
+    "position": "between engine (reservoir) and world (ocean)",
+    "function": "When internal pressure (mod output rate) exceeds Nexus capacity, overflow through Steam",
+    "analogy": "Dam → reservoir (engine) → spillway (Steam) → river (users) → ocean (community)",
+    "steamos_nodes": ["deckGate (x86_64)", "frameGate (ARM64)"],
+    "total_steam_devices": 2
+  },
+  "deployment_paths": {
+    "windows": {
+      "target": "x86_64-pc-windows-msvc",
+      "status": "BUILT (kenshi-reborn.exe)",
+      "size_estimate": "~10MB"
+    },
+    "linux_x86_64": {
+      "target": "x86_64-unknown-linux-gnu",
+      "build_host": "ironGate (.237) or cross-compile from northGate",
+      "deploy_to": ["deckGate (Steam Deck)", "ironGate (native)", "any Linux box"],
+      "status": "TARGET INSTALLED, needs build"
+    },
+    "linux_arm64": {
+      "target": "aarch64-unknown-linux-gnu",
+      "deploy_to": ["frameGate (ARM SteamOS)"],
+      "status": "PLANNED"
+    }
+  }
+}

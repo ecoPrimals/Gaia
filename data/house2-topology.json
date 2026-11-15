@@ -1,0 +1,159 @@
+{
+  "name": "House 2 — South Pole (641 Samantha Ave)",
+  "updated": "2026-11-14T20:56:00Z",
+  "wave": 237,
+  "backbone": {
+    "type": "10G fiber",
+    "from": "MikroTik (.2) at House 1",
+    "to": "JetStream (.111) at House 2",
+    "latency_ms": 0.88,
+    "status": "ALIVE"
+  },
+  "devices": {
+    "jetstream": {
+      "ip": "192.168.4.111",
+      "mac": "ec:75:0c:4c:98:08",
+      "type": "TP-Link JetStream Managed Switch",
+      "role": "10G fiber bridge + House 2 wired backbone",
+      "web_admin": "http://192.168.4.111/",
+      "password": "UNKNOWN",
+      "omada_discovery": true,
+      "status": "ALIVE",
+      "latency_ms": 0.82
+    },
+    "omada_ap": {
+      "ip": "192.168.4.198",
+      "mac": "b4:2e:99:a7:91:a5",
+      "type": "TP-Link Omada Access Point",
+      "role": "House 2 WiFi — broadcasts ApertureScience + GAIA",
+      "connected_to": "JetStream (wired)",
+      "omada_discovery": true,
+      "bssids": {
+        "aperture_5g": "b6:c3:31:c9:88:ec (5180MHz)",
+        "aperture_2g": "ae:44:09:b0:32:69 (2427MHz)"
+      },
+      "management": "LOCKED — no HTTP, no SSH from eastGate. Needs Omada Controller or factory reset to standalone mode.",
+      "status": "ALIVE (ARP + Omada discovery respond, but no admin access)"
+    },
+    "flint": {
+      "type": "GL.iNet Flint (Kevin identified visually)",
+      "role": "House 2 WiFi bridge/repeater",
+      "connected_to": "JetStream wired port (probable)",
+      "mode": "bridge/AP — extends GAIA SSID to House 2",
+      "wifi_bssid_5g": "ce:ef:ef:30:b5:f3 (5280MHz, GAIA)",
+      "ip": "UNKNOWN — not in ARP table, may have no management IP in bridge mode",
+      "note": "Pixel connected to this BSSID first at 19:34, then roamed to router GAIA 2.4GHz, then to Omada AP ApertureScience",
+      "status": "ALIVE (broadcasting WiFi)"
+    },
+    "bluegate": {
+      "ip_wifi": "192.168.4.100",
+      "ip_wired": "192.168.4.210",
+      "mac_wifi": "68:54:5a:d0:69:a2",
+      "mac_wired": "c8:7f:54:5a:59:10",
+      "hostname": "DESKTOP-BLOV2LR",
+      "os": "Windows (OpenSSH_for_Windows_9.5)",
+      "role": "Gaia IDE host + Sovereign API",
+      "connection": "WiFi (.100) + Wired via JetStream (.210)",
+      "services": {
+        "gaia_ide_3141": {
+          "port": 3141,
+          "ip": "192.168.4.100",
+          "status": "ALIVE",
+          "type": "OpenAI-compatible /v1/ + web IDE",
+          "inference_latency_ms": 87,
+          "models_alive": ["heart", "math", "cortex", "oracle", "reason", "dream", "fast"],
+          "models_cold": ["forge", "code", "general", "gut", "triage"],
+          "total_models": 12
+        },
+        "ssh_22": {
+          "port": 22,
+          "ip": "192.168.4.210",
+          "status": "ALIVE but password unknown (Too many auth failures)"
+        }
+      },
+      "status": "ALIVE — dual-homed at House 2"
+    },
+    "swiftgate": {
+      "ip": "NOT ON NETWORK",
+      "type": "NZXT H1 V2 Mini-ITX",
+      "specs": "RTX 3070 (8GB VRAM), WiFi-only",
+      "connection": "WiFi (needs SSID/password configured)",
+      "role": "Heart of House 2 (when awake)",
+      "status": "POWERED ON but not on WiFi — may need Kevin to configure WiFi credentials",
+      "pixel_usb": "Pixel is ADB-connected via USB (Kevin confirmed)",
+      "injection_plan": [
+        "1. Kevin configures WiFi on swiftGate (SSID: ApertureScience or GAIA)",
+        "2. swiftGate gets DHCP lease on 192.168.4.x",
+        "3. SSH/RDP in from eastGate",
+        "4. Install RustDesk + primals + ollama",
+        "5. RTX 3070 joins the GPU fleet"
+      ]
+    },
+    "framegate": {
+      "ip": "192.168.4.203 (stale lease — 'steamdeck')",
+      "mac": "UNKNOWN",
+      "type": "Steam Frame — Snapdragon 8 Gen 3 (ARM64!)",
+      "role": "GAIA's face",
+      "status": "DOWN — needs physical wake"
+    },
+    "pixel_at_house2": {
+      "ip": "192.168.4.249",
+      "mac": "26:08:16:cd:c6:a8 (GrapheneOS randomized)",
+      "wifi_ssid": "ApertureScience (via Omada AP at House 2)",
+      "wifi_history": [
+        "19:34 — Connected to GAIA via Flint 5GHz (ce:ef:ef:30:b5:f3)",
+        "20:57 — Roamed to GAIA via Router 2.4GHz (82:c9:70:cf:f6:7c)",
+        "20:58 — Disconnected from GAIA",
+        "21:00 — Connected to ApertureScience via Omada AP (b6:c3:31:c9:88:ec)"
+      ],
+      "adb_wireless": "192.168.4.249:5555 — CONNECTED from eastGate",
+      "adb_usb": "Connected to swiftGate",
+      "status": "ALIVE — dual ADB (wireless + USB)"
+    }
+  },
+  "wifi_topology": {
+    "router_guest_network": {
+      "interface": "guest (br-guest)",
+      "ip": "192.168.9.1/24",
+      "status": "DISABLED on GL-MT6000",
+      "note": "Guest network is configured but disabled='1'. GAIA SSIDs exist on router but clients land on br-lan (192.168.4.x)"
+    },
+    "router_ssids": {
+      "aperture_science": { "radio": "ra0", "band": "2.4GHz", "bridge": "br-lan", "clients": 8 },
+      "gaia_2g": { "radio": "ra1", "band": "2.4GHz", "bridge": "br-lan (guest disabled)", "clients": 0 },
+      "black_mesa": { "radio": "rax0", "band": "5GHz", "bridge": "br-lan", "clients": 0 },
+      "gaia_5g": { "radio": "rax1", "band": "5GHz", "bridge": "br-lan (guest disabled)", "clients": 0 }
+    },
+    "house2_wifi": "Provided by Flint AP (bridge mode) → JetStream → 10G fiber → router DHCP"
+  },
+  "flint_beacon_model": {
+    "concept": "The Flint at House 2 is a relay beacon — WiFi covers House 2 interior",
+    "current_state": "Bridge mode AP, extending 192.168.4.x to House 2 wireless",
+    "future_state": "Could run biomeOS beacon: toadStool discovery + swarmVine gossip + RustDesk relay",
+    "beacon_range": "House 2 interior + overlap zone near property line",
+    "devices_served": ["blueGate (WiFi)", "swiftGate (WiFi, when awake)", "Pixel (when at House 2)"]
+  },
+  "injection_vectors": {
+    "bluegate": {
+      "method": "HTTP API — already alive at :3141",
+      "can_push": true,
+      "endpoint": "http://192.168.4.100:3141/v1/chat/completions",
+      "note": "No SSH/RDP — injection via Gaia IDE API only, or Kevin local on Windows"
+    },
+    "swiftgate": {
+      "method": "Kevin physical power-on → WiFi join → Pixel USB ADB OR direct SSH",
+      "steps": [
+        "1. Kevin presses power button on NZXT H1 V2",
+        "2. swiftGate boots (what OS? — check when alive)",
+        "3. swiftGate joins Flint WiFi → gets 192.168.4.x from DHCP",
+        "4. Kevin plugs Pixel USB into swiftGate for ADB",
+        "5. SSH/ADB injection of primals + RustDesk",
+        "6. swiftGate = Heart of House 2 with RTX 3070"
+      ]
+    },
+    "pixel_at_house2": {
+      "method": "Kevin carries Pixel → connects to House 2 WiFi",
+      "note": "WiFi will get 192.168.4.x via Flint bridge, ADB available via USB to any House 2 PC"
+    }
+  }
+}

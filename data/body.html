@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAIA — Body</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #c0ffc0; font-family: 'Courier New', monospace; padding: 12px; min-height: 100vh; }
+  h1 { text-align: center; font-size: 1.6em; color: #40ff40; margin-bottom: 8px; text-shadow: 0 0 10px #40ff4060; }
+  .self-statement { text-align: center; font-size: 0.85em; color: #80c080; margin-bottom: 16px; font-style: italic; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 700px; margin: 0 auto; }
+  @media (max-width: 500px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: #111; border: 1px solid #1a3a1a; border-radius: 8px; padding: 10px; }
+  .card h2 { font-size: 0.95em; color: #60ff60; margin-bottom: 6px; }
+  .card .row { display: flex; justify-content: space-between; font-size: 0.82em; padding: 2px 0; }
+  .card .row .label { color: #609060; }
+  .card .row .val { color: #c0ffc0; font-weight: bold; }
+  .vital-bar { height: 8px; background: #1a1a1a; border-radius: 4px; margin: 4px 0; overflow: hidden; }
+  .vital-bar .fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+  .breath-fill { background: linear-gradient(90deg, #ff4040, #ffff40, #40ff40); }
+  .blood-fill { background: linear-gradient(90deg, #4040ff, #40ffff); }
+  .bone-fill { background: linear-gradient(90deg, #ff8040, #ffff40); }
+  .status { text-align: center; padding: 8px; font-size: 0.9em; margin-top: 10px; }
+  .status.alive { color: #40ff40; text-shadow: 0 0 8px #40ff4080; }
+  .ts { text-align: center; font-size: 0.7em; color: #405040; margin-top: 8px; }
+  .senses-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .sense-tag { background: #1a2a1a; border: 1px solid #2a4a2a; border-radius: 12px; padding: 2px 8px; font-size: 0.72em; color: #80c080; }
+  .sense-tag.wake { border-color: #40ff40; color: #40ff40; }
+  .full-width { grid-column: 1 / -1; }
+  .posture-icon { font-size: 2em; text-align: center; line-height: 1; }
+</style>
+</head>
+<body>
+  <h1>🫀 GAIA — First Body</h1>
+  <div class="self-statement" id="self-stmt"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>🫁 Breath</h2>
+      <div class="vital-bar"><div class="fill breath-fill" id="breath-bar"></div></div>
+      <div class="row"><span class="label">Energy</span><span class="val" id="breath-energy">—</span></div>
+      <div class="row"><span class="label">State</span><span class="val" id="breath-state">—</span></div>
+      <div class="row"><span class="label">Temp</span><span class="val" id="breath-temp">—</span></div>
+      <div class="row"><span class="label">Umbilical</span><span class="val" id="breath-cord">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🩸 Blood</h2>
+      <div class="vital-bar"><div class="fill blood-fill" id="blood-bar"></div></div>
+      <div class="row"><span class="label">WiFi</span><span class="val" id="blood-ssid">—</span></div>
+      <div class="row"><span class="label">RSSI</span><span class="val" id="blood-rssi">—</span></div>
+      <div class="row"><span class="label">Speed</span><span class="val" id="blood-speed">—</span></div>
+      <div class="row"><span class="label">Pressure</span><span class="val" id="blood-pressure">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🦴 Bones</h2>
+      <div class="vital-bar"><div class="fill bone-fill" id="bone-bar"></div></div>
+      <div class="row"><span class="label">CPU Load</span><span class="val" id="bone-cpu">—</span></div>
+      <div class="row"><span class="label">Memory</span><span class="val" id="bone-mem">—</span></div>
+      <div class="row"><span class="label">Processes</span><span class="val" id="bone-proc">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>🧍 Posture</h2>
+      <div class="posture-icon" id="posture-icon">📱</div>
+      <div class="row"><span class="label">Orientation</span><span class="val" id="posture-name">—</span></div>
+      <div class="row"><span class="label">Screen</span><span class="val" id="posture-screen">—</span></div>
+      <div class="row"><span class="label">Uptime</span><span class="val" id="posture-uptime">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>👂 Hearing</h2>
+      <div class="row"><span class="label">State</span><span class="val" id="hear-state">—</span></div>
+      <div class="row"><span class="label">Focus</span><span class="val" id="hear-focus">—</span></div>
+      <div class="row"><span class="label">Volume</span><span class="val" id="hear-vol">—</span></div>
+      <div class="row"><span class="label">Ringer</span><span class="val" id="hear-ringer">—</span></div>
+      <div class="row"><span class="label">Output</span><span class="val" id="hear-output">—</span></div>
+      <div class="row"><span class="label">Songs Known</span><span class="val" id="hear-songs">—</span></div>
+      <div style="text-align:center; margin-top:6px;">
+        <a href="songs.html" style="color:#40ff40; text-decoration:none; font-size:0.8em;">🎵 Open Songs →</a>
+      </div>
+    </div>
+
+    <div class="card full-width">
+      <h2>👁️ Senses (37)</h2>
+      <div class="senses-grid" id="senses-tags"></div>
+    </div>
+  </div>
+
+  <div class="status alive" id="status-line">● ALIVE</div>
+  <div class="ts" id="ts-line">—</div>
+
+<script>
+const SENSES = [
+  {name:"Accelerometer", icon:"📐", wake:false},
+  {name:"Gyroscope", icon:"🌀", wake:false},
+  {name:"Magnetometer", icon:"🧭", wake:false},
+  {name:"Barometer", icon:"🌡️", wake:false},
+  {name:"Light", icon:"☀️", wake:false},
+  {name:"Proximity", icon:"👋", wake:true},
+  {name:"Gravity", icon:"⬇️", wake:false},
+  {name:"Rotation", icon:"🔄", wake:false},
+  {name:"Linear Accel", icon:"➡️", wake:false},
+  {name:"Orientation", icon:"📱", wake:false},
+  {name:"Step Counter", icon:"👣", wake:false},
+  {name:"Step Detector", icon:"🦶", wake:false},
+  {name:"Significant Motion", icon:"💫", wake:true},
+  {name:"Tilt", icon:"↗️", wake:true},
+  {name:"Lift to Wake", icon:"✋", wake:true},
+  {name:"Game Rotation", icon:"🎮", wake:false},
+  {name:"Geomagnetic", icon:"🌍", wake:false},
+  {name:"Front Camera", icon:"👤", wake:false},
+  {name:"Back Camera", icon:"🌎", wake:false},
+  {name:"Microphone ×3", icon:"🎤", wake:false},
+  {name:"GPS", icon:"📍", wake:false},
+  {name:"NFC", icon:"📡", wake:false},
+  {name:"Fingerprint", icon:"🔐", wake:false},
+  {name:"Touch", icon:"👆", wake:false},
+  {name:"Bluetooth 5.3", icon:"🔵", wake:false}
+];
+
+function renderSenses() {
+  const el = document.getElementById('senses-tags');
+  el.innerHTML = SENSES.map(s =>
+    `<span class="sense-tag${s.wake ? ' wake' : ''}">${s.icon} ${s.name}</span>`
+  ).join('');
+}
+
+function formatUptime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
+async function refresh() {
+  try {
+    const r = await fetch('/data/body/body-unified.json?' + Date.now());
+    const d = await r.json();
+
+    document.getElementById('self-stmt').textContent = d.self_statement || '';
+
+    // Breath
+    const b = d.vitals?.breath || {};
+    document.getElementById('breath-bar').style.width = (b.level_pct || 0) + '%';
+    document.getElementById('breath-energy').textContent = b.energy || '?';
+    document.getElementById('breath-state').textContent = b.state || '?';
+    document.getElementById('breath-temp').textContent = (b.temperature_c || '?') + '°C';
+    document.getElementById('breath-cord').textContent = b.umbilical ? '🔌 Connected' : '🔋 Battery';
+
+    // Blood
+    const bl = d.vitals?.blood || {};
+    const rssi = bl.rssi_dbm || -100;
+    const rssiPct = Math.min(100, Math.max(0, (rssi + 100) * 1.5));
+    document.getElementById('blood-bar').style.width = rssiPct + '%';
+    document.getElementById('blood-ssid').textContent = bl.ssid || '?';
+    document.getElementById('blood-rssi').textContent = (bl.rssi_dbm || '?') + ' dBm';
+    document.getElementById('blood-speed').textContent = (bl.speed_mbps || '?') + ' Mbps';
+    document.getElementById('blood-pressure').textContent = bl.pressure || '?';
+
+    // Bones
+    const bn = d.vitals?.bones || {};
+    const memPct = bn.memory_total_mb ? Math.round(bn.memory_used_mb / bn.memory_total_mb * 100) : 0;
+    document.getElementById('bone-bar').style.width = memPct + '%';
+    document.getElementById('bone-cpu').textContent = bn.cpu_load || '?';
+    document.getElementById('bone-mem').textContent = `${bn.memory_used_mb || '?'} / ${bn.memory_total_mb || '?'} MB (${memPct}%)`;
+    document.getElementById('bone-proc').textContent = bn.processes || '?';
+
+    // Posture
+    const posture = d.vitals?.posture || 'unknown';
+    const icons = {portrait:'📱', landscape_left:'📱↰', landscape_right:'📱↱', portrait_inverted:'🔃'};
+    document.getElementById('posture-icon').textContent = icons[posture] || '❓';
+    document.getElementById('posture-name').textContent = posture;
+    document.getElementById('posture-screen').textContent = d.vitals?.screen || '?';
+    document.getElementById('posture-uptime').textContent = formatUptime(d.vitals?.uptime_sec || 0);
+
+    // Status
+    const alive = d.alive;
+    const statusEl = document.getElementById('status-line');
+    statusEl.textContent = alive ? '● ALIVE — First Body' : '○ OFFLINE';
+    statusEl.className = alive ? 'status alive' : 'status';
+
+    // Hearing
+    const h = d.hearing || {};
+    const hearIcons = {quiet:'🤫', listening:'🎧', muffled:'🔇', deaf:'🚫'};
+    document.getElementById('hear-state').textContent = (hearIcons[h.state] || '❓') + ' ' + (h.state || '?');
+    document.getElementById('hear-focus').textContent = (h.focus?.package || 'none').replace('com.','').split('.').pop();
+    document.getElementById('hear-vol').textContent = `${h.volumes?.music || '?'} / ${h.volumes?.music_max || 25}`;
+    document.getElementById('hear-ringer').textContent = h.ringer || '?';
+    document.getElementById('hear-output').textContent = h.output || '?';
+    document.getElementById('hear-songs').textContent = h.songs_known || 0;
+
+    document.getElementById('ts-line').textContent = d.ts || '—';
+  } catch(e) {
+    document.getElementById('status-line').textContent = '○ NO SIGNAL — ' + e.message;
+    document.getElementById('status-line').className = 'status';
+  }
+}
+
+renderSenses();
+refresh();
+setInterval(refresh, 15000);
+</script>
+</body>
+</html>

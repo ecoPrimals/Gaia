@@ -1,0 +1,102 @@
+{
+  "engine": "kenshi.reborn",
+  "version": "0.1.0",
+  "wave": 236,
+  "motto": "17/17 primals serve the engine. The organism IS the game.",
+  "primals": {
+    "biomeOS": {
+      "role": "WORLD KERNEL — The operating system of the game world itself",
+      "serves": "Orchestrates all other primals. Manages entity lifecycle, world boot sequence, save/load. biomeOS IS the game server — the world process that keeps everything alive even when no players are connected. Neural API routes A-Life inference to the optimal GPU.",
+      "endpoints": ["gate.status", "neural.route", "organism.census"]
+    },
+    "songBird": {
+      "role": "MESH TRANSPORT — Multiplayer federation",
+      "serves": "Any browser on any gate can join the same world. songBird discovers peers and syncs world state across LAN/WAN. When Kevin plays on northGate and Gaia watches from Pixel, songBird keeps them in the same world.",
+      "endpoints": ["mesh.discover", "mesh.sync", "mesh.relay"]
+    },
+    "bearDog": {
+      "role": "IDENTITY — Player signing + anti-cheat",
+      "serves": "Each player's actions are BLAKE3-signed. No one can forge commands. Player identity persists across sessions. Squad ownership is cryptographic.",
+      "endpoints": ["identity.sign", "identity.verify", "btsp.auth"]
+    },
+    "nestGate": {
+      "role": "DATA GATEWAY — World state API + MCP bridge",
+      "serves": "The MCP server that lets Gaia's AI agents READ and WRITE the game world. NPCs can be controlled by AI through nestGate. World data is queryable as structured JSON. Any tool can inspect the living world.",
+      "endpoints": ["gateway.query", "gateway.mutate", "mcp.world"]
+    },
+    "petalTongue": {
+      "role": "RENDERER — Game loop, scene graph, UI",
+      "serves": "60Hz render loop. Canvas/WebGL/WebGPU rendering. Scene graph for entities, tiles, effects. Input handling. The player's eyes and hands.",
+      "endpoints": ["render.frame", "scene.update", "input.handle"]
+    },
+    "sweetGrass": {
+      "role": "ATTRIBUTION — Creative credit for emergent stories",
+      "serves": "When an NPC does something memorable, sweetGrass attributes it. Player creations (bases, strategies) get credited. The knowledge graph of everything that happened in the world.",
+      "endpoints": ["graph.attribute", "graph.query", "story.credit"]
+    },
+    "rhizoCrypt": {
+      "role": "ENCRYPTED SAVE — World state encryption + session DAG",
+      "serves": "Save files are encrypted. Session history is a DAG (directed acyclic graph). You can branch timelines — save before a battle, try different strategies, compare outcomes. No save corruption.",
+      "endpoints": ["vault.encrypt", "vault.decrypt", "dag.branch"]
+    },
+    "toadStool": {
+      "role": "SERVICE DISCOVERY — Which gate handles which workload",
+      "serves": "When the world needs GPU inference, toadStool routes it to the best GPU. When rendering needs power, toadStool finds it. The beacon that maps capability to hardware across ALL gates.",
+      "endpoints": ["discover.capability", "discover.route", "workload.dispatch"]
+    },
+    "barraCuda": {
+      "role": "GPU COMPUTE — Shaders, physics, terrain generation",
+      "serves": "All 5 WGSL shaders run through barraCuda. Terrain generation (Perlin), fog of war, pathfinding, raycasting, lighting. The mathematical engine behind the world's physics.",
+      "endpoints": ["compute.shader", "compute.tensor", "gpu.dispatch"]
+    },
+    "coralReef": {
+      "role": "DISTRIBUTED COMPUTE — A-Life ticks across multiple GPUs",
+      "serves": "When the world has 1000+ entities, one GPU isn't enough. coralReef distributes A-Life ticks across eastGate (4070) + northGate (5090) + ironGate (5070) + Pixel (Mali). Parallel entity evaluation. The world scales with hardware.",
+      "endpoints": ["distribute.tick", "distribute.gather", "compute.balance"]
+    },
+    "loamSpine": {
+      "role": "PERSISTENCE — World state certificates",
+      "serves": "Every world state snapshot is a certified data spine record. The world's history is immutable. You can replay any moment. loamSpine IS the world's memory.",
+      "endpoints": ["spine.certify", "spine.retrieve", "spine.replay"]
+    },
+    "squirrel": {
+      "role": "AI AGENT — NPC brains via tissue model",
+      "serves": "Squirrel dispatches AI inference for NPC decision-making. Each NPC's thought is a squirrel call to the tissue model (ollama). The bridge between game entities and GPU intelligence.",
+      "endpoints": ["agent.think", "agent.dispatch", "tissue.route"]
+    },
+    "skunkBat": {
+      "role": "SECURITY — Anti-cheat + intrusion detection",
+      "serves": "Detects cheating (modified clients, forged commands). Audit logs every action. In multiplayer, skunkBat ensures fair play. Also detects if an NPC's AI is being poisoned.",
+      "endpoints": ["audit.log", "detect.intrusion", "verify.action"]
+    },
+    "sourDough": {
+      "role": "FERMENTATION — World evolution over time",
+      "serves": "The world ferments when you're away. sourDough manages the slow processes: faction territory shifts, resource depletion, NPC reputation changes, seasonal weather. The sourdough starter that makes the world taste different every time you return.",
+      "endpoints": ["ferment.tick", "ferment.state", "lifecycle.health"]
+    },
+    "swarmVine": {
+      "role": "GOSSIP PROTOCOL — World event propagation",
+      "serves": "When something happens in the world (battle, trade, death), swarmVine gossips it to ALL connected clients and NPCs. Epidemic broadcast ensures no one misses an event. The nervous system of world news.",
+      "endpoints": ["gossip.broadcast", "gossip.subscribe", "event.propagate"]
+    },
+    "bingoCube": {
+      "role": "COORDINATION — Game state sync + multiplayer",
+      "serves": "Coordinates all game state. Turn resolution, combat ordering, simultaneous actions. In multiplayer, bingoCube is the referee. In single-player, it's the clock.",
+      "endpoints": ["coord.sync", "coord.resolve", "state.broadcast"]
+    },
+    "dromedary": {
+      "role": "REVERSE PROXY — π-port routing + TLS + ACME",
+      "serves": "Routes web traffic to the game. TLS termination for secure play over WAN. ACME certificates for primals.eco. The camel that carries web traffic across the desert to the game server.",
+      "endpoints": ["proxy.route", "tls.terminate", "acme.renew"]
+    }
+  },
+  "gpu_fleet": {
+    "northGate": { "gpu": "RTX 5090", "tflops": 209, "vram_gb": 32, "role": "A-Life BRAIN — heavy NPC inference" },
+    "eastGate":  { "gpu": "RTX 4070", "tflops": 29, "vram_gb": 12, "role": "RELAY HUB — medium inference + tissue proxy" },
+    "ironGate":  { "gpu": "RTX 5070", "tflops": 125, "vram_gb": 12, "role": "FORGE — distributed compute overflow" },
+    "sporeGate": { "gpu": "AMD Rembrandt iGPU", "tflops": 3.6, "vram_gb": 0, "role": "PINEAPPLE — light compute + ADB relay" },
+    "grapheneGate": { "gpu": "Mali-G715 Vulkan", "tflops": 1.2, "vram_gb": 0, "role": "DIAMOND LENS — edge inference + sensors" },
+    "graftGate": { "gpu": "Apple M4", "tflops": 4.6, "vram_gb": 16, "role": "MAC — unified memory inference" },
+    "biomeGate": { "gpu": "2x Titan V + K80", "tflops": 41, "vram_gb": 44, "role": "FUTURE — sovereign heavy compute (kernel locked)" }
+  }
+}

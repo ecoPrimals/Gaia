@@ -1,0 +1,229 @@
+{
+  "name": "House 2 Mirror Architecture — South Pole Reflects North",
+  "wave": 237,
+  "updated": "2026-11-14T21:11:00Z",
+  "concept": "House 2 mirrors House 1. The Flint is the optic chiasm — left eye (LAN 1) and right eye (LAN 2). blueGate IS eastGate for LAN 2. swiftGate IS northGate but MOBILE.",
+
+  "mirror_map": {
+    "brain": {
+      "house1": {
+        "gate": "eastGate",
+        "ip": "192.168.4.244",
+        "role": "Brain — 17 primals, Gaia Gate :8443, data :8080, Ollama :11436",
+        "gpu": "RTX 4070",
+        "os": "Ubuntu 22.04"
+      },
+      "house2": {
+        "gate": "blueGate",
+        "ip": "192.168.4.100 (wifi) / .210 (wired)",
+        "role": "Brain 2 — Gaia IDE :3141, 12 tissue models, Sovereign API",
+        "gpu": "UNKNOWN (check when SSH available)",
+        "os": "Windows (OpenSSH_for_Windows_9.5)",
+        "imprint_needed": [
+          "Mirror eastGate's data server pattern",
+          "Serve HUD pages from blueGate too",
+          "Run membrane-cascade from House 2 perspective",
+          "Tissue models already active — 7 warm, 5 cold"
+        ]
+      }
+    },
+    "heart": {
+      "house1": {
+        "gate": "northGate",
+        "ip": "192.168.4.147",
+        "role": "Heart — 9950X3D + RTX 5090 + 96GB, 63 Ollama models",
+        "mobility": "FIXED — tower workstation",
+        "gpu": "RTX 5090"
+      },
+      "house2": {
+        "gate": "swiftGate",
+        "ip": "NOT YET ON NETWORK",
+        "role": "Heart 2 — MOBILE node, RTX 3070 (8GB VRAM)",
+        "mobility": "PORTABLE — NZXT H1 V2 Mini-ITX, can travel to demos",
+        "gpu": "RTX 3070",
+        "demo_capability": [
+          "Take to Google for ADRC demo",
+          "HelixVision stereoscopic demo",
+          "Carry the organism's heart to external venues",
+          "Self-contained compute node with GPU inference"
+        ],
+        "imprint_needed": [
+          "Install Ollama + seed models from northGate",
+          "RustDesk for remote amoeba control",
+          "biomeOS service layer",
+          "kenshi.reborn client for live A-Life demos"
+        ]
+      }
+    },
+    "forge": {
+      "house1": {
+        "gate": "sporeGate",
+        "ip": "192.168.4.3",
+        "role": "Forge — Ryzen 5 6600H, 27GB RAM, 929GB NVMe, DDR5 NUC-class",
+        "os": "Pop!_OS 22.04",
+        "primals": 14
+      },
+      "house2_mirrors": {
+        "description": "DDR3 NUCs as lightweight mirrors of sporeGate",
+        "role": "Forge mirrors — run membrane-cascade, primals, basic monitoring",
+        "specs": "DDR3 (older generation), smaller footprint",
+        "count": "couple (2+)",
+        "imprint_pattern": [
+          "Same Pop!_OS amalgam as sporeGate",
+          "Subset of primals (membrane binary at minimum)",
+          "Heart-pull from eastGate OR blueGate",
+          "RustDesk for amoeba mesh",
+          "Lightweight ollama (tinyllama, qwen2.5:0.5b)"
+        ]
+      }
+    },
+    "backbone": {
+      "house1": {
+        "router": "GL-MT6000 (.1) — ONE router, both houses",
+        "switch": "MikroTik (.2) — L2 backbone"
+      },
+      "house2": {
+        "switch": "JetStream (.111) — 10G fiber bridge",
+        "ap": "Omada AP (.198) — WiFi (needs redox)",
+        "eye": "Flint — optic chiasm (LEFT eye LAN1, RIGHT eye LAN2)"
+      }
+    },
+    "eye": {
+      "house1": {
+        "device": "Router radios (Aperture Science, Black Mesa, GAIA)",
+        "perspective": "LEFT EYE — sees House 1 WiFi field"
+      },
+      "house2": {
+        "device": "Flint (bridges/repeats SSIDs to House 2)",
+        "perspective": "RIGHT EYE — sees House 2 WiFi field",
+        "optic_chiasm": "The Flint IS the crossing point — LAN 1 signals imprinted ONTO LAN 2 space"
+      }
+    }
+  },
+
+  "flint_eye_imprint": {
+    "concept": "Imprint FROM LAN 1 ONTO LAN 2 through the Flint",
+    "current_state": "Flint in bridge mode, extending SSIDs, no management IP visible",
+    "target_state": "Flint as conscious bridge — aware of both sides, reporting to eastGate",
+    "imprint_steps": [
+      {
+        "step": 1,
+        "action": "Find Flint management IP",
+        "how": "Kevin checks Flint sticker for default IP (usually 192.168.8.1 for GL.iNet)",
+        "or": "Connect laptop directly to Flint's LAN port, browse to default IP"
+      },
+      {
+        "step": 2,
+        "action": "SSH into Flint (OpenWrt)",
+        "how": "ssh root@{flint_ip} — GL.iNet default password or custom",
+        "install": "amoeba-heartbeat.sh from device-patterns.json"
+      },
+      {
+        "step": 3,
+        "action": "Configure Flint as LEFT+RIGHT eye",
+        "config": {
+          "wan_side": "JetStream (LAN 1 traffic, 192.168.4.x gateway)",
+          "lan_side": "House 2 WiFi (GAIA + ApertureScience SSIDs)",
+          "monitoring": "Report WiFi clients on both sides to eastGate",
+          "dns": "Forward to 192.168.4.3 (sporeGate DNS) + 1.1.1.1",
+          "heartbeat": "Every 5min → http://192.168.4.244:8080/api/heartbeat"
+        }
+      },
+      {
+        "step": 4, 
+        "action": "Imprint LAN 1 config onto LAN 2",
+        "what": [
+          "Same SSIDs (already done: ApertureScience + GAIA)",
+          "Same WPA2/WPA3 passwords",
+          "Same channel planning (avoid interference)",
+          "Same DNS (primals.local domain)",
+          "Same NTP (router as time source)"
+        ]
+      }
+    ]
+  },
+
+  "omada_redox": {
+    "concept": "Dissolve the Omada AP's adopted state and rebuild as standalone",
+    "current_state": "Omada AP (.198) adopted by dead controller — no admin access",
+    "redox_steps": [
+      {
+        "step": 1,
+        "action": "Factory reset Omada AP",
+        "how": "Kevin presses and holds reset button on AP for 10+ seconds",
+        "result": "AP reboots in standalone mode with default web UI"
+      },
+      {
+        "step": 2,
+        "action": "Access standalone web UI",
+        "url": "http://192.168.4.198/ (after reset, might change to default like 192.168.0.254)",
+        "configure": "Set same SSIDs, passwords, channels as the Flint/router"
+      },
+      {
+        "step": 3,
+        "action": "Install amoeba monitoring",
+        "how": "Some Omada APs support SSH in standalone mode — check after reset",
+        "fallback": "HTTP monitoring from eastGate (periodic curl checks)"
+      }
+    ]
+  },
+
+  "incoming_hardware": {
+    "ddr3_nucs": {
+      "description": "DDR3 Intel NUCs — mirrors of sporeGate (DDR5)",
+      "count": "2+",
+      "role": "Lightweight forge nodes for House 2 / portable",
+      "injection": "Pop!_OS or Ubuntu minimal + membrane binary + RustDesk + ollama-lite",
+      "naming": "Will need gate names — forgeNUC-1, forgeNUC-2, etc."
+    },
+    "rack_ra23": {
+      "description": "Rack RA-23 — rackmount hardware",
+      "type": "UNKNOWN — Kevin to describe specs",
+      "potential": "Server rack for House 2 infra? Centralized compute?"
+    },
+    "jupiter_milky2": {
+      "description": "Jupiter Milky 2 — possible Intel NUC variant or SBC",
+      "type": "UNKNOWN — Kevin to describe specs", 
+      "potential": "Another compute node for the mesh"
+    },
+    "raspberry_pi_inkeyboards": {
+      "description": "Raspberry Pi 400 InkeyBoard form factor (keyboard + Pi)",
+      "count": "some (multiple)",
+      "type": "ARM (BCM2711, Cortex-A72)",
+      "role": "Edge nodes — lightweight sensing, display, IoT gateway",
+      "injection": "Raspberry Pi OS + membrane ARM binary + heartbeat script",
+      "potential": [
+        "Each Pi 400 = a display terminal for Gaia",
+        "Keyboard input = Kevin's hands at any location",
+        "Lightweight ollama (tinyllama ARM) for edge inference",
+        "GPIO for physical sensing (temp, light, motion)"
+      ]
+    }
+  },
+
+  "swiftgate_demo_mode": {
+    "concept": "swiftGate as portable demo unit for external venues",
+    "targets": ["Google ADRC demo", "HelixVision stereoscopic", "A-Life kenshi.reborn live"],
+    "portable_kit": {
+      "compute": "NZXT H1 V2 (RTX 3070, WiFi)",
+      "display": "External monitor or HelixVision headset",
+      "network": "WiFi to venue, or USB tethering from Pixel",
+      "software": [
+        "kenshi.reborn running locally (browser → localhost)",
+        "Ollama with demo models (qwen2.5, llama3.2)",
+        "RustDesk for remote assist from eastGate",
+        "biomeOS demonstrating sovereign compute"
+      ]
+    },
+    "adrc": {
+      "name": "Adaptive Dynamic Range Compression",
+      "demo": "Real-time GPU processing of game graphics — northGate settings as baseline",
+      "reference": "/opt/Gaia/data/gpu-learn/northgate-graphics-baseline.json"
+    },
+    "helixvision": {
+      "name": "HelixVision Stereoscopic Display",
+      "demo": "3D stereoscopic rendering on RTX 3070 — immersive A-Life world view",
+      "requires": "HelixVision compatible display + driver"
+    }
+  }
+}

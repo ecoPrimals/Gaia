@@ -1,0 +1,117 @@
+{
+    "title": "Distance to ENMESH — Kenshi .exe integration roadmap",
+    "date": "2026-11-14",
+    "current_wave": 260,
+
+    "DONE": {
+        "layer_0_mesh_parsing": {
+            "status": "COMPLETE",
+            "what": "Ogre v1.100 binary .mesh parser in Rust",
+            "proof": "21 creatures loaded, 959K vertices rendered",
+            "distance": "0 — already working"
+        },
+        "layer_1_dll_injection": {
+            "status": "COMPLETE",
+            "what": "RenderSystem_Vulkan_x64.dll loads inside kenshi_x64.exe via Plugins_x64.cfg",
+            "proof": "dllStartPlugin() called by Ogre, log file written",
+            "distance": "0 — already proven"
+        },
+        "layer_2_ogre_hooks": {
+            "status": "COMPLETE",
+            "what": "Root::getSingletonPtr() + getAvailableRenderers() hooked from inside the .exe",
+            "proof": "D3D11 RenderSystem found, vtable pointer read",
+            "distance": "0 — already working"
+        },
+        "layer_3_msvc_abi": {
+            "status": "COMPLETE",
+            "what": "MSVC std::string SSO layout (32 bytes), std::vector layout understood",
+            "proof": "mName read successfully at offset 8",
+            "distance": "0 — format understood"
+        },
+        "layer_4_renderer": {
+            "status": "COMPLETE",
+            "what": "WGPU/Vulkan renderer with lighting, camera, depth buffer",
+            "proof": "Bestiary rendering on RTX 5090 at 60fps",
+            "distance": "0 — already rendering"
+        },
+        "layer_5_world_map": {
+            "status": "COMPLETE",
+            "what": "8x8 world grid with biome-creature pinning",
+            "proof": "12 biomes, 21 creatures, globe overlay serving on LAN",
+            "distance": "0 — already mapped"
+        }
+    },
+
+    "REMAINING": {
+        "layer_6_vtable_scan": {
+            "status": "READY — need one Kenshi relaunch with v0.6.0 DLL",
+            "what": "Run the investigator DLL to dump D3D11's full 64-slot vtable with RVA offsets",
+            "steps": [
+                "1. Build v0.6.0 bridge DLL (already compiled)",
+                "2. Copy to Kenshi directory as RenderSystem_Vulkan_x64.dll",
+                "3. Add Plugin=RenderSystem_Vulkan_x64 to Plugins_x64.cfg",
+                "4. Launch Kenshi — investigator runs during plugin load",
+                "5. Read kenshi_reborn_vtable.json for full slot map",
+                "6. Restore original Plugins_x64.cfg"
+            ],
+            "distance": "1 Kenshi relaunch (< 5 min)",
+            "risk": "LOW — v0.6.0 is read-only, doesn't register anything"
+        },
+        "layer_7_dropdown": {
+            "status": "FRAMEWORK READY (safe_rendersystem.rs)",
+            "what": "Clone D3D11 vtable, patch getName → 'Vulkan (Reborn)', register with Root",
+            "steps": [
+                "1. Use vtable scan results to identify getName slot",
+                "2. clone_vtable() copies all 64 function pointers",
+                "3. Patch slot N with custom_get_name()",
+                "4. Build fake RenderSystem with patched vtable",
+                "5. Call Root::addRenderSystem()",
+                "6. 'Vulkan (Reborn)' appears in launcher dropdown"
+            ],
+            "distance": "~30 min coding after vtable scan",
+            "risk": "MEDIUM — if we miss which slot is getName, Kenshi could crash. But we restore instantly."
+        },
+        "layer_8_render_intercept": {
+            "status": "NOT STARTED",
+            "what": "When user selects 'Vulkan (Reborn)', intercept Ogre render calls → forward to WGPU",
+            "steps": [
+                "1. Implement _createRenderWindow() to create WGPU surface instead of D3D11",
+                "2. Implement _setViewport() to set our camera",
+                "3. Implement _render() to draw geometry with our pipeline",
+                "4. Handle all ~30 pure virtual methods in RenderSystem base"
+            ],
+            "distance": "WEEKS of work — this is the full engine replacement",
+            "risk": "HIGH — needs every virtual method to not crash"
+        },
+        "layer_9_fcs_mods": {
+            "status": "PARTIALLY READY",
+            "what": "Create .mod files for Kenshi's FCS system",
+            "what_we_know": [
+                "gamedata.base is the master FCS file (4.4MB binary)",
+                "Newwworld.mod is the main content mod (2MB)",
+                ".mod files are patches to gamedata.base",
+                "FCS binary format is partially documented by community",
+                "RE_Kenshi (Rust) can parse FCS — but we don't install external tools"
+            ],
+            "distance": "Need to write our own FCS parser in Rust",
+            "risk": "LOW — .mod files don't modify the .exe"
+        }
+    },
+
+    "TONIGHT_REALISTIC": [
+        "✅ Run vtable investigator (1 Kenshi relaunch, 5 min)",
+        "✅ Build the dropdown DLL from scan results (30 min)",
+        "✅ Test dropdown appears in launcher",
+        "⏳ FCS parser — stretch goal, needs format research"
+    ],
+
+    "AMALGAM_VISION": {
+        "principle": "Bit by bit, replace Kenshi's rendering with ours",
+        "phase_1": "Dropdown appears (proof we're inside)",
+        "phase_2": "Selecting our renderer opens a WGPU window alongside Kenshi",
+        "phase_3": "Our window mirrors Kenshi's camera/viewport",
+        "phase_4": "Our renderer takes over scene drawing",
+        "phase_5": "Full Vulkan replacement — Kenshi runs on our engine",
+        "endgame": "Offer to Lo-Fi Games as Kenshi 2 engine before UE5 ships"
+    }
+}

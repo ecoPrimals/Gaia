@@ -1,0 +1,91 @@
+{
+  "ts": "2026-11-15T01:42:00Z",
+  "wave": 236,
+  "organ": "grapheneGate_willis_circulation",
+  "doctrine": "The Pixel IS its own Circle of Willis — redundant blood supply for the Diamond Lens. If one path blocks, another opens. ALL paths are life paths.",
+
+  "paths": {
+    "1_adb_wifi": {
+      "protocol": "ADB over WiFi",
+      "endpoint": "192.168.4.225:5555",
+      "status": "PORT_OPEN_HANDSHAKE_STUCK",
+      "latency_ms": 5,
+      "bandwidth": "medium",
+      "reliability": "fragile — Android kills adbd on screen lock, needs auth dialog",
+      "what_flows": ["shell commands", "file push/pull", "sensor reads", "screenshots", "process management"],
+      "fix": "Pixel must have 'Always allow from this computer' checked + developer options 'Stay awake' ON"
+    },
+    "2_adb_usb": {
+      "protocol": "ADB over USB-C",
+      "endpoint": "/dev/bus/usb/... (when plugged in)",
+      "status": "NOT_CONNECTED",
+      "latency_ms": 0.1,
+      "bandwidth": "high (USB 3.1)",
+      "reliability": "solid — physical cable, no WiFi drops",
+      "what_flows": ["everything ADB WiFi does + faster transfers", "battery charging"],
+      "fix": "Plug USB-C from eastGate to Pixel"
+    },
+    "3_wifi_http": {
+      "protocol": "HTTP over WiFi (direct IP)",
+      "endpoint": "192.168.4.225:*",
+      "status": "ALIVE (4.71ms ping)",
+      "latency_ms": 5,
+      "bandwidth": "high",
+      "reliability": "moderate — WiFi can drop, IP changes",
+      "what_flows": ["llama-server inference (:8082)", "biomeOS API (:8080)", "sensor HTTP endpoints"],
+      "fix": "Start HTTP services on Pixel: llama-server, biomeOS serve, sensor-http"
+    },
+    "4_bluetooth": {
+      "protocol": "Bluetooth Classic / BLE",
+      "endpoint": "scan needed",
+      "status": "UNKNOWN",
+      "latency_ms": 50,
+      "bandwidth": "low (3 Mbps BLE, 24 Mbps Classic)",
+      "reliability": "proximity-dependent (10-100m)",
+      "what_flows": ["heartbeat ping", "Kevin presence detection", "low-bandwidth commands"],
+      "fix": "Pair eastGate BT with Pixel, create rfcomm serial bridge or BLE GATT sensor service"
+    },
+    "5_rss_outbound": {
+      "protocol": "RSS feed publication from Pixel",
+      "endpoint": "Pixel generates feed.xml, eastGate pulls via HTTP",
+      "status": "NOT_IMPLEMENTED",
+      "latency_ms": 60000,
+      "bandwidth": "very low (text only)",
+      "reliability": "high — no persistent connection needed, pull-based",
+      "what_flows": ["Pixel status updates", "sensor summaries", "location changes", "photo descriptions"],
+      "fix": "Create a tiny HTTP server on Pixel that serves sensor data as RSS/JSON"
+    },
+    "6_nfc_tap": {
+      "protocol": "NFC tap-to-sync",
+      "endpoint": "physical proximity",
+      "status": "AVAILABLE (Pixel 8a has NFC)",
+      "latency_ms": 100,
+      "bandwidth": "very low (424 kbps)",
+      "reliability": "requires physical tap — intentional sync",
+      "what_flows": ["auth tokens", "config updates", "key exchange", "trust handshake"],
+      "fix": "Android NFC beam or HCE service for gate-to-gate config"
+    },
+    "7_cellular_sms": {
+      "protocol": "SMS via southGate relay",
+      "endpoint": "southGate (.148) → Pixel",
+      "status": "THEORETICAL",
+      "latency_ms": 5000,
+      "bandwidth": "160 chars/message",
+      "reliability": "high — works even without WiFi",
+      "what_flows": ["emergency commands", "wake-up signals", "status pings"],
+      "fix": "Build SMS-to-command bridge: southGate receives SMS → forwards to Pixel via IP"
+    }
+  },
+
+  "willis_policy": {
+    "primary": "adb_wifi (lowest latency, richest data)",
+    "secondary": "wifi_http (no ADB needed, just HTTP)",
+    "tertiary": "adb_usb (when physically connected, highest bandwidth)",
+    "fallback": "bluetooth (proximity heartbeat, always-on BLE beacon)",
+    "emergency": "rss_outbound (pull-based, works even if Pixel can't accept connections)",
+    "last_resort": "cellular_sms (works even if WiFi is completely dead)",
+    "ritual": "nfc_tap (intentional physical sync, trust ceremonies)"
+  },
+
+  "circle_rule": "ANY path that flows is a life path. The Pixel should ALWAYS have at least 2 paths open. If ADB is stuck, HTTP still works. If WiFi drops, BT beacons. If everything network dies, SMS through southGate. The organism adapts — it doesn't depend on one artery."
+}

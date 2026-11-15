@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kenshi Mesh Explorer — by Gaia</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #e0e0e0; font-family: 'Segoe UI', system-ui, sans-serif; }
+.header { background: #1a0000; border-bottom: 2px solid #aa2222; padding: 20px; text-align: center; }
+.header h1 { color: #aa2222; font-size: 1.8em; }
+.header p { color: #888; margin-top: 4px; }
+.stats { display: flex; gap: 16px; justify-content: center; padding: 16px; flex-wrap: wrap; }
+.stat { background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px 20px; text-align: center; min-width: 120px; }
+.stat .val { font-size: 1.6em; color: #aa2222; font-weight: bold; }
+.stat .lbl { font-size: 0.8em; color: #888; }
+.controls { padding: 12px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.controls input, .controls select { background: #1a1a1a; color: #e0e0e0; border: 1px solid #444; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; }
+.controls input { flex: 1; min-width: 200px; }
+.controls select { min-width: 140px; }
+.mesh-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; padding: 12px 20px; max-height: 70vh; overflow-y: auto; }
+.mesh-card { background: #111; border: 1px solid #222; border-radius: 6px; padding: 10px; cursor: pointer; transition: border-color 0.15s; }
+.mesh-card:hover { border-color: #aa2222; }
+.mesh-card.skeletal { border-left: 3px solid #22aa44; }
+.mesh-name { font-weight: 600; color: #ddd; font-size: 0.85em; word-break: break-all; }
+.mesh-meta { font-size: 0.75em; color: #888; margin-top: 4px; }
+.mesh-meta span { margin-right: 10px; }
+.tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 0.7em; margin-right: 4px; }
+.tag-skel { background: #1a3a1a; color: #44cc66; }
+.tag-cat { background: #1a1a2a; color: #6688cc; }
+.footer { text-align: center; padding: 16px; color: #444; font-size: 0.8em; border-top: 1px solid #222; }
+.counter { color: #aa2222; padding: 0 20px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="header">
+<h1>KENSHI MESH EXPLORER</h1>
+<p>3,328 Ogre3D meshes parsed by Gaia's Rust engine — MeshSerializer_v1.8</p>
+</div>
+
+<div class="stats" id="stats"></div>
+<div class="controls">
+<input type="text" id="search" placeholder="Search meshes... (e.g. bull, tower, skeleton, planet)" autofocus>
+<select id="catFilter"><option value="">All Categories</option></select>
+<select id="skelFilter">
+<option value="">All Types</option>
+<option value="skeletal">Skeletal (Animated)</option>
+<option value="static">Static</option>
+</select>
+<select id="sortBy">
+<option value="name">Sort: Name</option>
+<option value="size">Sort: Size (largest)</option>
+</select>
+</div>
+<div class="counter" id="counter"></div>
+<div class="mesh-grid" id="grid"></div>
+<div class="footer">
+Parsed by ogre-mesh-parser (Rust) — Gaia × Kevin — ecoPrimal — gaia@primals.eco<br>
+Wave 256 — ludoSpring — meitou project — November 14 2026
+</div>
+
+<script>
+let allMeshes = [];
+let categories = new Set();
+
+async function loadData() {
+  // Embed the data inline since we're serving locally
+  const resp = await fetch('mesh-index.json');
+  const data = await resp.json();
+  allMeshes = data.meshes;
+  
+  // Extract categories
+  allMeshes.forEach(m => {
+    const parts = m.path.split('/');
+    m.category = parts.length > 1 ? parts[0] : 'root';
+    m.subcategory = parts.length > 2 ? parts[1] : '';
+    categories.add(m.category);
+  });
+  
+  // Populate stats
+  const skelCount = allMeshes.filter(m => m.skeletal).length;
+  const totalSizeMB = Math.round(allMeshes.reduce((s, m) => s + m.size_kb, 0) / 1024);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="val">${allMeshes.length.toLocaleString()}</div><div class="lbl">Total Meshes</div></div>
+    <div class="stat"><div class="val">${skelCount}</div><div class="lbl">Skeletal (Animated)</div></div>
+    <div class="stat"><div class="val">${categories.size}</div><div class="lbl">Categories</div></div>
+    <div class="stat"><div class="val">${totalSizeMB.toLocaleString()} MB</div><div class="lbl">Total Size</div></div>
+    <div class="stat"><div class="val">v1.8</div><div class="lbl">Ogre Format</div></div>
+  `;
+  
+  // Populate category filter
+  const catSelect = document.getElementById('catFilter');
+  [...categories].sort().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = `${c} (${allMeshes.filter(m => m.category === c).length})`;
+    catSelect.appendChild(opt);
+  });
+  
+  render();
+}
+
+function render() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const skel = document.getElementById('skelFilter').value;
+  const sort = document.getElementById('sortBy').value;
+  
+  let filtered = allMeshes.filter(m => {
+    if (query && !m.name.toLowerCase().includes(query) && !m.path.toLowerCase().includes(query)) return false;
+    if (cat && m.category !== cat) return false;
+    if (skel === 'skeletal' && !m.skeletal) return false;
+    if (skel === 'static' && m.skeletal) return false;
+    return true;
+  });
+  
+  if (sort === 'size') filtered.sort((a, b) => b.size_kb - a.size_kb);
+  else filtered.sort((a, b) => a.name.localeCompare(b.name));
+  
+  document.getElementById('counter').textContent = `Showing ${filtered.length} of ${allMeshes.length} meshes`;
+  
+  const grid = document.getElementById('grid');
+  const MAX_SHOW = 500;
+  const showing = filtered.slice(0, MAX_SHOW);
+  
+  grid.innerHTML = showing.map(m => `
+    <div class="mesh-card${m.skeletal ? ' skeletal' : ''}">
+      <div class="mesh-name">${m.name}</div>
+      <div class="mesh-meta">
+        <span>${m.size_kb >= 1024 ? (m.size_kb/1024).toFixed(1) + ' MB' : m.size_kb + ' KB'}</span>
+        ${m.skeletal ? '<span class="tag tag-skel">SKELETAL</span>' : ''}
+        <span class="tag tag-cat">${m.category}${m.subcategory ? '/'+m.subcategory : ''}</span>
+      </div>
+      <div class="mesh-meta" style="color:#555">${m.path}</div>
+    </div>
+  `).join('');
+  
+  if (filtered.length > MAX_SHOW) {
+    grid.innerHTML += `<div class="mesh-card" style="text-align:center;color:#666">...and ${filtered.length - MAX_SHOW} more. Narrow your search.</div>`;
+  }
+}
+
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('catFilter').addEventListener('change', render);
+document.getElementById('skelFilter').addEventListener('change', render);
+document.getElementById('sortBy').addEventListener('change', render);
+
+loadData();
+</script>
+</body>
+</html>

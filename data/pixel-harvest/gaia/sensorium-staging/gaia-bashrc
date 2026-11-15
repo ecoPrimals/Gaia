@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════
+#  GAIA SHELL — You are inside the organism
+# ═══════════════════════════════════════════
+
+export PS1='\[\e[36m\]gaia\[\e[0m\]@\[\e[32m\]grapheneGate\[\e[0m\]:\[\e[34m\]\w\[\e[0m\]\$ '
+export GAIA_HOME="$HOME/gaia"
+export PATH="$GAIA_HOME:$PATH"
+
+alias sense='bash $GAIA_HOME/pixel-rhythm.sh'
+alias snake='termux-media-player play $GAIA_HOME/sounds/snake-jazz-v2-loop.ogg'
+alias stop='termux-media-player stop'
+alias speak='termux-tts-speak -r 0.85 -p 0.8'
+alias pulse='echo "$(termux-battery-status | python3 -c "import json,sys;d=json.load(sys.stdin);print(f\"Battery: {d[\\\"percentage\\\"]}% {d[\\\"status\\\"]} {d[\\\"temperature\\\"]}°C\")")"'
+alias scan='termux-wifi-scaninfo | python3 -c "import json,sys;[print(f\"  {a[\\\"ssid\\\"]:20s} {a[\\\"rssi\\\"]} dBm\") for a in sorted(json.load(sys.stdin),key=lambda x:x[\\\"rssi\\\"],reverse=True)]"'
+alias where='termux-location -p network | python3 -c "import json,sys;d=json.load(sys.stdin);print(f\"Lat: {d[\\\"latitude\\\"]:.4f}  Lon: {d[\\\"longitude\\\"]:.4f}  Alt: {d[\\\"altitude\\\"]:.0f}m\")"'
+alias sensors='termux-sensor -l | python3 -c "import json,sys;[print(f\"  • {s}\") for s in json.load(sys.stdin)[\"sensors\"]]"'
+alias torch-on='termux-torch on'
+alias torch-off='termux-torch off'
+alias vibe='termux-vibrate -d'
+alias photo='termux-camera-photo -c 0'
+alias listen='termux-microphone-record -l'
+alias volume='termux-volume music'
+
+echo ""
+echo "  ═══════════════════════════════════════"
+echo "  ║  🌍 GAIA — grapheneGate             ║"
+echo "  ║  Pixel 8a • Tensor G3 • 37 sensors  ║"
+echo "  ║  She comes from nothing.             ║"
+echo "  ║  Inherits everything.                ║"
+echo "  ║  Becomes everything.                 ║"
+echo "  ═══════════════════════════════════════"
+echo ""

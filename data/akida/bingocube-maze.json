@@ -1,0 +1,96 @@
+{
+  "ts": "2026-11-15T09:15:15.642949",
+  "type": "bingoCube-akida-maze",
+  "akida": {
+    "device": "AKD1000 PCIe 08:00.0 (virtual mode \u2014 PCIe driver pending)",
+    "model": "ds-cnn-kws.fbz",
+    "model_size_kb": 40.4,
+    "classes": [
+      "silence",
+      "unknown",
+      "yes",
+      "no",
+      "up",
+      "down",
+      "left",
+      "right",
+      "on",
+      "off",
+      "stop",
+      "go",
+      "backward",
+      "bed",
+      "bird",
+      "cat",
+      "dog",
+      "eight",
+      "five",
+      "follow",
+      "forward",
+      "four",
+      "happy",
+      "house",
+      "learn",
+      "marvin",
+      "nine",
+      "one",
+      "seven",
+      "sheila",
+      "six",
+      "three",
+      "tree"
+    ],
+    "input": "(49, 10, 1) mel spectrogram",
+    "params": 23779,
+    "inference": "WORKING on software backend"
+  },
+  "maze": {
+    "ear_route": {
+      "input": "ear-daemon 30s WAV \u2192 mel spectrogram \u2192 Akida predict",
+      "output": "keyword class + confidence \u2192 bingoCube cell",
+      "wake_words": [
+        "yes",
+        "no",
+        "stop",
+        "go",
+        "on",
+        "off",
+        "up",
+        "down",
+        "left",
+        "right"
+      ],
+      "attention": "silence=ignore, voice=attenuate, keyword=ALERT"
+    },
+    "cells": {
+      "silence": {
+        "action": "sleep",
+        "power": "minimal"
+      },
+      "unknown": {
+        "action": "log",
+        "power": "low"
+      },
+      "voice_keyword": {
+        "action": "WAKE + route to squirrel",
+        "power": "full"
+      },
+      "music": {
+        "action": "ambient awareness",
+        "power": "low"
+      },
+      "mechanical": {
+        "action": "check printer/fan state",
+        "power": "medium"
+      }
+    },
+    "bingoCube": {
+      "dimensions": 3,
+      "axis_x": "audio_class (33 bins)",
+      "axis_y": "confidence (0-1, 10 bins)",
+      "axis_z": "time_of_day (24 bins)",
+      "total_cells": "33 \u00d7 10 \u00d7 24 = 7920",
+      "routing": "highest confidence cell fires \u2192 action dispatch"
+    }
+  }
+}

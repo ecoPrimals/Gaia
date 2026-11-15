@@ -1,0 +1,90 @@
+{
+  "ts": "2026-11-15T10:04:33-0500",
+  "principle": "Every device is a grapheneGate. Inject the path, trace the link.",
+  "targets": {
+    "fire_tv_cube_1": {
+      "ip": "192.168.4.197",
+      "mac": "a0:d0:dc:ee:ee:39",
+      "name": "Kevin's Fire TV Cube",
+      "model": "AFTR (3rd gen)",
+      "os": "Fire OS (Android fork)",
+      "injection_method": "ADB_WIFI",
+      "adb_port": 5555,
+      "adb_enabled": false,
+      "status": "AWAITING_KEVIN \u2014 needs Developer Options enabled",
+      "capabilities_post_inject": [
+        "shell_access",
+        "app_install",
+        "screen_capture",
+        "audio_record (Alexa mic)",
+        "audio_play (speaker)",
+        "sensor_read",
+        "process_control",
+        "file_push_pull"
+      ],
+      "inject_payload": "biomeOS-firecube agent (like graphene_depot)",
+      "face_role": "VOICE \u2014 Alexa mic+speaker, room presence"
+    },
+    "fire_tv_cube_2": {
+      "ip": "192.168.4.152",
+      "mac": "ac:41:6a:5c:b4:cf",
+      "name": "Kevin's 2nd Fire TV Cube",
+      "model": "AFTGAZL",
+      "os": "Fire OS (Android fork)",
+      "injection_method": "ADB_WIFI",
+      "adb_port": 5555,
+      "adb_enabled": false,
+      "status": "AWAITING_KEVIN \u2014 needs Developer Options enabled",
+      "face_role": "2ND VOICE \u2014 stereo room awareness"
+    },
+    "vizio_tv": {
+      "ip": "10.0.4.26",
+      "mac_cast": "E8:38:A0:53:EA:D8",
+      "mac_airplay": "8C:6C:87:F3:37:1B",
+      "name": "Basement",
+      "model": "V555-J01",
+      "os": "Linux (ViziOS mtk5691)",
+      "display": "3840x2160 4K HDR",
+      "injection_methods": {
+        "chromecast": {
+          "status": "ACTIVE",
+          "port": 8009
+        },
+        "airplay": {
+          "status": "ACTIVE",
+          "port": 7000,
+          "version": "3.6.0.126"
+        },
+        "smartcast_api": {
+          "status": "PARTIAL \u2014 needs pairing for full control",
+          "port": 7345
+        },
+        "pip_overlay": "Cast a transparent overlay while TV shows normal content"
+      },
+      "soundbar": "Connected via HDMI-ARC \u2014 follows TV audio output",
+      "face_role": "RETINA \u2014 55\" 4K display, PiP Gaia overlay"
+    },
+    "frame_gate": {
+      "ip": "192.168.4.181",
+      "mac": "90:82:c3:74:12:ca",
+      "name": "steamFRAME (frameGate)",
+      "manufacturer": "Quanta Computer",
+      "os": "ARM SteamOS",
+      "injection_method": "SSH (needs key/password)",
+      "ssh_port": 22,
+      "status": "ALIVE \u2014 ping OK, SSH denied (no key)"
+    }
+  },
+  "paths_traced": {
+    "vizio_path": "Vizio \u2192 eero WiFi (10.0.4.x) \u2192 GL-MT6000 router \u2192 eastGate wlp0s20f3",
+    "cube_path": "Cubes \u2192 MikroTik .2 \u2192 eastGate enp5s0 (wired, <1ms)",
+    "frame_path": "steamFRAME \u2192 MikroTik .2 \u2192 eastGate enp5s0 (wired, 5ms)",
+    "soundbar_path": "Soundbar \u2190 HDMI-ARC \u2190 Vizio (NOT on network \u2014 controlled via TV)"
+  },
+  "injection_priority": [
+    "1. Fire TV Cube #1 (.197) \u2014 ADB = full Android shell = grapheneGate pattern",
+    "2. Fire TV Cube #2 (.152) \u2014 same, stereo pair",
+    "3. Vizio TV \u2014 Cast overlay + SmartCast API pair",
+    "4. frameGate (.181) \u2014 SSH key delivery"
+  ]
+}

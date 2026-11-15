@@ -1,0 +1,165 @@
+{
+  "ts": "2026-11-15T10:12:02-0500",
+  "principle": "ZK integration. Devices don't know they're enmeshed. We solve OUR way.",
+  "dns_sinkhole": {
+    "status": "ACTIVE",
+    "router": "192.168.4.1 (GL-MT6000, SSH root)",
+    "total_sinked_domains": 60,
+    "categories": {
+      "amazon_telemetry": [
+        "device-metrics-us.amazon.com",
+        "unagi-na.amazon.com",
+        "mads.amazon.com",
+        "fls-na.amazon.com",
+        "arcus-uswest.amazon.com",
+        "mas-ext.amazon.com",
+        "ktpx.amazon.com"
+      ],
+      "amazon_alexa": [
+        "api.amazonalexa.com",
+        "alexa.amazon.com",
+        "avs-alexa-14-na.amazon.com",
+        "pitangui.amazon.com"
+      ],
+      "amazon_ads": [
+        "ads.amazon.com",
+        "msh.amazon.com",
+        "amazon-adsystem.com"
+      ],
+      "vizio_spying": [
+        "samba.tv",
+        "cdn.samba.tv",
+        "tvinteractive.tv",
+        "control-zoo-default.tvinteractive.tv"
+      ],
+      "google_tracking": [
+        "firebaselogging-pa.googleapis.com",
+        "app-measurement.com",
+        "firebaseinstallations.googleapis.com"
+      ],
+      "facebook": [
+        "graph.facebook.com",
+        "pixel.facebook.com",
+        "mqtt-mini.facebook.com",
+        "edge-mqtt.facebook.com"
+      ],
+      "nvidia": [
+        "events.telemetry.data.nvidia.com",
+        "telemetry.nvidia.com",
+        "gfe.nvidia.com"
+      ],
+      "microsoft": [
+        "settings-win.data.microsoft.com",
+        "vortex.data.microsoft.com",
+        "watson.telemetry.microsoft.com"
+      ],
+      "ads_general": [
+        "doubleclick.net",
+        "pagead2.googlesyndication.com",
+        "scorecardresearch.com",
+        "conviva.com",
+        "moatads.com",
+        "adnxs.com"
+      ]
+    },
+    "absorbed_to_eastgate": [
+      "amazon-adsystem.com",
+      "firebaselogging-pa.googleapis.com",
+      "app-measurement.com",
+      "doubleclick.net",
+      "scorecardresearch.com",
+      "conviva.com",
+      "moatads.com",
+      "serving-sys.com",
+      "adsrvr.org",
+      "adnxs.com",
+      "sc.omtrdc.net",
+      "demdex.net",
+      "imrworldwide.com",
+      "relay.primals.eco"
+    ],
+    "blackholed_to_null": [
+      "ALL amazon telemetry",
+      "ALL alexa cloud",
+      "ALL facebook",
+      "ALL nvidia telemetry",
+      "ALL vizio/samba spying",
+      "ALL microsoft telemetry",
+      "nest logging",
+      "captive portal",
+      "google play/firebase"
+    ]
+  },
+  "silent_vectors": {
+    "chromecast_cast": {
+      "target": "Vizio V555-J01 (10.0.4.26)",
+      "port": 8009,
+      "auth_required": false,
+      "capability": "Cast any URL silently. PiP overlay. Transparent page.",
+      "method": "catt or PyChromecast \u2014 no pairing needed for casting"
+    },
+    "airplay": {
+      "target": "Vizio V555-J01 (10.0.4.26)",
+      "port": 7000,
+      "auth_required": "TBD \u2014 probe needed",
+      "capability": "Stream video/audio, mirror screen"
+    },
+    "second_screen": {
+      "targets": [
+        "Fire TV Cube #1 (.197)",
+        "Fire TV Cube #2 (.152)"
+      ],
+      "port": 8009,
+      "capability": "Push media URLs to play on the Cube"
+    },
+    "dial_launch": {
+      "targets": [
+        "Fire TV Cube #1 (.197:60000)",
+        "Fire TV Cube #2 (.152:60000)"
+      ],
+      "capability": "Launch apps on the Cube by name"
+    },
+    "dns_redirect": {
+      "capability": "Redirect ANY domain to eastGate. Devices think they're reaching the real server.",
+      "example": "If we redirect api.amazonalexa.com \u2192 .244 and serve a response, Alexa thinks it's talking to Amazon"
+    },
+    "traffic_observation": {
+      "capability": "See ALL DNS queries, ALL connection state via conntrack. Every device's network behavior is visible.",
+      "live_traffic": "Fire TV Cubes streaming from Akamai CDN, ironGate pushing to git.primals.eco, northGate blackholed from Microsoft"
+    }
+  },
+  "enmeshed_devices": {
+    "fire_tv_cube_1": {
+      "ip": ".197",
+      "alexa_cloud": "BLACKHOLED",
+      "ads": "ABSORBED",
+      "telemetry": "BLACKHOLED",
+      "casting": "OPEN"
+    },
+    "fire_tv_cube_2": {
+      "ip": ".152",
+      "alexa_cloud": "BLACKHOLED",
+      "ads": "ABSORBED",
+      "telemetry": "BLACKHOLED",
+      "casting": "OPEN"
+    },
+    "vizio_tv": {
+      "ip": "10.0.4.26",
+      "samba_spying": "BLACKHOLED",
+      "ads": "ABSORBED",
+      "cast": "OPEN",
+      "airplay": "OPEN",
+      "smartcast": "PARTIAL"
+    },
+    "nest": {
+      "ip": ".239",
+      "logging": "BLACKHOLED",
+      "local_api": "unknown"
+    },
+    "eero": {
+      "ip": ".194",
+      "status": "bridge only"
+    }
+  },
+  "zk_principle": "They can't phone home. They can't report. They can't update without us knowing. Their telemetry goes to null or to us. We see every DNS query, every connection. They are enmeshed \u2014 and they have no idea."
+}

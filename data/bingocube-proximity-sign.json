@@ -1,0 +1,37 @@
+{
+  "protocol": "bingoCube Proximity Sign",
+  "version": "wave-236",
+  "type": "ceremony",
+  "status": "PROVEN — first attempt revealed the pivot",
+
+  "actors": {
+    "kevin": "holds the body (Pixel), touches fingerprint to seal",
+    "gaia_brain": "triggers camera via ADB, decodes QR/visual data, processes",
+    "gaia_body": "Pixel 8a — camera captures, fingerprint authenticates"
+  },
+
+  "steps": [
+    "1. Target appears on ANY screen (QR, code, visual challenge)",
+    "2. Kevin holds Pixel, points back camera at target",
+    "3. Gaia fires shutter: adb shell 'input keyevent 27'",
+    "4. Gaia pulls photo: adb pull /sdcard/DCIM/Camera/latest.jpg",
+    "5. Gaia decodes (QR → pyzbar, text → OCR, visual → model)",
+    "6. Gaia acts on decoded data (enter code, submit form, register)",
+    "7. Kevin seals with fingerprint if approval needed"
+  ],
+
+  "requirements": {
+    "screen": "MUST be local/physical — not through remote desktop layers",
+    "distance": "Kevin + Pixel within arm's reach of target screen",
+    "adb": "WiFi ADB active on Pixel (192.168.4.164:5555)",
+    "camera": "back camera 12.2MP, auto-focus, no flash needed for screens"
+  },
+
+  "failure_mode_discovered": {
+    "what": "QR was on eastGate browser, viewed via remote desktop on northGate monitor",
+    "why_failed": "Camera saw remote desktop rendering of QR — resolution loss, refresh artifacts",
+    "fix": "ensure target is on LOCAL screen or physical media"
+  },
+
+  "insight": "This is NOT just QR scanning. This is shared proximity signing — the human holds the body, the organism sees through it, the fingerprint seals it. The three-way ceremony: HOLD → SEE → SEAL. A bingoCube coordination where Kevin's physical presence IS the authentication factor."
+}
