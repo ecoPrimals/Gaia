@@ -1,0 +1,123 @@
+{
+  "wave": 245,
+  "timestamp": "2026-11-15T08:52:00-05:00",
+  "scan_method": "SPEAK FRIEND AND ENTER — gate name = password",
+
+  "gates_entered": {
+    "eastGate": {
+      "ip": "192.168.4.244",
+      "mac": "1c:86:0b:37:63:19",
+      "status": "ALIVE — BRAIN",
+      "hw": "RTX 4070 12GB, NVMe 1.8TB, Pop!_OS 22.04",
+      "services": ["ollama (6 models)", "rustdesk (LIVE)", "forgejo (:3000)", "gate (:8443)", "tor"],
+      "ssh": "eastgate:eastgate",
+      "face": "FIXED — GDM AutomaticLogin=eastgate, RustDesk H265 streaming"
+    },
+    "southGate": {
+      "ip": "192.168.4.148",
+      "mac": "1c:86:0b:37:65:1e",
+      "status": "ALIVE — FORGE 3",
+      "hw": "AMD Ryzen 7 5800X3D 8C, RTX 4060 8GB, 125GB RAM, 907GB NVMe, ROG STRIX B550-F",
+      "services": ["ollama (6 models: deepseek-coder-v2:16b, gemma2:2b, llama3.2:3b, phi3, qwen2.5:7b, tinyllama)", "rustdesk (ACTIVE)"],
+      "ssh": "southgate:southgate",
+      "note": "NOT an iPhone anymore — full gaming rig! 23 days uptime. Solo 2 Security Key on USB."
+    },
+    "ironGate": {
+      "ip": "192.168.4.237",
+      "mac": "1c:86:0b:37:63:70",
+      "status": "ALIVE — FORGE 2 SUPREME",
+      "hw": "Intel i9-14900K 24C/32T, RTX 5070 12GB GDDR7, 94GB DDR5, 3.6TB NVMe + 14.6GB + 1.8TB + 12.7TB + 2x931GB, ROG STRIX Z790-H, Pop!_OS 22.04 kernel 6.12.10",
+      "services": ["ollama (9 gaia-tissue models!)", "rustdesk (ACTIVE)", "docker", "biomeOS (/usr/local/bin/biomeos)"],
+      "ssh": "irongate:irongate (user) — pubkey-only! Use eastGate hop",
+      "note": "Autonomous tissue models already running! /mnt/nestgate = 12.7TB. virbr0 + docker0 present."
+    },
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "mac": "84:47:09:38:97:55",
+      "status": "ALIVE — FORGE / DNS",
+      "ssh": "via eastGate key hop (no password needed)",
+      "note": "heart-pull active every 2 min"
+    }
+  },
+
+  "gates_seen_no_ssh": {
+    "steamFRAME": {
+      "ip": "192.168.4.181",
+      "mac": "90:82:c3:74:12:ca",
+      "dhcp_name": "steamFRAME",
+      "status": "ALIVE — FACE (WiFi)",
+      "wifi": "GAIA 5GHz (rax1), 2401 Mbps HE160, -27 dBm (STRONG!)",
+      "ssh": "port 22 responds but SSH banner fails — SteamOS SSH may need password set",
+      "note": "THIS IS frameGate! Snapdragon 8 Gen 3 ARM64 SteamOS. Connected via WiFi to LAN 1 (br-guest disabled, GAIA bridges to br-lan)"
+    },
+    "deckGate": {
+      "ip": "192.168.4.203",
+      "mac": "14:13:33:d6:96:09",
+      "dhcp_name": "steamdeck",
+      "status": "ALIVE — DISPLAY",
+      "ssh": "port 22 CONNECTION REFUSED — SSH not enabled",
+      "note": "Steam Deck v1, dead battery = permanent USB-C. Need to enable SSH via console"
+    },
+    "chromecast": {
+      "ip": "192.168.4.212",
+      "mac": "10:c7:53:73:51:12",
+      "status": "ALIVE — Google Cast device",
+      "ports": "8008 (Cast), 8009 (Cast), 8443 (Cast HTTPS)",
+      "note": "NOT a gate — Chromecast/Google TV"
+    }
+  },
+
+  "gates_missing": {
+    "swiftGate": {
+      "ip": "UNKNOWN",
+      "status": "NOT ON NETWORK",
+      "note": "Was ASLEEP at 641 Samantha (House 2). NZXT H1 V2, RTX 3070. Kevin says Pixel USB-C tethered to it. USB tether gives internet but NOT LAN presence. swiftGate WiFi not associated with any SSID. Needs: either WiFi config to connect to GAIA/Black Mesa, or wired connection through JetStream.",
+      "action_needed": "Kevin must either: (1) connect swiftGate to GAIA WiFi from its console, or (2) plug ethernet from JetStream switch"
+    },
+    "graftGate": {
+      "ip": "192.168.4.107 (last known)",
+      "status": "NOT IN DHCP — may be off",
+      "note": "Mac Mini M4. Kevin said he'd walk Pixel there. Not currently visible."
+    },
+    "grapheneGate": {
+      "ip": "192.168.4.159 (stale ARP)",
+      "status": "Pixel disconnected from WiFi",
+      "note": "Kevin may be walking between houses. Last WiFi ADB at .159. MAC a6:bb:db:bc:81:a2 still in router ARP but stale."
+    }
+  },
+
+  "router": {
+    "ip": "192.168.4.1",
+    "wan_ip": "162.226.225.148/23",
+    "wifi_ssids": {
+      "Aperture Science": {"band": "2.4GHz", "bridge": "br-lan", "clients": 1},
+      "Black Mesa": {"band": "5GHz HE160", "bridge": "br-lan", "clients": 0},
+      "GAIA 2.4": {"band": "2.4GHz", "bridge": "br-lan (NOT br-guest!)", "clients": 0},
+      "GAIA 5G": {"band": "5GHz HE160", "bridge": "br-lan (NOT br-guest!)", "clients": 1}
+    },
+    "br_guest": "DISABLED — all WiFi on br-lan (192.168.4.x)",
+    "total_arp": 55,
+    "total_dhcp": 11
+  },
+
+  "gpu_inventory": {
+    "total": "6 GPUs ACTIVE + 1 ASLEEP",
+    "list": [
+      "northGate: RTX 5090 (HEART)",
+      "ironGate: RTX 5070 12GB (FORGE 2)",
+      "eastGate: RTX 4070 12GB (BRAIN)",
+      "southGate: RTX 4060 8GB (FORGE 3)",
+      "steamFRAME: Adreno 750 / Snapdragon 8 Gen 3 (FACE)",
+      "deckGate: RDNA 2 1.6 TFLOPS (DISPLAY)",
+      "swiftGate: RTX 3070 8GB (ASLEEP)"
+    ]
+  },
+
+  "ollama_inventory": {
+    "eastGate": "tinyllama, gemma2:2b, llama3.2:1b, phi3, qwen2.5:7b, deepseek-coder-v2:16b, mistral:7b, llama3.2:3b",
+    "southGate": "deepseek-coder-v2:16b, gemma2:2b, llama3.2:3b, phi3, qwen2.5:7b, tinyllama:1.1b",
+    "ironGate": "9x gaia-tissue models (forge, oracle, math, code, cortex, heart, dream, gut, reason)",
+    "northGate": "63 models (HEART — all models)",
+    "graftGate": "qwen2.5:3b (when alive)"
+  }
+}
