@@ -1,0 +1,27 @@
+{
+  "reboot_budget": 3,
+  "reboots": [
+    {
+      "id": 1,
+      "method": "modGRUBShell",
+      "commands": [
+        "setup_var_cv AMD_PBS_SETUP 0x49 0x06",
+        "setup_var_cv AMD_PBS_SETUP 0x48 0x01",
+        "reboot"
+      ]
+    },
+    {
+      "id": 2,
+      "method": "Smokeless_UMAF",
+      "steps": "FAT32 USB boot > AMD CBS > UMA"
+    },
+    {
+      "id": 3,
+      "method": "manual_bios",
+      "steps": "DEL > CSM OFF > NB Config > iGPU Force > UMA 512M"
+    }
+  ],
+  "verify": "python scripts/post-reboot-verify.py",
+  "csm_current": 1,
+  "uma_current": "0xFFFFFFFF"
+}
