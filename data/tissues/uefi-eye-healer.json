@@ -1,0 +1,174 @@
+{
+  "tissue": "uefi-eye-healer",
+  "version": "1.0.0",
+  "created": "2026-11-15T13:13:00-05:00",
+  "type": "self-heal",
+  "description": "Diagnose and heal iGPU display output (left eye) on AMD gates. Detects CSM lock, UMA allocation, and iGPU enable state. Prescribes fix via UEFI variable write at boot time.",
+
+  "applies_to": {
+    "arch": "x86_64",
+    "cpu_vendor": "AMD",
+    "has_igpu": true,
+    "bios_vendor": "AMI",
+    "notes": "Tested on ASUS ROG STRIX X870E-E + Ryzen 9 9950X3D. Pattern applies to any AMD AM5 board with AMI BIOS."
+  },
+
+  "diagnosis": {
+    "steps": [
+      {
+        "id": "check_csm",
+        "method": "wmi",
+        "query": "GetOptionData('CsmSupport')",
+        "expect": 0,
+        "fail_value": 1,
+        "severity": "critical",
+        "explanation": "CSM enabled → ASUS firmware hides NB Configuration menu AND disables iGPU display engine. This is the root cause on most ASUS X870E boards."
+      },
+      {
+        "id": "check_uma",
+        "method": "uefi_var",
+        "variable": "AMD_PBS_SETUP",
+        "guid": "{A339D746-F678-49B3-9FC7-54CE0F9DF226}",
+        "offset": "0x49",
+        "expect_not": "0xFF",
+        "target": "0x06",
+        "encoding": "uint32_le",
+        "explanation": "UMA Frame Buffer Size. 0xFFFFFFFF = Auto (no allocation). 0x06 = 512MB. Values: 0x01=64M, 0x02=128M, 0x03=256M, 0x04=384M, 0x05=512M or 0x06=512M (board-dependent), up to 0x0E=16G."
+      },
+      {
+        "id": "check_igpu_enable",
+        "method": "uefi_var",
+        "variable": "AMD_PBS_SETUP",
+        "guid": "{A339D746-F678-49B3-9FC7-54CE0F9DF226}",
+        "offset": "0x48",
+        "expect": "0x01",
+        "values": {"0x00": "Disabled/Auto", "0x01": "Force", "0x02": "Auto"},
+        "explanation": "Integrated Graphics enable. Must be Force (0x01) when dGPU is present and you want both."
+      },
+      {
+        "id": "check_primary_video",
+        "method": "uefi_var",
+        "variable": "AMD_PBS_SETUP",
+        "guid": "{A339D746-F678-49B3-9FC7-54CE0F9DF226}",
+        "offset": "0x4E",
+        "expect": "0x02",
+        "values": {"0x01": "IGFX", "0x02": "PCIE"},
+        "explanation": "Primary Video Device. Keep as PCIE (0x02) so dGPU stays primary."
+      },
+      {
+        "id": "check_display_driver",
+        "method": "pnp",
+        "query": "Get-PnpDevice -Class Monitor | Where FriendlyName -like '*LG*'",
+        "check_parent": "ROOT\\BasicDisplay vs PCI\\VEN_1002",
+        "explanation": "If LG monitor parent is BasicDisplay, iGPU has no driver. If parent is VEN_1002, amdgpu is loaded."
+      },
+      {
+        "id": "check_pci_igpu",
+        "method": "pnp",
+        "query": "Get-PnpDevice | Where InstanceId -like '*VEN_1002*DEV_1640*'",
+        "explanation": "iGPU audio at 1002:1640 proves silicon exists. If display function (1002:164E or similar) is missing, display engine not initialized."
+      }
+    ]
+  },
+
+  "prescription": {
+    "runtime_attempts": [
+      {
+        "id": "wmi_csm_disable",
+        "method": "wmi",
+        "query": "SetOptionData('CsmSupport', 0)",
+        "expected_error": 26,
+        "notes": "ASUS WMI locks most settings. Will likely fail with Error 26."
+      },
+      {
+        "id": "uefi_var_write",
+        "method": "SetFirmwareEnvironmentVariableExW",
+        "expected_error": 5,
+        "notes": "ASUS applies UEFI Variable Lock during DXE. Runtime writes blocked."
+      }
+    ],
+    "boot_time_fixes": [
+      {
+        "id": "modgrubshell",
+        "tool": "modGRUBShell.efi",
+        "source": "https://github.com/datasone/grub-mod-setup_var/releases/download/1.1/modGRUBShell.efi",
+        "efi_path": "\\EFI\\tools\\modGRUBShell.efi",
+        "commands": [
+          "setup_var_cv AMD_PBS_SETUP 0x48 0x01",
+          "setup_var_cv AMD_PBS_SETUP 0x49 0x06",
+          "reboot"
+        ],
+        "notes": "Writes UEFI vars before OS loads. ASUS lock not yet applied at GRUB time."
+      },
+      {
+        "id": "smokeless_umaf",
+        "tool": "Smokeless_UMAF",
+        "source": "https://github.com/DavidS95/Smokeless_UMAF/",
+        "method": "FAT32 USB boot",
+        "path": "Device Manager > AMD CBS > NBIO Common Options > GFX Configuration",
+        "settings": {
+          "iGPU Configuration": "UMA Specified",
+          "UMA Frame Buffer Size": "512M",
+          "Integrated Graphics Controller": "Forces"
+        }
+      },
+      {
+        "id": "cmos_clear",
+        "method": "hardware",
+        "steps": [
+          "Power off",
+          "Short CMOS clear jumper (or remove battery 30s)",
+          "Boot to BIOS (DEL key)",
+          "Advanced > Boot > CSM > Disabled",
+          "Advanced > NB Configuration > Integrated Graphics > Force",
+          "Advanced > NB Configuration > UMA Frame Buffer Size > 512M",
+          "Save & Exit"
+        ]
+      },
+      {
+        "id": "rust_uefi_app",
+        "tool": "gaia-eye-healer.efi",
+        "build": "viva-uefi or uefi-rs crate, no_std, target x86_64-unknown-uefi",
+        "source_template": "scripts/build-eye-healer-efi.rs",
+        "notes": "Sovereign Rust EFI app. Reads AMD_PBS_SETUP, patches bytes, writes back. Self-contained."
+      }
+    ],
+    "linux_runtime": {
+      "kernel_min": "7.0",
+      "sysfs_path": "/sys/class/drm/card*/device/uma/carveout",
+      "check": "cat /sys/class/drm/card*/device/uma/carveout_options",
+      "set": "echo 5 | sudo tee /sys/class/drm/card*/device/uma/carveout",
+      "notes": "Only works if amdgpu driver loads (chicken-and-egg: needs UMA allocated first). Works for CHANGING size after initial allocation."
+    }
+  },
+
+  "verification": {
+    "post_fix_checks": [
+      "UmaFrameBufferSize WMI value != 4294967295",
+      "AMD_PBS_SETUP[0x49] != 0xFF",
+      "Get-PnpDevice -Class Display shows AMD Radeon iGPU",
+      "LG monitor parent is PCI\\VEN_1002 (not BasicDisplay)",
+      "Second display appears in Display Settings"
+    ]
+  },
+
+  "knowledge": {
+    "root_cause": "CSM (Compatibility Support Module) enabled → ASUS firmware disables iGPU display engine and hides NB Configuration BIOS menu. UMA Frame Buffer Size defaults to 0xFFFFFFFF (Auto = no allocation).",
+    "why_csm_kills_igpu": "CSM enables legacy BIOS compatibility. Legacy BIOS doesn't support multi-GPU or iGPU+dGPU. ASUS firmware logic: if CSM=ON, assume single-GPU legacy boot → disable iGPU entirely.",
+    "why_runtime_locked": "ASUS applies EDKII VARIABLE_LOCK_PROTOCOL during DXE phase. All AMD_PBS_SETUP, Setup, and related vars locked before ExitBootServices. Only writable from UEFI Shell/app before OS loads.",
+    "silicon_proof": "iGPU audio (1002:1640) at PCI bus 123 proves Zen 5 IOD has RDNA 2 CUs. Display engine exists but firmware never enabled it. EDID from LG detected via I2C/DDC through mobo HDMI even without display engine active.",
+    "community_sources": [
+      "https://rog-forum.asus.com/t5/amd-800-series/proart-x870e-bios-1001-1003-integrated-graphics-menu-entry/td-p/1072999",
+      "https://github.com/DavidS95/Smokeless_UMAF/",
+      "https://www.reddit.com/r/AMDLaptops/comments/1ss6wtj/",
+      "https://community.frame.work/t/bios-feature-request-add-ability-to-specify-uma-size-on-amd-apus/41930/15",
+      "https://github.com/Kyworn/gnr-smu"
+    ]
+  },
+
+  "pattern_reuse": {
+    "gates": ["northGate", "ironGate", "sporeGate", "any AMD AM5 gate"],
+    "generalization": "Any AMD gate with AMI BIOS + iGPU + dGPU may hit this. The tissue pattern: diagnose → check CSM → check UMA → prescribe boot-time fix → verify.",
+    "future": "Once biomeOS has UEFI-layer access (via sourDough EFI app), this becomes fully autonomous self-healing."
+  }
+}
