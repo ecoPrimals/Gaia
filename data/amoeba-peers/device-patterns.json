@@ -1,0 +1,218 @@
+{
+  "name": "Amoeba Device Patterns — Reusable Templates for Network Devices",
+  "version": "1.0.0",
+  "updated": "2026-11-14T21:10:00Z",
+  "description": "Patterns for injecting amoeba (RustDesk + monitoring + mesh) into network devices. Each pattern defines how to discover, monitor, and manage a class of device.",
+
+  "patterns": {
+    "glinet_router": {
+      "name": "GL.iNet Router (OpenWrt)",
+      "applies_to": ["GL-MT6000 (Flint 2)", "GL-MT3000 (Flint)", "GL-AXT1800 (Slate AX)"],
+      "discovery": {
+        "method": "HTTP + mDNS + ARP",
+        "http_fingerprint": "gl-ui in page title, /js/app.*.js script",
+        "default_admin": "http://{ip}/ or http://{ip}:83/",
+        "ssh": "root@{ip} (OpenWrt dropbear or OpenSSH)",
+        "mac_oui": "94:83:c4 (GL.iNet Technologies)"
+      },
+      "amoeba_injection": {
+        "ssh_install": [
+          "1. SSH into router: ssh root@{ip}",
+          "2. Install monitoring script: scp amoeba-heartbeat.sh root@{ip}:/tmp/",
+          "3. Add cron: echo '*/5 * * * * /tmp/amoeba-heartbeat.sh' >> /etc/crontabs/root",
+          "4. Restart cron: /etc/init.d/cron restart"
+        ],
+        "heartbeat_script": "#!/bin/sh\n# amoeba-heartbeat.sh — GL.iNet router heartbeat\nDATA=$(cat <<EOF\n{\"type\":\"router\",\"ip\":\"$(ip -4 addr show br-lan|grep inet|awk '{print $2}')\",\n\"uptime\":\"$(cat /proc/uptime|awk '{print $1}')\",\n\"load\":\"$(cat /proc/loadavg|awk '{print $1,$2,$3}')\",\n\"mem_free\":$(free|grep Mem|awk '{print $4}'),\n\"clients\":$(ip neigh|grep -c REACHABLE),\n\"wifi_clients\":$(for i in ra0 ra1 rax0 rax1;do iwinfo $i assoclist 2>/dev/null;done|grep -c dBm),\n\"timestamp\":\"$(date -u +%FT%TZ)\"}\nEOF\n)\ncurl -s -X POST http://192.168.4.244:8080/api/heartbeat -d \"$DATA\" -H 'Content-Type: application/json' 2>/dev/null || true",
+        "monitoring": {
+          "metrics": ["uptime", "load_avg", "memory", "wifi_clients", "arp_table", "interface_stats"],
+          "interval": "5min",
+          "push_to": "http://192.168.4.244:8080/api/heartbeat"
+        },
+        "rustdesk": {
+          "feasible": false,
+          "reason": "RustDesk requires X11/Wayland display — routers are headless. Use SSH + heartbeat instead.",
+          "alternative": "SSH tunnel + web admin relay via amoeba proxy"
+        }
+      },
+      "known_instances": {
+        "gl_mt6000_router": {
+          "ip": "192.168.4.1",
+          "secondary_ip": "192.168.4.250",
+          "mac": "94:83:c4:e0:62:b0",
+          "role": "Main router — ONE router for both houses",
+          "ssh": "root@192.168.4.1 (ExoticPanda714!!)",
+          "status": "ALIVE — already managed"
+        },
+        "flint_house2": {
+          "ip": "UNKNOWN",
+          "role": "House 2 WiFi AP/bridge",
+          "wifi_bssid_5g": "ce:ef:ef:30:b5:f3",
+          "ssids": ["GAIA (5GHz)", "ApertureScience (5GHz)", "GAIA (2.4GHz)"],
+          "status": "ALIVE — management IP needed"
+        }
+      }
+    },
+
+    "tplink_omada_switch": {
+      "name": "TP-Link Omada Managed Switch",
+      "applies_to": ["T1500", "T2500", "T2600G", "TL-SG series"],
+      "discovery": {
+        "method": "HTTP + Omada Discovery (UDP 29810)",
+        "http_fingerprint": "TP-Link web UI, 'Loading...' title, jQuery-based",
+        "omada_discovery_port": 29810,
+        "ssh": "NOT available (web management only)",
+        "mac_oui": "ec:75:0c (TP-Link)"
+      },
+      "amoeba_injection": {
+        "method": "HTTP monitoring — no SSH available on managed switches",
+        "monitoring_script": "#!/bin/bash\n# amoeba-switch-monitor.sh — monitor TP-Link switch via HTTP\nSWITCH_IP=$1\nHTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://$SWITCH_IP/)\nif [ \"$HTTP_CODE\" = \"200\" ]; then\n  echo '{\"type\":\"switch\",\"ip\":\"'$SWITCH_IP'\",\"http_status\":'$HTTP_CODE',\"alive\":true,\"timestamp\":\"'$(date -u +%FT%TZ)'\"}'\nelse\n  echo '{\"type\":\"switch\",\"ip\":\"'$SWITCH_IP'\",\"http_status\":'$HTTP_CODE',\"alive\":false,\"timestamp\":\"'$(date -u +%FT%TZ)'\"}'\nfi",
+        "snmp": {
+          "feasible": "POSSIBLE — TP-Link switches often support SNMP v1/v2c",
+          "community": "public (default), check switch config",
+          "oids": ["sysDescr", "ifTable", "ifInOctets", "ifOutOctets", "dot1dTpFdbTable"]
+        },
+        "rustdesk": {
+          "feasible": false,
+          "reason": "Embedded firmware — no user-installable software"
+        }
+      },
+      "known_instances": {
+        "jetstream_house2": {
+          "ip": "192.168.4.111",
+          "mac": "ec:75:0c:4c:98:08",
+          "role": "10G fiber bridge — House 2 wired backbone",
+          "web_admin": "http://192.168.4.111/",
+          "password": "UNKNOWN",
+          "omada_discovery": true,
+          "latency_ms": 0.88,
+          "status": "ALIVE"
+        }
+      }
+    },
+
+    "tplink_omada_ap": {
+      "name": "TP-Link Omada Access Point",
+      "applies_to": ["EAP series", "Omada APs"],
+      "discovery": {
+        "method": "Omada Discovery (UDP 29810) + ARP",
+        "omada_discovery_port": 29810,
+        "http_fingerprint": "Omada AP web UI (if standalone mode)",
+        "mac_oui": "b4:2e:99 (TP-Link probable)",
+        "note": "When managed by Omada Controller, AP adopts controller config. When standalone, uses built-in web UI."
+      },
+      "amoeba_injection": {
+        "method": "HTTP monitoring + Omada discovery polling",
+        "standalone_management": {
+          "web_admin": "http://{ip}/ (if in standalone mode)",
+          "ssh": "Some Omada APs support SSH in standalone mode"
+        },
+        "controller_management": {
+          "note": "Omada Controller was killed on sporeGate (reclaimed 3.2GB RAM). AP runs standalone.",
+          "discovery_poll": "UDP broadcast to port 29810 returns AP info"
+        },
+        "rustdesk": {
+          "feasible": false,
+          "reason": "Embedded ARM firmware — headless, no display"
+        }
+      },
+      "known_instances": {
+        "omada_ap_house2": {
+          "ip": "192.168.4.198",
+          "mac": "b4:2e:99:a7:91:a5",
+          "role": "House 2 WiFi access point",
+          "omada_discovery": true,
+          "broadcasts": ["ApertureScience (5GHz)", "ApertureScience (2.4GHz)"],
+          "bssids": {
+            "5g": "b6:c3:31:c9:88:ec",
+            "2g": "ae:44:09:b0:32:69"
+          },
+          "status": "ALIVE (responds to Omada discovery, ICMP down)"
+        }
+      }
+    },
+
+    "windows_gate": {
+      "name": "Windows Gate (PC)",
+      "applies_to": ["blueGate", "northGate", "swiftGate (when awake)"],
+      "discovery": {
+        "method": "DHCP hostname + SSH + service ports",
+        "ssh_fingerprint": "OpenSSH_for_Windows",
+        "common_ports": [22, 3141, 3389, 445, 139, 11434, 21118]
+      },
+      "amoeba_injection": {
+        "rustdesk": {
+          "feasible": true,
+          "config_path": "%APPDATA%\\RustDesk\\config\\RustDesk2.toml",
+          "service_config_path": "C:\\Windows\\ServiceProfiles\\LocalService\\AppData\\Roaming\\RustDesk\\config\\RustDesk2.toml",
+          "config_template": "[options]\nkey = '6oVQBFyHHNAJqm1OlS+XvpdoJ5plYrPzJoPTTYlgQdg='\ncustom-rendezvous-server = '192.168.4.244'\nrelay-server = '192.168.4.244'\nlocal-ip-addr = '{local_ip}'\ndirect-server = 'Y'\ndirect-access-port = '21118'\nenable-lan-discovery = 'Y'\nverification-method = 'use-permanent-password'\napprove-mode = 'password'\nallow-remote-config-modification = 'Y'\nallow-auto-disconnect = 'N'"
+        },
+        "ollama": {
+          "feasible": true,
+          "endpoint": "http://{ip}:11434",
+          "note": "Install ollama for Windows, enable LAN listening"
+        },
+        "gaia_ide": {
+          "port": 3141,
+          "note": "blueGate serves Gaia IDE with 12 tissue models at :3141"
+        }
+      },
+      "known_instances": {
+        "bluegate": {
+          "ip_wifi": "192.168.4.100",
+          "ip_wired": "192.168.4.210 (probable)",
+          "hostname": "DESKTOP-BLOV2LR",
+          "mac_wifi": "68:54:5a:d0:69:a2",
+          "mac_wired": "c8:7f:54:5a:59:10",
+          "services": {
+            "gaia_ide_3141": "ALIVE — 12 tissue models, 87ms inference",
+            "ssh_22": "ALIVE on .210 only (Too many auth failures)"
+          },
+          "os": "Windows",
+          "location": "House 2",
+          "status": "ALIVE"
+        },
+        "northgate": {
+          "ip": "192.168.4.147",
+          "hostname": "northGate",
+          "os": "Windows 11",
+          "gpu": "RTX 5090",
+          "services": {"ollama_11434": "63 models", "rustdesk": "ALIVE"},
+          "status": "ALIVE"
+        },
+        "swiftgate": {
+          "ip": "UNKNOWN — not on network yet",
+          "type": "NZXT H1 V2 Mini-ITX",
+          "gpu": "RTX 3070 (8GB VRAM)",
+          "connection": "WiFi-only",
+          "location": "House 2",
+          "status": "BOOTING — Kevin powering on"
+        }
+      }
+    }
+  },
+
+  "amoeba_monitor_daemon": {
+    "name": "amoeba-device-pulse.sh",
+    "description": "Runs on eastGate, monitors all network devices every 5 minutes",
+    "checks": [
+      "ICMP ping (alive/dead)",
+      "TCP port probe (services up/down)",
+      "HTTP status (web admin accessible)",
+      "Omada discovery (AP/switch alive)",
+      "Latency measurement"
+    ],
+    "output": "/opt/Gaia/data/amoeba-peers/device-pulse.json"
+  },
+
+  "trefoil_knots": {
+    "house2_knot": {
+      "name": "House 2 Trefoil",
+      "paths": [
+        "eastGate → fiber(10G) → JetStream → Omada AP(.198) WiFi → Pixel(.249)",
+        "eastGate → wireless ADB(:5555) → Pixel(.249) → USB → swiftGate",
+        "eastGate → fiber → JetStream → blueGate(.100) ← WiFi ← Flint AP"
+      ],
+      "status": "2 of 3 paths closed, waiting for swiftGate"
+    }
+  }
+}

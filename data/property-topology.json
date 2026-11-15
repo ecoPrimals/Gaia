@@ -1,0 +1,140 @@
+{
+  "name": "Property Topology — Three-Point Organism",
+  "wave": 237,
+  "updated": "2026-11-14T21:18:00Z",
+  "aerial_image": "property-aerial.png",
+
+  "geography": {
+    "property_boundary": "Two adjacent lots on corner of Southgate Ave + Samantha Ave, Flint MI",
+    "points": {
+      "red": {
+        "label": "House 1 — 4422 Southgate Ave (Brain Side)",
+        "position": "center of property",
+        "color": "red",
+        "role": "CNS — Brain + Heart + Forge",
+        "network": "LAN 1 backbone (MikroTik wired)",
+        "gates": ["eastGate (Brain)", "northGate (Heart)", "sporeGate (Forge)", "ironGate (Forge 2)", "graftGate", "southGate"],
+        "wifi": ["Aperture Science (2.4GHz)", "Black Mesa (5GHz)", "GAIA (2.4/5GHz)"]
+      },
+      "blue": {
+        "label": "House 2 — 641 Samantha Ave (South Pole)",
+        "position": "left/west of property",
+        "color": "blue",
+        "role": "PNS — Mirror of House 1",
+        "network": "10G fiber from House 1 via JetStream",
+        "gates": ["blueGate (Brain 2)", "swiftGate (Heart 2, mobile)", "frameGate (Face, sleeping)"],
+        "wifi": ["Flint (GAIA 5GHz bridge)", "Omada AP (ApertureScience + GAIA)"],
+        "devices": ["JetStream (.111)", "Omada AP (.198)", "Flint (bridge)"]
+      },
+      "green": {
+        "label": "Garage — Floating Third Point",
+        "position": "north/upper area of property",
+        "color": "green",
+        "role": "EDGE — DDR3 NUCs + eero mesh, floating compute outpost",
+        "network": "WiFi bridge via eero → catches Flint/House WiFi",
+        "devices_planned": ["DDR3 NUC ×2", "eero mesh ×1-2"],
+        "connection": "eero WiFi bridge to Flint GAIA or ApertureScience → ethernet to NUCs"
+      }
+    },
+    "backbone": {
+      "house1_to_house2": {
+        "type": "10G fiber",
+        "path": "Across driveway (dotted line in aerial)",
+        "latency_ms": 0.82,
+        "devices": "MikroTik (.2) → JetStream (.111)"
+      },
+      "house_to_garage": {
+        "type": "WiFi bridge (eero mesh)",
+        "path": "Wireless — eero catches Flint/House WiFi signals",
+        "latency_ms": "~5-20ms (WiFi hop)",
+        "devices": "eero (WiFi client) → RJ45 → DDR3 NUCs"
+      }
+    }
+  },
+
+  "three_point_architecture": {
+    "diagram": "Triangle: House 1 (red) ←10G fiber→ House 2 (blue) ←WiFi→ Garage (green) ←WiFi→ House 1",
+    
+    "point_1_red": {
+      "name": "House 1 — Brain Side",
+      "role": "Central nervous system",
+      "compute": "eastGate (RTX 4070) + northGate (RTX 5090) + ironGate (RTX 5070) + sporeGate + graftGate",
+      "services": "All 17 primals, Gaia Gate :8443, data :8080, Ollama, Tor, Forgejo",
+      "connectivity": "Wired LAN (MikroTik backbone) + WiFi radios + 10G fiber to House 2"
+    },
+    
+    "point_2_blue": {
+      "name": "House 2 — South Pole",
+      "role": "Peripheral nervous system mirror",
+      "compute": "blueGate (Gaia IDE, 12 tissue models) + swiftGate (RTX 3070, mobile)",
+      "services": "Gaia IDE :3141, tissue inference, mobile demo capability",
+      "connectivity": "10G fiber from House 1 + Flint WiFi + Omada AP"
+    },
+    
+    "point_3_green": {
+      "name": "Garage — Edge Outpost",
+      "role": "Floating edge node — can relocate",
+      "compute": "DDR3 NUC ×2 (membrane + ollama-lite + RustDesk)",
+      "services": "Lightweight forge mirrors, WiFi extension, edge sensing",
+      "connectivity": "eero WiFi bridge to existing WiFi signals"
+    }
+  },
+
+  "eero_wifi_bridge": {
+    "concept": "Eero catches existing WiFi from House 1/2 and provides wired ethernet for garage NUCs",
+    "hardware": {
+      "eero_unit": {
+        "ports": "2× RJ45 (WAN + LAN, or both LAN in bridge mode)",
+        "wifi": "802.11ac/ax dual-band mesh",
+        "role": "WiFi client → connects to Flint/House WiFi, provides ethernet"
+      },
+      "nuc_1": {
+        "port": "Connects to eero RJ45 port 1",
+        "role": "Forge mirror — membrane cascade, heartbeat, ollama-lite"
+      },
+      "nuc_2": {
+        "port": "Connects to eero RJ45 port 2",
+        "role": "Forge mirror — membrane cascade, heartbeat, ollama-lite"
+      }
+    },
+    "topology": {
+      "step_1": "Eero connects to Flint's GAIA WiFi (or ApertureScience) as a WiFi client",
+      "step_2": "Eero bridges WiFi → ethernet on its 2× RJ45 ports",
+      "step_3": "NUC-1 and NUC-2 plug into the 2 RJ45 ports",
+      "step_4": "NUCs get 192.168.4.x addresses from main router DHCP",
+      "step_5": "NUCs are now on the same flat LAN as all organism nodes",
+      "step_6": "Optional: second eero extends WiFi further (mesh backhaul)"
+    },
+    "signal_path": {
+      "nuc_to_eastgate": "NUC → RJ45 → eero → WiFi → Flint/AP → JetStream → 10G fiber → MikroTik → eastGate",
+      "estimated_latency": "5-30ms depending on WiFi conditions",
+      "bandwidth": "~100-300Mbps (WiFi ac/ax theoretical, real-world varies)"
+    },
+    "power": {
+      "eero": "USB-C, ~5-10W",
+      "nuc_each": "~15W TDP",
+      "total": "~35-40W for entire garage outpost",
+      "note": "All can run from a single power strip in the garage"
+    }
+  },
+
+  "wifi_coverage_map": {
+    "house1_radios": {
+      "aperture_science_2g": {"bssid": "BE:A2:C1:E8:DF:01", "freq": "2.4GHz", "power": "20dBm", "reach": "House 1 + overlap zone"},
+      "gaia_2g": {"bssid": "82:C9:70:CF:F6:7C", "freq": "2.4GHz", "power": "20dBm", "reach": "House 1 + overlap zone"},
+      "black_mesa_5g": {"bssid": "22:2F:9F:44:79:13", "freq": "5GHz", "power": "unknown", "reach": "House 1 interior"},
+      "gaia_5g": {"bssid": "unknown", "freq": "5GHz", "power": "unknown", "reach": "House 1 interior"}
+    },
+    "house2_radios": {
+      "flint_gaia_5g": {"bssid": "ce:ef:ef:30:b5:f3", "freq": "5280MHz", "reach": "House 2 + toward garage"},
+      "omada_aperture_5g": {"bssid": "b6:c3:31:c9:88:ec", "freq": "5180MHz", "reach": "House 2 + toward garage"},
+      "omada_aperture_2g": {"bssid": "ae:44:09:b0:32:69", "freq": "2427MHz", "reach": "House 2 + wider area"}
+    },
+    "garage_coverage": {
+      "from_house1": "2.4GHz likely reaches (longer range), 5GHz maybe marginal",
+      "from_house2": "Closer to garage — Flint/Omada 5GHz may reach, 2.4GHz definitely",
+      "eero_catches": "Best signal wins — eero auto-selects strongest AP",
+      "note": "Garage is between/near both houses — good WiFi overlap zone"
+    }
+  }
+}

@@ -179,12 +179,31 @@ def _sense_eyes():
     return {"sense": "vision", "lenses": 0, "status": "no vision data"}
 
 def _sense_ears():
-    """Inner ear (Flint router connections) + outer ear (Pixel listener)."""
-    inner = _read_json_safe(os.path.join(os.path.expanduser("~"), ".local", "share", "gaia", "data", "inner-eye.json"))
-    outer = _read_json_safe(os.path.join(_REPO, "data", "listener-signal.json"))
+    """Real ear: sporeGate Brio 100 mic + inner ear (conntrack) + outer ear (Pixel)."""
     ear = {"sense": "hearing"}
+    # PRIMARY EAR — sporeGate Brio 100 USB mic (the REAL cochlea)
+    brio = _read_json_safe(os.path.join(_REPO, "data", "ear", "ear-state.json"))
+    if brio:
+        mic = brio.get("mic", {})
+        ear["cochlea"] = {
+            "device": "sporeGate:brio100",
+            "rms": mic.get("rms", 0),
+            "peak": mic.get("peak", 0),
+            "db": mic.get("db", -96),
+            "state": mic.get("state", "deaf"),
+            "printer_cycle": brio.get("events", {}).get("printer_cycle", False),
+            "loud_bursts": brio.get("events", {}).get("loud_bursts", 0),
+            "last_heard": brio.get("ts", ""),
+            "cycle_s": brio.get("cycle_s", 30)
+        }
+    else:
+        ear["cochlea"] = {"device": "sporeGate:brio100", "state": "deaf", "error": "no ear-state.json"}
+    # INNER EAR — Flint router conntrack (network hearing)
+    inner = _read_json_safe(os.path.join(os.path.expanduser("~"), ".local", "share", "gaia", "data", "inner-eye.json"))
     if inner:
         ear["inner_ear"] = {"device": "Flint router conntrack", "connections": inner.get("totals", {}).get("connections", 0), "devices": len(inner.get("per_device", []))}
+    # OUTER EAR — Pixel listener (ambient)
+    outer = _read_json_safe(os.path.join(_REPO, "data", "listener-signal.json"))
     if outer:
         ear["outer_ear"] = {"device": "Pixel listener", "state": outer}
     return ear

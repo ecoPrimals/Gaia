@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia GIS — Property Organism Map</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#c9d1d9;font-family:'Courier New',monospace;overflow:hidden}
+#map-container{position:relative;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#aerial{max-width:90vw;max-height:90vh;opacity:0.7;border:1px solid #333}
+.overlay{position:absolute;pointer-events:none}
+
+/* Device markers */
+.marker{position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid #fff;cursor:pointer;pointer-events:all;animation:pulse 2s infinite;z-index:10}
+.marker:hover .tooltip{display:block}
+.marker.alive{box-shadow:0 0 12px 3px currentColor}
+.marker.dead{opacity:0.3;animation:none}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.7}}
+
+/* Colors */
+.marker.brain{background:#f85149;color:#f85149}
+.marker.heart{background:#bc8cff;color:#bc8cff}
+.marker.forge{background:#d29922;color:#d29922}
+.marker.eye{background:#3fb950;color:#3fb950}
+.marker.switch{background:#58a6ff;color:#58a6ff}
+.marker.mobile{background:#f778ba;color:#f778ba}
+.marker.ap{background:#39d353;color:#39d353}
+.marker.display{background:#79c0ff;color:#79c0ff}
+
+/* Tooltips */
+.tooltip{display:none;position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#161b22;border:1px solid #30363d;padding:6px 10px;border-radius:6px;white-space:nowrap;font-size:11px;color:#c9d1d9;z-index:100}
+
+/* Connection lines */
+svg.connections{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.fiber{stroke:#58a6ff;stroke-width:3;stroke-dasharray:8,4;opacity:0.8}
+.wifi{stroke:#3fb950;stroke-width:1.5;stroke-dasharray:3,6;opacity:0.5}
+.wired{stroke:#d29922;stroke-width:2;opacity:0.6}
+
+/* Labels */
+.zone-label{position:absolute;font-size:14px;font-weight:bold;letter-spacing:2px;opacity:0.6;z-index:8}
+.zone-label.house1{color:#f85149}
+.zone-label.house2{color:#58a6ff}
+.zone-label.garage{color:#3fb950}
+
+/* Eye labels */
+.eye-label{position:absolute;font-size:20px;font-weight:bold;opacity:0.4;z-index:7;letter-spacing:4px}
+.eye-label.left{color:#f85149}
+.eye-label.right{color:#58a6ff}
+
+/* HUD overlay */
+#hud{position:fixed;top:10px;right:10px;background:rgba(13,17,23,0.9);border:1px solid #30363d;padding:12px;border-radius:8px;font-size:11px;z-index:200;max-width:280px}
+#hud h3{color:#3fb950;margin-bottom:8px;font-size:13px}
+#hud .stat{display:flex;justify-content:space-between;padding:2px 0}
+#hud .stat .val{color:#58a6ff}
+#hud .stat .label{color:#6e7681}
+
+#legend{position:fixed;bottom:10px;left:10px;background:rgba(13,17,23,0.9);border:1px solid #30363d;padding:10px;border-radius:8px;font-size:10px;z-index:200}
+#legend .item{display:flex;align-items:center;gap:6px;padding:1px 0}
+#legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+#title{position:fixed;top:10px;left:10px;z-index:200}
+#title h1{font-size:16px;color:#3fb950;letter-spacing:3px}
+#title h2{font-size:10px;color:#6e7681;letter-spacing:1px}
+
+/* Latency labels on connections */
+.latency-label{position:absolute;background:rgba(13,17,23,0.8);padding:1px 4px;border-radius:3px;font-size:9px;color:#58a6ff;z-index:9}
+</style>
+</head>
+<body>
+
+<div id="title">
+  <h1>🌍 GAIA GIS — PROPERTY ORGANISM</h1>
+  <h2>4422 Southgate + 641 Samantha • Flint, MI</h2>
+  <div style="margin-top:6px;font-size:10px">
+    <a href="lighthouse.html" style="color:#4af;margin-right:10px">🔦 Lighthouse</a>
+    <a href="eye.html" style="color:#4f4;margin-right:10px">👁️ Eyes</a>
+    <a href="mesh.html" style="color:#fa4;margin-right:10px">🕸️ Mesh</a>
+    <a href="glados.html" style="color:#f44">🤖 GLaDOS</a>
+  </div>
+</div>
+
+<div id="hud">
+  <h3>🔺 THREE-POINT TOPOLOGY</h3>
+  <div class="stat"><span class="label">🔴 House 1 (LAN 1)</span><span class="val" id="h1-status">ALIVE</span></div>
+  <div class="stat"><span class="label">🔵 House 2 (LAN 2)</span><span class="val" id="h2-status">ALIVE</span></div>
+  <div class="stat"><span class="label">🟢 Garage</span><span class="val" id="g-status">PLANNED</span></div>
+  <div class="stat"><span class="label">10G Fiber</span><span class="val">0.82ms</span></div>
+  <div class="stat"><span class="label">WiFi Bridge</span><span class="val">~10ms</span></div>
+  <div class="stat"><span class="label">Pixel → eastGate</span><span class="val" id="pixel-lat">11ms</span></div>
+  <div class="stat"><span class="label">👁️ LEFT EYE</span><span class="val" style="color:#f85149">Flint 1 (LAN 1)</span></div>
+  <div class="stat"><span class="label">👁️ RIGHT EYE</span><span class="val" style="color:#58a6ff">Flint 2 (LAN 2)</span></div>
+  <div class="stat"><span class="label">Total GPUs</span><span class="val">6 active</span></div>
+  <div class="stat"><span class="label">Tissue Models</span><span class="val">12 (blueGate)</span></div>
+</div>
+
+<div id="legend">
+  <div class="item"><span class="dot" style="background:#f85149"></span> Brain (eastGate/blueGate)</div>
+  <div class="item"><span class="dot" style="background:#bc8cff"></span> Heart (northGate/swiftGate)</div>
+  <div class="item"><span class="dot" style="background:#d29922"></span> Forge (sporeGate/ironGate/NUCs)</div>
+  <div class="item"><span class="dot" style="background:#3fb950"></span> Eye (Flint/Router WiFi)</div>
+  <div class="item"><span class="dot" style="background:#58a6ff"></span> Switch (JetStream/MikroTik)</div>
+  <div class="item"><span class="dot" style="background:#f778ba"></span> Mobile (Pixel/swiftGate)</div>
+  <div class="item"><span class="dot" style="background:#39d353"></span> AP (Omada/eero)</div>
+  <div style="margin-top:4px;border-top:1px solid #30363d;padding-top:4px">
+    <div class="item"><span style="color:#58a6ff">━ ━</span> 10G Fiber</div>
+    <div class="item"><span style="color:#3fb950">╌ ╌</span> WiFi</div>
+    <div class="item"><span style="color:#d29922">──</span> Wired</div>
+  </div>
+</div>
+
+<div id="map-container">
+  <img id="aerial" src="property-aerial.png" alt="Property Aerial">
+  
+  <svg class="connections" id="svg-lines"></svg>
+
+  <!-- Zone labels -->
+  <div class="zone-label house1" style="top:38%;left:48%">LAN 1</div>
+  <div class="zone-label house2" style="top:38%;left:18%">LAN 2</div>
+  <div class="zone-label garage" style="top:18%;left:32%">GARAGE</div>
+
+  <!-- Eye labels -->
+  <div class="eye-label left" style="top:55%;left:45%">👁️ L</div>
+  <div class="eye-label right" style="top:55%;left:15%">R 👁️</div>
+
+  <!-- HOUSE 1 devices (red zone — center of image) -->
+  <!-- eastGate - Brain -->
+  <div class="marker brain alive" id="m-eastgate" style="top:42%;left:47%">
+    <div class="tooltip">🧠 eastGate (.244)<br>Brain — RTX 4070, 17 primals<br>LAN 1 • 4422 Southgate</div>
+  </div>
+  
+  <!-- northGate - Heart -->
+  <div class="marker heart alive" id="m-northgate" style="top:38%;left:50%">
+    <div class="tooltip">❤️ northGate (.147)<br>Heart — RTX 5090, 63 models<br>9950X3D • 96GB</div>
+  </div>
+  
+  <!-- sporeGate - Forge -->
+  <div class="marker forge alive" id="m-sporegate" style="top:45%;left:44%">
+    <div class="tooltip">🔨 sporeGate (.3)<br>Forge — Ryzen 5, 27GB, DDR5 NUC<br>14 primals • Pop!_OS</div>
+  </div>
+  
+  <!-- ironGate - Forge 2 -->
+  <div class="marker forge alive" id="m-irongate" style="top:40%;left:52%">
+    <div class="tooltip">🔨 ironGate (.237)<br>Forge 2 — i9-14900K, RTX 5070<br>94GB DDR5</div>
+  </div>
+
+  <!-- graftGate -->
+  <div class="marker forge alive" id="m-graftgate" style="top:46%;left:50%">
+    <div class="tooltip">🍎 graftGate (.107)<br>Mac Mini M4 • 16GB unified</div>
+  </div>
+  
+  <!-- Router / Flint 1 (LEFT EYE) -->
+  <div class="marker eye alive" id="m-router" style="top:50%;left:47%">
+    <div class="tooltip">👁️ FLINT 1 — LEFT EYE<br>GL-MT6000 Router (.1/.250)<br>Aperture Science + GAIA + Black Mesa<br>LAN 1 WiFi radios</div>
+  </div>
+  
+  <!-- MikroTik -->
+  <div class="marker switch alive" id="m-mikrotik" style="top:48%;left:44%">
+    <div class="tooltip">🦴 MikroTik (.2)<br>L2 Switch — House 1 backbone</div>
+  </div>
+  
+  <!-- southGate (iPhone) -->
+  <div class="marker mobile alive" id="m-southgate" style="top:43%;left:53%">
+    <div class="tooltip">📱 southGate (.148)<br>iPhone XS — Home Phone</div>
+  </div>
+
+  <!-- HOUSE 2 devices (blue zone — left of image) -->
+  <!-- blueGate - Brain 2 -->
+  <div class="marker brain alive" id="m-bluegate" style="top:38%;left:20%">
+    <div class="tooltip">🧠 blueGate (.100/.210)<br>Brain 2 — Gaia IDE :3141<br>12 tissue models • Windows<br>LAN 2 • 641 Samantha</div>
+  </div>
+  
+  <!-- swiftGate - Heart 2 (mobile) -->
+  <div class="marker heart dead" id="m-swiftgate" style="top:42%;left:18%">
+    <div class="tooltip">❤️ swiftGate (BOOTING)<br>Heart 2 — NZXT H1 V2, RTX 3070<br>MOBILE demo unit<br>WiFi not configured yet</div>
+  </div>
+  
+  <!-- Flint 2 (RIGHT EYE) -->
+  <div class="marker eye alive" id="m-flint2" style="top:34%;left:22%">
+    <div class="tooltip">👁️ FLINT 2 — RIGHT EYE<br>GL.iNet Flint (bridge mode)<br>GAIA 5GHz: ce:ef:ef:30:b5:f3<br>LAN 2 WiFi relay</div>
+  </div>
+  
+  <!-- JetStream -->
+  <div class="marker switch alive" id="m-jetstream" style="top:36%;left:25%">
+    <div class="tooltip">🦴 JetStream (.111)<br>10G Fiber Bridge<br>0.82ms to House 1</div>
+  </div>
+  
+  <!-- Omada AP -->
+  <div class="marker ap alive" id="m-omada" style="top:40%;left:24%">
+    <div class="tooltip">📡 Omada AP (.198)<br>ApertureScience 5GHz: b6:c3:31<br>ApertureScience 2.4GHz: ae:44:09<br>Standalone (no controller)</div>
+  </div>
+  
+  <!-- frameGate -->
+  <div class="marker display dead" id="m-framegate" style="top:44%;left:16%">
+    <div class="tooltip">🖼️ frameGate (.203)<br>Steam Frame — Snapdragon 8 Gen 3<br>ARM64! • GAIA's face<br>💤 SLEEPING</div>
+  </div>
+
+  <!-- Pixel (mobile — at House 2 currently) -->
+  <div class="marker mobile alive" id="m-pixel" style="top:35%;left:16%">
+    <div class="tooltip">📱 Pixel (.156)<br>grapheneGate — Diamond Lens<br>37 sensors • Mali-G715<br>ADB: 192.168.4.156:5555<br>WiFi: ApertureScience via Omada</div>
+  </div>
+
+  <!-- GARAGE (planned) -->
+  <div class="marker forge dead" id="m-nuc1" style="top:22%;left:30%">
+    <div class="tooltip">🔨 DDR3 NUC-1 (PLANNED)<br>Forge mirror • membrane + ollama<br>📡 via eero WiFi bridge</div>
+  </div>
+  
+  <div class="marker forge dead" id="m-nuc2" style="top:22%;left:34%">
+    <div class="tooltip">🔨 DDR3 NUC-2 (PLANNED)<br>Forge mirror • membrane + ollama<br>📡 via eero WiFi bridge</div>
+  </div>
+  
+  <div class="marker ap alive" id="m-eero1" style="top:45%;left:42%">
+    <div class="tooltip">📡 eero #1 GATEWAY (.115)<br>MAC: c8:e3:06:c6:77:a1 (WAN)<br>10.0.4.1 (LAN) — DHCP server<br>Aperture Science + mesh "12239d3"<br>Plugged into sporeGate enp1s0</div>
+  </div>
+  
+  <div class="marker ap alive" id="m-eero2" style="top:42%;left:38%">
+    <div class="tooltip">📡 eero #2 SATELLITE<br>MAC: 78:76:89:96:e5:8b<br>10.0.4.21 — WiFi mesh ~5ms<br>Aperture Science + mesh "12239d3"</div>
+  </div>
+  
+  <div class="marker ap dead" id="m-eero3" style="top:22%;left:32%">
+    <div class="tooltip">📡 eero #3 (10.0.4.20)<br>48:35:2b eero Labs<br>On eero subnet • role TBD<br>GARAGE deployment target</div>
+  </div>
+
+  <!-- eero subnet label -->
+  <div class="latency-label" style="top:47%;left:38%;color:#39d353">eero 10.0.4.0/22</div>
+  
+  <!-- Latency labels -->
+  <div class="latency-label" style="top:37%;left:33%">◄── 10G fiber 0.82ms ──►</div>
+  <div class="latency-label" style="top:28%;left:24%">WiFi ~10ms</div>
+  
+  <!-- SETI position indicator (Pixel glow ring) -->
+  <div id="seti-ring" style="position:absolute;width:40px;height:40px;border-radius:50%;border:2px solid #f778ba;box-shadow:0 0 20px #f778ba;opacity:0;transition:all 1s ease;z-index:15;pointer-events:none;transform:translate(-50%,-50%)"></div>
+  <div id="seti-label" style="position:absolute;font-size:9px;color:#f778ba;opacity:0;transition:all 1s ease;z-index:16;pointer-events:none;text-align:center">📡 SETI FIX</div>
+</div>
+
+<script>
+const svg = document.getElementById('svg-lines');
+const container = document.getElementById('map-container');
+
+function getCenter(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  const cr = container.getBoundingClientRect();
+  return { x: r.left - cr.left + r.width/2, y: r.top - cr.top + r.height/2 };
+}
+
+function drawLine(id1, id2, cls) {
+  const a = getCenter(id1), b = getCenter(id2);
+  if (!a || !b) return;
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+  line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+  line.setAttribute('class', cls);
+  svg.appendChild(line);
+}
+
+function drawConnections() {
+  svg.innerHTML = '';
+  const w = container.offsetWidth, h = container.offsetHeight;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  
+  // 10G Fiber: MikroTik ↔ JetStream
+  drawLine('m-mikrotik', 'm-jetstream', 'fiber');
+  
+  // House 1 wired
+  drawLine('m-router', 'm-mikrotik', 'wired');
+  drawLine('m-mikrotik', 'm-eastgate', 'wired');
+  drawLine('m-mikrotik', 'm-northgate', 'wired');
+  drawLine('m-mikrotik', 'm-sporegate', 'wired');
+  drawLine('m-mikrotik', 'm-irongate', 'wired');
+  drawLine('m-mikrotik', 'm-graftgate', 'wired');
+  
+  // House 2 wired
+  drawLine('m-jetstream', 'm-bluegate', 'wired');
+  drawLine('m-jetstream', 'm-omada', 'wired');
+  drawLine('m-jetstream', 'm-flint2', 'wired');
+  
+  // WiFi connections
+  drawLine('m-omada', 'm-pixel', 'wifi');
+  drawLine('m-router', 'm-southgate', 'wifi');
+  drawLine('m-flint2', 'm-swiftgate', 'wifi');
+  
+  // eero network
+  drawLine('m-sporegate', 'm-eero1', 'wired');  // sporeGate enp1s0 → eero GW
+  drawLine('m-eero1', 'm-eero2', 'wifi');       // mesh backhaul
+  drawLine('m-eero3', 'm-nuc1', 'wired');       // future: garage
+  drawLine('m-eero3', 'm-nuc2', 'wired');
+}
+
+window.addEventListener('load', drawConnections);
+window.addEventListener('resize', drawConnections);
+
+// Live pulse update
+async function updatePulse() {
+  try {
+    const r = await fetch('device-pulse.json');
+    const d = await r.json();
+    document.getElementById('pixel-lat').textContent = 
+      d.devices?.pixel?.ping_ms ? d.devices.pixel.ping_ms + 'ms' : '~11ms';
+  } catch(e) {}
+}
+setInterval(updatePulse, 30000);
+
+// SETI@home WiFi positioning — move Pixel marker based on signal triangulation
+async function updateSETI() {
+  try {
+    const r = await fetch('seti-position.json?' + Date.now());
+    const d = await r.json();
+    const px = d.pixel;
+    
+    // Move Pixel marker to estimated position
+    const pixelMarker = document.getElementById('m-pixel');
+    if (pixelMarker && px.estimated_x && px.estimated_y) {
+      pixelMarker.style.left = px.estimated_x + '%';
+      pixelMarker.style.top = px.estimated_y + '%';
+      
+      // Update tooltip
+      const tip = pixelMarker.querySelector('.tooltip');
+      if (tip) {
+        tip.innerHTML = `📱 Pixel (.156) — SETI FIX<br>` +
+          `grapheneGate — Diamond Lens<br>` +
+          `📡 ${px.connected_ssid || 'scanning'} @ ${px.connected_rssi}dBm<br>` +
+          `🏠 ${px.house}<br>` +
+          `📍 (${px.estimated_x}, ${px.estimated_y}) ${px.confidence}`;
+      }
+    }
+    
+    // Show SETI ring at estimated position
+    const ring = document.getElementById('seti-ring');
+    const label = document.getElementById('seti-label');
+    if (ring && px.estimated_x && px.estimated_y) {
+      ring.style.left = px.estimated_x + '%';
+      ring.style.top = px.estimated_y + '%';
+      ring.style.opacity = px.confidence === 'high' ? '0.8' : '0.4';
+      ring.style.width = px.confidence === 'high' ? '30px' : '60px';
+      ring.style.height = ring.style.width;
+      
+      label.style.left = px.estimated_x + '%';
+      label.style.top = (px.estimated_y + 4) + '%';
+      label.style.opacity = '0.6';
+      label.textContent = `📡 ${px.house === 'house1' ? '4422' : px.house === 'house2' ? '641' : '?'} ${px.connected_rssi}dBm`;
+    }
+    
+    // Update HUD with house detection
+    const h1s = document.getElementById('h1-status');
+    const h2s = document.getElementById('h2-status');
+    if (px.house.includes('house1')) {
+      h1s.textContent = 'ALIVE + PIXEL';
+      h1s.style.color = '#f778ba';
+    } else if (px.house === 'house2') {
+      h2s.textContent = 'ALIVE + PIXEL';
+      h2s.style.color = '#f778ba';
+    }
+    
+    // Redraw connections with updated positions
+    drawConnections();
+    
+  } catch(e) {
+    // seti-position.json not available yet
+  }
+}
+
+// Lighthouse signal overlay — draw signal rings on APs
+async function updateLighthouse() {
+  try {
+    const r = await fetch('lighthouse-signal.json?' + Date.now());
+    const d = await r.json();
+    // Could overlay signal strength data here
+    // For now just update the scan age in HUD
+    const age = Math.round((Date.now() - new Date(d.timestamp).getTime()) / 1000);
+    const scanEl = document.getElementById('pixel-lat');
+    if (scanEl && age < 120) {
+      scanEl.textContent = `${age}s ago (live)`;
+    }
+  } catch(e) {}
+}
+
+// Run SETI positioning every 10 seconds
+updateSETI();
+setInterval(updateSETI, 10000);
+setInterval(updateLighthouse, 15000);
+
+// Hover glow effect
+document.querySelectorAll('.marker').forEach(m => {
+  m.addEventListener('mouseenter', () => m.style.zIndex = 100);
+  m.addEventListener('mouseleave', () => m.style.zIndex = 10);
+});
+</script>
+</body>
+</html>

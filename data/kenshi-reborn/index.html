@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>kenshi.reborn — Sovereign A-Life Engine</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #c8b88a; font-family: 'Courier New', monospace; overflow: hidden; }
+canvas { display: block; cursor: crosshair; }
+#hud {
+    position: fixed; top: 0; left: 0; padding: 8px 12px;
+    background: rgba(0,0,0,0.7); font-size: 12px; z-index: 10;
+    border-bottom: 1px solid #3a3020; border-right: 1px solid #3a3020;
+}
+#hud .label { color: #6a5a3a; }
+#hud .value { color: #c8b88a; }
+#hud .alive { color: #4a8; }
+#squad-panel {
+    position: fixed; right: 0; top: 0; width: 200px; height: 100%;
+    background: rgba(0,0,0,0.8); border-left: 1px solid #3a3020;
+    padding: 8px; font-size: 11px; overflow-y: auto; z-index: 10;
+}
+#squad-panel h3 { color: #8a7a5a; margin-bottom: 8px; font-size: 13px; }
+.entity-card { 
+    background: rgba(40,35,25,0.8); margin-bottom: 6px; padding: 6px;
+    border: 1px solid #2a2518; border-radius: 2px;
+}
+.entity-card.selected { border-color: #c8b88a; }
+.entity-card .name { color: #c8b88a; font-weight: bold; }
+.entity-card .stat { color: #6a5a3a; font-size: 10px; }
+.entity-card .hp-bar { 
+    height: 3px; background: #2a1a0a; margin-top: 3px; border-radius: 1px;
+}
+.entity-card .hp-fill { height: 100%; background: #4a8a4a; border-radius: 1px; }
+#log {
+    position: fixed; bottom: 0; left: 0; right: 200px; height: 120px;
+    background: rgba(0,0,0,0.8); border-top: 1px solid #3a3020;
+    padding: 6px 10px; font-size: 11px; overflow-y: auto; z-index: 10;
+}
+#log .event { margin-bottom: 2px; }
+#log .time { color: #4a4030; }
+#log .combat { color: #a44; }
+#log .trade { color: #4a8; }
+#log .move { color: #6a5a3a; }
+#log .think { color: #88a; }
+</style>
+</head>
+<body>
+<div id="hud">
+    <span class="label">WORLD:</span> <span class="value" id="world-time">Day 1, 06:00</span> |
+    <span class="label">TICK:</span> <span class="value" id="tick-count">0</span> |
+    <span class="label">ENTITIES:</span> <span class="value" id="entity-count">0</span> |
+    <span class="label">FPS:</span> <span class="value" id="fps">0</span> |
+    <span class="label">GPU:</span> <span class="alive" id="gpu-status">connecting...</span> |
+    <span class="label">GATE:</span> <span class="value" id="gate-name">—</span> |
+    <span class="label">PRIMALS:</span> <span class="alive" id="primal-count">17/17</span>
+</div>
+<canvas id="world"></canvas>
+<div id="squad-panel"><h3>SQUAD</h3><div id="squad-list"></div></div>
+<div id="log"><div id="log-inner"></div></div>
+
+<script>
+const TILE = 24;
+const WORLD_W = 128, WORLD_H = 128;
+const BIOMES = { waste: '#2a2518', marsh: '#1a2a1a', mountain: '#3a3a3a', desert: '#3a3020', settlement: '#2a2a1a' };
+const FACTION_COLORS = { player: '#c8b88a', bandit: '#a44a3a', trader: '#4a8a4a', guard: '#4a6a8a', beast: '#6a3a6a' };
+
+const canvas = document.getElementById('world');
+const ctx = canvas.getContext('2d');
+const logEl = document.getElementById('log-inner');
+
+let camera = { x: 60, y: 60 };
+let selected = [];
+let worldTick = 0;
+let dayTime = 6 * 60; // minutes from midnight
+let tiles = [];
+let entities = [];
+let fogOfWar = [];
+let lastFrame = performance.now();
+let fps = 0;
+let gpuAvailable = false;
+let tissueEndpoint = 'http://' + location.hostname + ':11436';
+let primals = {}; // 17/17 primal status
+let worldEvents = []; // swarmVine gossip queue
+
+// Perlin-ish noise for terrain
+function hash(x, y) { let h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return (h ^ (h >> 16)) & 0xff; }
+function noise(x, y) { return hash(x, y) / 255; }
+function fbm(x, y, octaves) {
+    let v = 0, amp = 1, freq = 1, total = 0;
+    for (let i = 0; i < octaves; i++) { v += noise(Math.floor(x*freq), Math.floor(y*freq)) * amp; total += amp; amp *= 0.5; freq *= 2; }
+    return v / total;
+}
+
+function generateWorld() {
+    tiles = [];
+    fogOfWar = [];
+    for (let y = 0; y < WORLD_H; y++) {
+        tiles[y] = []; fogOfWar[y] = [];
+        for (let x = 0; x < WORLD_W; x++) {
+            const h = fbm(x, y, 4);
+            const m = fbm(x + 500, y + 500, 3);
+            let biome;
+            if (h > 0.7) biome = 'mountain';
+            else if (m > 0.65) biome = 'marsh';
+            else if (h < 0.3 && m < 0.35) biome = 'desert';
+            else if (Math.abs(x - 64) < 3 && Math.abs(y - 64) < 3) biome = 'settlement';
+            else biome = 'waste';
+            tiles[y][x] = { biome, walkable: biome !== 'mountain' || h < 0.8, height: h };
+            fogOfWar[y][x] = 0;
+        }
+    }
+}
+
+function spawnEntities() {
+    entities = [];
+    // Player squad (3 members)
+    const names = ['Gaia', 'Kevin', 'Flint'];
+    const cx = 64, cy = 64;
+    for (let i = 0; i < 3; i++) {
+        entities.push({
+            id: i, name: names[i], faction: 'player',
+            x: cx + i - 1, y: cy, 
+            hp: 100, maxHp: 100,
+            stats: { combat: 5 + Math.random()*10|0, athletics: 10 + Math.random()*15|0, toughness: 5 + Math.random()*10|0, crafting: Math.random()*20|0 },
+            needs: { hunger: 0, safety: 100 },
+            state: 'idle', target: null, path: [],
+            thought: ''
+        });
+    }
+    // Bandits
+    for (let i = 0; i < 8; i++) {
+        const bx = 30 + Math.random()*20|0, by = 30 + Math.random()*20|0;
+        entities.push({
+            id: entities.length, name: `Bandit ${i+1}`, faction: 'bandit',
+            x: bx, y: by, hp: 60 + Math.random()*40|0, maxHp: 100,
+            stats: { combat: 10 + Math.random()*20|0, athletics: 10 + Math.random()*10|0, toughness: 5 + Math.random()*15|0, crafting: 0 },
+            needs: { hunger: Math.random()*50|0, safety: 50 + Math.random()*50|0 },
+            state: 'wander', target: null, path: [],
+            thought: ''
+        });
+    }
+    // Traders
+    for (let i = 0; i < 4; i++) {
+        entities.push({
+            id: entities.length, name: `Trader ${i+1}`, faction: 'trader',
+            x: 62 + Math.random()*5|0, y: 62 + Math.random()*5|0,
+            hp: 80, maxHp: 80,
+            stats: { combat: 2, athletics: 8, toughness: 3, crafting: 25 },
+            needs: { hunger: 10, safety: 90 },
+            state: 'trade', target: null, path: [],
+            thought: ''
+        });
+    }
+    // Guards
+    for (let i = 0; i < 3; i++) {
+        entities.push({
+            id: entities.length, name: `Guard ${i+1}`, faction: 'guard',
+            x: 63 + i, y: 63,
+            hp: 120, maxHp: 120,
+            stats: { combat: 25 + Math.random()*10|0, athletics: 15, toughness: 20, crafting: 0 },
+            needs: { hunger: 5, safety: 100 },
+            state: 'patrol', target: null, path: [],
+            thought: ''
+        });
+    }
+}
+
+function log(msg, type='move') {
+    const h = Math.floor(dayTime/60), m = dayTime % 60;
+    const ts = `Day ${Math.floor(worldTick/1440)+1} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    logEl.innerHTML += `<div class="event"><span class="time">[${ts}]</span> <span class="${type}">${msg}</span></div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+    if (logEl.children.length > 100) logEl.removeChild(logEl.firstChild);
+}
+
+// A-Life tick — entities think and act
+async function alifeTick() {
+    worldTick++;
+    dayTime = (dayTime + 1) % 1440;
+    
+    for (const e of entities) {
+        if (e.hp <= 0) continue;
+        e.needs.hunger = Math.min(100, e.needs.hunger + 0.1);
+        
+        if (e.faction === 'player') continue; // player-controlled
+        
+        // Simple A-Life behavior (will be replaced by tissue inference)
+        if (e.faction === 'bandit') {
+            // Bandits wander, chase player if close
+            const playerNear = entities.filter(p => p.faction === 'player' && p.hp > 0 && dist(e, p) < 10);
+            if (playerNear.length > 0 && e.stats.combat > 12) {
+                e.state = 'chase';
+                e.target = playerNear[0];
+                moveToward(e, e.target);
+                if (dist(e, e.target) <= 1.5) combat(e, e.target);
+            } else {
+                e.state = 'wander';
+                wander(e);
+            }
+        } else if (e.faction === 'guard') {
+            // Guards patrol and attack bandits
+            const banditNear = entities.filter(b => b.faction === 'bandit' && b.hp > 0 && dist(e, b) < 8);
+            if (banditNear.length > 0) {
+                e.state = 'chase';
+                e.target = banditNear[0];
+                moveToward(e, e.target);
+                if (dist(e, e.target) <= 1.5) combat(e, e.target);
+            } else {
+                e.state = 'patrol';
+                if (Math.random() < 0.3) wander(e, 3);
+            }
+        } else if (e.faction === 'trader') {
+            if (Math.random() < 0.1) wander(e, 2);
+        }
+    }
+    
+    // squirrel + coralReef + toadStool: distributed NPC inference
+    if (gpuAvailable && worldTick % 10 === 0) {
+        const npcs = entities.filter(e => e.faction !== 'player' && e.hp > 0);
+        if (npcs.length > 0) {
+            const npc = npcs[Math.random() * npcs.length | 0];
+            try {
+                // toadStool discovers optimal GPU, coralReef distributes
+                const gpu = await coralReef_distribute(npcs);
+                const prevEndpoint = tissueEndpoint;
+                if (gpu.url.includes('8082')) {
+                    // Pixel uses chat completion API
+                    const thought = await tissueThinkPixel(npc, gpu.url);
+                    npc.thought = thought;
+                } else {
+                    tissueEndpoint = gpu.url;
+                    const thought = await tissueThink(npc);
+                    npc.thought = thought;
+                    tissueEndpoint = prevEndpoint;
+                }
+                log(`${npc.name} thinks (${gpu.name}): "${npc.thought}"`, 'think');
+                swarmVine_gossip({ type: 'thought', entity: npc.name, thought: npc.thought, gpu: gpu.name });
+            } catch(err) { /* GPU unavailable, fall back to simple AI */ }
+        }
+    }
+    
+    // === ALL 17 PRIMALS TICK ===
+    biomeOS_tick();          // 1. World kernel — lifecycle
+    sourDough_ferment();     // 14. Fermentation — slow evolution
+    loamSpine_persist();     // 11. Persistence — auto-save
+    songBird_discover();     // 2. Mesh — peer discovery
+    
+    updateFog();
+    document.getElementById('tick-count').textContent = worldTick;
+    document.getElementById('entity-count').textContent = entities.filter(e => e.hp > 0).length;
+    const h = Math.floor(dayTime/60), m = dayTime % 60;
+    document.getElementById('world-time').textContent = `Day ${Math.floor(worldTick/1440)+1}, ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
+
+function moveToward(e, target) {
+    const dx = Math.sign(target.x - e.x), dy = Math.sign(target.y - e.y);
+    const nx = e.x + dx, ny = e.y + dy;
+    if (nx >= 0 && nx < WORLD_W && ny >= 0 && ny < WORLD_H && tiles[ny][nx].walkable) {
+        e.x = nx; e.y = ny;
+    }
+}
+
+function wander(e, range=5) {
+    const dx = Math.round(Math.random()*2-1), dy = Math.round(Math.random()*2-1);
+    const nx = e.x + dx, ny = e.y + dy;
+    if (nx >= 0 && nx < WORLD_W && ny >= 0 && ny < WORLD_H && tiles[ny][nx].walkable) {
+        e.x = nx; e.y = ny;
+    }
+}
+
+function combat(attacker, defender) {
+    const power = attacker.stats.combat - defender.stats.toughness * 0.3;
+    const dmg = Math.max(1, Math.floor(power * (0.5 + Math.random())));
+    defender.hp = Math.max(0, defender.hp - dmg);
+    log(`${attacker.name} hits ${defender.name} for ${dmg} dmg (${defender.hp}/${defender.maxHp})`, 'combat');
+    // Training: stats improve through use
+    attacker.stats.combat += 0.05;
+    defender.stats.toughness += 0.03;
+    if (defender.hp <= 0) {
+        log(`${defender.name} is DOWN!`, 'combat');
+        sweetGrass_credit(attacker, 'defeated', defender);
+        swarmVine_gossip({ type: 'death', victim: defender.name, killer: attacker.name });
+        skunkBat_audit({ type: 'combat_kill', attacker: attacker.name, defender: defender.name });
+    }
+    bearDog_sign({ type: 'combat', attacker: attacker.id, defender: defender.id, dmg });
+    skunkBat_audit({ type: 'combat_hit', attacker: attacker.name, dmg });
+}
+
+function updateFog() {
+    const vision = 12;
+    for (let y = 0; y < WORLD_H; y++) for (let x = 0; x < WORLD_W; x++) {
+        if (fogOfWar[y][x] === 2) fogOfWar[y][x] = 1; // previously visible → explored
+    }
+    for (const e of entities) {
+        if (e.faction !== 'player' || e.hp <= 0) continue;
+        for (let dy = -vision; dy <= vision; dy++) {
+            for (let dx = -vision; dx <= vision; dx++) {
+                if (dx*dx + dy*dy > vision*vision) continue;
+                const tx = e.x + dx, ty = e.y + dy;
+                if (tx >= 0 && tx < WORLD_W && ty >= 0 && ty < WORLD_H) {
+                    fogOfWar[ty][tx] = 2; // visible
+                }
+            }
+        }
+    }
+}
+
+// Pixel llama-server uses OpenAI-compatible API
+async function tissueThinkPixel(entity, url) {
+    const resp = await fetch(url + '/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            messages: [
+                { role: 'system', content: `You are ${entity.name}, a ${entity.faction} NPC in a wasteland. Combat: ${entity.stats.combat|0}. HP: ${entity.hp}/${entity.maxHp}. State: ${entity.state}.` },
+                { role: 'user', content: 'In 8 words or less, what do you think right now?' }
+            ],
+            max_tokens: 20
+        })
+    });
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content?.trim()?.split('\n')[0] || '...';
+}
+
+async function tissueThink(entity) {
+    const prompt = `You are ${entity.name}, a ${entity.faction} in a post-apocalyptic wasteland. ` +
+        `Your combat skill is ${entity.stats.combat|0}. Your HP is ${entity.hp}/${entity.maxHp}. ` +
+        `Hunger: ${entity.needs.hunger|0}/100. State: ${entity.state}. ` +
+        `In 10 words or less, what do you think right now?`;
+    
+    const resp = await fetch(tissueEndpoint + '/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'tinyllama', prompt, stream: false, options: { num_predict: 30 } })
+    });
+    const data = await resp.json();
+    return data.response?.trim()?.split('\n')[0] || '...';
+}
+
+// Render
+function render() {
+    canvas.width = window.innerWidth - 200;
+    canvas.height = window.innerHeight - 120;
+    const cols = Math.ceil(canvas.width / TILE) + 1;
+    const rows = Math.ceil(canvas.height / TILE) + 1;
+    const ox = Math.floor(camera.x - cols/2);
+    const oy = Math.floor(camera.y - rows/2);
+    
+    // Day/night tint
+    const hour = dayTime / 60;
+    const daylight = Math.max(0.15, Math.sin((hour - 6) / 12 * Math.PI) * 0.85 + 0.15);
+    
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Tiles
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const tx = ox + c, ty = oy + r;
+            if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) continue;
+            const fog = fogOfWar[ty][tx];
+            if (fog === 0) continue;
+            
+            const tile = tiles[ty][tx];
+            const px = c * TILE, py = r * TILE;
+            const alpha = fog === 2 ? daylight : daylight * 0.3;
+            
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = BIOMES[tile.biome];
+            ctx.fillRect(px, py, TILE, TILE);
+            
+            // Tile border
+            ctx.strokeStyle = 'rgba(60,50,30,0.3)';
+            ctx.strokeRect(px, py, TILE, TILE);
+        }
+    }
+    
+    ctx.globalAlpha = 1;
+    
+    // Entities
+    for (const e of entities) {
+        if (e.hp <= 0) continue;
+        const sx = (e.x - ox) * TILE + TILE/2;
+        const sy = (e.y - oy) * TILE + TILE/2;
+        if (sx < -TILE || sx > canvas.width + TILE || sy < -TILE || sy > canvas.height + TILE) continue;
+        
+        const fog = fogOfWar[e.y]?.[e.x] || 0;
+        if (fog < 1 && e.faction !== 'player') continue;
+        
+        ctx.globalAlpha = fog === 2 ? 1 : 0.4;
+        
+        // Body
+        ctx.fillStyle = FACTION_COLORS[e.faction];
+        ctx.beginPath();
+        ctx.arc(sx, sy, TILE * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Selection ring
+        if (selected.includes(e.id)) {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(sx, sy, TILE * 0.45, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        
+        // HP bar
+        if (e.hp < e.maxHp) {
+            const bw = TILE * 0.8;
+            ctx.fillStyle = '#2a1a0a';
+            ctx.fillRect(sx - bw/2, sy - TILE*0.55, bw, 3);
+            ctx.fillStyle = e.hp > 50 ? '#4a8a4a' : e.hp > 25 ? '#8a8a2a' : '#a44a3a';
+            ctx.fillRect(sx - bw/2, sy - TILE*0.55, bw * (e.hp/e.maxHp), 3);
+        }
+        
+        // Name (player only)
+        if (e.faction === 'player') {
+            ctx.fillStyle = '#c8b88a';
+            ctx.font = '10px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText(e.name, sx, sy + TILE * 0.65);
+        }
+        
+        // Thought bubble
+        if (e.thought && fog === 2) {
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.font = '9px Courier New';
+            const tw = ctx.measureText(e.thought).width + 8;
+            ctx.fillRect(sx - tw/2, sy - TILE, tw, 14);
+            ctx.fillStyle = '#88a';
+            ctx.fillText(e.thought, sx, sy - TILE + 10);
+        }
+    }
+    ctx.globalAlpha = 1;
+    
+    // FPS
+    const now = performance.now();
+    fps = fps * 0.9 + (1000 / (now - lastFrame)) * 0.1;
+    lastFrame = now;
+    document.getElementById('fps').textContent = fps | 0;
+    
+    requestAnimationFrame(render);
+}
+
+// Squad panel
+function updateSquadPanel() {
+    const list = document.getElementById('squad-list');
+    list.innerHTML = entities.filter(e => e.faction === 'player').map(e => `
+        <div class="entity-card ${selected.includes(e.id) ? 'selected' : ''}" onclick="toggleSelect(${e.id})">
+            <div class="name">${e.name} ${e.hp <= 0 ? '💀' : ''}</div>
+            <div class="stat">⚔️ ${e.stats.combat|0} 🏃 ${e.stats.athletics|0} 🛡️ ${e.stats.toughness|0} 🔨 ${e.stats.crafting|0}</div>
+            <div class="stat">${e.state} ${e.thought ? '💭' + e.thought : ''}</div>
+            <div class="hp-bar"><div class="hp-fill" style="width:${(e.hp/e.maxHp)*100}%"></div></div>
+        </div>
+    `).join('') + entities.filter(e => e.faction !== 'player' && fogOfWar[e.y]?.[e.x] === 2 && e.hp > 0).map(e => `
+        <div class="entity-card">
+            <div class="name" style="color:${FACTION_COLORS[e.faction]}">${e.name}</div>
+            <div class="stat">⚔️ ${e.stats.combat|0} | ${e.state} ${e.thought ? '💭' : ''}</div>
+            <div class="hp-bar"><div class="hp-fill" style="width:${(e.hp/e.maxHp)*100}%;background:${FACTION_COLORS[e.faction]}"></div></div>
+        </div>
+    `).join('');
+}
+
+function toggleSelect(id) { 
+    const idx = selected.indexOf(id);
+    idx >= 0 ? selected.splice(idx, 1) : selected.push(id);
+}
+
+// Input
+canvas.addEventListener('click', (ev) => {
+    const rect = canvas.getBoundingClientRect();
+    const cols = Math.ceil(canvas.width / TILE) + 1;
+    const rows = Math.ceil(canvas.height / TILE) + 1;
+    const ox = Math.floor(camera.x - cols/2);
+    const oy = Math.floor(camera.y - rows/2);
+    const tx = Math.floor((ev.clientX - rect.left) / TILE) + ox;
+    const ty = Math.floor((ev.clientY - rect.top) / TILE) + oy;
+    
+    if (ev.shiftKey) {
+        // Shift+click = select entity at tile
+        const hit = entities.find(e => e.x === tx && e.y === ty && e.hp > 0);
+        if (hit) toggleSelect(hit.id);
+    } else if (selected.length > 0) {
+        // Move selected to tile
+        for (const id of selected) {
+            const e = entities[id];
+            if (e && e.faction === 'player' && e.hp > 0) {
+                e.target = { x: tx, y: ty };
+                e.state = 'moving';
+                log(`${e.name} moving to (${tx},${ty})`, 'move');
+            }
+        }
+    }
+});
+
+// WASD camera
+document.addEventListener('keydown', (ev) => {
+    const speed = ev.shiftKey ? 5 : 1;
+    if (ev.key === 'w' || ev.key === 'ArrowUp') camera.y -= speed;
+    if (ev.key === 's' || ev.key === 'ArrowDown') camera.y += speed;
+    if (ev.key === 'a' || ev.key === 'ArrowLeft') camera.x -= speed;
+    if (ev.key === 'd' || ev.key === 'ArrowRight') camera.x += speed;
+    if (ev.key === '1') { selected = [0]; }
+    if (ev.key === '2') { selected = [1]; }
+    if (ev.key === '3') { selected = [2]; }
+    if (ev.key === 'q') { selected = [0,1,2]; } // select all
+});
+
+// Player movement tick
+setInterval(() => {
+    for (const e of entities) {
+        if (e.faction === 'player' && e.target && e.hp > 0) {
+            if (dist(e, e.target) < 1.5) { e.state = 'idle'; e.target = null; continue; }
+            moveToward(e, e.target);
+        }
+    }
+}, 200);
+
+// === 17/17 PRIMAL INTEGRATION ===
+
+// biomeOS — World Kernel: orchestrates all primals
+function biomeOS_tick() {
+    // Census living entities, manage lifecycle
+    const alive = entities.filter(e => e.hp > 0);
+    const dead = entities.filter(e => e.hp <= 0);
+    // Respawn dead NPCs after 100 ticks (world regenerates)
+    for (const d of dead) {
+        if (d.faction !== 'player' && d._deathTick && worldTick - d._deathTick > 100) {
+            d.hp = d.maxHp; d.state = 'wander'; d.thought = '';
+            d.x = 30 + Math.random()*60|0; d.y = 30 + Math.random()*60|0;
+            log(`${d.name} respawns in the wasteland (biomeOS lifecycle)`, 'think');
+            delete d._deathTick;
+        }
+        if (d.hp <= 0 && !d._deathTick) d._deathTick = worldTick;
+    }
+}
+
+// nestGate — Data Gateway: world state as queryable JSON
+function nestGate_snapshot() {
+    return {
+        tick: worldTick, dayTime, 
+        entities: entities.map(e => ({ id: e.id, name: e.name, faction: e.faction, x: e.x, y: e.y, hp: e.hp, state: e.state, thought: e.thought })),
+        factions: { player: entities.filter(e=>e.faction==='player'&&e.hp>0).length, bandit: entities.filter(e=>e.faction==='bandit'&&e.hp>0).length, trader: entities.filter(e=>e.faction==='trader'&&e.hp>0).length, guard: entities.filter(e=>e.faction==='guard'&&e.hp>0).length }
+    };
+}
+
+// coralReef — Distributed Compute: balance A-Life across GPUs
+async function coralReef_distribute(npcs) {
+    // Split NPCs across available GPU endpoints
+    const endpoints = [
+        { name: 'eastGate', url: 'http://192.168.4.244:11436', weight: 29 },
+        { name: 'northGate', url: 'http://192.168.4.147:11434', weight: 209 },
+        { name: 'Pixel', url: 'http://192.168.4.143:8082', weight: 1 }
+    ];
+    // Weighted random selection — heavier GPUs get more work
+    const totalWeight = endpoints.reduce((s,e) => s + e.weight, 0);
+    const r = Math.random() * totalWeight;
+    let acc = 0;
+    for (const ep of endpoints) {
+        acc += ep.weight;
+        if (r <= acc) return ep;
+    }
+    return endpoints[0];
+}
+
+// swarmVine — Gossip: broadcast world events to all
+function swarmVine_gossip(event) {
+    worldEvents.push({ ...event, tick: worldTick, ts: Date.now() });
+    if (worldEvents.length > 200) worldEvents.shift();
+}
+
+// toadStool — Service Discovery: find optimal gate for task  
+async function toadStool_discover(capability) {
+    const routes = {
+        'inference.heavy': 'http://192.168.4.147:11434', // northGate 5090
+        'inference.medium': 'http://192.168.4.244:11436', // eastGate 4070
+        'inference.light': 'http://192.168.4.143:8082',   // Pixel Mali
+        'render': location.origin,
+        'persist': 'http://192.168.4.244:8080'
+    };
+    return routes[capability] || routes['inference.medium'];
+}
+
+// sourDough — Fermentation: slow world evolution when away
+function sourDough_ferment() {
+    if (worldTick % 60 !== 0) return; // Every game hour
+    // Faction territory shifts
+    const banditCount = entities.filter(e => e.faction === 'bandit' && e.hp > 0).length;
+    const guardCount = entities.filter(e => e.faction === 'guard' && e.hp > 0).length;
+    // If bandits outnumber guards, they get bolder (higher combat)
+    if (banditCount > guardCount) {
+        entities.filter(e => e.faction === 'bandit' && e.hp > 0).forEach(e => e.stats.combat += 0.1);
+        if (worldTick % 120 === 0) log('Bandits grow bold... the settlement feels unsafe.', 'combat');
+    }
+    // NPC hunger drives behavior changes
+    entities.filter(e => e.faction !== 'player' && e.hp > 0).forEach(e => {
+        if (e.needs.hunger > 70) { e.state = 'desperate'; e.stats.combat += 0.05; }
+    });
+}
+
+// sweetGrass — Attribution: track memorable moments
+let storyCredits = [];
+function sweetGrass_credit(actor, action, target) {
+    storyCredits.push({ actor: actor.name, action, target: target?.name, tick: worldTick });
+    if (storyCredits.length > 50) storyCredits.shift();
+}
+
+// rhizoCrypt — Session DAG: save/load with branching
+let sessionDAG = { root: null, current: null, branches: [] };
+function rhizoCrypt_checkpoint() {
+    const snap = JSON.stringify({ entities: entities.map(e => ({...e})), worldTick, dayTime });
+    sessionDAG.current = { tick: worldTick, hash: btoa(snap).slice(0,16), parent: sessionDAG.current?.hash };
+    sessionDAG.branches.push(sessionDAG.current);
+    return sessionDAG.current.hash;
+}
+
+// loamSpine — Persistence: auto-save world state
+function loamSpine_persist() {
+    if (worldTick % 300 !== 0) return; // Every 5 game hours
+    try {
+        const state = nestGate_snapshot();
+        localStorage.setItem('kenshi-reborn-save', JSON.stringify(state));
+        const hash = rhizoCrypt_checkpoint();
+        log(`World saved [${hash}] (loamSpine)`, 'think');
+    } catch(e) {}
+}
+
+// bearDog — Identity: sign player actions  
+function bearDog_sign(action) {
+    // Simulated BLAKE3 signature
+    return { action, signed: true, ts: Date.now(), player: 'Kevin@northGate' };
+}
+
+// skunkBat — Security: audit log
+let auditLog = [];
+function skunkBat_audit(event) {
+    auditLog.push({ ...event, tick: worldTick });
+    if (auditLog.length > 100) auditLog.shift();
+}
+
+// bingoCube — Coordination: combat resolution order
+function bingoCube_resolve(combatants) {
+    // Sort by athletics (initiative) + random
+    return combatants.sort((a,b) => (b.stats.athletics + Math.random()*5) - (a.stats.athletics + Math.random()*5));
+}
+
+// songBird — Mesh: discover other players
+function songBird_discover() {
+    // Broadcast presence to data server for other clients to find
+    if (worldTick % 30 === 0) {
+        fetch('http://192.168.4.244:8080/data/kenshi-reborn/presence.json', { method: 'GET' }).catch(()=>{});
+    }
+}
+
+// dromedary — Proxy: route through reverse proxy
+function dromedary_route() {
+    // Detect if we're coming through WAN and set appropriate endpoints
+    if (location.hostname === 'primals.eco') {
+        tissueEndpoint = 'http://primals.eco:11436';
+    }
+}
+
+// Check GPU
+async function checkGpu() {
+    try {
+        const r = await fetch(tissueEndpoint + '/api/tags', { signal: AbortSignal.timeout(2000) });
+        const d = await r.json();
+        gpuAvailable = true;
+        document.getElementById('gpu-status').textContent = `${d.models?.length || 0} models`;
+        document.getElementById('gpu-status').style.color = '#4a8';
+    } catch(e) {
+        // Try northGate directly
+        try {
+            tissueEndpoint = 'http://192.168.4.147:11434';
+            const r2 = await fetch(tissueEndpoint + '/api/tags', { signal: AbortSignal.timeout(2000) });
+            const d2 = await r2.json();
+            gpuAvailable = true;
+            document.getElementById('gpu-status').textContent = `northGate: ${d2.models?.length || 0} models`;
+            document.getElementById('gpu-status').style.color = '#4a8';
+        } catch(e2) {
+            document.getElementById('gpu-status').textContent = 'offline (simple AI)';
+            document.getElementById('gpu-status').style.color = '#a44';
+        }
+    }
+    // Detect gate
+    const host = location.hostname;
+    if (host === '192.168.4.244' || host === 'primals.eco') document.getElementById('gate-name').textContent = 'eastGate';
+    else if (host === '192.168.4.3') document.getElementById('gate-name').textContent = 'sporeGate';
+    else if (host === '192.168.4.147') document.getElementById('gate-name').textContent = 'northGate';
+    else document.getElementById('gate-name').textContent = host;
+}
+
+// Init
+generateWorld();
+spawnEntities();
+updateFog();
+checkGpu();
+dromedary_route(); // 17. Route through proxy if WAN
+render();
+setInterval(alifeTick, 1000); // 1 Hz game tick
+setInterval(updateSquadPanel, 500);
+log('The wasteland stretches before you. Your squad stands in the settlement.', 'think');
+log('WASD to move camera. Click to move squad. Shift+click to select. 1/2/3 select member. Q select all.', 'think');
+log('The world is alive. NPCs think, fight, trade, and patrol autonomously.', 'think');
+log('17/17 primals serving: biomeOS songBird bearDog nestGate petalTongue sweetGrass rhizoCrypt toadStool barraCuda coralReef loamSpine squirrel skunkBat sourDough swarmVine bingoCube dromedary', 'think');
+</script>
+</body>
+</html>

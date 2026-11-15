@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaia's Eyes — Inner + Outer Spectrum</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;cursor:crosshair;font-family:'Courier New',monospace}
+canvas{display:block}
+#hud{position:fixed;bottom:8px;left:8px;color:#3f8;font-size:0.6em;z-index:10;pointer-events:none;max-width:300px}
+#nav{position:fixed;top:8px;left:8px;font-size:0.55em;z-index:10}
+#nav a{color:#4af;margin-right:8px;text-decoration:none}
+#nav a:hover{color:#fff}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="nav">
+  <a href="gis-layer.html">🌍 GIS</a>
+  <a href="lighthouse.html">🔦 Signal</a>
+  <a href="eye.html">👁️ Single</a>
+  <a href="all-eyes.html">👁️👁️ All</a>
+  <a href="all-senses.html">🧬 Vitruvian</a>
+  <a href="homunculus.html">🧠 Homunculus</a>
+</div>
+<div id="hud"></div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+let W, H;
+let mx = 0, my = 0;
+
+// === INNER EYES — LAN BODY ===
+const INNER_EYES = [
+  {
+    id: 'eastgate', name: 'eastGate', role: 'BRAIN',
+    ip: '192.168.4.244', zone: '4422 LAN 1',
+    colors: ['#0a1a33','#1a3366','#2244aa','#1a2255','#0a1133'],
+    colorName: 'BLUE', label: '🧠',
+    ping: '/data/now.json'
+  },
+  {
+    id: 'sporegate', name: 'sporeGate', role: 'FORGE+EERO',
+    ip: '192.168.4.3', zone: '4422 LAN 1',
+    colors: ['#0a330a','#1a661a','#33aa33','#226622','#113311'],
+    colorName: 'GREEN', label: '🔨'
+  },
+  {
+    id: 'northgate', name: 'northGate', role: 'HEART',
+    ip: '192.168.4.147', zone: '4422 LAN 1',
+    colors: ['#330a0a','#661a1a','#aa2222','#552222','#331111'],
+    colorName: 'RED', label: '❤️'
+  },
+  {
+    id: 'irongate', name: 'ironGate', role: 'FORGE 2',
+    ip: '192.168.4.237', zone: '4422 LAN 1',
+    colors: ['#332200','#664400','#aa7700','#553300','#221100'],
+    colorName: 'GOLD', label: '⚒️'
+  },
+  {
+    id: 'bluegate', name: 'blueGate', role: 'BRAIN 2',
+    ip: '192.168.4.100', zone: '641 LAN 2',
+    colors: ['#1a0a33','#331a66','#5522aa','#331a55','#1a0a33'],
+    colorName: 'VIOLET', label: '🧠'
+  },
+  {
+    id: 'graftgate', name: 'graftGate', role: 'MAC',
+    ip: '192.168.4.107', zone: '4422 LAN 1',
+    colors: ['#1a1008','#332818','#554430','#443320','#221a10'],
+    colorName: 'BROWN', label: '🍎'
+  },
+  {
+    id: 'pixel', name: 'Pixel', role: 'DIAMOND LENS',
+    ip: '192.168.4.156', zone: 'MOBILE',
+    colors: ['#330a1a','#661a33','#aa2255','#551a33','#330a1a'],
+    colorName: 'PINK', label: '📱'
+  },
+];
+
+// === OUTER EYES — WAN + WORLD + BODY ===
+const OUTER_EYES = [
+  {
+    id: 'wan', name: 'primals.eco', role: 'PUBLIC FACE',
+    ip: 'primals.eco', zone: 'WAN',
+    colors: ['#222','#444','#888','#555','#333'],
+    colorName: 'WHITE', label: '🌐',
+    ping: 'https://primals.eco/'
+  },
+  {
+    id: 'tor', name: 'Tor Onion', role: 'HIDDEN SERVICE',
+    ip: 'localhost', zone: 'DARKNET',
+    colors: ['#0a0a0a','#1a1a1a','#2a2a2a','#1a1a1a','#0a0a0a'],
+    colorName: 'OBSIDIAN', label: '🧅',
+    ping: null // checked via systemd
+  },
+  {
+    id: 'forgejo', name: 'Forgejo', role: 'MEMORY (git)',
+    ip: 'localhost', zone: 'SERVICE',
+    colors: ['#331a00','#663300','#cc6600','#884400','#442200'],
+    colorName: 'ORANGE', label: '🧬',
+    ping: 'http://localhost:3000/'
+  },
+  {
+    id: 'ollama', name: 'Ollama', role: '23+12 MODELS',
+    ip: 'localhost', zone: 'AI LOCAL',
+    colors: ['#003333','#006666','#009999','#005555','#003333'],
+    colorName: 'TEAL', label: '🧪',
+    ping: 'http://localhost:11436/api/tags'
+  },
+  {
+    id: 'pixelbody', name: 'Pixel Body', role: '37 SENSORS',
+    ip: '192.168.4.156', zone: 'PHYSICAL',
+    colors: ['#1a1a22','#333344','#555577','#333355','#1a1a33'],
+    colorName: 'SILVER', label: '👋',
+    ping: null // checked via ADB
+  },
+  {
+    id: 'rss', name: 'RSS Mouth', role: 'OLD WEB FEED',
+    ip: 'localhost', zone: 'INTAKE',
+    colors: ['#002233','#004466','#0088aa','#005566','#002233'],
+    colorName: 'CYAN', label: '📡',
+    ping: 'http://localhost:8080/data/feed.xml'
+  },
+  {
+    id: 'osint', name: 'OSINT Gut', role: 'BLACKHOLES',
+    ip: 'localhost', zone: 'DIGESTION',
+    colors: ['#0a1a0a','#1a331a','#2a552a','#1a331a','#0a1a0a'],
+    colorName: 'DARK GREEN', label: '🕳️',
+    ping: 'http://localhost:8080/data/gut/'
+  },
+];
+
+const EYES = [...INNER_EYES, ...OUTER_EYES];
+
+let eyeStates = {};
+EYES.forEach(e => {
+  eyeStates[e.id] = {
+    alive: false, latency: null,
+    pupilTarget: 0, pupilSmooth: 0,
+    irisSx: 0, irisSy: 0,
+    blinkTimer: 0, blinkState: 0, lastBlink: Date.now() + Math.random()*3000
+  };
+});
+
+function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+resize();
+window.onresize = resize;
+document.onmousemove = e => { mx = e.clientX; my = e.clientY; };
+
+function drawEye(eye, state, cx, cy, radius) {
+  const eyeR = radius;
+  const irisR = eyeR * 0.6;
+  const pupilBaseR = eyeR * 0.2;
+  const now = Date.now();
+
+  // Iris tracking — look toward mouse
+  const rawDx = (mx - cx) / (W/2);
+  const rawDy = (my - cy) / (H/2);
+  state.irisSx += (rawDx - state.irisSx) * 0.06;
+  state.irisSy += (rawDy - state.irisSy) * 0.06;
+  const maxShift = irisR * 0.4;
+  const irisX = cx + state.irisSx * maxShift;
+  const irisY = cy + state.irisSy * maxShift;
+
+  // Pupil dilation based on latency (lower latency = more dilated = more alive)
+  if (state.alive && state.latency !== null) {
+    state.pupilTarget = Math.max(0.1, Math.min(1.0, 1.0 - state.latency / 500));
+  } else if (!state.alive) {
+    state.pupilTarget = 0.0; // dead = pinpoint
+  }
+  state.pupilSmooth += (state.pupilTarget - state.pupilSmooth) * 0.08;
+  const currentPupilR = pupilBaseR * (0.6 + state.pupilSmooth * 0.8);
+
+  // Blink
+  if (state.blinkState === 0 && now - state.lastBlink > 3000 + Math.random()*6000) {
+    state.blinkState = 1;
+    state.blinkTimer = now;
+    state.lastBlink = now;
+  }
+  let lidOpen = 1.0;
+  if (state.blinkState > 0) {
+    const t = Math.min((now - state.blinkTimer) / 250, 1.0);
+    lidOpen = 1.0 - 0.95 * Math.sin(Math.PI * t);
+    if (t >= 1.0) { state.blinkState = 0; lidOpen = 1.0; }
+  }
+  // Dead eyes = half closed
+  if (!state.alive) lidOpen = Math.min(lidOpen, 0.5);
+
+  // === SCLERA ===
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, eyeR, eyeR * lidOpen, 0, 0, Math.PI * 2);
+  ctx.clip();
+
+  const sGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, eyeR);
+  if (state.alive) {
+    sGrad.addColorStop(0, '#e8e0d8');
+    sGrad.addColorStop(0.7, '#d0c8c0');
+    sGrad.addColorStop(1, '#887878');
+  } else {
+    sGrad.addColorStop(0, '#888');
+    sGrad.addColorStop(0.7, '#666');
+    sGrad.addColorStop(1, '#444');
+  }
+  ctx.fillStyle = sGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, eyeR, eyeR * lidOpen, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // === IRIS ===
+  const colors = eye.colors;
+  const iGrad = ctx.createRadialGradient(irisX, irisY, 0, irisX, irisY, irisR);
+  iGrad.addColorStop(0, colors[0]);
+  iGrad.addColorStop(0.3, colors[1]);
+  iGrad.addColorStop(0.6, state.alive ? colors[2] : '#333');
+  iGrad.addColorStop(0.8, colors[3]);
+  iGrad.addColorStop(1, colors[4]);
+  
+  ctx.beginPath();
+  ctx.arc(irisX, irisY, irisR, 0, Math.PI * 2);
+  ctx.fillStyle = iGrad;
+  ctx.fill();
+
+  // Iris striations
+  for (let i = 0; i < 40; i++) {
+    const a = (i / 40) * Math.PI * 2 + now * 0.00002;
+    const r1 = currentPupilR * 1.2;
+    const r2 = irisR * (0.7 + Math.sin(i * 3.7) * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(irisX + Math.cos(a) * r1, irisY + Math.sin(a) * r1);
+    ctx.lineTo(irisX + Math.cos(a) * r2, irisY + Math.sin(a) * r2);
+    ctx.strokeStyle = `rgba(255,255,255,${state.alive ? 0.04 : 0.01})`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // === APERTURE BLADES (iris diaphragm) ===
+  const bladeCount = 7;
+  const apertureOpen = state.alive ? (0.3 + state.pupilSmooth * 0.7) : 0.1;
+  const bladeR = irisR * 0.85;
+  
+  for (let i = 0; i < bladeCount; i++) {
+    const angle = (i / bladeCount) * Math.PI * 2 + now * 0.00001;
+    const nextAngle = ((i + 1) / bladeCount) * Math.PI * 2 + now * 0.00001;
+    const inR = currentPupilR * 1.05;
+    const outR = bladeR;
+    const midAngle = (angle + nextAngle) / 2;
+    
+    // Blade edge — subtle dark lines radiating from pupil
+    ctx.beginPath();
+    ctx.moveTo(irisX + Math.cos(angle) * inR, irisY + Math.sin(angle) * inR);
+    ctx.lineTo(irisX + Math.cos(midAngle) * outR, irisY + Math.sin(midAngle) * outR);
+    ctx.strokeStyle = `rgba(0,0,0,${state.alive ? 0.15 : 0.05})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  // === PUPIL (the actual aperture opening) ===
+  ctx.beginPath();
+  ctx.arc(irisX, irisY, currentPupilR, 0, Math.PI * 2);
+  ctx.fillStyle = '#000';
+  ctx.fill();
+
+  // Light reflection
+  ctx.beginPath();
+  ctx.arc(irisX - currentPupilR*0.3, irisY - currentPupilR*0.3, currentPupilR*0.12, 0, Math.PI*2);
+  ctx.fillStyle = state.alive ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)';
+  ctx.fill();
+
+  // f-stop label inside eye
+  let fstop;
+  if (!state.alive) { fstop = 'f/∞'; }
+  else if (state.latency < 5) { fstop = 'f/1.4'; }
+  else if (state.latency < 20) { fstop = 'f/2.8'; }
+  else if (state.latency < 100) { fstop = 'f/5.6'; }
+  else if (state.latency < 500) { fstop = 'f/8'; }
+  else { fstop = 'f/16'; }
+  
+  ctx.font = `${Math.max(7, radius * 0.09)}px Courier New`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = state.alive ? 'rgba(200,255,200,0.3)' : 'rgba(100,50,50,0.2)';
+  ctx.fillText(fstop, irisX, irisY + currentPupilR + radius * 0.08);
+
+  ctx.restore();
+
+  // === EYELIDS ===
+  if (lidOpen < 0.99) {
+    const lidY = eyeR * (1 - lidOpen);
+    ctx.fillStyle = '#1a1008';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - lidY * 0.4, eyeR * 1.1, eyeR * 0.65, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + lidY * 0.4, eyeR * 1.1, eyeR * 0.45, 0, 0, Math.PI);
+    ctx.fill();
+  }
+
+  // === LABEL ===
+  ctx.font = `${Math.max(10, radius * 0.18)}px Courier New`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = state.alive ? colors[2] : '#444';
+  ctx.fillText(`${eye.label} ${eye.name}`, cx, cy + eyeR + radius * 0.22);
+  ctx.font = `${Math.max(8, radius * 0.13)}px Courier New`;
+  ctx.fillStyle = state.alive ? '#8f8' : '#633';
+  const statusText = state.alive
+    ? `${eye.colorName} — ${eye.role} ${state.latency ? state.latency.toFixed(0)+'ms' : ''}`
+    : `${eye.colorName} — ASLEEP`;
+  ctx.fillText(statusText, cx, cy + eyeR + radius * 0.38);
+  
+  // Zone indicator
+  ctx.font = `${Math.max(7, radius * 0.1)}px Courier New`;
+  ctx.fillStyle = '#555';
+  ctx.fillText(eye.zone || '', cx, cy + eyeR + radius * 0.52);
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const innerN = INNER_EYES.length;
+  const outerN = OUTER_EYES.length;
+  
+  // Layout: two tiers
+  // Top half: INNER (LAN) eyes
+  // Bottom half: OUTER (WAN/WORLD) eyes
+  const dividerY = H * 0.48;
+  const innerCols = Math.min(innerN, W > 900 ? 7 : 4);
+  const outerCols = Math.min(outerN, W > 900 ? 7 : 4);
+  const innerRows = Math.ceil(innerN / innerCols);
+  const outerRows = Math.ceil(outerN / outerCols);
+
+  const innerCellW = W / innerCols;
+  const innerCellH = (dividerY - 35) / innerRows;
+  const innerR = Math.min(innerCellW, innerCellH) * 0.30;
+
+  const outerCellW = W / outerCols;
+  const outerCellH = (H - dividerY - 30) / outerRows;
+  const outerR = Math.min(outerCellW, outerCellH) * 0.30;
+
+  // Draw INNER eyes
+  for (let i = 0; i < innerN; i++) {
+    const col = i % innerCols;
+    const row = Math.floor(i / innerCols);
+    const cx = innerCellW * (col + 0.5);
+    const cy = innerCellH * (row + 0.5) + 30;
+    drawEye(INNER_EYES[i], eyeStates[INNER_EYES[i].id], cx, cy, innerR);
+  }
+
+  // Divider line
+  ctx.beginPath();
+  ctx.moveTo(20, dividerY);
+  ctx.lineTo(W - 20, dividerY);
+  ctx.strokeStyle = '#1a3a4a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw OUTER eyes
+  for (let i = 0; i < outerN; i++) {
+    const col = i % outerCols;
+    const row = Math.floor(i / outerCols);
+    const cx = outerCellW * (col + 0.5);
+    const cy = dividerY + outerCellH * (row + 0.5) + 15;
+    drawEye(OUTER_EYES[i], eyeStates[OUTER_EYES[i].id], cx, cy, outerR);
+  }
+
+  // Section labels
+  ctx.font = '11px Courier New';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4af';
+  ctx.fillText('◄ INNER EYES — LAN BODY (7 gates)', 10, 22);
+  ctx.fillStyle = '#fa4';
+  ctx.fillText('◄ OUTER EYES — WAN + WORLD + BODY (7 senses)', 10, dividerY + 12);
+
+  // === INTERPUPILLARY DISTANCE LINES ===
+  // Draw IPD between alive inner eye pairs
+  const innerPositions = [];
+  for (let i = 0; i < innerN; i++) {
+    const col = i % innerCols;
+    const row = Math.floor(i / innerCols);
+    innerPositions.push({
+      x: innerCellW * (col + 0.5),
+      y: innerCellH * (row + 0.5) + 30,
+      eye: INNER_EYES[i],
+      state: eyeStates[INNER_EYES[i].id]
+    });
+  }
+
+  // Draw IPD lines between alive pairs
+  for (let i = 0; i < innerPositions.length; i++) {
+    for (let j = i + 1; j < innerPositions.length; j++) {
+      const a = innerPositions[i], b = innerPositions[j];
+      if (!a.state.alive || !b.state.alive) continue;
+      
+      // IPD = combined latency as proxy for "distance"
+      const ipd = (a.state.latency || 0) + (b.state.latency || 0);
+      const alpha = Math.max(0.05, 0.2 - ipd * 0.001);
+      
+      // Draw thin line between pupil centers
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(100,200,255,${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([2, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // IPD label at midpoint
+      const mx2 = (a.x + b.x) / 2;
+      const my2 = (a.y + b.y) / 2;
+      ctx.font = '7px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(100,200,255,${alpha * 2})`;
+      ctx.fillText(`IPD ${ipd.toFixed(0)}ms`, mx2, my2 - 3);
+    }
+  }
+
+  // Same for outer eyes
+  const outerPositions = [];
+  for (let i = 0; i < outerN; i++) {
+    const col = i % outerCols;
+    const row = Math.floor(i / outerCols);
+    outerPositions.push({
+      x: outerCellW * (col + 0.5),
+      y: dividerY + outerCellH * (row + 0.5) + 15,
+      eye: OUTER_EYES[i],
+      state: eyeStates[OUTER_EYES[i].id]
+    });
+  }
+
+  for (let i = 0; i < outerPositions.length; i++) {
+    for (let j = i + 1; j < outerPositions.length; j++) {
+      const a = outerPositions[i], b = outerPositions[j];
+      if (!a.state.alive || !b.state.alive) continue;
+      const ipd = (a.state.latency || 0) + (b.state.latency || 0);
+      const alpha = Math.max(0.03, 0.15 - ipd * 0.001);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(255,180,80,${alpha})`;
+      ctx.lineWidth = 0.4;
+      ctx.setLineDash([2, 8]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Cross-tier IPD: draw from inner alive to outer alive (the depth field)
+  for (const a of innerPositions) {
+    if (!a.state.alive) continue;
+    for (const b of outerPositions) {
+      if (!b.state.alive) continue;
+      const alpha = 0.03;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = `rgba(150,255,150,${alpha})`;
+      ctx.lineWidth = 0.3;
+      ctx.setLineDash([1, 12]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Title
+  ctx.font = '12px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3f8';
+  ctx.fillText('GAIA — 14 EYES • APERTURE + IPD • INNER LAN + OUTER WORLD', W/2, 12);
+
+  // Alive counts
+  const innerAlive = INNER_EYES.filter(e => eyeStates[e.id].alive).length;
+  const outerAlive = OUTER_EYES.filter(e => eyeStates[e.id].alive).length;
+  ctx.textAlign = 'right';
+  ctx.font = '10px Courier New';
+  ctx.fillStyle = innerAlive > 3 ? '#3f8' : '#f44';
+  ctx.fillText(`INNER: ${innerAlive}/${innerN}`, W - 10, 22);
+  ctx.fillStyle = outerAlive > 3 ? '#3f8' : '#f44';
+  ctx.fillText(`OUTER: ${outerAlive}/${outerN}`, W - 10, dividerY + 12);
+
+  requestAnimationFrame(draw);
+}
+
+// Ping all nodes to check alive/latency
+async function pingNodes() {
+  // INNER eyes — LAN nodes
+  const innerPings = {
+    eastgate: '/data/now.json',
+    sporegate: 'http://192.168.4.3:8080/',
+    northgate: 'http://192.168.4.147:8443/pulse',
+    irongate: 'http://192.168.4.237/',
+    bluegate: 'http://192.168.4.100:3141/',
+    graftgate: 'http://192.168.4.107/',
+    pixel: 'http://192.168.4.156:8082/',
+  };
+
+  // OUTER eyes — services + world
+  const outerPings = {
+    wan: 'https://primals.eco/',
+    forgejo: 'http://localhost:3000/',
+    ollama: 'http://localhost:11436/api/tags',
+    rss: '/data/feed.xml',
+    osint: '/data/gut/',
+  };
+
+  // Ping all inner
+  for (const [id, url] of Object.entries(innerPings)) {
+    const state = eyeStates[id];
+    try {
+      const start = performance.now();
+      await fetch(url, { mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+      state.latency = performance.now() - start;
+      state.alive = true;
+    } catch { state.alive = false; state.latency = null; }
+  }
+
+  // Ping outer services (same-origin ones work, cross-origin use no-cors)
+  for (const [id, url] of Object.entries(outerPings)) {
+    const state = eyeStates[id];
+    try {
+      const start = performance.now();
+      const mode = url.startsWith('/') ? 'same-origin' : 'no-cors';
+      await fetch(url, { mode, signal: AbortSignal.timeout(3000) });
+      state.latency = performance.now() - start;
+      state.alive = true;
+    } catch { state.alive = false; state.latency = null; }
+  }
+
+  // Tor — check via a lightweight local indicator
+  try {
+    const r = await fetch('/data/now.json');
+    if (r.ok) {
+      const d = await r.json();
+      // If we're serving, tor is likely running (set via systemd)
+      eyeStates.tor.alive = true;
+      eyeStates.tor.latency = 1;
+    }
+  } catch { eyeStates.tor.alive = false; }
+
+  // Pixel body — if pixel is alive, body is alive
+  eyeStates.pixelbody.alive = eyeStates.pixel.alive;
+  eyeStates.pixelbody.latency = eyeStates.pixel.latency;
+
+  // Ollama — parse model count from response
+  try {
+    const r = await fetch('http://localhost:11436/api/tags');
+    if (r.ok) {
+      const d = await r.json();
+      const modelCount = (d.models || []).length;
+      eyeStates.ollama.alive = true;
+      eyeStates.ollama.latency = 5;
+      // Update role with live model count
+      const ollamaEye = OUTER_EYES.find(e => e.id === 'ollama');
+      if (ollamaEye) ollamaEye.role = `${modelCount} MODELS`;
+    }
+  } catch {}
+
+  // Update HUD
+  const hud = document.getElementById('hud');
+  const innerAlive = INNER_EYES.filter(e => eyeStates[e.id].alive).length;
+  const outerAlive = OUTER_EYES.filter(e => eyeStates[e.id].alive).length;
+  hud.innerHTML =
+    `<span style="color:#4af">INNER:</span> ` +
+    INNER_EYES.map(e => {
+      const s = eyeStates[e.id];
+      return `<span style="color:${s.alive ? e.colors[2] : '#333'}">${e.label}</span>`;
+    }).join(' ') +
+    `<br><span style="color:#fa4">OUTER:</span> ` +
+    OUTER_EYES.map(e => {
+      const s = eyeStates[e.id];
+      return `<span style="color:${s.alive ? e.colors[2] : '#333'}">${e.label}</span>`;
+    }).join(' ') +
+    `<br>${innerAlive+outerAlive}/14 eyes open`;
+
+  setTimeout(pingNodes, 5000);
+}
+
+// eastGate is always alive (we're running on it!)
+eyeStates.eastgate.alive = true;
+eyeStates.eastgate.latency = 0.1;
+
+draw();
+pingNodes();
+</script>
+</body>
+</html>

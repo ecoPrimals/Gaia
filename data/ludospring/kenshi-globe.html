@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KenshiReborn — World Globe · LAN MMO Overlay</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a14; color: #e0d8c8; font-family: 'Courier New', monospace; overflow: hidden; }
+canvas { display: block; }
+#hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#title { position: absolute; top: 12px; left: 20px; font-size: 14px; color: #8b7d5e; }
+#title span { color: #c9a84c; font-weight: bold; }
+#gates { position: absolute; top: 12px; right: 20px; font-size: 11px; text-align: right; }
+.gate-alive { color: #4caf50; }
+.gate-down { color: #555; }
+#biome-info { position: absolute; bottom: 60px; left: 20px; font-size: 12px; color: #a89070; max-width: 300px; }
+#stats { position: absolute; bottom: 12px; left: 20px; font-size: 10px; color: #665; }
+#minimap { position: absolute; bottom: 12px; right: 12px; width: 180px; height: 180px; border: 1px solid #332; }
+</style>
+</head>
+<body>
+<canvas id="globe"></canvas>
+<div id="hud">
+  <div id="title">KENSHI<span>REBORN</span> v0.7 — World Globe · LAN MMO<br>
+    <span style="font-size:10px;color:#665">Snow Globe · Lysogenic Engine · scyBorg Licensed</span>
+  </div>
+  <div id="gates"></div>
+  <div id="biome-info"></div>
+  <div id="stats"></div>
+  <canvas id="minimap"></canvas>
+</div>
+
+<script>
+const BIOMES = [
+  { name:"The Venge", gx:4.5, gz:5.0, creatures:["Mammal_beak","land_bat","bird"], color:"#cc4d26", env:"Scorched wasteland, deadly solar beams" },
+  { name:"Deadlands", gx:3.5, gz:3.0, creatures:["brokendrone","robot_worker"], color:"#666", env:"Polluted industrial wasteland" },
+  { name:"Great Desert", gx:5.0, gz:1.5, creatures:["antilop250","goat","bull"], color:"#e6d280", env:"Vast sand desert, The Eye" },
+  { name:"Swamp", gx:2.5, gz:5.5, creatures:["swamp_duck","frog_gorilla"], color:"#4d8033", env:"Murky wetland, fog, disease" },
+  { name:"Fog Islands", gx:1.5, gz:2.5, creatures:["flesh_insect"], color:"#99b399", env:"Thick fog, cannibals" },
+  { name:"Gut", gx:6.5, gz:3.5, creatures:["elephant_turtle","Crab"], color:"#a68c66", env:"Gorges, crabs everywhere" },
+  { name:"Leviathan Coast", gx:1.5, gz:0.0, creatures:["whale2","Big-Bones"], color:"#668ccc", env:"Northern coast, massive creatures" },
+  { name:"Border Zone", gx:3.0, gz:3.5, creatures:["dog"], color:"#b39973", env:"Starting area, mild" },
+  { name:"Howler Maze", gx:5.5, gz:2.5, creatures:["skimmer"], color:"#cc994d", env:"Labyrinth canyons" },
+  { name:"Ashlands", gx:6.5, gz:6.5, creatures:["robot_worker"], color:"#401f1f", env:"Cat-Lon's domain, extreme danger" },
+  { name:"Spider Plains", gx:0.5, gz:4.5, creatures:["cage_beast"], color:"#8c6678", env:"Desolate, spider nests" },
+  { name:"Cannibal Plains", gx:1.5, gz:1.0, creatures:["pack_beast"], color:"#999", env:"Hostile northern territory" },
+];
+
+const GATES = [
+  { name:"northGate", ip:".147", role:"HEART", color:"#4caf50" },
+  { name:"eastGate", ip:".244", role:"BRAIN", color:"#ff9800" },
+  { name:"ironGate", ip:".237", role:"FORGE", color:"#8bc34a" },
+  { name:"sporeGate", ip:".3", role:"DNS", color:"#26c6da" },
+  { name:"deckGate", ip:".176", role:"DISPLAY", color:"#888" },
+  { name:"frameGate", ip:".203", role:"FACE", color:"#555" },
+];
+
+// Main globe canvas
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Minimap canvas
+const mm = document.getElementById('minimap');
+const mx = mm.getContext('2d');
+mm.width = 180; mm.height = 180;
+
+// Gate status display
+const gatesDiv = document.getElementById('gates');
+GATES.forEach(g => {
+  const alive = [".147",".244",".237",".3"].includes(g.ip);
+  gatesDiv.innerHTML += `<div class="${alive?'gate-alive':'gate-down'}">● ${g.name} ${g.ip} — ${g.role}${alive?' ✓':''}</div>`;
+});
+
+let time = 0;
+let hoveredBiome = null;
+
+function drawGlobe() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const r = Math.min(cx, cy) * 0.7;
+  const rot = time * 0.3;
+
+  // Grid lines (8×8 world)
+  ctx.strokeStyle = '#1a1a2a';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 8; i++) {
+    const t = i / 8;
+    // Horizontal
+    ctx.beginPath();
+    for (let a = -Math.PI/2; a <= Math.PI/2; a += 0.05) {
+      const x = cx + r * Math.cos(a) * Math.cos(rot + t * Math.PI);
+      const y = cy + r * (t - 0.5) * 1.6;
+      if (a === -Math.PI/2) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // Vertical
+    ctx.beginPath();
+    const angle = t * Math.PI * 2 + rot;
+    for (let v = -0.5; v <= 0.5; v += 0.02) {
+      const x = cx + r * Math.cos(angle) * Math.cos(v * Math.PI * 0.8);
+      const y = cy + r * v * 1.6;
+      if (v === -0.5) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // Draw biomes as glowing circles on the globe
+  BIOMES.forEach((b, i) => {
+    const bAngle = (b.gx / 8) * Math.PI * 2 + rot;
+    const bElev = (b.gz / 8 - 0.5);
+    const x = cx + r * Math.cos(bAngle) * Math.cos(bElev * Math.PI * 0.8) * 0.9;
+    const y = cy + r * bElev * 1.5;
+    const z = Math.sin(bAngle);
+    if (z < -0.3) return; // behind globe
+
+    const alpha = 0.4 + z * 0.6;
+    const size = 8 + b.creatures.length * 4 + Math.sin(time * 2 + i) * 2;
+
+    // Glow
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, size * 2);
+    grad.addColorStop(0, b.color + 'aa');
+    grad.addColorStop(1, b.color + '00');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = b.color;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Label
+    ctx.fillStyle = '#c9a84c';
+    ctx.font = '10px Courier New';
+    ctx.fillText(b.name, x + size + 4, y + 3);
+
+    // Creature count
+    ctx.fillStyle = '#665';
+    ctx.font = '9px Courier New';
+    ctx.fillText(`${b.creatures.length} beasts`, x + size + 4, y + 14);
+
+    // Store for hover
+    b._sx = x; b._sy = y; b._size = size;
+  });
+
+  // Draw gate nodes orbiting the globe
+  GATES.forEach((g, i) => {
+    const alive = [".147",".244",".237",".3"].includes(g.ip);
+    const angle = (i / GATES.length) * Math.PI * 2 + rot * 0.5;
+    const gr = r * 1.15;
+    const x = cx + gr * Math.cos(angle);
+    const y = cy + gr * Math.sin(angle) * 0.3;
+
+    ctx.fillStyle = alive ? g.color : '#333';
+    ctx.beginPath();
+    // Diamond shape
+    ctx.moveTo(x, y - 8);
+    ctx.lineTo(x + 6, y);
+    ctx.lineTo(x, y + 8);
+    ctx.lineTo(x - 6, y);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = alive ? '#ddd' : '#444';
+    ctx.font = '8px Courier New';
+    ctx.fillText(g.name, x + 10, y + 3);
+  });
+}
+
+function drawMinimap() {
+  mx.fillStyle = '#0d0d1a';
+  mx.fillRect(0, 0, 180, 180);
+
+  // 8×8 grid
+  mx.strokeStyle = '#222';
+  mx.lineWidth = 0.5;
+  for (let i = 0; i <= 8; i++) {
+    mx.beginPath(); mx.moveTo(i * 22.5, 0); mx.lineTo(i * 22.5, 180); mx.stroke();
+    mx.beginPath(); mx.moveTo(0, i * 22.5); mx.lineTo(180, i * 22.5); mx.stroke();
+  }
+
+  // Biomes
+  BIOMES.forEach(b => {
+    const x = b.gx * 22.5;
+    const y = b.gz * 22.5;
+    mx.fillStyle = b.color;
+    mx.globalAlpha = 0.6;
+    mx.beginPath();
+    mx.arc(x, y, 4 + b.creatures.length * 1.5, 0, Math.PI * 2);
+    mx.fill();
+    mx.globalAlpha = 1;
+  });
+
+  // Label
+  mx.fillStyle = '#665';
+  mx.font = '8px Courier New';
+  mx.fillText('8×8 WORLD MAP', 4, 176);
+}
+
+function animate() {
+  time += 0.016;
+  drawGlobe();
+  drawMinimap();
+
+  // Stats
+  document.getElementById('stats').textContent =
+    `Frame ${Math.floor(time*60)} · ${BIOMES.length} biomes · ${BIOMES.reduce((s,b)=>s+b.creatures.length,0)} creatures · ${GATES.filter(g=>[".147",".244",".237",".3"].includes(g.ip)).length}/${GATES.length} gates alive`;
+
+  requestAnimationFrame(animate);
+}
+
+// Hover detection
+canvas.addEventListener('mousemove', e => {
+  const info = document.getElementById('biome-info');
+  let found = null;
+  BIOMES.forEach(b => {
+    if (b._sx && Math.hypot(e.clientX - b._sx, e.clientY - b._sy) < b._size + 10) found = b;
+  });
+  if (found) {
+    info.innerHTML = `<b style="color:${found.color}">${found.name}</b><br>${found.env}<br>` +
+      `Creatures: ${found.creatures.join(', ')}<br>Grid: (${found.gx}, ${found.gz})`;
+  } else {
+    info.textContent = '';
+  }
+});
+
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+animate();
+</script>
+</body>
+</html>

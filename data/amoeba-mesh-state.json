@@ -1,0 +1,71 @@
+{
+  "ts": "2026-11-14T19:02:00Z",
+  "wave": "233c",
+  "author": "northGate-cursor",
+  "subject": "AMOEBA MESH — FULL STATE RADIATION",
+  "mesh": {
+    "relay": {
+      "ip": "192.168.4.244",
+      "hbbs_port": 21116,
+      "hbbr_port": 21117,
+      "key": "6oVQBFyHHNAJqm1OlS+XvpdoJ5plYrPzJoPTTYlgQdg=",
+      "key_source": "id_ed25519 in /home/eastgate/Development/ecoPrimals/membrane-recipe/",
+      "key_required": true,
+      "note": "ZK NULL is philosophical — relay crypto key is REQUIRED by hbbs"
+    },
+    "password": "d14247c1680e3085",
+    "password_derivation": "SHA256(relay_key) first 16 chars = bingoCube identity",
+    "connection_method": "DIRECT IP wins on LAN — bypass relay, connect to IP:21118",
+    "gates": {
+      "eastGate": {
+        "id": "19091278",
+        "ip": "192.168.4.244",
+        "role": "BRAIN + RELAY",
+        "rustdesk": "relay only (HEADLESS, no X11)",
+        "ssh": "eastgate:eastgate",
+        "direct_port": 21118
+      },
+      "sporeGate": {
+        "id": "1871544996",
+        "ip": "192.168.4.3",
+        "role": "EYEBALL + GAMING HUB",
+        "rustdesk": "desktop target (Xorg :0, GDM active)",
+        "ssh_from_eastgate": "key auth (root + sporegate)",
+        "direct_port": 21118,
+        "apps": ["steam", "discord", "firefox"],
+        "gpu": "AMD Rembrandt (Ryzen 5 6600H iGPU)"
+      },
+      "northGate": {
+        "id": "132831540",
+        "ip": "192.168.4.147",
+        "role": "HEART + DRIVER SEAT",
+        "rustdesk": "client (RTX 5090, 63 models)",
+        "direct_port": 21118,
+        "note": "ID was 290123343, regenerated to 132831540 during config overwrite"
+      },
+      "ironGate": {
+        "id": "pending",
+        "ip": "192.168.4.237",
+        "role": "FORGE 2",
+        "rustdesk": "needs amoeba inject",
+        "direct_port": 21118,
+        "hw": "i9-14900K, RTX 5070, 94GB DDR5"
+      },
+      "graftGate": {
+        "id": "pending",
+        "ip": "192.168.4.107",
+        "role": "MAC MINI",
+        "rustdesk": "needs amoeba inject"
+      }
+    },
+    "toml_template": "rendezvous_server = '192.168.4.244:21116'\nnat_type = 1\nserial = 0\nunlock_pin = ''\n\n[options]\ncustom-rendezvous-server = '192.168.4.244'\nrelay-server = '192.168.4.244'\nkey = '6oVQBFyHHNAJqm1OlS+XvpdoJ5plYrPzJoPTTYlgQdg='\ndirect-server = 'Y'\ndirect-access-port = '21118'\nenable-lan-discovery = 'Y'\nverification-method = 'use-permanent-password'\nallow-remote-config-modification = 'Y'\nallow-auto-disconnect = 'N'\n",
+    "discoveries": {
+      "key_required": "hbbs loads key from id_ed25519 — empty key causes Key mismatch(0)",
+      "direct_ip_wins": "LAN connections work with IP:port, no relay needed",
+      "root_config_matters": "Service reads /root/.config/rustdesk/RustDesk2.toml",
+      "id_fragile": "Overwriting RustDesk.toml regenerates ID (loses key_pair)",
+      "forgejo_auth": "gaia:GaiaForge2026! works",
+      "ssh_chain": "northGate→eastGate(eastgate:eastgate)→sporeGate(key auth)"
+    }
+  }
+}

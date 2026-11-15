@@ -1,0 +1,153 @@
+{
+  "version": "wave-232-unify",
+  "timestamp": "2026-11-14T12:55:00-05:00",
+  "organism": "GAIA",
+  "roles": {
+    "eastGate": {
+      "ip": "192.168.4.244",
+      "role": [
+        "BRAIN",
+        "GUT",
+        "RELAY"
+      ],
+      "links": {
+        "enp5s0": "10G SFP+ FIBER \u2192 MikroTik (.2) [PRIMARY 0.24ms]",
+        "eno1": "1G RJ45 \u2192 Flint (.1) [BACKUP 0.46ms]",
+        "wlp0s20f3": "WiFi \u2192 Flint [BACKUP]"
+      },
+      "services": {
+        "gate": ":8443",
+        "data": ":8080",
+        "forgejo": ":3000",
+        "ollama": ":11436",
+        "relay_hbbs": ":21116",
+        "relay_hbbr": ":21117",
+        "tor": ".onion",
+        "ssh": ":22"
+      },
+      "rustdesk_id": "19091278",
+      "gpu": "RTX 4070 (12GB)"
+    },
+    "flint": {
+      "ip": "192.168.4.1",
+      "role": [
+        "LIGHTHOUSE",
+        "EAR",
+        "GATEWAY"
+      ],
+      "lighthouse": {
+        "radios": [
+          {
+            "iface": "ra0",
+            "ssid": "Aperture Science",
+            "band": "2.4GHz",
+            "mode": "HE20",
+            "power": "20dBm"
+          },
+          {
+            "iface": "ra1",
+            "ssid": "GAIA",
+            "band": "2.4GHz",
+            "mode": "HE20",
+            "power": "20dBm"
+          },
+          {
+            "iface": "rax0",
+            "ssid": "Black Mesa",
+            "band": "5GHz",
+            "mode": "HE160",
+            "power": "20dBm"
+          },
+          {
+            "iface": "rax1",
+            "ssid": "GAIA",
+            "band": "5GHz",
+            "mode": "HE160",
+            "power": "20dBm"
+          }
+        ],
+        "usb_wifi": "Realtek 802.11ax (28de:2432) \u2014 UNBOUND, no driver (future 5th radio)",
+        "purpose": "Pineapple lighthouse \u2014 4 SSID beacons, RSSI proximity for all devices"
+      },
+      "ear": {
+        "device": "Logitech Brio 100 mic",
+        "daemon": "flint-ear.sh (30s cycle)",
+        "data": "/tmp/gaia-ear/ear.json"
+      },
+      "conntrack_flows": 1827,
+      "thermal": "27C"
+    },
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "role": [
+        "FORGE",
+        "EYE",
+        "LISTENER"
+      ],
+      "eye": "Brio 100 webcam (pending physical move from Flint)",
+      "capabilities": {
+        "bluetooth": "5.2 (MediaTek hci0 UP)",
+        "gpu": "AMD Rembrandt iGPU",
+        "display": "Xorg :0 headless + RustDesk eyeball",
+        "audio": "HDMI audio (2 devices)",
+        "storage": "929GB NVMe (705GB free)",
+        "ram": "27GB"
+      },
+      "rustdesk_id": "1871544996"
+    },
+    "northGate": {
+      "ip": "192.168.4.147",
+      "role": [
+        "HEART",
+        "USER_CHAIR"
+      ],
+      "purpose": "Kevin's driver seat \u2014 gaming, Steam, dev. FREED from server duty.",
+      "hw": "9950X3D + RTX 5090 + 96GB",
+      "ollama_models": 63,
+      "services": {
+        ":11434": "ollama"
+      }
+    },
+    "ironGate": {
+      "ip": "192.168.4.237",
+      "role": [
+        "FORGE_2",
+        "MUSCLE"
+      ],
+      "hw": "i9-14900K + RTX 5070 (12GB GDDR7) + 94GB DDR5",
+      "ollama_models": 6,
+      "ssh_status": "pubkey-only, no eastGate key \u2014 NEEDS INJECTION",
+      "services": {
+        ":8080": "data",
+        ":11434": "ollama",
+        ":22": "ssh (locked)"
+      }
+    },
+    "mikrotik": {
+      "ip": "192.168.4.2",
+      "role": [
+        "SPINE",
+        "L2_SWITCH"
+      ],
+      "links": "10G SFP+ to eastGate, 2.5G to Flint, all wired gates",
+      "password": "UNKNOWN"
+    }
+  },
+  "mesh": {
+    "type": "DAG via rhizoCrypt",
+    "relay": "eastGate (192.168.4.244:21116)",
+    "trust": "LAN = trust boundary, ZK null, key-free",
+    "password": "d14247c1680e3085 (bingoCube universal)",
+    "discovery": "LAN broadcast + RSSI from lighthouse"
+  },
+  "lan2": {
+    "status": "BRIDGE DOWN",
+    "jetstream": "192.168.4.111 (reachable)",
+    "unreachable": [
+      "192.168.9.1",
+      "192.168.9.203 (frameGate)",
+      "192.168.9.217 (Pixel WiFi)"
+    ],
+    "note": "br-guest gone from Flint \u2014 needs config restore"
+  }
+}

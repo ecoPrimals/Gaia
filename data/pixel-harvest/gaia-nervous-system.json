@@ -1,0 +1,98 @@
+{
+  "architecture": "CNS ↔ PNS — Central and Peripheral Nervous System",
+  "description": "LAN 1 is the CNS (brain + spine). LAN 2 + Pixel is the PNS (peripheral nerves + sense organs).",
+
+  "cns": {
+    "name": "Central Nervous System — LAN 1 (4422 Southgate)",
+    "components": {
+      "brain": {
+        "node": "eastGate (.244)",
+        "gpu": "RTX 4070",
+        "role": "Processing, orchestration, data serve, Forgejo, Gaia Gate",
+        "services": [":11436/ollama", ":8080/data", ":8443/gate", ":3000/forgejo"]
+      },
+      "heart": {
+        "node": "northGate (.147)",
+        "gpu": "RTX 5090",
+        "cpu": "9950X3D",
+        "ram": "96GB",
+        "models": 63,
+        "role": "Heavy inference, deep thinking, model zoo",
+        "services": [":11434/ollama"]
+      },
+      "forge": {
+        "node": "sporeGate (.3)",
+        "role": "DNS, heart-pull, plasmidBin build forge",
+        "services": ["dns", "heart-pull"]
+      },
+      "spine": {
+        "path": "MikroTik (.2) → Router (.1) → 10G fiber → JetStream (.111)",
+        "latency_ms": 0.87,
+        "bandwidth": "10Gbps",
+        "role": "Spinal cord connecting CNS to PNS"
+      }
+    }
+  },
+
+  "pns": {
+    "name": "Peripheral Nervous System — LAN 2 (641 Samantha) + Rover",
+    "components": {
+      "diamond_lens": {
+        "node": "grapheneGate (.9.217)",
+        "gpu": "Mali-G715 Vulkan",
+        "type": "Pixel 8a",
+        "weight_g": 188,
+        "volume_cm3": 98.41,
+        "role": "ROVER — mobile sense organ, touch/screen/camera/GPS/WiFi",
+        "services": [":8082/llama-server"],
+        "senses": 37,
+        "meaning": "Kevin's interface to Gaia. Her eye, skin, ear, nose."
+      },
+      "swift_gate": {
+        "node": "swiftGate (ASLEEP — no IP yet)",
+        "gpu": "RTX 3070",
+        "case": "NZXT H1 V2",
+        "role": "POLARIS OF LAN 2 — heavy inference at South Pole",
+        "status": "POWERED OFF",
+        "when_awake": "Will be the Heart of House 2"
+      }
+    }
+  },
+
+  "signaling": {
+    "cns_to_pns": {
+      "path": "eastGate → spine → WiFi → Pixel / swiftGate",
+      "protocol": "HTTP (heart-pull.json, full-image.json)",
+      "latency_ms": 145,
+      "description": "Brain pushes state, models, data to periphery"
+    },
+    "pns_to_cns": {
+      "path": "Pixel → WiFi → spine → eastGate",
+      "protocol": "HTTP (phone-home, sensor data)",
+      "latency_ms": 28,
+      "description": "Sense organs report back to brain"
+    },
+    "pns_internal": {
+      "path": "Pixel ↔ swiftGate (when awake) on Gaia WiFi",
+      "latency_ms": "~5ms (same WiFi AP)",
+      "description": "Peripheral nerves talk to each other locally"
+    }
+  },
+
+  "symmetry": {
+    "lan1_polaris": "northGate — RTX 5090, 63 models, 96GB RAM",
+    "lan2_polaris": "swiftGate — RTX 3070, 8GB VRAM (when awake)",
+    "lan1_rover": "none (all wired)",
+    "lan2_rover": "grapheneGate — Pixel 8a, 37 sensors, mobile"
+  },
+
+  "wikipedia_core": {
+    "concept": "Gaia IS Wikipedia at core — all knowledge, wrapped in GrapheneOS as muscle, Pixel as frame",
+    "implementation": {
+      "knowledge": "103GB unified memory to fill with offline Wikipedia dumps + OSINT",
+      "muscle": "GrapheneOS provides security, process isolation, hardware access",
+      "frame": "152.1 × 72.7 × 8.9 mm aluminum + glass — her physical envelope",
+      "diamond_lens": "6.1\" OLED @ 2000 nits — her window to the world"
+    }
+  }
+}

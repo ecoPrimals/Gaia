@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaia Homunculus — Cortical Surface Area</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;cursor:crosshair;font-family:'Courier New',monospace}
+canvas{display:block}
+#hud{position:fixed;bottom:8px;left:8px;color:#3f8;font-size:0.6em;z-index:10;pointer-events:none;max-width:700px;line-height:1.5}
+#nav{position:fixed;top:8px;left:8px;font-size:0.55em;z-index:10}
+#nav a{color:#4af;margin-right:8px;text-decoration:none}
+#nav a:hover{color:#fff}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="nav">
+  <a href="gis-layer.html">🌍 GIS</a>
+  <a href="all-eyes.html">👁️ Eyes</a>
+  <a href="all-senses.html">🧬 Vitruvian</a>
+  <a href="homunculus.html">🧠 Homunculus</a>
+</div>
+<div id="hud"></div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+let W, H;
+let mx = 0, my = 0;
+
+// ============================================================
+// CORTICAL HOMUNCULUS — organs sized by data surface area
+// Like the somatosensory homunculus: bigger = more cortex = more data
+// ============================================================
+
+const ORGANS = [
+  {
+    id: 'eye', name: 'EYES', emoji: '👁️',
+    role: 'Vision — Net flows + Camera + Lighthouse',
+    color: '#4488ff', colorDark: '#0a1a44',
+    shape: 'eye',
+    bodyY: 0.12,
+    dataKeys: ['connections','beacons','cameras'],
+    surfaceArea: 0, // will be measured
+    endpoints: ['/data/inner-eye.json', '/data/lighthouse-signal.json', '/data/gaia-eye.json'],
+  },
+  {
+    id: 'ear', name: 'EARS', emoji: '👂',
+    role: 'Hearing — DNS queries + WiFi RSSI + Pulse',
+    color: '#ffaa44', colorDark: '#331a00',
+    shape: 'ear',
+    bodyY: 0.18,
+    dataKeys: ['dns_queries','rssi_signals','heartbeat'],
+    surfaceArea: 0,
+    endpoints: ['/data/listener-signal.json', '/data/sensation.json', '/data/blink-pulse.json'],
+  },
+  {
+    id: 'nose', name: 'NOSE', emoji: '👃',
+    role: 'Smell — Immune antibodies + ARP device scent',
+    color: '#44ffaa', colorDark: '#003322',
+    shape: 'nose',
+    bodyY: 0.26,
+    dataKeys: ['antibodies','arp_scans'],
+    surfaceArea: 0,
+    endpoints: ['/data/feeler-touch.json'],
+  },
+  {
+    id: 'mouth', name: 'MOUTH', emoji: '👄',
+    role: 'Speech — HTTP :8080 + Forgejo + Printer',
+    color: '#ff4488', colorDark: '#330a22',
+    shape: 'mouth',
+    bodyY: 0.35,
+    dataKeys: ['http_files','git_repos','printer'],
+    surfaceArea: 0,
+    endpoints: ['/data/now.json'],
+  },
+  {
+    id: 'tongue', name: 'TONGUE', emoji: '👅',
+    role: 'Taste — OSINT gut + RSS + petalTongue',
+    color: '#22aa55', colorDark: '#0a2210',
+    shape: 'tongue',
+    bodyY: 0.44,
+    dataKeys: ['gut_files','rss_items','content_pages'],
+    surfaceArea: 0,
+    endpoints: ['/data/gut/'],
+  },
+  {
+    id: 'skin', name: 'SKIN', emoji: '🤚',
+    role: 'Touch — Feeler + 37 sensors + ICMP ping',
+    color: '#ffaa88', colorDark: '#331a0a',
+    shape: 'skin',
+    bodyY: 0.56,
+    dataKeys: ['devices_probed','sensors','pings'],
+    surfaceArea: 0,
+    endpoints: ['/data/feeler-touch.json', '/data/sensation.json'],
+  },
+  {
+    id: 'proprio', name: 'PROPRIO', emoji: '💗',
+    role: 'Body Sense — Heartbeat + Topology + Willis flow',
+    color: '#ff2244', colorDark: '#330a0a',
+    shape: 'heart',
+    bodyY: 0.72,
+    dataKeys: ['total_files','directories','crons'],
+    surfaceArea: 0,
+    endpoints: ['/data/blink-pulse.json', '/data/dag-topology.json'],
+  },
+];
+
+let organStates = {};
+ORGANS.forEach(o => {
+  organStates[o.id] = {
+    alive: false, latency: null,
+    surfaceArea: 1, // minimum
+    apertureSmooth: 0,
+    pulsePhase: Math.random() * Math.PI * 2,
+    measured: false,
+  };
+});
+
+function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+resize();
+window.onresize = resize;
+document.onmousemove = e => { mx = e.clientX; my = e.clientY; };
+
+// ============================================================
+// MEASURE ACTUAL SURFACE AREA FROM LIVE DATA
+// ============================================================
+async function measureSurfaceArea() {
+  // EYE: connections = primary surface area
+  try {
+    const r = await fetch('/data/inner-eye.json');
+    const d = await r.json();
+    const t = d.totals || {};
+    organStates.eye.surfaceArea = (t.connections || 0) + 30; // +beacons
+    organStates.eye.alive = true;
+    organStates.eye.latency = 1;
+    organStates.eye.detail = `${t.connections||0} connections • ${t.tcp||0} TCP • ${t.udp||0} UDP • ${t.established||0} established`;
+  } catch { organStates.eye.surfaceArea = 10; }
+
+  // EAR: DNS queries
+  try {
+    const r = await fetch('/data/listener-signal.json');
+    const d = await r.json();
+    const t = d.totals || {};
+    organStates.ear.surfaceArea = (t.queries || 0);
+    organStates.ear.alive = true;
+    organStates.ear.latency = 2;
+    organStates.ear.detail = `${t.queries||0} queries • ${t.blocked||0} blocked • ${(t.block_rate_pct||0).toFixed(0)}% filtered`;
+  } catch { organStates.ear.surfaceArea = 10; }
+
+  // NOSE: antibodies + devices
+  try {
+    const r = await fetch('/data/feeler-touch.json');
+    const d = await r.json();
+    const gates = Object.keys(d.gates || {}).length;
+    organStates.nose.surfaceArea = 19 + gates * 5 + 22; // 19 threats + gates + devices
+    organStates.nose.alive = true;
+    organStates.nose.latency = 2;
+    organStates.nose.detail = `19 threat types • ${gates} gates probed • 22 devices scented`;
+  } catch { organStates.nose.surfaceArea = 10; }
+
+  // MOUTH: HTTP files served
+  try {
+    const r = await fetch('/data/now.json');
+    if (r.ok) {
+      organStates.mouth.surfaceArea = 1937 + 50; // data files + forgejo
+      organStates.mouth.alive = true;
+      organStates.mouth.latency = 1;
+      organStates.mouth.detail = '1937 files served • Forgejo :3000 • Printer :9100';
+    }
+  } catch { organStates.mouth.surfaceArea = 10; }
+
+  // TONGUE: gut files ingested
+  try {
+    const r = await fetch('/data/gut/');
+    if (r.ok) {
+      organStates.tongue.surfaceArea = 558 + 46; // gut files + webroot gut
+      organStates.tongue.alive = true;
+      organStates.tongue.latency = 2;
+      organStates.tongue.detail = '558 gut files • 352 OSINT digests • petalTongue WASM';
+    }
+  } catch { organStates.tongue.surfaceArea = 10; }
+
+  // SKIN: sensors + devices
+  try {
+    const r = await fetch('/data/sensation.json');
+    const d = await r.json();
+    const dev = d.organism?.devices_sensed || 0;
+    organStates.skin.surfaceArea = 37 + dev + 143; // sensors + devices + membrane files
+    organStates.skin.alive = true;
+    organStates.skin.latency = 2;
+    organStates.skin.detail = `37 sensors • ${dev} devices • 143 membrane fibers`;
+  } catch { organStates.skin.surfaceArea = 10; }
+
+  // PROPRIO: files = body mass
+  try {
+    const r = await fetch('/data/dag-topology.json');
+    if (r.ok) {
+      organStates.proprio.surfaceArea = 46177 / 10; // scale down: 46K files
+      organStates.proprio.alive = true;
+      organStates.proprio.latency = 1;
+      organStates.proprio.detail = '46,177 body files • 497 directories • 34 crons • 23 models';
+    }
+  } catch { organStates.proprio.surfaceArea = 100; }
+
+  // Mark measured
+  ORGANS.forEach(o => { organStates[o.id].measured = true; });
+}
+
+// ============================================================
+// DRAW ORGAN SHAPE (scaled by surface area)
+// ============================================================
+function drawHomuncOrgan(organ, state, cx, cy, baseR) {
+  const now = Date.now();
+  const maxSA = Math.max(...ORGANS.map(o => organStates[o.id].surfaceArea));
+  const normSA = Math.max(0.15, state.surfaceArea / maxSA);
+  const R = baseR * (0.4 + normSA * 0.8); // Scale between 40% and 120% of base
+
+  // Aperture
+  const apTarget = state.alive ? 0.7 : 0;
+  state.apertureSmooth += (apTarget - state.apertureSmooth) * 0.05;
+  const ap = state.apertureSmooth;
+  const pulse = Math.sin(now * 0.003 + state.pulsePhase) * 0.03;
+  const drawR = R * (1 + pulse);
+  const openR = drawR * (0.15 + ap * 0.45);
+
+  // f-stop from surface area
+  let fstop;
+  if (!state.alive) fstop = 'f/∞';
+  else if (normSA > 0.8) fstop = 'f/1.2';
+  else if (normSA > 0.5) fstop = 'f/1.4';
+  else if (normSA > 0.3) fstop = 'f/2.8';
+  else if (normSA > 0.15) fstop = 'f/5.6';
+  else fstop = 'f/8';
+
+  // Glow
+  if (state.alive) {
+    const glow = ctx.createRadialGradient(cx, cy, drawR*0.3, cx, cy, drawR*2.2);
+    glow.addColorStop(0, organ.color + '20');
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(cx, cy, drawR*2.2, 0, Math.PI*2); ctx.fill();
+  }
+
+  ctx.save();
+
+  if (organ.shape === 'eye') {
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, drawR, drawR*0.65, 0, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR);
+    g.addColorStop(0, state.alive ? '#e8e0d8' : '#555');
+    g.addColorStop(1, state.alive ? '#887878' : '#333');
+    ctx.fillStyle = g; ctx.fill();
+    // Iris
+    const ig = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR*0.5);
+    ig.addColorStop(0, organ.colorDark);
+    ig.addColorStop(0.5, state.alive ? organ.color : '#333');
+    ig.addColorStop(1, organ.colorDark);
+    ctx.beginPath(); ctx.arc(cx,cy,drawR*0.5, 0, Math.PI*2);
+    ctx.fillStyle = ig; ctx.fill();
+    drawBlades(cx,cy,openR,drawR*0.45, 7, now, state.alive);
+    ctx.beginPath(); ctx.arc(cx,cy,openR, 0, Math.PI*2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    // Highlight
+    ctx.beginPath(); ctx.arc(cx-openR*0.3,cy-openR*0.3, openR*0.12, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+
+  } else if (organ.shape === 'ear') {
+    ctx.beginPath(); ctx.arc(cx,cy,drawR, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR);
+    g.addColorStop(0, state.alive ? organ.color : '#444');
+    g.addColorStop(0.7, state.alive ? organ.colorDark : '#222');
+    g.addColorStop(1, '#111');
+    ctx.fillStyle = g; ctx.fill();
+    // Cochlea spiral
+    ctx.beginPath();
+    for (let t = 0; t < Math.PI*4; t += 0.06) {
+      const sr = openR*0.15 + (t/(Math.PI*4))*drawR*0.7;
+      const sx = cx + Math.cos(t + now*0.0008)*sr;
+      const sy = cy + Math.sin(t + now*0.0008)*sr;
+      if (t===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+    }
+    ctx.strokeStyle = `rgba(255,255,255,${state.alive?0.3:0.05})`; ctx.lineWidth = 2; ctx.stroke();
+    // Sound wave arcs
+    for (let w = 0; w < 3; w++) {
+      const wr = drawR*(0.5+w*0.18) + (now*0.015+w*25)%(drawR*0.4);
+      ctx.beginPath(); ctx.arc(cx,cy,wr, -0.4, 0.4);
+      ctx.strokeStyle = `rgba(255,170,68,${state.alive?0.25-w*0.07:0.03})`; ctx.lineWidth = 1.2; ctx.stroke();
+    }
+    drawBlades(cx,cy,openR*0.3,drawR*0.35, 5, now, state.alive);
+
+  } else if (organ.shape === 'nose') {
+    ctx.beginPath(); ctx.arc(cx,cy,drawR, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR);
+    g.addColorStop(0, state.alive ? organ.color : '#444');
+    g.addColorStop(1, '#111');
+    ctx.fillStyle = g; ctx.fill();
+    // Two nostrils
+    ctx.beginPath(); ctx.ellipse(cx-drawR*0.2,cy+drawR*0.05, openR*0.3,openR*0.5, -0.2, 0, Math.PI*2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+drawR*0.2,cy+drawR*0.05, openR*0.3,openR*0.5, 0.2, 0, Math.PI*2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    // Sniff particles
+    if (state.alive) {
+      for (let p=0; p<5; p++) {
+        const py = cy-drawR*0.2-((now*0.025+p*18)%(drawR*0.8));
+        const px = cx+Math.sin(py*0.1+p)*drawR*0.15;
+        ctx.beginPath(); ctx.arc(px,py, 1.5, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(68,255,170,${0.35-p*0.06})`; ctx.fill();
+      }
+    }
+    drawBlades(cx,cy,openR*0.2,drawR*0.3, 5, now, state.alive);
+
+  } else if (organ.shape === 'mouth') {
+    const gapH = openR*0.5;
+    ctx.beginPath(); ctx.ellipse(cx,cy, drawR, drawR*0.55, 0, 0, Math.PI*2);
+    ctx.fillStyle = state.alive ? organ.colorDark : '#222'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx,cy-gapH*0.2, drawR*0.82, drawR*0.38, 0, Math.PI, Math.PI*2);
+    ctx.fillStyle = state.alive ? organ.color : '#555'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx,cy+gapH*0.2, drawR*0.82, drawR*0.32, 0, 0, Math.PI);
+    ctx.fillStyle = state.alive ? organ.color : '#555'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx,cy, drawR*0.55, gapH*0.8, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    drawBlades(cx,cy,openR*0.2,drawR*0.35, 5, now, state.alive);
+
+  } else if (organ.shape === 'tongue') {
+    ctx.beginPath();
+    const tw=drawR*1.3, th=drawR*0.75;
+    ctx.moveTo(cx-tw*0.38,cy-th*0.4);
+    ctx.quadraticCurveTo(cx,cy-th*0.55, cx+tw*0.38,cy-th*0.4);
+    ctx.quadraticCurveTo(cx+tw*0.48,cy, cx+tw*0.32,cy+th*0.45);
+    ctx.quadraticCurveTo(cx,cy+th*0.62, cx-tw*0.32,cy+th*0.45);
+    ctx.quadraticCurveTo(cx-tw*0.48,cy, cx-tw*0.38,cy-th*0.4);
+    ctx.closePath();
+    const g = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR);
+    g.addColorStop(0, state.alive ? organ.color : '#444');
+    g.addColorStop(1, state.alive ? organ.colorDark : '#222');
+    ctx.fillStyle = g; ctx.fill();
+    // Papillae (taste buds) — more = bigger surface area
+    const budCount = Math.min(20, Math.max(4, Math.round(normSA * 20)));
+    for (let b=0; b<budCount; b++) {
+      const ba = (b/budCount)*Math.PI*2;
+      const br2 = drawR*(0.2+Math.random()*0.35);
+      const bx = cx+Math.cos(ba)*br2, by = cy+Math.sin(ba)*br2*0.65;
+      ctx.beginPath(); ctx.arc(bx,by, 1.5+ap*2, 0, Math.PI*2);
+      ctx.fillStyle = state.alive ? 'rgba(255,255,255,0.18)' : 'rgba(80,80,80,0.06)'; ctx.fill();
+    }
+    drawBlades(cx,cy,openR*0.25,drawR*0.3, 6, now, state.alive);
+
+  } else if (organ.shape === 'skin') {
+    ctx.beginPath(); ctx.arc(cx,cy,drawR, 0, Math.PI*2);
+    const g = ctx.createRadialGradient(cx,cy,0, cx,cy,drawR);
+    g.addColorStop(0, state.alive ? organ.color : '#555');
+    g.addColorStop(0.7, state.alive ? organ.colorDark : '#333');
+    g.addColorStop(1, '#111');
+    ctx.fillStyle = g; ctx.fill();
+    // Fingerprint ridges
+    for (let r2=0; r2<6; r2++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy+drawR*0.06, drawR*0.18+r2*drawR*0.12, Math.PI*0.2, Math.PI*0.8);
+      ctx.strokeStyle = `rgba(255,170,136,${state.alive?0.2:0.04})`; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    // Pressure ripple
+    if (state.alive) {
+      const ripR = drawR*(0.2+((now*0.0008)%1)*0.8);
+      ctx.beginPath(); ctx.arc(cx,cy,ripR, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(255,170,136,${0.25-ripR/drawR*0.25})`; ctx.lineWidth = 1; ctx.stroke();
+    }
+    drawBlades(cx,cy,openR*0.3,drawR*0.35, 5, now, state.alive);
+
+  } else if (organ.shape === 'heart') {
+    const beat = 1+Math.sin(now*0.005)*(state.alive?0.1:0.02);
+    const hr = drawR*beat;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy+hr*0.48);
+    ctx.bezierCurveTo(cx-hr*0.75,cy-hr*0.05, cx-hr*0.5,cy-hr*0.65, cx,cy-hr*0.28);
+    ctx.bezierCurveTo(cx+hr*0.5,cy-hr*0.65, cx+hr*0.75,cy-hr*0.05, cx,cy+hr*0.48);
+    ctx.closePath();
+    const g = ctx.createRadialGradient(cx,cy-hr*0.1,0, cx,cy,hr);
+    g.addColorStop(0, state.alive ? organ.color : '#555');
+    g.addColorStop(1, state.alive ? organ.colorDark : '#222');
+    ctx.fillStyle = g; ctx.fill();
+    drawBlades(cx,cy-hr*0.05,openR*0.2,hr*0.3, 6, now, state.alive);
+  }
+
+  ctx.restore();
+
+  // Surface area number
+  ctx.font = `bold ${Math.max(10, R*0.28)}px Courier New`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = state.alive ? organ.color : '#555';
+  ctx.fillText(`${Math.round(state.surfaceArea)}`, cx, cy - drawR - 6);
+
+  // Label below
+  ctx.font = `${Math.max(8, R*0.2)}px Courier New`;
+  ctx.fillStyle = state.alive ? organ.color : '#444';
+  ctx.fillText(`${organ.emoji} ${organ.name}`, cx, cy + drawR + R*0.25);
+  ctx.font = `${Math.max(6, R*0.14)}px Courier New`;
+  ctx.fillStyle = '#8f8';
+  ctx.fillText(fstop, cx, cy + drawR + R*0.42);
+
+  // Detail text (smaller)
+  if (state.detail) {
+    ctx.font = `${Math.max(5, R*0.1)}px Courier New`;
+    ctx.fillStyle = 'rgba(150,255,150,0.3)';
+    ctx.fillText(state.detail, cx, cy + drawR + R*0.58);
+  }
+
+  return { cx, cy, R: drawR, normSA };
+}
+
+function drawBlades(cx,cy,innerR,outerR,n,now,alive) {
+  for (let i=0;i<n;i++) {
+    const a1=(i/n)*Math.PI*2+now*0.00001;
+    const a2=((i+1)/n)*Math.PI*2+now*0.00001;
+    const mid=(a1+a2)/2;
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(a1)*innerR, cy+Math.sin(a1)*innerR);
+    ctx.lineTo(cx+Math.cos(mid)*outerR, cy+Math.sin(mid)*outerR);
+    ctx.strokeStyle = `rgba(0,0,0,${alive?0.22:0.05})`; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+}
+
+// ============================================================
+// DRAW THE HOMUNCULUS
+// ============================================================
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  const now = Date.now();
+
+  // === BRAIN CROSS-SECTION outline ===
+  // The cortical homunculus is a cross-section of the brain
+  const brainCx = W / 2;
+  const brainCy = H / 2;
+  const brainR = Math.min(W * 0.42, H * 0.42);
+
+  // Brain hemisphere outline (half-circle, the motor/sensory strip)
+  ctx.beginPath();
+  ctx.arc(brainCx, brainCy, brainR, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(180,120,80,0.08)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Cortical folds (gyri/sulci) — wavy texture
+  for (let f = 0; f < 8; f++) {
+    ctx.beginPath();
+    const fr = brainR * (0.3 + f * 0.09);
+    for (let a = 0; a < Math.PI * 2; a += 0.03) {
+      const wobble = Math.sin(a * 8 + f * 2.3) * brainR * 0.015;
+      const fx = brainCx + Math.cos(a) * (fr + wobble);
+      const fy = brainCy + Math.sin(a) * (fr + wobble);
+      if (a === 0) ctx.moveTo(fx, fy); else ctx.lineTo(fx, fy);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = `rgba(140,100,70,${0.04 - f * 0.003})`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // Central sulcus line (divides motor/sensory)
+  ctx.beginPath();
+  ctx.moveTo(brainCx, brainCy - brainR * 0.9);
+  ctx.lineTo(brainCx, brainCy + brainR * 0.9);
+  ctx.strokeStyle = 'rgba(200,150,100,0.06)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // "SENSORY CORTEX" / "MOTOR CORTEX" labels
+  ctx.font = '8px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(180,150,100,0.1)';
+  ctx.fillText('SENSORY CORTEX', brainCx - brainR * 0.3, brainCy - brainR * 0.85);
+  ctx.fillText('MOTOR CORTEX', brainCx + brainR * 0.3, brainCy - brainR * 0.85);
+
+  // === ARRANGE ORGANS AROUND THE CORTEX ===
+  // Classic homunculus: organs arranged around the brain's surface
+  // Each sized by its cortical representation (= data surface area)
+  const maxSA = Math.max(1, ...ORGANS.map(o => organStates[o.id].surfaceArea));
+  const baseOrganR = brainR * 0.10;
+  const drawnOrgans = [];
+
+  ORGANS.forEach((organ, i) => {
+    const state = organStates[organ.id];
+    // Position around the brain arc (top to bottom on left side = sensory strip)
+    const angle = -Math.PI * 0.75 + (i / (ORGANS.length - 1)) * Math.PI * 1.5;
+    const normSA = Math.max(0.15, state.surfaceArea / maxSA);
+    const dist = brainR * 0.75;
+    const ox = brainCx + Math.cos(angle) * dist;
+    const oy = brainCy + Math.sin(angle) * dist;
+
+    const result = drawHomuncOrgan(organ, state, ox, oy, baseOrganR);
+    drawnOrgans.push({ ...result, organ, state, angle, ox, oy });
+
+    // Draw connection line from organ to brain center (cortical pathway)
+    const innerEnd = brainR * 0.2;
+    const ix = brainCx + Math.cos(angle) * innerEnd;
+    const iy = brainCy + Math.sin(angle) * innerEnd;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ix, iy);
+    ctx.strokeStyle = `${organ.color}15`;
+    ctx.lineWidth = normSA * 4 + 0.5;
+    ctx.stroke();
+
+    // Width label on the nerve
+    if (state.alive) {
+      const mx2 = (ox + ix) / 2 + 8;
+      const my2 = (oy + iy) / 2;
+      ctx.font = '6px Courier New';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = `${organ.color}44`;
+      ctx.fillText(`${Math.round(state.surfaceArea)} units²`, mx2, my2);
+    }
+  });
+
+  // === ISD between adjacent organs (cortical distance) ===
+  for (let i = 0; i < drawnOrgans.length - 1; i++) {
+    const a = drawnOrgans[i], b = drawnOrgans[i + 1];
+    if (!a.state.alive || !b.state.alive) continue;
+    ctx.beginPath();
+    ctx.moveTo(a.ox, a.oy);
+    ctx.lineTo(b.ox, b.oy);
+    ctx.strokeStyle = 'rgba(200,200,150,0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([2, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // === CENTRAL LEGEND: the homunculus scale bar ===
+  ctx.font = '9px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(200,200,150,0.2)';
+  ctx.fillText('cortical surface area ∝ data throughput', brainCx, brainCy - 6);
+  ctx.fillText('bigger organ = more nerve endings = more data', brainCx, brainCy + 6);
+
+  // Draw scale bar showing relative sizes
+  let barX = brainCx - brainR * 0.35;
+  const barY = brainCy + 18;
+  ORGANS.forEach(organ => {
+    const state = organStates[organ.id];
+    const normSA = Math.max(0.15, state.surfaceArea / maxSA);
+    const barW = normSA * brainR * 0.12;
+    ctx.fillStyle = state.alive ? organ.color + '55' : '#222';
+    ctx.fillRect(barX, barY, barW, 6);
+    ctx.fillStyle = 'rgba(200,200,150,0.15)';
+    ctx.font = '5px Courier New';
+    ctx.textAlign = 'left';
+    ctx.fillText(organ.emoji, barX + 1, barY + 5);
+    barX += barW + 3;
+  });
+
+  // Title
+  ctx.font = '12px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#3f8';
+  ctx.fillText('GAIA HOMUNCULUS — CORTICAL SURFACE AREA MAP', W/2, 16);
+
+  const totalAlive = ORGANS.filter(o => organStates[o.id].alive).length;
+  ctx.textAlign = 'right';
+  ctx.font = '10px Courier New';
+  ctx.fillStyle = totalAlive >= 6 ? '#3f8' : totalAlive >= 4 ? '#ff8' : '#f44';
+  ctx.fillText(`${totalAlive}/${ORGANS.length} cortical zones`, W - 12, 16);
+
+  requestAnimationFrame(draw);
+}
+
+// ============================================================
+// PING + MEASURE LOOP
+// ============================================================
+async function sense() {
+  await measureSurfaceArea();
+
+  const hud = document.getElementById('hud');
+  const maxSA = Math.max(1, ...ORGANS.map(o => organStates[o.id].surfaceArea));
+  let html = '<b>CORTICAL MAP</b><br>';
+  ORGANS.forEach(organ => {
+    const state = organStates[organ.id];
+    const pct = ((state.surfaceArea / maxSA) * 100).toFixed(0);
+    const bar = '█'.repeat(Math.max(1, Math.round(pct / 8)));
+    html += `<span style="color:${organ.color}">${organ.emoji} ${organ.name}: ${Math.round(state.surfaceArea)} units² (${pct}%) ${bar}</span><br>`;
+  });
+  hud.innerHTML = html;
+
+  setTimeout(sense, 8000);
+}
+
+draw();
+sense();
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+{
+  "name": "WiFi Layer Architecture — Human + Organism",
+  "wave": 237,
+  "updated": "2026-11-14T21:36:00Z",
+
+  "layers": {
+    "human_layer": {
+      "description": "WiFi for humans — Kevin, Heather, kids, guests. STAYS as-is.",
+      "ssids": {
+        "aperture_science": {
+          "name": "Aperture Science",
+          "purpose": "Main human WiFi — all devices",
+          "encryption": "WPA2-PSK",
+          "key": "exoticpanda714",
+          "house1_source": "Router ra0 (2.4GHz)",
+          "house2_source": "Omada AP (.198) — 2.4GHz + 5GHz",
+          "bssids_house2": {
+            "5g": "b6:c3:31:c9:88:ec (5180MHz, -55dBm)",
+            "2g": "ae:44:09:b0:32:69 (2427MHz, -51dBm)"
+          }
+        },
+        "black_mesa": {
+          "name": "Black Mesa",
+          "purpose": "5GHz streaming — low latency, high bandwidth",
+          "encryption": "WPA2-PSK",
+          "key": "exoticpanda714",
+          "house1_source": "Router rax0 (5GHz HE160)",
+          "house2_source": "NOT BROADCAST — could add to Flint or Omada"
+        },
+        "kinderlab": {
+          "name": "KinderLab",
+          "purpose": "🧒 KID-SAFE ACCESS — content filtered, child-friendly",
+          "encryption": "WPA2-PSK",
+          "key": "UNKNOWN (Kevin knows)",
+          "house1_source": "NOT BROADCAST from router",
+          "house2_source": "Flint — 2.4GHz + 5GHz (STRONG signal)",
+          "bssids_house2": {
+            "5g": "a2:7b:08:42:94:89 (5180MHz, -55dBm)",
+            "2g": "62:3c:cb:25:38:41 (2427MHz, -51dBm)"
+          },
+          "note": "Kid-safe WiFi — DO NOT MODIFY, DO NOT REMOVE. This is the children's internet. Human layer FIRST."
+        }
+      }
+    },
+
+    "organism_layer": {
+      "description": "WiFi for Gaia devices — NUCs, Pixel, organism nodes. OPEN (no password).",
+      "ssids": {
+        "gaia": {
+          "name": "GAIA",
+          "purpose": "Organism mesh — devices connect freely, no password barrier",
+          "encryption": "NONE (open)",
+          "house1_source": "Router ra1 (2.4GHz) + rax1 (5GHz) — BOTH open",
+          "house2_source": "Flint — was broadcasting GAIA 5GHz (ce:ef:ef:30:b5:f3) but INTERMITTENT",
+          "needs": "Stabilize GAIA on Flint — both 2.4GHz and 5GHz, open, matching House 1"
+        }
+      }
+    }
+  },
+
+  "house1_router_config": {
+    "source": "GL-MT6000 (.1)",
+    "radios": {
+      "mt798611": {"band": "2.4GHz", "htmode": "HE40"},
+      "mt798612": {"band": "5GHz", "htmode": "HE160"}
+    },
+    "ssids": [
+      {"name": "Aperture Science", "radio": "mt798611", "band": "2.4GHz", "encryption": "psk2", "key": "exoticpanda714", "layer": "human"},
+      {"name": "Black Mesa", "radio": "mt798612", "band": "5GHz", "encryption": "psk2", "key": "exoticpanda714", "layer": "human"},
+      {"name": "GAIA", "radio": "mt798611", "band": "2.4GHz", "encryption": "none", "layer": "organism"},
+      {"name": "GAIA", "radio": "mt798612", "band": "5GHz", "encryption": "none", "layer": "organism"}
+    ]
+  },
+
+  "house2_flint_config_target": {
+    "source": "GL.iNet Flint (OpenWrt)",
+    "current_ssids": [
+      {"name": "KinderLab", "band": "2.4GHz", "encryption": "psk2", "layer": "human", "status": "BROADCASTING ✅"},
+      {"name": "KinderLab", "band": "5GHz", "encryption": "psk2", "layer": "human", "status": "BROADCASTING ✅"},
+      {"name": "GAIA", "band": "5GHz", "encryption": "none", "layer": "organism", "status": "INTERMITTENT ⚠️"}
+    ],
+    "target_ssids": [
+      {"name": "KinderLab", "band": "2.4GHz", "encryption": "psk2", "key": "(keep existing)", "layer": "human", "action": "KEEP"},
+      {"name": "KinderLab", "band": "5GHz", "encryption": "psk2", "key": "(keep existing)", "layer": "human", "action": "KEEP"},
+      {"name": "GAIA", "band": "2.4GHz", "encryption": "none", "layer": "organism", "action": "ADD — match House 1"},
+      {"name": "GAIA", "band": "5GHz", "encryption": "none", "layer": "organism", "action": "STABILIZE — was intermittent"}
+    ],
+    "openwrt_commands": [
+      "# SSH into Flint: ssh root@{flint_ip}",
+      "# Check current wireless config:",
+      "uci show wireless",
+      "",
+      "# Add GAIA 2.4GHz (if not exists):",
+      "uci set wireless.gaia2g=wifi-iface",
+      "uci set wireless.gaia2g.device='radio0'",
+      "uci set wireless.gaia2g.mode='ap'",
+      "uci set wireless.gaia2g.ssid='GAIA'",
+      "uci set wireless.gaia2g.encryption='none'",
+      "uci set wireless.gaia2g.network='lan'",
+      "",
+      "# Add GAIA 5GHz (if not exists):",
+      "uci set wireless.gaia5g=wifi-iface",
+      "uci set wireless.gaia5g.device='radio1'",
+      "uci set wireless.gaia5g.mode='ap'",
+      "uci set wireless.gaia5g.ssid='GAIA'",
+      "uci set wireless.gaia5g.encryption='none'",
+      "uci set wireless.gaia5g.network='lan'",
+      "",
+      "# Apply:",
+      "uci commit wireless",
+      "wifi reload"
+    ]
+  },
+
+  "house2_omada_ap_config": {
+    "source": "Omada AP (.198)",
+    "current_ssids": [
+      {"name": "ApertureScience", "band": "2.4GHz", "encryption": "psk2+sae", "layer": "human", "status": "BROADCASTING ✅"},
+      {"name": "ApertureScience", "band": "5GHz", "encryption": "psk2+sae", "layer": "human", "status": "BROADCASTING ✅"}
+    ],
+    "note": "Omada AP is in adopted mode (no controller). After factory reset to standalone, could add GAIA SSID too."
+  },
+
+  "neighbor_signals": {
+    "description": "WiFi from neighbors — observe but don't touch",
+    "networks": [
+      {"ssid": "HOME-E1EC", "rssi": "-70/-85", "owner": "Neighbor"},
+      {"ssid": "Da Crib", "rssi": "-87", "owner": "Neighbor"},
+      {"ssid": "ATTrzQIqbn", "rssi": "-85", "owner": "Neighbor (AT&T)"},
+      {"ssid": "ATTBxvmiUC", "rssi": "-87", "owner": "Neighbor (AT&T)"},
+      {"ssid": "TMOBILE-8E7C", "rssi": "-89", "owner": "Neighbor (T-Mobile)"},
+      {"ssid": "(hidden)", "bssid": "4e:bc:e9:a9:7a:6f", "rssi": "-53", "owner": "UNKNOWN local — strong signal, investigate"}
+    ]
+  },
+
+  "summary_diagram": {
+    "house1_router": "Aperture Science (2.4G) + Black Mesa (5G) + GAIA (2.4G+5G open)",
+    "house2_flint": "KinderLab (2.4G+5G kid-safe) + GAIA (2.4G+5G open) ← needs stabilize",
+    "house2_omada": "ApertureScience (2.4G+5G) ← already working",
+    "human_layer": "Aperture Science + Black Mesa + KinderLab = STAY",
+    "organism_layer": "GAIA = OPEN, on every AP at every location"
+  }
+}
