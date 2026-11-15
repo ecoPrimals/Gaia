@@ -14,6 +14,7 @@ CYCLE_S=30
 BRIO_DEV="plughw:2,0"  # Logitech Brio 100 on sporeGate
 
 mkdir -p "$EAR_DIR"
+CYCLE_COUNT=0
 
 classify_sound() {
     local rms=$1 peak=$2
@@ -173,9 +174,14 @@ EOF
     ELAPSED=$((CYCLE_END - CYCLE_START))
     echo "[$(date)] ear: rms=$RMS peak=$PEAK db=${DB}dB state=$STATE loud=$LOUD printer=$PRINTER (${ELAPSED}s)"
 
-    # Run spectral analysis + Akida classification on this cycle's WAV
+    # Run spectral analysis + Akida classification + full attenuator
     python3 /opt/Gaia/ear-spectral.py 2>/dev/null &
     python3 /opt/Gaia/akida-ear-pipe.py 2>/dev/null &
+    # Full 7-sense attenuator sweep every 4th cycle (~2min)
+    CYCLE_COUNT=$(( (CYCLE_COUNT + 1) % 4 ))
+    if [ "$CYCLE_COUNT" -eq 0 ]; then
+        python3 /opt/Gaia/attenuate-all.py 2>/dev/null &
+    fi
 
     # If cycle took less than CYCLE_S, the sleep was in the recording itself — no extra wait needed
 done
