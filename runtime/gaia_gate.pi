@@ -652,6 +652,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path in ("/campus","/university","/departments"): self._serve_static("campus.html"); return
         if self.path in ("/chromatograph","/spectrum","/spectral"): self._serve_static("chromatograph.html"); return
         if self.path in ("/springs","/chemistry","/synthetic"): self._serve_static("springs.html"); return
+        if self.path in ("/web","/huge-web","/weave","/stories"): self._serve_static("web.html"); return
         if self.path in ("/gaia-sw.js","/sw.js","/service-worker.js"): self._serve_static("gaia-sw.js"); return
         if self.path=="/manifest.json": self._serve_static("manifest.json"); return
         if self.path in ("/biomes","/gardens","/surface"): self._serve_static("spacedock.html"); return
@@ -829,6 +830,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self._serve_file(CAMPFIRE_PAGES[self.path], os.path.join(_REPO,"infra","campfire-site")); return
         if self.path=="/og-card.svg": self._serve_static("og-card.svg"); return
         if self.path.startswith("/static/"): self._serve_static(self.path[8:]); return
+        if self.path.startswith("/nucleus-aarch64/"): self._serve_file(self.path[1:], "/tmp"); return
+        if self.path.startswith("/nucleus/"): self._serve_file("nucleus-aarch64/"+self.path[9:], "/tmp"); return
         if self.path.startswith("/data/"): self._serve_file(self.path[1:]); return
         if self.path.startswith("/videos/"): self._serve_file(self.path[1:]); return
         if self.path in ("/gaiau","/university","/classes","/videos"):
