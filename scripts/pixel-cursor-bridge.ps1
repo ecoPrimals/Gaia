@@ -1,4 +1,4 @@
-﻿# pixel-cursor-bridge.ps1 — Pixel touch → Windows mouse cursor
+# pixel-cursor-bridge.ps1 — Pixel touch → Windows mouse cursor
 # Sovereign ADB bridge. No installs. Pure pipe.
 # 
 # Reads multitouch events from Pixel's goodix_ts0 touchscreen
