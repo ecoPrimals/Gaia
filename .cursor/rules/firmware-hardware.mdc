@@ -1,0 +1,81 @@
+# Firmware & Hardware Healing — Mesh-Wide Pattern
+
+## The Left Eye Problem (iGPU + dGPU dual display)
+
+Any AMD gate with both iGPU and dGPU may hit this:
+- CSM enabled → hides NB Configuration → iGPU disabled → no UMA → left eye blind
+- Fix: CSM OFF + UMA allocated + Integrated Graphics = Force
+
+## Known Gate Firmware
+
+| Gate | CPU | Board | BIOS | iGPU | UMA Status |
+|------|-----|-------|------|------|------------|
+| northGate | 9950X3D | ASUS X870E-E | AMI v1401 | RDNA 2 (2 CU) | LOCKED (CSM=1) |
+| eastGate | (check) | (check) | (check) | (check) | UNKNOWN |
+| ironGate | i9-14900K | (check) | (check) | Intel UHD 770 | UNKNOWN |
+| sporeGate | Ryzen 5 6600H | (check) | (check) | RDNA 2 | UNKNOWN |
+
+## UEFI Variable Map (AMD AM5)
+
+```
+Variable: AMD_PBS_SETUP
+GUID: {A339D746-F678-49B3-9FC7-54CE0F9DF226}
+Size: 256 bytes, Attrs: 0x07 (NV+BS+RT)
+
+Key offsets:
+  [0x48] = Integrated Graphics (0x00=Disabled, 0x01=Force, 0x02=Auto)
+  [0x49] = UMA Frame Buffer Size (0xFF=Auto/None, 0x06=512M)
+  [0x4E] = Primary Video (0x01=IGFX, 0x02=PCIE)
+```
+
+## Fix Methods (in order of preference)
+
+### Linux (eastGate, sporeGate, ironGate)
+```bash
+# Read
+efivar -n a339d746-f678-49b3-9fc7-54ce0f9df226-AMD_PBS_SETUP -p
+
+# Write (may bypass ASUS runtime lock!)
+# Create modified binary, write back
+efivar -n a339d746-f678-49b3-9fc7-54ce0f9df226-AMD_PBS_SETUP -w -f modified.bin
+
+# Kernel 7.0+ UMA carveout (runtime, no reboot)
+cat /sys/class/drm/card*/device/uma/carveout_options
+echo 5 | sudo tee /sys/class/drm/card*/device/uma/carveout
+```
+
+### Windows (northGate, blueGate)
+```
+# Runtime writes BLOCKED by ASUS (Error 5 / NTSTATUS 0xC0000022)
+# Must use boot-time tools:
+
+# Option A: modGRUBShell (on EFI partition)
+setup_var_cv AMD_PBS_SETUP 0x49 0x06
+setup_var_cv AMD_PBS_SETUP 0x48 0x01
+
+# Option B: Smokeless_UMAF (FAT32 USB boot)
+Device Manager > AMD CBS > NBIO Common Options > UMA
+
+# Option C: BIOS manual (DEL key)
+CSM = Disabled → NB Configuration appears → iGPU Force + UMA 512M
+```
+
+## Tissue Patterns
+- `data/tissues/uefi-eye-healer.json` — full diagnosis + prescription
+- `data/tissues/left-eye-amoeba.json` — RustDesk Display 2 deployment
+- `scripts/left-eye-attenuator.py` — wake pulse on login
+- `scripts/post-reboot-verify.py` — check after fix
+
+## Attenuator Pattern (dual display wake)
+- RIGHT EYE (dGPU): wakes naturally at POST, primary display
+- LEFT EYE (iGPU): needs wake pulse — `displayswitch /extend` + DDC/CI + PnP enable
+- Attenuator scheduled task: GaiaLeftEyeWake (runs on login)
+
+## CSM — The Root Cause
+CSM (Compatibility Support Module) enables legacy BIOS boot.
+On ASUS boards: CSM=ON → iGPU disabled, NB Config hidden, Re-Size BAR disabled.
+ALWAYS disable CSM on UEFI-only systems. Windows 11 requires UEFI anyway.
+
+## Secure Boot
+Secure Boot = True on northGate. This may block unsigned EFI tools (modGRUBShell).
+Smokeless_UMAF may also be blocked. If both fail → manual BIOS is the fallback.
