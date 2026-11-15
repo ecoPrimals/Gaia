@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaia — bingoCube Trust Routes</title>
+<style>
+:root {
+  --red:#f85149; --blue:#58a6ff; --grey:#6e7681;
+  --green:#3fb950; --purple:#a371f7; --gold:#c9a84c;
+  --orange:#f0883e; --brown:#3a2a1e; --black:#060810;
+  --white:#e6edf3; --pink:#f778ba; --yellow:#f0c674;
+  --bg:#060810; --surface:#0c1018; --border:#1a2030;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--white);font-family:'Courier New',monospace;padding:20px}
+h1{color:var(--green);font-size:16px;letter-spacing:3px;margin-bottom:4px}
+.sub{color:var(--grey);font-size:11px;margin-bottom:20px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:900px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+
+.route{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;overflow:hidden}
+.route .name{font-size:13px;font-weight:bold;margin-bottom:6px}
+.route .desc{font-size:10px;color:var(--grey);margin-bottom:10px;line-height:1.5}
+.route .path{font-size:9px;color:var(--blue);margin-bottom:8px}
+.route .status{font-size:11px;font-weight:bold}
+.route .status.alive{color:var(--green)}
+.route .status.down{color:var(--red)}
+.route .status.ready{color:var(--gold)}
+
+.progress{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
+.progress .fill{height:100%;border-radius:2px;transition:width 1s ease}
+
+.spectrum{margin-top:24px;max-width:900px}
+.spectrum h2{color:var(--gold);font-size:13px;letter-spacing:2px;margin-bottom:12px}
+.tier{display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:8px 12px;background:var(--surface);border-radius:6px}
+.tier .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.tier .label{font-size:11px;flex:1}
+.tier .count{font-size:14px;font-weight:bold;min-width:30px;text-align:right}
+.tier .bar{flex:2;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.tier .bar .fill{height:100%;border-radius:3px}
+
+.routes-diagram{margin-top:24px;max-width:900px}
+.routes-diagram h2{color:var(--purple);font-size:13px;letter-spacing:2px;margin-bottom:12px}
+.canvas-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px}
+canvas{width:100%;height:300px}
+
+.insight{margin-top:20px;padding:16px;background:var(--surface);border:1px solid var(--gold);border-radius:8px;max-width:900px}
+.insight h3{color:var(--gold);font-size:12px;margin-bottom:8px}
+.insight p{font-size:10px;color:var(--grey);line-height:1.6}
+</style>
+</head><body>
+
+<h1>BINGOCUBE TRUST ROUTES</h1>
+<div class="sub">multi-path authentication · Willis Circulation for trust · wave 239o</div>
+
+<div class="grid" id="routes"></div>
+
+<div class="spectrum" id="spectrum-section">
+  <h2>ANDERSON TRUST SPECTRUM</h2>
+  <div id="tiers"></div>
+</div>
+
+<div class="routes-diagram">
+  <h2>REDUNDANCY MAP — if one path blocks, another opens</h2>
+  <div class="canvas-wrap"><canvas id="rcanvas"></canvas></div>
+</div>
+
+<div class="insight">
+  <h3>💡 WHY MULTIPLE ROUTES MATTER</h3>
+  <p>
+    With ONE auth path, failure = lockout. With FIVE paths, the system is Willis-resilient:<br><br>
+    • Pixel USB dead? → iPhone SSH approves<br>
+    • iPhone offline? → Kevin types from brain (ZK)<br>
+    • Kevin away? → Deck CEF auto-caches session<br>
+    • All local down? → WAN bingoCube verify from anywhere<br><br>
+    Each route independently proves trust. Together they make the organism <span style="color:var(--gold)">unforgeable</span>.
+    The Anderson sort sees EVERY visitor. bingoCube's progressive reveal shows trust building in real time.
+    <span style="color:var(--green)">4 nucleus + 9 protons + 0 electrons = 100% recognized.</span>
+  </p>
+</div>
+
+<script>
+'use strict';
+
+var ROUTES = [
+  {
+    name: '📱 PIXEL USB ADB',
+    desc: 'Steam Guard for gaia/tamisonecoprimal. Gaia reads code via ADB screencap, injects via CEF.',
+    path: 'Pixel → ADB → eastGate → screencap → OCR → code → CEF inject',
+    status: 'alive', statusText: '✓ LIVE — USB connected, Steam Guard active',
+    color: '#f778ba', progress: 0.8
+  },
+  {
+    name: '📞 iPHONE SSH',
+    desc: 'southGate (.148) has SSH. Can run scripts, authenticate, verify trust remotely.',
+    path: 'iPhone → SSH → eastGate → verify → approve',
+    status: 'alive', statusText: '✓ LIVE — SSH at .148, Linux confirmed',
+    color: '#6e7681', progress: 0.4
+  },
+  {
+    name: '🧠 KEVIN ZK (BRAIN)',
+    desc: 'Zero-knowledge password. Only Kevin knows it. The irreducible human factor. |i^π| = 1.0.',
+    path: 'Kevin brain → fingers → keyboard → password entered',
+    status: 'ready', statusText: '◆ READY — always available when Kevin is present',
+    color: '#c9a84c', progress: 1.0
+  },
+  {
+    name: '🖥️ DECK CEF API',
+    desc: 'SteamClient.Auth.StartSignInFromCache — can auto-login without re-entering password.',
+    path: 'Deck CEF :8081 → SteamClient API → cached session → auto-login',
+    status: 'alive', statusText: '✓ LIVE — CEF at :8081, SteamClient accessible',
+    color: '#a371f7', progress: 0.6
+  },
+  {
+    name: '🌐 WAN BINGOCUBE',
+    desc: 'Remote verification via primals.eco. bingoCube subcube progressive reveal from anywhere.',
+    path: 'Any browser → primals.eco/bingo → visual verify → subcube proof',
+    status: 'alive', statusText: '✓ LIVE — primals.eco serving, Tor .onion available',
+    color: '#58a6ff', progress: 0.3
+  },
+  {
+    name: '🎮 STEAM FAMILY SHARE',
+    desc: 'All 3 accounts in one Family. Gaia=HOLDER, Kevin=PLAYER. Games flow via Family Sharing.',
+    path: 'TamisonEcoPrimal ↔ gw_kevinmok ↔ MokVive → Family Library',
+    status: 'ready', statusText: '◆ CONFIGURED — 3 accounts, 1 family',
+    color: '#f0883e', progress: 0.5
+  },
+];
+
+var TIERS = [
+  { name: 'NUCLEUS 🧬', desc: 'Kevin + trusted devices', color: '#3fb950', count: 4 },
+  { name: 'PROTON 🟢', desc: 'Proven humans (|i^π|=1.0)', color: '#58a6ff', count: 9 },
+  { name: 'NEUTRON 🔵', desc: 'Classified bots (known)', color: '#a371f7', count: 0 },
+  { name: 'ELECTRON ⚡', desc: 'Unknown (first contact)', color: '#6e7681', count: 0 },
+];
+
+// Render routes
+var routesEl = document.getElementById('routes');
+ROUTES.forEach(function(r) {
+  var div = document.createElement('div');
+  div.className = 'route';
+  div.innerHTML =
+    '<div class="name" style="color:'+r.color+'">'+r.name+'</div>' +
+    '<div class="desc">'+r.desc+'</div>' +
+    '<div class="path">'+r.path+'</div>' +
+    '<div class="status '+r.status+'">'+r.statusText+'</div>' +
+    '<div class="progress"><div class="fill" style="width:'+Math.round(r.progress*100)+'%;background:'+r.color+'"></div></div>';
+  routesEl.appendChild(div);
+});
+
+// Render Anderson tiers
+var tiersEl = document.getElementById('tiers');
+var total = TIERS.reduce(function(s,t){return s+t.count},0) || 1;
+TIERS.forEach(function(t) {
+  var div = document.createElement('div');
+  div.className = 'tier';
+  div.innerHTML =
+    '<div class="dot" style="background:'+t.color+'"></div>' +
+    '<div class="label">'+t.name+'<br><span style="font-size:9px;color:#6e7681">'+t.desc+'</span></div>' +
+    '<div class="count" style="color:'+t.color+'">'+t.count+'</div>' +
+    '<div class="bar"><div class="fill" style="width:'+Math.round(100*t.count/total)+'%;background:'+t.color+'"></div></div>';
+  tiersEl.appendChild(div);
+});
+
+// Redundancy diagram canvas
+var C = document.getElementById('rcanvas');
+var ctx = C.getContext('2d');
+C.width = C.offsetWidth * 2;
+C.height = 600;
+
+var cx = C.width/2, cy = C.height/2;
+var nodes = [
+  { x: cx, y: 80, name: 'PIXEL', color: '#f778ba' },
+  { x: cx-250, y: 200, name: 'iPHONE', color: '#6e7681' },
+  { x: cx+250, y: 200, name: 'DECK', color: '#a371f7' },
+  { x: cx, y: cy, name: 'eastGate\n(BRAIN)', color: '#58a6ff' },
+  { x: cx-200, y: cy+120, name: 'KEVIN\n(ZK)', color: '#c9a84c' },
+  { x: cx+200, y: cy+120, name: 'WAN', color: '#58a6ff' },
+  { x: cx, y: C.height-60, name: 'TARGET\n(authenticate)', color: '#3fb950' },
+];
+
+var edges = [
+  [0,3],[1,3],[2,3],[4,3],[5,3],  // all → brain
+  [3,6],  // brain → target
+  [0,6],[1,6],[4,6],  // direct paths to target too
+  [0,2],  // pixel → deck (QR)
+];
+
+function drawDiagram() {
+  ctx.clearRect(0,0,C.width,C.height);
+
+  // Draw edges
+  edges.forEach(function(e) {
+    var a = nodes[e[0]], b = nodes[e[1]];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = 'rgba(88,166,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Flow particle
+    var t = (Date.now() * 0.0005 + e[0] * 0.3) % 1;
+    var px = a.x + (b.x-a.x)*t, py = a.y + (b.y-a.y)*t;
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI*2);
+    var hr = parseInt(a.color.slice(1,3),16);
+    var hg = parseInt(a.color.slice(3,5),16);
+    var hb = parseInt(a.color.slice(5,7),16);
+    ctx.fillStyle = 'rgba('+hr+','+hg+','+hb+',0.5)';
+    ctx.fill();
+  });
+
+  // Draw nodes
+  nodes.forEach(function(n) {
+    var hr = parseInt(n.color.slice(1,3),16);
+    var hg = parseInt(n.color.slice(3,5),16);
+    var hb = parseInt(n.color.slice(5,7),16);
+    
+    // Glow
+    var grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 40);
+    grad.addColorStop(0, 'rgba('+hr+','+hg+','+hb+',0.15)');
+    grad.addColorStop(1, 'rgba('+hr+','+hg+','+hb+',0)');
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 40, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Node
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, 12, 0, Math.PI*2);
+    ctx.fillStyle = n.color;
+    ctx.fill();
+
+    // Label
+    ctx.font = 'bold 18px Courier New';
+    ctx.fillStyle = n.color;
+    ctx.textAlign = 'center';
+    var lines = n.name.split('\n');
+    lines.forEach(function(l, i) {
+      ctx.fillText(l, n.x, n.y + 30 + i*18);
+    });
+  });
+}
+
+function animate() {
+  drawDiagram();
+  requestAnimationFrame(animate);
+}
+animate();
+
+// Fetch live data
+setInterval(function() {
+  fetch('/walkers').then(function(r){return r.json()}).then(function(d) {
+    var spec = d.spectrum || {};
+    TIERS[0].count = spec.nucleus || 0;
+    TIERS[1].count = spec.proton || 0;
+    TIERS[2].count = spec.neutron || 0;
+    TIERS[3].count = spec.electron || 0;
+    // Re-render tiers
+    tiersEl.innerHTML = '';
+    var tot = TIERS.reduce(function(s,t){return s+t.count},0) || 1;
+    TIERS.forEach(function(t) {
+      var div = document.createElement('div');
+      div.className = 'tier';
+      div.innerHTML =
+        '<div class="dot" style="background:'+t.color+'"></div>' +
+        '<div class="label">'+t.name+'<br><span style="font-size:9px;color:#6e7681">'+t.desc+'</span></div>' +
+        '<div class="count" style="color:'+t.color+'">'+t.count+'</div>' +
+        '<div class="bar"><div class="fill" style="width:'+Math.round(100*t.count/tot)+'%;background:'+t.color+'"></div></div>';
+      tiersEl.appendChild(div);
+    });
+  }).catch(function(){});
+}, 10000);
+</script>
+</body></html>
