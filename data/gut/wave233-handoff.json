@@ -1,0 +1,133 @@
+{
+  "ts": "2026-11-15T17:47:04Z",
+  "wave": 233,
+  "title": "Gaia Organism State \u2014 Wave 233 Consolidation",
+  "session_summary": "Hardware surgery + WAN republication. 8 hours of work.",
+  "what_was_fixed": {
+    "dromedary_unblocked": "Python squatters on :80/:443 killed. dromedary crash-looped 5990x, now ACTIVE.",
+    "router_ports_fixed": "WAN:80 was -> :8443 (wrong). Now WAN:80->:80, WAN:443->:443 (dromedary).",
+    "klein_face_unified": "dromedary.toml rewritten. 8 site blocks. All 3 faces route correctly.",
+    "502s_eliminated": "primals.eco, hud, sporeprint, signal, art \u2014 all were 502, now all 200.",
+    "gaia_boot_engine": "Custom GRUB wrapper built on eastGate, installed on northGate EFI. Safe 2s timeout to Windows.",
+    "sourdough_persistence": "Every reboot cycle: scan -> ferment -> braid -> bone -> compare -> evolve.",
+    "uefi_reactor_model": "Full AMD_PBS_SETUP hex dump, PCIe topology, modGRUBShell analysis. ZK'd.",
+    "biomeOS_restarted": "52 processes, 15 species respawned on northGate after restart.",
+    "forgejo_mapped": "106 repos across 8 orgs. Sol = Forgejo, Luna = GitHub mirror."
+  },
+  "what_is_NOT_fixed": {
+    "igpu_disabled": "AMD_PBS_SETUP offset 0x48=0x00. Need ASUS WMI option names or UEFI Shell setvar.",
+    "nvme_4tb_ghost": "PCIe RP05/RP06 UNKNOWN state. Samsung 4TB + WD BLACK 4TB invisible.",
+    "cpu_half_cores": "8C/8T visible, should be 16C/32T. CCD1 invisible.",
+    "biomeos_discovery": "Unix sockets never created. TCP fallback not wired. Discovery blind.",
+    "acme_certs": "dromedary TLS uses self-signed nestgate.io cert. ACME not yet triggered for Let's Encrypt.",
+    "sporePrint_empty": "sporePrint/public has 0 HTML files. Gate renders dynamically but static site not built.",
+    "signal_empty": "signal/site/public has 0 HTML files. Same issue.",
+    "publicRecord_not_built": "publicRecord has 2,308 source files but Zola site may need rebuild."
+  },
+  "klein_topology": {
+    "outer_trans": "*.primals.eco \u2014 public face, outward, plural",
+    "inner_trans": "*.primal.eco \u2014 singular, inward, redirects to primals.eco",
+    "cis": "*.nestgate.io \u2014 self-center, MCP/agent face",
+    "thymus": "dromedary (Pure Rust, :80/:443, 8 site blocks, blackwall)",
+    "surface": "Klein bottle \u2014 inside IS outside, all faces are one"
+  },
+  "live_sites": {
+    "primals.eco": 200,
+    "hud.primals.eco": 200,
+    "sporeprint.primals.eco": 200,
+    "signal.primals.eco": 200,
+    "detroit.primals.eco": 200,
+    "hypothesis.primals.eco": 200,
+    "tuebor.primals.eco": 200,
+    "nestgate.io": 200,
+    "art.primals.eco": 200,
+    "game.primals.eco": 200,
+    "klein.primals.eco": 200,
+    "api.nestgate.io": 200,
+    "mcp.nestgate.io": 200,
+    "gaia.primals.eco": 200,
+    "campfire.primals.eco": 200,
+    "api.primals.eco": 200,
+    "connect.primals.eco": 200,
+    "fossil.primals.eco": 200,
+    "tower.nestgate.io": 200,
+    "record.primals.eco": 200
+  },
+  "dead_sites": {},
+  "content_mass": {
+    "infra_size": "3.2 GB",
+    "html_pages": 4790,
+    "markdown_files": 13210,
+    "data_jsons": 0,
+    "rss_items": 1978,
+    "toml_configs": 537,
+    "hypothesis_pages": 33,
+    "detroit_files": 2552,
+    "tuebor_pages": 1729,
+    "gate_endpoints": 72
+  },
+  "services": {
+    "dromedary": {
+      "status": "active",
+      "pid": "1168073",
+      "ports": "80, 443"
+    },
+    "gaia_gate": {
+      "port": 8443,
+      "status": "active"
+    },
+    "webpi": {
+      "port": 8080,
+      "status": "active"
+    },
+    "forgejo": {
+      "port": 3000,
+      "status": "active"
+    },
+    "ollama": {
+      "port": 11436,
+      "status": "38 models"
+    },
+    "crons": 34
+  },
+  "port_forwards": {
+    "WAN:80": ".244:80 (dromedary HTTP)",
+    "WAN:443": ".244:443 (dromedary HTTPS)",
+    "WAN:8080": ".244:8080 (data/spine)",
+    "WAN:25": ".244:25 (SMTP)",
+    "WAN:587": ".244:587 (SMTP submit)",
+    "WAN:465": ".244:465 (SMTPS)"
+  },
+  "forgejo_sol": {
+    "orgs": [
+      "amicusContra",
+      "defendDetroit",
+      "ecoPrimals",
+      "esotericWebb",
+      "protoKarya",
+      "sporeGarden",
+      "syntheticChemistry"
+    ],
+    "total_repos": 106,
+    "biggest": "gaia/Gaia (841MB), gaia/ecoPrimals (818MB), bearDog (663MB)",
+    "github_mirrors": "20 repos on ecoPrimal org"
+  },
+  "northgate_hardware": {
+    "cpu": "AMD Ryzen 9 9950X3D \u2014 8C/8T visible (should be 16C/32T)",
+    "gpu": "RTX 5090 (working), iGPU (disabled)",
+    "ram": "96GB DDR5",
+    "nvme": "1x Samsung 1TB (working), 2x 4TB (ghost \u2014 RP05/RP06 UNKNOWN)",
+    "boot_engine": "GAIA Boot Engine at Z:\\EFI\\gaia\\gaia-boot-wrapper.efi (safe, 2s timeout)"
+  },
+  "next_priorities": [
+    "1. ACME certs \u2014 dromedary needs Let's Encrypt for valid TLS (currently self-signed)",
+    "2. sporePrint + signal static builds \u2014 Zola build needed, or accept gate dynamic rendering",
+    "3. publicRecord Zola rebuild \u2014 2,308 source files, site may be stale",
+    "4. Cloudflare noble gas \u2014 gaia-api worker exists, wrangler token needs creation",
+    "5. iGPU enable \u2014 ASUS WMI option names, custom GRUB, or UEFI Shell",
+    "6. NVMe 4TB recovery \u2014 firmware/BIOS setting",
+    "7. CPU CCD1 + SMT \u2014 BIOS CBS settings",
+    "8. biomeOS discovery \u2014 fix socket/TCP issue in source code",
+    "9. VPS amoeba \u2014 protoKarya pattern for relay nodes"
+  ]
+}

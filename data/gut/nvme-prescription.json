@@ -1,0 +1,81 @@
+{
+  "ts": "2026-11-15T17:59:00-05:00",
+  "wave": 233,
+  "type": "sourdough-prescription",
+  "title": "NVMe Recovery — Pre-determined Reboot Solution",
+  "zk_hash": "nvme_dual_root_cause_wave233",
+
+  "diagnosis": {
+    "samsung_4tb": {
+      "model": "Samsung SSD 990 PRO 4TB",
+      "instance_id": "SCSI\\DISK&VEN_NVME&PROD_SAMSUNG_SSD_990\\5&13220B3&0&000000",
+      "controller_id": "PCI\\VEN_144D&DEV_A80C&SUBSYS_A801144D&REV_00\\4&15A5C264&0&000B",
+      "root_port_id": "PCI\\VEN_1022&DEV_14DB&SUBSYS_88771043&REV_00\\3&11583659&0&0B",
+      "root_port_status": "OK",
+      "controller_status": "Unknown",
+      "pci_location": "Bus 3, Device 0, Function 0",
+      "m2_slot": "M.2_2(SOCKET3) or M.2_3",
+      "disease": "PCIe link training failure — root port alive but NVMe controller cannot handshake",
+      "possible_causes": [
+        "PCIe Gen speed mismatch (slot set to Gen5, drive is Gen4)",
+        "M.2 slot power rail not enabled in BIOS",
+        "PCIe link width negotiation failure",
+        "IOMMU/ACS blocking device enumeration"
+      ]
+    },
+    "wd_black_4tb": {
+      "model": "WD_BLACK SN850X 4000GB",
+      "instance_id": "SCSI\\DISK&VEN_NVME&PROD_WD_BLACK_SN850X\\5&1B8EE23D&0&000000",
+      "controller_id": "PCI\\VEN_15B7&DEV_5030&SUBSYS_503015B7&REV_01\\4&285F7309&0&000C",
+      "root_port_id": "PCI\\VEN_1022&DEV_14DB&SUBSYS_88771043&REV_00\\3&11583659&0&0C",
+      "root_port_status": "Unknown",
+      "controller_status": "Unknown",
+      "pci_location": "Bus 4, Device 0, Function 0",
+      "m2_slot": "M.2_3(SOCKET3) or M.2_4",
+      "disease": "Root port NULL — firmware has disabled the PCIe root port entirely",
+      "possible_causes": [
+        "M.2 slot disabled in BIOS",
+        "AMD CBS PCIe root port disabled",
+        "Slot shares lanes with PCIEX16_2 (bifurcation conflict)",
+        "Above 4G Decoding not enabled"
+      ]
+    },
+    "working_reference": {
+      "model": "Samsung SSD 990 PRO 1TB",
+      "controller_id": "PCI\\VEN_144D&DEV_A80C&SUBSYS_A801144D&REV_00\\4&2EC11BF&0&000A",
+      "root_port_parent": "PCI bus 0, device 1, function 2",
+      "status": "OK — fully working reference"
+    }
+  },
+
+  "bios_checklist": [
+    "1. Advanced → Onboard Devices → M.2 slots: ALL set to ENABLED (not Auto/Disabled)",
+    "2. Advanced → Onboard Devices → M.2_2 slot: ENABLED",
+    "3. Advanced → Onboard Devices → M.2_3 slot: ENABLED", 
+    "4. Advanced → AMD CBS → NBIO → PCIe Configuration → All root ports: ENABLED",
+    "5. Advanced → AMD CBS → NBIO → PCIe Gen Speed: Auto or Gen4 (NOT forced Gen5)",
+    "6. Advanced → Above 4G Decoding: ENABLED",
+    "7. Advanced → Re-Size BAR Support: ENABLED",
+    "8. Advanced → AMD CBS → NBIO → IOMMU: ENABLED (or Auto)",
+    "9. Advanced → AMD CBS → CCD Control → CCD0+CCD1 both ENABLED (fixes CPU 8→16 cores)",
+    "10. Advanced → AMD CBS → Core Count → All cores enabled",
+    "11. Advanced → AMD CBS → SMT: ENABLED (fixes 16→32 threads)"
+  ],
+
+  "post_boot_verify_script": "c:\\Users\\mokke\\Desktop\\Gaia\\scripts\\reboot-cycle.ps1",
+  
+  "expected_results": {
+    "nvme_count": "3 (Samsung 1TB + Samsung 4TB + WD BLACK 4TB)",
+    "total_storage": "~9 TB NVMe",
+    "cpu_cores": "16 cores / 32 threads",
+    "igpu": "still disabled (separate fix — AMD_PBS_SETUP offset 0x48)"
+  },
+
+  "sourdough_cycle": {
+    "pre_reboot": "Run auto-cycle.ps1 -Action prep → saves pre-state",
+    "reboot": "Enter BIOS → apply checklist → save & exit",
+    "post_boot": "Run auto-cycle.ps1 -Action verify → compares delta",
+    "ferment": "sourdough-persist.ps1 → records what changed",
+    "learn": "Update prescription with results"
+  }
+}

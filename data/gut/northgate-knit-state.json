@@ -1,0 +1,66 @@
+{
+  "timestamp": "2026-11-15T19:22:37Z",
+  "gate": "northGate",
+  "ip": "192.168.4.147",
+  "event": "pre-umaf-reboot-knit",
+  "hardware": {
+    "cpu": "AMD Ryzen 9 9950X3D (16C/32T, Zen 5, Granite Ridge)",
+    "gpu_discrete": "NVIDIA GeForce RTX 5090 (OK)",
+    "gpu_igpu": "AMD RDNA 2 iGPU (2 CU) \u2014 DISABLED by firmware",
+    "ram": "96GB DDR5",
+    "nvme_boot": "Samsung 990 PRO 1TB (OK, Bus 2, 488GB used + 443GB unallocated)",
+    "nvme_4tb_samsung": "Samsung 990 PRO 4TB (DEAD, Bus 3, PCI controller Unknown)",
+    "nvme_4tb_wd": "WD_BLACK SN850X 4TB (DEAD, Bus 4, PCI controller Unknown)",
+    "mobo": "ASUS ROG STRIX X870E-E GAMING WIFI, AMI BIOS v1401"
+  },
+  "displays": {
+    "right_eye": "RTX 5090 DP -> EI322QUR 2560x1440 (PRIMARY, OK)",
+    "left_eye": "mobo HDMI -> LG ULTRAGEAR (DDC alive, iGPU disabled, will dummy plug)",
+    "virtual": "IDD Virtual Display 5 (1024x768, RustDesk bubble)",
+    "steamdeck": "RTX 5090 HDMI -> Steam Deck dock (available)"
+  },
+  "firmware": {
+    "secure_boot": "OFF (keys cleared)",
+    "csm": "1 (enabled, but no BIOS menu found \u2014 X870E may not expose it)",
+    "uma": "0xFFFFFFFF (Auto/None \u2014 iGPU gets zero VRAM)",
+    "igpu": "0x00 (disabled)",
+    "primary_video": "0x02 (PCIe)",
+    "umaf_loaded": "YES \u2014 EFI\\UMAF\\Bootx64.efi on EFI partition",
+    "modgrubshell": "YES \u2014 EFI\\tools\\modGRUBShell.efi on EFI partition"
+  },
+  "users": {
+    "mokke": "Active, primary user",
+    "gaia": "Created, never logged in, password set \u2014 LEFT EYE candidate",
+    "CodexSandboxOffline": "Cursor sandbox",
+    "CodexSandboxOnline": "Cursor sandbox"
+  },
+  "wsl": {
+    "Ubuntu": "Stopped (available)",
+    "docker-desktop": "Stopped (available)"
+  },
+  "steam": {
+    "library_c": "C:\\Program Files (x86)\\Steam (2 apps)",
+    "library_m": "M:\\SteamLibrary (80+ apps, 3.7TB) \u2014 OFFLINE, drive dead"
+  },
+  "discoveries_today": [
+    "Milk-V Jupiter 2 (SpacemiT K1 RISC-V) on eastGate USB \u2014 first RISC-V node",
+    "Pixel 8a (grapheneGate) bridged to LAN 1 WiFi at .202 \u2014 House 2 WiFi bridge",
+    "WiFi ADB reaches House 2 from eastGate \u2014 accidental space collapse",
+    "Pixel USB-C into swiftGate \u2014 relay path when swiftGate wakes",
+    "443GB unallocated on boot NVMe \u2014 future Linux dual boot (split brain)",
+    "2x 4TB NVMe controllers dead (Bus 3+4) \u2014 need BIOS M.2 check or reseat",
+    "gaia user exists on northGate \u2014 never logged in, left eye candidate",
+    "Secure Boot OFF \u2014 UMAF and modGRUBShell can now boot",
+    "Dummy plug pattern \u2014 probe iGPU via mobo HDMI, reusable on all gates"
+  ],
+  "next_action": {
+    "reboot": "UMAF boot from EFI partition",
+    "path": "F8/DEL -> Boot from file -> EFI\\UMAF\\Bootx64.efi",
+    "goals": [
+      "AMD CBS -> NBIO -> GFX Config -> iGPU = Forces",
+      "UMA Mode = UMA_SPECIFIED, Size = 512M",
+      "Check M.2 slot configuration for Bus 3 + Bus 4",
+      "Check any NVMe/storage settings"
+    ]
+  }
+}

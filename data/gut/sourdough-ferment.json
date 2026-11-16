@@ -1,0 +1,61 @@
+﻿{
+    "reboot_history":  [
+                           {
+                               "learning":  "modGRUBShell starts in rescue mode, needs \u0027normal\u0027 or \u0027configfile\u0027 command to load grub.cfg",
+                               "goal":  "iGPU enable via modGRUBShell auto-grub.cfg",
+                               "result":  "FAILED — GRUB dropped to shell, config not auto-executed",
+                               "cycle":  1
+                           },
+                           {
+                               "learning":  "16 primals alive but HTTP dead. tarpc/JSON-RPC is the path.",
+                               "goal":  "model UEFI + primals before next reboot",
+                               "result":  "IN PROGRESS",
+                               "cycle":  2
+                           }
+                       ],
+    "next_reboot":  {
+                        "method":  "F4 -\u003e GAIA EFI Key -\u003e type setup_var_cv commands -\u003e reboot",
+                        "verify":  "agent reads AMD_PBS_SETUP after boot, checks 0x48=0x01",
+                        "fallback":  "UMAF browser for manual toggle",
+                        "goal":  "iGPU enable (0x48-\u003e0x01, 0x49-\u003e0x06)"
+                    },
+    "organism":  "northGate",
+    "knowledge":  {
+                      "cpu_half_blind":  "8C/8T visible, should be 16C/32T. CCD1 invisible. Game Mode or CBS setting.",
+                      "amd_pbs_setup":  {
+                                            "primary_video":  "0x4E=0x02 (PCIE, keep)",
+                                            "igpu_target":  "0x01",
+                                            "size":  256,
+                                            "igpu_offset":  "0x48",
+                                            "uma_target":  "0x06",
+                                            "guid":  "A339D746-F678-49B3-9FC7-54CE0F9DF226",
+                                            "uma_current":  "0xFF",
+                                            "uma_offset":  "0x49",
+                                            "igpu_current":  "0x00"
+                                        },
+                      "nvme_ghost":  [
+                                         "Samsung 990 PRO 4TB (bus 3)",
+                                         "WD_BLACK SN850X 4TB (bus 4)"
+                                     ],
+                      "pcie_dead_ports":  [
+                                              "RP05 (0:1.3) -\u003e Samsung 4TB ghost",
+                                              "RP06 (0:1.4) -\u003e WD BLACK 4TB ghost"
+                                          ]
+                  },
+    "boot_engine_evolution":  {
+                                  "v3":  "Auto: custom GRUB EFI with embedded config (needs grub-efi-amd64-bin on eastGate)",
+                                  "v1":  "Manual: Kevin types in GRUB shell",
+                                  "v4":  "Full: biomeOS manages boot cycle, reads/writes firmware, verifies post-boot",
+                                  "v2":  "Semi-auto: agent writes grub.cfg, Kevin types \u0027configfile\u0027 or \u0027normal\u0027"
+                              },
+    "cycle":  2,
+    "primal_state":  {
+                         "bind_mode":  "tcp (fallback from unix sockets)",
+                         "tarpc":  "primary transport",
+                         "alive_count":  16,
+                         "note":  "All primals running but deaf to HTTP. Need JSON-RPC or tarpc to talk.",
+                         "http_api":  "SKIPPED (config error)"
+                     },
+    "pattern":  "sourDough",
+    "timestamp":  "2026-11-15T15:55:34.5265930-05:00"
+}
