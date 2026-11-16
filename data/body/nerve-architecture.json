@@ -1,0 +1,73 @@
+{
+  "type": "nerve-architecture",
+  "wave": "239x",
+  "ts": "2026-11-16T01:00:00Z",
+  "title": "Dual-Nerve Architecture — USB Hardwire + WiFi Wireless",
+  "principle": "Two nerves connect grapheneGate to northGate: USB 3.1 (CPU-direct, 5Gbps, 0 latency) and WiFi (1134 Mbps, 73ms). USB = spinal cord. WiFi = peripheral nervous system.",
+  
+  "usb_nerve": {
+    "path": "Pixel dwc3-gadget → USB Root Hub 3.0 → AMD xHCI DEV_15B7 → PCIe Root Port DEV_14DD → PCIe Root Complex PNP0A08 → CPU silicon",
+    "type": "CPU-direct",
+    "speed": "USB 3.1 Gen 2 (10 Gbps theoretical)",
+    "latency": "< 1ms (through BIOS flash port area)",
+    "note": "Not chipset, not ASMedia — straight into Zen 5 silicon. Shortest possible path from phone to CPU.",
+    "capabilities": ["ADB shell", "ADB file push/pull", "USB HID gadget (future)", "USB tethering", "USB audio"]
+  },
+  
+  "wifi_nerve": {
+    "path": "Pixel wlan0 → Aperture Science 5GHz → Router (.1) → MikroTik (.2) → northGate eth0",
+    "type": "wireless",
+    "speed": "1134 Mbps",
+    "rssi": "-27 dBm (excellent)",
+    "latency": "73ms from eastGate",
+    "ip": "192.168.4.114",
+    "capabilities": ["HTTP data", "ADB over WiFi", "heart-pull", "sensor streaming"]
+  },
+  
+  "hosts": {
+    "northGate": {
+      "ip": ".147",
+      "cpu": "AMD Ryzen 9 9950X3D (Zen 5, 16C/32T)",
+      "gpu": "RTX 5090 (32GB VRAM)",
+      "ram": "96GB DDR5",
+      "role": "HEART of the organism",
+      "usb_controller": "AMD USB 3.10 xHCI (DEV_15B7) — CPU-direct",
+      "status": {
+        "alive": true,
+        "ports": {"data": 8080, "steam": 27036},
+        "ollama": "DOWN — needs restart after BIOS reboot",
+        "models": "63 models (need to restart ollama service)"
+      }
+    },
+    "grapheneGate": {
+      "ip": ".114 (WiFi) / USB (hardwire)",
+      "device": "Google Pixel 8a (akita)",
+      "cpu": "Google Tensor G3",
+      "sensors": 37,
+      "role": "LEFT EYE + USB PROBE",
+      "usb_gadget": "dwc3-gadget (can become HID keyboard/mouse)",
+      "dual_nerve": true
+    }
+  },
+  
+  "future_pattern": {
+    "usb_hid_gadget": {
+      "description": "Pixel learns USB HID gadget mode → becomes a keyboard → types into BIOS during boot",
+      "how": "dwc3-gadget → configfs → g_hid → /dev/hidg0 → send keystrokes to host",
+      "enables": "Fully automated BIOS surgery. No human fingers needed. The phone IS the hands.",
+      "prerequisite": "Linux kernel on Pixel with CONFIG_USB_CONFIGFS_F_HID (GrapheneOS may not have it)"
+    },
+    "bios_surgery": {
+      "needed_changes": 6,
+      "method": "Manual for now: power off → DEL → navigate BIOS → save → reboot",
+      "future": "Pixel sends DEL keystroke at POST → navigates BIOS menus → saves → reboots"
+    }
+  },
+  
+  "body_analogy": {
+    "usb": "Spinal cord — hardwired, fastest, direct to brain",
+    "wifi": "Peripheral nerves — wireless, everywhere, slight delay",
+    "pixel": "The hand — it can think about what to type (not just dumb keystrokes)",
+    "northgate": "The heart — most powerful compute, needs the probe for surgery"
+  }
+}
