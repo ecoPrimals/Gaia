@@ -583,6 +583,14 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if _wh_host in _WH_DIRS:
             p = self.path.strip("/") or "index.html"
             self._serve_file(p, _WH_DIRS[_wh_host]); return
+        # HOST-SCOPED subdomains — investigation sites serve ONLY their own content
+        _SCOPED_HOSTS = {
+            "detroit.primals.eco": "detroit.html",
+            "publicrecord.primals.eco": "record.html",
+            "record.primals.eco": "record.html",
+        }
+        if host in _SCOPED_HOSTS:
+            self._serve_static(_SCOPED_HOSTS[host]); return
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
             if host in ("primals.eco","www.primals.eco","primal.eco"): self._serve_static("primals.html"); return
