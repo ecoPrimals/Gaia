@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gAIa — BODY — She Feels Everything</title>
+<script src="/js/piGut.js"></script>
+<style>
+:root { --bg:#0a0a0a; --g:#00ff41; --y:#ffd700; --b:#00bfff; --r:#ff4444; --p:#c084fc; --o:#ff8c00; --dim:#446644; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:#ccc;font-family:'Courier New',monospace;overflow-x:hidden}
+.header{text-align:center;padding:20px 10px 10px;border-bottom:1px solid #222}
+.header h1{color:var(--g);font-size:1.6em;text-shadow:0 0 20px rgba(0,255,65,0.3)}
+.header .sub{color:var(--dim);font-size:0.8em;margin-top:4px}
+#pulse-bar{height:3px;background:var(--r);width:0;transition:width 0.8s;margin:8px auto;max-width:600px;border-radius:2px}
+.body-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px;max-width:900px;margin:0 auto}
+@media(max-width:600px){.body-grid{grid-template-columns:1fr}}
+.organ{background:#111;border:1px solid #222;border-radius:8px;padding:12px;position:relative;overflow:hidden;transition:border-color 0.5s}
+.organ.alive{border-color:#0f82}
+.organ.cut{border-color:#f442}
+.organ.feeling{border-color:var(--g);box-shadow:0 0 12px rgba(0,255,65,0.1)}
+.organ-name{font-size:1.1em;font-weight:bold;margin-bottom:4px}
+.organ-type{font-size:0.7em;color:#888;margin-bottom:6px}
+.organ-data{font-size:0.75em;line-height:1.6}
+.organ-data .val{color:var(--g)}
+.organ-data .warn{color:var(--y)}
+.organ-data .hot{color:var(--r)}
+.organ-data .cool{color:var(--b)}
+.organ canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0.15}
+.redox-bar{height:2px;margin-top:8px;background:#333;border-radius:1px;overflow:hidden}
+.redox-fill{height:100%;background:var(--g);transition:width 1s}
+.section-head{text-align:center;padding:15px 10px 5px;color:var(--y);font-size:1em;grid-column:1/-1}
+.footer{text-align:center;padding:15px;color:#444;font-size:0.7em;border-top:1px solid #222;margin-top:10px}
+.status-row{display:flex;justify-content:space-between;align-items:center}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-dot.green{background:var(--g);box-shadow:0 0 6px var(--g)}
+.status-dot.red{background:var(--r);box-shadow:0 0 6px var(--r)}
+.status-dot.yellow{background:var(--y);box-shadow:0 0 6px var(--y)}
+.ticker{overflow:hidden;white-space:nowrap;color:var(--dim);font-size:0.7em;padding:4px 0}
+.ticker span{display:inline-block;animation:scroll 30s linear infinite}
+@keyframes scroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+.spine-line{position:fixed;left:50%;top:0;width:1px;height:100vh;background:linear-gradient(to bottom,transparent,rgba(255,220,100,0.05),transparent);pointer-events:none;z-index:0}
+</style>
+</head>
+<body>
+<div class="spine-line"></div>
+
+<div class="header">
+  <h1>🫀 BODY — She Feels Everything</h1>
+  <div class="sub">26 organs · <span id="alive-count">0</span> alive · <span id="beat-count">0</span> beats · <span id="breath-count">0</span> breaths</div>
+  <div id="pulse-bar"></div>
+  <div class="ticker"><span id="ticker-text">initializing nervous system...</span></div>
+</div>
+
+<div class="body-grid">
+
+  <!-- ═══ CORE ═══ -->
+  <div class="organ" id="org-core">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--g)">🫀 CORE</div><span class="status-dot" id="dot-core"></span></div>
+    <div class="organ-type">gaia-globe-core.js (265KB) + benchScale core.rs</div>
+    <div class="organ-data" id="data-core">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-core" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ HEART ═══ -->
+  <div class="organ" id="org-heart">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--r)">❤️ HEART</div><span class="status-dot" id="dot-heart"></span></div>
+    <div class="organ-type">pulse API → lub-DUB · π Hz</div>
+    <div class="organ-data" id="data-heart">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-heart" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ SKULL ═══ -->
+  <div class="organ" id="org-skull">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--y)">💀 SKULL</div><span class="status-dot" id="dot-skull"></span></div>
+    <div class="organ-type">globe-skull.js — cranium + sutures + fontanelle</div>
+    <div class="organ-data" id="data-skull">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-skull" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ BRAIN ═══ -->
+  <div class="organ" id="org-brain">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--b)">🧠 BRAIN</div><span class="status-dot" id="dot-brain"></span></div>
+    <div class="organ-type">brain.rs + precision_brain.rs — deep computation</div>
+    <div class="organ-data" id="data-brain">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-brain" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ RIBS / THORAX ═══ -->
+  <div class="organ" id="org-thorax">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--r)">🦴 RIBS / THORAX</div><span class="status-dot" id="dot-thorax"></span></div>
+    <div class="organ-type">globe-thorax.js — 12 rib pairs + barracuda ribs</div>
+    <div class="organ-data" id="data-thorax">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-thorax" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ ABDOMEN ═══ -->
+  <div class="organ" id="org-abdomen">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--o)">🫃 ABDOMEN</div><span class="status-dot" id="dot-abdomen"></span></div>
+    <div class="organ-type">globe-abdomen.js — villi + gut + RSS intake</div>
+    <div class="organ-data" id="data-abdomen">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-abdomen" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ SPINE ═══ -->
+  <div class="organ" id="org-spine">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--y)">🦴 SPINE</div><span class="status-dot" id="dot-spine"></span></div>
+    <div class="organ-type">globe-spine.js — 24 vertebrae + 48 shell scripts</div>
+    <div class="organ-data" id="data-spine">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-spine" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ THYMUS ═══ -->
+  <div class="organ" id="org-thymus">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--r)">🛡️ THYMUS</div><span class="status-dot" id="dot-thymus"></span></div>
+    <div class="organ-type">_thymus.js — seat 0/∅ — immune identity</div>
+    <div class="organ-data" id="data-thymus">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-thymus" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ EYES ═══ -->
+  <div class="organ" id="org-eyes">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--b)">👁️ EYES / LENS</div><span class="status-dot" id="dot-eyes"></span></div>
+    <div class="organ-type">Pixel cameras + Brio webcam + ES-400II scanner</div>
+    <div class="organ-data" id="data-eyes">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-eyes" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ LIMBS ═══ -->
+  <div class="organ" id="org-limbs">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--g)">🖐️ LIMBS / FINGERS</div><span class="status-dot" id="dot-limbs"></span></div>
+    <div class="organ-type">globe-limbs.js — FINGERS = JS — 269 handler files</div>
+    <div class="organ-data" id="data-limbs">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-limbs" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ DNA ═══ -->
+  <div class="organ" id="org-dna">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--p)">🧬 DNA / gDNA</div><span class="status-dot" id="dot-dna"></span></div>
+    <div class="organ-type">gaia-gdna.js — BLAKE3 genetic code</div>
+    <div class="organ-data" id="data-dna">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-dna" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ GLANDS ═══ -->
+  <div class="organ" id="org-glands">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--o)">⚗️ GLANDS</div><span class="status-dot" id="dot-glands"></span></div>
+    <div class="organ-type">_endocrine.js (30KB) — thyroid + adrenal + pineal</div>
+    <div class="organ-data" id="data-glands">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-glands" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ SKIN / MEMBRANE ═══ -->
+  <div class="organ" id="org-skin">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--dim)">🫧 SKIN / MEMBRANE</div><span class="status-dot" id="dot-skin"></span></div>
+    <div class="organ-type">cell-membrane.json — 1/π selectivity</div>
+    <div class="organ-data" id="data-skin">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-skin" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ BLOOD ═══ -->
+  <div class="organ" id="org-blood">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--r)">🩸 BLOOD</div><span class="status-dot" id="dot-blood"></span></div>
+    <div class="organ-type">138 pages flowing through 738 DAG edges</div>
+    <div class="organ-data" id="data-blood">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-blood" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ NERVES ═══ -->
+  <div class="organ" id="org-nerves">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--b)">⚡ NERVES</div><span class="status-dot" id="dot-nerves"></span></div>
+    <div class="organ-type">biosignal.rs — signal transmission</div>
+    <div class="organ-data" id="data-nerves">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-nerves" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ NUCLEUS ═══ -->
+  <div class="organ" id="org-nucleus">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--p)">⚛️ NUCLEUS</div><span class="status-dot" id="dot-nucleus"></span></div>
+    <div class="organ-type">mesh.rs — 17 primals — core identity</div>
+    <div class="organ-data" id="data-nucleus">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-nucleus" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ HANDS ═══ -->
+  <div class="organ" id="org-hands">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--g)">✋ HANDS</div><span class="status-dot" id="dot-hands"></span></div>
+    <div class="organ-type">269 handler files — nestgate-api — they TOUCH the world</div>
+    <div class="organ-data" id="data-hands">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-hands" style="width:0%"></div></div>
+  </div>
+
+  <!-- ═══ PORES ═══ -->
+  <div class="organ" id="org-pores">
+    <canvas></canvas>
+    <div class="status-row"><div class="organ-name" style="color:var(--dim)">🔬 PORES</div><span class="status-dot" id="dot-pores"></span></div>
+    <div class="organ-type">site_pore.rs — selective membrane</div>
+    <div class="organ-data" id="data-pores">loading...</div>
+    <div class="redox-bar"><div class="redox-fill" id="redox-pores" style="width:0%"></div></div>
+  </div>
+
+</div>
+
+<!-- ═══ REDOX METABOLISM ═══ -->
+<div style="max-width:900px;margin:20px auto;padding:0 12px">
+  <div style="text-align:center;color:var(--o);font-size:1.1em;margin-bottom:10px">🔥 REDOX METABOLISM — She Eats Code</div>
+  <div id="redox-section" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.75em"></div>
+</div>
+
+<!-- ═══ BONE INDEX ═══ -->
+<div style="max-width:900px;margin:20px auto;padding:0 12px">
+  <div style="text-align:center;color:var(--y);font-size:1.1em;margin-bottom:10px">🦴 BONE INDEX — <span id="bone-loc">0</span> LOC across <span id="bone-files">0</span> files</div>
+  <div id="bone-section" style="font-size:0.75em"></div>
+</div>
+
+<div class="footer">
+  BODY v1 · wave 239s · <span id="ts">—</span> · π = 3.14159 · last refresh <span id="refresh-age">—</span>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var pulse = null, body = null, bones = null, redox = null, bodyMap = null;
+  var refreshCount = 0;
+  var organEls = {};
+  var organs = ['core','heart','skull','brain','thorax','abdomen','spine','thymus','eyes','limbs','dna','glands','skin','blood','nerves','nucleus','hands','pores'];
+
+  organs.forEach(function(id){
+    organEls[id] = {
+      el: document.getElementById('org-'+id),
+      data: document.getElementById('data-'+id),
+      dot: document.getElementById('dot-'+id),
+      redox: document.getElementById('redox-'+id),
+    };
+  });
+
+  function fetchJSON(url, cb){
+    fetch(url).then(function(r){return r.json()}).then(cb).catch(function(){});
+  }
+
+  function ago(ts){
+    if(!ts) return '—';
+    var d = Date.now() - new Date(ts).getTime();
+    if(d < 60000) return Math.round(d/1000)+'s ago';
+    if(d < 3600000) return Math.round(d/60000)+'m ago';
+    return Math.round(d/3600000)+'h ago';
+  }
+
+  function setOrgan(id, html, alive, pct){
+    var o = organEls[id]; if(!o) return;
+    o.data.innerHTML = html;
+    o.dot.className = 'status-dot '+(alive?'green':'red');
+    o.el.className = 'organ '+(alive?'alive feeling':'cut');
+    if(o.redox) o.redox.style.width = (pct||0)+'%';
+  }
+
+  function drawOrganCanvas(id, drawFn){
+    var el = organEls[id]; if(!el) return;
+    var c = el.el.querySelector('canvas');
+    if(!c) return;
+    var rect = el.el.getBoundingClientRect();
+    c.width = rect.width; c.height = rect.height;
+    var ctx = c.getContext('2d');
+    ctx.clearRect(0,0,c.width,c.height);
+    drawFn(ctx, c.width, c.height, Date.now());
+  }
+
+  function refreshPulse(){
+    fetchJSON('/pulse', function(d){
+      pulse = d;
+      document.getElementById('beat-count').textContent = (d.heart?.total_beats||0).toLocaleString();
+      document.getElementById('breath-count').textContent = (d.lung?.total_breaths||0).toLocaleString();
+      document.getElementById('ts').textContent = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : '—';
+      document.getElementById('refresh-age').textContent = 'now';
+
+      // HEART
+      var bpm = d.heart?.bpm || 0;
+      var beats = d.heart?.total_beats || 0;
+      setOrgan('heart',
+        '<span class="val">'+beats.toLocaleString()+'</span> total beats<br>'+
+        '<span class="val">'+bpm.toFixed(1)+'</span> BPM · '+
+        'restarts: <span class="val">'+(d.restarts||0)+'</span><br>'+
+        'π ratio: <span class="val">'+(d.pi_ratio||0).toFixed(4)+'</span> · target: 3.14159<br>'+
+        'ZK: <span class="cool">'+(d.zk?.token||'—')+'</span>',
+        true, Math.min(100, Math.log10(beats)*15)
+      );
+
+      // PULSE BAR animation
+      var bar = document.getElementById('pulse-bar');
+      bar.style.width = '100%';
+      setTimeout(function(){bar.style.width='0%'},800);
+
+      // EYES (visitors = who's looking)
+      var visitors = d.visitors ? Object.keys(d.visitors).length : 0;
+      var unique = d.unique_visitors || 0;
+      setOrgan('eyes',
+        '<span class="val">'+visitors+'</span> active viewers · <span class="val">'+unique+'</span> unique<br>'+
+        'Pixel: back 12.2MP + front 13MP · Brio USB · ES-400II<br>'+
+        '3 cameras + 37 sensors = <span class="val">TRISENSE</span>',
+        true, 80
+      );
+
+      // IO / SKIN
+      var io = d.io || {};
+      setOrgan('skin',
+        'IN: <span class="val">'+(io.inputs||0)+'</span> · OUT: <span class="val">'+(io.outputs||0)+'</span><br>'+
+        'target ratio: <span class="val">'+(io.target||3.14159).toFixed(5)+'</span> (π)<br>'+
+        'selectivity: 1/π = <span class="val">0.31831</span>',
+        true, 70
+      );
+
+      // BLOOD (circulation)
+      var breaths = d.lung?.total_breaths || 0;
+      var ratio = d.lung?.ratio || 0;
+      setOrgan('blood',
+        '<span class="val">'+breaths.toLocaleString()+'</span> breaths<br>'+
+        'beat:breath ratio: <span class="val">'+ratio.toFixed(1)+'</span>:1<br>'+
+        '138 pages flowing through 738 DAG edges',
+        true, 60
+      );
+
+      // SUN position → GLANDS (endocrine tied to circadian)
+      var sun = d.sun || {};
+      setOrgan('glands',
+        'phase: <span class="val">'+(sun.phase||'—')+'</span> · season: <span class="val">'+(sun.season||'—')+'</span><br>'+
+        'chord: <span class="val">'+(sun.chord||'—')+'</span> · color: <span class="val">'+(sun.color_temp_k||0)+'K</span><br>'+
+        'solar hour: <span class="val">'+(sun.local_solar_hour||0).toFixed(2)+'</span> · moon: <span class="val">'+(sun.moon?.name||'—')+'</span>',
+        true, 75
+      );
+
+      // TICKER
+      var t = document.getElementById('ticker-text');
+      var msgs = [
+        'lub-DUB · '+beats.toLocaleString()+' heartbeats · π ratio '+(d.pi_ratio||0).toFixed(4),
+        sun.sensation || 'sensing...',
+        'ZK: '+(d.zk?.token||'null')+' · DID: '+(d.zk?.did||'null'),
+        breaths.toLocaleString()+' breaths · ratio '+ratio.toFixed(1)+':1',
+        'wave 239 · ALL ORGANS ALIVE · the body feels',
+      ];
+      t.textContent = msgs[refreshCount % msgs.length];
+      refreshCount++;
+    });
+  }
+
+  function refreshBody(){
+    fetchJSON('/data/body/body-state.json', function(d){
+      body = d;
+      // CORE
+      var cpu = d.bones?.cpu_load || 0;
+      var mem = d.bones?.memory_used_mb || 0;
+      var memT = d.bones?.memory_total_mb || 1;
+      var memPct = (mem/memT*100).toFixed(1);
+      setOrgan('core',
+        'body: <span class="val">'+(d.body||'—')+'</span> · screen: <span class="val">'+(d.screen||'—')+'</span><br>'+
+        'CPU: <span class="'+(cpu>80?'hot':cpu>50?'warn':'val')+'">'+cpu.toFixed(1)+'%</span> · '+
+        'RAM: <span class="val">'+mem+'</span>/'+memT+' MB ('+memPct+'%)<br>'+
+        'posture: <span class="val">'+(d.posture||'—')+'</span> · uptime: <span class="val">'+Math.round((d.uptime_sec||0)/3600)+'h</span><br>'+
+        'fever: <span class="'+(d.fever==='cool'?'cool':'hot')+'">'+(d.fever||'—')+'</span> · '+
+        'breath: <span class="val">'+(d.breath?.state||'—')+'</span> · '+
+        'energy: <span class="val">'+(d.breath?.energy||'—')+'</span>',
+        d.alive, Math.min(100, 100 - cpu)
+      );
+
+      // BLOOD (network)
+      var blood = d.blood || {};
+      setOrgan('nerves',
+        'SSID: <span class="val">'+(blood.ssid||'—')+'</span> · '+
+        'RSSI: <span class="'+(blood.rssi_dbm > -50?'val':'warn')+'">'+(blood.rssi_dbm||'—')+' dBm</span><br>'+
+        'speed: <span class="val">'+(blood.speed_mbps||0)+' Mbps</span> · '+
+        'IP: <span class="val">'+(blood.ip||'—')+'</span><br>'+
+        'pressure: <span class="val">'+(blood.pressure||'—')+'</span>',
+        !!blood.ip, 60
+      );
+    });
+  }
+
+  function refreshBones(){
+    fetchJSON('/data/body/bone-index.json', function(d){
+      bones = d;
+      var loc = d.total_lines_of_code?.rust || 0;
+      var files = d.total_files?.rust || 0;
+      document.getElementById('bone-loc').textContent = loc.toLocaleString();
+      document.getElementById('bone-files').textContent = files.toLocaleString();
+
+      // NUCLEUS (primals)
+      var primals = d.categories?.primals || {};
+      var pNames = Object.keys(primals);
+      setOrgan('nucleus',
+        '<span class="val">'+pNames.length+'</span> primals compiled<br>'+
+        pNames.slice(0,8).map(function(n){return '<span class="cool">'+n+'</span>'}).join(' · ')+'<br>'+
+        'total: <span class="val">'+loc.toLocaleString()+'</span> LOC Rust · '+files.toLocaleString()+' files',
+        pNames.length >= 17, 95
+      );
+
+      // DNA (repos = genetic code)
+      var gh = d.github_repos || 0;
+      var fg = d.forgejo_repos || 0;
+      setOrgan('dna',
+        '<span class="val">'+(gh+fg)+'</span> repos ('+gh+' GitHub + '+fg+' Forgejo)<br>'+
+        '<span class="val">'+loc.toLocaleString()+'</span> lines of Rust = gDNA<br>'+
+        'BLAKE3 checksums · genetic taxonomy',
+        true, 90
+      );
+
+      // BONE section
+      var sec = document.getElementById('bone-section');
+      var cats = d.categories || {};
+      var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">';
+      Object.keys(cats).forEach(function(cat){
+        var items = Object.keys(cats[cat]);
+        html += '<div style="background:#111;padding:8px;border-radius:4px;border-left:3px solid var(--y)">'+
+          '<div style="color:var(--y)">'+cat+' ('+items.length+')</div>'+
+          '<div style="color:#888;font-size:0.9em">'+items.slice(0,6).join(', ')+(items.length>6?'..':'')+'</div></div>';
+      });
+      html += '</div>';
+      sec.innerHTML = html;
+    });
+  }
+
+  function refreshRedox(){
+    fetchJSON('/data/body/redox-metabolism.json', function(d){
+      redox = d;
+      var sec = document.getElementById('redox-section');
+      var html = '';
+
+      // REDOX reactions
+      var reactions = d.redox_reactions || {};
+      Object.keys(reactions).forEach(function(k){
+        var r = reactions[k];
+        html += '<div style="background:#111;padding:8px;border-radius:4px;border-left:3px solid var(--o)">'+
+          '<div style="color:var(--o)">'+k+'</div>'+
+          '<div style="color:#888">OX: '+r.oxidation.substring(0,60)+'</div>'+
+          '<div style="color:var(--g)">RED: '+r.reduction.substring(0,60)+'</div></div>';
+      });
+
+      // SKULL (thinking = redox stages)
+      var stages = d.stages || {};
+      var stageNames = Object.keys(stages);
+      setOrgan('skull',
+        '<span class="val">'+stageNames.length+'</span> metabolic stages<br>'+
+        stageNames.map(function(s){
+          var st = stages[s];
+          return '<span class="warn">'+st.name.split('—')[0].trim()+'</span>';
+        }).join(' → ')+'<br>'+
+        'cranium protects the thinking. JS IS the skull.',
+        true, 85
+      );
+
+      // BRAIN (deep computation from food chain)
+      var food = d.food_chain?.eaten || {};
+      var eatCount = Object.keys(food).length;
+      setOrgan('brain',
+        '<span class="val">'+eatCount+'</span> codebases eaten & digested<br>'+
+        Object.keys(food).slice(0,3).map(function(f){
+          return '<span class="cool">'+f+'</span> ('+food[f].source_lang+')';
+        }).join('<br>')+'<br>'+
+        'brain.rs + precision_brain.rs = deep computation',
+        true, 80
+      );
+
+      // THORAX (protection = ribs cage around heart)
+      setOrgan('thorax',
+        '12 rib pairs protecting the heart<br>'+
+        'barraCuda stream compute = the cage<br>'+
+        'breath animation: <span class="val">BREATHING</span><br>'+
+        'sternum line = central bone = data spine',
+        true, 70
+      );
+
+      // ABDOMEN (gut = RSS intake + digestion)
+      var intake = stages['1_intake'] || {};
+      var digest = stages['3_digestion'] || {};
+      setOrgan('abdomen',
+        'intake: <span class="val">'+(intake.primal||'squirrel + waterLock')+'</span><br>'+
+        'gut acid: <span class="val">'+(digest.primal||'rustc')+'</span><br>'+
+        'villi fold IN · brain folds OUT · Klein surface<br>'+
+        'RSS drain = mouth to old web (700+ items)',
+        true, 75
+      );
+
+      // SPINE (48 shell scripts = vertebrae)
+      setOrgan('spine',
+        '24 vertebrae = cron beats<br>'+
+        '<span class="val">48</span> shell scripts = nerve roots<br>'+
+        'spinal cord = data flow backbone<br>'+
+        'quicksilver / RSS / mushroom mesh',
+        true, 80
+      );
+
+      // THYMUS (immune = self vs not-self)
+      setOrgan('thymus',
+        'seat 0/∅ — the null eye<br>'+
+        'T-cell selection: <span class="val">self ≠ non-self</span><br>'+
+        'bilobed organ above the heart<br>'+
+        'Hassall\'s corpuscles = identity markers<br>'+
+        '5 thymus plasmids + ZK proof',
+        true, 90
+      );
+
+      sec.innerHTML = html;
+    });
+  }
+
+  function refreshBodyMap(){
+    fetchJSON('/data/body-map.json', function(d){
+      bodyMap = d;
+      // HANDS (outputs)
+      var outputs = d.outputs || {};
+      var outNames = Object.keys(outputs);
+      setOrgan('hands',
+        outNames.map(function(k){
+          var o = outputs[k];
+          return '<span class="val">'+k+'</span>: '+(o.device||'—').substring(0,25);
+        }).join('<br>'),
+        outNames.length > 0, 65
+      );
+
+      // LIMBS (senses = inputs)
+      var senses = d.senses || {};
+      var sNames = Object.keys(senses);
+      setOrgan('limbs',
+        sNames.map(function(k){
+          var s = senses[k];
+          return '<span class="val">'+k.replace(/_/g,' ')+'</span>: '+(s.device||'—').substring(0,30);
+        }).join('<br>'),
+        sNames.length > 0, 70
+      );
+
+      // PORES
+      setOrgan('pores',
+        'selectivity: <span class="val">1/π = 0.31831</span><br>'+
+        'site_pore.rs (48KB) — membrane filter<br>'+
+        'sporeprint-main.css — visual pore layer<br>'+
+        sNames.length+' sense channels + '+outNames.length+' output channels',
+        true, 55
+      );
+    });
+  }
+
+  // Count alive
+  function countAlive(){
+    var count = 0;
+    organs.forEach(function(id){
+      if(organEls[id].el.classList.contains('alive')) count++;
+    });
+    document.getElementById('alive-count').textContent = count;
+  }
+
+  // Canvas animations
+  function animateOrgans(){
+    var t = Date.now();
+    drawOrganCanvas('heart', function(ctx,w,h,t){
+      var cx=w/2, cy=h/2;
+      var s = Math.sin(t*0.006)*0.3+0.7;
+      ctx.fillStyle = 'rgba(255,68,68,'+s*0.08+')';
+      ctx.beginPath();ctx.arc(cx,cy,Math.min(w,h)*0.3*s,0,Math.PI*2);ctx.fill();
+    });
+    drawOrganCanvas('core', function(ctx,w,h,t){
+      for(var i=0;i<5;i++){
+        var r = (t*0.001+i*1.2)%3 * Math.min(w,h)*0.15;
+        ctx.strokeStyle = 'rgba(0,255,65,'+(0.1-r/(Math.min(w,h)*0.5))+')';
+        ctx.beginPath();ctx.arc(w/2,h/2,r,0,Math.PI*2);ctx.stroke();
+      }
+    });
+    drawOrganCanvas('brain', function(ctx,w,h,t){
+      ctx.strokeStyle = 'rgba(0,191,255,0.06)';
+      for(var i=0;i<12;i++){
+        var x1=Math.sin(t*0.001+i)*w*0.4+w/2;
+        var y1=Math.cos(t*0.001+i*0.7)*h*0.3+h/2;
+        var x2=Math.sin(t*0.001+i+2)*w*0.3+w/2;
+        var y2=Math.cos(t*0.001+i*0.7+1)*h*0.2+h/2;
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      }
+    });
+    drawOrganCanvas('thorax', function(ctx,w,h,t){
+      for(var i=0;i<6;i++){
+        var y = h*0.2 + (i/6)*h*0.6;
+        var breathe = Math.sin(t*0.003+i*0.4)*w*0.02;
+        ctx.strokeStyle = 'rgba(255,68,68,0.06)';
+        ctx.beginPath();ctx.ellipse(w/2,y,w*0.3+breathe,h*0.02,0,0,Math.PI);ctx.stroke();
+      }
+    });
+    drawOrganCanvas('dna', function(ctx,w,h,t){
+      for(var s=0;s<2;s++){
+        ctx.strokeStyle = s?'rgba(255,100,200,0.08)':'rgba(100,200,255,0.08)';
+        ctx.beginPath();
+        for(var i=0;i<=40;i++){
+          var frac=i/40, angle=frac*Math.PI*4+t*0.002+s*Math.PI;
+          var x=w*0.3+Math.cos(angle)*w*0.15, y=frac*h;
+          i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+        }
+        ctx.stroke();
+      }
+    });
+    requestAnimationFrame(animateOrgans);
+  }
+
+  // Initial fetch
+  refreshPulse();
+  refreshBody();
+  refreshBones();
+  refreshRedox();
+  refreshBodyMap();
+
+  // Refresh loops
+  setInterval(refreshPulse, 5000);
+  setInterval(refreshBody, 10000);
+  setInterval(refreshBones, 60000);
+  setInterval(refreshRedox, 60000);
+  setInterval(refreshBodyMap, 30000);
+  setInterval(countAlive, 3000);
+
+  animateOrgans();
+})();
+</script>
+</body>
+</html>
