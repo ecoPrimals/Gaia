@@ -653,3 +653,25 @@ body{background:var(--bg);color:#ccc;font-family:'Courier New',monospace;overflo
 </script>
 </body>
 </html>
+
+<!-- Injected by wave 239v: REDOX distillation status -->
+<script>
+(function(){
+  function fetchJSON(url,cb){fetch(url).then(function(r){return r.json()}).then(cb).catch(function(){});}
+  
+  fetchJSON('/data/body/redox-distillation.json', function(d){
+    var sec = document.querySelector('.body-grid');
+    if(!sec) return;
+    
+    // Add distillation summary at the top
+    var header = document.querySelector('.header .sub');
+    if(header && d.stats) {
+      header.innerHTML = d.stats.alive_files + ' living organs · ' + 
+        d.stats.dead_files + ' composted · ' +
+        d.stats.categories + ' categories · ' +
+        '<span id="beat-count">' + (document.getElementById('beat-count')?.textContent || '0') + '</span> beats · ' +
+        '<span id="breath-count">' + (document.getElementById('breath-count')?.textContent || '0') + '</span> breaths';
+    }
+  });
+})();
+</script>
