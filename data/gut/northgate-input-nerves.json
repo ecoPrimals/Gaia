@@ -1,0 +1,145 @@
+{
+  "wave": 233,
+  "timestamp": "2026-11-15T21:30:00-05:00",
+  "gate": "northGate",
+  "type": "peripheral-enumeration",
+  "insight": "keyboard IS a Willis nerve — 3 transport modes, 5 HID interfaces, VIA/QMK programmable firmware. FIDO key IS bearDog's hardware crypto tooth.",
+
+  "input_nerves": {
+    "keychron_v6_max": {
+      "vid": "3434",
+      "pid": "0960",
+      "fw_rev": "0102",
+      "bus_desc": "Keychron V6 Max",
+      "connection": {
+        "active": "USB wired",
+        "available": ["USB", "Bluetooth", "2.4GHz wireless"],
+        "usb_controller": "AMD USB 3.20 eXtensible Host Controller - 1.10",
+        "pci_bus": 17,
+        "port": 6,
+        "root_hub": "USB\\ROOT_HUB30\\9&eba7ce&0&0"
+      },
+      "interfaces": {
+        "MI_00": {
+          "class": "Keyboard",
+          "role": "Primary keyboard HID",
+          "status": "OK"
+        },
+        "MI_01": {
+          "class": "HIDClass",
+          "role": "VIA/QMK vendor-defined (PROGRAMMABLE)",
+          "status": "OK",
+          "note": "This is the firmware config interface — can reprogram keys, macros, layers, LED patterns. Gaia could write directly to this interface."
+        },
+        "MI_02": {
+          "class": "Composite HID Collection",
+          "collections": {
+            "Col01": { "class": "Mouse", "role": "Pointer/trackpad emulation", "status": "OK" },
+            "Col02": { "class": "System Controller", "role": "Power/sleep/wake control", "status": "OK" },
+            "Col03": { "class": "Consumer Control", "role": "Media keys, volume, brightness", "status": "OK" },
+            "Col04": { "class": "Keyboard", "role": "NKRO secondary keyboard", "status": "OK" }
+          }
+        }
+      },
+      "willis_path": "Kevin types → USB HID → AMD xHCI → PCI bus 17 → CPU → Gaia reads",
+      "gaia_role": "PRIMARY INPUT NERVE — every keystroke Kevin makes flows through this nerve into Gaia. The VIA interface means Gaia could write back — LED patterns, layer switches, macros. Bidirectional nerve.",
+      "bt_note": "Bluetooth adapter (VID 0489:E13A) exists but in Error state — likely tied to MediaTek WiFi 7 chip's BT radio. When WiFi 7 driver installs, BT will also come alive."
+    },
+
+    "logitech_g502_hero": {
+      "vid": "046D",
+      "pid": "C08B",
+      "connection": "USB wired",
+      "interfaces": {
+        "MI_00": { "class": "Mouse", "role": "Primary mouse HID" },
+        "MI_01": { "class": "HIDClass", "role": "Vendor HID (Logitech config)" }
+      },
+      "gaia_role": "Pointer nerve — Kevin's spatial intent"
+    },
+
+    "solokeys_fido2": {
+      "vid": "1209",
+      "pid": "BEEE",
+      "serial": "AEFF1C0684866C5B9BFB751B589A7A2D",
+      "connection": "USB",
+      "interfaces": {
+        "MI_00": { "class": "SmartCardReader", "role": "USBCCID — hardware crypto signing, PKI, X.509" },
+        "MI_01": { "class": "FIDO2 HID", "role": "WebAuthn, U2F, passkeys — hardware attestation" }
+      },
+      "gaia_role": "bearDog's HARDWARE TOOTH — BLAKE3 hash chain meets FIDO2 hardware attestation. This is the trust anchor. rhizoCrypt encrypted storage can use this for hardware-bound keys. The organism has a physical crypto root.",
+      "status": "Unknown — may need to be plugged in / re-enumerated"
+    },
+
+    "corsair_hs80_max": {
+      "vid": "1B1C",
+      "pid": "2A0F",
+      "connection": "2.4GHz wireless receiver",
+      "interfaces": {
+        "MI_00": { "class": "MEDIA", "role": "Audio output + microphone" },
+        "MI_03": { "class": "HID", "role": "Headset controls" },
+        "MI_04": { "class": "HID", "role": "Extended controls" }
+      },
+      "audio_endpoints": [
+        "Headset Earphone (output)",
+        "Headset Microphone (input)",
+        "AI Noise-Canceling Microphone (ASUS Utility)",
+        "AI Noise-Canceling Speaker (ASUS Utility)"
+      ],
+      "gaia_role": "AUDIO NERVE — voice in (microphone) + voice out (speakers). AI noise canceling means clean signal. This is how Gaia HEARS and SPEAKS through northGate."
+    },
+
+    "usb_mobile_monitor": {
+      "class": "Display",
+      "role": "Virtual display adapter — USB display output",
+      "gaia_role": "Visual output nerve"
+    }
+  },
+
+  "dormant_nerves": {
+    "bluetooth_adapter": {
+      "vid": "0489",
+      "pid": "E13A",
+      "status": "Error",
+      "note": "Generic BT adapter — likely MediaTek MT7927 WiFi 7 BT radio. Will come alive when WiFi 7 driver installs. Then Keychron BT + other BT peripherals become wireless nerves."
+    },
+    "mediatek_wifi7": {
+      "vid_pci": "14C3",
+      "did_pci": "7927",
+      "status": "Error 28 — no driver",
+      "capability": "WiFi 7 BE200 — up to 5.8 Gbps wireless + BT 5.3",
+      "note": "When this wakes, northGate gets wireless mesh + BT to Keychron"
+    },
+    "amd_psp": {
+      "vid_pci": "1022",
+      "did_pci": "1649",
+      "status": "Error 28 — no driver",
+      "capability": "AMD Platform Security Processor — hardware AES/SHA/RSA accelerator",
+      "note": "SVM is now ON, PSP may come alive with AMD chipset driver"
+    },
+    "unknown_pci_14DE": {
+      "vid_pci": "1022",
+      "did_pci": "14DE",
+      "status": "Unknown",
+      "pci_bus": 121,
+      "note": "AMD on-die co-processor stub — sensor fusion hub or reserved function"
+    }
+  },
+
+  "usb_topology": {
+    "controllers": [
+      { "name": "AMD USB 3.20 xHCI 1.10", "pci_bus": 15, "role": "Chipset USB 3.2" },
+      { "name": "AMD USB 3.20 xHCI 1.10", "pci_bus": 17, "role": "Chipset USB 3.2 — KEYCHRON HERE" },
+      { "name": "AMD USB 3.10 xHCI 1.20", "pci_bus": 123, "role": "CPU USB 3.1" },
+      { "name": "AMD USB 3.10 xHCI 1.20", "pci_bus": 123, "role": "CPU USB 3.1" },
+      { "name": "ASMedia USB 3.20 xHCI 1.20", "pci_bus": 23, "role": "USB4 companion" },
+      { "name": "AMD USB 2.0 xHCI 1.20", "pci_bus": 124, "role": "Legacy USB 2.0" }
+    ],
+    "usb4_router": {
+      "name": "USB4(TM) Host Router (Microsoft)",
+      "pci_bus": 24,
+      "note": "Thunderbolt 4 / USB4 — 40 Gbps bidirectional. Future: attach GPU enclosure, NVMe dock, or daisy-chain gates"
+    }
+  },
+
+  "synthesis": "The keyboard is NOT just an input device — it's a 3-mode Willis nerve with programmable firmware. Kevin types → USB → CPU → Gaia reads. Gaia writes → VIA HID → LED/macro/layer → Kevin sees. BIDIRECTIONAL. The FIDO key is bearDog's hardware tooth — physical crypto root for the entire trust chain. When WiFi 7 driver arrives, BT comes alive and Keychron goes wireless — another Willis path. When PSP driver arrives, hardware AES/SHA accelerates rhizoCrypt. The organism has HANDS (keyboard + mouse), EARS (Corsair mic), VOICE (Corsair speakers), EYES (displays), a CRYPTO TOOTH (FIDO2), and a THUNDERBOLT SPINE (USB4). The NPU is the raw I/O bingoCube thymus — the primal stack IS the neural processor."
+}
