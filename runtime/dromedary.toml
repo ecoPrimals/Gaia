@@ -32,15 +32,55 @@ upstream = "http://127.0.0.1:8080"
 strip_prefix = "/rss"
 
 # ═══════════════════════════════════════════
-# SUBDOMAIN: detroit.primals.eco
+# ZOLA SITES — GitHub Pages proxied through dromedary
+# Users stay on primals.eco subdomains.
+# strip_prefix removes /repo-name prefix so URLs resolve correctly.
 # ═══════════════════════════════════════════
 
+# detroit.primals.eco → defendDetroit/detroit (D3 network map)
 [[sites]]
 hostnames = ["detroit.primals.eco"]
 compress = true
 [sites.backend]
 type = "proxy"
-upstream = "http://127.0.0.1:8443"
+upstream = "https://defenddetroit.github.io/detroit"
+strip_prefix = "/detroit"
+
+# tuebor.primals.eco → amicusContra/tuebor (public record investigation)
+[[sites]]
+hostnames = ["tuebor.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "https://amicuscontra.github.io/tuebor"
+strip_prefix = "/tuebor"
+
+# clutch.primals.eco → amicusContra/clutch (justice cases)
+[[sites]]
+hostnames = ["clutch.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "https://amicuscontra.github.io/clutch"
+strip_prefix = "/clutch"
+
+# lansing.primals.eco → amicusContra/lansing (capital infrastructure)
+[[sites]]
+hostnames = ["lansing.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "https://amicuscontra.github.io/lansing"
+strip_prefix = "/lansing"
+
+# publicrecord.primals.eco → defendDetroit/publicRecord (full evidence)
+[[sites]]
+hostnames = ["publicrecord.primals.eco", "record.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "https://defenddetroit.github.io/publicRecord"
+strip_prefix = "/publicRecord"
 
 # ═══════════════════════════════════════════
 # SUBDOMAIN: sporeprint.primals.eco
