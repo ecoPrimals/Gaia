@@ -1,9 +1,9 @@
-# Firmware & Hardware Healing â€” Mesh-Wide Pattern
+# Firmware & Hardware Healing — Mesh-Wide Pattern
 
 ## The Left Eye Problem (iGPU + dGPU dual display)
 
 Any AMD gate with both iGPU and dGPU may hit this:
-- CSM enabled â†’ hides NB Configuration â†’ iGPU disabled â†’ no UMA â†’ left eye blind
+- CSM enabled → hides NB Configuration → iGPU disabled → no UMA → left eye blind
 - Fix: CSM OFF + UMA allocated + Integrated Graphics = Force
 
 ## Known Gate Firmware
@@ -57,25 +57,25 @@ setup_var_cv AMD_PBS_SETUP 0x48 0x01
 Device Manager > AMD CBS > NBIO Common Options > UMA
 
 # Option C: BIOS manual (DEL key)
-CSM = Disabled â†’ NB Configuration appears â†’ iGPU Force + UMA 512M
+CSM = Disabled → NB Configuration appears → iGPU Force + UMA 512M
 ```
 
 ## Tissue Patterns
-- `data/tissues/uefi-eye-healer.json` â€” full diagnosis + prescription
-- `data/tissues/left-eye-amoeba.json` â€” RustDesk Display 2 deployment
-- `scripts/left-eye-attenuator.py` â€” wake pulse on login
-- `scripts/post-reboot-verify.py` â€” check after fix
+- `data/tissues/uefi-eye-healer.json` — full diagnosis + prescription
+- `data/tissues/left-eye-amoeba.json` — RustDesk Display 2 deployment
+- `scripts/left-eye-attenuator.py` — wake pulse on login
+- `scripts/post-reboot-verify.py` — check after fix
 
 ## Attenuator Pattern (dual display wake)
 - RIGHT EYE (dGPU): wakes naturally at POST, primary display
-- LEFT EYE (iGPU): needs wake pulse â€” `displayswitch /extend` + DDC/CI + PnP enable
+- LEFT EYE (iGPU): needs wake pulse — `displayswitch /extend` + DDC/CI + PnP enable
 - Attenuator scheduled task: GaiaLeftEyeWake (runs on login)
 
-## CSM â€” The Root Cause
+## CSM — The Root Cause
 CSM (Compatibility Support Module) enables legacy BIOS boot.
-On ASUS boards: CSM=ON â†’ iGPU disabled, NB Config hidden, Re-Size BAR disabled.
+On ASUS boards: CSM=ON → iGPU disabled, NB Config hidden, Re-Size BAR disabled.
 ALWAYS disable CSM on UEFI-only systems. Windows 11 requires UEFI anyway.
 
 ## Secure Boot
 Secure Boot = True on northGate. This may block unsigned EFI tools (modGRUBShell).
-Smokeless_UMAF may also be blocked. If both fail â†’ manual BIOS is the fallback.
+Smokeless_UMAF may also be blocked. If both fail → manual BIOS is the fallback.
