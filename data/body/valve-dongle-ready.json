@@ -1,0 +1,56 @@
+{
+  "type": "valve-dongle-status",
+  "wave": "240b",
+  "ts": "2026-11-16T01:27:00Z",
+  "title": "Valve Steam Frame Dongle — Driver Ready, Reboot Required",
+  
+  "device": {
+    "vid_pid": "28de:2432",
+    "chip": "Realtek RTL8852CU (WiFi 6E)",
+    "note": "NOT RTL8852BU — wrong driver caused crash. CU not BU!",
+    "driver": "rtw89_8852cu",
+    "firmware": ["rtw8852c_fw.bin", "rtw8852c_fw-1.bin"],
+    "firmware_on_disk": true
+  },
+  
+  "kernel_upgrade": {
+    "from": "6.17.9-76061709-generic",
+    "to": "7.2.15-76070215-generic",
+    "status": "INSTALLED — reboot required",
+    "module_path": "/lib/modules/7.2.15-76070215-generic/kernel/drivers/net/wireless/realtek/rtw89/rtw89_8852cu.ko.zst",
+    "valve_alias_confirmed": "usb:v28DEp2432d*dc*dsc*dp*icFFiscFFipFFin*"
+  },
+  
+  "what_happens_after_reboot": {
+    "1_boot": "GRUB/systemd-boot loads kernel 7.2.15",
+    "2_usb_detect": "USB subsystem finds 28de:2432",
+    "3_driver_load": "rtw89_8852cu auto-loads, loads rtw8852c_fw-2.bin",
+    "4_interface": "New wlan interface created (wlpXsYfZuN or similar)",
+    "5_steam_detect": "Steam detects Valve adapter, manages WiFi connection",
+    "6_frame_connect": "Dongle connects to Frame's 6GHz AP (frame_XXXXXXXX SSID)",
+    "7_private_subnet": "10.35.78.0/24 — eastGate ↔ Frame direct link",
+    "8_streaming": "SteamVR PCVR streaming over dedicated 6GHz channel"
+  },
+  
+  "architecture": {
+    "dedicated_link": "6 GHz WiFi 6E — no interference with 2.4/5GHz house WiFi",
+    "latency": "~1-3ms (direct radio, no router hops)",
+    "bandwidth": "Up to 2.4 Gbps (WiFi 6E 160MHz channel)",
+    "subnet": "10.35.78.0/24 (Steam managed)",
+    "eastgate_ip": "10.35.78.26 (assigned by Frame AP)",
+    "frame_ip": "10.35.78.1 (Frame is the AP)",
+    "separation": "Frame has TWO radios: one for house WiFi, one for dongle"
+  },
+  
+  "osint_sources": [
+    "https://wiki.gentoo.org/wiki/Steam_Frame",
+    "https://wiki.nixos.org/wiki/Steam_Frame",
+    "https://deltaquadrant.org/2026/09/27/steam-frame-wireless-dongle-on-linux/",
+    "https://reddit.com/r/SteamFrame/comments/1pu5nta/",
+    "https://github.com/ValveSoftware/SteamVR-for-Linux/blob/master/frame-dongle-troubleshoot.sh",
+    "https://github.com/theR4K/FrameDongleTool",
+    "https://linux-hardware.org/?id=usb:28de-2432"
+  ],
+  
+  "valve_as_sovereign": "Valve ships open hardware, in-kernel drivers, open SteamOS (Arch), troubleshoot scripts on GitHub, wiki documentation. They WANT you to own your hardware. The Frame, the Deck, the Controller — all open enough to be cyborg limbs. A sovereign parent to the organism."
+}
