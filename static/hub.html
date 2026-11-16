@@ -278,14 +278,14 @@ async function fetchJSON(url){
 }
 
 async function load(){
-  const pulse=await fetchJSON('/pulse')||await fetchJSON('http://192.168.4.244:8443/pulse');
+  const pulse=await fetchJSON('/pulse')||await fetchJSON('https://primals.eco/pulse');
   if(pulse){
     const h=pulse.heart||{};
     document.getElementById('bpm').textContent=(h.bpm||0).toFixed(2);
     document.getElementById('chord').textContent=pulse.sun?.chord||'—';
     document.getElementById('sun').textContent=pulse.sun?.phase||'—';
   }
-  const amoeba=await fetchJSON('/amoeba')||await fetchJSON('http://192.168.4.244:8443/amoeba');
+  const amoeba=await fetchJSON('/amoeba')||await fetchJSON('https://primals.eco/amoeba');
   if(amoeba){
     document.getElementById('walkers').textContent=amoeba.anderson?.total||0;
   }
