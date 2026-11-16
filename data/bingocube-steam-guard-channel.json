@@ -1,0 +1,73 @@
+{
+  "protocol": "bingoCube Steam Guard Channel",
+  "version": "wave-239n",
+  "type": "coordination",
+  "status": "READY — Pixel has Steam Guard, ADB is live, Deck is castable",
+
+  "ceremony": {
+    "name": "HOLD → SEE → SEAL (Steam Family Authentication)",
+    "extends": "bingoCube Proximity Sign",
+    "actors": {
+      "kevin": "PLAYER — holds Pixel, enters password (ZK), fingerprint seals",
+      "gaia_brain": "HOLDER — eastGate reads Steam Guard via ADB, types code via CEF, coordinates",
+      "gaia_eye": "Pixel 8a — USB ADB, runs Steam Guard for tamisonecoprimal, camera for QR",
+      "gaia_display": "deckGate — CEF at :8081, target device to authenticate"
+    }
+  },
+
+  "channels": {
+    "guard_read": {
+      "path": "Pixel → ADB screencap → eastGate → OCR/parse → 5-char code",
+      "method": "adb exec-out screencap -p → image → extract code from center of screen",
+      "refresh": "code rotates every 30s, blue ring shows remaining time",
+      "account": "gaia / tamisonecoprimal"
+    },
+    "code_inject": {
+      "path": "eastGate → CEF websocket → Deck browser/login form → type code",
+      "method": "Runtime.evaluate → document.querySelector('input').value = code → submit",
+      "target": "ws://192.168.4.176:8081/devtools/page/{tabId}"
+    },
+    "qr_scan": {
+      "path": "Deck shows QR → Pixel camera captures → Gaia decodes → Steam app approves",
+      "method": "adb shell input keyevent 27 (shutter) → pull photo → pyzbar decode",
+      "backup": "Kevin physically scans QR with Pixel camera"
+    },
+    "progress_reveal": {
+      "uses": "bingoCube subcube(x) where x ∈ (0,1]",
+      "stages": [
+        {"x": 0.0,  "state": "VOID",    "color": "black",  "desc": "not started"},
+        {"x": 0.2,  "state": "SENSE",   "color": "grey",   "desc": "target device identified"},
+        {"x": 0.4,  "state": "BREATH",  "color": "blue",   "desc": "password entered, waiting for 2FA"},
+        {"x": 0.6,  "state": "PULSE",   "color": "red",    "desc": "Steam Guard code read from Pixel"},
+        {"x": 0.8,  "state": "DREAM",   "color": "purple", "desc": "code injected, waiting for verify"},
+        {"x": 1.0,  "state": "CREATE",  "color": "gold",   "desc": "AUTHENTICATED — Gaia is HOLDER"}
+      ],
+      "visual": "chromatic-gis.html node color transitions through stages as auth progresses"
+    }
+  },
+
+  "devices": {
+    "pixel": {
+      "ip": "192.168.4.114",
+      "usb": "44251JEKB04957 on usb:1-4.1",
+      "steam_account": "gaia / tamisonecoprimal",
+      "steam_guard": "ACTIVE — 5-char TOTP rotating every 30s",
+      "battery": "100%, charging"
+    },
+    "deck": {
+      "ip": "192.168.4.176",
+      "cef": "http://192.168.4.176:8081",
+      "current_account": "gw_kevinmok (Kevin)",
+      "target_account": "tamisonecoprimal (Gaia)"
+    }
+  },
+
+  "future_targets": [
+    "frameGate — same ceremony when it comes online",
+    "Any new Steam device — bingoCube coordinates the handshake",
+    "MokVive account — separate Guard code if needed",
+    "Other humans' devices — Family Sharing player enrollment"
+  ],
+
+  "insight": "bingoCube is the multi-device authentication coordinator. The progressive reveal (subcube) maps DIRECTLY to the auth stages. Each stage transitions the device's color on the chromatic GIS. The ceremony completes when the node goes GOLD = authenticated = Gaia is HOLDER."
+}

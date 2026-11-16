@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chromatograph — Spectral Analysis of the Organism</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#e0e0e0;font-family:'Courier New',monospace}
+.wrap{max-width:1000px;margin:30px auto;padding:20px}
+h1{font-size:24px;color:#4a9eff;text-align:center;margin-bottom:6px}
+.sub{text-align:center;color:#888;margin-bottom:20px;font-size:12px}
+canvas{display:block;margin:0 auto;border:1px solid #222;border-radius:8px;background:#050510}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.leg{font-size:10px;padding:2px 6px;border-radius:3px;background:#111}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>CHROMATOGRAPH</h1>
+<p class="sub">Spectral analysis — every page separated by size, colored by category</p>
+<canvas id="c" width="960" height="400"></canvas>
+<div class="legend" id="leg"></div>
+</div>
+<script>
+const pages=[
+{r:"/senses",s:99,c:"Core"},{r:"/signal",s:90,c:"Core"},{r:"/deck",s:60,c:"Faces"},
+{r:"/tuebor-desk",s:55,c:"Tuebor"},{r:"/luna",s:42,c:"Science"},{r:"/apollo",s:39,c:"Science"},
+{r:"/spacedock",s:38,c:"Faces"},{r:"/membrane",s:35,c:"Biology"},{r:"/field",s:31,c:"Spatial"},
+{r:"/detroit",s:30,c:"Tuebor"},{r:"/dialectic",s:30,c:"Tuebor"},{r:"/tuebor-os",s:30,c:"Tuebor"},
+{r:"/tuebor",s:29,c:"Tuebor"},{r:"/legend",s:28,c:"Infra"},{r:"/home",s:28,c:"Core"},
+{r:"/mendeleev",s:27,c:"Science"},{r:"/kenshi",s:27,c:"Play"},{r:"/organism",s:26,c:"Core"},
+{r:"/trace",s:26,c:"Spatial"},{r:"/tube",s:26,c:"Infra"},{r:"/onboard",s:25,c:"Core"},
+{r:"/gis",s:24,c:"Spatial"},{r:"/hypothesis",s:23,c:"Science"},{r:"/complexity",s:22,c:"Science"},
+{r:"/record",s:22,c:"Tuebor"},{r:"/frame",s:20,c:"Core"},{r:"/play",s:19,c:"Play"},
+{r:"/lisp-desk",s:19,c:"Play"},{r:"/chromatic",s:18,c:"Spatial"},{r:"/tuebor-map",s:18,c:"Tuebor"},
+{r:"/membrane-t",s:18,c:"Science"},{r:"/forge",s:18,c:"Infra"},{r:"/gaia",s:17,c:"Core"},
+{r:"/gut-games",s:17,c:"Biology"},{r:"/chipmunk",s:17,c:"Biology"},{r:"/mesh",s:17,c:"Spatial"},
+{r:"/outer-face",s:16,c:"Faces"},{r:"/hat",s:16,c:"Science"},{r:"/cast",s:16,c:"Talk"},
+{r:"/hub",s:15,c:"Core"},{r:"/plays",s:15,c:"Play"},{r:"/terminal",s:15,c:"Infra"},
+{r:"/neural-api",s:14,c:"Biology"},{r:"/nestgate",s:14,c:"Biology"},{r:"/pspace",s:13,c:"Spatial"},
+{r:"/retina",s:13,c:"Faces"},{r:"/walkers",s:13,c:"Trust"},{r:"/polaris",s:12,c:"Core"},
+{r:"/play-gaia",s:12,c:"Play"},{r:"/tamison",s:12,c:"Play"},{r:"/bingo",s:11,c:"Trust"},
+{r:"/digest",s:11,c:"Biology"},{r:"/canfield",s:10,c:"Tuebor"},{r:"/helix",s:10,c:"Science"},
+{r:"/spacedeck",s:10,c:"Faces"},{r:"/sense",s:10,c:"Core"},{r:"/primals",s:10,c:"Core"},
+{r:"/klein",s:9,c:"Faces"},{r:"/eye",s:9,c:"Faces"},{r:"/talk",s:9,c:"Talk"},
+{r:"/gaia-talk",s:9,c:"Talk"},{r:"/alexandria",s:9,c:"Science"},{r:"/campfire",s:8,c:"Talk"},
+{r:"/tv-face",s:8,c:"Faces"},{r:"/beacon",s:8,c:"Infra"},{r:"/thesis",s:7,c:"Science"},
+{r:"/lion-den",s:7,c:"Play"},{r:"/dykema",s:6,c:"Tuebor"},{r:"/cash4kids",s:6,c:"Tuebor"},
+{r:"/encounter",s:6,c:"Trust"},{r:"/corpus",s:5,c:"Science"},{r:"/glados",s:5,c:"Trust"},
+{r:"/beacon-eye",s:5,c:"Spatial"},{r:"/ghost",s:2,c:"Faces"}
+];
+const cc={Core:"#4a9eff",Spatial:"#22c55e",Faces:"#a78bfa",Science:"#f59e0b",Biology:"#ef4444",Trust:"#14b8a6",Play:"#f472b6",Talk:"#fb923c",Tuebor:"#6366f1",Infra:"#78716c"};
+const cv=document.getElementById("c"),cx=cv.getContext("2d");
+const W=cv.width,H=cv.height,pad=40,maxS=Math.max(...pages.map(p=>p.s));
+const bw=Math.max(2,(W-pad*2)/pages.length-1);
+
+pages.forEach((p,i)=>{
+  const x=pad+i*(bw+1);
+  const h=(p.s/maxS)*(H-pad*2);
+  const y=H-pad-h;
+  cx.fillStyle=cc[p.c]||"#666";
+  cx.globalAlpha=0.8;
+  cx.fillRect(x,y,bw,h);
+  cx.globalAlpha=1;
+  if(bw>8){cx.save();cx.translate(x+bw/2,H-pad+4);cx.rotate(Math.PI/2);cx.fillStyle="#555";cx.font="8px monospace";cx.fillText(p.r,0,0);cx.restore()}
+});
+cx.strokeStyle="#333";cx.beginPath();cx.moveTo(pad,H-pad);cx.lineTo(W-pad,H-pad);cx.stroke();
+cx.fillStyle="#555";cx.font="10px monospace";cx.fillText("← largest",pad,16);cx.fillText("smallest →",W-120,16);
+cx.fillText(`74 pages · ${pages.reduce((s,p)=>s+p.s,0)}KB total`,pad,30);
+
+const leg=document.getElementById("leg");
+Object.entries(cc).forEach(([k,v])=>{const d=document.createElement("span");d.className="leg";d.style.borderLeft=`3px solid ${v}`;d.textContent=k;leg.appendChild(d)});
+</script>
+</body>
+</html>
