@@ -1,0 +1,143 @@
+﻿{
+  "gate": "northGate",
+  "timestamp": "2026-11-15T15:44:00-05:00",
+  "phase": "reactor-model-v1",
+  
+  "motherboard": {
+    "manufacturer": "ASUSTeK COMPUTER INC.",
+    "product": "ROG STRIX X870E-E GAMING WIFI",
+    "chipset": "AMD X870E",
+    "socket": "AM5",
+    "bios_version": "1401",
+    "bios_date": "2025-05-04",
+    "bios_vendor": "American Megatrends Inc.",
+    "m2_slots": ["M.2_1 (CPU PCIe 5.0 x4)", "M.2_2 (CPU PCIe 5.0 x4)", "M.2_3 (chipset PCIe 4.0 x4)", "M.2_4 (chipset PCIe 4.0 x4)"]
+  },
+
+  "cpu": {
+    "name": "AMD Ryzen 9 9950X3D",
+    "architecture": "Zen 5 (Granite Ridge)",
+    "ccds": {
+      "CCD0": "8 cores, 3D V-Cache, 96MB L3 (VISIBLE)",
+      "CCD1": "8 cores, standard, 32MB L3 (INVISIBLE — disabled in BIOS or game mode)"
+    },
+    "visible_cores": 8,
+    "visible_threads": 8,
+    "expected_cores": 16,
+    "expected_threads": 32,
+    "l3_visible_kb": 98304,
+    "diagnosis": "Only CCD0 visible (96MB L3 = 3D V-Cache CCD). CCD1 disabled or SMT off. ASUS may have Game Mode enabled."
+  },
+
+  "amd_pbs_setup": {
+    "guid": "A339D746-F678-49B3-9FC7-54CE0F9DF226",
+    "size": 256,
+    "attributes": 7,
+    "hex_dump": [
+      "0000: 03 8C 01 01 00 00 00 00 01 00 00 00 02 01 00 02",
+      "0010: 02 00 00 01 00 09 09 09 00 02 01 01 00 26 02 00",
+      "0020: 00 00 01 01 00 0A 14 14 01 01 01 00 01 01 00 00",
+      "0030: 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 32",
+      "0040: 00 64 00 00 00 00 64 64 00 FF FF FF FF 00 02 30",
+      "0050: 80 01 80 00 00 03 01 00 00 00 00 00 03 03 00 00",
+      "0060: 01 01 1B 21 1B 21 24 00 04 04 04 04 04 04 00 04",
+      "0070: 04 04 04 04 00 01 14 00 03 30 0C 80 01 80 02 00",
+      "0080: 00 40 00 00 01 00 00 64 0A 01 01 03 00 00 00 00",
+      "0090-00FF: all zeros"
+    ],
+    "known_offsets": {
+      "0x48": {"name": "iGPU_Control", "current": "0x00", "meaning": "Disabled/Auto", "target": "0x01", "target_meaning": "Forces (enabled)"},
+      "0x49": {"name": "UMA_Frame_Size", "current": "0xFF", "meaning": "Auto/None", "target": "0x06", "target_meaning": "512MB"},
+      "0x4A": {"name": "UMA_Above4G", "current": "0xFF", "meaning": "unknown", "target": null},
+      "0x4B": {"name": "NB_Azalia", "current": "0xFF", "meaning": "unknown", "target": null},
+      "0x4E": {"name": "Primary_Video", "current": "0x02", "meaning": "PCIE", "target": "0x02", "target_meaning": "keep PCIE"}
+    }
+  },
+
+  "pcie_topology": {
+    "root_complex": "AMD NBIO (bus 0)",
+    "ports": [
+      {"id": "RP01", "pci": "0:8.1", "status": "OK", "children": ["PCI Device (Error)", "Encryption (Error)", "USB 3.10 xHCI ×2"]},
+      {"id": "RP02", "pci": "0:8.3", "status": "OK", "children": ["USB 2.0 xHCI"]},
+      {"id": "RP03", "pci": "0:1.1", "status": "OK", "children": ["RTX 5090", "HD Audio"]},
+      {"id": "RP04", "pci": "0:1.2", "status": "OK", "children": ["NVMe Controller (Samsung 1TB — boot drive)"]},
+      {"id": "RP05", "pci": "0:1.3", "status": "UNKNOWN", "children": [], "diagnosis": "DEAD — should be Samsung 990 PRO 4TB (bus 3)"},
+      {"id": "RP06", "pci": "0:1.4", "status": "UNKNOWN", "children": [], "diagnosis": "DEAD — should be WD_BLACK SN850X 4TB (bus 4)"},
+      {"id": "RP07", "pci": "0:2.1", "status": "OK", "children": ["PCIe Upstream Switch (ASMedia)"]},
+      {"id": "RP08", "pci": "0:2.2", "status": "OK", "children": ["PCIe Upstream Switch (ASMedia)"]}
+    ],
+    "diagnosis": "RP05 and RP06 are on device 0:1 functions 3 and 4 — same NBIO root as GPU (func 1) and boot NVMe (func 2). This is CPU-direct PCIe 5.0. The M.2 slots for these drives need PCIe lane allocation in BIOS."
+  },
+
+  "nvme_drives": [
+    {"name": "Samsung SSD 990 PRO 1TB", "status": "OK", "present": true, "bus": 2, "root_port": "RP04 (0:1.2)", "role": "C: boot drive"},
+    {"name": "Samsung SSD 990 PRO 4TB", "status": "Unknown", "present": false, "bus": 3, "root_port": "RP05 (0:1.3)", "role": "ghost — was M: (Steam library)"},
+    {"name": "WD_BLACK SN850X 4TB", "status": "Unknown", "present": false, "bus": 4, "root_port": "RP06 (0:1.4)", "role": "ghost — was D:/K:"}
+  ],
+
+  "gpus": [
+    {"name": "NVIDIA GeForce RTX 5090", "status": "OK", "vram": "32GB GDDR7", "driver": "32.0.16.1088", "root_port": "RP03 (0:1.1)"},
+    {"name": "AMD Raphael iGPU (Radeon 610M)", "status": "DISABLED", "vram": "0 (no UMA allocated)", "note": "Built into 9950X3D die, needs 0x48=0x01 to enable"},
+    {"name": "USB Mobile Monitor Virtual Display", "status": "OK", "vram": "0", "note": "software"}
+  ],
+
+  "boot_entries": [
+    {"id": "bootmgr", "desc": "Windows Boot Manager", "path": "\\EFI\\Microsoft\\Boot\\bootmgfw.efi", "order": "FIRST"},
+    {"id": "dce17415", "desc": "GAIA EFI Key - UMA Unlock", "path": "\\EFI\\tools\\modGRUBShell.efi"},
+    {"id": "dce17416", "desc": "Smokeless UMAF", "path": "\\EFI\\Microsoft\\Boot\\bootmgfw.efi"},
+    {"id": "dce17417", "desc": "Smokeless UMAF (iGPU)", "path": "\\EFI\\UMAF\\Bootx64.efi"}
+  ],
+
+  "modgrubshell": {
+    "path": "Z:\\EFI\\tools\\modGRUBShell.efi",
+    "size": 5521920,
+    "commands_available": ["setup_var", "setup_var2", "setup_var_3", "lsefivar", "configfile", "chainloader", "normal", "reboot", "set"],
+    "config_search_path": "$prefix/grub.cfg (loaded when 'normal' command is issued)",
+    "why_auto_failed": "modGRUBShell starts in rescue/shell mode, NOT normal mode. It does NOT auto-execute grub.cfg. You must type 'normal' to trigger config loading, or use 'configfile' to load explicitly.",
+    "fix": "Either: (1) type commands directly, (2) build custom EFI with embedded config via grub-mkstandalone on eastGate, (3) use 'configfile' command"
+  },
+
+  "efi_partition": {
+    "mount": "Z:",
+    "size": "100MB",
+    "tools": ["modGRUBShell.efi (5.5MB)", "UiApp.efi (163KB)", "SetupBrowser.efi (73KB)", "DisplayEngine.efi (63KB)"],
+    "umaf_dir": "Z:\\EFI\\UMAF\\"
+  },
+
+  "reboot_goals": {
+    "GOAL_A_iGPU": {
+      "priority": 1,
+      "writes": ["AMD_PBS_SETUP 0x48 = 0x01 (Forces)", "AMD_PBS_SETUP 0x49 = 0x06 (512M UMA)"],
+      "risk": "LOW",
+      "verify": "Read 0x48 and 0x49 after reboot + check for AMD Radeon in Device Manager",
+      "tool": "modGRUBShell: setup_var_cv AMD_PBS_SETUP 0x48 0x01 0x01 / setup_var_cv AMD_PBS_SETUP 0x49 0x01 0x06"
+    },
+    "GOAL_B_NVMe": {
+      "priority": 2,
+      "writes": "UNKNOWN — need to find CBS_SETUP or NBIO variable offsets for M.2 slot enable",
+      "risk": "MEDIUM",
+      "verify": "RP05 and RP06 status changes to OK, NVMe drives become Present=True",
+      "tool": "UMAF browser (manual) to explore AMD CBS > NBIO > PCIe settings"
+    },
+    "GOAL_C_CPU_CCD": {
+      "priority": 3,
+      "writes": "UNKNOWN — need CBS_SETUP offset for CCD1 enable + SMT enable",
+      "risk": "LOW",
+      "verify": "16C/32T in Task Manager",
+      "tool": "UMAF browser (manual) to explore AMD CBS > CPU settings"
+    }
+  },
+
+  "next_reboot_plan": {
+    "goal": "GOAL_A — iGPU enable only",
+    "method": "F4 → GAIA EFI Key → 3 lines in GRUB shell",
+    "commands": [
+      "setup_var_cv AMD_PBS_SETUP 0x48 0x01 0x01",
+      "setup_var_cv AMD_PBS_SETUP 0x49 0x01 0x06",
+      "reboot"
+    ],
+    "fallback": "If setup_var_cv fails, try: setup_var 0x48 0x01",
+    "post_verify": "Agent reads AMD_PBS_SETUP, checks 0x48=0x01, scans GPU devices",
+    "boot_engine_evolution": "After this works, build auto-execute EFI on eastGate using grub-mkstandalone"
+  }
+}
