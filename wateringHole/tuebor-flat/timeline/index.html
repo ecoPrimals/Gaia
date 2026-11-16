@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline — tuebor — Public Record Investigation</title>
+<style>
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
+</style>
+</head>
+<body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="https://primals.eco" class="gaia-nav-brand">gaia</a><a href="https://primals.eco/#organism">Organism</a><a href="https://primals.eco/#investigation">Investigation</a><a href="https://primals.eco/#knowledge">Knowledge</a><a href="https://primals.eco/#infrastructure">Infrastructure</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
+<!doctype html><html lang=en><head><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><title>Timeline — tuebor — Public Record Investigation</title><meta content="Complete chronology of the Banks Enterprise — from 1998 criminal convictions through 2026 federal notification. Every date sourced from public records." name=description><link href="index.html" rel=canonical><meta content="tuebor — Public Record Investigation" property=og:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." property=og:description><meta content=website property=og:type><meta content=https://amicuscontra.github.io/tuebor/timeline/ property=og:url><meta content="Tuebor — Michigan Public Record" property=og:site_name><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png property=og:image><meta content=1200 property=og:image:width><meta content=630 property=og:image:height><meta content="Tuebor — Michigan Public Record Investigation" property=og:image:alt><meta content="Brian Banks criminal history timeline, Purpose Charter Academy timeline, Brian Banks charter school 2017, Cylenthia Miller election 2026, Brian Banks 1998 convictions, Brian Banks resignation Michigan House, Detroit charter school corruption timeline, Wayne County judges Banks network" name=keywords><meta content=summary_large_image name=twitter:card><meta content="tuebor — Public Record Investigation" name=twitter:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." name=twitter:description><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png name=twitter:image><meta name=fediverse:creator><link href="../css/main.css" rel=stylesheet><link title="tuebor — Public Record Investigation" href="../atom.xml" rel=alternate type=application/atom+xml><script type=application/ld+json>
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Tuebor — Michigan Public Record",
+      "alternateName": "Tuebor",
+      "url": "https://tuebor.primals.eco",
+      "description": "Evidence-based accountability documentation. Charter schools, courts, regulatory capture. Every claim sourced to public records.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://tuebor.primals.eco/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Citizens of Michigan",
+        "url": "https://tuebor.primals.eco"
+      },
+      "inLanguage": "en-US",
+      "license": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+    </script><body><a class=skip-link href="index.html#main">Skip to content</a><nav class=site-nav><div class=nav-inner><a class=nav-brand href=https://amicuscontra.github.io/tuebor>tuebor</a><div class=nav-links><a href="../explore/index.html" style=color:khaki;font-weight:700>🔍 Explore</a><a href="../people/index.html">Actors</a><a href="../evidence/index.html">Evidence</a><a href="../analysis/index.html">Analysis</a><a href="../investigate/index.html">Investigate</a><a href="index.html">Timeline</a><a href="../synthesis/index.html" style=color:#98fb98>Dialectic</a><a href="../desk/index.html" style=opacity:.7;font-size:.85em>⊞ Desk</a><a href="../membrane/index.html" style=opacity:.7;font-size:.85em>⬡ Membrane</a><a href="../map/index.html" style=opacity:.7;font-size:.85em>🗺️ Map</a></div><div class=nav-search><input aria-label="Search articles" placeholder="Search Beasley, Moran, PCA..." autocomplete=off id=tuebor-search><div class=search-results id=tuebor-search-results style=display:none></div></div></div></nav><main class=site-main id=main><article class=page-content><h1>Timeline</h1><nav aria-label="System lenses" class=lens-bar><span class=lens-label>Lens:</span><a class=lens-item href="https://amicuscontra.github.io/network/"> <span class=lens-icon>🕸️</span> Topology </a><a class=lens-item href="https://amicuscontra.github.io/analysis/anderson-localization/"> <span class=lens-icon>⚛️</span> Lattice </a><a class="lens-item lens-active" href="https://amicuscontra.github.io/timeline/"> <span class=lens-icon>📅</span> Chronology </a><a class=lens-item href="https://amicuscontra.github.io/analysis/funding-flow/"> <span class=lens-icon>💰</span> Money </a><a class=lens-item href="https://amicuscontra.github.io/analysis/rico-pattern/"> <span class=lens-icon>⚖️</span> Legal </a><a class=lens-item href="https://amicuscontra.github.io/analysis/institutional-capture-graph/"> <span class=lens-icon>🏛️</span> Capture </a></nav><div id=interactive-timeline></div><script defer src="https://amicuscontra.github.io/js/timeline-graph.js"></script><noscript><p><em>Interactive timeline requires JavaScript. Static version below.</em></p></noscript><hr><h2 id=pre-2017-criminal-history>Pre-2017: Criminal History</h2><p><a href="https://amicuscontra.github.io/network/actors/brian-banks/"><strong>Brian Roderick Banks</strong></a> accumulated <strong> 9 convictions (6 felony, 3 misdemeanor) </strong> across 5 agencies and 5 courts. His father OD Banks was indicted in the BMF federal case ( 2:05-cr-80955 (E.D. Michigan) ).<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>Nov 1998<td>Banks convicted — NSF Check, Lincoln Park<td>ICHAT<tr><td>Apr 1999<td>Banks convicted — 3 felonies (U&P + 2×FTD), Oakland<td>ICHAT<tr><td>Aug 1999<td>Banks convicted — NSF felony, Oakland<td>ICHAT<tr><td>Sep 2003<td>Banks convicted — NSF $500+ felony, Wayne 3rd Circuit<td>ICHAT<tr><td>Sep 2004<td>Banks arrested — Forgery + U&P, Eaton County<td>ICHAT<tr><td>2005<td>BMF federal indictment — OD Banks is Defendant #22 (2:05-cr-80955)<td>PACER<tr><td>2007<td>Banks pleads guilty — Eaton County forgery<td>ICHAT</table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Requires $10 fee per search. Search by name and date of birth." href=https://apps.michigan.gov/ichat itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>ICHAT</span> </a> <span class=source-query> — SID 2029469K</span> </cite> , <cite class="source source-legal" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Federal court electronic records system. Requires free account. $0.10/page for documents." href=https://www.pacer.gov itemprop=url target=_blank> <span class=source-badge>⚖️</span> <span itemprop=name>PACER</span> </a> <span class=source-query> — 2:05-cr-80955</span> </cite><h2 id=2014-2016-political-career>2014–2016: Political Career</h2><p>Banks enters politics with <a href="https://amicuscontra.github.io/network/actors/joseph-holland/"><strong>Joseph Holland Jr.</strong></a> as his PAC treasurer — a convicted drug offender managing campaign money.<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>2014<td>Banks runs for MI Senate; “Bank on Banks” PAC created; Holland (felon) as Treasurer<td>CFRS<tr><td>2015<td>Banks serves in MI House HD-1 using GPW address<td>MI SOS<tr><td>Jun 2016<td>Banks arrested by MI Attorney General — 3 felonies<td>ICHAT</table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Search by candidate or committee name. Free access. Legacy MERTS data migrated to MiTN." href=https://cfrsearch.nictusa.com itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>MI Campaign Finance</span> </a> </cite> , <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Requires $10 fee per search. Search by name and date of birth." href=https://apps.michigan.gov/ichat itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>ICHAT</span> </a> </cite><h2 id=2017-the-pivot>2017: The Pivot</h2><p>Three felonies become one misdemeanor with a one-day sentence. Banks immediately pivots to charter schools, launching <a href="https://amicuscontra.github.io/network/entities/banks-strategy-llc/"><strong>Banks Strategy & Consultants LLC</strong></a> and beginning his career at <a href="https://amicuscontra.github.io/network/entities/macdowell-prep/"><strong>MacDowell Preparatory Academy</strong></a> .<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>2017<td>AG case: 3 felonies → <strong>1 misdemeanor, 1 day</strong><td>ICHAT<tr><td>Feb 25<td>Banks Strategy & Consultants, LLC filed<td>LARA<tr><td>2017<td>Banks begins charter school career at MacDowell<td>Public records</table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Requires $10 fee per search. Search by name and date of birth." href=https://apps.michigan.gov/ichat itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>ICHAT</span> </a> </cite> , <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Visit the URL and search by entity name or ID number. COFS retired June 23, 2025." href=https://mibusinessregistry.lara.state.mi.us itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>LARA MiBusiness</span> </a> </cite><h2 id=2022-2023-credentialing>2022–2023: Credentialing</h2><p>Banks obtains a Ph.D. from Walden University — his dissertation lists a fake “J.D., MSU Law, 2010.” The State Bar of Michigan returns <strong>zero results</strong> for “Brian Banks.” Meanwhile, <a href="https://amicuscontra.github.io/network/judges/cylenthia-miller/"><strong>Judge Cylenthia Miller</strong></a> has a recorded confrontation with court security.<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>2022<td>Banks receives Ph.D. from Walden — dissertation lists fake “J.D., MSU Law, 2010”<td>Walden #12627<tr><td>Sep 2, 2022<td>MI DOE issues School Admin Certificate — <strong>3 days after school year started</strong><td>MI DOE<tr><td>2023<td>Banks hosts Michigan CBC After Glow Party w/ Chubb Rock (DC)<td>Eventbrite<tr><td>2023<td>Judge Miller — recorded confrontation with court security<td>WXYZ</table><p>Source: <cite class="source source-legal" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Official attorney lookup. Search by name or bar number. Free access." href=https://www.michbar.org/memberdirectory/ itemprop=url target=_blank> <span class=source-badge>⚖️</span> <span itemprop=name>State Bar of MI</span> </a> </cite> , <cite class="source source-news" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Free access. Local investigative journalism." href=https://www.wxyz.com itemprop=url target=_blank> <span class=source-badge>📰</span> <span itemprop=name>WXYZ</span> </a> </cite><h2 id=2024-entity-expansion>2024: Entity Expansion</h2><p>The shell entity structure expands. <a href="https://amicuscontra.github.io/network/entities/purpose-group-llc/"><strong>The Purpose Group, LLC</strong></a> is filed as a management company. <a href="https://amicuscontra.github.io/network/entities/purpose-foundation/"><strong>Purpose Foundation</strong></a> is filed with <a href="https://amicuscontra.github.io/network/actors/brian-banks/"><strong>Brian Roderick Banks</strong></a> and <a href="https://amicuscontra.github.io/network/actors/joseph-holland/"><strong>Joseph Holland Jr.</strong></a> in all four officer positions. <a href="https://amicuscontra.github.io/network/judges/tenisha-yancey/"><strong>Judge Tenisha Yancey</strong></a> ‘s campaign pays $383.82 to <a href="https://amicuscontra.github.io/network/entities/banks-strategy-llc/"><strong>Banks Strategy & Consultants LLC</strong></a> . <a href="https://amicuscontra.github.io/network/political/sherry-gay-dagnogo/"><strong>Sherry Gay-Dagnogo</strong></a> is honored at Banks’ CBC Week party in DC.<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>Apr 10<td>Banks Strategy LLC restored — 3 overdue annual reports batch-filed<td>LARA<tr><td>Sep<td>Banks hosts Michigan CBC Party at Hyatt DC — SOLD OUT; honoree: Gay-Dagnogo<td>Eventbrite<tr><td>Nov 14<td><strong>The Purpose Group, LLC</strong> filed — organized by Perlmuter, Esq.<td>LARA<tr><td>Dec 9<td><strong>Purpose Foundation</strong> filed — Banks + Holland hold all positions<td>LARA<tr><td>2024<td>Judge Yancey campaign pays <strong>$383.82</strong> to Banks Strategy<td>CFRS</table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Visit the URL and search by entity name or ID number. COFS retired June 23, 2025." href=https://mibusinessregistry.lara.state.mi.us itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>LARA MiBusiness</span> </a> </cite> , <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Search by candidate or committee name. Free access. Legacy MERTS data migrated to MiTN." href=https://cfrsearch.nictusa.com itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>MI Campaign Finance</span> </a> </cite><h2 id=2025-charter-authorization>2025: Charter Authorization</h2><p><a href="https://amicuscontra.github.io/network/judges/aliyah-sabree/"><strong>Judge Aliyah Sabree</strong></a> is appointed to the 3rd Circuit Family Division — the court handling custody cases involving Banks’ network. <a href="https://amicuscontra.github.io/network/entities/purpose-charter-academy/"><strong>Purpose Charter Academy</strong></a> is authorized by DPSCD. <a href="https://amicuscontra.github.io/network/political/sherry-gay-dagnogo/"><strong>Sherry Gay-Dagnogo</strong></a> resigns from DPSCD to become Detroit City Ombudsman.<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>May 2025<td>Judge Aliyah Sabree appointed to 3rd Circuit Family Division<td>Gov. Whitmer<tr><td>Jul 2025<td><strong>Purpose Charter Academy authorized by DPSCD Board</strong> — 3-year contract<td>DPSCD<tr><td>Oct 2025<td>Gay-Dagnogo resigns DPSCD, becomes Detroit City Ombudsman<td>Bridge Detroit<tr><td>Dec 26<td>Purpose Foundation identifies as <strong>“private foundation”</strong><td>LARA</table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Visit the URL and search by entity name or ID number. COFS retired June 23, 2025." href=https://mibusinessregistry.lara.state.mi.us itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>LARA MiBusiness</span> </a> </cite> , <cite class="source source-news" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Free access. Nonprofit local journalism." href=https://www.bridgedetroit.com itemprop=url target=_blank> <span class=source-badge>📰</span> <span itemprop=name>Bridge Detroit</span> </a> </cite><h2 id=2026-exposure>2026: Exposure</h2><p>The investigation goes public. <a href="https://amicuscontra.github.io/network/actors/joseph-holland/"><strong>Joseph Holland Jr.</strong></a> ’s MDOC record shows discharge <strong>“ May 8, 2024 — WITHOUT IMPROVEMENT ”</strong>. The site expands to 93 pages mapping the full network across 4 taxonomy dimensions.<table><thead><tr><th>Date<th>Event<th>Source<tbody><tr><td>May 8<td>Holland discharged from MDOC — <strong>“WITHOUT IMPROVEMENT”</strong><td>MDOC OTIS<tr><td>Aug 29<td>Complainant attends PCA — Banks denies access, claims to be attorney<td>Police report<tr><td>Aug 31<td>DPSCD, State Bar UPL, and JTC complaints filed<td>Filed records<tr><td>Sep 1<td>Civil action filed — Ingham County (2026-4349-CZ)<td>Court records<tr><td>Sep 13<td>Clutch Justice publishes MacDowell investigation — $15,217/student, 3% math<td><cite class="source source-news" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Free access. Independent investigative journalism. Primary analytical reference for this investigation." href=https://clutchjustice.com/2026/09/13/macdowell-preparatory-academy-academic-financial-record/ itemprop=url target=_blank> <span class=source-badge>📰</span> <span itemprop=name>Clutch Justice</span> </a> <span class=source-label>: <em>Clutch Justice</em></span> </cite><tr><td>Sep 17<td>Motion for Alternative Service filed (Banks PPO)<td>Court records<tr><td>Sep 18–19<td>Banks hosts CBC Reception at Kitchen + Kocktails, DC<td>Eventbrite<tr><td>Sep 20<td>ICHAT pulled — 9 convictions confirmed<td>MI ICHAT<tr><td>Sep 21<td>Clutch Justice publishes “The Detroit Files, Part I: The Room”<td><cite class="source source-news" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Free access. Independent investigative journalism. Primary analytical reference for this investigation." href=https://clutchjustice.com/2026/09/21/detroit-files-part-1-the-room/ itemprop=url target=_blank> <span class=source-badge>📰</span> <span itemprop=name>Clutch Justice</span> </a> <span class=source-label>: <em>Clutch Justice</em></span> </cite><tr><td><strong>Sep 22</strong><td><strong>Federal Master Packet — delivered to 8 agencies (DOJ, FBI, IRS, ED-OIG, FTC, SEC, USED, FinCEN)</strong><td>Filed<tr><td><strong>Sep 22</strong><td><strong>Journalist briefing packets distributed — Clutch Justice, Free Press, WXYZ</strong><td>Filed<tr><td>Sep 23<td>Clutch Justice publishes FOIA guide for Michigan school board records<td><cite class="source source-news" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Free access. Independent investigative journalism. Primary analytical reference for this investigation." href=https://clutchjustice.com/2026/09/23/foia-michigan-school-board-records-guide/ itemprop=url target=_blank> <span class=source-badge>📰</span> <span itemprop=name>Clutch Justice</span> </a> <span class=source-label>: <em>Clutch Justice</em></span> </cite><tr><td>Sep 23<td>Google indexes detroit.primals.eco homepage<td>Google Search Console<tr><td>Sep 24<td>detroit.primals.eco expanded to 97 pages — search, sidebar nav, Clutch Justice integration<td><a href=https://detroit.primals.eco>This site</a><tr><td><strong>Sep 24</strong><td><strong>PCA Board roster documented: AG employee (Moreland) + City Council (Johnson) discovered</strong><td><a href=https://www.purposecharteracademy.com/boardofdirectors>PCA Board</a></table><p>Source: <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Search by MDOC number or name." href=https://mdocweb.state.mi.us/otis2/Search itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>MDOC OTIS</span> </a> <span class=source-query> — MDOC #443789</span> </cite> , <cite class="source source-gov" itemscope itemtype=https://schema.org/CreativeWork> <a rel="noopener noreferrer" title="Government database. Requires $10 fee per search. Search by name and date of birth." href=https://apps.michigan.gov/ichat itemprop=url target=_blank> <span class=source-badge>🏛️</span> <span itemprop=name>ICHAT</span> </a> <span class=source-query> — SID 2029469K</span> </cite><h2 id=upcoming>Upcoming</h2><table><thead><tr><th>Date<th>Event<tbody><tr><td>Sep 29, 2026<td>PPO hearing — Wayne County<tr><td>Oct 2026<td>Michigan Court of Claims filing (state entities)<tr><td>Oct 2026<td>Federal § 1983 + RICO overlay<tr><td><strong>Nov 3, 2026</strong><td><strong> <a href="https://amicuscontra.github.io/network/judges/cylenthia-miller/"><strong>Judge Cylenthia Miller</strong></a> — election day</strong></table><hr><p><em>All dates sourced from public records as cited. Full documentation in the <a href=https://git.primals.eco/publicRecord/detroit>git repository</a>.</em></article></main><footer class=site-footer><p><strong>Every fact is cited. Every document is timestamped.</strong><p>Source: <a href=https://git.primals.eco/publicRecord/detroit>git repository</a> — clone it, verify it. <br>No cookies. No tracking. No identifying data.<p>Part of the <a href=https://primals.eco>primals.eco</a> evidence network: <a href=https://detroit.primals.eco>detroit</a> · <a href=https://lansing.primals.eco>lansing</a> · <a href=https://signal.primals.eco>signal</a> · <a href=https://hypothesis.primals.eco>hypothesis</a> · <a href=https://hud.primals.eco>hud</a> · <a href=https://clutch.primals.eco>clutch</a><p class=footer-license>Original analysis: <a href=https://creativecommons.org/licenses/by-sa/4.0/>CC-BY-SA 4.0</a>. Court filings and public records: public domain where applicable.<p>Named on this site? Something wrong? <a onclick="var el=document.getElementById('opsonize');if(el){el.scrollIntoView({behavior:'smooth'});return false}" href="index.html#opsonize">Contact us</a> (<a href=mailto:eco.primal@pm.me style=opacity:.6;font-size:.85em>or email ↗</a>) — truth matters more than being right.<p style=margin-top:.5rem;font-size:.8rem><a href=https://github.com/amicusContra/tuebor style=opacity:.6>Source: github.com/amicusContra/tuebor</a> · <a href=https://sporeprint.primals.eco style=opacity:.6>sporePrint</a> · <a href=https://thesis.primals.eco style=opacity:.6>thesis</a> · <a href=https://hypothesis.primals.eco style=opacity:.6>hypothesis</a> · <a href=https://synthesis.primals.eco style=opacity:.6>synthesis</a> · <a href=https://antithesis.primals.eco style=opacity:.6>antithesis</a> · <a href=https://corollary.primals.eco style=opacity:.6>corollary</a> · <a href=https://totality.primals.eco style=opacity:.6>totality</a></footer><script src="../js/elasticlunr.min.js"></script><script src="../search_index.en.js"></script><script src="../js/search.js"></script><script defer src=https://hud.primals.eco/js/hud-widget.js></script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="https://primals.eco">Gaia</a> &mdash; sovereign living digital organism</p></div></div></footer>
+</body>
+</html>

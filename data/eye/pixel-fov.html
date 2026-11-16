@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GAIA LEFT EYE — Pixel FOV</title>
+<style>
+  * { margin:0; padding:0; }
+  body { background:#000; overflow:hidden; }
+  img { width:100vw; height:100vh; object-fit:cover; }
+  .hud {
+    position:fixed; bottom:10px; left:10px;
+    color:#0f0; font:14px monospace;
+    text-shadow: 0 0 5px #0f0;
+    z-index:10;
+  }
+</style>
+</head>
+<body>
+  <img id="eye" src="/data/eye/current.png" />
+  <div class="hud" id="hud">LEFT EYE — grapheneGate @ House 2</div>
+  <script>
+    const img = document.getElementById('eye');
+    const hud = document.getElementById('hud');
+    let frame = 0;
+    setInterval(() => {
+      img.src = '/data/eye/current.png?' + Date.now();
+      frame++;
+      hud.textContent = `LEFT EYE — grapheneGate @ House 2 | frame ${frame} | ${new Date().toLocaleTimeString()}`;
+    }, 500);
+  </script>
+</body>
+</html>

@@ -2,68 +2,185 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GAIA Terminal — TR-49</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0806;color:#c8b894;font-family:'Special Elite','Courier New',monospace;height:100vh;overflow:hidden;display:flex}
-/* CRT effect */
-body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:100}
-body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.4) 100%);pointer-events:none;z-index:99}
-/* LEFT: Tube display */
-#tube{flex:2;background:#0d0b08;border-right:3px solid #2a2418;display:flex;flex-direction:column;position:relative}
-#tube-header{background:#161210;padding:10px 20px;border-bottom:2px solid #2a2418;display:flex;align-items:center;gap:12px}
-#tube-header .lamp{width:10px;height:10px;border-radius:50%;background:#f80;box-shadow:0 0 8px #f80;animation:flicker 3s infinite}
-@keyframes flicker{0%,100%{opacity:1}50%{opacity:.7}75%{opacity:.9}}
-#tube-header h2{color:#d4a44a;font-size:14px;letter-spacing:4px}
-#tube-header .pulse-num{margin-left:auto;color:#8a7a5a;font-size:12px}
-#tube-content{flex:1;overflow-y:auto;padding:20px;line-height:1.8;font-size:14px}
-#tube-content::-webkit-scrollbar{width:6px}
-#tube-content::-webkit-scrollbar-thumb{background:#2a2418;border-radius:3px}
-.entry{margin-bottom:20px;border-bottom:1px solid #1a1610;padding-bottom:16px}
-.entry .code{color:#d4a44a;font-size:18px;letter-spacing:2px;margin-bottom:4px}
-.entry .title{color:#e8d4a8;font-size:16px;font-weight:bold;margin-bottom:6px}
-.entry .body{color:#a89870;font-size:13px;line-height:1.7}
-.entry .link{color:#d4a44a;cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
-.entry .link:hover{color:#f80}
-.entry .meta{color:#6a5a3a;font-size:11px;margin-top:8px}
-.entry .img{width:100%;max-height:300px;object-fit:cover;border:2px solid #2a2418;margin:8px 0;filter:sepia(40%) contrast(1.1)}
-/* RIGHT: Input & Notes */
-#panel{flex:1;max-width:380px;background:#0f0d0a;display:flex;flex-direction:column;border-left:1px solid #1a1610}
-#input-area{background:#161210;padding:16px;border-bottom:2px solid #2a2418}
-#input-area label{display:block;color:#8a7a5a;font-size:11px;letter-spacing:3px;margin-bottom:8px}
-#code-input{width:100%;background:#0a0806;border:2px solid #2a2418;color:#d4a44a;font-family:inherit;font-size:28px;letter-spacing:6px;padding:12px 16px;text-align:center;text-transform:uppercase}
-#code-input:focus{outline:none;border-color:#d4a44a;box-shadow:0 0 12px rgba(212,164,74,.2)}
-#code-input::placeholder{color:#3a3020;letter-spacing:4px}
-#suggestions{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px}
-.sug{background:#1a1610;color:#8a7a5a;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer;border:1px solid #2a2418}
-.sug:hover{color:#d4a44a;border-color:#d4a44a}
-/* Notes */
-#notes{flex:1;overflow-y:auto;padding:12px}
-#notes::-webkit-scrollbar{width:4px}
-#notes::-webkit-scrollbar-thumb{background:#2a2418}
-.note{padding:8px;margin-bottom:6px;border-left:3px solid #2a2418;cursor:pointer;font-size:12px}
-.note:hover{border-color:#d4a44a;background:#161210}
-.note .n-code{color:#d4a44a;font-weight:bold}
-.note .n-title{color:#a89870}
-.note .n-cat{color:#6a5a3a;font-size:10px}
-/* Voice bar */
-#voice{background:#161210;border-top:2px solid #2a2418;padding:10px 16px;display:flex;align-items:center;gap:10px}
-#voice .wave{width:40px;height:20px;display:flex;align-items:end;gap:2px}
-#voice .wave span{width:3px;background:#d4a44a;animation:wave 1s ease infinite}
-#voice .wave span:nth-child(2){animation-delay:.1s}
-#voice .wave span:nth-child(3){animation-delay:.2s}
-#voice .wave span:nth-child(4){animation-delay:.3s}
-#voice .wave span:nth-child(5){animation-delay:.4s}
-@keyframes wave{0%,100%{height:4px}50%{height:16px}}
-#voice-text{color:#8a7a5a;font-size:12px;font-style:italic;flex:1}
-#voice-beat{color:#d4a44a;font-size:11px}
-/* Status bar */
-#status{background:#0a0806;border-top:1px solid #1a1610;padding:4px 16px;display:flex;gap:16px;font-size:10px;color:#4a3a2a}
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
 </style>
 </head>
 <body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
 <div id="tube">
   <div id="tube-header">
     <div class="lamp"></div>
@@ -290,5 +407,7 @@ setTimeout(()=>{
     ['pulse','science','paintings','beardog','thymus','cascade'].map(c=>`<span class="sug" onclick="go('${c}')">${c}</span>`).join('');
 },500);
 </script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 </body>
 </html>

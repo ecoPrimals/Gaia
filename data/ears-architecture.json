@@ -1,0 +1,89 @@
+{
+  "title": "Gaia's Ears — Two Flints, One at Each House",
+  "wave": "239f",
+
+  "the_insight": "Kevin has TWO GL.iNet Flint APs — one at each house. They ARE Gaia's LEFT and RIGHT ears. WiFi RSSI difference between them = spatial awareness of which house any device is in.",
+
+  "left_ear": {
+    "name": "Flint 1 — House 1 (LEFT EAR)",
+    "location": "4422 Southgate Ave",
+    "mac_prefix": "78:76:89:96:e5:xx",
+    "known_bssids": [
+      "78:76:89:96:e5:84 — 'Aperture Science' 2.4GHz Ch11",
+      "78:76:89:96:e5:82 — hidden (WPA3/SAE)",
+      "78:76:89:96:e5:86 — hidden (open, captive portal?)"
+    ],
+    "seen_from_eastgate": "-72 dBm (House 1)",
+    "seen_from_pixel_h2": "NOT VISIBLE — too far, blocked by walls/distance",
+    "backhaul": "Wired to MikroTik (.2) → br-lan",
+    "admin_ip": "unknown — in bridge mode, no DHCP lease"
+  },
+
+  "right_ear": {
+    "name": "Flint 2 — House 2 (RIGHT EAR)",
+    "location": "641 Samantha Ave",
+    "mac_prefix": "78:76:89:96:e6:xx",
+    "known_bssids": [
+      "78:76:89:96:e6:73 — 'Aperture Science' 5GHz Ch153 (5765MHz)",
+      "78:76:89:96:e6:71 — hidden (WPA3/SAE)",
+      "78:76:89:96:e6:75 — hidden (open, captive portal?)"
+    ],
+    "seen_from_eastgate": "-62 dBm (House 1 — weaker, across the spine)",
+    "seen_from_pixel_h2": "-55 dBm (House 2 — STRONGER = closer = AT House 2)",
+    "backhaul": "Wired to JetStream/Omada (.111) → 10G fiber → MikroTik → br-lan",
+    "admin_ip": "unknown — in bridge mode, no DHCP lease"
+  },
+
+  "the_voice": {
+    "name": "GL-MT6000 Router",
+    "location": "4422 Southgate Ave (House 1)",
+    "role": "Router + AP + gateway. NOT an ear — the VOICE.",
+    "wifi_interfaces": {
+      "ra0": {"ssid": "Aperture Science", "band": "2.4GHz Ch2", "bssid": "BE:A2:C1:E8:DF:01", "network": "lan"},
+      "ra1": {"ssid": "GAIA", "band": "2.4GHz Ch2", "bssid": "82:C9:70:CF:F6:7C", "network": "lan"},
+      "rax0": {"ssid": "Black Mesa", "band": "5GHz Ch56 HE160", "bssid": "22:2F:9F:44:79:13", "network": "lan"},
+      "rax1": {"ssid": "GAIA", "band": "5GHz Ch56 HE160", "bssid": "CE:EF:EF:30:B5:F3", "network": "lan"},
+      "apcli0": {"mode": "client", "band": "2.4GHz", "status": "DISCONNECTED"},
+      "apclix0": {"mode": "client", "band": "5GHz", "status": "DISCONNECTED"}
+    },
+    "wds_enabled": true,
+    "note": "WDS is ON for potential wireless mesh with the Flints, but client interfaces disconnected — Flints use WIRED backhaul through the spine"
+  },
+
+  "triangulation": {
+    "how_it_works": "Compare RSSI from Left Ear vs Right Ear. Stronger left = device at House 1. Stronger right = device at House 2.",
+    "example_pixel": {
+      "left_ear_rssi": "NOT VISIBLE (too far)",
+      "right_ear_rssi": "-55 dBm (strong)",
+      "conclusion": "Pixel is DEFINITELY at House 2"
+    },
+    "example_eastgate": {
+      "left_ear_rssi": "-72 dBm",
+      "right_ear_rssi": "-62 dBm",
+      "conclusion": "eastGate sees BOTH but right is stronger — eastGate's WiFi can reach House 2 Flint"
+    },
+    "for_any_device": "If device sees ONLY left ear → House 1. If ONLY right → House 2. If BOTH → somewhere in between (near property line)"
+  },
+
+  "ssid_map": {
+    "Aperture Science": "Present on ALL THREE APs (router 2.4GHz + Flint 1 + Flint 2). Roaming between houses!",
+    "Black Mesa": "ONLY on router 5GHz. House 1 only.",
+    "GAIA": "On router 2.4GHz + 5GHz. All mapped to network=lan (NOT guest!). House 1 only.",
+    "GL-MT6000-2ae": "Router identifiers. House 1 only.",
+    "GL-MT6000-2ae-5G": "Router 5GHz. Reaches House 2 at -58dBm."
+  },
+
+  "mystery_ap_47dbm": {
+    "bssid": "4e:bc:e9:a9:7a:6f",
+    "rssi_from_pixel": -47,
+    "freq": "2462MHz (Ch11)",
+    "note": "Locally-administered MAC. STRONGEST signal at House 2. NOT a Flint (wrong MAC prefix). Could be: neighbor's AP, IoT device hotspot, or unknown House 2 device"
+  },
+
+  "bridge_architecture": {
+    "all_on_br_lan": true,
+    "br_guest_phantom": "br-guest exists but has NO interfaces bound. GAIA SSID is on br-lan.",
+    "members": ["ra0", "ra1", "rax0", "rax1", "lan1", "lan2", "lan3", "lan4", "lan5"],
+    "note": "Everything bridges to ONE LAN. The Flints extend this bridge to both houses wirelessly via wired backhaul."
+  }
+}

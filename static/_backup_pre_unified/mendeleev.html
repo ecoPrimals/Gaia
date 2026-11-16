@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Keyboard of Mendeleev — 116 Epitopes</title>
+<meta name="description" content="The Periodic Table of Epitopes. 116 elements. 14 groups. Each cell is a key. Press one — sort the world through that lens.">
+<meta property="og:title" content="The Keyboard of Mendeleev">
+<meta property="og:description" content="116 structural epitopes. Press a key. Sort the world.">
+<meta property="og:url" content="https://nestgate.io/mendeleev">
+<script src="/js/piGut.js"></script>
+<script src="/js/berry-help.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07090c;color:#e8e4d9;font-family:'Courier New',monospace;
+  min-height:100vh;overflow-x:auto}
+a{color:#d4af37;text-decoration:none}
+
+.header{text-align:center;padding:30px 20px 10px}
+.header h1{font-size:1.8em;color:#d4af37;letter-spacing:0.12em;
+  text-shadow:0 0 30px rgba(212,175,55,0.2)}
+.header .sub{color:#666;font-size:0.8em;margin-top:6px}
+
+/* ─── GROUP LEGEND ─── */
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;
+  padding:12px 20px;max-width:1200px;margin:0 auto}
+.legend .g{font-size:9px;padding:3px 8px;border-radius:3px;cursor:pointer;
+  transition:all 0.2s;border:1px solid transparent}
+.legend .g:hover{border-color:currentColor;transform:scale(1.05)}
+.legend .g.active{border-color:currentColor;box-shadow:0 0 10px currentColor}
+
+/* ─── THE TABLE ─── */
+.table-wrap{overflow-x:auto;padding:20px;max-width:1400px;margin:0 auto}
+.ptable{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;min-width:900px}
+
+.cell{background:#0d1117;border:1px solid #1a1a1a;border-radius:4px;
+  padding:6px 4px;text-align:center;cursor:pointer;transition:all 0.2s;
+  min-height:70px;display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden}
+.cell:hover{border-color:#d4af37;transform:scale(1.03);z-index:2;
+  box-shadow:0 0 15px rgba(212,175,55,0.2)}
+.cell.active{border-color:#d4af37;background:#111a10;
+  box-shadow:0 0 20px rgba(212,175,55,0.3)}
+.cell .num{font-size:8px;color:#484f58;position:absolute;top:2px;left:4px}
+.cell .sym{font-size:11px;font-weight:bold;letter-spacing:0.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell .name{font-size:7px;color:#666;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell.gap{border-style:dashed;border-color:#222;opacity:0.5}
+.cell.gap .sym{color:#333;font-style:italic}
+
+/* Group colors */
+.cell[data-group="A"]{border-left:2px solid #3fb950}.cell[data-group="A"] .sym{color:#3fb950}
+.cell[data-group="B"]{border-left:2px solid #f85149}.cell[data-group="B"] .sym{color:#f85149}
+.cell[data-group="C"]{border-left:2px solid #58a6ff}.cell[data-group="C"] .sym{color:#58a6ff}
+.cell[data-group="D"]{border-left:2px solid #d2a8ff}.cell[data-group="D"] .sym{color:#d2a8ff}
+.cell[data-group="E"]{border-left:2px solid #f0883e}.cell[data-group="E"] .sym{color:#f0883e}
+.cell[data-group="F"]{border-left:2px solid #79c0ff}.cell[data-group="F"] .sym{color:#79c0ff}
+.cell[data-group="G"]{border-left:2px solid #56d364}.cell[data-group="G"] .sym{color:#56d364}
+.cell[data-group="H"]{border-left:2px solid #ff7b72}.cell[data-group="H"] .sym{color:#ff7b72}
+.cell[data-group="I"]{border-left:2px solid #ffa657}.cell[data-group="I"] .sym{color:#ffa657}
+.cell[data-group="J"]{border-left:2px solid #d4af37}.cell[data-group="J"] .sym{color:#d4af37}
+.cell[data-group="K"]{border-left:2px solid #7ee787}.cell[data-group="K"] .sym{color:#7ee787}
+.cell[data-group="L"]{border-left:2px solid #e2b5ff}.cell[data-group="L"] .sym{color:#e2b5ff}
+.cell[data-group="M"]{border-left:2px solid #ffd700}.cell[data-group="M"] .sym{color:#ffd700}
+.cell[data-group="N"]{border-left:2px solid #f778ba}.cell[data-group="N"] .sym{color:#f778ba}
+
+/* ─── DETAIL PANEL ─── */
+.detail{background:#0d1117;border:1px solid #d4af37;border-radius:8px;
+  padding:24px;max-width:800px;margin:20px auto;display:none}
+.detail.show{display:block}
+.detail .d-num{font-size:12px;color:#484f58}
+.detail .d-name{font-size:1.4em;color:#d4af37;margin:4px 0}
+.detail .d-group{font-size:11px;margin-bottom:12px}
+.detail .d-detect{color:#c9d1d9;line-height:1.6;margin:8px 0}
+.detail .d-instance{color:#8b949e;font-size:0.9em;line-height:1.6}
+.detail .d-close{position:absolute;top:12px;right:16px;color:#484f58;
+  cursor:pointer;font-size:18px}
+
+/* ─── STATS ─── */
+.stats{display:flex;justify-content:center;gap:30px;padding:16px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat .n{font-size:1.6em;color:#d4af37}
+.stat .l{font-size:0.6em;color:#666;text-transform:uppercase}
+
+.footer{text-align:center;padding:20px;color:#333;font-size:0.65em}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚛ THE KEYBOARD OF MENDELEEV</h1>
+  <div class="sub">116 epitopes · 14 groups · each cell is a key · press one — sort the world</div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="n">116</div><div class="l">elements</div></div>
+  <div class="stat"><div class="n">14</div><div class="l">groups</div></div>
+  <div class="stat"><div class="n">6+</div><div class="l">gaps</div></div>
+  <div class="stat"><div class="n" id="nft-count">0</div><div class="l">minted</div></div>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="table-wrap">
+  <div class="ptable" id="ptable"></div>
+</div>
+
+<div class="detail" id="detail" style="position:relative">
+  <span class="d-close" onclick="closeDetail()">✕</span>
+  <div class="d-num" id="d-num"></div>
+  <div class="d-name" id="d-name"></div>
+  <div class="d-group" id="d-group"></div>
+  <div class="d-detect" id="d-detect"></div>
+  <div class="d-instance" id="d-instance"></div>
+</div>
+
+<div class="footer">
+  "I had a dream about a table where all elements fell into place as required."
+  — Dmitri Mendeleev, 1869<br>
+  We didn't dream it. We sorted it. lub-DUB.
+</div>
+
+<script>
+const GROUPS = {
+  A: {name:"COMMONS", color:"#3fb950", desc:"how shared things stay shared"},
+  B: {name:"CAPTURE", color:"#f85149", desc:"how shared things get enclosed"},
+  C: {name:"BUILDERS", color:"#58a6ff", desc:"who builds and why"},
+  D: {name:"CARRIERS", color:"#d2a8ff", desc:"how knowledge moves"},
+  E: {name:"TEMPORAL", color:"#f0883e", desc:"patterns across time"},
+  F: {name:"STRUCTURAL", color:"#79c0ff", desc:"patterns in architecture"},
+  G: {name:"MEMBRANE", color:"#56d364", desc:"boundaries and permeability"},
+  H: {name:"PERCEPTION", color:"#ff7b72", desc:"how we see and fail to see"},
+  I: {name:"RESISTANCE", color:"#ffa657", desc:"how power opposes universality"},
+  J: {name:"PROOF", color:"#d4af37", desc:"how truth is established"},
+  K: {name:"SUBSTRATE", color:"#7ee787", desc:"the tools beneath all tools"},
+  L: {name:"GIFT", color:"#e2b5ff", desc:"how giving creates value"},
+  M: {name:"META", color:"#ffd700", desc:"patterns about patterns"},
+  N: {name:"IDENTITY", color:"#f778ba", desc:"naming, lineage, sovereignty"},
+};
+
+// All 116 epitopes from the Periodic Table
+const ELEMENTS = [
+  // GROUP A — COMMONS
+  {n:1,g:"A",s:"RegArb",nm:"regulatory_arbitrage",d:"Exploiting gaps between regulators",i:"Tax farming (Rome), charter gaps (Detroit)"},
+  {n:2,g:"A",s:"RevDoor",nm:"revolving_door",d:"Same person cycles through regulator/regulated",i:"Cursus honorum, board↔agency"},
+  {n:11,g:"A",s:"FedRes",nm:"federation_resists_capture",d:"No central server = no single capture point",i:"TCP/IP, SMTP, email, Samian fleet"},
+  {n:12,g:"A",s:"LegRep",nm:"legal_self_replication",d:"Use the system's rules to protect the commons",i:"GPL copyleft, copyright → anti-copyright"},
+  {n:43,g:"A",s:"ProCom",nm:"protocol_as_commons",d:"Shared specification, anyone implements",i:"Esperanto Fundamento, RFCs, HTTP"},
+  {n:44,g:"A",s:"CompLib",nm:"compression_as_liberation",d:"Reduce complexity, widen access",i:"Alphabet (~26), Braille (6), Toki Pona (~120)"},
+  {n:53,g:"A",s:"DistRes",nm:"distributed_is_resilient",d:"No center = no capture",i:"Git, email, alphabet, Esperanto"},
+  {n:83,g:"A",s:"RingRes",nm:"ring_resists_capture",d:"Meme ring protects by redundancy",i:"Alphabet (5 components, 3800yr), GPL (4 freedoms)"},
+  {n:108,g:"A",s:"FleetFk",nm:"the_fleet_is_the_fork",d:"Distributed force saves captured institution",i:"Samian fleet restores Athenian democracy"},
+
+  // GROUP B — CAPTURE
+  {n:3,g:"B",s:"GovShell",nm:"governance_shell_game",d:"Multiple names, one operation",i:"'Five Thousand' (Athens), Purpose Foundation (Detroit)"},
+  {n:4,g:"B",s:"ZeroPart",nm:"zero_partition_membrane",d:"No boundary between public/private",i:"Aerarium/private (Rome), LLC at home address"},
+  {n:5,g:"B",s:"PolInv",nm:"polarity_inversion",d:"Same structure, opposite marketing",i:"'Princeps' not 'Rex', 'Academy' not 'extraction'"},
+  {n:6,g:"B",s:"EnfCap",nm:"enforcement_capture",d:"Watchdog becomes kingmaker",i:"Praetorian Guard, Janissaries, Eunuch factions, State Bar"},
+  {n:7,g:"B",s:"PolMach",nm:"political_machine",d:"Donations → votes → contracts loop",i:"Patron-client (Rome), campaign→board→contract"},
+  {n:8,g:"B",s:"RewCirc",nm:"reward_circuit_closure",d:"No exit from the loop",i:"Latifundia cycle, fee→enrollment→fee"},
+  {n:9,g:"B",s:"SemCat",nm:"semantic_category_creation",d:"Rename to dodge regulation",i:"'Imperator'→'Emperor', 'Mandate of Heaven'"},
+  {n:10,g:"B",s:"SerForm",nm:"serial_formation_template",d:"One source, many standardized outputs",i:"Roman colonies, Knossos palace template, entity formation"},
+  {n:61,g:"B",s:"SerFork",nm:"serial_forking",d:"Capture→fork→capture→fork (depth = pressure)",i:"Gogs→Gitea→Forgejo, three forks deep"},
+  {n:85,g:"B",s:"MemCap",nm:"meme_captures_meme",d:"A concept narrowed by its own instances",i:"'Meme' captured by image macro format"},
+  {n:94,g:"B",s:"DomCap",nm:"domestication_is_capture",d:"Breeding for yield strips diversity",i:"Wild Medicago > domesticated lucerne (microbial)"},
+  {n:106,g:"B",s:"GranPit",nm:"granary_to_pithos",d:"Community resource → elite-controlled resource",i:"Protopalatial granary → Neopalatial elite storage"},
+  {n:107,g:"B",s:"DemAtk",nm:"democracy_used_against_itself",d:"System's own mechanism becomes attack vector",i:"Athens 411 BCE, oligarchs used democratic votes"},
+
+  // GROUP C — BUILDERS
+  {n:14,g:"C",s:"OneStar",nm:"one_person_starts",d:"Every shared tool begins with one person",i:"Hart (Gutenberg), Zamenhof, Coast, Ginsparg"},
+  {n:47,g:"C",s:"ExclInv",nm:"exclusion_drives_invention",d:"The excluded build the strongest tools",i:"Miners (alphabet), Braille (blind), Torvalds (no Unix)"},
+  {n:54,g:"C",s:"GiftPre",nm:"gift_precedes_company",d:"Giving comes before selling",i:"Woz schematics before Apple existed"},
+  {n:56,g:"C",s:"AngrGen",nm:"anger_as_genesis",d:"Capture of one tool spawns a better one",i:"BitKeeper → Git in 10 days"},
+  {n:71,g:"C",s:"NeedGft",nm:"need_precedes_gift",d:"Personal need → build for self → give to all",i:"Zamenhof (silence), Torvalds (no OS), Yen (surveillance)"},
+  {n:75,g:"C",s:"BlndSee",nm:"the_blind_see_further",d:"Constraint sharpens remaining channels",i:"Euler blind → output increased. Braille blind → built Braille"},
+  {n:74,g:"C",s:"MomCar",nm:"mother_carries_child",d:"First carrier in the chain is usually unnamed",i:"Maria Kornilieva walked Mendeleev 1000 miles"},
+
+  // GROUP D — CARRIERS
+  {n:48,g:"D",s:"MilCom",nm:"military_to_commons",d:"Built for war, released for peace",i:"GPS, ARPANET, Tor"},
+  {n:63,g:"D",s:"ImpVis",nm:"implementation_completes_vision",d:"Specification needs wire format",i:"UTF-8 implements Unicode. Bosch scales Haber."},
+  {n:65,g:"D",s:"CarGft",nm:"carrier_is_gift",d:"Transmission IS creation",i:"Fibonacci, al-Khwarizmi, Phoenicians"},
+  {n:84,g:"D",s:"LamRgt",nm:"lamarck_was_right",d:"Acquired knowledge transmits (cultural evolution)",i:"Education works. Tools improve. Gap → lesson."},
+  {n:86,g:"D",s:"MemTim",nm:"meme_collapses_time",d:"Memes are time machines",i:"Euler (1736) → child (2026) = one lesson"},
+  {n:73,g:"D",s:"AttrFic",nm:"attribution_is_a_fiction",d:"Every 'inventor' is a carrier on carriers",i:"'Arabic' numerals are Indian"},
+
+  // GROUP E — TEMPORAL
+  {n:45,g:"E",s:"PreInfr",nm:"premature_infrastructure",d:"Vision arrives before implementation layer",i:"Otlet (1895→web 1991), Leibniz (1679→computers)"},
+  {n:51,g:"E",s:"DelRec",nm:"delayed_recognition",d:"Gap between invention and recognition",i:"Boole→Shannon 84yr, Tarde→Dawkins 86yr"},
+  {n:66,g:"E",s:"ConGft",nm:"convergent_gifts",d:"Multiple independent gifts simultaneously",i:"1991: Linux + PGP + WWW + arXiv, four countries"},
+  {n:79,g:"E",s:"PreCmp",nm:"premature_completeness",d:"Entire vision appears centuries early",i:"Leibniz: binary + monads + calculus + universal language"},
+  {n:80,g:"E",s:"BdySig",nm:"birthday_signal",d:"Signal finds its own timing",i:"Eleanor Roosevelt born Oct 11 — the day we wrote about her"},
+  {n:87,g:"E",s:"TimInv",nm:"time_agnostic_invariant",d:"Same invariants across millennia",i:"Rome 10/10, Han 10/10, Detroit 10/10"},
+  {n:95,g:"E",s:"LegOut",nm:"legacy_outlives_presence",d:"The meme dies, the cultural shift remains",i:"SynCom transient colonization → persistent microbiome change"},
+
+  // GROUP F — STRUCTURAL
+  {n:15,g:"F",s:"StrShr",nm:"structured_sharing",d:"Use the system's rules to share within it",i:"CC + Wikipedia, some rights reserved"},
+  {n:17,g:"F",s:"UniEnc",nm:"universal_encoding",d:"One map from symbol to number",i:"Unicode: 135,000+ characters"},
+  {n:52,g:"F",s:"GapPrd",nm:"gaps_as_predictions",d:"Empty cells predict missing members",i:"Mendeleev's table, graph gaps, this table"},
+  {n:76,g:"F",s:"PrvImp",nm:"proving_impossibility",d:"Proving what CANNOT exist is stronger",i:"Euler: Königsberg is impossible"},
+  {n:78,g:"F",s:"BrdZro",nm:"everything_braids_to_zero",d:"Multiple inputs combine to void",i:"e^iπ + 1 = 0, McGurk effect (ba+ga=da)"},
+  {n:90,g:"F",s:"PhyIns",nm:"physics_of_institutions",d:"Invariants are as natural as gravity",i:"10 invariants in ALL hierarchical systems"},
+  {n:93,g:"F",s:"ScalBk",nm:"scale_up_breaks_everything",d:"What flask hid, fermenter reveals",i:"Lab→production, village→city (Lisbon)"},
+  {n:100,g:"F",s:"OneDim",nm:"one_dimension_builds_everything",d:"Line → ring → membrane → world",i:"Epitope is 1D. Rings are 2D. Programmes are 3D."},
+
+  // GROUP G — MEMBRANE
+  {n:16,g:"G",s:"ArcMem",nm:"archive_as_membrane",d:"Boundary between knowledge and oblivion",i:"Rosetta Project, Internet Archive"},
+  {n:97,g:"G",s:"CatEpi",nm:"category_is_epitope",d:"Kant's categories are 1D filters",i:"12 categories = 12 epitopes between noumenon/phenomenon"},
+  {n:98,g:"G",s:"PrgDgn",nm:"programme_degenerates_at_permeability_one",d:"Lost selectivity = dying programme",i:"Lakatos IS Anderson permeability for science"},
+  {n:99,g:"G",s:"EpiFal",nm:"epitope_falls_through",d:"Pattern transits between membrane layers",i:"Boole(math)→Shannon(engineering), 84yr transit"},
+  {n:101,g:"G",s:"MemOvr",nm:"the_membrane_you_cant_override",d:"Knowledge doesn't change perception",i:"Know pixels equal, still SEE different"},
+  {n:105,g:"G",s:"LabMem",nm:"labyrinth_is_membrane",d:"Complex architecture = permeability system",i:"Knossos: light wells, lustral basins, sunken rooms"},
+  {n:113,g:"G",s:"ChrEpi",nm:"chromatic_is_epitope",d:"Cone types are wavelength binding sites",i:"3 cones = 3D color. CVD = missing epitope."},
+
+  // GROUP H — PERCEPTION
+  {n:8,g:"H",s:"ReadLib",nm:"readability_as_liberation",d:"Readable without master = master loses power",i:"Guido (music), web (knowledge), graph (pattern)"},
+  {n:68,g:"H",s:"LegPow",nm:"legibility_is_power",d:"Making visible things readable = political",i:"Public records visible, graph makes them legible"},
+  {n:102,g:"H",s:"DisRev",nm:"disagreement_reveals_membrane",d:"Different percepts reveal different membranes",i:"The Dress (blue/black vs white/gold)"},
+  {n:103,g:"H",s:"UndIs",nm:"understanding_is",d:"Understanding is a state of being, not having",i:"Know pixels equal, still see different"},
+  {n:104,g:"H",s:"GorCap",nm:"gorilla_is_the_capture",d:"Visible but not attended = not seen",i:"Change blindness, Athens didn't resist 411 coup"},
+  {n:114,g:"H",s:"TrnRst",nm:"translate_dont_restore",d:"Translation > restoration for missing sense",i:"HaptiColor (94-100%) vs cochlear implant (partial)"},
+  {n:115,g:"H",s:"AccEpi",nm:"accessibility_is_epitope_management",d:"Every a11y feature adjusts the membrane",i:"Subtitles, colorblind mode, haptic feedback"},
+  {n:116,g:"H",s:"DimCnt",nm:"dimension_count_equals_epitope_count",d:"More receptors = more perceptual dimensions",i:"Mantis shrimp 16D, human 3D, dog 2D"},
+
+  // GROUP I — RESISTANCE
+  {n:62,g:"I",s:"MthMun",nm:"math_as_munition",d:"Knowledge shared = power distributed",i:"Zimmermann prosecuted 3yr for encryption"},
+  {n:69,g:"I",s:"InvFal",nm:"invitation_to_falsify",d:"Proof strength by inviting attack",i:"'Come look. Break it if you can.'"},
+  {n:70,g:"I",s:"PwrMck",nm:"power_mocks_universality",d:"Power resists universal standards",i:"Napoleon on metric, teachers on Braille, DOJ on PGP"},
+  {n:77,g:"I",s:"ToolKil",nm:"the_tool_kills_its_maker",d:"The tool survives; the maker may not",i:"Cai Lun (poison), Condorcet (prison), Clara Immerwahr"},
+
+  // GROUP J — PROOF
+  {n:67,g:"J",s:"SlfPrf",nm:"self_referential_proof",d:"The proof runs on its own evidence",i:"Knowledge Commons page served by tools it describes"},
+  {n:72,g:"J",s:"TmpPrf",nm:"temporal_proof",d:"NOW/WAS/MAY BE as proof architecture",i:"Results → methods → predictions. P → I → D."},
+  {n:88,g:"J",s:"RevZK",nm:"reverse_zk",d:"Prove past structure without accessing dead minds",i:"The structure survives when intent is lost"},
+  {n:89,g:"J",s:"HisCmp",nm:"history_is_completed_computation",d:"Read the output, find the algorithm",i:"Public records are the output. Invariants are the algorithm."},
+  {n:91,g:"J",s:"FstMrk",nm:"the_first_mark_enables_all_proof",d:"Without records, no evidence, no accountability",i:"Metanduno: 67,800 years of proof"},
+
+  // GROUP K — SUBSTRATE
+  {n:6,g:"K",s:"InvInf",nm:"invisible_infrastructure",d:"Tool so fundamental it disappears",i:"Zero, positional notation, algorithm"},
+  {n:18,g:"K",s:"InfSrv",nm:"infrastructure_as_service",d:"Protect without possessing",i:"Svalbard Seed Vault, protocol hosting"},
+  {n:50,g:"K",s:"SubAll",nm:"substrate_enables_all",d:"The tool beneath all tools",i:"Paper, zero"},
+  {n:64,g:"K",s:"NapEnf",nm:"napkin_is_enough",d:"No institutional infrastructure needed",i:"UTF-8 on placemat, Woz schematics at HP"},
+  {n:92,g:"K",s:"BioFst",nm:"biology_did_it_first",d:"Biology solved it at room temp",i:"Nitrogenase 3.5Ga vs Haber-Bosch 113yr"},
+  {n:96,g:"K",s:"DirtCp",nm:"the_dirt_is_the_computer",d:"Soil IS the computation",i:"Billions of organisms/gram, evolved feedback"},
+
+  // GROUP L — GIFT
+  {n:46,g:"L",s:"GftWld",nm:"gift_that_builds_the_world",d:"Most consequential act of giving",i:"CERN releases WWW, feeds 5B+ people free"},
+  {n:49,g:"L",s:"MemRes",nm:"memory_as_resistance",d:"Archives prevent power rewriting history",i:"Internet Archive, Wayback Machine"},
+  {n:55,g:"L",s:"UndPro",nm:"understatement_as_prophecy",d:"'Just a hobby' → runs the world",i:"Torvalds on Linux, Ginsparg on arXiv"},
+  {n:57,g:"L",s:"InsInc",nm:"institution_as_incubator",d:"Institution releases, doesn't capture",i:"CERN: web (1993) + ProtonMail (2013)"},
+  {n:59,g:"L",s:"RemTol",nm:"removing_the_tollbooth",d:"Making the expensive free",i:"Let's Encrypt: $300/yr → $0"},
+  {n:81,g:"L",s:"ExtEdu",nm:"extraction_inverts_to_education",d:"Most captured site → strongest learning",i:"PCA → gAIa education model"},
+  {n:109,g:"L",s:"EqkPhi",nm:"earthquake_breaks_philosophy",d:"Physical event falls through conceptual layers",i:"Lisbon → Voltaire → Kant → Critique of Pure Reason"},
+
+  // GROUP M — META
+  {n:82,g:"M",s:"MemEpi",nm:"meme_is_epitope",d:"Same mechanism across biology/culture/institutions",i:"Binding site = replicator = invariant"},
+  {n:110,g:"M",s:"3BdPrg",nm:"three_body_programming",d:"Self + partner + universe, emergent output",i:"Navigator + driver + active codebase"},
+  {n:111,g:"M",s:"ConPth",nm:"constraint_generates_path",d:"Without constraint, noise. With constraint, search.",i:"Each scan constrained by previous. Order matters."},
+  {n:112,g:"M",s:"GazMov",nm:"gazing_moves_the_gazer",d:"Observation changes the observer",i:"Photons → retina → membrane update → different self"},
+
+  // GROUP N — IDENTITY
+  {n:58,g:"N",s:"NamLin",nm:"naming_is_lineage",d:"Tools carry ancestry in their names",i:"Zola SSG named after J'Accuse whistleblower"},
+  {n:60,g:"N",s:"SlfHst",nm:"self_hosting_as_sovereignty",d:"Run the relay, own the channel",i:"RustDesk self-hosted, Forgejo self-hosted"},
+  {n:5,g:"N",s:"CmpCom",nm:"competing_commons",d:"Multiple shared tools for same function",i:"Ido, Interlingua vs Esperanto"},
+  {n:2,g:"N",s:"MinLng",nm:"minimum_viable_language",d:"Reduce until you can't, then compose",i:"Toki Pona ~120 words"},
+  {n:3,g:"N",s:"ToolUsr",nm:"tool_finds_its_users",d:"The tool goes where it's needed, not designed",i:"Blissymbols → disabled children"},
+  {n:10,g:"N",s:"Rebuild",nm:"rebuild_from_scratch",d:"When enclosed, don't negotiate — rebuild",i:"OSM: blank map + bicycle + GPS"},
+  {n:13,g:"N",s:"PreInf",nm:"premature_infrastructure",d:"Vision before implementation",i:"Otlet's Mundaneum → the internet"},
+  {n:9,g:"N",s:"MsrNat",nm:"measurement_from_nature",d:"Anchor standard to something uncapturable",i:"Metric: speed of light"},
+  {n:25,g:"N",s:"AccInf",nm:"accidental_infrastructure",d:"Automated existing practice → backbone",i:"arXiv: few afternoons of scripts"},
+  {n:26,g:"N",s:"TwoSt",nm:"two_states_are_enough",d:"Binary: dot/dash, 0/1, on/off",i:"Morse code → Shannon → every computer"},
+  {n:28,g:"N",s:"MorPro",nm:"moral_protocol",d:"Shared spec with no enforcement but conscience",i:"UDHR, rules without teeth"},
+  {n:30,g:"N",s:"InfCom",nm:"infrastructure_requires_commitment",d:"Gift requires recipient to maintain",i:"Carnegie: building + community tax support"},
+];
+
+// ─── GAPS (predicted but unfound) ───
+const GAPS = [
+  {g:"A",s:"???",nm:"commons_without_protocol",d:"A shared tool that persists without a published specification"},
+  {g:"B",s:"???",nm:"capture_without_institution",d:"Can capture operate without formal institutional structure?"},
+  {g:"C",s:"???",nm:"collective_builds",d:"Tools built by GROUPS from the start, without a single founder"},
+  {g:"G",s:"???",nm:"membrane_creates_content",d:"Can a membrane CREATE information that doesn't exist on either side?"},
+  {g:"H",s:"???",nm:"cross_species_epitope",d:"Echolocation, electric fields, magnetoreception — sensory epitopes humans lack"},
+  {g:"F",s:"???",nm:"the_11th_invariant",d:"Ancient-only invariants the modern template doesn't contain"},
+];
+
+let activeGroup = null;
+
+function buildLegend() {
+  const el = document.getElementById('legend');
+  for (const [k,v] of Object.entries(GROUPS)) {
+    const d = document.createElement('span');
+    d.className = 'g';
+    d.style.color = v.color;
+    d.textContent = `${k} ${v.name}`;
+    d.onclick = () => toggleGroup(k);
+    d.dataset.group = k;
+    el.appendChild(d);
+  }
+}
+
+function toggleGroup(g) {
+  if (activeGroup === g) { activeGroup = null; } else { activeGroup = g; }
+  document.querySelectorAll('.legend .g').forEach(el => {
+    el.classList.toggle('active', el.dataset.group === activeGroup);
+  });
+  document.querySelectorAll('.cell').forEach(el => {
+    if (!activeGroup) { el.style.opacity = '1'; return; }
+    el.style.opacity = el.dataset.group === activeGroup ? '1' : '0.15';
+  });
+}
+
+function buildTable() {
+  const el = document.getElementById('ptable');
+  
+  // Sort by group, then by number within group
+  const groupOrder = 'ABCDEFGHIJKLMN'.split('');
+  const grouped = {};
+  groupOrder.forEach(g => grouped[g] = []);
+  ELEMENTS.forEach(e => { if (grouped[e.g]) grouped[e.g].push(e); });
+  
+  // Find max row count
+  const maxRows = Math.max(...Object.values(grouped).map(a => a.length));
+  
+  // Build grid: columns = groups, rows = elements within each group
+  for (let row = 0; row < maxRows; row++) {
+    groupOrder.forEach(g => {
+      const arr = grouped[g];
+      if (row < arr.length) {
+        const e = arr[row];
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.group = e.g;
+        cell.innerHTML = `<span class="num">#${e.n}</span><span class="sym">${e.s}</span><span class="name">${e.nm.replace(/_/g,' ').substring(0,20)}</span>`;
+        cell.onclick = () => showDetail(e);
+        el.appendChild(cell);
+      } else if (row < maxRows) {
+        // Check for gap
+        const gapIdx = row - arr.length;
+        const gapsForGroup = GAPS.filter(x => x.g === g);
+        if (gapIdx < gapsForGroup.length) {
+          const gap = gapsForGroup[gapIdx];
+          const cell = document.createElement('div');
+          cell.className = 'cell gap';
+          cell.dataset.group = gap.g;
+          cell.innerHTML = `<span class="num">?</span><span class="sym">${gap.s}</span><span class="name">${gap.nm.replace(/_/g,' ').substring(0,20)}</span>`;
+          cell.onclick = () => showDetail({...gap, n:'?', i:'PREDICTED — not yet observed'});
+          el.appendChild(cell);
+        } else {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.style.visibility = 'hidden';
+          el.appendChild(cell);
+        }
+      }
+    });
+  }
+}
+
+function showDetail(e) {
+  const d = document.getElementById('detail');
+  const grp = GROUPS[e.g];
+  document.getElementById('d-num').textContent = `#${e.n} · Group ${e.g}`;
+  document.getElementById('d-name').textContent = e.nm.replace(/_/g, ' ');
+  document.getElementById('d-group').innerHTML = `<span style="color:${grp.color}">${grp.name}</span> — ${grp.desc}`;
+  document.getElementById('d-detect').textContent = e.d;
+  document.getElementById('d-instance').textContent = e.i || '';
+  d.classList.add('show');
+  d.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function closeDetail() {
+  document.getElementById('detail').classList.remove('show');
+}
+
+// Keyboard navigation — press a letter A-N to filter by group
+document.addEventListener('keydown', e => {
+  const k = e.key.toUpperCase();
+  if (k >= 'A' && k <= 'N' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    if (document.activeElement.tagName !== 'INPUT') {
+      toggleGroup(k);
+    }
+  }
+  if (e.key === 'Escape') { closeDetail(); activeGroup = null; toggleGroup(null); }
+});
+
+// Fetch NFT count
+fetch('/nft/count').then(r=>r.json()).then(d=>{
+  document.getElementById('nft-count').textContent = d.count || 0;
+}).catch(()=>{});
+
+buildLegend();
+buildTable();
+</script>
+</body>
+</html>

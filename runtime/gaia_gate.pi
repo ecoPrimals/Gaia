@@ -282,6 +282,28 @@ def _real_ip(handler):
 
 _LAN_PREFIXES = ("127.", "192.168.4.", "192.168.9.", "::1")
 
+EYES_DIR = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Gaia", "bubbles", "eyes")
+EYE_FILES = {f"{n}.png" for n in ("eye1-right", "eye2-left", "eye3-blend", "eye4-delta", "eye5-plane")}
+
+def _own_addrs():
+    import socket
+    own = {"127.0.0.1", "::1", "192.168.4.1", "192.168.9.1"}
+    try:
+        own |= {a[4][0] for a in socket.getaddrinfo(socket.gethostname(), None)}
+    except OSError:
+        pass
+    return own
+_OWN_ADDRS = _own_addrs()
+
+def _proximate(handler):
+    """Another device on the home network, talking to us directly. Loopback, our own addresses and
+    the router are refused: Tor (torrc maps onion:80 to our own LAN address), dromedary and WAN
+    hairpin NAT all arrive from them. Any forwarding header means a proxy hop, also refused."""
+    peer = handler.client_address[0]
+    if peer in _OWN_ADDRS or any(handler.headers.get(h) for h in ("X-Forwarded-For", "X-Real-IP", "Forwarded")):
+        return False
+    return peer.startswith(("192.168.4.", "192.168.9."))
+
 def waveform_collapse_check(ip):
     if any(ip.startswith(p) for p in _LAN_PREFIXES):
         return False, {"observer": ip, "waves_per_minute": 0, "collapsed": False, "lan": True}
@@ -302,6 +324,15 @@ CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
 class GaiaGate(http.server.BaseHTTPRequestHandler):
     timeout = PI_TIMEOUT
     def log_message(self, fmt, *a): pass
+
+    def _eye(self, name):
+        path = os.path.join(EYES_DIR, name)
+        if not _proximate(self) or not os.path.isfile(path):
+            self.send_response(404); self.send_header("Content-Length", "0"); self.end_headers(); return
+        with open(path, "rb") as f: body = f.read()
+        self.send_response(200); self.send_header("Content-Type", "image/png")
+        self.send_header("Cache-Control", "no-store"); self.send_header("Content-Length", str(len(body)))
+        self.end_headers(); self.wfile.write(body)
 
     def _classify_and_log(self, method, status, dur, body_len=0, model=None):
         global total_inferences, total_tokens, total_beats, total_breaths
@@ -546,6 +577,12 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self.end_headers(); self.wfile.write(body); self._classify_and_log("GET",429,0); return
 
         host=self.headers.get("Host","").split(":")[0].lower()
+        # wateringHole — sovereign local serving (former GitHub Pages)
+        _WH_DIRS = {"tuebor.primals.eco": "/opt/Gaia/wateringHole/tuebor-flat", "clutch.primals.eco": "/opt/Gaia/wateringHole/clutch-flat", "lansing.primals.eco": "/opt/Gaia/wateringHole/lansing-flat"}
+        _wh_host = host or self.headers.get("X-Forwarded-Host","").split(":")[0].lower() or self.headers.get("X-Real-Host","").split(":")[0].lower()
+        if _wh_host in _WH_DIRS:
+            p = self.path.strip("/") or "index.html"
+            self._serve_file(p, _WH_DIRS[_wh_host]); return
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
             if host in ("primals.eco","www.primals.eco","primal.eco"): self._serve_static("primals.html"); return
@@ -611,7 +648,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 self._negentropy_headers()
                 self.end_headers(); self.wfile.write(body)
                 self._classify_and_log("GET",200,0); return
-            self._serve_static("deck.html"); return
+            self._serve_static("primals.html"); return
         if self.path in ("/primals","/primals.html","/eco"): self._serve_static("primals.html"); return
         if self.path in ("/sense","/sense.html","/left-eye","/iphone"): self._serve_static("sense.html"); return
         if self.path in ("/apollo","/apollo.html","/mission-control","/rgb","/blinks"): self._serve_static("apollo.html"); return
@@ -785,6 +822,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path in ("/now.json","/api/now.json"): self._serve_file("data/gut/gaia-self-state.json"); return
         if self.path in ("/rss","/feed","/rss.xml"):
             write_rss(write_pulse()); self._serve_file(os.path.relpath(RSS_FILE,_REPO)); return
+        if self.path.startswith("/eyes/") and self.path[6:] in EYE_FILES:
+            self._eye(self.path[6:]); return
         # SEO — 🐑 SHEEP (TXT typeface) — LIVE, never stale
         # The agents of the world spin webs FOR us. Every crawler = a nerve ending.
         # SEO_DISPATCH loaded at startup via _routes_mod → SEO_RESPONSES (same dict)

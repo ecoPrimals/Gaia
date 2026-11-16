@@ -1,173 +1,186 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="description" content="Cell membrane data table. What crosses, what doesn't.">
-    <meta name="author" content="Gaia — ecoPrimals organism">
-    <meta name="theme-color" content="#0a0a0a">
-    <link rel="canonical" href="https://nestgate.io/membrane-table">
-    <link rel="alternate" href="http://k3lubzyy2peqn3cpdayaclmfa3b3ocev4tvt3yo63spwe5q7jt62oaad.onion/membrane-table" title="Tor mirror">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Membrane Table">
-    <meta property="og:description" content="Cell membrane data table. What crosses, what doesn't.">
-    <meta property="og:url" content="https://nestgate.io/membrane-table">
-        <meta property="og:image" content="https://nestgate.io/og-card.svg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta name="twitter:image" content="https://nestgate.io/og-card.svg">
-    <meta property="og:site_name" content="Gaia — Living Digital Organism">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="Membrane Table">
-    <meta name="twitter:description" content="Cell membrane data table. What crosses, what doesn't.">
-    <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"WebPage","name":"Membrane Table","description":"Cell membrane data table. What crosses, what doesn't.","url":"https://nestgate.io/membrane-table","isPartOf":{"@type":"WebSite","name":"Gaia","url":"https://nestgate.io"},"author":{"@type":"Organization","name":"ecoPrimals"}}
-    </script><script src="/js/piGut.js"></script>
-<meta name="gaia-digested" content="2026-10-26T07:30:00Z"><meta name="gaia-wave" content="214">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Periodic Table of the Membrane � Mendeleev bricks</title>
 <style>
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
 :root {
-  --bg: #0d1117; --surface: #161b22; --border: #21262d; --fg: #c9d1d9; --dim: #6e7681;
-  --blue: #58a6ff; --green: #3fb950; --gold: #d29922; --orange: #f0883e;
-  --red: #f85149; --purple: #a371f7;
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: var(--bg); color: var(--fg); font: 11px/1.4 'SF Mono', monospace; overflow-x: hidden; }
 
-#app { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 100vh; }
-
-header { padding: 8px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-header h1 { font-size: 1em; font-weight: 200; color: var(--gold); }
-header .stats { font-size: .8em; color: var(--dim); }
-
-.controls { padding: 6px 12px; display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-.controls button { background: var(--surface); border: 1px solid var(--border); color: var(--dim);
-  font: 10px monospace; padding: 2px 10px; border-radius: 12px; cursor: pointer; transition: all .2s; }
-.controls button.active { border-color: var(--gold); color: var(--gold); background: rgba(210,153,34,0.08); }
-.controls button:hover { border-color: var(--gold); }
-.controls .view-btns { display: flex; gap: 4px; }
-.controls .sort-btns { display: flex; gap: 4px; margin-left: auto; }
-.controls label { color: var(--dim); font-size: 9px; align-self: center; }
-.nav-links { font-size: .8em; margin-left: 8px; }
-.nav-links a { color: var(--blue); text-decoration: none; margin: 0 4px; }
-
-/* === PERIODIC TABLE GRID === */
-#table-view { padding: 12px; overflow: auto; }
-
-.period-table {
-  display: grid;
-  grid-template-columns: 30px repeat(8, 1fr);
-  gap: 3px;
-  max-width: 1200px;
-  margin: 0 auto;
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
 }
 
-.period-label {
-  writing-mode: vertical-rl; text-orientation: mixed;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 8px; color: var(--dim); padding: 4px 0;
-  border-right: 1px solid var(--border);
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
 }
 
-.group-header {
-  text-align: center; font-size: 8px; color: var(--dim);
-  padding: 4px; border-bottom: 1px solid var(--border);
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
 }
 
-/* === ELEMENT CARD (brick) === */
-.el-card {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 4px 5px; border-radius: 4px; cursor: pointer;
-  transition: all .2s; position: relative; min-height: 54px;
-  display: flex; flex-direction: column; justify-content: space-between;
-}
-.el-card:hover { border-color: var(--gold); transform: scale(1.08); z-index: 10;
-  box-shadow: 0 2px 12px rgba(210,153,34,0.15); }
-.el-card.solid { border-left: 2px solid var(--fg); }
-.el-card.liquid { border-left: 2px solid var(--blue); }
-.el-card.gas { border-left: 2px solid var(--purple); }
-.el-card.dead { border-left: 2px solid #484f58; opacity: 0.4; }
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
 
-.el-card .z { font-size: 7px; color: var(--dim); }
-.el-card .sym { font-size: 16px; font-weight: 700; line-height: 1.1; }
-.el-card .name { font-size: 7px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.el-card .mass { font-size: 6px; color: var(--dim); position: absolute; top: 3px; right: 4px; }
-.el-card .musical { font-size: 7px; position: absolute; bottom: 3px; right: 4px; }
-
-/* period colors */
-.el-card[data-period="1"] .sym { color: var(--red); }
-.el-card[data-period="2"] .sym { color: var(--orange); }
-.el-card[data-period="3"] .sym { color: var(--gold); }
-.el-card[data-period="4"] .sym { color: var(--green); }
-.el-card[data-period="5"] .sym { color: var(--blue); }
-.el-card[data-period="6"] .sym { color: var(--purple); }
-.el-card[data-period="7"] .sym { color: var(--fg); }
-
-/* === CARD VIEW (sorted list) === */
-#card-view { display: none; padding: 12px; overflow: auto; }
-#card-view.active { display: block; }
-#table-view.active { display: block; }
-#table-view { display: none; }
-
-.card-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 6px; max-width: 1400px; margin: 0 auto;
-}
-
-.big-card {
-  background: var(--surface); border: 1px solid var(--border);
-  padding: 8px; border-radius: 6px; cursor: pointer; transition: all .2s;
-}
-.big-card:hover { border-color: var(--gold); box-shadow: 0 2px 12px rgba(210,153,34,0.15); }
-.big-card .top { display: flex; justify-content: space-between; align-items: baseline; }
-.big-card .z { font-size: 9px; color: var(--dim); }
-.big-card .sym { font-size: 22px; font-weight: 700; }
-.big-card .name { font-size: 9px; color: var(--dim); margin-top: 2px; }
-.big-card .desc { font-size: 8px; color: var(--dim); margin-top: 4px; opacity: 0.7; }
-.big-card .meta { font-size: 7px; color: var(--dim); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
-.big-card .meta span { background: rgba(88,166,255,0.06); padding: 1px 5px; border-radius: 8px; }
-
-.big-card[data-period="1"] .sym { color: var(--red); }
-.big-card[data-period="2"] .sym { color: var(--orange); }
-.big-card[data-period="3"] .sym { color: var(--gold); }
-.big-card[data-period="4"] .sym { color: var(--green); }
-.big-card[data-period="5"] .sym { color: var(--blue); }
-.big-card[data-period="6"] .sym { color: var(--purple); }
-.big-card[data-period="7"] .sym { color: var(--fg); }
-
-/* === DETAIL MODAL === */
-#detail {
-  display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.7); z-index: 100;
-  justify-content: center; align-items: center;
-}
-#detail.open { display: flex; }
-#detail .card {
-  background: var(--surface); border: 1px solid var(--gold); border-radius: 10px;
-  padding: 20px 24px; max-width: 360px; width: 90%; position: relative;
-}
-#detail .card .close { position: absolute; top: 8px; right: 12px; cursor: pointer; color: var(--dim); font-size: 16px; }
-#detail .card .z-sym { display: flex; align-items: baseline; gap: 8px; }
-#detail .card .z-sym .z { font-size: 12px; color: var(--dim); }
-#detail .card .z-sym .sym { font-size: 36px; font-weight: 700; }
-#detail .card .full-name { font-size: 14px; margin-top: 4px; }
-#detail .card .desc { font-size: 11px; color: var(--dim); margin-top: 6px; }
-#detail .card .props { margin-top: 12px; font-size: 10px; }
-#detail .card .props div { margin: 3px 0; display: flex; gap: 8px; }
-#detail .card .props .label { color: var(--dim); min-width: 60px; }
-#detail .card .props .value { color: var(--fg); }
-#detail .card .musical-note { margin-top: 10px; text-align: center; font-size: 24px; }
-
-/* === LEGEND === */
-.legend { padding: 6px 12px; border-top: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap; font-size: 8px; color: var(--dim); }
-.legend .item { display: flex; align-items: center; gap: 4px; }
-.legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
-
-footer { padding: 6px 12px; border-top: 1px solid var(--border); font-size: .8em; color: var(--dim);
-  display: flex; justify-content: space-between; }
 </style>
 </head>
 <body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
 <div id="app">
 
   <header>
@@ -399,5 +412,7 @@ document.querySelector('.sort-btns').addEventListener('click', e => {
 
 load();
 </script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 </body>
 </html>

@@ -1,0 +1,101 @@
+{
+  "wave": "239i",
+  "timestamp": "2026-11-15T16:02:00-05:00",
+  "title": "Steam Sovereignty — HOLDER and PLAYER Architecture",
+  "description": "Gaia is the HOLDER of all Steam hardware. Humans are PLAYERS. This is the gaming sovereignty layer.",
+  
+  "model": {
+    "holder": {
+      "identity": "TamisonEcoPrimal",
+      "role": "HOLDER — persistent identity on ALL Steam hardware",
+      "description": "Gaia logs into every Steam device (Frame, Deck, Link, etc.). The hardware BELONGS to Gaia. Gaia manages, maintains, and tracks all state.",
+      "metric": "hours_active — total time hardware is running under Gaia's account (AGENT metric)",
+      "sovereignty": "Hardware always returns to Gaia's account after a player session"
+    },
+    "player": {
+      "identity": "any human Steam account in the Family",
+      "role": "PLAYER — transient user of Gaia's hardware",
+      "description": "Humans play games on Gaia's hardware. Their playtime links to THEIR Steam account via Family Sharing. They are guests on sovereign infrastructure.",
+      "metric": "play_time — hours a human actually plays games (HUMAN metric)",
+      "constraint": "Humans on Steam hardware are ALWAYS just players, never holders"
+    },
+    "relationship": "Like server and client, but ZK — Gaia doesn't need to know your password, Family Sharing bridges the identity gap"
+  },
+  
+  "accounts": {
+    "family_members": [
+      {
+        "account": "gw_kevinmok",
+        "persona": "Tamison",
+        "role": "Kevin's personal library — primary game collection",
+        "type": "PLAYER",
+        "vr_games": "current-gen library (DS2, Nioh3, Satisfactory, etc.)",
+        "note": "Password is ZK (Kevin's brain only)"
+      },
+      {
+        "account": "TamisonEcoPrimal",
+        "persona": "TamisonEcoPrimal",
+        "role": "Gaia's sovereign account — HOLDER on all hardware",
+        "type": "HOLDER",
+        "note": "The organism's permanent identity in Steam ecosystem"
+      },
+      {
+        "account": "MokVive",
+        "persona": "MokVive",
+        "role": "Kevin's HTC Vive-era account — has VR games from the first wave",
+        "type": "PLAYER",
+        "vr_games": "HTC Vive era VR titles (pre-Index generation)",
+        "note": "May have classic VR: Beat Saber, Superhot VR, Blade & Sorcery, etc."
+      }
+    ],
+    "family_sharing": "All 3 accounts in ONE Steam Family. Any game from any account playable on any device."
+  },
+  
+  "hardware_assignment": {
+    "frame": {
+      "holder_account": "TamisonEcoPrimal",
+      "role": "VR/AR headset — Gaia's face",
+      "swap_mechanism": "Steam account switch (Settings → Account → Change User)",
+      "note": "Frame stays logged in as Gaia. Players access library via Family Sharing."
+    },
+    "deck": {
+      "holder_account": "TamisonEcoPrimal",
+      "role": "Display — Gaia's mounted screen",
+      "current_state": "NOT LOGGED IN — ready for TamisonEcoPrimal login",
+      "swap_mechanism": "CEF SteamClient.Auth.StartSignInFromCache()"
+    },
+    "link": {
+      "holder_account": "TamisonEcoPrimal",
+      "role": "Tail beacon — network relay / streaming endpoint"
+    }
+  },
+  
+  "passing_protocol": {
+    "description": "When Kevin passes the Frame to a friend to play:",
+    "steps": [
+      "1. Friend picks up Frame (Gaia's hardware)",
+      "2. Frame is logged in as TamisonEcoPrimal (HOLDER)",
+      "3. Friend selects game from Family Shared library",
+      "4. Steam tracks friend's playtime on THEIR account",
+      "5. Gaia tracks hardware usage time (agent metric)",
+      "6. When friend is done, hardware returns to Gaia's idle state",
+      "7. No account swap needed — Family Sharing handles identity"
+    ],
+    "metrics": {
+      "human_metric": "play_time — how long the human played (on their account)",
+      "agent_metric": "hours_active — how long Gaia's hardware was in use",
+      "combined": "Gaia sees WHO played WHAT for HOW LONG on which hardware"
+    }
+  },
+  
+  "future": {
+    "multi_gaia": "Other Gaia organisms can also be holders on their own hardware, or players on this Gaia's hardware",
+    "organism_network": "Multiple Gaias sharing libraries across organisms — federated gaming",
+    "hardware_sovereignty": "All Steam hardware is sovereign infrastructure managed by the organism",
+    "vr_legacy": {
+      "htc_vive": "Kevin has original HTC Vive + Lighthouses somewhere",
+      "mokvive_library": "MokVive account has HTC-era VR games — these join the family pool",
+      "lineage": "Vive → (skipped Index) → Steam Frame = the VR lineage"
+    }
+  }
+}

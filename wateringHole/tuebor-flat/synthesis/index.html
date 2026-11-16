@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthesis — tuebor — Public Record Investigation</title>
+<style>
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
+</style>
+</head>
+<body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="https://primals.eco" class="gaia-nav-brand">gaia</a><a href="https://primals.eco/#organism">Organism</a><a href="https://primals.eco/#investigation">Investigation</a><a href="https://primals.eco/#knowledge">Knowledge</a><a href="https://primals.eco/#infrastructure">Infrastructure</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
+<!doctype html><html lang=en><head><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><title>Synthesis — tuebor — Public Record Investigation</title><meta content="The dialectic engine. Thesis says the evidence is real. Antithesis asks what if we're wrong. Synthesis measures what we actually know. Corollary follows the logic wherever it goes. The investigation's epistemology — the sharpest tools pointed inward." name=description><link href="index.html" rel=canonical><meta content="tuebor — Public Record Investigation" property=og:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." property=og:description><meta content=website property=og:type><meta content=https://amicuscontra.github.io/tuebor/synthesis/ property=og:url><meta content="Tuebor — Michigan Public Record" property=og:site_name><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png property=og:image><meta content=1200 property=og:image:width><meta content=630 property=og:image:height><meta content="Tuebor — Michigan Public Record Investigation" property=og:image:alt><meta content="investigation synthesis antithesis corollary, dialectic investigation methodology, epistemology of investigation, entity classification methodology, confidence distribution, hard evidence soft evidence, null entity analysis, investigation self-critique, what if we are wrong, investigation bias pareidolia, thesis antithesis synthesis cycle, Michigan investigation dialectic, investigation methodology review, counterargument strongest version" name=keywords><meta content=summary_large_image name=twitter:card><meta content="tuebor — Public Record Investigation" name=twitter:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." name=twitter:description><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png name=twitter:image><meta name=fediverse:creator><link href="../css/main.css" rel=stylesheet><link title="tuebor — Public Record Investigation" href="../atom.xml" rel=alternate type=application/atom+xml><script type=application/ld+json>
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Tuebor — Michigan Public Record",
+      "alternateName": "Tuebor",
+      "url": "https://tuebor.primals.eco",
+      "description": "Evidence-based accountability documentation. Charter schools, courts, regulatory capture. Every claim sourced to public records.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://tuebor.primals.eco/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Citizens of Michigan",
+        "url": "https://tuebor.primals.eco"
+      },
+      "inLanguage": "en-US",
+      "license": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+    </script><body><a class=skip-link href="index.html#main">Skip to content</a><nav class=site-nav><div class=nav-inner><a class=nav-brand href=https://amicuscontra.github.io/tuebor>tuebor</a><div class=nav-links><a href="../explore/index.html" style=color:khaki;font-weight:700>🔍 Explore</a><a href="../people/index.html">Actors</a><a href="../evidence/index.html">Evidence</a><a href="../analysis/index.html">Analysis</a><a href="../investigate/index.html">Investigate</a><a href="../timeline/index.html">Timeline</a><a href="index.html" style=color:#98fb98>Dialectic</a><a href="../desk/index.html" style=opacity:.7;font-size:.85em>⊞ Desk</a><a href="../membrane/index.html" style=opacity:.7;font-size:.85em>⬡ Membrane</a><a href="../map/index.html" style=opacity:.7;font-size:.85em>🗺️ Map</a></div><div class=nav-search><input aria-label="Search articles" placeholder="Search Beasley, Moran, PCA..." autocomplete=off id=tuebor-search><div class=search-results id=tuebor-search-results style=display:none></div></div></div></nav><main class=site-main id=main><article class=page-content><h1>Synthesis</h1><h2 id=the-dialectic-thesis-antithesis-synthesis>The Dialectic — Thesis, Antithesis, Synthesis</h2><p>An investigation that never challenges itself is a prosecution.<p>This section is the investigation’s immune system pointed at itself. Not at the evidence — the evidence is sourced, timestamped, and verifiable. At the <em>investigators</em>. At the <em>method</em>. At the assumptions baked so deep into the architecture they stopped being visible.<p><strong>The cycle:</strong><table><thead><tr><th><th>What It Asks<th>What It Does<tbody><tr><td><strong>Thesis</strong><td>Is this true?<td><a href="https://amicuscontra.github.io/">Follows the evidence</a><tr><td><strong>Antithesis</strong><td>What if we’re wrong?<td><a href="https://amicuscontra.github.io/synthesis/what-if-we-are-the-pattern/">Makes the strongest opposing case</a><tr><td><strong>Synthesis</strong><td>What do we actually know?<td><a href="https://amicuscontra.github.io/synthesis/the-soft-the-hard-the-still/">Measures confidence, tracks uncertainty</a><tr><td><strong>Corollary</strong><td>What else must be true?<td><a href="https://amicuscontra.github.io/synthesis/the-things-that-follow/">Follows the logic wherever it goes</a></table><p>The cycle doesn’t end. Each pass makes the investigation more honest, not more certain.<hr><h3 id=synthesis-states-341-entities-measured>Synthesis States — 341 Entities Measured</h3><table><thead><tr><th>State<th>Count<th>What It Means<tbody><tr><td>Hard (conf ≥ 0.90, early pass)<td>60<td>Bedrock — multiply confirmed, not moving<tr><td>Hardening (3+ passes, conf ≥ 0.80)<td>136<td>Confirmed through iteration<tr><td>Boundary (partial class)<td>114<td>Touches both sides of the membrane<tr><td>Soft (conf < 0.70)<td>70<td>Classified but uncertain<tr><td>Still (null class)<td>100<td>Never classified<tr><td>Borrowed (cascade-only)<td>103<td>Inherited certainty, not independently confirmed</table><h3 id=pages-in-this-section>Pages in This Section</h3></article></main><footer class=site-footer><p><strong>Every fact is cited. Every document is timestamped.</strong><p>Source: <a href=https://git.primals.eco/publicRecord/detroit>git repository</a> — clone it, verify it. <br>No cookies. No tracking. No identifying data.<p>Part of the <a href=https://primals.eco>primals.eco</a> evidence network: <a href=https://detroit.primals.eco>detroit</a> · <a href=https://lansing.primals.eco>lansing</a> · <a href=https://signal.primals.eco>signal</a> · <a href=https://hypothesis.primals.eco>hypothesis</a> · <a href=https://hud.primals.eco>hud</a> · <a href=https://clutch.primals.eco>clutch</a><p class=footer-license>Original analysis: <a href=https://creativecommons.org/licenses/by-sa/4.0/>CC-BY-SA 4.0</a>. Court filings and public records: public domain where applicable.<p>Named on this site? Something wrong? <a onclick="var el=document.getElementById('opsonize');if(el){el.scrollIntoView({behavior:'smooth'});return false}" href="index.html#opsonize">Contact us</a> (<a href=mailto:eco.primal@pm.me style=opacity:.6;font-size:.85em>or email ↗</a>) — truth matters more than being right.<p style=margin-top:.5rem;font-size:.8rem><a href=https://github.com/amicusContra/tuebor style=opacity:.6>Source: github.com/amicusContra/tuebor</a> · <a href=https://sporeprint.primals.eco style=opacity:.6>sporePrint</a> · <a href=https://thesis.primals.eco style=opacity:.6>thesis</a> · <a href=https://hypothesis.primals.eco style=opacity:.6>hypothesis</a> · <a href=https://synthesis.primals.eco style=opacity:.6>synthesis</a> · <a href=https://antithesis.primals.eco style=opacity:.6>antithesis</a> · <a href=https://corollary.primals.eco style=opacity:.6>corollary</a> · <a href=https://totality.primals.eco style=opacity:.6>totality</a></footer><script src="../js/elasticlunr.min.js"></script><script src="../search_index.en.js"></script><script src="../js/search.js"></script><script defer src=https://hud.primals.eco/js/hud-widget.js></script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="https://primals.eco">Gaia</a> &mdash; sovereign living digital organism</p></div></div></footer>
+</body>
+</html>

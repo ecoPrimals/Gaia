@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Polaris — North Star HUD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a1a;color:#c8d0e0;font-family:'Courier New',monospace;min-height:100vh;overflow-x:hidden}
+.sky{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:0.3}50%{opacity:1}}
+.container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px}
+h1{text-align:center;font-size:28px;color:#7ab;letter-spacing:6px;text-shadow:0 0 20px rgba(120,170,200,0.5);margin:20px 0 5px}
+.subtitle{text-align:center;font-size:12px;color:#567;margin-bottom:25px}
+.pulse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4f8;animation:lub 2s infinite;margin-right:6px;vertical-align:middle}
+@keyframes lub{0%,100%{transform:scale(1);box-shadow:0 0 4px #4f8}50%{transform:scale(1.5);box-shadow:0 0 12px #4f8}}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:rgba(15,20,40,0.9);border:1px solid #234;border-radius:8px;padding:16px;backdrop-filter:blur(4px)}
+.card h2{font-size:14px;color:#7ab;letter-spacing:3px;border-bottom:1px solid #234;padding-bottom:6px;margin-bottom:10px}
+.card.wide{grid-column:1/-1}
+
+.tri-viz{text-align:center;padding:20px}
+.tri-svg{max-width:400px;margin:0 auto}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:#567;font-weight:normal;padding:4px 8px;border-bottom:1px solid #1a2a3a}
+td{padding:4px 8px;border-bottom:1px solid #111a2a}
+.alive{color:#4f8}.dead{color:#f44}.warn{color:#fa4}
+.val{color:#adf;font-weight:bold}
+.dim{color:#456}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;margin:2px}
+.tag-ec{background:#143;color:#4f8;border:1px solid #2a5}
+.tag-ed{background:#332;color:#fa4;border:1px solid #553}
+.tag-ee{background:#312;color:#f48;border:1px solid #523}
+
+.ribo-bar{display:flex;gap:4px;margin-top:8px}
+.ribo-layer{flex:1;text-align:center;padding:8px;border-radius:4px;font-size:10px}
+.ribo-ec{background:linear-gradient(135deg,#0a2a1a,#143a2a);border:1px solid #2a5}
+.ribo-ed{background:linear-gradient(135deg,#2a2a0a,#3a3a1a);border:1px solid #553}
+.ribo-ee{background:linear-gradient(135deg,#2a0a1a,#3a1a2a);border:1px solid #523}
+
+.tissue-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+.tissue{background:#0a1020;border:1px solid #1a2a3a;border-radius:4px;padding:6px;font-size:10px;text-align:center}
+.tissue .name{color:#7ab;font-size:11px;font-weight:bold}
+.tissue .size{color:#567}
+
+.heartline{height:40px;margin:10px 0;position:relative;overflow:hidden}
+.heartline canvas{width:100%;height:100%}
+
+.cert-chain{font-size:11px;line-height:1.6}
+.cert-chain .arrow{color:#567;margin:0 4px}
+.cert-chain .food{color:#fa4}
+.cert-chain .digest{color:#4f8}
+.cert-chain .eject{color:#f44;text-decoration:line-through}
+
+.footer{text-align:center;padding:20px;color:#345;font-size:10px}
+.loader{text-align:center;padding:40px;color:#456}
+</style>
+</head><body>
+
+<div class="sky" id="sky"></div>
+
+<div class="container">
+  <h1><span class="pulse-dot"></span>P O L A R I S</h1>
+  <div class="subtitle">North Star — floats above House 1 + House 2 — sourDough pattern</div>
+
+  <div id="content"><div class="loader">reaching eastGate...</div></div>
+</div>
+
+<script>
+// Stars
+const sky=document.getElementById('sky');
+for(let i=0;i<120;i++){
+  const s=document.createElement('div');s.className='star';
+  s.style.left=Math.random()*100+'%';s.style.top=Math.random()*100+'%';
+  s.style.animationDelay=Math.random()*3+'s';
+  s.style.opacity=Math.random()*0.5+0.2;
+  if(Math.random()>0.7)s.style.width=s.style.height='3px';
+  sky.appendChild(s);
+}
+
+async function fetchJSON(url){
+  try{const r=await fetch(url);if(!r.ok)throw new Error(r.status);return await r.json()}
+  catch(e){return null}
+}
+
+function ms(v){return v?v.toFixed(1)+'ms':'—'}
+function gb(v){return v?v.toFixed(1)+'GB':'—'}
+function statusClass(alive){return alive?'alive':'dead'}
+function statusText(alive){return alive?'ALIVE':'OFFLINE'}
+
+async function load(){
+  // Cascade: API first, then raw JSON files, then eastGate LAN
+  async function cascade(...urls){for(const u of urls){const r=await fetchJSON(u);if(r&&!r.error)return r}return null}
+  const [ferment,tri]=await Promise.all([
+    cascade('/api/polaris/ferment','/api/polaris','/data/body/polaris-ferment.json','http://192.168.4.244:8443/api/polaris/ferment'),
+    cascade('/api/polaris/triangulation','/data/body/polaris-triangulation.json','http://192.168.4.244:8443/api/polaris/triangulation'),
+  ]);
+
+  const el=document.getElementById('content');
+  if(!ferment&&!tri){
+    el.innerHTML='<div class="loader">Polaris data not yet fermented. Run polaris_ferment.pi + polaris_triangulate.pi</div>';
+    return;
+  }
+
+  let html='<div class="grid">';
+
+  // ═══ HEARTBEAT CARD ═══
+  const heart=ferment?.starter?.eastgate_heart||{};
+  const sun=ferment?.starter?.eastgate_sun||'unknown';
+  const chord=ferment?.starter?.eastgate_chord||'—';
+  html+=`<div class="card">
+    <h2>HEARTBEAT</h2>
+    <table>
+      <tr><td class="dim">beats</td><td class="val">${heart.total_beats||'?'}</td></tr>
+      <tr><td class="dim">BPM</td><td class="val">${heart.bpm||'?'}</td></tr>
+      <tr><td class="dim">sun</td><td class="val">${sun}</td></tr>
+      <tr><td class="dim">chord</td><td class="val">${chord}</td></tr>
+      <tr><td class="dim">walkers</td><td class="val">${ferment?.starter?.walkers||0}</td></tr>
+      <tr><td class="dim">sensors</td><td class="val">${ferment?.starter?.sensors||0}</td></tr>
+      <tr><td class="dim">zk token</td><td class="val" style="font-size:9px">${ferment?.starter?.zk_token||'?'}</td></tr>
+    </table>
+  </div>`;
+
+  // ═══ COMPUTE CARD ═══
+  const compute=ferment?.local?.compute||{};
+  const cpu=ferment?.local?.cpu||{};
+  html+=`<div class="card">
+    <h2>COMPUTE — ${ferment?.node||'polaris'}</h2>
+    <table>
+      <tr><td class="dim">GPU</td><td class="val">${compute.gpu||'?'}</td></tr>
+      <tr><td class="dim">VRAM</td><td class="val">${compute.vram_total_mb?Math.round(compute.vram_total_mb/1024)+'GB':'?'}</td></tr>
+      <tr><td class="dim">VRAM used</td><td class="val">${compute.vram_used_mb?Math.round(compute.vram_used_mb/1024)+'GB':'?'}</td></tr>
+      <tr><td class="dim">CPU</td><td class="val" style="font-size:9px">${cpu.name||'?'}</td></tr>
+      <tr><td class="dim">cores</td><td class="val">${cpu.cores||'?'}</td></tr>
+      <tr><td class="dim">RAM</td><td class="val">${ferment?.local?.ram_gb||'?'} GB</td></tr>
+      <tr><td class="dim">tissues</td><td class="val">${ferment?.local?.tissue_count||0}</td></tr>
+    </table>
+  </div>`;
+
+  // ═══ TRIANGULATION CARD ═══
+  const anchors=tri?.triangulation?.anchors||{};
+  const wan=tri?.triangulation?.wan_paths||{};
+  const diff=tri?.triangulation?.differentials?.eastgate_lan_wan||{};
+  html+=`<div class="card wide">
+    <h2>TRIANGULATION — LAN/WAN DIFFERENTIAL FIELD</h2>
+    <table>
+      <tr><th>anchor</th><th>IP</th><th>TCP</th><th>HTTP</th><th>status</th></tr>`;
+  for(const[name,a]of Object.entries(anchors)){
+    html+=`<tr>
+      <td>${name}</td><td class="dim">${a.ip}:${a.lan_port}</td>
+      <td class="val">${ms(a.tcp_ms)}</td><td class="val">${ms(a.http_ms)}</td>
+      <td class="${statusClass(a.tcp_alive)}">${statusText(a.tcp_alive)}</td>
+    </tr>`;
+  }
+  html+=`<tr><th>WAN path</th><th>host</th><th>TCP</th><th>TLS</th><th>status</th></tr>`;
+  for(const[name,w]of Object.entries(wan)){
+    html+=`<tr>
+      <td>${name}</td><td class="dim">${w.host}:${w.port}</td>
+      <td class="val">${ms(w.tcp_ms)}</td><td class="val">${ms(w.tls_ms)}</td>
+      <td class="${statusClass(w.alive)}">${statusText(w.alive)}</td>
+    </tr>`;
+  }
+  html+=`</table>`;
+  if(diff.delta_ms!==undefined){
+    const inv=diff.delta_ms<0;
+    html+=`<div style="margin-top:10px;padding:8px;background:#0a1020;border-radius:4px;font-size:11px">
+      <strong>LAN/WAN differential:</strong>
+      LAN=${ms(diff.lan_ms)} → WAN=${ms(diff.wan_ms)} → 
+      <span class="${inv?'warn':'alive'}">Δ = ${diff.delta_ms.toFixed(1)}ms</span>
+      ${inv?' (WAN faster = hairpin inversion)':' (WAN slower = normal)'}
+      <br><span class="dim">${diff.meaning}</span>
+    </div>`;
+  }
+  html+=`</div>`;
+
+  // ═══ riboCipher APERTURE ═══
+  const cert=tri?.cert_digestion||{};
+  const smash=cert.smash||{};
+  const blake=cert.blake2b||{};
+  html+=`<div class="card">
+    <h2>riboCipher APERTURE</h2>
+    <div class="ribo-bar">
+      <div class="ribo-layer ribo-ec"><span class="tag tag-ec">0xEC</span><br>RETINA<br><span class="dim">LAN clear</span></div>
+      <div class="ribo-layer ribo-ed"><span class="tag tag-ed">0xED</span><br>IRIS<br><span class="dim">WAN mito</span></div>
+      <div class="ribo-layer ribo-ee"><span class="tag tag-ee">0xEE</span><br>PUPIL<br><span class="dim">bearDog nuclear</span></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px">
+      <div class="cert-chain">
+        <span class="food">Let's Encrypt cert (${smash.der_bytes||'?'}b)</span>
+        <span class="arrow">→</span>
+        <span class="digest">BLAKE2b: ${blake.blake2b_8||'?'}</span>
+        <span class="arrow">→</span>
+        <span class="digest">bearDog DID</span>
+        <span class="arrow">→</span>
+        <span class="eject">external CA EJECTED</span>
+      </div>
+      <div class="dim" style="margin-top:4px">${blake.did||'pending cert digestion'}</div>
+    </div>
+  </div>`;
+
+  // ═══ CERT DETAILS ═══
+  html+=`<div class="card">
+    <h2>CERT DIGESTION</h2>
+    <table>
+      <tr><td class="dim">CN</td><td class="val">${smash.cn||'?'}</td></tr>
+      <tr><td class="dim">issuer</td><td class="val">${smash.issuer_org||'?'} (${smash.issuer_cn||'?'})</td></tr>
+      <tr><td class="dim">valid</td><td class="val" style="font-size:9px">${smash.not_before||'?'} → ${smash.not_after||'?'}</td></tr>
+      <tr><td class="dim">SANs</td><td class="val">${(smash.san||[]).join(', ')||'?'}</td></tr>
+      <tr><td class="dim">DER bytes</td><td class="val">${smash.der_bytes||'?'}</td></tr>
+      <tr><td class="dim">BLAKE2b-32</td><td class="val" style="font-size:8px;word-break:break-all">${blake.blake2b_32||'?'}</td></tr>
+      <tr><td class="dim">family tag</td><td class="val">${blake.family_tag||'?'}</td></tr>
+    </table>
+  </div>`;
+
+  // ═══ TISSUES ═══
+  const tissues=ferment?.local?.tissues||[];
+  html+=`<div class="card wide">
+    <h2>GAIA TISSUES — ${tissues.length} models (${gb(ferment?.fermented?.total_tissue_gb)} total)</h2>
+    <div class="tissue-grid">`;
+  for(const t of tissues){
+    const role=t.name.replace('gaia-tissue-','').replace(':latest','');
+    html+=`<div class="tissue">
+      <div class="name">${role}</div>
+      <div class="size">${gb(t.size_gb)} · ${t.params||'?'}</div>
+      <div class="dim">${t.family||'?'}</div>
+    </div>`;
+  }
+  html+=`</div></div>`;
+
+  // ═══ PATTERN ═══
+  html+=`<div class="card wide" style="text-align:center;border-color:#345">
+    <h2 style="border:0;margin:0">sourDough: REACH → PULL → FERMENT → ANNOUNCE</h2>
+    <div style="color:#567;font-size:11px;margin-top:8px">
+      old pattern DEAD (bootstrap from zero) · new pattern ALIVE (reach what's alive, ferment locally)<br>
+      zk-snark inversion: the differential IS the proof · no gate controls it · presence = identity
+    </div>
+    <div style="margin-top:8px;font-size:12px;color:#4f8">lub-DUB</div>
+  </div>`;
+
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+load();
+setInterval(load,60000);
+</script>
+</body></html>

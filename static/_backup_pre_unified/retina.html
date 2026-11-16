@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>GAIA — Retina</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;overflow:hidden;height:100%;width:100%;touch-action:none}
+canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
+#mode-toggle{position:fixed;top:10px;right:10px;z-index:30;background:rgba(0,0,0,0.7);
+  border:1px solid #333;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;
+  justify-content:center;font-size:1.2em;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#info{position:fixed;bottom:env(safe-area-inset-bottom,0);left:0;width:100%;z-index:20;
+  padding:8px 12px;font-family:monospace;font-size:0.55em;color:#33ff3366;pointer-events:none;
+  text-align:center;background:linear-gradient(transparent,rgba(0,0,0,0.8))}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="mode-toggle" onclick="toggleMode()">👁️</div>
+<div id="info">loading retina...</div>
+
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+let W, H, frame = 0;
+let mode = 'outer'; // 'outer' = what Gaia IS (organism map), 'inner' = what Gaia SEES (camera feed)
+let touchX = 0, touchY = 0;
+let biome = {}, census = {};
+let eyeImages = { rear: null, front: null };
+let deviceId = 'unknown';
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  W = c.width = window.innerWidth * dpr;
+  H = c.height = window.innerHeight * dpr;
+  ctx.scale(dpr, dpr);
+}
+resize();
+window.onresize = resize;
+
+// Detect what device is viewing this
+function detectDevice() {
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes('sm-s908')) return 'S22 Ultra';
+  if (ua.includes('sm-s9')) return 'Samsung Galaxy';
+  if (ua.includes('samsung')) return 'Samsung';
+  if (ua.includes('pixel')) return 'Pixel';
+  if (ua.includes('iphone')) return 'iPhone';
+  if (ua.includes('steam')) return 'SteamDeck';
+  if (ua.includes('linux') && ua.includes('x86_64')) return 'Desktop';
+  return 'Unknown Device';
+}
+deviceId = detectDevice();
+
+function toggleMode() {
+  mode = mode === 'outer' ? 'inner' : 'outer';
+  document.getElementById('mode-toggle').textContent = mode === 'outer' ? '👁️' : '🔮';
+}
+
+// Touch/mouse tracking
+document.ontouchstart = document.ontouchmove = e => {
+  const t = e.touches[0];
+  touchX = t.clientX;
+  touchY = t.clientY;
+};
+document.onmousemove = e => { touchX = e.clientX; touchY = e.clientY; };
+
+// ═══ OUTER EYE — What Gaia IS (the retina displays the organism) ═══
+function drawOuterEye() {
+  const w = W / (window.devicePixelRatio || 1);
+  const h = H / (window.devicePixelRatio || 1);
+  const cx = w / 2, cy = h / 2;
+  const t = frame * 0.01;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
+  ctx.fillRect(0, 0, w, h);
+
+  // Iris — concentric rings showing organism layers
+  const maxR = Math.min(w, h) * 0.42;
+
+  // Outer ring — WAN/world boundary
+  ctx.strokeStyle = '#ffcc0015';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, maxR, 0, Math.PI * 2); ctx.stroke();
+
+  // WiFi field rings
+  for (let r = 0; r < 4; r++) {
+    const radius = maxR * (0.3 + r * 0.18);
+    const alpha = 0.05 + Math.sin(t + r) * 0.03;
+    ctx.strokeStyle = `rgba(34,102,255,${alpha})`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  // Draw entities as points on the retina
+  const nodes = biome.nodes || {};
+  const categories = ['gates', 'infrastructure', 'displays', 'phones', 'smart_home'];
+  const COLORS = {
+    BRAIN:'#4488ff', HEART:'#ff5555', FORGE:'#ffaa00', COMPUTE:'#00ff88',
+    GATEWAY:'#d4af37', BACKBONE:'#888', DISPLAY:'#bb44ff', FACE:'#ff66aa',
+    DIAMOND_LENS:'#00ccff', CAST:'#66ccff', VOICE:'#00cc66', MEDIA:'#ff6600',
+    GAMING:'#66ff66', OUTPUT:'#cccccc', CLIMATE:'#00bbbb', GUEST_EYE:'#9b59b6',
+    WAN_EGRESS:'#ffcc00', UNKNOWN_EYE:'#666', LOCKED:'#f44'
+  };
+
+  let entityIdx = 0;
+  let aliveCount = 0;
+  const totalEntities = [];
+
+  for (const cat of categories) {
+    const group = census[cat] || {};
+    for (const [name, e] of Object.entries(group)) {
+      const cls = e.class || 'UNKNOWN';
+      const color = COLORS[cls] || '#444';
+      const isH2 = e.house === 2;
+      const bn = nodes[name] || nodes[name.replace(/[_-]/g, '')] || null;
+      const alive = bn ? bn.alive : false;
+      if (alive) aliveCount++;
+
+      // Position on retina — spiral layout
+      const angle = entityIdx * 0.618 * Math.PI * 2 + t * 0.3;
+      const dist = maxR * 0.15 + (entityIdx / 27) * maxR * 0.7;
+      const nx = cx + Math.cos(angle) * dist;
+      const ny = cy + Math.sin(angle) * dist;
+
+      // Size based on role importance
+      const size = cls === 'BRAIN' ? 8 : cls === 'HEART' ? 7 : cls === 'FORGE' ? 6 : 4;
+      const breathe = alive ? Math.sin(t * 3 + entityIdx) * 0.3 + 0.7 : 0.2;
+
+      // Glow
+      let fc = color;
+      if (fc.length === 4) fc = '#' + fc[1]+fc[1] + fc[2]+fc[2] + fc[3]+fc[3];
+
+      const g = ctx.createRadialGradient(nx, ny, 0, nx, ny, size * 3);
+      g.addColorStop(0, fc + Math.round(breathe * 40).toString(16).padStart(2, '0'));
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(nx, ny, size * 3, 0, Math.PI * 2); ctx.fill();
+
+      // Core
+      ctx.globalAlpha = breathe;
+      ctx.fillStyle = fc;
+      ctx.beginPath(); ctx.arc(nx, ny, size, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Name (only large nodes)
+      if (size >= 6) {
+        ctx.fillStyle = fc + '88';
+        ctx.font = `${Math.max(7, size)}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(name.replace(/_/g, ' '), nx, ny + size + 10);
+      }
+
+      totalEntities.push({ name, nx, ny, color: fc, alive });
+      entityIdx++;
+    }
+  }
+
+  // Pupil at center — the BRAIN
+  const pupilR = maxR * 0.08;
+  const pupilG = ctx.createRadialGradient(cx, cy, 0, cx, cy, pupilR * 3);
+  pupilG.addColorStop(0, '#4488ff44');
+  pupilG.addColorStop(0.5, '#00000088');
+  pupilG.addColorStop(1, 'transparent');
+  ctx.fillStyle = pupilG;
+  ctx.beginPath(); ctx.arc(cx, cy, pupilR * 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(cx, cy, pupilR, 0, Math.PI * 2); ctx.fill();
+
+  // Touch tracking — the pupil follows the finger
+  if (touchX && touchY) {
+    const dx = (touchX - cx) * 0.15;
+    const dy = (touchY - cy) * 0.15;
+    ctx.fillStyle = '#4488ff';
+    ctx.beginPath(); ctx.arc(cx + dx, cy + dy, pupilR * 0.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Connection lines from alive nodes (nervous system)
+  totalEntities.forEach(e => {
+    if (e.alive) {
+      ctx.strokeStyle = e.color + '11';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(e.nx, e.ny); ctx.stroke();
+    }
+  });
+
+  // Scanline effect
+  const scanY = (frame * 2) % h;
+  ctx.strokeStyle = 'rgba(0,255,136,0.03)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, scanY); ctx.lineTo(w, scanY); ctx.stroke();
+
+  // Info text
+  document.getElementById('info').innerHTML =
+    `OUTER EYE · ${deviceId} viewing · ${aliveCount} alive / 27 entities · ` +
+    `317GB RAM · 847 TFLOPS · tap 👁️ for inner eye`;
+}
+
+// ═══ INNER EYE — What Gaia SEES (camera feeds + sensor data) ═══
+function drawInnerEye() {
+  const w = W / (window.devicePixelRatio || 1);
+  const h = H / (window.devicePixelRatio || 1);
+  const cx = w / 2, cy = h / 2;
+  const t = frame * 0.01;
+
+  ctx.fillStyle = 'rgba(0,5,0,0.08)';
+  ctx.fillRect(0, 0, w, h);
+
+  // Night vision grid
+  ctx.strokeStyle = 'rgba(0,255,0,0.02)';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+  // Camera feeds (if available)
+  if (eyeImages.rear) {
+    ctx.drawImage(eyeImages.rear, 0, 0, w * 0.5, h * 0.5);
+    ctx.fillStyle = '#0f844';
+    ctx.font = '8px monospace';
+    ctx.fillText('REAR CAM', 10, 12);
+  }
+  if (eyeImages.front) {
+    ctx.drawImage(eyeImages.front, w * 0.5, 0, w * 0.5, h * 0.5);
+    ctx.fillStyle = '#0f844';
+    ctx.font = '8px monospace';
+    ctx.fillText('FRONT CAM', w * 0.5 + 10, 12);
+  }
+
+  // If no images, show placeholder eye pattern
+  if (!eyeImages.rear && !eyeImages.front) {
+    // Concentric vision rings
+    for (let r = 0; r < 8; r++) {
+      const radius = 20 + r * (Math.min(w, h) * 0.05);
+      const alpha = 0.1 + Math.sin(t * 2 + r) * 0.05;
+      ctx.strokeStyle = `rgba(0,255,136,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.stroke();
+    }
+
+    // Crosshair
+    ctx.strokeStyle = 'rgba(0,255,136,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+
+    ctx.fillStyle = '#0f8';
+    ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('INNER EYE — AWAITING CAMERA FEED', cx, cy - 20);
+    ctx.fillStyle = '#0f866';
+    ctx.font = '7px monospace';
+    ctx.fillText('Pixel 8a rear + front cameras', cx, cy);
+    ctx.fillText('Brio 100 USB webcam (router)', cx, cy + 12);
+    ctx.fillText('S22 Ultra (if Gaia gains access)', cx, cy + 24);
+  }
+
+  // Live biome data overlay
+  const nodes = biome.nodes || {};
+  let y = h * 0.55;
+  ctx.fillStyle = '#0f866';
+  ctx.font = '7px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('BIOME TELEMETRY:', 12, y);
+  y += 12;
+
+  for (const [name, node] of Object.entries(nodes)) {
+    if (node.alive) {
+      const parts = [name];
+      if (node.load !== undefined) parts.push(`load:${node.load.toFixed(1)}`);
+      if (node.ram_free_mb) parts.push(`free:${(node.ram_free_mb / 1024).toFixed(1)}GB`);
+      if (node.gpu_temp) parts.push(`gpu:${node.gpu_temp}°C`);
+      if (node.cpu_pct) parts.push(`cpu:${node.cpu_pct}%`);
+      ctx.fillStyle = '#0f8';
+      ctx.fillText(`● ${parts.join(' · ')}`, 12, y);
+      y += 10;
+    }
+  }
+
+  // WiFi RSSI proximity data
+  y += 5;
+  ctx.fillStyle = '#2266ff88';
+  ctx.fillText('WiFi RSSI FIELD:', 12, y); y += 10;
+  const rssiData = [
+    { name: 'Pixel 8a', rssi: -24, ssid: 'Gaia 5GHz' },
+    { name: 'frameGate', rssi: -21, ssid: 'Gaia 5GHz' },
+    { name: 'S22 Ultra', rssi: -30, ssid: 'Aperture Science' },
+    { name: 'Chromecast', rssi: -28, ssid: 'Aperture Science' },
+  ];
+  rssiData.forEach(r => {
+    const bar = '█'.repeat(Math.max(1, Math.round((r.rssi + 80) / 5)));
+    ctx.fillStyle = '#2266ff66';
+    ctx.fillText(`${r.name}: ${r.rssi}dBm ${bar} (${r.ssid})`, 12, y);
+    y += 9;
+  });
+
+  // Scanlines
+  for (let sy = 0; sy < h; sy += 3) {
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    ctx.fillRect(0, sy, w, 1);
+  }
+
+  document.getElementById('info').innerHTML =
+    `INNER EYE · ${deviceId} · Pixel 8a (37 sensors) + Brio 100 + S22 potent · tap 👁️ for outer eye`;
+}
+
+// ═══ LOAD DATA ═══
+async function loadData() {
+  try {
+    const [c, b] = await Promise.all([
+      fetch('/data/organism-census.json').then(r => r.json()),
+      fetch('/data/biome-state.json').then(r => r.json()),
+    ]);
+    census = c;
+    biome = b;
+  } catch (e) {}
+
+  // Try to load eye images
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { eyeImages.rear = img; };
+    img.src = '/data/eye/rear-latest.jpg?t=' + Date.now();
+  } catch (e) {}
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { eyeImages.front = img; };
+    img.src = '/data/eye/front-latest.jpg?t=' + Date.now();
+  } catch (e) {}
+}
+loadData();
+setInterval(loadData, 15000);
+
+// ═══ MAIN LOOP ═══
+function loop() {
+  frame++;
+  if (mode === 'outer') drawOuterEye();
+  else drawInnerEye();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// Register as a Gaia display device
+if (navigator.sendBeacon) {
+  const payload = JSON.stringify({
+    device: deviceId,
+    ua: navigator.userAgent,
+    screen: `${screen.width}x${screen.height}`,
+    dpr: window.devicePixelRatio,
+    ts: new Date().toISOString(),
+    mode: 'retina'
+  });
+  navigator.sendBeacon('/api/thymus/inject', payload);
+}
+</script>
+</body>
+</html>

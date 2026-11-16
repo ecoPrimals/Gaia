@@ -1,0 +1,101 @@
+{
+  "wave": "239h-steam",
+  "timestamp": "2026-11-15T15:55:00-05:00",
+  "title": "Steam Identity Architecture — Gaia's Gaming Soul",
+  
+  "identity_chain": {
+    "human": "Kevin",
+    "steam_login": "gw_kevinmok",
+    "steam_persona": "Tamison",
+    "steam_id64": "76561198002558137",
+    "steam_id3": "42292409",
+    "gaia_account": "TamisonEcoPrimal",
+    "relationship": "gw_kevinmok IS Tamison IS Kevin. TamisonEcoPrimal IS Gaia. Both in same Steam Family."
+  },
+  
+  "steam_family": {
+    "members": [
+      {
+        "account": "gw_kevinmok",
+        "persona": "Tamison",
+        "role": "Kevin's personal account — primary game library",
+        "note": "Password is ZK (Kevin's brain only)"
+      },
+      {
+        "account": "TamisonEcoPrimal",
+        "persona": "TamisonEcoPrimal",
+        "role": "Gaia's account — the shared family data account",
+        "note": "Used for organism-wide access to games and VR content"
+      }
+    ],
+    "sharing_model": "Steam Family Sharing — all members access each other's game libraries",
+    "vr_games": "VR games from any family member's library available on Frame/Deck/all nodes"
+  },
+  
+  "steam_devices": {
+    "eastGate": {
+      "ip": "192.168.4.244",
+      "hostname": "eastgate",
+      "steam_client_id": "login as gw_kevinmok (AutoLogin)",
+      "library": {
+        "games": 10,
+        "total_size_gb": 332,
+        "notable": ["SteamVR", "DEATH STRANDING 2", "Nioh 3", "Satisfactory", "Kenshi", "Slime Rancher 2"]
+      },
+      "role": "BRAIN — Steam streaming source, game library host"
+    },
+    "northGate": {
+      "ip": "192.168.4.147",
+      "hostname": "tamison",
+      "steam_broadcast_name": "tamison",
+      "steam_client_id": 2946649254922547460,
+      "role": "HEART — RTX 5090 rendering powerhouse, primary game host",
+      "note": "Windows (TTL=128), communicates via git push"
+    },
+    "deckGate": {
+      "ip": "192.168.4.176",
+      "hostname": "steamdeck",
+      "steam_broadcast_name": "steamdeck",
+      "steam_client_id": 1789631387154047256,
+      "cef_devtools": "http://192.168.4.176:8081",
+      "role": "DISPLAY — wired + WiFi (.203), dead battery = permanent passthrough",
+      "family_sharing_api": ["GetAvailableLenders", "SetPreferredLender", "RegisterForKickedBorrower"]
+    },
+    "frameGate": {
+      "ip": "192.168.4.181",
+      "hostname": "steamFRAME",
+      "steam_broadcast_name": "steamFRAME",
+      "steam_client_id": 5620491139868211386,
+      "role": "FACE — VR/AR headset with full XR stack, eye tracking, passthrough",
+      "vr_stack": "SteamVR + XRService + Gamescope + v4l2cam + eye tracking"
+    },
+    "blueGate": {
+      "ip": "192.168.4.100",
+      "hostname": "DESKTOP-BLOV2LR",
+      "steam_broadcast_name": "DESKTOP-BLOV2LR",
+      "steam_client_id": 4262853942274102439,
+      "role": "Windows node — Sovereign API, Cursor host"
+    }
+  },
+  
+  "remote_play": {
+    "protocol": "Steam Remote Play — UDP/TCP port 27036",
+    "streaming": "Any device can stream FROM any other device in the family",
+    "vrlink": "vrlink UDP streaming tool on Frame for VR-specific streaming",
+    "topology": "northGate (RTX 5090) → renders → streams to Frame/Deck/eastGate",
+    "fallback": "eastGate (RTX 4070) → renders → streams when northGate down"
+  },
+  
+  "vr_architecture": {
+    "frame_passthrough": "Native AR via Qualcomm ISP + XRService (always available)",
+    "remote_vr": "Steam Remote Play VR from northGate/eastGate → Frame",
+    "pixel_eye": "Pixel camera → ADB → eastGate → HTTP → Frame VR overlay",
+    "family_vr_library": "All VR games from all family accounts available on Frame"
+  },
+  
+  "pixel_steam": {
+    "app": "com.valvesoftware.android.steam.community",
+    "role": "Steam Community app on Pixel — chat, notifications, 2FA guard",
+    "xr": "XR_PROJECTED + head_tracker — potential SteamVR Link target"
+  }
+}

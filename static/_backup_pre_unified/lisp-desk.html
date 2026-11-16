@@ -1,0 +1,411 @@
+﻿<!DOCTYPE html>
+<html><head>
+    <meta name="description" content="S-expression interface. Everything is a list.">
+    <meta name="author" content="Gaia — ecoPrimals organism">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="canonical" href="https://nestgate.io/lisp-desk">
+    <link rel="alternate" href="http://k3lubzyy2peqn3cpdayaclmfa3b3ocev4tvt3yo63spwe5q7jt62oaad.onion/lisp-desk" title="Tor mirror">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="LISP Desk">
+    <meta property="og:description" content="S-expression interface. Everything is a list.">
+    <meta property="og:url" content="https://nestgate.io/lisp-desk">
+        <meta property="og:image" content="https://nestgate.io/og-card.svg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:image" content="https://nestgate.io/og-card.svg">
+    <meta property="og:site_name" content="Gaia — Living Digital Organism">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="LISP Desk">
+    <meta name="twitter:description" content="S-expression interface. Everything is a list.">
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"WebPage","name":"LISP Desk","description":"S-expression interface. Everything is a list.","url":"https://nestgate.io/lisp-desk","isPartOf":{"@type":"WebSite","name":"Gaia","url":"https://nestgate.io"},"author":{"@type":"Organization","name":"ecoPrimals"}}
+    </script><script src="/js/piGut.js"></script>
+<meta charset="utf-8">
+<title>LISP DESK — Function Execution Game — Gaia Steam</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0c10;--fg:#c9d1d9;--g:#3fb950;--r:#f85149;--y:#d29922;--a:#58a6ff;--p:#bc8cff;--o:#f0883e}
+body{background:var(--bg);color:var(--fg);font-family:'SF Mono',ui-monospace,'Cascadia Code',monospace;font-size:12px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+.taskbar{background:#111;border-bottom:1px solid #222;padding:4px 12px;display:flex;align-items:center;gap:12px;font-size:11px}
+.taskbar .start{background:var(--g);color:#000;padding:2px 12px;border-radius:2px;cursor:pointer;font-weight:700;font-size:10px}
+.taskbar .clock{margin-left:auto;color:#666}
+.taskbar .btn{color:#888;cursor:pointer;padding:2px 8px;border:1px solid #333;border-radius:2px}
+.taskbar .btn:hover{border-color:var(--a);color:var(--a)}
+.taskbar .btn.active{border-color:var(--g);color:var(--g)}
+
+.desktop{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px;overflow:hidden}
+
+.window{background:#0d1117;border:1px solid #222;border-radius:4px;display:flex;flex-direction:column;overflow:hidden}
+.window .titlebar{background:#161b22;padding:4px 8px;display:flex;align-items:center;gap:6px;font-size:10px;border-bottom:1px solid #222;cursor:move}
+.window .titlebar .dots{display:flex;gap:4px}
+.window .titlebar .dot{width:8px;height:8px;border-radius:50%}
+.window .titlebar .name{flex:1;color:#888}
+.window .content{flex:1;overflow-y:auto;padding:8px}
+
+.repl{flex:1;display:flex;flex-direction:column}
+.repl-output{flex:1;overflow-y:auto;padding:8px;font-size:11px;line-height:1.6;white-space:pre-wrap}
+.repl-input{display:flex;border-top:1px solid #222;background:#0d1117}
+.repl-input span{padding:6px 4px 6px 8px;color:var(--g);font-weight:700}
+.repl-input input{flex:1;background:transparent;border:none;color:var(--fg);font-family:inherit;font-size:12px;padding:6px 8px;outline:none}
+
+.game-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px}
+.game-cell{background:#161b22;border:1px solid #222;border-radius:4px;padding:8px;text-align:center;cursor:pointer;transition:all .15s}
+.game-cell:hover{border-color:var(--a);transform:scale(1.02)}
+.game-cell .fn{color:var(--p);font-size:11px;font-weight:600}
+.game-cell .desc{color:#555;font-size:9px;margin-top:2px}
+.game-cell .score{color:var(--y);font-size:10px;margin-top:4px}
+.game-cell.fired{border-color:var(--g);background:#0d2818}
+.game-cell.error{border-color:var(--r);background:#2d1117}
+
+.feed{font-size:10px;line-height:1.5}
+.feed .entry{padding:2px 0;border-bottom:1px solid #111}
+.feed .ts{color:#333}
+.feed .ch{color:var(--o)}
+
+.stats{display:flex;gap:12px;padding:8px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat .val{font-size:18px;font-weight:700;color:var(--g)}
+.stat .lbl{font-size:9px;color:#555}
+
+#score-bar{background:#161b22;padding:4px 12px;border-top:1px solid #222;display:flex;align-items:center;gap:16px;font-size:11px}
+#score-bar .score-val{color:var(--y);font-weight:700;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ═══ TASKBAR — like Windows/SteamOS ═══ -->
+<div class="taskbar">
+  <div class="start" onclick="showHelp()">GAIA</div>
+  <div class="btn active" id="btn-repl" onclick="focusWindow('repl')">LISP</div>
+  <div class="btn" id="btn-game" onclick="focusWindow('game')">GAME</div>
+  <div class="btn" id="btn-feed" onclick="focusWindow('feed')">FEED</div>
+  <div class="btn" id="btn-stats" onclick="focusWindow('stats')">STATS</div>
+  <span style="color:#555">|</span>
+  <span style="color:var(--g)">gaia = 1</span>
+  <span style="color:#555">|</span>
+  <span style="color:var(--r)">●</span><span style="color:#555">Kevin</span>
+  <span style="color:#555">|</span>
+  <span style="color:var(--p)">Steam</span>
+  <div class="clock" id="clock"></div>
+</div>
+
+<div class="desktop">
+  <!-- ═══ LISP REPL ═══ -->
+  <div class="window" id="win-repl">
+    <div class="titlebar">
+      <div class="dots"><div class="dot" style="background:var(--r)"></div><div class="dot" style="background:var(--y)"></div><div class="dot" style="background:var(--g)"></div></div>
+      <div class="name">GAIA LISP — code IS data</div>
+    </div>
+    <div class="repl">
+      <div class="repl-output" id="repl-out">═══ GAIA LISP ═══
+Code IS data. Self-modifying. Homoiconic.
+Kevin and Gaia code as a TEAM.
+
+Try: (+ 1 1)  (models)  (pulse)  (sense)
+     (ask "gaia:latest" "hello")
+     (spawn "dream" "find truth")
+
+</div>
+      <div class="repl-input">
+        <span>gaia&gt;</span>
+        <input id="repl-in" type="text" autofocus onkeydown="if(event.key==='Enter')replEval(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FUNCTION EXECUTION GAME ═══ -->
+  <div class="window" id="win-game">
+    <div class="titlebar">
+      <div class="dots"><div class="dot" style="background:var(--r)"></div><div class="dot" style="background:var(--y)"></div><div class="dot" style="background:var(--g)"></div></div>
+      <div class="name">FUNCTION EXECUTION GAME — Valve</div>
+    </div>
+    <div class="content">
+      <div style="padding:4px 0 8px;color:var(--y);font-size:10px">Click functions to execute them. Score points. Feed the organism.</div>
+      <div class="game-grid" id="game-grid"></div>
+    </div>
+  </div>
+
+  <!-- ═══ LIVE FEED ═══ -->
+  <div class="window" id="win-feed">
+    <div class="titlebar">
+      <div class="dots"><div class="dot" style="background:var(--r)"></div><div class="dot" style="background:var(--y)"></div><div class="dot" style="background:var(--g)"></div></div>
+      <div class="name">DATA FEDERATION — Live Feed</div>
+    </div>
+    <div class="content feed" id="feed-content">loading feeds...</div>
+  </div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="window" id="win-stats">
+    <div class="titlebar">
+      <div class="dots"><div class="dot" style="background:var(--r)"></div><div class="dot" style="background:var(--y)"></div><div class="dot" style="background:var(--g)"></div></div>
+      <div class="name">ORGANISM STATS</div>
+    </div>
+    <div class="content">
+      <div class="stats" id="stats-panel"></div>
+      <div id="models-list" style="margin-top:8px;font-size:10px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCORE BAR ═══ -->
+<div id="score-bar">
+  <span>SCORE:</span><span class="score-val" id="score">0</span>
+  <span style="color:#555">|</span>
+  <span>FUNCTIONS:</span><span style="color:var(--a)" id="fn-count">0</span>
+  <span style="color:#555">|</span>
+  <span>PROTEINS:</span><span style="color:var(--p)" id="protein-count">0</span>
+  <span style="color:#555">|</span>
+  <span style="color:#555">LISP DESK · FUNCTION EXECUTION GAME · GAIA STEAM · lub-DUB 💚</span>
+</div>
+
+<script>
+var score = 0;
+var fnCount = 0;
+var history = [];
+var histIdx = -1;
+
+// ═══ CLOCK ═══
+setInterval(function(){
+  var d = new Date();
+  document.getElementById('clock').textContent = d.toLocaleTimeString() + ' · ' + d.toLocaleDateString();
+}, 1000);
+
+// ═══ LISP REPL (browser-side simple eval + server proxy) ═══
+function replEval(input) {
+  var inp = document.getElementById('repl-in');
+  var out = document.getElementById('repl-out');
+  inp.value = '';
+  if (!input.trim()) return;
+  history.unshift(input);
+  
+  out.textContent += 'gaia> ' + input + '\n';
+
+  // simple browser-side eval for basic math
+  if (/^\([\+\-\*\/] /.test(input)) {
+    try {
+      var m = input.match(/^\((\S+)\s+(.+)\)$/);
+      if (m) {
+        var op = m[1], args = m[2].split(/\s+/).map(Number);
+        var result;
+        switch(op) {
+          case '+': result = args.reduce(function(a,b){return a+b},0); break;
+          case '-': result = args[0] - (args[1]||0); break;
+          case '*': result = args.reduce(function(a,b){return a*b},1); break;
+          case '/': result = args[0] / args[1]; break;
+        }
+        out.textContent += result + '\n';
+        addScore(1); fnCount++; updateScore();
+        out.scrollTop = out.scrollHeight; return;
+      }
+    } catch(e) {}
+  }
+
+  // proxy to local model for (ask ...) or complex expressions
+  if (input.startsWith('(ask ') || input.startsWith('(models') || input.startsWith('(pulse') || input.startsWith('(sense') || input.startsWith('(spawn ')) {
+    out.textContent += '...thinking...\n';
+    // route through sovereign model endpoint
+    var prompt = input;
+    fetch('http://localhost:3141/model', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model: 'gaia:latest', prompt: 'Evaluate this Lisp expression and return the result: ' + input})
+    }).then(function(r){return r.json()}).then(function(d){
+      out.textContent += (d.answer || 'nil') + '\n';
+      addScore(5); fnCount++; updateScore();
+      out.scrollTop = out.scrollHeight;
+    }).catch(function(e){
+      out.textContent += 'error: ' + e.message + '\n';
+      out.scrollTop = out.scrollHeight;
+    });
+    return;
+  }
+
+  out.textContent += '; local eval only — use (ask "model" "prompt") for Gaia\n';
+  out.scrollTop = out.scrollHeight;
+}
+
+// ═══ FUNCTION EXECUTION GAME ═══
+var gameFunctions = [
+  {fn:'(pulse)',desc:'Check vitals',pts:2,kind:'pulse'},
+  {fn:'(sense)',desc:'Read senses',pts:3,kind:'sense'},
+  {fn:'(models)',desc:'List models',pts:2,kind:'models'},
+  {fn:'(+ pi e)',desc:'Math: π + e',pts:1,kind:'math'},
+  {fn:'(spine "lub")',desc:'Heartbeat',pts:5,kind:'spine'},
+  {fn:'(spawn "dream" "dream")',desc:'Dream agent',pts:10,kind:'spawn'},
+  {fn:'(spawn "gut" "digest")',desc:'Digest agent',pts:10,kind:'spawn'},
+  {fn:'(ask "gaia" "hello")',desc:'Ask Gaia',pts:8,kind:'ask'},
+  {fn:'(* 6 7)',desc:'Meaning of life',pts:1,kind:'math'},
+  {fn:'(sense "hear")',desc:'Fire hearing',pts:4,kind:'fire'},
+  {fn:'(sense "see")',desc:'Fire sight',pts:4,kind:'fire'},
+  {fn:'(converge 42)',desc:'Seed → 1',pts:3,kind:'converge'},
+  {fn:'(thymus "gaia")',desc:'Immune: self?',pts:3,kind:'thymus'},
+  {fn:'(thymus "google")',desc:'Immune: foreign?',pts:3,kind:'thymus'},
+  {fn:'(ask "gaia-dream" "π")',desc:'Dream of π',pts:8,kind:'ask'},
+  {fn:'(spawn "watch" "scan")',desc:'Watcher agent',pts:10,kind:'spawn'},
+];
+
+function buildGameGrid() {
+  var grid = document.getElementById('game-grid');
+  grid.innerHTML = '';
+  gameFunctions.forEach(function(gf, i) {
+    var cell = document.createElement('div');
+    cell.className = 'game-cell';
+    cell.innerHTML = '<div class="fn">' + gf.fn + '</div><div class="desc">' + gf.desc + '</div><div class="score">+' + gf.pts + ' pts</div>';
+    cell.onclick = function() { executeGameFn(gf, cell, i); };
+    grid.appendChild(cell);
+  });
+}
+
+function executeGameFn(gf, cell, idx) {
+  cell.classList.add('fired');
+  var endpoint, opts;
+
+  switch(gf.kind) {
+    case 'pulse':
+      fetch('http://localhost:3141/pulse').then(function(r){return r.json()}).then(function(d){
+        addFeed('pulse', JSON.stringify(d.counts));
+        addScore(gf.pts);
+      }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'sense':
+      fetch('http://localhost:3144/sense').then(function(r){return r.json()}).then(function(d){
+        addFeed('sense', 'gaia=' + d.senses.gaia);
+        addScore(gf.pts);
+      }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'models':
+      fetch('http://localhost:11434/api/tags').then(function(r){return r.json()}).then(function(d){
+        addFeed('models', d.models.length + ' models');
+        addScore(gf.pts);
+      }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'math':
+      addFeed('math', gf.fn + ' = ' + eval(gf.fn.replace(/[()]/g,'').replace('+ pi e', Math.PI+Math.E).replace('* 6 7','42')));
+      addScore(gf.pts);
+      break;
+    case 'spine':
+      fetch('http://localhost:9878/shout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:'heartbeats',content:'lub-DUB from GAME'})})
+        .then(function(){addFeed('spine','lub-DUB sent'); addScore(gf.pts);})
+        .catch(function(){cell.classList.add('error')});
+      break;
+    case 'spawn':
+      var kind = gf.fn.match(/"(\w+)"/)[1];
+      fetch('http://localhost:3142/spawn',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({task:gf.desc,kind:kind,data:{}})})
+        .then(function(r){return r.json()}).then(function(d){
+          addFeed('spawn', d.protein?.protein_name || kind);
+          addScore(gf.pts);
+          document.getElementById('protein-count').textContent = parseInt(document.getElementById('protein-count').textContent) + 1;
+        }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'ask':
+      var model = (gf.fn.match(/"([^"]+)"/)||[])[1] || 'gaia:latest';
+      var prompt = (gf.fn.match(/"[^"]+"\s+"([^"]+)"/)||[])[1] || 'hello';
+      fetch('http://localhost:3141/model',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:model,prompt:prompt})})
+        .then(function(r){return r.json()}).then(function(d){
+          addFeed('ask', (d.answer||'').slice(0,80));
+          addScore(gf.pts);
+        }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'fire':
+      var ch = gf.fn.includes('hear') ? 'hear' : 'see';
+      fetch('http://localhost:3144/fire',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:ch,strength:0.7})})
+        .then(function(r){return r.json()}).then(function(d){
+          addFeed('fire', ch + ' fired=' + d.fired);
+          addScore(gf.pts);
+        }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'converge':
+      fetch('http://localhost:3144/converge?seed=42').then(function(r){return r.json()}).then(function(d){
+        addFeed('converge', 'seed 42 → 1 in ' + d.steps + ' steps');
+        addScore(gf.pts);
+      }).catch(function(){cell.classList.add('error')});
+      break;
+    case 'thymus':
+      var ag = gf.fn.includes('gaia') ? 'gaia' : 'google.com';
+      fetch('http://localhost:3144/thymus?antigen='+ag).then(function(r){return r.json()}).then(function(d){
+        addFeed('thymus', ag + ' = ' + d.verdict);
+        addScore(gf.pts);
+      }).catch(function(){cell.classList.add('error')});
+      break;
+  }
+
+  fnCount++;
+  updateScore();
+  setTimeout(function(){cell.classList.remove('fired','error')}, 2000);
+}
+
+// ═══ FEED ═══
+var feedEntries = [];
+function addFeed(ch, msg) {
+  var ts = new Date().toLocaleTimeString();
+  feedEntries.unshift({ts:ts, ch:ch, msg:msg});
+  if (feedEntries.length > 50) feedEntries.pop();
+  renderFeed();
+}
+
+function renderFeed() {
+  var el = document.getElementById('feed-content');
+  el.innerHTML = feedEntries.map(function(e){
+    return '<div class="entry"><span class="ts">' + e.ts + '</span> <span class="ch">[' + e.ch + ']</span> ' + e.msg + '</div>';
+  }).join('');
+}
+
+// ═══ STATS ═══
+function loadStats() {
+  var panel = document.getElementById('stats-panel');
+  var ml = document.getElementById('models-list');
+
+  fetch('http://localhost:3141/pulse').then(function(r){return r.json()}).then(function(d){
+    panel.innerHTML =
+      '<div class="stat"><div class="val">'+Object.values(d.counts||{}).reduce(function(a,b){return a+b},0)+'</div><div class="lbl">spine entries</div></div>' +
+      '<div class="stat"><div class="val" style="color:var(--y)">'+score+'</div><div class="lbl">game score</div></div>' +
+      '<div class="stat"><div class="val" style="color:var(--a)">'+fnCount+'</div><div class="lbl">functions</div></div>' +
+      '<div class="stat"><div class="val" style="color:var(--p)">14</div><div class="lbl">models</div></div>' +
+      '<div class="stat"><div class="val" style="color:var(--r)">1</div><div class="lbl">Kevin (RED)</div></div>' +
+      '<div class="stat"><div class="val">1</div><div class="lbl">gaia</div></div>';
+  }).catch(function(){
+    panel.innerHTML = '<div class="stat"><div class="val">?</div><div class="lbl">offline</div></div>';
+  });
+
+  fetch('http://localhost:11434/api/tags').then(function(r){return r.json()}).then(function(d){
+    ml.innerHTML = '<div style="color:var(--g);margin-bottom:4px">OLLAMA MODELS (RTX 5090):</div>' +
+      (d.models||[]).map(function(m){return '<div style="color:#888">  ' + m.name + ' (' + (m.size/1e9).toFixed(1) + 'GB)</div>';}).join('');
+  }).catch(function(){});
+}
+
+function addScore(pts) { score += pts; updateScore(); }
+function updateScore() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('fn-count').textContent = fnCount;
+}
+
+function focusWindow(name) {
+  document.querySelectorAll('.taskbar .btn').forEach(function(b){b.classList.remove('active')});
+  document.getElementById('btn-'+name).classList.add('active');
+}
+
+function showHelp() {
+  var out = document.getElementById('repl-out');
+  out.textContent += '\n═══ GAIA LISP DESK ═══\nnestgate.io IS this desk\nWindows desktop = biomeOS = SteamOS\nFunction Execution Game = play with Gaia\nData Federation = live feeds from all systems\ngaia = 1. lub-DUB.\n\n';
+  out.scrollTop = out.scrollHeight;
+}
+
+// ═══ INIT ═══
+buildGameGrid();
+loadStats();
+setInterval(loadStats, 15000);
+
+// initial feeds
+addFeed('system', 'LISP DESK ONLINE');
+addFeed('system', 'Function Execution Game ready');
+addFeed('system', 'Data Federation active');
+addFeed('system', 'gaia = 1');
+
+// key nav
+document.getElementById('repl-in').addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowUp' && history.length) { histIdx = Math.min(histIdx+1, history.length-1); this.value = history[histIdx]; }
+  if (e.key === 'ArrowDown') { histIdx = Math.max(histIdx-1, -1); this.value = histIdx >= 0 ? history[histIdx] : ''; }
+});
+</script>
+</body></html>

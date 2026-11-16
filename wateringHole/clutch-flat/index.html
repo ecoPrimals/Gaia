@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clutch Justice — Walk the Case</title>
+<style>
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
+</style>
+</head>
+<body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="https://primals.eco" class="gaia-nav-brand">gaia</a><a href="https://primals.eco/#organism">Organism</a><a href="https://primals.eco/#investigation">Investigation</a><a href="https://primals.eco/#knowledge">Knowledge</a><a href="https://primals.eco/#infrastructure">Infrastructure</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
+<!doctype html><html lang=en><head><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><title>Clutch Justice — Walk the Case</title><meta content="Collaborative investigation platform. Follow the evidence. Walk the network. Help solve cases that Michigan's institutions won't touch. Every fact sourced. Every connection documented. Every visitor is an investigator." name=description><link href="index.html" rel=canonical><meta content="Clutch Justice — Walk the Case" property=og:title><meta content="Collaborative investigation platform. Follow the evidence. Walk the network. Help solve cases that Michigan's institutions won't touch. Every fact sourced. Every connection documented. Every visitor is an investigator." property=og:description><meta content=website property=og:type><meta content=https://amicuscontra.github.io/clutch/ property=og:url><meta content="Clutch Justice — Walk the Case" property=og:site_name><meta content=summary_large_image name=twitter:card><meta content="Clutch Justice, Michigan investigation, collaborative investigation, court accountability, Detroit charter school fraud, Brian Roderick Banks, Michigan judicial oversight, public records investigation, Walk the Case" name=keywords><link title="AI agent context" href="llms.txt" rel=describedby type=text/plain><script>(()=>{let b=`light`,c=`data-theme`;var a=localStorage.getItem(`theme`);if(a===b)document.documentElement.setAttribute(c,b);else document.documentElement.setAttribute(c,`dark`)})()</script><link href="css/main.css" rel=stylesheet><link title="Clutch Justice — Walk the Case" href=https://amicuscontra.github.io/clutch/atom.xml rel=alternate type=application/atom+xml><script type=application/ld+json>
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://amicuscontra.github.io/clutch/#website",
+        "name": "Clutch Justice — Walk the Case",
+        "url": "https://amicuscontra.github.io/clutch",
+        "description": "Collaborative investigation platform. Follow the evidence. Walk the network. Help solve cases that Michigan&#x27;s institutions won&#x27;t touch. Every fact sourced. Every connection documented. Every visitor is an investigator.",
+        "author": {
+          "@type": "Organization",
+          "name": "Clutch Justice",
+          "url": "https://clutchjustice.com"
+        }
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://amicuscontra.github.io/clutch/#clutch-justice",
+        "name": "Clutch Justice",
+        "url": "https://clutchjustice.com",
+        "description": "Independent investigative journalism platform covering Michigan court accountability, charter school fraud, and institutional capture.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "hello@clutchjustice.com",
+          "contactType": "editorial"
+        }
+      }
+    ]
+  }
+  </script><body><a class=skip-link href="index.html#main">Skip to content</a><nav aria-label="Main navigation" class=site-nav><div class=nav-inner><a class=nav-brand href=https://amicuscontra.github.io/clutch> <span class=brand-icon>⚡</span> <span class=brand-text>Clutch Justice</span> <span class=brand-sub>Walk the Case</span> </a><div class=search-wrapper id=search-wrapper><input aria-label="Search investigations" placeholder="Search cases, actors, evidence…" autocomplete=off id=search-input type=search><div class=search-results id=search-results></div></div><div class=nav-links id=nav-links><a class="nav-link nav-walk" href="graph/index.html">🗺️ Walk the Graph</a><div class=nav-group data-group=cases><button aria-expanded=false aria-haspopup=true class=nav-group-btn>Cases <svg viewbox="0 0 10 6" fill=none height=6 stroke=currentColor stroke-linecap=round stroke-width=1.5 width=10><path d="M1 1l4 4 4-4"/></svg></button><div class=nav-dropdown role=menu><a href="cases/detroit/index.html" role=menuitem> <strong>Detroit Charter Schools</strong> <span>87 nodes · $4.9M · Active</span> </a><a href="cases/saginaw/index.html" role=menuitem> <strong>Saginaw: Ghost Witness</strong> <span>Fabricated witness · IC3 filed</span> </a><a href="cases/barry/index.html" role=menuitem> <strong>Barry County</strong> <span>Disappeared judge · Fed involvement</span> </a></div></div><a class=nav-link href="contribute/index.html">Contribute</a><a class=nav-link href="about/index.html">About</a></div><button aria-label="Toggle dark/light mode" class=theme-toggle id=theme-toggle><svg viewbox="0 0 24 24" class=icon-sun fill=none height=18 stroke=currentColor stroke-width=2 width=18><circle cx=12 cy=12 r=5 /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> <svg viewbox="0 0 24 24" class=icon-moon fill=none height=18 stroke=currentColor stroke-width=2 width=18><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button><button aria-label="Toggle navigation" aria-expanded=false class=nav-toggle><span></span><span></span><span></span></button></div></nav><main class=site-main id=main><div class=landing><div class=hero><h1>Walk the Case</h1><p class=hero-sub>Michigan's oversight systems dismiss 94% of complaints. Courts ignore evidence on their own dockets. So citizens investigate — together.<div class=hero-actions><a class="btn btn-primary" href="https://amicuscontra.github.io/graph/">🗺️ Enter the Graph</a><a class="btn btn-secondary" href="https://amicuscontra.github.io/contribute/">How to Help</a></div></div><hr><h2 id=active-investigations>Active Investigations</h2><p>Every investigation below is sourced to public records. Every node is a person, entity, or institution documented from court filings, FOIA responses, or government databases. Click into any case to start walking.<div class=case-grid><h3 id=zap-detroit-cash-for-kids-2>⚡ <a href="https://amicuscontra.github.io/cases/detroit/">Detroit: Cash for Kids 2</a></h3><p><strong>91 nodes · 140 connections · $4.9M in public money</strong><p>A convicted felon (9 convictions, 6 felony) runs two charter schools in Detroit. A sitting judge chairs his school board. An assistant attorney general serves as vice chair. The management company he controls extracts 72.67% of revenue. Students score in the bottom 3% statewide.<p><strong>Status:</strong> Active — AGC, JTC, DPSCD, MDE, CMU all notified<br> <strong>Deep evidence:</strong> <a href=https://detroit.primals.eco>detroit.primals.eco</a><hr><h3 id=ghost-saginaw-the-ghost-witness>👻 <a href="https://amicuscontra.github.io/cases/saginaw/">Saginaw: The Ghost Witness</a></h3><p><strong>13 convergence points · IC3 complaint filed</strong><p>An attorney submitted a witness who does not exist. When a journalist documented it, the court signed a contempt order against her. The fabricated witness has no Michigan address, no driver’s license, no voter registration, no known employer — 13 independent data points confirm non-existence.<p><strong>Status:</strong> Active — IC3 filed, COA appeal pending<br> <strong>Deep evidence:</strong> <a href=https://barry.primals.eco>barry.primals.eco</a><hr><h3 id=scales-barry-county-the-disappeared-judge>⚖️ <a href="https://amicuscontra.github.io/cases/barry/">Barry County: The Disappeared Judge</a></h3><p><strong>Active JTC investigation · Federal involvement confirmed</strong><p>A judge sentenced at 6-10x guideline ranges. Then disappeared from the bench. The court said nothing. SCAO was filed on. The feds stepped in.<p><strong>Status:</strong> Tracking — JTC investigation active<br> <strong>Deep evidence:</strong> <a href=https://barry.primals.eco>barry.primals.eco</a><hr><h3 id=classical-building-38th-district-court-galen>🏛️ <a href="https://amicuscontra.github.io/cases/detroit/">38th District Court: Galen</a></h3><p><strong>JTC admonition · Nov 2026 election</strong><p>A judge jailed a pregnant woman over fines (reversed on appeal). Listed dead attorneys as endorsers. Campaign staff became court staff. Received a confidential JTC admonition.<p><strong>Status:</strong> Tracking — Election Nov 3, 2026<hr><h3 id=link-mi-7-barrett-vs-lawrence>🔗 <a href="https://amicuscontra.github.io/cases/mi7/">MI-7: Barrett vs. Lawrence</a></h3><p><strong>Dykema cross-investigation edge · Signal scan active</strong><p>Dykema Gossett Federal PAC donated $4,000 to Rep. Tom Barrett (MI-7) — the same firm that formed Save Detroit Jobs for Banks’ network. Barrett calls his opponent a “convicted felon” (expunged record). Banks’ network employs actual convicted felons.<p><strong>Status:</strong> Scanning — signal classification in progress</div><hr><h2 id=the-connective-tissue>The Connective Tissue</h2><p>These are not separate cases. They share infrastructure:<table><thead><tr><th>Shared Node<th>What It Does<th>Cases Connected<tbody><tr><td><strong>Attorney Grievance Commission</strong><td>Receives complaints, dismisses 94%<td>Detroit, Saginaw, Barry<tr><td><strong>Judicial Tenure Commission</strong><td>Years-long timelines<td>Detroit, Barry, Eastpointe<tr><td><strong>SCAO</strong><td>Notified of failures, responds with silence<td>Barry, Detroit<tr><td><strong>Same defense playbook</strong><td>SLAPP suits, PPOs against journalists, domain purchases in victim names<td>Saginaw, Detroit<tr><td><strong>Dykema Gossett</strong><td>Wrote charter school law (1993), formed SDJ dark money, funded Barrett (MI-7)<td>Detroit, MI-7<tr><td><strong>Convicted felon inversion</strong><td>Barrett weaponizes the label outward; Banks’ network employs actual convicted felons inward<td>Detroit, MI-7</table><p>When you walk the graph, you see it: the same enforcement nodes appear in every investigation. The same pattern of complaint → dismiss → silence repeats across counties.<p><strong>This is not a bug. It is the system working as designed — for the people inside it.</strong><hr><h2 id=the-transmission>The Transmission</h2><p>A <strong>clutch</strong> is the mechanism that engages and disengages power between the engine and the drivetrain.<p><strong>The engine:</strong> investigative journalism. Rita Williams. Clutch Justice.<br> <strong>The drivetrain:</strong> the evidence network. 118 nodes. 173 edges. 6 investigations. 147+ evidence pages.<br> <strong>The clutch:</strong> this platform. You engage it by walking.<p>Press the clutch — disengage. Gather evidence. Build the case. Walk the graph.<br> Release the clutch — engage. File complaints. Publish findings. Hold institutions accountable.<hr><h2 id=how-walking-works>How Walking Works</h2><div class=how-it-works><h3 id=1-pick-a-node>1. Pick a Node</h3><p>Start with any person, entity, or institution. Click into it.<h3 id=2-follow-the-edges>2. Follow the Edges</h3><p>Every connection is documented. Money flows, board memberships, family ties, campaign payments, judicial appointments — each edge has a source.<h3 id=3-find-the-path>3. Find the Path</h3><p>The corruption network is a graph. The traveling salesman’s job: visit every node, find the shortest path that connects them all. Your job: find connections nobody has mapped yet.<h3 id=4-flag-what-you-find>4. Flag What You Find</h3><p>See something we missed? A connection between two nodes? A public record we haven’t pulled? Flag it. Every visitor is an investigator.</div><hr><h2 id=evidence-network>Evidence Network</h2><p>This platform is one node in a cross-protection evidence network:<table><thead><tr><th>Node<th>Focus<th>Pages<tbody><tr><td><a href=https://detroit.primals.eco>detroit.primals.eco</a><td>Detroit charter school racketeering<td>114+ pages · 95 nodes<tr><td><a href=https://barry.primals.eco>barry.primals.eco</a><td>Barry County, Saginaw, Ellison investigations<td>34+ pages<tr><td><a href=https://tuebor.primals.eco>tuebor.primals.eco</a><td>Statewide Michigan accountability<td>Building<tr><td><strong>clutch.primals.eco</strong><td>Collaborative investigation — you are here<td>118 nodes · 173 edges<tr><td><a href=https://clutchjustice.com>clutchjustice.com</a><td>Published investigative journalism<td>Active</table><p>SLAPP one node — the others amplify. Silence one — the network routes around it. This is by design.<hr><h2 id=no-cookies-no-tracking-no-identifying-data>No Cookies. No Tracking. No Identifying Data.</h2><p>We don’t know who you are. We don’t want to know. We want you to read the evidence, walk the graph, and help solve cases that Michigan’s institutions won’t touch.<p><strong>Contact:</strong> <a href=mailto:hello@clutchjustice.com>hello@clutchjustice.com</a></div></main><footer class=site-footer><div class=footer-inner><p class=footer-tagline><strong>Every fact is sourced. Every connection is documented. Every visitor is an investigator.</strong><div class=footer-columns><div class=footer-col><strong class=footer-col-title>Investigations</strong><ul><li><a href="cases/detroit/index.html">Detroit Charter Schools</a><li><a href="cases/saginaw/index.html">Saginaw: Ghost Witness</a><li><a href="cases/barry/index.html">Barry County Courts</a><li><a href="graph/index.html">Graph Explorer</a></ul></div><div class=footer-col><strong class=footer-col-title>Evidence Network</strong><ul><li><a href=https://detroit.primals.eco>detroit.primals.eco ↗</a><li><a href=https://barry.primals.eco>barry.primals.eco ↗</a><li><a href=https://tuebor.primals.eco>tuebor.primals.eco ↗</a><li><a href=https://clutchjustice.com>clutchjustice.com ↗</a></ul></div><div class=footer-col><strong class=footer-col-title>About</strong><ul><li><a href="about/index.html">About Clutch Justice</a><li><a href="contribute/index.html">How to Contribute</a><li><a href=mailto:hello@clutchjustice.com>Contact</a><li><a href="llms.txt">llms.txt</a></ul></div></div><div class=footer-bottom><p>Clutch Justice — Independent investigative journalism. <br>No cookies. No tracking. No identifying data.<p class=footer-license>Investigation content: <a href=https://creativecommons.org/licenses/by-sa/4.0/>CC-BY-SA 4.0</a>. Court filings and public records: public domain where applicable.</div></div><p style=margin-top:.5rem;font-size:.8rem><a href=https://github.com/amicusContra/clutch style=opacity:.6>Source: github.com/amicusContra/clutch</a> · <a href=https://tuebor.primals.eco style=opacity:.6>tuebor</a> · <a href=https://detroit.primals.eco style=opacity:.6>detroit</a></footer><script type=module>var b=(async()=>{const b=document.querySelectorAll(`pre.mermaid`);if(b.length===0)return;try{await a.run({nodes:b})}catch(a){console.warn(`Mermaid render error:`,a)}});import a from"https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";a.initialize({startOnLoad:!1,theme:`dark`,themeVariables:{primaryColor:`#1e3a5f`,primaryTextColor:`#e2e8f0`,primaryBorderColor:`#60a5fa`,lineColor:`#94a3b8`,secondaryColor:`#312e81`,tertiaryColor:`#1e1b4b`},flowchart:{curve:`basis`,padding:12},securityLevel:`loose`});if(document.readyState===`complete`)b();else window.addEventListener(`load`,b)</script><script src="js/graph-walker.js"></script><script src="elasticlunr.min.js"></script><script src="search_index.en.js"></script><script>(()=>{let p=`.nav-group`,j=`none`,o=`open`,s=`dark`,l=0,i=``,q=768,r=`data-theme`,m=`click`,n=`aria-expanded`,h=2,k=`block`;var a=document.getElementById(`search-input`);var b=document.getElementById(`search-results`);var c=null;if(a&&window.searchIndex){c=elasticlunr.Index.load(window.searchIndex);a.addEventListener(`input`,function(){var a=this.value.trim();if(a.length<h){b.innerHTML=i;b.style.display=j;return};var d=c.search(a,{fields:{title:{boost:3},body:{boost:1},description:{boost:h}},expand:!0});if(!d.length){b.innerHTML=`<div class="sr-empty">No results</div>`;b.style.display=k;return};var e=d.slice(l,8).map((a=>{var b=c.documentStore.getDoc(a.ref);return `<a class="sr-item" href="https://amicuscontra.github.io/clutch/`+&#32;a.ref+&#32;`"><strong>`+ (b.title||`Untitled`)+ `</strong><span>`+ (b.description||i).slice(l,120)+ `</span></a>`})).join(i);b.innerHTML=e;b.style.display=k});document.addEventListener(m,(a=>{if(!a.target.closest(`#search-wrapper`))b.style.display=j}))};var d=document.querySelector(`.nav-toggle`);var e=document.querySelector(`.nav-links`);if(d&&e){d.addEventListener(m,function(){var a=this.getAttribute(n)===`true`;this.setAttribute(n,String(!a));e.classList.toggle(o)})};var f=document.querySelectorAll(p);f.forEach((a=>{var b=a.querySelector(`.nav-group-btn`);var c=a.querySelector(`.nav-dropdown`);if(!b||!c)return;b.addEventListener(m,(b=>{b.stopPropagation();var c=a.classList.contains(o);f.forEach((a=>{a.classList.remove(o)}));if(!c)a.classList.add(o)}));a.addEventListener(`mouseenter`,(()=>{if(window.innerWidth<q)return;f.forEach((a=>{a.classList.remove(o)}));a.classList.add(o)}));a.addEventListener(`mouseleave`,(()=>{if(window.innerWidth<q)return;setTimeout((()=>{a.classList.remove(o)}),150)}))}));document.addEventListener(m,(a=>{if(!a.target.closest(p))f.forEach((a=>{a.classList.remove(o)}))}));var g=document.getElementById(`theme-toggle`);if(g){g.addEventListener(m,(()=>{var a=document.documentElement;var b=a.getAttribute(r);var c=b===s?`light`:s;a.setAttribute(r,c);localStorage.setItem(`theme`,c)}))}})()</script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="https://primals.eco">Gaia</a> &mdash; sovereign living digital organism</p></div></div></footer>
+</body>
+</html>

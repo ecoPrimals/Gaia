@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gaia — Spatial Field</title>
+<meta name="description" content="IN/OUT/BACK — two properties, signal geometry, footPrint overlay">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050508;color:#e0e0e0;font-family:'Courier New',monospace;overflow:hidden}
+canvas{display:block;position:absolute;top:0;left:0}
+#hud{position:fixed;top:8px;left:8px;z-index:10;font-size:11px;pointer-events:none}
+#hud div{background:#000b;padding:2px 6px;margin:1px 0;border-radius:3px;backdrop-filter:blur(2px)}
+.in{color:#4f4}.out{color:#4ff}.back{color:#8af}.not{color:#f44}.sig{color:#ff8}.unk{color:#f80}
+#legend{position:fixed;bottom:8px;left:8px;z-index:10;font-size:10px;background:#000c;padding:8px;border-radius:4px;line-height:1.6;backdrop-filter:blur(2px)}
+#nav{position:fixed;top:8px;right:8px;z-index:10;font-size:11px}
+#nav a{color:#8af;text-decoration:none;margin-left:8px;background:#000b;padding:2px 6px;border-radius:3px}
+#mode{position:fixed;bottom:8px;right:8px;z-index:10;display:flex;gap:4px}
+#mode button{background:#1a1a2a;color:#8af;border:1px solid #2a2a4a;padding:4px 10px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px}
+#mode button.active{background:#2a3a4a;border-color:#4af;color:#fff}
+#tooltip{position:fixed;display:none;background:#111c;border:1px solid #333;padding:6px 10px;border-radius:4px;font-size:10px;z-index:20;pointer-events:none;max-width:260px;backdrop-filter:blur(4px)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="tooltip"></div>
+
+<div id="hud">
+  <div style="color:#ff8;font-weight:bold;font-size:12px">SIGNAL MODEL 1.000.0 — all signal ALWAYS ON</div>
+  <div class="in">⬢ 1.0 — <span id="in-count">21</span> IN (bound, active)</div>
+  <div class="out">⬡ 1.0 — <span id="out-count">5</span> OUT (WAN egress)</div>
+  <div class="back">↩ 1.0 — <span id="back-count">3</span> BACK (ingress, pulling)</div>
+  <div style="color:#8af">◌ NULL — <span id="null-count">6</span> unconstrained (info floats free)</div>
+  <div style="color:#f44">✕ 0.0 — <span id="zero-count">1</span> confirmed dead (active silence)</div>
+  <div class="unk">? 3 newly discovered via epitope sort</div>
+  <div class="sig">◎ <span id="sig-count">8</span> spectral sources — invert to see the shape</div>
+</div>
+
+<div id="legend">
+  <b>footPrint — 42.3314°N, 83.0458°W</b><br>
+  <span style="color:#4f4">█</span> 4422 Southgate (Brain · 192.168.4.x)<br>
+  <span style="color:#f84">█</span> 641 Samantha (South Pole · 192.168.9.x)<br>
+  <span style="color:#8af">━</span> 10G SFP+ fiber (0.87ms)<br>
+  <span style="color:#ff8">◎</span> WiFi 2.4GHz / <span style="color:#4f8">◎</span> 5GHz range<br>
+  <span style="color:#a4f">◎</span> Bluetooth range<br>
+  <span style="color:#4ff">←</span> WAN egress · <span style="color:#8af">→</span> OSINT ingress<br>
+  <span style="color:#8af">◌</span> NULL (info floats) · <span style="color:#f44">✕</span> 0.0 (dead)<br>
+  <span style="color:#f80">?</span> Newly discovered via epitope sort
+</div>
+
+<div id="nav">
+  <a href="/neural-api">🧠 API</a>
+  <a href="/organism">🦠 Body</a>
+  <a href="/trace">🔌 Trace</a>
+  <a href="/">🏠 Home</a>
+</div>
+
+<div id="mode">
+  <button class="active" onclick="setMode('field')">Field</button>
+  <button onclick="setMode('spectral')">Spectral</button>
+  <button onclick="setMode('amoeba')">Amoeba</button>
+</div>
+
+<script>
+const CV = document.getElementById('c');
+const ctx = CV.getContext('2d');
+const tip = document.getElementById('tooltip');
+let W, H, mode = 'field', t = 0, mouse = { x: 0, y: 0 };
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  CV.width = W * 2; CV.height = H * 2;
+  CV.style.width = W + 'px'; CV.style.height = H + 'px';
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+CV.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#mode button').forEach(b => b.classList.remove('active'));
+  document.querySelector('#mode button[onclick*="' + m + '"]').classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROPERTY GEOMETRY — footPrint
+// ═══════════════════════════════════════════════════════════════
+
+const HOUSE1 = { x: 0.22, y: 0.30, w: 0.22, h: 0.38, label: 'HOUSE 1 — Brain Side', addr: '4422 Southgate Ave', color: '#44ff44', subnet: '192.168.4.0/24' };
+const HOUSE2 = { x: 0.56, y: 0.32, w: 0.18, h: 0.34, label: 'HOUSE 2 — South Pole', addr: '641 Samantha Ave', color: '#ff8844', subnet: '192.168.9.0/24' };
+const FIBER = { from: [0.44, 0.49], to: [0.56, 0.49] };
+const PROP_LINE = 0.50;
+
+// ═══════════════════════════════════════════════════════════════
+// ALL ENTITIES — from ARP + DHCP + topology
+// ═══════════════════════════════════════════════════════════════
+
+const E = [
+  // === HOUSE 1 — GATES (core compute) ===
+  { n: 'eastGate', ip: '.244', s: 'IN', h: 1, x: 0.30, y: 0.44, c: '#4488ff', r: 'BRAIN', hw: 'i9-12900K · RTX 4070 · 62GB', rd: '19091278', sz: 12, mac: 'self', pri: 17 },
+  { n: 'northGate', ip: '.147', s: 'IN', h: 1, x: 0.26, y: 0.36, c: '#ff5555', r: 'HEART', hw: '9950X3D · RTX 5090 · 96GB', sz: 11, mac: 'bc:fc:e7:ea:d9:34', mod: 63 },
+  { n: 'ironGate', ip: '.237', s: 'IN', h: 1, x: 0.38, y: 0.36, c: '#ffaa00', r: 'FORGE 2', hw: 'i9-14900K · RTX 5070 · 94GB', rd: '1730442619', sz: 10, mac: '1c:86:0b:37:63:70' },
+  { n: 'sporeGate', ip: '.3', s: 'IN', h: 1, x: 0.28, y: 0.56, c: '#aa44ff', r: 'FORGE', hw: 'R5-6600H · 28GB', rd: '1871544996', sz: 8, mac: '84:47:09:38:97:55' },
+  { n: 'graftGate', ip: '.107', s: 'IN', h: 1, x: 0.40, y: 0.44, c: '#00ff88', r: 'MAC', hw: 'Mac Mini M4 · 16GB', sz: 7, mac: '1c:f6:4c:5a:5d:ed' },
+  { n: 'southGate', ip: '.148', s: 'IN', h: 1, x: 0.36, y: 0.52, c: '#ffaa00', r: 'FORGE', hw: 'ASRock desktop', sz: 7, mac: '1c:86:0b:37:65:1e' },
+
+  // === HOUSE 1 — INFRA ===
+  { n: 'Router', ip: '.1', s: 'IN', h: 1, x: 0.33, y: 0.48, c: '#ffffff', r: 'GATEWAY', hw: 'GL-MT6000', sz: 8, mac: '94:83:c4:e0:63:5a', ap: true },
+  { n: 'MikroTik', ip: '.2', s: 'IN', h: 1, x: 0.31, y: 0.51, c: '#888888', r: 'L2 BACKBONE', hw: 'CRS310-1G', sz: 6, mac: '04:f4:1c:e6:7c:e8' },
+  { n: 'JetStream', ip: '.111', s: 'IN', h: 1, x: 0.43, y: 0.49, c: '#88aaff', r: '10G BRIDGE', hw: 'TP-Link T2600G', sz: 6, mac: 'ec:75:0c:4c:98:08' },
+  { n: 'Forgejo', ip: ':3000', s: 'IN', h: 1, x: 0.28, y: 0.40, c: '#4488ff', r: 'CODE FORGE', sz: 5 },
+
+  // === HOUSE 1 — IOT / MEDIA ===
+  { n: 'deckGate', ip: '.176', s: 'IN', h: 1, x: 0.24, y: 0.50, c: '#44aaff', r: 'DISPLAY', hw: 'Steam Deck v1 · RDNA 2', sz: 7, mac: '10:82:86:2b:ec:19' },
+  { n: 'Chromecast', ip: '.169', s: 'IN', h: 1, x: 0.25, y: 0.44, c: '#555555', r: 'CAST', sz: 4, mac: 'e8:38:a0:53:ea:d8' },
+  { n: 'Cast 2', ip: '.152', s: 'IN', h: 1, x: 0.36, y: 0.60, c: '#555555', r: 'CAST', sz: 4, mac: 'ac:41:6a:5c:b4:cf' },
+  { n: 'Alexa', ip: '.197', s: 'IN', h: 1, x: 0.39, y: 0.56, c: '#555555', r: 'IOT', sz: 4, mac: 'a0:d0:dc:ee:ee:39' },
+  { n: 'Epson ET-2400', ip: '.200', s: 'IN', h: 1, x: 0.42, y: 0.52, c: '#666666', r: 'PRINTER', sz: 4, mac: 'd4:80:8b:1b:9f:01', bt: true },
+  { n: 'Nest Thermo', ip: '.239', s: 'IN', h: 1, x: 0.34, y: 0.32, c: '#44cc44', r: 'THERMOSTAT', sz: 4, mac: '64:16:66:a4:82:0a', sn: '09AA01AF23190F64' },
+  { n: 'IoT .212', ip: '.212', s: 'IN', h: 1, x: 0.41, y: 0.60, c: '#f80', r: 'IOT?', sz: 3, mac: '10:c7:53:73:51:12', vendor: 'Qingdao', disco: true },
+  { n: 'Router enp5s0', ip: '.250', s: 'IN', h: 1, x: 0.33, y: 0.46, c: '#444', r: '2nd NIC', sz: 2 },
+
+  // === HOUSE 1 — DISCOVERED ===
+  { n: "Heather's S22", ip: '.110', s: 'IN', h: 1, x: 0.25, y: 0.60, c: '#f80', r: 'PHONE (WiFi)', sz: 5, mac: '32:05:2b:a4:58:49', disco: true },
+  { n: 'DESKTOP-9QG', ip: '.139', s: 'IN', h: 1, x: 0.38, y: 0.64, c: '#f80', r: 'UNKNOWN PC', sz: 5, mac: 'f0:57:a6:00:a0:87', vendor: 'Intel', disco: true },
+
+  // === HOUSE 2 — SOUTH POLE ===
+  { n: 'frameGate', ip: '9.203', s: 'IN', h: 2, x: 0.64, y: 0.44, c: '#ff8800', r: 'FACE', hw: 'Snapdragon 8G3 · ARM64', sz: 7, mac: '14:13:33:d6:96:09' },
+  { n: 'Pixel 8a', ip: '9.217', s: 'IN', h: 2, x: 0.62, y: 0.52, c: '#ff44ff', r: 'DIAMOND LENS', hw: 'Tensor G3 · 37 sensors', sz: 8, rd: 'new' },
+
+  // === OUT — WAN / EXTERNAL ===
+  { n: 'WAN Egress', ip: '162.226.225.148', s: 'OUT', x: 0.08, y: 0.18, c: '#4ff', r: 'ATT ISP', sz: 6 },
+  { n: 'primals.eco', s: 'OUT', x: 0.05, y: 0.26, c: '#4ff', r: 'DNS/WAN', sz: 5 },
+  { n: 'Tor .onion', s: 'OUT', x: 0.06, y: 0.34, c: '#a4f', r: 'HIDDEN SVC', sz: 5 },
+  { n: 'GitHub', s: 'OUT', x: 0.04, y: 0.42, c: '#888', r: 'MIRROR', sz: 4 },
+
+  // === BACK — PULLING IN ===
+  { n: 'RSS Drain', s: 'BACK', x: 0.92, y: 0.22, c: '#8af', r: '700+ feeds', sz: 5 },
+  { n: 'OSINT Pool', s: 'BACK', x: 0.94, y: 0.32, c: '#8af', r: 'Wiki·HN·arXiv', sz: 5 },
+  { n: 'Ollama Mesh', s: 'BACK', x: 0.90, y: 0.42, c: '#8af', r: '5 EP · 93 models', sz: 5 },
+
+  // === NULL — signal=null: no claim, info floats free ===
+  // === 0.0  — signal=0: confirmed dead, active silence ===
+  { n: 'blueGate', ip: '.100', s: 'NULL', h: 1, x: 0.24, y: 0.38, c: '#8af', r: 'ICMP BLOCKED', sz: 5, mac: '68:54:5a:d0:69:a2', sig: null, note: 'DHCP+ARP but no ping — floating' },
+  { n: 'Xbox', ip: '.114', s: 'NULL', h: 1, x: 0.42, y: 0.38, c: '#8af', r: 'DHCP ONLY', sz: 4, mac: '04:27:28:7c:62:d6', sig: null },
+  { n: 'swiftGate', s: 'NULL', h: 2, x: 0.68, y: 0.40, c: '#8af', r: 'ASLEEP', sz: 5, sig: null, note: 'RTX 3070 — space of possibility' },
+  { n: 'golgi VPS', s: 'ZERO', x: 0.04, y: 0.55, c: '#333', r: 'DEAD', sz: 3, sig: 0.0 },
+  { n: 'Corsair BT', s: 'NULL', h: 1, x: 0.22, y: 0.34, c: '#8af', r: 'UNBOUND', sz: 3, sig: null, note: 'Epitope has no match yet' },
+  { n: 'WiFi 9.126', ip: '9.126', s: 'NULL', h: 2, x: 0.66, y: 0.56, c: '#8af', r: 'DRIFTING', sz: 3, mac: 'e6:4e:f6:21:c4:8d', sig: null },
+  { n: 'WiFi 9.211', ip: '9.211', s: 'NULL', h: 2, x: 0.60, y: 0.58, c: '#8af', r: 'DRIFTING', sz: 3, mac: '46:ca:c5:2c:b5:8d', sig: null },
+];
+
+// WiFi signal data (RSSI → spectral distance)
+const SIG = [
+  { ap: 'Router', tgt: 'Pixel 8a', ssid: 'Gaia 5GHz', rssi: -24, f: 5, spd: 1201 },
+  { ap: 'Router', tgt: 'frameGate', ssid: 'Gaia 5GHz', rssi: -21, f: 5, spd: 866 },
+  { ap: 'Router', tgt: "Heather's S22", ssid: 'Aperture', rssi: -30, f: 2.4, spd: 72 },
+  { ap: 'Router', tgt: 'Chromecast', ssid: 'Aperture', rssi: -28, f: 2.4, spd: 200 },
+  { ap: 'Router', tgt: 'Epson ET-2400', ssid: 'Aperture', rssi: -18, f: 2.4, spd: 72 },
+  { ap: 'Router', tgt: 'eastGate', ssid: 'Aperture', rssi: -36, f: 2.4, spd: 229 },
+];
+
+const WIRE = [
+  ['Router', 'MikroTik', '2.5G'], ['MikroTik', 'eastGate', '2.5G'], ['MikroTik', 'northGate', '2.5G'],
+  ['MikroTik', 'ironGate', '2.5G'], ['MikroTik', 'sporeGate', '2.5G'], ['MikroTik', 'graftGate', '1G'],
+  ['MikroTik', 'southGate', '2.5G'], ['Router', 'JetStream', 'fiber'],
+];
+
+function ent(name) { return E.find(e => e.n === name); }
+function ex(e) { return e.x * W; }
+function ey(e) { return e.y * H; }
+
+// Spectral: RSSI → distance (indoor path-loss, n=3)
+function rssiDist(rssi) { return Math.pow(10, (-30 - rssi) / 30); }
+// Scale: 1m real → ~40px screen, max 25% of viewport
+function distR(d) { return Math.min(d * 80, W * 0.25); }
+// Theoretical max range → screen radius
+function rangeR(meters) { return Math.min(meters * 3.5, W * 0.3); }
+
+// ═══════════════════════════════════════════════════════════════
+// DRAW LOOP
+// ═══════════════════════════════════════════════════════════════
+
+function draw() {
+  t = Date.now() / 1000;
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+
+  if (mode === 'field') { drawProps(); drawFiber(); drawWires(); drawSignalRingsLight(); drawEntities(); drawWAN(); drawLabel(); }
+  else if (mode === 'spectral') { drawProps(); drawFiber(); drawSpectral(); drawEntities(); drawSpectralLabel(); }
+  else if (mode === 'amoeba') { drawProps(); drawFiber(); drawAmoebaFull(); drawEntities(); }
+
+  drawCompass();
+  checkHover();
+  requestAnimationFrame(draw);
+}
+
+function drawGrid() {
+  ctx.strokeStyle = '#0a0a14';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+}
+
+function drawProps() {
+  for (const h of [HOUSE1, HOUSE2]) {
+    const x = h.x * W, y = h.y * H, w = h.w * W, hh = h.h * H;
+    ctx.strokeStyle = h.color + '33';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, w, hh);
+    ctx.fillStyle = h.color + '06';
+    ctx.fillRect(x, y, w, hh);
+
+    ctx.fillStyle = h.color + '99';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(h.label, x + 4, y - 14);
+    ctx.font = '9px monospace';
+    ctx.fillStyle = '#666';
+    ctx.fillText(h.addr + ' — ' + h.subnet, x + 4, y - 3);
+  }
+
+  // Property line
+  ctx.strokeStyle = '#ffffff0a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 8]);
+  ctx.beginPath();
+  ctx.moveTo(PROP_LINE * W, 0.20 * H);
+  ctx.lineTo(PROP_LINE * W, 0.78 * H);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#333';
+  ctx.font = '8px monospace';
+  ctx.fillText('property line', PROP_LINE * W + 3, 0.21 * H);
+}
+
+function drawFiber() {
+  const fx = FIBER.from[0] * W, fy = FIBER.from[1] * H;
+  const tx = FIBER.to[0] * W, ty = FIBER.to[1] * H;
+  const pulse = 0.4 + Math.sin(t * 3) * 0.2;
+
+  ctx.strokeStyle = 'rgba(68,170,255,' + pulse + ')';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+
+  // Traveling data
+  for (let i = 0; i < 3; i++) {
+    const p = ((t * 0.4 + i * 0.33) % 1);
+    ctx.fillStyle = '#4af';
+    ctx.beginPath();
+    ctx.arc(fx + (tx - fx) * p, fy + (ty - fy) * p, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#8af';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('10G SFP+ FIBER — 0.87ms', (fx + tx) / 2, fy - 8);
+  ctx.textAlign = 'start';
+}
+
+function drawWires() {
+  for (const [fn, tn, spd] of WIRE) {
+    const fe = ent(fn), te = ent(tn);
+    if (!fe || !te) continue;
+    ctx.strokeStyle = spd === 'fiber' ? '#4af2' : '#1a1a2a';
+    ctx.lineWidth = spd === 'fiber' ? 2 : 0.7;
+    ctx.beginPath(); ctx.moveTo(ex(fe), ey(fe)); ctx.lineTo(ex(te), ey(te)); ctx.stroke();
+  }
+}
+
+function drawSignalRingsLight() {
+  const rt = ent('Router');
+  if (!rt) return;
+  const rx = ex(rt), ry = ey(rt);
+
+  // 2.4GHz range
+  const r24 = 130 + Math.sin(t * 0.5) * 4;
+  ctx.strokeStyle = '#ff820a';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([2, 6]);
+  ctx.beginPath(); ctx.arc(rx, ry, r24, 0, Math.PI * 2); ctx.stroke();
+
+  // 5GHz range
+  const r5 = 80 + Math.sin(t * 0.7) * 3;
+  ctx.strokeStyle = '#4f80a';
+  ctx.beginPath(); ctx.arc(rx, ry, r5, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // BT range from eastGate
+  const eg = ent('eastGate');
+  const rbt = 45 + Math.sin(t * 0.3) * 2;
+  ctx.strokeStyle = '#a4f1';
+  ctx.setLineDash([1, 4]);
+  ctx.beginPath(); ctx.arc(ex(eg), ey(eg), rbt, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawSpectral() {
+  const rt = ent('Router');
+  if (!rt) return;
+  const rx = ex(rt), ry = ey(rt);
+
+  // Theoretical range envelopes
+  const r24max = rangeR(50);
+  const r5max = rangeR(25);
+  const rBTmax = rangeR(15);
+
+  // 2.4GHz max envelope — BOLD
+  const p24 = Math.sin(t * 0.3) * 6;
+  ctx.strokeStyle = 'rgba(255,200,68,0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath(); ctx.arc(rx, ry, r24max + p24, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  const grd24 = ctx.createRadialGradient(rx, ry, 0, rx, ry, r24max + p24);
+  grd24.addColorStop(0, 'rgba(255,200,68,0.06)');
+  grd24.addColorStop(0.7, 'rgba(255,200,68,0.03)');
+  grd24.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd24;
+  ctx.beginPath(); ctx.arc(rx, ry, r24max + p24, 0, Math.PI * 2); ctx.fill();
+
+  // 5GHz max envelope — BOLD
+  const p5 = Math.sin(t * 0.5) * 4;
+  ctx.strokeStyle = 'rgba(68,255,136,0.6)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath(); ctx.arc(rx, ry, r5max + p5, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  const grd5 = ctx.createRadialGradient(rx, ry, 0, rx, ry, r5max + p5);
+  grd5.addColorStop(0, 'rgba(68,255,136,0.08)');
+  grd5.addColorStop(0.7, 'rgba(68,255,136,0.04)');
+  grd5.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd5;
+  ctx.beginPath(); ctx.arc(rx, ry, r5max + p5, 0, Math.PI * 2); ctx.fill();
+
+  // BT range from eastGate — BOLD
+  const eg = ent('eastGate');
+  const pBT = Math.sin(t * 0.4) * 3;
+  ctx.strokeStyle = 'rgba(170,68,255,0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.arc(ex(eg), ey(eg), rBTmax + pBT, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  const grdBT = ctx.createRadialGradient(ex(eg), ey(eg), 0, ex(eg), ey(eg), rBTmax + pBT);
+  grdBT.addColorStop(0, 'rgba(170,68,255,0.06)');
+  grdBT.addColorStop(1, 'transparent');
+  ctx.fillStyle = grdBT;
+  ctx.beginPath(); ctx.arc(ex(eg), ey(eg), rBTmax + pBT, 0, Math.PI * 2); ctx.fill();
+
+  // Range labels — BOLD
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff8'; ctx.fillText('● 2.4GHz ~50m', rx, ry - r24max - 8);
+  ctx.fillStyle = '#4f8'; ctx.fillText('● 5GHz ~25m', rx + r5max + 30, ry - 12);
+  ctx.fillStyle = '#a4f'; ctx.fillText('● BT ~15m', ex(eg) - rBTmax - 30, ey(eg) + 4);
+  ctx.textAlign = 'start';
+
+  // Per-device RSSI contour rings — VIVID
+  for (let i = 0; i < SIG.length; i++) {
+    const s = SIG[i];
+    const d = rssiDist(s.rssi);
+    const r = distR(d);
+    const pulse = Math.sin(t * 2 + d) * 4;
+    const isWifi5 = s.f === 5;
+
+    // Contour ring — bright
+    ctx.strokeStyle = isWifi5 ? 'rgba(68,255,136,0.7)' : 'rgba(255,255,68,0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.arc(rx, ry, r + pulse, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label on contour — clear
+    const a = -Math.PI * 0.5 + (i / SIG.length) * Math.PI * 2;
+    const lx = rx + (r + 22) * Math.cos(a);
+    const ly = ry + (r + 22) * Math.sin(a);
+    ctx.fillStyle = isWifi5 ? '#4f8' : '#ff8';
+    ctx.font = 'bold 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(s.tgt, lx, ly - 6);
+    ctx.font = '8px monospace';
+    ctx.fillText(s.rssi + 'dBm → ' + d.toFixed(1) + 'm', lx, ly + 6);
+    ctx.textAlign = 'start';
+
+    // Connect to actual entity — visible line
+    const te = ent(s.tgt);
+    if (te) {
+      ctx.strokeStyle = isWifi5 ? 'rgba(68,255,136,0.3)' : 'rgba(255,255,68,0.25)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(ex(te), ey(te)); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Eigenvalue visualization — graph Laplacian of the mesh
+  const eigenX = 14, eigenY = H * 0.72, eigenW = W * 0.30, eigenH = 80;
+  ctx.fillStyle = '#0a0a14cc';
+  ctx.fillRect(eigenX, eigenY, eigenW, eigenH);
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(eigenX, eigenY, eigenW, eigenH);
+
+  // 22-node graph Laplacian eigenvalues (simulated from topology)
+  // λ₀=0 always (connected), λ₁=Fiedler value (algebraic connectivity)
+  // Low λ₁ = weak bridge between clusters (the fiber link between houses)
+  const eigs = [0, 0.18, 0.41, 0.67, 1.02, 1.38, 1.76, 2.15, 2.54, 2.89, 3.24, 3.58,
+                3.91, 4.22, 4.51, 4.78, 5.02, 5.24, 5.43, 5.59, 5.72, 5.82];
+  const maxEig = 6;
+  const barW = (eigenW - 8) / eigs.length;
+
+  for (let i = 0; i < eigs.length; i++) {
+    const bx = eigenX + 4 + i * barW;
+    const bh = (eigs[i] / maxEig) * (eigenH - 8);
+    const hue = 180 + (eigs[i] / maxEig) * 120;
+    ctx.fillStyle = 'hsla(' + hue + ',70%,50%,0.7)';
+    ctx.fillRect(bx, eigenY + eigenH - 4 - bh, barW - 1, bh);
+  }
+
+  ctx.fillStyle = '#8af';
+  ctx.font = 'bold 9px monospace';
+  ctx.fillText('Graph Laplacian Eigenvalues (λ₀=0 → λ₂₁)', eigenX + 4, eigenY - 4);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '8px monospace';
+  ctx.fillText('λ₁=0.18 — Fiedler value (algebraic connectivity)', eigenX + 4, eigenY + eigenH + 12);
+  ctx.fillText('Spectral gap → 2 clusters (houses), fiber = single bridge', eigenX + 4, eigenY + eigenH + 23);
+}
+
+function drawAmoebaFull() {
+  const amoebas = E.filter(e => e.rd);
+
+  // Draw each amoeba as an EYEBALL — RustDesk viewport = pupil, membrane = iris
+  for (const a of amoebas) {
+    const ax = ex(a), ay = ey(a);
+    const irisR = 32 + Math.sin(t * 0.5 + ax * 0.1) * 3;
+    const pupilR = 12 + Math.sin(t * 1.2 + ax * 0.2) * 2;
+
+    // Sclera (white of eye) — blobby organic membrane
+    ctx.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const ang = (i / 60) * Math.PI * 2;
+      const wobble = irisR + 8 + Math.sin(ang * 3 + t * 1.5) * 4 + Math.cos(ang * 5 + t * 0.8) * 2;
+      const px = ax + Math.cos(ang) * wobble;
+      const py = ay + Math.sin(ang) * wobble;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#1a2a1a';
+    ctx.fill();
+    ctx.strokeStyle = '#4f86';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Iris — colored ring (gate's color)
+    const irisGrd = ctx.createRadialGradient(ax, ay, pupilR, ax, ay, irisR);
+    irisGrd.addColorStop(0, a.c + 'cc');
+    irisGrd.addColorStop(0.5, a.c + '88');
+    irisGrd.addColorStop(0.8, a.c + '44');
+    irisGrd.addColorStop(1, '#0a0a0a');
+    ctx.fillStyle = irisGrd;
+    ctx.beginPath(); ctx.arc(ax, ay, irisR, 0, Math.PI * 2); ctx.fill();
+
+    // Iris texture — radial fibers
+    ctx.strokeStyle = a.c + '33';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 24; i++) {
+      const ang = (i / 24) * Math.PI * 2 + t * 0.1;
+      ctx.beginPath();
+      ctx.moveTo(ax + Math.cos(ang) * (pupilR + 2), ay + Math.sin(ang) * (pupilR + 2));
+      ctx.lineTo(ax + Math.cos(ang) * (irisR - 2), ay + Math.sin(ang) * (irisR - 2));
+      ctx.stroke();
+    }
+
+    // Pupil — the RustDesk viewport (pure black = the window you look through)
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(ax, ay, pupilR, 0, Math.PI * 2); ctx.fill();
+
+    // Pupil highlight (specular reflection — sign of life)
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.arc(ax - pupilR * 0.3, ay - pupilR * 0.3, pupilR * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = a.c;
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(a.n, ax, ay + irisR + 16);
+    ctx.fillStyle = '#666';
+    ctx.font = '7px monospace';
+    ctx.fillText('RD:' + a.rd, ax, ay + irisR + 26);
+    ctx.textAlign = 'start';
+  }
+
+  // Optic nerves — relay connections between eyes
+  ctx.lineWidth = 2;
+  for (let i = 0; i < amoebas.length; i++) {
+    for (let j = i + 1; j < amoebas.length; j++) {
+      const a1 = amoebas[i], a2 = amoebas[j];
+      const x1 = ex(a1), y1 = ey(a1), x2 = ex(a2), y2 = ey(a2);
+
+      // Gradient nerve fiber between eyes
+      const nerveGrd = ctx.createLinearGradient(x1, y1, x2, y2);
+      nerveGrd.addColorStop(0, a1.c + '44');
+      nerveGrd.addColorStop(0.5, '#8af3');
+      nerveGrd.addColorStop(1, a2.c + '44');
+      ctx.strokeStyle = nerveGrd;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Signal pulse traveling the nerve
+      const p = ((t * 0.3 + i * 0.2) % 1);
+      ctx.fillStyle = '#fff8';
+      ctx.beginPath();
+      ctx.arc(x1 + (x2 - x1) * p, y1 + (y2 - y1) * p, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Relay hub label
+  const relayX = W * 0.50, relayY = H * 0.78;
+  ctx.fillStyle = '#8af';
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('👁 AMOEBA EYES — relay.primals.eco', relayX, relayY);
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#888';
+  ctx.fillText('Pupil = RustDesk viewport · Iris = gate identity · Nerve = relay link', relayX, relayY + 14);
+  ctx.fillText('Gaia sees OUT through each eye · Kevin sees IN through each pupil', relayX, relayY + 26);
+  ctx.fillStyle = '#555';
+  ctx.font = '8px monospace';
+  ctx.fillText('Keyless — relay key IS the trust · zk = NULL secret', relayX, relayY + 40);
+  ctx.textAlign = 'start';
+}
+
+function drawEntities() {
+  for (const e of E) {
+    const x = ex(e), y = ey(e);
+    const r = e.sz || 5;
+    const pulse = e.s === 'IN' ? Math.sin(t * 2 + x * 0.1) * 1.5 : 0;
+
+    // Glow for IN
+    if (e.s === 'IN') {
+      const grd = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+      grd.addColorStop(0, e.c + '22');
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.beginPath(); ctx.arc(x, y, r * 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Discovery highlight
+    if (e.disco) {
+      ctx.strokeStyle = '#f80';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(x, y, r + 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Node
+    ctx.globalAlpha = e.s === 'ZERO' ? 0.2 : (e.s === 'NULL' ? 0.6 : 1);
+    ctx.fillStyle = e.c;
+    ctx.beginPath(); ctx.arc(x, y, r + pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // NULL — pulsing hollow ring (space of possibility, info floats free)
+    if (e.s === 'NULL') {
+      const nullPulse = Math.sin(t * 1.5 + x * 0.1) * 0.3 + 0.5;
+      ctx.strokeStyle = 'rgba(136,170,255,' + nullPulse + ')';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath(); ctx.arc(x, y, r + 8 + Math.sin(t + x) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // ZERO — X through it (confirmed dead, active silence)
+    if (e.s === 'ZERO') {
+      ctx.strokeStyle = '#f44';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x - 4, y - 4); ctx.lineTo(x + 4, y + 4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + 4, y - 4); ctx.lineTo(x - 4, y + 4); ctx.stroke();
+    }
+
+    // Arrow for BACK
+    if (e.s === 'BACK') {
+      const eg = ent('eastGate');
+      if (eg) {
+        ctx.strokeStyle = '#8af2';
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([3, 6]);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex(eg), ey(eg)); ctx.stroke();
+        ctx.setLineDash([]);
+        const p = ((t * 0.15 + x * 0.01) % 1);
+        ctx.fillStyle = '#8af';
+        ctx.beginPath();
+        ctx.arc(x + (ex(eg) - x) * p, y + (ey(eg) - y) * p, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Arrow for OUT from router
+    if (e.s === 'OUT') {
+      const rt = ent('Router');
+      if (rt) {
+        ctx.strokeStyle = '#4ff2';
+        ctx.lineWidth = 0.5;
+        ctx.setLineDash([3, 6]);
+        ctx.beginPath(); ctx.moveTo(ex(rt), ey(rt)); ctx.lineTo(x, y); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    // Label
+    ctx.fillStyle = e.s === 'ZERO' ? '#444' : (e.s === 'NULL' ? '#8af' : (e.disco ? '#f80' : '#ccc'));
+    ctx.font = r >= 10 ? 'bold 9px monospace' : '8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.n, x, y - r - 3);
+    if (e.ip && e.s !== 'NOT') {
+      ctx.fillStyle = '#555';
+      ctx.font = '7px monospace';
+      ctx.fillText(e.ip, x, y + r + 9);
+    }
+    ctx.textAlign = 'start';
+  }
+}
+
+function drawWAN() {
+  const rt = ent('Router');
+  const wan = ent('WAN Egress');
+  if (!rt || !wan) return;
+
+  const rx = ex(rt), ry = ey(rt);
+  const wx = ex(wan), wy = ey(wan);
+
+  ctx.strokeStyle = '#4ff3';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(wx, wy); ctx.stroke();
+
+  const p = (t * 0.2) % 1;
+  ctx.fillStyle = '#4ff';
+  ctx.beginPath();
+  ctx.arc(rx + (wx - rx) * p, ry + (wy - ry) * p, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCompass() {
+  const cx = W - 40, cy = 55;
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx, cy + 18); ctx.lineTo(cx, cy - 18); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - 4, cy - 13); ctx.lineTo(cx, cy - 18); ctx.lineTo(cx + 4, cy - 13); ctx.stroke();
+  ctx.fillStyle = '#555';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', cx, cy - 22);
+  ctx.textAlign = 'start';
+}
+
+function drawLabel() {
+  ctx.fillStyle = '#444';
+  ctx.font = '9px monospace';
+  ctx.fillText('footPrint: 42.3314°N, 83.0458°W — Dearborn, MI — ARP: 22 entries — DHCP: 16 leases', 10, H - 8);
+}
+
+function drawSpectralLabel() {
+  ctx.fillStyle = '#ff8';
+  ctx.font = 'bold 11px monospace';
+  ctx.fillText('SPECTRAL GEOMETRY — RSSI → Distance via Indoor Path-Loss', 12, H - 34);
+  ctx.font = '9px monospace';
+  ctx.fillStyle = '#666';
+  ctx.fillText('d = 10^((−30 − RSSI) / 30) | n=3 (indoor) | 2.4GHz range ~50m | 5GHz range ~25m | BT ~15m', 12, H - 20);
+  ctx.fillText('footPrint: 42.3314°N, 83.0458°W — Dearborn, MI', 12, H - 8);
+}
+
+function checkHover() {
+  let closest = null, minD = 20;
+  for (const e of E) {
+    const dx = ex(e) - mouse.x, dy = ey(e) - mouse.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < minD) { closest = e; minD = d; }
+  }
+  if (closest) {
+    let html = '<b style="color:' + closest.c + '">' + closest.n + '</b>';
+    if (closest.ip) html += ' <span style="color:#888">' + closest.ip + '</span>';
+    html += '<br>Role: ' + closest.r;
+    if (closest.hw) html += '<br>HW: ' + closest.hw;
+    if (closest.mac && closest.mac !== 'self') html += '<br>MAC: ' + closest.mac;
+    if (closest.rd) html += '<br>RustDesk: ' + closest.rd;
+    if (closest.mod) html += '<br>Models: ' + closest.mod;
+    if (closest.pri) html += '<br>Primals: ' + closest.pri;
+    if (closest.note) html += '<br><i style="color:#f80">' + closest.note + '</i>';
+    if (closest.disco) html += '<br><span style="color:#f80">⚡ Newly discovered</span>';
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    tip.style.left = (mouse.x + 14) + 'px';
+    tip.style.top = (mouse.y - 10) + 'px';
+  } else {
+    tip.style.display = 'none';
+  }
+}
+
+draw();
+
+// Auto-refresh state
+setInterval(async () => {
+  try {
+    const r = await fetch('/data/field-state.json');
+    if (r.ok) { /* future: update entity states from live data */ }
+  } catch(e) {}
+}, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+{
+  "title": "Gaia Data Protocols — 6 Channels",
+  "wave": "239a",
+  
+  "protocols": {
+    "1_http": {
+      "name": "HTTP / Heart-Pull",
+      "direction": "bidirectional",
+      "endpoints": ["eastGate:8080 (data)", "eastGate:8443 (gate/thymus)"],
+      "who_uses": "All gates pull data, sporeGate every 2min, any device on LAN",
+      "carries": "JSON state, HUD pages, sensor data, heart-pull packages"
+    },
+    "2_git": {
+      "name": "Git / Forgejo / GitHub",
+      "direction": "bidirectional", 
+      "endpoints": ["Forgejo :3000", "GitHub ecoPrimal/*"],
+      "who_uses": "northGate pushes, all gates clone/pull",
+      "carries": "Code, config, wave commits, organism DNA"
+    },
+    "3_email": {
+      "name": "Neutrino SMTP / Mail",
+      "direction": "inbound + outbound",
+      "endpoints": ["eastGate:25 (SMTP)", "gaia@primals.eco"],
+      "who_uses": "External senders, BOINC notifications, encounters",
+      "carries": "Email, notifications, external contact"
+    },
+    "4_tor": {
+      "name": "Tor Hidden Service",
+      "direction": "inbound",
+      "endpoints": ["iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"],
+      "who_uses": "Anonymous external access",
+      "carries": "Same as HTTP but through onion routing"
+    },
+    "5_pony": {
+      "name": "Pony Express",
+      "direction": "inter-gate async",
+      "endpoints": ["pony-express.jsonl on each gate"],
+      "who_uses": "Gates send messages to each other, absorbed via heart-pull + git",
+      "carries": "State sync beads, announcements, commands, neutrino beads"
+    },
+    "6_physical": {
+      "name": "Physical Plane FAX",
+      "direction": "bidirectional (digital ↔ physical)",
+      "endpoints": [
+        "Epson ET-2400 (.200) — PRINT output (Gaia's hand)",
+        "Epson ES-400II (USB) — SCAN input (Gaia's eye)"
+      ],
+      "who_uses": "Kevin (pen annotations), any gate via HTTP POST/GET",
+      "carries": "Documents, forms, photos, diagrams, handwritten notes, art",
+      "modes": {
+        "draft": "Gray, minimal ink (DEFAULT)",
+        "whisper": "2-up gray, absolute minimum ink",
+        "normal": "Color, standard quality",
+        "photo": "Color, high quality",
+        "fax": "Gray, inter-gate transmission"
+      },
+      "http_api": {
+        "send": "POST file to eastGate:8443/fax/send",
+        "scan": "GET eastGate:8080/data/latest-fax.png",
+        "inbox": "GET eastGate:8080/data/fax/",
+        "scans": "GET eastGate:8080/data/scans/"
+      },
+      "conservation": "Default DRAFT/GRAY. Every drop of ink is a choice.",
+      "unique_property": "ONLY protocol that crosses the digital/physical boundary. Carries human handwriting INTO the system."
+    }
+  },
+
+  "protocol_matrix": {
+    "north_to_east": ["git", "pony", "http"],
+    "east_to_north": ["http (heart-pull)", "pony"],
+    "east_to_spore": ["http (heart-pull)"],
+    "spore_to_east": ["http (pull)", "pony"],
+    "east_to_pixel": ["ADB", "http"],
+    "pixel_to_east": ["ADB (sensor push)", "http"],
+    "east_to_world": ["http (WAN)", "tor", "email", "RSS"],
+    "world_to_east": ["http (WAN)", "tor", "email"],
+    "east_to_kevin": ["physical (print)", "display (HUD/TV)", "http"],
+    "kevin_to_east": ["physical (scan)", "keyboard", "pen annotation"],
+    "any_gate_to_printer": ["http POST → eastGate → ET-2400"],
+    "scanner_to_any_gate": ["ES-400II → eastGate → http GET"]
+  }
+}

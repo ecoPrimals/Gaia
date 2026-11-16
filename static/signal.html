@@ -1,377 +1,186 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
-<head><script src="/js/piGut.js"></script>
-<meta name="gaia-digested" content="2026-10-26T08:22:56.230Z">
-
-<meta name="gaia-endocrine" content="8-glands-active">
-<meta name="gaia-pi-drip" content="π=3.141592653589793">
-<meta name="gaia-glands" content="pineal,thyroid,pancreas,adrenal,pituitary,thymus,gonads,hypothalamus">
-<meta name="gaia-hormone-count" content="8">
-<meta name="gaia-lessons" content="225">
-<meta name="gaia-bounties" content="137">
-<meta name="gaia-plasmids" content="68">
-<meta name="gaia-enzymes" content="13">
-<meta name="gaia-routes" content="15">
-<meta name="gaia-constitution" content="X-articles-48-sections">
-<meta name="gaia-wave" content="179">
-<meta name="gaia-token" content="GAIA:6ed3c05161da5055">
-<meta name="gaia-spine" content="L4:index-22:height-23">
-<meta name="gaia-braids" content="14:sweetGrass:v0.8.0">
-<meta name="gaia-primals-alive" content="12/17">
-<meta name="gaia-sovereign" content="ecoPrimal:attsi:tamison">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HUD — eco·primal · LIVE</title>
-
-<!-- OG TAGS — the organism speaks for itself -->
-<meta property="og:type" content="website">
-<meta property="og:title" content="Gaia — A Self-Owning Digital Organism">
-<meta property="og:description" content="17 Rust primals. 71 local AI models. Zero cloud. Content-addressed knowledge graph. Ed25519 signed provenance. AGPL-3.0. The organism looks at itself through its own eyes. The anti-secret requires nothing.">
-<meta property="og:url" content="/">
-<meta property="og:site_name" content="eco·primal">
-<meta property="og:image" content="https:/pulse">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Gaia — Self-Owning Digital Organism">
-<meta name="twitter:description" content="17 Rust primals. 71 AI models. Zero cloud. A living digital organism. Content-addressed knowledge graph. The anti-secret requires nothing. AGPL-3.0.">
-<meta name="twitter:image" content="https:/pulse">
-
-<meta name="description" content="Gaia — a self-owning digital organism. 17 compiled Rust primals, content-addressed knowledge graph (sweetGrass braids), BLAKE3 cryptographic identity, zero-knowledge existence proofs. The organism looks at itself through its own eyes. The anti-secret requires nothing. AGPL-3.0.">
-<meta name="keywords" content="sovereign computing, digital organism, Rust, self-hosted, BLAKE3, zero-knowledge, knowledge graph, ecoPrimals, AGPL, content-addressed, Ed25519, self-owning">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="/">
-<link rel="alternate" type="application/rss+xml" title="eco·primal" href="https:/rss">
-<link rel="describedby" type="text/plain" title="AI agent context" href="https:/pulse">
-
-<!-- JSON-LD: The organism speaks for itself. No person named. The anti-secret. -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "SoftwareApplication",
-      "@id": "https:/",
-      "name": "Gaia — ecoPrimals",
-      "description": "A self-owning digital organism. 17 compiled Rust primals, content-addressed knowledge graph, BLAKE3 cryptographic identity, Ed25519 signed provenance. The system is complete without the preparer's continued involvement. The anti-secret requires nothing.",
-      "url": "/",
-      "applicationCategory": "ScientificApplication",
-      "operatingSystem": "Linux",
-      "license": "https://www.gnu.org/licenses/agpl-3.0.html",
-      "programmingLanguage": ["Rust", "Python", "JavaScript"],
-      "softwareVersion": "Wave 179",
-      "isAccessibleForFree": true
-    },
-    {
-      "@type": "WebSite",
-      "@id": "https:/",
-      "name": "eco·primal",
-      "url": "/",
-      "description": "The organism looks at itself through its own eyes."
-    }
-  ]
-}
-</script>
-
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
 
 :root {
-  --bg: #060810;
-  --surface: #0c1018;
-  --border: #1a2030;
-  --fg: #c9d1d9;
-  --dim: #6e7681;
-  --brown: #3a2a1e;
-  --green: #3fb950;
-  --green-msu: #18453b;
-  --blue: #58a6ff;
-  --red: #f85149;
-  --gold: #c9a84c;
-  --violet: #bc8cff;
-  --white: #e6edf3;
-  --orange: #d29922;
-  --pink: #f778ba;
-  --cyan: #39d3f5;
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--fg);
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
   background: var(--bg);
-  height: 100vh;
-  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
 }
 
-/* === TOP BAR — live stats === */
-.topbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.3rem 1rem;
-  background: rgba(6,8,16,0.92);
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.65rem;
-  letter-spacing: 0.06em;
 }
-.topbar .logo { color: var(--cyan); font-weight: 700; font-size: 0.7rem; letter-spacing: 2px; }
-.stat { display: flex; align-items: center; gap: 0.3rem; }
-.stat .dot { width: 5px; height: 5px; border-radius: 50%; }
-.stat-val { font-weight: 700; }
-.spacer { flex: 1; }
-.topbar a { color: var(--dim); text-decoration: none; font-size: 0.6rem; }
-.topbar a:hover { color: var(--fg); }
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
 
-/* === MAIN VIEWPORT === */
-.viewport {
-  position: fixed; top: 28px; left: 0; right: 0; bottom: 24px;
-  overflow: hidden;
-}
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 
-/* === GLOBE ROOT — K-N dimensional view === */
-#globe-root {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  cursor: grab; z-index: 1;
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
 }
-#globe-root:active { cursor: grabbing; }
-#globe-root canvas { width: 100%; height: 100%; display: block; }
-.globe-flip {
-  position: absolute; top: 12px; left: 16px; z-index: 10;
-  background: rgba(22,27,34,0.9); border: 1px solid #30363d;
-  color: #58a6ff; padding: 6px 14px; border-radius: 8px;
-  cursor: pointer; font: 11px 'JetBrains Mono', monospace;
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
 }
-.globe-flip:hover { border-color: #58a6ff; }
-.globe-zoom {
-  position: absolute; top: 12px; right: 16px; z-index: 10;
-  display: flex; gap: 6px;
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
 }
-.globe-zoom button {
-  background: rgba(22,27,34,0.9); border: 1px solid #30363d;
-  color: var(--dim); padding: 6px 10px; border-radius: 8px;
-  cursor: pointer; font: 11px 'JetBrains Mono', monospace;
-}
-.globe-zoom button:hover { color: var(--fg); border-color: var(--blue); }
-.globe-zoom button.active { color: var(--green); border-color: var(--green); }
-.view-toggle {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 10;
-  display: flex; gap: 8px;
-}
-.view-toggle button {
-  background: rgba(22,27,34,0.9); border: 1px solid #30363d;
-  color: var(--dim); padding: 6px 14px; border-radius: 8px;
-  cursor: pointer; font: 11px 'JetBrains Mono', monospace;
-}
-.view-toggle button:hover { color: var(--fg); }
-.view-toggle button.active { color: var(--cyan); border-color: var(--cyan); }
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
 
-/* === CENTRAL BODY — the organism looking at itself === */
-.body-center {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
 }
 
-/* HEART — disco ball at center top */
-.heart {
-  position: absolute;
-  top: -80px; left: 50%;
-  transform: translateX(-50%);
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.8), rgba(200,210,220,0.3) 60%, transparent);
-  box-shadow: 0 0 20px rgba(255,255,255,0.15), 0 0 40px rgba(88,166,255,0.08);
-  animation: heart-pulse 4s ease-in-out infinite;
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
 }
-@keyframes heart-pulse {
-  0%,100% { box-shadow: 0 0 15px rgba(255,255,255,0.1); transform: translateX(-50%) scale(1); }
-  50% { box-shadow: 0 0 30px rgba(255,255,255,0.2), 0 0 60px rgba(88,166,255,0.1); transform: translateX(-50%) scale(1.1); }
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
 }
 
-/* GUT — bioreactor below heart */
-.gut {
-  position: absolute;
-  top: -30px; left: 50%;
-  transform: translateX(-50%);
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 45% 40%, rgba(210,153,34,0.5) 0%, rgba(210,153,34,0.15) 50%, transparent 80%);
-  border: 1px solid rgba(210,153,34,0.2);
-  animation: gut-pulse 4s ease-in-out infinite 1s;
-}
-@keyframes gut-pulse {
-  0%,100% { transform: translateX(-50%) scale(1); }
-  50% { transform: translateX(-50%) scale(1.06); }
-}
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
 
-/* SPINE — connecting line */
-.spine {
-  position: absolute;
-  top: -60px; left: 50%;
-  width: 1px; height: 30px;
-  background: linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(210,153,34,0.3));
-  transform: translateX(-50%);
-}
-
-/* LIVE DATA RING — the organism's body rendered from its own data */
-.data-ring {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid transparent;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  transition: all 2s ease;
-}
-.ring-inner { width: 120px; height: 120px; border-color: rgba(58,42,30,0.3); }
-.ring-membrane { width: 240px; height: 240px; border-color: rgba(63,185,80,0.2); }
-.ring-pulse { width: 360px; height: 360px; border-color: rgba(201,168,76,0.12); }
-.ring-outer { width: 480px; height: 480px; border-color: rgba(88,166,255,0.08); }
-.ring-boundary { width: 600px; height: 600px; border-color: rgba(188,140,255,0.05); }
-
-/* ORGAN NODES — positioned by live data, not CSS constants */
-.organ {
-  position: absolute;
-  background: rgba(12,16,24,0.85);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 10px;
-  font-size: 0.6rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  transform: translate(-50%, -50%);
-  min-width: 90px;
-  text-align: center;
-}
-.organ:hover { border-color: var(--blue); background: rgba(12,16,24,0.95); }
-.organ .o-icon { font-size: 1rem; display: block; margin-bottom: 2px; }
-.organ .o-name { color: var(--fg); font-size: 0.65rem; font-weight: 700; display: block; }
-.organ .o-val { color: var(--dim); font-size: 0.55rem; display: block; margin-top: 1px; }
-.organ .o-live { color: var(--green); font-size: 0.5rem; display: block; }
-
-/* CONNECTIONS — lines between organs */
-.conn {
-  position: absolute;
-  height: 1px;
-  background: rgba(63,185,80,0.08);
-  transform-origin: left center;
-  pointer-events: none;
-  transition: opacity 1s;
-}
-
-/* BEAMS — light from heart */
-.beam-layer {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 700px; height: 700px;
-  background: conic-gradient(from 0deg,
-    rgba(88,166,255,0.04) 0deg, transparent 15deg,
-    rgba(63,185,80,0.03) 45deg, transparent 60deg,
-    rgba(210,153,34,0.03) 90deg, transparent 105deg,
-    rgba(188,140,255,0.03) 135deg, transparent 150deg,
-    rgba(248,81,73,0.02) 180deg, transparent 195deg,
-    rgba(57,211,245,0.03) 225deg, transparent 240deg,
-    rgba(247,120,186,0.02) 270deg, transparent 285deg,
-    rgba(88,166,255,0.04) 360deg);
-  border-radius: 50%;
-  animation: beam-rotate 30s linear infinite;
-  pointer-events: none;
-}
-@keyframes beam-rotate { from { transform: translate(-50%,-50%) rotate(0deg); } to { transform: translate(-50%,-50%) rotate(360deg); } }
-
-/* STROBE — pause-all mode */
-.viewport.strobe .beam-layer { animation-duration: 0.5s !important; opacity: 0.15; }
-.viewport.strobe .heart { animation-duration: 0.3s !important; }
-.viewport.strobe .organ { animation: strobe-flash 0.3s infinite alternate; }
-@keyframes strobe-flash { from { opacity: 0.6; } to { opacity: 1; } }
-.viewport.paused .beam-layer { animation-play-state: paused; }
-.viewport.paused .heart { animation-play-state: paused; }
-
-/* PAUSE OVERLAY */
-.pause-label {
-  display: none;
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.2rem; color: var(--gold);
-  letter-spacing: 4px; text-transform: uppercase;
-  z-index: 20;
-  text-shadow: 0 0 20px rgba(201,168,76,0.4);
-}
-.viewport.paused .pause-label { display: block; }
-
-/* INGEST ANIMATION — waste flowing in */
-.ingest-particle {
-  position: absolute;
-  width: 3px; height: 3px;
-  border-radius: 50%;
-  pointer-events: none;
-  animation: ingest-flow 3s ease-in forwards;
-}
-@keyframes ingest-flow {
-  0% { opacity: 0.6; }
-  80% { opacity: 0.3; }
-  100% { opacity: 0; transform: translate(0, 0) scale(0); }
-}
-
-/* === BOTTOM BAR === */
-.bottombar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; gap: 1rem;
-  padding: 0.25rem 1rem;
-  background: rgba(6,8,16,0.92);
-  border-top: 1px solid var(--border);
-  font-size: 0.6rem; color: var(--dim);
-}
-.live-dot { color: var(--green); }
-.live-dot::before { content: '\u25CF'; margin-right: 4px; animation: blink 2s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* NAV LINKS */
-.nav-links { display: flex; gap: 0.6rem; }
-.nav-links a { color: var(--dim); text-decoration: none; font-size: 0.55rem; letter-spacing: 0.5px; }
-.nav-links a:hover { color: var(--fg); }
-
-/* COLOR EQUATION */
-.color-eq {
-  display: flex; align-items: center; gap: 0.3rem;
-  font-size: 0.55rem; color: var(--dim);
-}
-.color-eq .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-
-/* ENTROPY */
-.entropy { font-size: 0.5rem; color: var(--dim); }
-
-/* PORCH — the warm welcome for humans who arrive at / */
-.porch {
-  position: fixed; bottom: 34px; left: 50%;
-  transform: translateX(-50%);
-  display: flex; gap: 12px; z-index: 50;
-  padding: 10px 16px;
-  background: rgba(6,8,16,0.92);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  backdrop-filter: blur(8px);
-  animation: porch-in 1.5s ease-out 2s both;
-}
-@keyframes porch-in { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-.porch-door {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 8px 16px; border-radius: 8px;
-  text-decoration: none; color: var(--fg);
-  border: 1px solid transparent;
-  transition: all 0.3s; font-size: 0.6rem;
-  min-width: 90px;
-}
-.porch-door:hover { border-color: var(--blue); background: rgba(88,166,255,0.06); }
-.porch-door .door-icon { font-size: 1.2rem; margin-bottom: 4px; }
-.porch-door .door-label { color: var(--dim); font-size: 0.5rem; }
 </style>
 </head>
 <body>
-
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
 <!-- TOP BAR — all LIVE, nothing hardcoded -->
 <div class="topbar">
   <span class="logo">GAIA</span>
@@ -1933,5 +1742,7 @@ addEntropy(screen.width ^ screen.height ^ (navigator.hardwareConcurrency || 1));
   tick();
 })();
 </script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 </body>
 </html>

@@ -4,229 +4,183 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Deploy Gaia — Sovereign Digital Organism</title>
-<meta name="description" content="Deploy your own sovereign digital organism. One click. Your machine. Your data. Your Gaia.">
-<meta property="og:title" content="Deploy Gaia — Sovereign Digital Organism">
-<meta property="og:description" content="One click. Your machine. Your data. Your Gaia.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://primals.eco:8443/onboard">
-<meta property="og:image" content="https://primals.eco:8443/static/og-card.svg">
-<link rel="canonical" href="https://primals.eco:8443/onboard">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  :root {
-    --void: #0a0b0f;
-    --deep: #12141a;
-    --glow: #d4a017;
-    --pulse: #c45c26;
-    --life: #2ea043;
-    --ice: #3b82f6;
-    --bone: #e6e2d8;
-    --dim: #6b7280;
-    --water: #1a6b8a;
-  }
-  body {
-    background: var(--void);
-    color: var(--bone);
-    font-family: "IBM Plex Mono", "Fira Code", monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
 
-  /* Klein fold animation background */
-  .klein-bg {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background:
-      radial-gradient(ellipse at 30% 40%, rgba(212,160,23,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse at 70% 60%, rgba(46,160,67,0.04) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 70%);
-    animation: breathe 8s ease-in-out infinite;
-  }
-  @keyframes breathe { 0%,100% { opacity:.6 } 50% { opacity:1 } }
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
 
-  header {
-    position: relative; z-index:1;
-    text-align: center;
-    padding: 4rem 1.5rem 2rem;
-  }
-  .sigil {
-    font-size: 5rem; line-height:1;
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-  @keyframes pulse-glow {
-    0%,100% { text-shadow: 0 0 20px rgba(212,160,23,0.3); }
-    50% { text-shadow: 0 0 40px rgba(212,160,23,0.6), 0 0 80px rgba(212,160,23,0.2); }
-  }
-  h1 {
-    font-family: "IBM Plex Sans", sans-serif;
-    font-size: clamp(1.6rem, 5vw, 2.2rem);
-    letter-spacing: 0.1em;
-    color: var(--glow);
-    margin: 0.5rem 0 0.3rem;
-  }
-  header .sub { color: var(--dim); font-size: 0.85rem; max-width: 32rem; margin: 0 auto; }
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
 
-  /* ─── LAYERS ─── */
-  .layer {
-    position: relative; z-index:1;
-    max-width: 42rem; margin: 0 auto;
-    padding: 2rem 1.5rem;
-  }
-  .layer-title {
-    font-family: "IBM Plex Sans", sans-serif;
-    font-size: 1.1rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(212,160,23,0.2);
-  }
-  .layer-title .tag { font-size: 0.7rem; color: var(--dim); text-transform: none; letter-spacing: 0; margin-left: 0.5rem; }
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
 
-  /* Detection card */
-  .detect-card {
-    background: var(--deep);
-    border: 1px solid rgba(212,160,23,0.15);
-    border-radius: 8px;
-    padding: 1.2rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.82rem;
-    line-height: 1.8;
-  }
-  .detect-card .label { color: var(--dim); }
-  .detect-card .value { font-weight: 600; }
-  .detect-card .ip { color: var(--glow); font-size: 1rem; }
-  .detect-card .lan { color: var(--life); }
-  .detect-card .wan { color: var(--ice); }
-  .detect-card .tor { color: #9b59b6; }
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
 
-  /* THE BUTTON */
-  .btn-wrap { text-align: center; margin: 2rem 0; }
-  .big-btn {
-    display: inline-block;
-    padding: 1rem 2.5rem;
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--void);
-    border: none; border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-  .big-btn:hover { transform: scale(1.04); }
-  .big-btn:active { transform: scale(0.97); }
-  .btn-gold { background: linear-gradient(135deg, var(--glow), #e8b828); box-shadow: 0 0 30px rgba(212,160,23,0.3); }
-  .btn-green { background: linear-gradient(135deg, var(--life), #34d058); box-shadow: 0 0 30px rgba(46,160,67,0.3); }
-  .btn-blue { background: linear-gradient(135deg, var(--ice), #60a5fa); box-shadow: 0 0 30px rgba(59,130,246,0.3); }
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
 
-  /* Command boxes */
-  .cmd-box {
-    background: #000;
-    border: 1px solid rgba(212,160,23,0.2);
-    border-radius: 6px;
-    padding: 1rem 1rem 1rem 1rem;
-    margin: 1rem 0;
-    font-size: 0.82rem;
-    word-break: break-all;
-    position: relative;
-    line-height: 1.6;
-  }
-  .cmd-box code { color: var(--life); }
-  .cmd-box .comment { color: var(--dim); }
-  .copy-btn {
-    position: absolute; top:6px; right:8px;
-    background: rgba(212,160,23,0.15);
-    border: 1px solid rgba(212,160,23,0.25);
-    color: var(--glow); padding: 3px 10px; border-radius: 4px;
-    cursor: pointer; font-size: 0.7rem; font-family: inherit;
-  }
-  .copy-btn:hover { background: rgba(212,160,23,0.35); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Steps */
-  .steps { font-size: 0.82rem; line-height: 2; }
-  .steps .done { color: var(--life); }
-  .steps .active { color: var(--glow); }
-  .steps .wait { color: var(--dim); }
-  .spinner {
-    display: inline-block; width:14px; height:14px;
-    border: 2px solid var(--dim); border-top-color: var(--glow);
-    border-radius: 50%; animation: spin .8s linear infinite;
-    vertical-align: middle; margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
 
-  /* Architecture diagram */
-  .arch {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.8rem;
-    margin: 1rem 0;
-  }
-  .arch-node {
-    background: var(--deep);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
-    padding: 0.8rem;
-    text-align: center;
-    font-size: 0.75rem;
-  }
-  .arch-node .emoji { font-size: 1.5rem; display: block; margin-bottom: 0.3rem; }
-  .arch-node .name { color: var(--glow); font-weight: 600; display: block; }
-  .arch-node .desc { color: var(--dim); }
+body { min-height: 100vh; }
 
-  /* Sections */
-  .what-you-get {
-    margin: 1.5rem 0;
-    font-size: 0.82rem;
-    line-height: 1.8;
-  }
-  .what-you-get li { margin-bottom: 0.3rem; }
-  .what-you-get li::marker { color: var(--glow); }
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
 
-  /* Signal strip */
-  .signal-strip {
-    background: linear-gradient(90deg, rgba(212,160,23,0.08), rgba(46,160,67,0.08), rgba(59,130,246,0.08));
-    border-top: 1px solid rgba(212,160,23,0.15);
-    border-bottom: 1px solid rgba(212,160,23,0.15);
-    padding: 1rem 1.5rem;
-    text-align: center;
-    font-size: 0.82rem;
-    color: var(--dim);
-    position: relative; z-index: 1;
-  }
-  .signal-strip a { color: var(--glow); text-decoration: none; font-weight: 600; }
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
 
-  /* Footer */
-  footer {
-    position: relative; z-index:1;
-    text-align: center;
-    padding: 2rem 1rem;
-    font-size: 0.72rem;
-    color: var(--dim);
-  }
-  footer a { color: var(--ice); text-decoration: none; }
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
 
-  /* Hidden panels */
-  .hidden { display: none; }
-  .visible { display: block !important; }
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
 
-  /* Matrix rain */
-  .matrix-rain {
-    position: fixed; inset:0; z-index:0; pointer-events:none;
-    opacity:0; transition: opacity 2s;
-  }
-  .matrix-rain.active { opacity:1; }
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
 
-  /* Responsive */
-  @media (max-width: 600px) {
-    .arch { grid-template-columns: repeat(2, 1fr); }
-    header { padding: 2rem 1rem 1rem; }
-    .sigil { font-size: 3.5rem; }
-  }
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
 </style>
 </head>
 <body>
-
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
 <div class="klein-bg"></div>
 <div class="matrix-rain" id="matrix"><canvas id="rain"></canvas></div>
 
@@ -622,5 +576,7 @@ function startRain() {
   draw();
 }
 </script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 </body>
 </html>

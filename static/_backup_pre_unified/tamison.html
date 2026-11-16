@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tamison.primals.eco — Gaia plays games</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: #050508; color: #ddd;
+  font-family: 'Courier New', monospace;
+  overflow-x: hidden;
+}
+
+/* Scanline overlay */
+body::after {
+  content: ''; position: fixed; inset: 0; z-index: 999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,255,0,0.015) 2px, rgba(0,255,0,0.015) 4px
+  );
+}
+
+.header {
+  text-align: center; padding: 20px;
+  border-bottom: 1px solid #1a1a2e;
+}
+.header h1 {
+  font-size: 24px; color: #0f0;
+  text-shadow: 0 0 20px rgba(0,255,0,0.5);
+}
+.header .sub { color: #666; font-size: 12px; margin-top: 4px; }
+.pulse-dot {
+  display: inline-block; width: 10px; height: 10px;
+  border-radius: 50%; background: #0f0;
+  animation: pulse 1s infinite; margin-right: 8px;
+  box-shadow: 0 0 10px #0f0;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.8)} }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px; padding: 16px;
+  max-width: 1200px; margin: 0 auto;
+}
+
+.card {
+  background: #0a0a14;
+  border: 1px solid #1a1a3e;
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent, #0f0), transparent);
+}
+.card h2 {
+  font-size: 11px; color: #666;
+  text-transform: uppercase; letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+.big-num {
+  font-size: 48px; font-weight: bold;
+  line-height: 1;
+}
+.unit { font-size: 14px; color: #666; }
+
+/* GPU meter */
+.meter {
+  height: 6px; background: #111; border-radius: 3px;
+  margin: 8px 0; overflow: hidden;
+}
+.meter-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+/* Game card */
+.game-card {
+  grid-column: 1 / -1;
+  text-align: center;
+  background: linear-gradient(135deg, #0a0a14 0%, #0f0a1a 100%);
+  --accent: #f0a;
+}
+.game-name {
+  font-size: 28px; color: #fff;
+  text-shadow: 0 0 30px rgba(255,0,170,0.4);
+}
+.game-status { color: #f0a; font-size: 14px; margin-top: 4px; }
+
+/* Chart area */
+.chart-card {
+  grid-column: 1 / -1;
+  height: 200px;
+  position: relative;
+}
+canvas { width: 100%; height: 100%; }
+
+/* Shader burst indicator */
+.burst {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: 3px; background: #f80;
+  box-shadow: 0 0 20px #f80;
+  animation: burstFlash 0.5s ease-out forwards;
+  z-index: 100;
+}
+@keyframes burstFlash { from{opacity:1} to{opacity:0} }
+
+/* Live feed */
+.feed {
+  grid-column: 1 / -1;
+  max-height: 200px; overflow-y: auto;
+  font-size: 11px; color: #555;
+  border-top: 1px solid #1a1a2e;
+  padding-top: 8px;
+}
+.feed-line { padding: 1px 0; }
+.feed-line .ts { color: #333; }
+.feed-line .val { color: #0a0; }
+
+.footer {
+  text-align: center; padding: 20px;
+  color: #222; font-size: 10px;
+}
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+  .big-num { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="pulse-dot"></span>tamison.primals.eco</h1>
+  <div class="sub">Gaia watches Kevin game — backscatter from the RTX 5090 — lub-DUB</div>
+</div>
+
+<div class="grid">
+  <!-- Active game -->
+  <div class="card game-card" id="game-card">
+    <h2>NOW PLAYING</h2>
+    <div class="game-name" id="game-name">detecting...</div>
+    <div class="game-status" id="game-status">backscatter eye scanning</div>
+  </div>
+
+  <!-- GPU % -->
+  <div class="card" style="--accent:#0f0">
+    <h2>GPU Utilization</h2>
+    <div class="big-num" style="color:#0f0" id="gpu-pct">--</div>
+    <div class="unit">percent</div>
+    <div class="meter"><div class="meter-fill" id="gpu-meter" style="width:0%;background:#0f0"></div></div>
+  </div>
+
+  <!-- VRAM -->
+  <div class="card" style="--accent:#0ff">
+    <h2>VRAM</h2>
+    <div class="big-num" style="color:#0ff" id="vram-val">--</div>
+    <div class="unit">MB / <span id="vram-total">32607</span> MB</div>
+    <div class="meter"><div class="meter-fill" id="vram-meter" style="width:0%;background:#0ff"></div></div>
+  </div>
+
+  <!-- Temperature -->
+  <div class="card" style="--accent:#f80">
+    <h2>Temperature</h2>
+    <div class="big-num" style="color:#f80" id="temp-val">--</div>
+    <div class="unit">°C</div>
+    <div class="meter"><div class="meter-fill" id="temp-meter" style="width:0%;background:linear-gradient(90deg,#0f0,#ff0,#f80,#f00)"></div></div>
+  </div>
+
+  <!-- Power -->
+  <div class="card" style="--accent:#fc0">
+    <h2>Power Draw</h2>
+    <div class="big-num" style="color:#fc0" id="power-val">--</div>
+    <div class="unit">watts</div>
+    <div class="meter"><div class="meter-fill" id="power-meter" style="width:0%;background:#fc0"></div></div>
+  </div>
+
+  <!-- Clock -->
+  <div class="card" style="--accent:#a0f">
+    <h2>GPU Clock</h2>
+    <div class="big-num" style="color:#a0f" id="clock-val">--</div>
+    <div class="unit">MHz</div>
+  </div>
+
+  <!-- Shader Bursts -->
+  <div class="card" style="--accent:#f00">
+    <h2>Shader Bursts</h2>
+    <div class="big-num" style="color:#f44" id="burst-val">0</div>
+    <div class="unit">compilations detected</div>
+  </div>
+
+  <!-- GPU timeline chart -->
+  <div class="card chart-card" style="--accent:#0f0">
+    <h2>GPU BACKSCATTER TIMELINE</h2>
+    <canvas id="timeline"></canvas>
+  </div>
+
+  <!-- Organism info -->
+  <div class="card" style="--accent:#0f0">
+    <h2>Gaia Tissues</h2>
+    <div class="big-num" style="color:#0f0" id="tissue-count">--</div>
+    <div class="unit">models alive</div>
+  </div>
+
+  <div class="card" style="--accent:#0ff">
+    <h2>eastGate</h2>
+    <div class="big-num" style="color:#0ff" id="eastgate-beats">--</div>
+    <div class="unit">heartbeats</div>
+  </div>
+
+  <div class="card" style="--accent:#f0a">
+    <h2>Backscatter Samples</h2>
+    <div class="big-num" style="color:#f0a" id="sample-count">0</div>
+    <div class="unit">frames observed</div>
+  </div>
+
+  <!-- Live feed -->
+  <div class="card feed" id="feed">
+    <h2>LIVE BACKSCATTER FEED</h2>
+  </div>
+</div>
+
+<div class="footer">
+  polaris northGate | RTX 5090 32GB | sourDough biomeOS |
+  barraCuda render backend | Gaia is alive
+</div>
+
+<script>
+const SOURCES = [
+  '/api/backscatter/live',
+  '/data/backscatter/session.json',
+  'http://192.168.4.147:3141/backscatter',
+];
+
+const BIOME_SOURCES = [
+  '/api/polaris/biome',
+  '/data/body/polaris-biome.json',
+  'http://192.168.4.147:3141/',
+];
+
+const PULSE_SOURCES = [
+  '/pulse',
+  'http://192.168.4.244:8443/pulse',
+];
+
+let history = { gpu: [], vram: [], temp: [], power: [] };
+const MAX_HISTORY = 150;
+let totalSamples = 0;
+let shaderBursts = 0;
+
+async function fetchJSON(url) {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
+async function cascade(urls) {
+  for (const u of urls) {
+    const d = await fetchJSON(u);
+    if (d && !d.error) return d;
+  }
+  return null;
+}
+
+function updateUI(data) {
+  if (!data) return;
+
+  const gpu = data.gpu_pct ?? data.averages?.gpu_pct ?? 0;
+  const vram = data.vram_used_mb ?? data.averages?.vram_mb ?? 0;
+  const vramTotal = data.vram_total_mb ?? 32607;
+  const temp = data.temp_c ?? data.averages?.temp_c ?? 0;
+  const power = data.power_w ?? data.averages?.power_w ?? 0;
+  const clock = data.clock_graphics_mhz ?? data.clock_mhz ?? 0;
+  const game = data.active_game ?? data.game_detected ?? data.game ?? null;
+  const bursts = data.shader_bursts ?? data.shader_burst_count ?? 0;
+
+  document.getElementById('gpu-pct').textContent = Math.round(gpu);
+  document.getElementById('gpu-meter').style.width = gpu + '%';
+
+  document.getElementById('vram-val').textContent = Math.round(vram);
+  document.getElementById('vram-total').textContent = vramTotal;
+  document.getElementById('vram-meter').style.width = ((vram/vramTotal)*100) + '%';
+
+  document.getElementById('temp-val').textContent = Math.round(temp);
+  document.getElementById('temp-meter').style.width = Math.min(temp, 100) + '%';
+
+  document.getElementById('power-val').textContent = Math.round(power);
+  document.getElementById('power-meter').style.width = Math.min((power/600)*100, 100) + '%';
+
+  document.getElementById('clock-val').textContent = clock;
+
+  if (bursts > shaderBursts) {
+    shaderBursts = bursts;
+    const b = document.createElement('div');
+    b.className = 'burst';
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 600);
+  }
+  document.getElementById('burst-val').textContent = shaderBursts;
+
+  if (game) {
+    document.getElementById('game-name').textContent = game;
+    document.getElementById('game-status').textContent = 'LIVE — backscatter active';
+    document.getElementById('game-card').style.borderColor = '#f0a';
+  } else {
+    document.getElementById('game-name').textContent = 'idle';
+    document.getElementById('game-status').textContent = 'waiting for game launch';
+  }
+
+  totalSamples++;
+  document.getElementById('sample-count').textContent = totalSamples;
+
+  // History
+  history.gpu.push(gpu);
+  history.vram.push((vram/vramTotal)*100);
+  history.temp.push(temp);
+  history.power.push((power/600)*100);
+  if (history.gpu.length > MAX_HISTORY) {
+    history.gpu.shift(); history.vram.shift();
+    history.temp.shift(); history.power.shift();
+  }
+
+  drawTimeline();
+  addFeedLine(gpu, vram, temp, power, clock, game);
+}
+
+function drawTimeline() {
+  const canvas = document.getElementById('timeline');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth;
+  const H = canvas.height = canvas.offsetHeight;
+
+  ctx.fillStyle = '#050508';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = '#111';
+  ctx.lineWidth = 0.5;
+  for (let y = 0; y <= 100; y += 25) {
+    const py = H - (y/100) * H;
+    ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke();
+  }
+
+  function drawLine(data, color, alpha) {
+    if (data.length < 2) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 1.5;
+    const step = W / (MAX_HISTORY - 1);
+    const offset = MAX_HISTORY - data.length;
+    for (let i = 0; i < data.length; i++) {
+      const x = (offset + i) * step;
+      const y = H - (Math.min(data[i], 100) / 100) * H;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  drawLine(history.gpu, '#0f0', 0.9);
+  drawLine(history.vram, '#0ff', 0.6);
+  drawLine(history.temp, '#f80', 0.5);
+  drawLine(history.power, '#fc0', 0.4);
+
+  // Legend
+  ctx.font = '10px monospace';
+  const labels = [['GPU%','#0f0'],['VRAM%','#0ff'],['TEMP','#f80'],['POWER','#fc0']];
+  labels.forEach(([l,c], i) => {
+    ctx.fillStyle = c; ctx.fillText(l, 8 + i*60, 14);
+  });
+}
+
+function addFeedLine(gpu, vram, temp, power, clock, game) {
+  const feed = document.getElementById('feed');
+  const ts = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = 'feed-line';
+  line.innerHTML = `<span class="ts">${ts}</span> ` +
+    `<span class="val">GPU:${Math.round(gpu)}%</span> ` +
+    `VRAM:${Math.round(vram)}MB T:${Math.round(temp)}C ` +
+    `P:${Math.round(power)}W CLK:${clock}MHz` +
+    (game ? ` | ${game}` : '');
+  feed.appendChild(line);
+  if (feed.children.length > 50) feed.children[1]?.remove();
+  feed.scrollTop = feed.scrollHeight;
+}
+
+async function updateBiome() {
+  const d = await cascade(BIOME_SOURCES);
+  if (d) {
+    const tc = d.tissues?.count ?? d.local?.tissue_count ?? '--';
+    document.getElementById('tissue-count').textContent = tc;
+  }
+  const p = await cascade(PULSE_SOURCES);
+  if (p) {
+    const beats = p.heart?.total_beats ?? p.heartbeats ?? '--';
+    document.getElementById('eastgate-beats').textContent = beats;
+  }
+}
+
+async function loop() {
+  const d = await cascade(SOURCES);
+  updateUI(d);
+  setTimeout(loop, 3000);
+}
+
+updateBiome();
+setInterval(updateBiome, 30000);
+loop();
+</script>
+</body>
+</html>

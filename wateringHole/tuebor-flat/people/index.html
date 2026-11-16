@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actors — tuebor — Public Record Investigation</title>
+<style>
+/* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
+   The living organism. Dark with warm accents.
+   Every page uses this. No inline styles. */
+
+:root {
+  --bg:         #08090b;
+  --bg-raised:  #0f1114;
+  --bg-card:    #141719;
+  --bg-hover:   #1a1d21;
+  --border:     #1e2228;
+  --border-glow:#2a3040;
+
+  --text:       #e0dcd6;
+  --text-muted: #8a857e;
+  --text-dim:   #5a5650;
+  --text-bright:#f5f0e8;
+
+  --amber:      #d4a574;
+  --amber-dim:  #7a5f3e;
+  --amber-glow: #d4a57420;
+  --green:      #5aad72;
+  --green-dim:  #2d5e3a;
+  --green-glow: #5aad7220;
+  --blue:       #5b8fd4;
+  --red:        #d45b5b;
+  --purple:     #9b7ed4;
+
+  --radius:     6px;
+  --radius-lg:  12px;
+  --gap:        16px;
+  --gap-lg:     24px;
+
+  --font:       -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+body { min-height: 100vh; }
+
+/* ═══ TYPOGRAPHY ═══ */
+h1, h2, h3, h4 { color: var(--text-bright); font-weight: 500; line-height: 1.25; }
+h1 { font-size: 2rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 0.95rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 400; }
+
+p { color: var(--text); margin-bottom: 0.75em; }
+a { color: var(--amber); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+code, pre { font-family: var(--font-mono); }
+code { background: var(--bg-raised); padding: 2px 6px; border-radius: 3px; font-size: 0.88em; color: var(--amber); }
+pre { background: var(--bg-raised); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow-x: auto; font-size: 0.85rem; }
+
+/* ═══ LAYOUT ═══ */
+.gaia-shell { max-width: 1200px; margin: 0 auto; padding: 0 var(--gap); }
+.gaia-hero { padding: 48px 0 32px; text-align: center; }
+.gaia-hero h1 { margin-bottom: 8px; }
+.gaia-hero .subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+/* ═══ NAV ═══ */
+.gaia-nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+.gaia-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 var(--gap);
+  display: flex; align-items: center; gap: var(--gap);
+  height: 52px; overflow-x: auto;
+}
+.gaia-nav-brand {
+  font-weight: 500; color: var(--amber); font-size: 1.1rem;
+  white-space: nowrap; margin-right: 8px;
+}
+.gaia-nav a {
+  color: var(--text-muted); font-size: 0.88rem; white-space: nowrap;
+  padding: 4px 0; border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.gaia-nav a:hover, .gaia-nav a.active { color: var(--text); border-bottom-color: var(--amber); }
+
+/* ═══ CARDS ═══ */
+.gaia-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--gap); }
+.gaia-grid-sm { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.gaia-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: var(--gap-lg);
+  transition: border-color 0.3s, transform 0.2s;
+  text-decoration: none; display: block;
+}
+.gaia-card:hover {
+  border-color: var(--amber-dim); transform: translateY(-2px);
+}
+.gaia-card h3 { margin-bottom: 6px; font-size: 1.05rem; }
+.gaia-card p { color: var(--text-muted); font-size: 0.88rem; margin: 0; }
+.gaia-card .tag {
+  display: inline-block; font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 99px; margin-top: 10px;
+  background: var(--amber-glow); color: var(--amber); border: 1px solid var(--amber-dim);
+}
+.gaia-card .tag.green { background: var(--green-glow); color: var(--green); border-color: var(--green-dim); }
+
+/* ═══ SECTION ═══ */
+.gaia-section { padding: 32px 0; }
+.gaia-section h2 { margin-bottom: var(--gap); }
+.gaia-section h4 { margin-bottom: 12px; }
+.gaia-divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ═══ PULSE DOT ═══ */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--green-glow); }
+  50% { box-shadow: 0 0 12px var(--green); }
+}
+
+/* ═══ STATS ═══ */
+.gaia-stats { display: flex; gap: var(--gap-lg); flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+.gaia-stat { text-align: center; }
+.gaia-stat .value { font-size: 1.8rem; font-weight: 500; color: var(--amber); font-family: var(--font-mono); }
+.gaia-stat .label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ═══ FOOTER ═══ */
+.gaia-footer {
+  border-top: 1px solid var(--border); padding: 32px 0;
+  margin-top: 48px; color: var(--text-muted); font-size: 0.85rem;
+}
+.gaia-footer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--gap-lg); }
+.gaia-footer h4 { margin-bottom: 8px; font-size: 0.8rem; }
+.gaia-footer a { display: block; padding: 3px 0; color: var(--text-dim); font-size: 0.82rem; }
+.gaia-footer a:hover { color: var(--amber); }
+.gaia-footer-bottom { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 640px) {
+  h1 { font-size: 1.5rem; }
+  .gaia-grid { grid-template-columns: 1fr; }
+  .gaia-stats { gap: var(--gap); }
+  .gaia-stat .value { font-size: 1.3rem; }
+  .gaia-nav-inner { gap: 12px; }
+}
+
+/* ═══ UTILITIES ═══ */
+.text-amber { color: var(--amber); }
+.text-green { color: var(--green); }
+.text-blue { color: var(--blue); }
+.text-red { color: var(--red); }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+
+</style>
+</head>
+<body>
+<nav class="gaia-nav"><div class="gaia-nav-inner"><a href="https://primals.eco" class="gaia-nav-brand">gaia</a><a href="https://primals.eco/#organism">Organism</a><a href="https://primals.eco/#investigation">Investigation</a><a href="https://primals.eco/#knowledge">Knowledge</a><a href="https://primals.eco/#infrastructure">Infrastructure</a></div></nav>
+<main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
+<!doctype html><html lang=en><head><meta charset=utf-8><meta content="width=device-width,initial-scale=1" name=viewport><title>Actors — tuebor — Public Record Investigation</title><meta content="Documented individuals and entities in Tuebor investigations. Every role sourced to court records or public filings." name=description><link href="index.html" rel=canonical><meta content="tuebor — Public Record Investigation" property=og:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." property=og:description><meta content=website property=og:type><meta content=https://amicuscontra.github.io/tuebor/people/ property=og:url><meta content="Tuebor — Michigan Public Record" property=og:site_name><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png property=og:image><meta content=1200 property=og:image:width><meta content=630 property=og:image:height><meta content="Tuebor — Michigan Public Record Investigation" property=og:image:alt><meta content="Philip Ellison attorney, Julie Gafkay judge, Andre Borrello judge, Michael Schipper Barry County, Kathleen Galen Eastpointe, Julie Nakfoor Pratt prosecutor, Kelly Ellsworth Saginaw, Michigan judicial actors, Saginaw County court actors, Barry County court actors, Clutch Justice actors, Michigan attorney misconduct actors" name=keywords><meta content=summary_large_image name=twitter:card><meta content="tuebor — Public Record Investigation" name=twitter:title><meta content="Public evidence library documenting a Detroit charter school network. Convicted felons running schools. Judges with documented connections. $4.9M in public funding. Every fact cited from public records. Every document timestamped. Verify everything." name=twitter:description><meta content=https://amicuscontra.github.io/tuebor/img/og-default.png name=twitter:image><meta name=fediverse:creator><link href="../css/main.css" rel=stylesheet><link title="tuebor — Public Record Investigation" href="../atom.xml" rel=alternate type=application/atom+xml><script type=application/ld+json>
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Tuebor — Michigan Public Record",
+      "alternateName": "Tuebor",
+      "url": "https://tuebor.primals.eco",
+      "description": "Evidence-based accountability documentation. Charter schools, courts, regulatory capture. Every claim sourced to public records.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://tuebor.primals.eco/?q={search_term_string}"
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Citizens of Michigan",
+        "url": "https://tuebor.primals.eco"
+      },
+      "inLanguage": "en-US",
+      "license": "https://creativecommons.org/licenses/by-sa/4.0/"
+    }
+    </script><body><a class=skip-link href="index.html#main">Skip to content</a><nav class=site-nav><div class=nav-inner><a class=nav-brand href=https://amicuscontra.github.io/tuebor>tuebor</a><div class=nav-links><a href="../explore/index.html" style=color:khaki;font-weight:700>🔍 Explore</a><a href="index.html">Actors</a><a href="../evidence/index.html">Evidence</a><a href="../analysis/index.html">Analysis</a><a href="../investigate/index.html">Investigate</a><a href="../timeline/index.html">Timeline</a><a href="../synthesis/index.html" style=color:#98fb98>Dialectic</a><a href="../desk/index.html" style=opacity:.7;font-size:.85em>⊞ Desk</a><a href="../membrane/index.html" style=opacity:.7;font-size:.85em>⬡ Membrane</a><a href="../map/index.html" style=opacity:.7;font-size:.85em>🗺️ Map</a></div><div class=nav-search><input aria-label="Search articles" placeholder="Search Beasley, Moran, PCA..." autocomplete=off id=tuebor-search><div class=search-results id=tuebor-search-results style=display:none></div></div></div></nav><main class=site-main id=main><article class=page-content><h1>Actors</h1><h2 id=documented-actors>Documented Actors</h2><h3 id=ellison-aljouny-slapp-investigation>Ellison / Aljouny / SLAPP Investigation</h3><table><thead><tr><th>Actor<th>Role<th>Key Connection<tbody><tr><td><strong><a href="https://amicuscontra.github.io/people/ellison/">Philip L. Ellison</a></strong><td>Attorney, Outside Legal Counsel PLC (Hemlock, MI). 4 entities. 153-domain portfolio. $73K in federal sanctions. SVSU adjunct.<td>Fabricated witness. SLAPP suit. FOIAworks operator. Domain registration chain.<tr><td><strong><a href="https://amicuscontra.github.io/people/gafkay/">Judge Julie A. Gafkay</a></strong><td><strong>Chief Judge</strong>, 10th Circuit Court, Saginaw County. Successor judge in SLAPP.<td>Former SVSU adjunct colleague of Ellison (6-year overlap). Presides over 3 simultaneous Ellison cases. Holds both sides of UPEPA judicial estoppel.<tr><td><strong><a href="https://amicuscontra.github.io/people/borrello/">Judge Andre R. Borrello</a></strong><td>10th Circuit Court. Signed contempt. Denied DQ motion. Recused May 12, 2026.<td>Ignored fabricated witness evidence placed on his docket.<tr><td><strong><a href="https://amicuscontra.github.io/people/ellsworth/">Kelly D. Ellsworth</a></strong><td>Attorney, Shinners & Ellsworth PLC. Briefly represented Rita Williams.<td>Dissuaded her from fighting. SCBA member — same small-town bar. Family practiced in Saginaw County since 1986.<tr><td><strong>Lisa Edgecomb</strong><td>Legal assistant to Ellison. Notarized his “no connection” affidavits.<td>Employee notarizing employer’s sworn statements.<tr><td><strong><a href="https://amicuscontra.github.io/people/lindke/">Kevin Lindke</a></strong><td>Ellison’s client. Convicted: using computers to commit crime. 272 days served. 21,000-member Facebook group used to coordinate harassment.<td>3 harassment domains incl. minor child. ritafelinewilliams.com renewed Sep 2026. Booked St. Clair County Apr 23, 2026. Ellison stated on record Lindke “created the domains.”<tr><td><strong>Conrad Mallett</strong><td>Detroit Corporation Counsel. Former MSC Chief Justice.<td>Received Aljouny email. Cross-references Detroit dark money pipeline via Sheffield retention.<tr><td><strong>Violet Ikonomova</strong><td>Detroit Free Press reporter. Independent witness.<td>Received Aljouny email Sep 9, 2026. Independently suspected Ellison.<tr><td><strong>Hassan Ahmad</strong><td>Ellison’s client in <em>Ahmad v. University of Michigan</em> (FOIA).<td>Aljouny PGP key created 4 days after Ahmad press release.</table><h3 id=barry-county-investigation>Barry County Investigation</h3><table><thead><tr><th>Actor<th>Role<th>Key Connection<tbody><tr><td><strong><a href="https://amicuscontra.github.io/people/schipper/">Judge Michael Schipper</a></strong><td>Barry County Circuit. Active JTC investigation. 6-10x guideline sentencing.<td>Snowden/ADA retaliation. Two MSC remands in 3 months.<tr><td><strong><a href="https://amicuscontra.github.io/people/nakfoor-pratt/">Julie Nakfoor Pratt</a></strong><td>Barry County Prosecutor. Private admonishment (MRPC 3.4(e)).<td>Brady/Giglio failures. $14.5M Fuller verdict. Johnson shooting. FOIA obstruction.</table><h3 id=eastpointe-38th-district-investigation>Eastpointe / 38th District Investigation</h3><table><thead><tr><th>Actor<th>Role<th>Key Connection<tbody><tr><td><strong><a href="https://amicuscontra.github.io/people/galen/">Judge Kathleen G. Galen</a></strong><td>38th District Court. JTC confidential admonition.<td>Wine Bar Clause. Personnel overlap: Makoski = Treasurer + magistrate. Soward reversal.</table><hr><h3 id=case-registry>Case Registry</h3><table><thead><tr><th>Case<th>Court<th>Judge<th>Status<tbody><tr><td><strong>25-2441-CZ</strong> (OLC v. Williams — SLAPP)<td>Saginaw 10th Circuit<td><strong>Gafkay</strong> (successor)<td>UPEPA motion + sanctions motion pending. Void ab initio (automatic stay). COA 380599.<tr><td><strong>26-000243-CZ</strong> (Ellison v. Consumers Energy)<td>Saginaw 10th Circuit<td><strong>Gafkay</strong><td>Active. Ellison filed UPEPA (contradicts his position in SLAPP).<tr><td><strong>25-2533-CH</strong> (Sova v. Consumers — class action)<td>Saginaw 10th Circuit<td><strong>Gafkay</strong><td>Active. Ellison + Gronda as proposed class counsel.<tr><td><strong>26-cv-12029</strong> (Ellison v. Scripps)<td>E.D. Michigan<td>TBD<td>Active. Property rights, §1983.<tr><td><strong>AGC File 25-2363</strong><td>Attorney Grievance Commission<td>Sr. Assoc. Counsel Morgan<td><strong>OPEN</strong> (Ellison told court it was “closed”).<tr><td><strong>IC3 Complaint</strong><td>FBI/IC3<td>—<td>Filed Oct 6, 2026 (10f80c476ef144d4a772d0b198c75a2a).<tr><td><strong>Macomb County PPOs</strong><td>Macomb County Circuit<td>Judge Rancilio<td>Active against Lindke. Under criminal investigation by Macomb Sheriff + Prosecutor for perjury.<tr><td><strong>T25-625-PH</strong> (Hines v. Lindke)<td>St. Clair County, 31st Circuit<td>Judge Tomlinson<td>PPO granted Apr 2, 2025. Lindke violated.</table><hr><h3 id=cross-reference-detroit-network>Cross-Reference: Detroit Network</h3><p>Conrad Mallett connects the Saginaw investigation to the Detroit network:<ul><li><strong>Retained by Mayor Sheffield</strong> — endpoint of the <a href=https://detroit.primals.eco/analysis/dark-money-pipeline/>Save Detroit Jobs → Detroit Next PAC → Sheffield dark money pipeline</a><li><strong>Received Aljouny email</strong> — tying the fabricated identity to Detroit’s law department<li><strong>Under Ethics Board investigation</strong> — Lear Corp. directorship while heading Law Department</ul><h3 id=the-structural-pattern>The Structural Pattern</h3><p>Every investigation on this site reveals the same dynamic:<table><thead><tr><th>County<th>Court<th>What Failed<tbody><tr><td><strong>Saginaw</strong><td>10th Circuit<td>Chief judge (Gafkay) presides over 3 cases for the same attorney (Ellison), was his SVSU colleague, was bar president. UPEPA and sanctions motions sit.<tr><td><strong>Barry</strong><td>Circuit<td>Judge (Schipper) under JTC investigation, 6-10x guidelines. Prosecutor (Nakfoor Pratt) privately admonished.<tr><td><strong>Eastpointe</strong><td>38th District<td>Judge (Galen) JTC admonished. Court staff = campaign staff.<tr><td><strong>Wayne (Detroit)</strong><td>3rd Circuit<td>Convicted felon runs charter schools with a sitting judge on the board. AGC notified.</table><p>The AGC dismisses 94% of complaints. The JTC measures in years. The SCAO responds with silence. The local bars protect their own. <strong>The system does not self-correct.</strong><p>That is why this site exists: when oversight fails, the record itself becomes the oversight.</article></main><footer class=site-footer><p><strong>Every fact is cited. Every document is timestamped.</strong><p>Source: <a href=https://git.primals.eco/publicRecord/detroit>git repository</a> — clone it, verify it. <br>No cookies. No tracking. No identifying data.<p>Part of the <a href=https://primals.eco>primals.eco</a> evidence network: <a href=https://detroit.primals.eco>detroit</a> · <a href=https://lansing.primals.eco>lansing</a> · <a href=https://signal.primals.eco>signal</a> · <a href=https://hypothesis.primals.eco>hypothesis</a> · <a href=https://hud.primals.eco>hud</a> · <a href=https://clutch.primals.eco>clutch</a><p class=footer-license>Original analysis: <a href=https://creativecommons.org/licenses/by-sa/4.0/>CC-BY-SA 4.0</a>. Court filings and public records: public domain where applicable.<p>Named on this site? Something wrong? <a onclick="var el=document.getElementById('opsonize');if(el){el.scrollIntoView({behavior:'smooth'});return false}" href="index.html#opsonize">Contact us</a> (<a href=mailto:eco.primal@pm.me style=opacity:.6;font-size:.85em>or email ↗</a>) — truth matters more than being right.<p style=margin-top:.5rem;font-size:.8rem><a href=https://github.com/amicusContra/tuebor style=opacity:.6>Source: github.com/amicusContra/tuebor</a> · <a href=https://sporeprint.primals.eco style=opacity:.6>sporePrint</a> · <a href=https://thesis.primals.eco style=opacity:.6>thesis</a> · <a href=https://hypothesis.primals.eco style=opacity:.6>hypothesis</a> · <a href=https://synthesis.primals.eco style=opacity:.6>synthesis</a> · <a href=https://antithesis.primals.eco style=opacity:.6>antithesis</a> · <a href=https://corollary.primals.eco style=opacity:.6>corollary</a> · <a href=https://totality.primals.eco style=opacity:.6>totality</a></footer><script src="../js/elasticlunr.min.js"></script><script src="../search_index.en.js"></script><script src="../js/search.js"></script><script defer src=https://hud.primals.eco/js/hud-widget.js></script>
+</main>
+<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="https://primals.eco">Gaia</a> &mdash; sovereign living digital organism</p></div></div></footer>
+</body>
+</html>

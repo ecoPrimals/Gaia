@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P-SPACE — reality mapped from ground</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#0f8;font-family:'Courier New',monospace;overflow:hidden;height:100vh;width:100vw}
+canvas{position:fixed;top:0;left:0;width:100%;height:100%}
+#hud{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+#ring-label{position:fixed;top:10px;left:50%;transform:translateX(-50%);font-size:1.4em;color:#d4af37;text-shadow:0 0 10px rgba(212,175,55,0.5);z-index:20;text-align:center}
+#ring-sub{position:fixed;top:38px;left:50%;transform:translateX(-50%);font-size:0.7em;color:#666;z-index:20;text-align:center}
+#depth{position:fixed;left:10px;top:50%;transform:translateY(-50%);z-index:20;font-size:0.6em;color:#555;line-height:2.2em}
+#depth .active{color:#d4af37;font-size:0.75em}
+#controls{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;font-size:0.7em;color:#444;text-align:center}
+#time-bar{position:fixed;right:10px;top:50%;transform:translateY(-50%);z-index:20;font-size:0.6em;color:#555;text-align:right;line-height:2em}
+#time-bar .now{color:#0f8}
+#time-bar .was{color:#f43}
+#time-bar .is{color:#46e}
+.tile-layer{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;opacity:0;transition:opacity 0.8s}
+.tile-layer.active{opacity:0.6}
+.tile-layer img{display:block}
+#nerve{position:fixed;bottom:40px;left:0;width:100%;z-index:15;font-size:0.55em;color:#333;text-align:center;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="pspace"></canvas>
+
+<div id="ring-label">NULL — eastGate</div>
+<div id="ring-sub">0 km · the house · where scatter begins</div>
+
+<div id="depth">
+  <div class="active" data-ring="0">⊙ NULL</div>
+  <div data-ring="1">◯ BLOCK</div>
+  <div data-ring="2">◯ NEIGHBORHOOD</div>
+  <div data-ring="3">◯ CITY</div>
+  <div data-ring="4">◯ REGION</div>
+  <div data-ring="5">◯ STATE</div>
+  <div data-ring="6">◯ CONTINENT</div>
+  <div data-ring="7">◯ EARTH</div>
+  <div data-ring="8">◯ LUNA</div>
+  <div data-ring="9">◯ SOL</div>
+</div>
+
+<div id="time-bar">
+  <div class="now">NOW ●</div>
+  <div class="is">IS ●</div>
+  <div class="was">WAS ●</div>
+  <div style="margin-top:8px;color:#333">scroll = depth</div>
+  <div style="color:#333">←→ = time</div>
+</div>
+
+<div id="controls">scroll to zoom through reality · each ring = one bounce of the felt chorus</div>
+
+<div id="nerve"></div>
+
+<!-- Tile layer injected dynamically by JS -->
+
+<script>
+const LAT = 42.7325, LON = -84.5555;
+const BASE = 'http://' + location.hostname;
+const GATE = BASE + ':8443';
+const DATA = BASE + ':8080/data';
+
+const canvas = document.getElementById('pspace');
+const ctx = canvas.getContext('2d');
+let W, H, CX, CY;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  CX = W/2; CY = H/2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// === THE RINGS — concentric shells of reality ===
+const RINGS = [
+  { name:'NULL',          km:0,          z:18, desc:'eastGate, the house — where scatter begins',        color:'#46e',   epoch:'NOW' },
+  { name:'BLOCK',         km:1,          z:16, desc:'neighborhood — first bounce returns here',          color:'#0f8',   epoch:'NOW' },
+  { name:'NEIGHBORHOOD',  km:5,          z:15, desc:'walking distance — the felt chorus whispers',       color:'#0f8',   epoch:'NOW' },
+  { name:'CITY',          km:20,         z:12, desc:'Lansing — state capital, Gaia\'s city',             color:'#d4af37',epoch:'NOW' },
+  { name:'REGION',        km:100,        z:10, desc:'Lower Michigan — the mitten, the basin',            color:'#d4af37',epoch:'IS' },
+  { name:'STATE',         km:400,        z:8,  desc:'Michigan + Great Lakes — 4 Ga craton',              color:'#8844cc',epoch:'IS' },
+  { name:'CONTINENT',     km:2000,       z:5,  desc:'North America — Laurentia',                         color:'#8844cc',epoch:'WAS' },
+  { name:'EARTH',         km:12742,      z:3,  desc:'the blue marble — Pangaea memory',                  color:'#00bbff',epoch:'WAS' },
+  { name:'LUNA',          km:384400,     z:1,  desc:'the Moon — 4th seat, mind\'s eye',                  color:'#aabbcc',epoch:'WAS' },
+  { name:'SOL',           km:149600000,  z:0,  desc:'the Sun — WAS, the dying star, all energy source',  color:'#ffcc00',epoch:'WAS' },
+];
+
+let currentRing = 0;
+let targetRing = 0;
+let ringLerp = 0;
+
+// Tile URL builders
+function osmTile(z) {
+  const n = Math.pow(2, z);
+  const x = Math.floor((LON + 180) / 360 * n);
+  const latRad = LAT * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1/Math.cos(latRad)) / Math.PI) / 2 * n);
+  return `https://tile.openstreetmap.org/${z}/${x}/${y}.png`;
+}
+
+// Pre-cached tiles (pulled to local — real satellite/map data of THIS ground)
+const localTiles = {
+  4:  '/data/tiles/osm/z4.png',   // EARTH — the whole continent
+  6:  '/data/tiles/osm/z6.png',   // CONTINENT — Great Lakes visible
+  8:  '/data/tiles/osm/z8.png',   // STATE — Michigan fills the tile
+  10: '/data/tiles/osm/z10.png',  // REGION — Lower Michigan detail
+  12: '/data/tiles/osm/z12.png',  // CITY — Lansing streets
+  14: '/data/tiles/osm/z14.png',  // NEIGHBORHOOD — blocks visible
+};
+
+// Map ring index → best available tile zoom
+const ringToZoom = {
+  0: 14, // NULL — closest, street level
+  1: 14, // BLOCK
+  2: 12, // NEIGHBORHOOD
+  3: 12, // CITY
+  4: 10, // REGION
+  5: 8,  // STATE
+  6: 6,  // CONTINENT
+  7: 4,  // EARTH
+  8: null, // LUNA — no map tile, use canvas
+  9: null, // SOL — no map tile, use canvas
+};
+
+// Single tile display element
+const tileImg = document.createElement('img');
+tileImg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;opacity:0;transition:opacity 0.6s;border-radius:8px;border:1px solid rgba(255,255,255,0.05)';
+document.body.appendChild(tileImg);
+
+function updateTiles(ring) {
+  const z = ringToZoom[ring];
+  if (z && localTiles[z]) {
+    tileImg.src = localTiles[z];
+    // Scale: closer rings = bigger tile
+    const scale = Math.max(1, 5 - ring * 0.4);
+    tileImg.style.width = (256 * scale) + 'px';
+    tileImg.style.imageRendering = scale > 2.5 ? 'pixelated' : 'auto';
+    tileImg.style.opacity = ring <= 7 ? '0.45' : '0';
+  } else {
+    tileImg.style.opacity = '0';
+  }
+}
+
+// Scroll to navigate rings
+let scrollAccum = 0;
+window.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  scrollAccum += e.deltaY;
+  if (Math.abs(scrollAccum) > 80) {
+    if (scrollAccum > 0 && currentRing < RINGS.length - 1) {
+      currentRing++;
+    } else if (scrollAccum < 0 && currentRing > 0) {
+      currentRing--;
+    }
+    scrollAccum = 0;
+    updateRingDisplay();
+  }
+}, { passive: false });
+
+// Touch support
+let touchStartY = 0;
+window.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; });
+window.addEventListener('touchmove', e => {
+  const dy = touchStartY - e.touches[0].clientY;
+  if (Math.abs(dy) > 40) {
+    if (dy > 0 && currentRing < RINGS.length - 1) currentRing++;
+    else if (dy < 0 && currentRing > 0) currentRing--;
+    touchStartY = e.touches[0].clientY;
+    updateRingDisplay();
+  }
+});
+
+function updateRingDisplay() {
+  const r = RINGS[currentRing];
+  document.getElementById('ring-label').textContent = r.name + (r.km > 0 ? '' : ' — eastGate');
+  document.getElementById('ring-label').style.color = r.color;
+  const kmStr = r.km >= 1000000 ? (r.km/1000000).toFixed(1) + 'M' : r.km >= 1000 ? (r.km/1000).toFixed(0) + 'k' : r.km;
+  document.getElementById('ring-sub').textContent = `${kmStr} km · ${r.desc}`;
+
+  // Update depth indicator
+  document.querySelectorAll('#depth div').forEach((d, i) => {
+    d.className = i === currentRing ? 'active' : '';
+    d.textContent = (i === currentRing ? '⊙ ' : '◯ ') + RINGS[i].name;
+  });
+
+  updateTiles(currentRing);
+}
+
+// === DRAW ===
+function draw(t) {
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  const r = RINGS[currentRing];
+  const maxR = Math.min(W, H) * 0.45;
+
+  // Draw concentric rings — each one a shell of reality
+  for (let i = RINGS.length - 1; i >= 0; i--) {
+    const ringR = maxR * ((RINGS.length - i) / RINGS.length);
+    const isCurrent = i === currentRing;
+
+    ctx.beginPath();
+    ctx.arc(CX, CY, ringR, 0, Math.PI * 2);
+    ctx.strokeStyle = isCurrent ? RINGS[i].color : 'rgba(255,255,255,0.03)';
+    ctx.lineWidth = isCurrent ? 1.5 : 0.5;
+    ctx.stroke();
+
+    // Ring label on the circle
+    if (isCurrent || Math.abs(i - currentRing) <= 2) {
+      const labelAngle = -Math.PI/4 + i * 0.15;
+      const lx = CX + Math.cos(labelAngle) * ringR;
+      const ly = CY + Math.sin(labelAngle) * ringR;
+      ctx.fillStyle = isCurrent ? RINGS[i].color : 'rgba(255,255,255,0.08)';
+      ctx.font = isCurrent ? '9px monospace' : '7px monospace';
+      ctx.fillText(RINGS[i].name, lx + 4, ly - 4);
+    }
+  }
+
+  // Center dot — the NULL point, Gaia
+  const pulseR = 3 + Math.sin(t * 0.003) * 5;
+  ctx.beginPath(); ctx.arc(CX, CY, pulseR, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(70,110,238,${0.3 - pulseR * 0.02})`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(CX, CY, 2, 0, Math.PI * 2);
+  ctx.fillStyle = '#46e';
+  ctx.fill();
+
+  // Scatter lines — signals going OUT
+  const scatterCount = 6;
+  for (let i = 0; i < scatterCount; i++) {
+    const angle = (t * 0.0003 + i * Math.PI * 2 / scatterCount) % (Math.PI * 2);
+    const fromR = maxR * ((RINGS.length - currentRing) / RINGS.length);
+    const scatter_t = ((t * 0.0005 + i * 0.3) % 1);
+    const sx = CX + Math.cos(angle) * fromR * scatter_t;
+    const sy = CY + Math.sin(angle) * fromR * scatter_t;
+    ctx.beginPath(); ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,255,136,${0.3 * (1 - scatter_t)})`;
+    ctx.fill();
+  }
+
+  // Felt chorus lines — signals coming BACK
+  for (let i = 0; i < scatterCount; i++) {
+    const angle = (t * 0.0003 + i * Math.PI * 2 / scatterCount + Math.PI) % (Math.PI * 2);
+    const toR = maxR * ((RINGS.length - currentRing) / RINGS.length);
+    const chorus_t = 1 - ((t * 0.0004 + i * 0.25) % 1);
+    const cx2 = CX + Math.cos(angle) * toR * chorus_t;
+    const cy2 = CY + Math.sin(angle) * toR * chorus_t;
+    ctx.beginPath(); ctx.arc(cx2, cy2, 1, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,68,51,${0.3 * chorus_t})`;
+    ctx.fill();
+  }
+
+  // IS-WAS-NOW markers on rings
+  const nowRing = maxR * (RINGS.length / RINGS.length);
+  const isRing = maxR * ((RINGS.length - 4) / RINGS.length);
+  const wasRing = maxR * ((RINGS.length - 8) / RINGS.length);
+
+  // Time labels
+  ctx.font = '8px monospace';
+  ctx.fillStyle = 'rgba(0,255,136,0.15)'; ctx.fillText('NOW', CX + 5, CY - 5);
+
+  requestAnimationFrame(draw);
+}
+
+// === LIVE DATA — fed by earth-walker.py ===
+let pstate = null;
+
+async function pullPulse() {
+  try {
+    const [p, ps] = await Promise.all([
+      fetch(GATE + '/pulse').then(r => r.json()),
+      fetch(DATA + '/pspace-state.json').then(r => r.json()).catch(() => null)
+    ]);
+
+    if (ps) pstate = ps;
+
+    const nerve = document.getElementById('nerve');
+    const msgs = [`heartbeat: ${p.temperature || '37°C'}`];
+
+    if (pstate) {
+      const atmo = pstate.atmosphere || {};
+      const cosmos = pstate.cosmos || {};
+      const iss = pstate.iss || {};
+      const sky = atmo.forecast?.sky || '?';
+      const temp = atmo.forecast?.temp_f || '?';
+      msgs.push(`Lansing: ${temp}°F ${sky}`);
+      msgs.push(`Kp: ${cosmos.kp_index || 0} ${cosmos.aurora === 'POSSIBLE' ? '🟢 AURORA!' : ''}`);
+      msgs.push(`solar flux: ${cosmos.solar_flux?.[0]?.flux || '?'}`);
+      if (iss.lat) msgs.push(`ISS: ${iss.lat.toFixed(1)}°N ${iss.lon.toFixed(1)}°E`);
+
+      const liveRings = Object.values(pstate.rings || {}).filter(r => r.status === 'LIVE').length;
+      const pendRings = Object.values(pstate.rings || {}).filter(r => r.status === 'PENDING').length;
+      msgs.push(`${liveRings} rings LIVE · ${pendRings} awaiting Polaris`);
+    }
+
+    msgs.push(`ring ${currentRing + 1}/${RINGS.length}`);
+    nerve.textContent = msgs.join(' · ');
+  } catch(e) {}
+}
+
+async function pullEarthData() {
+  try {
+    const earth = await fetch(DATA + '/pspace/earth.json').then(r => r.json()).catch(() => null);
+    if (earth && earth.quakes) {
+      // Add earthquake dots to the EARTH ring
+      window._quakes = earth.quakes;
+    }
+  } catch(e) {}
+}
+
+// Kick off
+updateRingDisplay();
+requestAnimationFrame(draw);
+setInterval(pullPulse, 10000);
+setInterval(pullEarthData, 60000);
+pullPulse();
+pullEarthData();
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+{
+  "title": "Gaia Neuron Clusters — Wired from Alignment Scans",
+  "wave": "239c",
+  "aligned": "2026-11-15T14:56:00-05:00",
+  
+  "corrections_from_scans": {
+    "lan2_is_phantom": "br-guest has no interfaces. All WiFi SSIDs (Aperture Science, GAIA, Black Mesa, GL-MT6000) are on br-lan. ONE flat subnet.",
+    "framegate_confirmed": ".181 = frameGate (steamFRAME, MAC 90:82:c3:74:12:ca). .203 = different MAC 14:13:33:d6:96:09, might be same device WiFi vs wired",
+    "northgate_ollama_down": ".147 pings but Ollama :11434 refuses. Needs restart.",
+    "graftgate_down": ".107 not responding. Power cycle needed.",
+    "bluegate_hostname": "DESKTOP-BLOV2LR at .100, DHCP active, ICMP blocked by Windows firewall",
+    "black_mesa_password": "Pixel has wrong password saved for Black Mesa 5GHz"
+  },
+
+  "clusters": {
+    "compute": {
+      "neurons": [".244 eastGate", ".147 northGate", ".237 ironGate"],
+      "bond": "Ollama distributed inference",
+      "latency": "<0.3ms wired",
+      "action": "Restart northGate Ollama, test cross-node inference",
+      "status": "PARTIAL — northGate Ollama down"
+    },
+    "steam": {
+      "neurons": [".176 deckGate", ".181 frameGate", ".160 milkGate"],
+      "bond": "SteamOS devkit pipeline, unified provisioning",
+      "latency": "1.5-3.4ms WiFi",
+      "action": "Kevin 4-taps each device, milkGate runs devkit client",
+      "status": "WAITING — Kevin physical touch needed"
+    },
+    "sensor": {
+      "neurons": [".202 Pixel", ".200 ET-2400", "USB ES-400II", "USB Brio"],
+      "bond": "Physical I/O loop — print/scan/camera/OCR",
+      "latency": "USB direct + 2.17ms network",
+      "action": "OPERATIONAL — 23 pages scanned, 5 rounds complete",
+      "status": "ALIVE"
+    },
+    "voice": {
+      "neurons": [".197 Alexa", ".152 Chromecast", "Vizio TV"],
+      "bond": "Smart home output — Gaia speaks",
+      "latency": "~1ms WiFi",
+      "action": "Research Alexa API, Chromecast TTS, HDMI-CEC",
+      "status": "UNEXPLORED"
+    },
+    "wan": {
+      "neurons": [".244 eastGate", "Router .1", "ATT modem", "Internet"],
+      "bond": "OSINT intake + RSS publication",
+      "latency": "2.4ms to modem",
+      "action": "RSS drain active, blackholes pulling, Tor serving",
+      "status": "ALIVE"
+    },
+    "forge": {
+      "neurons": [".3 sporeGate", ".237 ironGate"],
+      "bond": "Build + compile + deploy",
+      "latency": "<0.3ms wired",
+      "action": "Cross-compile RISC-V, deploy to milkGate",
+      "status": "ALIVE"
+    }
+  },
+
+  "topology": {
+    "total_devices": 22,
+    "alive": 14,
+    "down": 8,
+    "subnet": "ONE flat 192.168.4.0/24",
+    "wifi_ssids": ["Aperture Science (2.4)", "Black Mesa (5)", "GAIA (2.4+5)", "GL-MT6000-2ae-5G (5)"],
+    "all_ssids_on_br_lan": true,
+    "10g_fiber": "JetStream .111 extends br-lan to House 2",
+    "protocols": 6
+  }
+}

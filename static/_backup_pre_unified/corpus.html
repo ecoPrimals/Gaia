@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GAIA CORPUS — 905 Papers, 26 Domains</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#c0c0c0;font-family:'Courier New',monospace;min-height:100vh}
+a{color:#d4af37;text-decoration:none}a:hover{color:#fff}
+header{text-align:center;padding:30px 20px;border-bottom:1px solid #1a1a1a}
+header h1{color:#d4af37;font-size:1.8em;letter-spacing:3px}
+header .sub{color:#888;font-size:0.85em;margin-top:6px}
+.stats{display:flex;justify-content:center;gap:30px;margin-top:16px}
+.stat .n{color:#d4af37;font-size:1.5em;font-weight:bold;display:block}
+.stat .l{color:#666;font-size:0.65em;text-transform:uppercase;letter-spacing:1px}
+.domains{max-width:900px;margin:30px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.domain{background:#111;border:1px solid #1a1a1a;border-radius:6px;padding:14px;transition:all 0.2s;cursor:pointer}
+.domain:hover{border-color:#d4af37;background:#151510}
+.domain h3{color:#d4af37;font-size:0.9em;margin-bottom:4px}
+.domain .count{color:#0f8;font-size:0.8em}
+.domain .desc{color:#666;font-size:0.7em;margin-top:4px;line-height:1.4}
+.domain .bar{height:3px;background:#1a1a1a;border-radius:2px;margin-top:8px;overflow:hidden}
+.domain .bar-fill{height:100%;background:#d4af37;border-radius:2px}
+.footer{text-align:center;padding:30px 20px;color:#444;font-size:0.7em;border-top:1px solid #1a1a1a;margin-top:40px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>GAIA CORPUS</h1>
+  <div class="sub">26 domains of original research — from stream computing to constrained evolution</div>
+  <div class="stats">
+    <div class="stat"><span class="n" id="total">905</span><span class="l">Papers</span></div>
+    <div class="stat"><span class="n" id="domCount">26</span><span class="l">Domains</span></div>
+    <div class="stat"><span class="n">47</span><span class="l">MB</span></div>
+  </div>
+</header>
+
+<div class="domains" id="grid"></div>
+
+<div class="footer">
+  <a href="/thesis">Thesis</a> · <a href="/gis">GIS</a> · <a href="/campfire">Campfire</a> · <a href="/hub">Hub</a> · <a href="/deck">Deck</a><br>
+  AGPL-3.0 · ecoPrimals · Wave 233
+</div>
+
+<script>
+const DOMAINS = [
+  {name:'attsi', count:222, kb:33309, desc:'ATTSI corpus — the largest single domain'},
+  {name:'subGen', count:136, kb:2157, desc:'Sub-generation papers — evolutionary branches'},
+  {name:'gen3', count:118, kb:2152, desc:'Generation 3 — constraint-driven architecture'},
+  {name:'barraCUDA', count:60, kb:358, desc:'Stream compute primal — GPU pipeline papers'},
+  {name:'gen4', count:55, kb:791, desc:'Generation 4 — spring collapse + primal composition'},
+  {name:'guerillaGorilla', count:43, kb:627, desc:'Guerrilla engineering — building with nothing'},
+  {name:'gAIa', count:43, kb:644, desc:'Gaia core papers — the organism itself'},
+  {name:'gen5', count:36, kb:508, desc:'Generation 5 — sovereign infrastructure'},
+  {name:'outreach', count:33, kb:2351, desc:'Public outreach — explaining the work'},
+  {name:'coGen', count:28, kb:223, desc:'Co-generation — multi-primal composition'},
+  {name:'noClothes', count:24, kb:355, desc:'The emperor has no clothes — critical analysis'},
+  {name:'coralForge', count:21, kb:153, desc:'Distributed compute — colony coordination'},
+  {name:'siltPond', count:18, kb:182, desc:'Sediment analysis — data archaeology'},
+  {name:'technical', count:17, kb:162, desc:'Technical specifications and benchmarks'},
+  {name:'RootPulse', count:16, kb:222, desc:'Autonomous version control heartbeat'},
+  {name:'neuralAPI', count:13, kb:164, desc:'Neural network API design'},
+  {name:'lansingScuffle', count:12, kb:2775, desc:'The Lansing Scuffle — local evidence'},
+  {name:'waterFall', count:11, kb:102, desc:'Waterfall analysis — cascade patterns'},
+  {name:'nautilus', count:9, kb:59, desc:'Nautilus — spiral architecture'},
+  {name:'gen0', count:8, kb:35, desc:'Generation 0 — the seed'},
+  {name:'gen1', count:6, kb:206, desc:'Generation 1 — first growth'},
+  {name:'gen2', count:7, kb:83, desc:'Generation 2 — structure emergence'},
+  {name:'concrete', count:4, kb:25, desc:'Concrete examples — worked problems'},
+  {name:'economics', count:4, kb:18, desc:'Economics of sovereign compute'},
+  {name:'ethics', count:4, kb:15, desc:'Ethical framework'},
+  {name:'k-nGen', count:3, kb:15, desc:'K-nearest generation proximity'},
+];
+
+const maxCount = Math.max(...DOMAINS.map(d=>d.count));
+
+const grid = document.getElementById('grid');
+grid.innerHTML = DOMAINS.map(d => `
+  <div class="domain">
+    <h3>${d.name}</h3>
+    <div class="count">${d.count} papers · ${Math.round(d.kb)}KB</div>
+    <div class="desc">${d.desc}</div>
+    <div class="bar"><div class="bar-fill" style="width:${(d.count/maxCount*100).toFixed(1)}%"></div></div>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

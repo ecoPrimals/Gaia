@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>☀️ sunCloud Economics — The Sovereign Math</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .sun-bg {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,180,0,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(0,180,255,0.04) 0%, transparent 50%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 1100px; margin: 0 auto; padding: 40px 20px;
+  }
+
+  h1 {
+    font-size: 2.2em; font-weight: 700;
+    background: linear-gradient(135deg, #FFB400, #FF6B00, #FFB400);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    color: #888; font-size: 0.85em; margin-bottom: 40px;
+  }
+
+  .thesis {
+    font-size: 1.1em; color: #FFB400; margin-bottom: 40px;
+    padding: 20px; border-left: 3px solid #FFB400;
+    background: rgba(255,180,0,0.05);
+  }
+
+  .section { margin-bottom: 50px; }
+  .section h2 {
+    font-size: 1.3em; color: #FF6B00; margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,107,0,0.3); padding-bottom: 8px;
+  }
+
+  .controls {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-bottom: 40px;
+  }
+  @media (max-width: 700px) { .controls { grid-template-columns: 1fr; } }
+
+  .slider-group {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,180,0,0.15);
+    border-radius: 12px; padding: 20px;
+  }
+  .slider-group label {
+    display: block; color: #FFB400; font-size: 0.85em; margin-bottom: 8px;
+  }
+  .slider-group .value {
+    font-size: 1.6em; font-weight: 700; color: #fff; margin-bottom: 12px;
+  }
+  input[type="range"] {
+    width: 100%; height: 6px; -webkit-appearance: none;
+    background: linear-gradient(90deg, #FF6B00, #FFB400);
+    border-radius: 3px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px;
+    background: #FFB400; border-radius: 50%; cursor: pointer;
+    box-shadow: 0 0 10px rgba(255,180,0,0.5);
+  }
+  .slider-group .range-labels {
+    display: flex; justify-content: space-between;
+    font-size: 0.7em; color: #666; margin-top: 4px;
+  }
+
+  .results {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px; margin-bottom: 40px;
+  }
+  .result-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,180,0,0.2);
+    border-radius: 12px; padding: 20px; text-align: center;
+    transition: all 0.3s;
+  }
+  .result-card:hover {
+    border-color: #FFB400;
+    box-shadow: 0 0 20px rgba(255,180,0,0.1);
+  }
+  .result-card .label { font-size: 0.75em; color: #888; margin-bottom: 6px; }
+  .result-card .number {
+    font-size: 1.8em; font-weight: 700;
+    background: linear-gradient(135deg, #FFB400, #FF6B00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .result-card .unit { font-size: 0.7em; color: #666; margin-top: 4px; }
+  .result-card.savings .number {
+    background: linear-gradient(135deg, #00FF88, #00BBFF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .result-card.warning .number {
+    background: linear-gradient(135deg, #FF4444, #FF8800);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  canvas#chart {
+    width: 100%; height: 350px;
+    border: 1px solid rgba(255,180,0,0.15);
+    border-radius: 12px; background: rgba(0,0,0,0.3);
+    margin-bottom: 40px;
+  }
+
+  .comparison-bar {
+    display: flex; align-items: center; margin-bottom: 12px;
+  }
+  .comparison-bar .bar-label {
+    width: 140px; font-size: 0.8em; color: #888; flex-shrink: 0;
+  }
+  .comparison-bar .bar-track {
+    flex: 1; height: 28px; background: rgba(255,255,255,0.03);
+    border-radius: 14px; overflow: hidden; position: relative;
+  }
+  .comparison-bar .bar-fill {
+    height: 100%; border-radius: 14px; transition: width 0.5s ease;
+    display: flex; align-items: center; padding-left: 12px;
+    font-size: 0.75em; font-weight: 700; color: #000;
+  }
+  .bar-cloud { background: linear-gradient(90deg, #FF4444, #FF8800); }
+  .bar-sovereign { background: linear-gradient(90deg, #00FF88, #00CC66); }
+  .bar-solar { background: linear-gradient(90deg, #FFB400, #FF6B00); }
+
+  .gaia-proof {
+    background: rgba(0,255,136,0.05); border: 1px solid rgba(0,255,136,0.2);
+    border-radius: 12px; padding: 24px; margin-top: 30px;
+  }
+  .gaia-proof h3 { color: #00FF88; margin-bottom: 12px; }
+  .gaia-proof p { font-size: 0.85em; line-height: 1.6; color: #aaa; }
+  .gaia-proof .highlight { color: #00FF88; font-weight: 700; }
+
+  .footer {
+    text-align: center; padding: 40px 0; color: #444; font-size: 0.8em;
+  }
+
+  .energy-viz {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin: 20px 0;
+  }
+  @media (max-width: 700px) { .energy-viz { grid-template-columns: 1fr; } }
+  .energy-card {
+    background: rgba(255,180,0,0.05); border: 1px solid rgba(255,180,0,0.15);
+    border-radius: 12px; padding: 16px; text-align: center;
+  }
+  .energy-card .icon { font-size: 2em; margin-bottom: 8px; }
+  .energy-card .count { font-size: 1.4em; font-weight: 700; color: #FFB400; }
+  .energy-card .desc { font-size: 0.75em; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="sun-bg"></div>
+<div class="container">
+
+<h1>☀️ sunCloud Economics</h1>
+<p class="subtitle">Wave 233 · November 15, 2026 · The Sovereign Math</p>
+
+<div class="thesis">
+  The cloud is just someone else's NVMe. The sun is free. The math works at every scale.
+</div>
+
+<!-- SLIDERS -->
+<div class="section">
+  <h2>⚙️ Parameters — Drag to Explore</h2>
+  <div class="controls">
+    <div class="slider-group">
+      <label>Compression Ratio</label>
+      <div class="value" id="compVal">40%</div>
+      <input type="range" id="compSlider" min="10" max="80" value="40" step="1">
+      <div class="range-labels"><span>10% (minimal)</span><span>80% (aggressive)</span></div>
+    </div>
+    <div class="slider-group">
+      <label>Deduplication Rate</label>
+      <div class="value" id="dedupVal">10%</div>
+      <input type="range" id="dedupSlider" min="0" max="50" value="10" step="1">
+      <div class="range-labels"><span>0% (none)</span><span>50% (heavy dedup)</span></div>
+    </div>
+    <div class="slider-group">
+      <label>Global Data (Exabytes)</label>
+      <div class="value" id="dataVal">2,500 EB</div>
+      <input type="range" id="dataSlider" min="500" max="10000" value="2500" step="100">
+      <div class="range-labels"><span>500 EB</span><span>10,000 EB (2030)</span></div>
+    </div>
+    <div class="slider-group">
+      <label>NVMe Cost ($/TB)</label>
+      <div class="value" id="costVal">$83</div>
+      <input type="range" id="costSlider" min="20" max="200" value="83" step="1">
+      <div class="range-labels"><span>$20 (future)</span><span>$200 (today retail)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="section">
+  <h2>📊 The Numbers</h2>
+  <div class="results" id="results">
+    <div class="result-card">
+      <div class="label">Effective Storage Needed</div>
+      <div class="number" id="rStorage">900</div>
+      <div class="unit">Exabytes</div>
+    </div>
+    <div class="result-card">
+      <div class="label">NVMe Hardware Cost</div>
+      <div class="number" id="rHardware">$75B</div>
+      <div class="unit">one-time</div>
+    </div>
+    <div class="result-card warning">
+      <div class="label">Cloud Cost (Annual)</div>
+      <div class="number" id="rCloud">$690B</div>
+      <div class="unit">per year, forever</div>
+    </div>
+    <div class="result-card">
+      <div class="label">Total Sovereign Cost</div>
+      <div class="number" id="rSovereign">$104B</div>
+      <div class="unit">hardware + solar + land</div>
+    </div>
+    <div class="result-card savings">
+      <div class="label">Year 1 Savings</div>
+      <div class="number" id="rSavings">$586B</div>
+      <div class="unit">cloud premium eliminated</div>
+    </div>
+    <div class="result-card savings">
+      <div class="label">Breakeven</div>
+      <div class="number" id="rBreakeven">1.8</div>
+      <div class="unit">months</div>
+    </div>
+  </div>
+</div>
+
+<!-- ENERGY -->
+<div class="section">
+  <h2>⚡ Energy Equivalents</h2>
+  <div class="energy-viz">
+    <div class="energy-card">
+      <div class="icon">☀️</div>
+      <div class="count" id="eSolar">29 × 29</div>
+      <div class="desc">mile square of solar panels<br>(one Arizona county)</div>
+    </div>
+    <div class="energy-card">
+      <div class="icon">⚛️</div>
+      <div class="count" id="eNuclear">7</div>
+      <div class="desc">nuclear plants<br>(AP1000-class, 4 GW each)</div>
+    </div>
+    <div class="energy-card">
+      <div class="icon">🌊</div>
+      <div class="count" id="eHoover">14</div>
+      <div class="desc">Hoover Dams<br>(2.08 GW each)</div>
+    </div>
+  </div>
+</div>
+
+<!-- BAR COMPARISON -->
+<div class="section">
+  <h2>📏 Cost Comparison (5 Years)</h2>
+  <div id="bars">
+    <div class="comparison-bar">
+      <div class="bar-label">Cloud (5yr)</div>
+      <div class="bar-track"><div class="bar-fill bar-cloud" id="barCloud" style="width:100%">$3.45T</div></div>
+    </div>
+    <div class="comparison-bar">
+      <div class="bar-label">Sovereign</div>
+      <div class="bar-track"><div class="bar-fill bar-sovereign" id="barSov" style="width:15%">$104B</div></div>
+    </div>
+    <div class="comparison-bar">
+      <div class="bar-label">Solar infra</div>
+      <div class="bar-track"><div class="bar-fill bar-solar" id="barSolar" style="width:4%">$14B</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CUMULATIVE CHART -->
+<div class="section">
+  <h2>📈 Cumulative Cost Over 10 Years</h2>
+  <canvas id="chart" width="1060" height="350"></canvas>
+</div>
+
+<!-- GAIA PROOF -->
+<div class="gaia-proof">
+  <h3>🧬 The ecoPrimal Proof</h3>
+  <p>
+    Gaia runs on <span class="highlight">$800 of NVMe</span> (6 TB across 3 drives).
+    17 primals, 38 ollama models, 7 GPUs, 18 devices, 2 houses connected by 10G fiber.
+    Total infrastructure: <span class="highlight">~$30,000</span>.
+    Cloud equivalent: <span class="highlight">$2,000+/month</span>.
+    <br><br>
+    <span class="highlight">The organism paid for itself in 15 months. Everything after is free.</span>
+    <br><br>
+    The 6GHz Valve dongle just linked eastGate to the Frame at <span class="highlight">1,921 Mbps</span> over a dedicated nerve.
+    The iPhone house phone is USB-tethered. The Pixel sees both houses.
+    The sun powers. The NVMe stores. The organism lives.
+  </p>
+</div>
+
+<div class="footer">
+  ☀️ sunCloud Economics · Gaia · ecoPrimals · The cloud is just someone else's NVMe 🧬
+</div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const compSlider = $('compSlider');
+const dedupSlider = $('dedupSlider');
+const dataSlider = $('dataSlider');
+const costSlider = $('costSlider');
+
+const CLOUD_COST_PER_EB_YEAR = 0.96; // $B per EB per year (AWS gp3 average)
+const SERVER_OVERHEAD_RATIO = 0.20;   // 20% for servers/racks/networking
+const SOLAR_COST_PER_GW = 4.0;       // $B per GW nameplate solar
+const BATTERY_COST_PER_GW = 0.48;    // $B per GW of 4h battery
+const LAND_INFRA_RATIO = 0.05;       // 5% of hardware for land+infra
+const WATTS_PER_EB = 25000;          // MW per EB active storage + compute
+const SOLAR_CAPACITY_FACTOR = 0.25;
+const HOOVER_GW = 2.08;
+const NUCLEAR_GW = 4.0;
+
+function fmt(n) {
+  if (Math.abs(n) >= 1e12) return '$' + (n/1e12).toFixed(1) + 'T';
+  if (Math.abs(n) >= 1e9) return '$' + (n/1e9).toFixed(0) + 'B';
+  if (Math.abs(n) >= 1e6) return '$' + (n/1e6).toFixed(0) + 'M';
+  return '$' + n.toFixed(0);
+}
+
+function recalc() {
+  const comp = compSlider.value / 100;
+  const dedup = dedupSlider.value / 100;
+  const dataEB = +dataSlider.value;
+  const costPerTB = +costSlider.value;
+
+  $('compVal').textContent = compSlider.value + '%';
+  $('dedupVal').textContent = dedupSlider.value + '%';
+  $('dataVal').textContent = Number(dataSlider.value).toLocaleString() + ' EB';
+  $('costVal').textContent = '$' + costSlider.value;
+
+  // Effective storage after compression + dedup
+  const effectiveEB = dataEB * (1 - comp) * (1 - dedup);
+  const effectivePB = effectiveEB * 1000;
+
+  // Hardware costs
+  const nvmeCostB = (effectiveEB * 1e6) * costPerTB / 1e9; // EB → TB, then × $/TB, → $B
+  const serverCostB = nvmeCostB * SERVER_OVERHEAD_RATIO;
+  const hardwareTotalB = nvmeCostB + serverCostB;
+
+  // Energy
+  const powerGW = (effectiveEB * WATTS_PER_EB) / 1e3; // MW → GW
+  const solarNameplateGW = powerGW / SOLAR_CAPACITY_FACTOR;
+  const solarCostB = solarNameplateGW * SOLAR_COST_PER_GW;
+  const batteryCostB = powerGW * BATTERY_COST_PER_GW;
+  const landCostB = hardwareTotalB * LAND_INFRA_RATIO;
+
+  const sovereignTotalB = hardwareTotalB + solarCostB + batteryCostB + landCostB;
+
+  // Cloud cost
+  const cloudAnnualB = dataEB * CLOUD_COST_PER_EB_YEAR;
+
+  // Savings
+  const savingsY1B = cloudAnnualB - sovereignTotalB;
+  const breakevenMonths = sovereignTotalB / (cloudAnnualB / 12);
+
+  // Energy equivalents
+  const hooverCount = Math.ceil(powerGW / HOOVER_GW);
+  const nuclearCount = Math.ceil(powerGW / NUCLEAR_GW);
+  const solarMiles = Math.sqrt(solarNameplateGW * 1000 / 5 * (1/640)); // acres → sq miles
+  const solarSide = Math.round(Math.sqrt(solarNameplateGW * 1000 * 5 / 640));
+
+  // Update cards
+  $('rStorage').textContent = Math.round(effectiveEB).toLocaleString();
+  $('rHardware').textContent = fmt(nvmeCostB * 1e9);
+  $('rCloud').textContent = fmt(cloudAnnualB * 1e9);
+  $('rSovereign').textContent = fmt(sovereignTotalB * 1e9);
+  $('rSavings').textContent = savingsY1B > 0 ? fmt(savingsY1B * 1e9) : '-' + fmt(Math.abs(savingsY1B) * 1e9);
+  $('rBreakeven').textContent = breakevenMonths < 120 ? breakevenMonths.toFixed(1) : '∞';
+
+  // Color savings card
+  const savingsCard = $('rSavings').closest('.result-card');
+  savingsCard.className = savingsY1B > 0 ? 'result-card savings' : 'result-card warning';
+
+  // Energy
+  $('eSolar').textContent = solarSide + ' × ' + solarSide;
+  $('eNuclear').textContent = nuclearCount;
+  $('eHoover').textContent = hooverCount;
+
+  // Bars (5-year comparison)
+  const cloud5 = cloudAnnualB * 5;
+  const maxBar = cloud5;
+  const sovPct = Math.min(100, (sovereignTotalB / maxBar) * 100);
+  const solarPct = Math.min(100, ((solarCostB + batteryCostB) / maxBar) * 100);
+
+  $('barCloud').style.width = '100%';
+  $('barCloud').textContent = fmt(cloud5 * 1e9);
+  $('barSov').style.width = Math.max(2, sovPct) + '%';
+  $('barSov').textContent = fmt(sovereignTotalB * 1e9);
+  $('barSolar').style.width = Math.max(2, solarPct) + '%';
+  $('barSolar').textContent = fmt((solarCostB + batteryCostB) * 1e9);
+
+  // Chart
+  drawChart(cloudAnnualB, sovereignTotalB);
+}
+
+function drawChart(cloudAnnualB, sovereignB) {
+  const canvas = $('chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth * 2;
+  const H = canvas.height = canvas.offsetHeight * 2;
+  ctx.scale(1, 1);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const pad = { top: 40, right: 40, bottom: 50, left: 100 };
+  const gw = W - pad.left - pad.right;
+  const gh = H - pad.top - pad.bottom;
+
+  const years = 10;
+  const cloudMax = cloudAnnualB * years;
+  const sovMax = sovereignB; // one-time
+  const maxVal = cloudMax * 1.05;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(255,180,0,0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + (gh / 5) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + gw, y); ctx.stroke();
+    ctx.fillStyle = '#666'; ctx.font = '20px JetBrains Mono';
+    ctx.textAlign = 'right';
+    const val = maxVal * (1 - i / 5);
+    ctx.fillText(fmt(val * 1e9), pad.left - 10, y + 6);
+  }
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  for (let yr = 0; yr <= years; yr++) {
+    const x = pad.left + (gw / years) * yr;
+    ctx.fillStyle = '#666'; ctx.font = '18px JetBrains Mono';
+    ctx.fillText('Y' + yr, x, H - pad.bottom + 30);
+  }
+
+  // Cloud line (cumulative — grows every year)
+  ctx.beginPath();
+  ctx.strokeStyle = '#FF4444';
+  ctx.lineWidth = 4;
+  ctx.shadowColor = 'rgba(255,68,68,0.5)';
+  ctx.shadowBlur = 8;
+  for (let yr = 0; yr <= years; yr++) {
+    const cumCloud = cloudAnnualB * yr;
+    const x = pad.left + (gw / years) * yr;
+    const y = pad.top + gh - (cumCloud / maxVal) * gh;
+    yr === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Sovereign line (flat after year 0)
+  ctx.beginPath();
+  ctx.strokeStyle = '#00FF88';
+  ctx.lineWidth = 4;
+  ctx.shadowColor = 'rgba(0,255,136,0.5)';
+  ctx.shadowBlur = 8;
+  for (let yr = 0; yr <= years; yr++) {
+    const cumSov = sovereignB; // one-time cost
+    const x = pad.left + (gw / years) * yr;
+    const y = pad.top + gh - (cumSov / maxVal) * gh;
+    yr === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Fill the savings area between lines
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(0,255,136,0.06)';
+  for (let yr = 0; yr <= years; yr++) {
+    const x = pad.left + (gw / years) * yr;
+    const yCloud = pad.top + gh - ((cloudAnnualB * yr) / maxVal) * gh;
+    yr === 0 ? ctx.moveTo(x, yCloud) : ctx.lineTo(x, yCloud);
+  }
+  for (let yr = years; yr >= 0; yr--) {
+    const x = pad.left + (gw / years) * yr;
+    const ySov = pad.top + gh - (sovereignB / maxVal) * gh;
+    ctx.lineTo(x, ySov);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Legend
+  ctx.font = 'bold 22px JetBrains Mono';
+  ctx.fillStyle = '#FF4444';
+  ctx.fillText('● Cloud (cumulative)', pad.left + gw / 2 - 180, pad.top - 10);
+  ctx.fillStyle = '#00FF88';
+  ctx.fillText('● Sovereign (one-time)', pad.left + gw / 2 + 180, pad.top - 10);
+}
+
+// Bind sliders
+[compSlider, dedupSlider, dataSlider, costSlider].forEach(s => {
+  s.addEventListener('input', recalc);
+});
+
+// Initial calc
+recalc();
+
+// Resize handler
+window.addEventListener('resize', recalc);
+</script>
+</body>
+</html>

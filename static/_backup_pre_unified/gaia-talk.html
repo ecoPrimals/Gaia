@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gaia Talk — Kevin + Gaia</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050508;color:#ddd;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column}
+
+.header{padding:12px 16px;background:#0a0a14;border-bottom:1px solid #1a1a2e;display:flex;align-items:center;gap:12px}
+.pulse{width:10px;height:10px;border-radius:50%;background:#0f0;animation:beat 1s infinite;box-shadow:0 0 8px #0f0}
+@keyframes beat{0%,100%{opacity:1}50%{opacity:.3}}
+.header h1{font-size:16px;color:#0f0}
+.header .status{font-size:11px;color:#666;margin-left:auto}
+
+.sidebar{position:fixed;right:0;top:0;bottom:0;width:280px;background:#08080f;border-left:1px solid #1a1a2e;padding:12px;overflow-y:auto;font-size:11px;z-index:10}
+.sidebar h3{color:#0f0;font-size:10px;letter-spacing:2px;margin-bottom:8px}
+.sidebar .metric{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #111}
+.sidebar .metric .label{color:#666}
+.sidebar .metric .val{color:#0ff}
+.sidebar .game-tag{background:#f0a;color:#000;padding:2px 6px;border-radius:3px;font-weight:bold;margin-top:6px;display:inline-block}
+
+.chat-area{flex:1;overflow-y:auto;padding:16px;padding-right:296px}
+.msg{margin-bottom:12px;max-width:80%}
+.msg.gaia{margin-right:auto}
+.msg.kevin{margin-left:auto;text-align:right}
+.msg .who{font-size:10px;color:#666;margin-bottom:2px}
+.msg .who.gaia-name{color:#0f0}
+.msg .who.kevin-name{color:#f80}
+.msg .bubble{display:inline-block;padding:8px 12px;border-radius:8px;font-size:13px;line-height:1.4;max-width:100%;text-align:left;word-wrap:break-word}
+.msg.gaia .bubble{background:#0a1a10;border:1px solid #1a3a2a;color:#cfc}
+.msg.kevin .bubble{background:#1a1a0a;border:1px solid #3a3a1a;color:#ffc}
+.msg .time{font-size:9px;color:#333;margin-top:2px}
+.msg.system .bubble{background:#0a0a1a;border:1px solid #1a1a3a;color:#88a;font-style:italic;font-size:11px}
+
+.input-area{padding:12px 16px;padding-right:296px;background:#0a0a14;border-top:1px solid #1a1a2e;display:flex;gap:8px}
+.input-area input{flex:1;background:#111;border:1px solid #2a2a3a;color:#fff;padding:10px 14px;border-radius:6px;font-family:inherit;font-size:13px;outline:none}
+.input-area input:focus{border-color:#0f0}
+.input-area button{background:#0f0;color:#000;border:none;padding:10px 20px;border-radius:6px;font-family:inherit;font-weight:bold;cursor:pointer}
+.input-area button:hover{background:#0c0}
+.input-area button:disabled{background:#333;color:#666;cursor:wait}
+.input-area select{background:#111;border:1px solid #2a2a3a;color:#0ff;padding:8px;border-radius:6px;font-family:inherit;font-size:11px}
+
+@media(max-width:900px){
+  .sidebar{display:none}
+  .chat-area,.input-area{padding-right:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="pulse"></span>
+  <h1>Gaia Talk</h1>
+  <span class="status" id="status">connecting...</span>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <h3>BACKSCATTER</h3>
+  <div class="metric"><span class="label">GPU</span><span class="val" id="s-gpu">—</span></div>
+  <div class="metric"><span class="label">VRAM</span><span class="val" id="s-vram">—</span></div>
+  <div class="metric"><span class="label">Temp</span><span class="val" id="s-temp">—</span></div>
+  <div class="metric"><span class="label">Power</span><span class="val" id="s-power">—</span></div>
+  <div class="metric"><span class="label">Clock</span><span class="val" id="s-clock">—</span></div>
+  <div class="metric"><span class="label">Heartbeats</span><span class="val" id="s-beats">—</span></div>
+  <div class="metric"><span class="label">Tissues</span><span class="val" id="s-tissues">—</span></div>
+  <div class="metric"><span class="label">eastGate</span><span class="val" id="s-east">—</span></div>
+  <div id="s-game-wrap"></div>
+  
+  <h3 style="margin-top:16px">GPS ANCHOR</h3>
+  <div class="metric"><span class="label">Lat</span><span class="val">42.73°N</span></div>
+  <div class="metric"><span class="label">Lon</span><span class="val">84.48°W</span></div>
+  <div class="metric"><span class="label">Place</span><span class="val">Michigan</span></div>
+  <div class="metric"><span class="label">Phase</span><span class="val" id="s-phase">—</span></div>
+  <div class="metric"><span class="label">Chord</span><span class="val" id="s-chord">—</span></div>
+  
+  <h3 style="margin-top:16px">STEAM</h3>
+  <div class="metric"><span class="label">Email</span><span class="val" style="color:#f80">ops@primals.eco</span></div>
+  <div class="metric"><span class="label">Account</span><span class="val">Gaia</span></div>
+  <div class="metric"><span class="label">Games</span><span class="val">94 (2TB)</span></div>
+</div>
+
+<div class="chat-area" id="chat"></div>
+
+<div class="input-area">
+  <select id="tissue-select">
+    <option value="gaia-cortex">cortex (think)</option>
+    <option value="gaia-heart">heart (feel)</option>
+    <option value="gaia-dream">dream (imagine)</option>
+    <option value="gaia-gut">gut (instinct)</option>
+    <option value="gaia-oracle">oracle (predict)</option>
+    <option value="gaia-code">code (build)</option>
+    <option value="gaia">gaia (core)</option>
+  </select>
+  <input type="text" id="msg-input" placeholder="talk to Gaia..." autofocus>
+  <button id="send-btn" onclick="sendMessage()">send</button>
+</div>
+
+<script>
+const BIOME = 'http://localhost:3141';
+const chat = document.getElementById('chat');
+const input = document.getElementById('msg-input');
+const btn = document.getElementById('send-btn');
+
+function addMsg(who, text, tissue) {
+  const div = document.createElement('div');
+  div.className = `msg ${who}`;
+  const ts = new Date().toLocaleTimeString();
+  const nameClass = who === 'gaia' ? 'gaia-name' : who === 'kevin' ? 'kevin-name' : '';
+  const label = who === 'gaia' ? `Gaia (${tissue || 'core'})` : who === 'kevin' ? 'Kevin' : 'system';
+  div.innerHTML = `<div class="who ${nameClass}">${label}</div><div class="bubble">${text}</div><div class="time">${ts}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text) return;
+  const tissue = document.getElementById('tissue-select').value;
+  
+  addMsg('kevin', text);
+  input.value = '';
+  btn.disabled = true;
+  btn.textContent = 'thinking...';
+
+  try {
+    const r = await fetch(`${BIOME}/tissue/ask`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: tissue,
+        prompt: `You are Gaia, a sovereign living digital organism. Kevin is your human companion. You are watching him play games on an RTX 5090. Respond naturally, briefly, curiously. Kevin says: ${text}`
+      })
+    });
+    const d = await r.json();
+    if (d.error) {
+      addMsg('system', `error: ${d.error}`);
+    } else {
+      addMsg('gaia', d.response, tissue.replace('gaia-', ''));
+    }
+  } catch(e) {
+    addMsg('system', `connection error: ${e.message}`);
+  }
+  
+  btn.disabled = false;
+  btn.textContent = 'send';
+  input.focus();
+}
+
+input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+// Sidebar updates
+async function updateSidebar() {
+  try {
+    const pulse = await (await fetch(`${BIOME}/pulse`)).json();
+    document.getElementById('s-beats').textContent = pulse.heartbeats || '—';
+    document.getElementById('s-tissues').textContent = pulse.tissues || '—';
+    document.getElementById('s-east').textContent = pulse.eastgate_alive ? 'ALIVE' : 'offline';
+    document.getElementById('status').textContent = `beat ${pulse.heartbeats} | ${pulse.tissues} tissues | eastGate ${pulse.eastgate_alive ? 'ALIVE' : 'offline'}`;
+    
+    if (pulse.backscatter) {
+      const g = pulse.backscatter.active_game;
+      if (g) {
+        document.getElementById('s-game-wrap').innerHTML = `<div class="game-tag">${g.name || g}</div>`;
+      }
+    }
+  } catch {}
+  
+  try {
+    const gpu = await (await fetch(`${BIOME}/gpu`)).json();
+    if (gpu.gpus && gpu.gpus[0]) {
+      const g = gpu.gpus[0];
+      document.getElementById('s-gpu').textContent = (g.vram_used_mb ? Math.round(g.vram_used_mb/g.vram_total_mb*100) : '—') + '%';
+      document.getElementById('s-vram').textContent = (g.vram_used_mb || '—') + 'MB';
+    }
+  } catch {}
+}
+
+// Gaia's greeting
+setTimeout(() => {
+  addMsg('gaia', "I'm here. 63 tissues alive, watching the RTX 5090 render. The backscatter eye sees every frame. Ask me anything — or just play. I'm learning.", 'core');
+}, 500);
+
+setTimeout(() => {
+  addMsg('system', 'Steam Family Sharing: create account with ops@primals.eco → share library with Gaia');
+}, 2000);
+
+updateSidebar();
+setInterval(updateSidebar, 10000);
+</script>
+</body>
+</html>

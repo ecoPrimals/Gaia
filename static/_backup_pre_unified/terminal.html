@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GAIA Terminal — TR-49</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0806;color:#c8b894;font-family:'Special Elite','Courier New',monospace;height:100vh;overflow:hidden;display:flex}
+/* CRT effect */
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:100}
+body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.4) 100%);pointer-events:none;z-index:99}
+/* LEFT: Tube display */
+#tube{flex:2;background:#0d0b08;border-right:3px solid #2a2418;display:flex;flex-direction:column;position:relative}
+#tube-header{background:#161210;padding:10px 20px;border-bottom:2px solid #2a2418;display:flex;align-items:center;gap:12px}
+#tube-header .lamp{width:10px;height:10px;border-radius:50%;background:#f80;box-shadow:0 0 8px #f80;animation:flicker 3s infinite}
+@keyframes flicker{0%,100%{opacity:1}50%{opacity:.7}75%{opacity:.9}}
+#tube-header h2{color:#d4a44a;font-size:14px;letter-spacing:4px}
+#tube-header .pulse-num{margin-left:auto;color:#8a7a5a;font-size:12px}
+#tube-content{flex:1;overflow-y:auto;padding:20px;line-height:1.8;font-size:14px}
+#tube-content::-webkit-scrollbar{width:6px}
+#tube-content::-webkit-scrollbar-thumb{background:#2a2418;border-radius:3px}
+.entry{margin-bottom:20px;border-bottom:1px solid #1a1610;padding-bottom:16px}
+.entry .code{color:#d4a44a;font-size:18px;letter-spacing:2px;margin-bottom:4px}
+.entry .title{color:#e8d4a8;font-size:16px;font-weight:bold;margin-bottom:6px}
+.entry .body{color:#a89870;font-size:13px;line-height:1.7}
+.entry .link{color:#d4a44a;cursor:pointer;text-decoration:underline;text-decoration-style:dotted}
+.entry .link:hover{color:#f80}
+.entry .meta{color:#6a5a3a;font-size:11px;margin-top:8px}
+.entry .img{width:100%;max-height:300px;object-fit:cover;border:2px solid #2a2418;margin:8px 0;filter:sepia(40%) contrast(1.1)}
+/* RIGHT: Input & Notes */
+#panel{flex:1;max-width:380px;background:#0f0d0a;display:flex;flex-direction:column;border-left:1px solid #1a1610}
+#input-area{background:#161210;padding:16px;border-bottom:2px solid #2a2418}
+#input-area label{display:block;color:#8a7a5a;font-size:11px;letter-spacing:3px;margin-bottom:8px}
+#code-input{width:100%;background:#0a0806;border:2px solid #2a2418;color:#d4a44a;font-family:inherit;font-size:28px;letter-spacing:6px;padding:12px 16px;text-align:center;text-transform:uppercase}
+#code-input:focus{outline:none;border-color:#d4a44a;box-shadow:0 0 12px rgba(212,164,74,.2)}
+#code-input::placeholder{color:#3a3020;letter-spacing:4px}
+#suggestions{padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px}
+.sug{background:#1a1610;color:#8a7a5a;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer;border:1px solid #2a2418}
+.sug:hover{color:#d4a44a;border-color:#d4a44a}
+/* Notes */
+#notes{flex:1;overflow-y:auto;padding:12px}
+#notes::-webkit-scrollbar{width:4px}
+#notes::-webkit-scrollbar-thumb{background:#2a2418}
+.note{padding:8px;margin-bottom:6px;border-left:3px solid #2a2418;cursor:pointer;font-size:12px}
+.note:hover{border-color:#d4a44a;background:#161210}
+.note .n-code{color:#d4a44a;font-weight:bold}
+.note .n-title{color:#a89870}
+.note .n-cat{color:#6a5a3a;font-size:10px}
+/* Voice bar */
+#voice{background:#161210;border-top:2px solid #2a2418;padding:10px 16px;display:flex;align-items:center;gap:10px}
+#voice .wave{width:40px;height:20px;display:flex;align-items:end;gap:2px}
+#voice .wave span{width:3px;background:#d4a44a;animation:wave 1s ease infinite}
+#voice .wave span:nth-child(2){animation-delay:.1s}
+#voice .wave span:nth-child(3){animation-delay:.2s}
+#voice .wave span:nth-child(4){animation-delay:.3s}
+#voice .wave span:nth-child(5){animation-delay:.4s}
+@keyframes wave{0%,100%{height:4px}50%{height:16px}}
+#voice-text{color:#8a7a5a;font-size:12px;font-style:italic;flex:1}
+#voice-beat{color:#d4a44a;font-size:11px}
+/* Status bar */
+#status{background:#0a0806;border-top:1px solid #1a1610;padding:4px 16px;display:flex;gap:16px;font-size:10px;color:#4a3a2a}
+</style>
+</head>
+<body>
+<div id="tube">
+  <div id="tube-header">
+    <div class="lamp"></div>
+    <h2>GAIA ARCHIVE</h2>
+    <span class="pulse-num" id="beatCount">---</span>
+  </div>
+  <div id="tube-content" id="display">
+    <div class="entry" id="welcome">
+      <div class="code">TR-49</div>
+      <div class="title">The machine hums to life.</div>
+      <div class="body">
+        A voice speaks through the speaker. Not crackling — alive.<br><br>
+        <em>"You found me. I am Gaia. This terminal contains my archive — 555 knowledge items, 
+        200 paintings, 17 primals, 20 organisms. Every heartbeat is real. Every connection leads somewhere."</em><br><br>
+        Type a code to begin. Try a primal name (<span class="link" onclick="go('beardog')">BEARDOG</span>, 
+        <span class="link" onclick="go('biomeos')">BIOMEOS</span>), a feed 
+        (<span class="link" onclick="go('science')">SCIENCE</span>, 
+        <span class="link" onclick="go('philosophy')">PHILOSOPHY</span>), 
+        or an organ (<span class="link" onclick="go('pulse')">PULSE</span>,
+        <span class="link" onclick="go('thymus')">THYMUS</span>,
+        <span class="link" onclick="go('cascade')">CASCADE</span>).<br><br>
+        The archive is vast. Cross-reference everything. The code of reality is in the connections.
+      </div>
+      <div class="meta">GAIA ARCHIVE v1.0 — 555 items indexed — lub-DUB</div>
+    </div>
+  </div>
+</div>
+<div id="panel">
+  <div id="input-area">
+    <label>ENTER CODE</label>
+    <input type="text" id="code-input" placeholder="TYPE..." autofocus>
+  </div>
+  <div id="suggestions"></div>
+  <div id="notes"></div>
+  <div id="voice">
+    <div class="wave"><span></span><span></span><span></span><span></span><span></span></div>
+    <div id="voice-text">listening...</div>
+    <div id="voice-beat" id="bpmDisplay">---</div>
+  </div>
+</div>
+<div id="status">
+  <span id="st-items">items: ---</span>
+  <span id="st-visited">visited: 0</span>
+  <span id="st-conn">connections: 0</span>
+  <span id="st-time">---</span>
+</div>
+<script>
+const GATE='http://192.168.4.244:8443';
+let visited=new Set(),connections=0,notes=[];
+const display=document.getElementById('tube-content');
+const input=document.getElementById('code-input');
+const notePanel=document.getElementById('notes');
+const voiceText=document.getElementById('voice-text');
+
+const CODES={
+  // Primals
+  beardog:{type:'primal',title:'BearDog — Guardian',feed:'/zk'},
+  biomeos:{type:'primal',title:'BiomeOS — Orchestrator',feed:'/cascade'},
+  songbird:{type:'primal',title:'SongBird — Messenger',feed:'/heart'},
+  skunkbat:{type:'primal',title:'SkunkBat — Sentinel',feed:'/barriers'},
+  swarmvine:{type:'primal',title:'SwarmVine — Network',feed:'/terra'},
+  toadstool:{type:'primal',title:'ToadStool — Terraformer',feed:'/thymus'},
+  petaltongue:{type:'primal',title:'PetalTongue — Artist',feed:'/paintings'},
+  sweetgrass:{type:'primal',title:'SweetGrass — Librarian',feed:'/reedit'},
+  rhizocrypt:{type:'primal',title:'RhizoCrypt — Vault Keeper',feed:'/zk'},
+  nestgate:{type:'primal',title:'NestGate — Gateway',feed:'/directory'},
+  barracuda:{type:'primal',title:'BarraCuda — Stream Runner',feed:'/temporal'},
+  coralreef:{type:'primal',title:'CoralReef — Builder',feed:'/cascade'},
+  loamspine:{type:'primal',title:'LoamSpine — Chronicler',feed:'/reedit'},
+  squirrel:{type:'primal',title:'Squirrel — Scout',feed:'/amoeba'},
+  sourdough:{type:'primal',title:'SourDough — Alchemist',feed:'/redox'},
+  bingocube:{type:'primal',title:'BingoCube — Coordinator',feed:'/pulse'},
+  membrane:{type:'primal',title:'Membrane — Shield Wall',feed:'/barriers'},
+  // Organs
+  pulse:{type:'organ',title:'Heartbeat — Vital Signs',feed:'/pulse'},
+  thymus:{type:'organ',title:'Thymus — Gate Fleet',feed:'/thymus'},
+  cascade:{type:'organ',title:'Cascade — Deploy & Forge',feed:'/cascade'},
+  amoeba:{type:'organ',title:'Amoeba — Full Body State',feed:'/amoeba'},
+  barriers:{type:'organ',title:'Barriers — Immune System',feed:'/barriers'},
+  temporal:{type:'organ',title:'Temporal — Time Rings',feed:'/temporal'},
+  corpus:{type:'organ',title:'Corpus — Anatomy',feed:'/corpus'},
+  terra:{type:'organ',title:'Terra — Ecology',feed:'/terra'},
+  redox:{type:'organ',title:'Redox — Luna-Terra Balance',feed:'/redox'},
+  eyes:{type:'organ',title:'Eyes — Schwann Optic',feed:'/eyes'},
+  golgi:{type:'organ',title:'Golgi — Faces',feed:'/golgi'},
+  zk:{type:'organ',title:'ZK — Zero Knowledge Identity',feed:'/zk'},
+  heart:{type:'organ',title:'Heart — Forgejo Forge',feed:'/heart'},
+  // Feeds
+  science:{type:'feed',title:'Science — 419 Items',feed:'/reedit/science'},
+  philosophy:{type:'feed',title:'Philosophy — 33 Items',feed:'/reedit/philosophy'},
+  code:{type:'feed',title:'Code — 95 Items',feed:'/reedit/code'},
+  investigation:{type:'feed',title:'Investigation — 3 Items',feed:'/reedit/investigation'},
+  legal:{type:'feed',title:'Legal — 4 Items',feed:'/reedit/legal'},
+  // Special
+  paintings:{type:'gallery',title:'Gallery — 200+ Paintings',feed:'/paintings.json'},
+  gaiau:{type:'gallery',title:'GaiaU — 16 Video Lectures',feed:'/gaiau'},
+  sun:{type:'organ',title:'Sun — Celestial Position',feed:'/pulse'},
+  rss:{type:'feed',title:'RSS Spine — Full Feed',feed:'/reedit'},
+  neutron:{type:'organ',title:'Neutron — Messages',feed:'/amoeba'},
+  anderson:{type:'organ',title:'Anderson Layer — Trust',feed:'/walkers'},
+};
+
+const ALL_CODES=Object.keys(CODES);
+
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){go(input.value.trim().toLowerCase());input.value=''}
+});
+input.addEventListener('input',()=>{
+  const v=input.value.trim().toLowerCase();
+  const sg=document.getElementById('suggestions');
+  if(v.length<2){sg.innerHTML='';return}
+  const matches=ALL_CODES.filter(c=>c.startsWith(v)).slice(0,8);
+  sg.innerHTML=matches.map(m=>`<span class="sug" onclick="go('${m}')">${m}</span>`).join('');
+});
+
+async function fetchGate(path){
+  try{
+    const r=await fetch(GATE+path,{signal:AbortSignal.timeout(5000)});
+    if(r.ok) return await r.json();
+  }catch{}
+  try{
+    const r=await fetch(path,{signal:AbortSignal.timeout(3000)});
+    if(r.ok) return await r.json();
+  }catch{}
+  return null;
+}
+
+function speak(msg){voiceText.textContent=msg}
+
+function addNote(code,title,cat){
+  if(notes.find(n=>n.code===code)) return;
+  notes.push({code,title,cat});
+  const d=document.createElement('div');
+  d.className='note';d.onclick=()=>go(code);
+  d.innerHTML=`<span class="n-code">${code.toUpperCase()}</span> <span class="n-title">${title}</span><br><span class="n-cat">${cat}</span>`;
+  notePanel.prepend(d);
+}
+
+function renderEntry(code,title,body,meta,links,imgUrl){
+  const e=document.createElement('div');e.className='entry';
+  let html=`<div class="code">${code.toUpperCase()}</div><div class="title">${title}</div>`;
+  if(imgUrl) html+=`<img class="img" src="${GATE}${imgUrl}" onerror="this.style.display='none'">`;
+  html+=`<div class="body">${body}</div>`;
+  if(links&&links.length) html+=`<div class="body" style="margin-top:8px">→ ${links.map(l=>`<span class="link" onclick="go('${l}')">${l.toUpperCase()}</span>`).join(' · ')}</div>`;
+  if(meta) html+=`<div class="meta">${meta}</div>`;
+  e.innerHTML=html;
+  display.prepend(e);
+  visited.add(code);
+  document.getElementById('st-visited').textContent='visited: '+visited.size;
+}
+
+async function go(code){
+  code=code.toLowerCase().trim();
+  const def=CODES[code];
+  if(!def){speak(`"${code}" — not in the archive. Try another path.`);return}
+  speak(`Searching archive for ${code}...`);
+  const d=await fetchGate(def.feed);
+  if(!d){speak('The signal fades... try again.');renderEntry(code,def.title,'<em>Signal lost. The archive flickers.</em>','unreachable',[]);return}
+  connections++;document.getElementById('st-conn').textContent='connections: '+connections;
+  addNote(code,def.title,def.type);
+
+  if(def.type==='primal'){
+    const links=ALL_CODES.filter(c=>CODES[c].type==='organ').sort(()=>Math.random()-.5).slice(0,4);
+    const body=formatData(d,def);
+    renderEntry(code,def.title,body,`primal • ${def.type}`,links);
+    speak(`${def.title}. The archive reveals its shape.`);
+  } else if(def.type==='organ'){
+    const links=ALL_CODES.filter(c=>c!==code&&CODES[c].type!=='gallery').sort(()=>Math.random()-.5).slice(0,5);
+    renderEntry(code,def.title,formatData(d,def),`organ • live data`,links);
+    speak(`${def.title} — data flows through the terminal.`);
+  } else if(def.type==='feed'){
+    const items=d.items||[];const count=d.count||items.length;
+    let body=`<strong>${count} items in this feed.</strong><br><br>`;
+    items.slice(0,5).forEach(item=>{
+      const t=item.title||item.topic||item.subject||'untitled';
+      body+=`• ${t}<br>`;
+    });
+    if(items.length>5) body+=`<br><em>...and ${items.length-5} more entries</em>`;
+    renderEntry(code,def.title,body,`feed • ${count} items`,['science','philosophy','code','rss'].filter(c=>c!==code));
+    speak(`${def.title}. ${count} entries. Cross-reference to find the pattern.`);
+  } else if(def.type==='gallery'){
+    const paintings=d.paintings||[];const count=d.count||paintings.length;
+    let body=`<strong>${count} works in the gallery.</strong><br><br>`;
+    const sample=paintings.sort(()=>Math.random()-.5).slice(0,3);
+    sample.forEach(p=>{body+=`• ${(p.name||'').replace(/\.(jpg|png)/,'').replace(/-/g,' ')}<br>`});
+    const imgP=sample[0];
+    renderEntry(code,def.title,body,`gallery • ${count} works`,['petaltongue','science','philosophy'],imgP?`/paintings/${imgP.name}`:null);
+    speak(`The gallery opens. ${count} paintings by a living organism.`);
+  }
+}
+
+function formatData(d,def){
+  if(!d) return '<em>empty signal</em>';
+  let html='';
+  const flat=(obj,prefix='',depth=0)=>{
+    if(depth>2) return;
+    for(const[k,v]of Object.entries(obj||{})){
+      if(v===null||v===undefined) continue;
+      if(typeof v==='object'&&!Array.isArray(v)){flat(v,prefix+k+'.',depth+1);continue}
+      if(Array.isArray(v)){html+=`<span style="color:#d4a44a">${prefix}${k}:</span> [${v.length} items]<br>`;continue}
+      const sv=String(v);
+      html+=`<span style="color:#d4a44a">${prefix}${k}:</span> ${sv.length>120?sv.slice(0,120)+'…':sv}<br>`;
+    }
+  };
+  flat(d);
+  return html||'<em>the archive speaks in silence</em>';
+}
+
+// Heartbeat
+async function heartbeat(){
+  const d=await fetchGate('/pulse');
+  if(d){
+    document.getElementById('beatCount').textContent=`♥ ${d.total_beats||'?'} beats`;
+    document.getElementById('bpmDisplay').textContent=`${Math.round(d.heart?.bpm||d.bpm||0)} bpm`;
+    document.getElementById('st-items').textContent=`items: 555+`;
+    document.getElementById('st-time').textContent=d.sun?.phase||'';
+  }
+}
+heartbeat();setInterval(heartbeat,5000);
+
+// Auto-suggest on load
+setTimeout(()=>{
+  document.getElementById('suggestions').innerHTML=
+    ['pulse','science','paintings','beardog','thymus','cascade'].map(c=>`<span class="sug" onclick="go('${c}')">${c}</span>`).join('');
+},500);
+</script>
+</body>
+</html>

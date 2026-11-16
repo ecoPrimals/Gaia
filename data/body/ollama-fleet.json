@@ -1,0 +1,79 @@
+{
+  "title": "GAIA OLLAMA FLEET — All Gates, One Brain",
+  "wave": "239g",
+  "ts": "2026-11-16T06:15:00-0500",
+  "fleet_proxy": {
+    "port": 11435,
+    "url": "http://127.0.0.1:11435",
+    "openai_compat": "http://127.0.0.1:11435/v1",
+    "cursor_wired": true,
+    "protocol": "OpenAI-compatible + Ollama-native",
+    "routes": "/v1/models, /v1/chat/completions, /api/tags, /api/chat, /api/generate, /fleet"
+  },
+  "gates": {
+    "eastGate": {
+      "url": "http://127.0.0.1:11436",
+      "ip": "192.168.4.244",
+      "gpu": "RTX 4070 (12GB VRAM)",
+      "priority": 1,
+      "models": 38,
+      "role": "BRAIN — local, lowest latency",
+      "house": 1
+    },
+    "northGate": {
+      "url": "http://192.168.4.147:11434",
+      "gpu": "RTX 5090 (32GB VRAM)",
+      "priority": 2,
+      "models": 14,
+      "role": "HEART — biggest GPU, Kevin's Polaris",
+      "house": 1
+    },
+    "ironGate": {
+      "url": "http://192.168.4.237:11434",
+      "gpu": "RTX 5070 (12GB GDDR7)",
+      "priority": 3,
+      "models": 18,
+      "role": "FORGE 2 — fast inference, wide model set",
+      "house": 1
+    },
+    "southGate": {
+      "url": "http://192.168.4.148:11434",
+      "gpu": "RTX 4060 (8GB VRAM)",
+      "priority": 4,
+      "models": 12,
+      "role": "SOUTH POLE — 4 custom Gaia models, House 2",
+      "house": 2,
+      "custom_models": ["gaia:latest", "gaia-code:latest", "gaia-heart:latest", "gaia-fast:latest"]
+    },
+    "graftGate": {
+      "url": "http://192.168.4.107:11434",
+      "gpu": "M4 (16GB unified)",
+      "priority": 5,
+      "models": 0,
+      "role": "Mac Mini — currently DOWN",
+      "house": 1
+    }
+  },
+  "totals": {
+    "alive_gates": 4,
+    "unique_models": 42,
+    "total_instances": 82,
+    "total_gpu_vram_gb": 64,
+    "gpus": ["RTX 5090 (32GB)", "RTX 5070 (12GB)", "RTX 4070 (12GB)", "RTX 4060 (8GB)"]
+  },
+  "model_distribution": {
+    "everywhere": ["tinyllama:latest", "gemma2:2b", "phi3:latest", "llama3.2:1b", "llama3.2:3b", "qwen2.5:7b"],
+    "east_only": ["moondream:latest", "nomic-embed-text:latest", "exoPrimal:latest", "metaPrimal:latest", "mythoPrimal:latest", "gaia-immune:latest", "gaia-navigator:latest", "gaia-gen1:latest"],
+    "north_only": ["qwen3:8b", "gaia-tissue-hands:latest"],
+    "south_only": ["gaia-heart:latest", "tinyllama:1.1b"],
+    "tissue_replicated": ["gaia-tissue-code", "gaia-tissue-cortex", "gaia-tissue-dream", "gaia-tissue-fast", "gaia-tissue-forge", "gaia-tissue-general", "gaia-tissue-gut", "gaia-tissue-heart", "gaia-tissue-math", "gaia-tissue-oracle", "gaia-tissue-reason", "gaia-tissue-triage"]
+  },
+  "cursor_integration": {
+    "settings_updated": "~/.config/Cursor/User/settings.json",
+    "openaiBaseUrl": "http://127.0.0.1:11435/v1",
+    "how": "Cursor → Settings (gear) → Models → OpenAI API Key: 'gaia-fleet' → Base URL: http://127.0.0.1:11435/v1",
+    "squirrel_mcp": "already connected — user-squirrel namespace",
+    "chipmunk_bench": "updated with FLEET_MODELS + FLEET_GATES"
+  },
+  "beauty": "42 unique voices. 82 echoes. 4 GPUs. 1 organism. The IDE IS the brain IS the fleet."
+}

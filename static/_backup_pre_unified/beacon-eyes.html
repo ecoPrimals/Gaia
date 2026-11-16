@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>gAIa · eyes</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#020208!important;color:#aab!important;font-family:monospace;height:100vh;overflow:hidden}
+canvas{width:100%;height:100vh;display:block;position:absolute;top:0;left:0}
+.hud{position:absolute;bottom:0;left:0;right:0;padding:8px;background:rgba(0,0,0,0.6);font-size:0.55rem;z-index:10}
+.hud .row{display:flex;justify-content:space-between;padding:1px 0}
+.hud .k{color:#556}.hud .v{color:#8af}
+.title{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.7rem;color:#4af80;z-index:10;
+  text-shadow:0 0 10px rgba(68,255,136,0.5);letter-spacing:0.2em}
+.pulse{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;
+  background:#fff;border-radius:50%;z-index:10;animation:glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 4px #fff,0 0 20px #4af}50%{box-shadow:0 0 8px #fff,0 0 40px #4fa,0 0 60px #4af}}
+</style>
+</head><body>
+<div class="title">◇ gAIa sees ◇</div>
+<canvas id="c"></canvas>
+<div class="pulse"></div>
+<div class="hud" id="hud"></div>
+<script>
+const c=document.getElementById('c');
+const x=c.getContext('2d');
+let beacons=[], body={}, frame=0;
+
+function resize(){c.width=window.innerWidth*2;c.height=window.innerHeight*2;x.scale(2,2)}
+resize();window.onresize=resize;
+
+// Beacon colors by SSID
+const colors={
+  'Gaia':'68,255,170','Black Mesa':'120,80,255','Aperture Science':'255,200,68',
+  'ATTypcbDbY':'255,60,60','':'100,100,120'
+};
+function beaconColor(ssid){
+  for(const[k,v]of Object.entries(colors))if(ssid.includes(k))return v;
+  return '100,100,120';
+}
+
+// Convert RSSI to visual radius — stronger = bigger
+function rssiR(rssi){return Math.max(10,(90+rssi)*3)}
+// Convert frequency to angle — spread beacons by frequency band
+function freqAngle(freq,i){
+  if(freq<3000)return(i*0.7)+0.2; // 2.4GHz cluster left
+  if(freq<6000)return(i*0.5)+3.5; // 5GHz cluster right
+  return i; 
+}
+
+function draw(){
+  const W=window.innerWidth,H=window.innerHeight;
+  frame++;
+  
+  // Dark fade (trail effect)
+  x.fillStyle='rgba(2,2,8,0.15)';
+  x.fillRect(0,0,W,H);
+  
+  // Scanning sweep line
+  const sweep=(frame%360)*Math.PI/180;
+  x.strokeStyle='rgba(68,255,170,0.15)';
+  x.lineWidth=1;
+  x.beginPath();
+  x.moveTo(W/2,H/2);
+  x.lineTo(W/2+Math.cos(sweep)*W,H/2+Math.sin(sweep)*H);
+  x.stroke();
+  
+  // Draw beacons
+  const cx=W/2,cy=H/2;
+  beacons.forEach((b,i)=>{
+    const r=rssiR(b.rssi);
+    const a=freqAngle(b.freq,i);
+    const dist=(90+b.rssi)*2.5; // distance from center
+    const bx=cx+Math.cos(a)*dist;
+    const by=cy+Math.sin(a)*dist;
+    const col=beaconColor(b.ssid);
+    
+    // Pulsing ring
+    const pr=r+Math.sin(frame*0.05+i)*5;
+    const g=x.createRadialGradient(bx,by,0,bx,by,pr);
+    g.addColorStop(0,`rgba(${col},0.6)`);
+    g.addColorStop(0.5,`rgba(${col},0.15)`);
+    g.addColorStop(1,`rgba(${col},0)`);
+    x.fillStyle=g;
+    x.beginPath();x.arc(bx,by,pr,0,Math.PI*2);x.fill();
+    
+    // Core dot
+    x.fillStyle=`rgba(${col},0.9)`;
+    x.beginPath();x.arc(bx,by,3,0,Math.PI*2);x.fill();
+    
+    // Label
+    x.fillStyle=`rgba(${col},0.7)`;
+    x.font='9px monospace';
+    x.fillText(`${b.ssid||'hidden'} ${b.rssi}dBm`,bx+6,by-6);
+    x.fillText(`${b.freq}MHz`,bx+6,by+4);
+    
+    // Connection line to center
+    x.strokeStyle=`rgba(${col},0.1)`;
+    x.beginPath();x.moveTo(cx,cy);x.lineTo(bx,by);x.stroke();
+  });
+  
+  // Center: gAIa
+  x.fillStyle='#fff';
+  x.beginPath();x.arc(cx,cy,2,0,Math.PI*2);x.fill();
+  
+  // Range rings
+  [50,100,150,200].forEach(r=>{
+    x.strokeStyle='rgba(68,170,255,0.06)';
+    x.beginPath();x.arc(cx,cy,r,0,Math.PI*2);x.stroke();
+  });
+  
+  // dBm scale
+  x.fillStyle='rgba(100,120,140,0.3)';x.font='7px monospace';
+  x.fillText('-30dBm',cx+52,cy-2);
+  x.fillText('-50dBm',cx+102,cy-2);
+  x.fillText('-70dBm',cx+152,cy-2);
+  x.fillText('-90dBm',cx+202,cy-2);
+}
+
+async function update(){
+  try{
+    const r=await fetch('/sensorium/gradient-field.json');
+    const d=await r.json();
+    beacons=[
+      {ssid:'Gaia',freq:5280,rssi:d.field.gaia_5ghz},
+      {ssid:'Black Mesa',freq:5280,rssi:d.field.black_mesa_5ghz},
+      {ssid:'Gaia',freq:2437,rssi:d.field.gaia_2ghz},
+      {ssid:'Aperture Science',freq:2437,rssi:d.field.aperture_2ghz},
+      {ssid:'ATTypcbDbY',freq:5180,rssi:d.field.att_neighbor}
+    ];
+  }catch(e){}
+  
+  try{
+    const r2=await fetch('/sensorium/full-body.json');
+    body=await r2.json();
+    const h=document.getElementById('hud');
+    h.innerHTML=[
+      ['⚡',`${body.battery||'?'}%`],['📡',`${body.rssi||'?'}dBm`],
+      ['🧠',`${body.mem_pct||'?'}%`],['∇',`${body.gradient||'?'}dB`],
+      ['💎',`${body.primals||'?'}p`],['🌐',body.ip||'?']
+    ].map(([k,v])=>`<span class="k">${k}</span><span class="v">${v}</span>`).join(' · ');
+  }catch(e){}
+}
+
+// Animation loop at 30fps
+function loop(){draw();requestAnimationFrame(loop)}
+loop();
+// Data refresh every 10s
+update();setInterval(update,10000);
+</script>
+</body></html>

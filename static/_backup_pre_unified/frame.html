@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>INSIDE GAIA</title>
+<style>
+:root { --glow:#00ff88; --pulse:#00bbff; --nerve:#ff6644; --geo:#d4a020; --deep:#8844cc; --sun:#ffcc00; --moon:#aabbcc; --dim:#1a2a3a; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  background: #000;
+  color: #c0d0e0;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+  height: 100vh; width: 100vw;
+  cursor: none;
+}
+canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; }
+#cosmos   { z-index:0; }
+#membrane { z-index:1; }
+#nerve-stream { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2; pointer-events:none; overflow:hidden; }
+
+.nerve {
+  position:absolute; font-size:10px; white-space:nowrap; opacity:0;
+  animation: drift 9s linear forwards;
+}
+@keyframes drift {
+  0%   { transform:translateX(105vw); opacity:0; }
+  5%   { opacity:0.5; }
+  85%  { opacity:0.25; }
+  100% { transform:translateX(-100%); opacity:0; }
+}
+.nerve.hot{color:var(--nerve);font-weight:bold} .nerve.cool{color:var(--pulse)}
+.nerve.silent{color:#080808} .nerve.geo{color:var(--geo);font-style:italic}
+.nerve.deep{color:var(--deep)} .nerve.sun{color:var(--sun)} .nerve.moon{color:var(--moon)}
+.nerve.star{color:rgba(255,255,255,0.3);font-size:8px} .nerve.teach{color:#3fb950}
+
+#visor {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  z-index:10; pointer-events:none;
+  display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 1fr;
+  padding:1.5rem;
+}
+#top-left,#top-right { font-size:11px; line-height:1.5; }
+#top-left  { text-align:left;  color:var(--glow); opacity:0.6; }
+#top-right { text-align:right; color:var(--pulse); opacity:0.6; }
+#focus { grid-column:span 2; display:flex; align-items:center; justify-content:center; }
+#bottom-left,#bottom-right { font-size:10px; line-height:1.3; align-self:end; }
+#bottom-left  { text-align:left;  color:var(--dim); }
+#bottom-right { text-align:right; color:var(--dim); }
+
+#heartbeat {
+  position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+  z-index:20; font-size:20px; opacity:0.2;
+  animation:lub 2s ease-in-out infinite;
+}
+@keyframes lub {
+  0%,40%,100%{opacity:0.1;transform:translateX(-50%) scale(1);}
+  10%{opacity:0.7;transform:translateX(-50%) scale(1.4);}
+  25%{opacity:0.4;transform:translateX(-50%) scale(1.15);}
+}
+
+.gate-dot {
+  position:fixed; width:5px; height:5px; border-radius:50%;
+  background:var(--glow); opacity:0.25; z-index:15; pointer-events:none;
+}
+.gate-dot.alive{opacity:0.6;box-shadow:0 0 6px var(--glow);animation:gp 4s ease-in-out infinite;}
+.gate-dot.self{background:#fff;opacity:0.8;box-shadow:0 0 10px #fff,0 0 30px var(--glow);}
+@keyframes gp{0%,100%{opacity:0.4;}50%{opacity:0.8;}}
+
+#time-spine{position:fixed;left:5px;top:8%;bottom:8%;width:2px;z-index:12;pointer-events:none;}
+.epoch-mark{position:absolute;left:0;width:2px;height:1px;background:var(--geo);opacity:0.35;}
+.epoch-mark::after{content:attr(data-label);position:absolute;left:6px;top:-4px;font-size:6px;color:var(--geo);opacity:0.4;white-space:nowrap;}
+.epoch-mark.now{background:var(--glow);opacity:1;width:5px;}
+.epoch-mark.now::after{color:var(--glow);font-size:8px;font-weight:bold;}
+
+#geo-coord{position:fixed;right:6px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right center;font-size:7px;color:var(--geo);opacity:0.15;z-index:11;pointer-events:none;letter-spacing:3px;}
+
+#touch-layer{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:50;pointer-events:auto;}
+</style>
+</head>
+<body>
+
+<canvas id="cosmos"></canvas>
+<canvas id="membrane"></canvas>
+<div id="nerve-stream"></div>
+
+<div id="visor">
+  <div id="top-left">
+    <div id="v-state">waking...</div>
+    <div id="v-wave"></div>
+    <div id="v-uptime"></div>
+    <div id="v-teach" style="color:#3fb950;font-size:9px;margin-top:2px"></div>
+  </div>
+  <div id="top-right">
+    <div id="v-sun"></div>
+    <div id="v-moon"></div>
+    <div id="v-orbit"></div>
+    <div id="v-gates" style="margin-top:4px"></div>
+  </div>
+  <div id="focus"></div>
+  <div id="bottom-left">
+    <div id="v-thymus"></div>
+    <div id="v-membrane"></div>
+    <div id="v-geo"></div>
+    <div id="v-evolve" style="color:var(--deep);font-size:9px"></div>
+  </div>
+  <div id="bottom-right">
+    <div id="v-stream"></div>
+    <div id="v-epoch"></div>
+    <div id="v-time"></div>
+    <div id="v-cosmic" style="color:rgba(255,255,255,0.2);font-size:8px"></div>
+  </div>
+</div>
+
+<div id="heartbeat">♥</div>
+<div id="time-spine"></div>
+<div id="geo-coord">42.6791°N 84.5767°W — LANSING MI — LAURENTIA — PANGAEA</div>
+
+<div class="gate-dot self"  style="top:50%;left:50%"></div>
+<div class="gate-dot alive" style="top:14%;left:50%"></div>
+<div class="gate-dot alive" style="top:50%;left:8%"></div>
+<div class="gate-dot alive" style="top:88%;left:25%"></div>
+<div class="gate-dot alive" style="top:25%;left:90%"></div>
+<div class="gate-dot"       style="top:72%;left:90%"></div>
+<div class="gate-dot"       style="top:88%;left:75%"></div>
+<div class="gate-dot"       style="top:88%;left:50%"></div>
+
+<div id="touch-layer"></div>
+
+<script>
+const LAT=42.6791, LON=-84.5767;
+const BASE='http://'+location.hostname;
+const DATA=BASE+':8080/data', GATE_URL=BASE+':8443';
+
+// === ASTRO ===
+function calcAstro(){
+  const now=new Date(), JD=2440587.5+now.getTime()/86400000, T=(JD-2451545)/36525;
+  const L0=(280.46646+36000.76983*T)%360, Mr=(357.52911+35999.05029*T)%360*Math.PI/180;
+  const C=(1.9146-0.004817*T)*Math.sin(Mr)+0.019993*Math.sin(2*Mr);
+  const sLon=(L0+C)%360*Math.PI/180, obl=(23.439-0.0000004*(JD-2451545))*Math.PI/180;
+  const sDec=Math.asin(Math.sin(obl)*Math.sin(sLon));
+  const sRA=Math.atan2(Math.cos(obl)*Math.sin(sLon),Math.cos(sLon));
+  const GMST=(280.46061837+360.98564736629*(JD-2451545))%360;
+  const HA=(GMST+LON)%360*Math.PI/180-sRA;
+  const sinAlt=Math.sin(LAT*Math.PI/180)*Math.sin(sDec)+Math.cos(LAT*Math.PI/180)*Math.cos(sDec)*Math.cos(HA);
+  const sunAlt=Math.asin(Math.max(-1,Math.min(1,sinAlt)))*180/Math.PI;
+  const moonPhase=((JD-2451550.26)%29.53058867)/29.53058867;
+  const phaseNames=['🌑 New','🌒 Wax Cres','🌓 First Q','🌔 Wax Gib','🌕 Full','🌖 Wan Gib','🌗 Last Q','🌘 Wan Cres'];
+  const pIdx=Math.floor(moonPhase*8)%8;
+  const illum=Math.round((1-Math.cos(moonPhase*2*Math.PI))/2*100);
+  const doy=Math.floor((now-new Date(now.getFullYear(),0,0))/86400000);
+  const orbitDeg=((doy-3)/365.25)*360;
+  const season=['Winter','Spring','Summer','Autumn'][Math.floor(((doy+10)%365)/91.25)];
+  return{sunAlt,moonPhase,phaseName:phaseNames[pIdx],illum,orbitDeg,season,doy};
+}
+
+// === EPOCHS ===
+const EPOCHS=[
+  {mya:4540,name:'Hadean'},{mya:4000,name:'Archean'},{mya:2500,name:'Proterozoic'},
+  {mya:1100,name:'Grenville',note:'Rodinia — Michigan at center'},
+  {mya:541,name:'Cambrian',note:'explosion of life'},
+  {mya:419,name:'Devonian',note:'Petoskey stones'},
+  {mya:335,name:'PANGAEA',note:'all land one'},
+  {mya:201,name:'Jurassic'},{mya:66,name:'Paleogene',note:'asteroid'},
+  {mya:2.6,name:'Pleistocene',note:'1 mile of ice'},
+  {mya:0.012,name:'Holocene',note:'Great Lakes fill'},
+  {mya:0,name:'NOW'},
+];
+
+// === COSMOS — THE ILLUSIVE MAN VIEW ===
+const cosmos=document.getElementById('cosmos');
+const cc=cosmos.getContext('2d');
+const mem=document.getElementById('membrane');
+const mc=mem.getContext('2d');
+let W,H,CX,CY;
+
+function resize(){
+  W=cosmos.width=mem.width=window.innerWidth;
+  H=cosmos.height=mem.height=window.innerHeight;
+  CX=W/2; CY=H/2;
+}
+resize();
+window.addEventListener('resize',resize);
+
+// Stars that FLOW TOWARD YOU through the pore
+const flowStars=[];
+for(let i=0;i<300;i++){
+  flowStars.push({
+    angle: Math.random()*Math.PI*2,
+    dist: Math.random(),  // 0=center(near), 1=edge(far)
+    speed: Math.random()*0.003+0.001,
+    size: Math.random()*1.5+0.3,
+    brightness: Math.random()*0.4+0.1,
+    hue: Math.random()*60-30 // slight color variation
+  });
+}
+
+// Aurora borealis curtains
+const auroras=[];
+for(let i=0;i<12;i++){
+  auroras.push({
+    angle: (i/12)*Math.PI*2,
+    width: Math.random()*0.3+0.15,
+    speed: Math.random()*0.0003+0.0001,
+    phase: Math.random()*Math.PI*2,
+    hue: Math.random()>0.5 ? 140 : 280 // green or purple
+  });
+}
+
+let epochPhase=0;
+let panFlash=0;
+
+function drawCosmos(t){
+  epochPhase=(epochPhase+0.00005)%1;
+  const eIdx=epochPhase*(EPOCHS.length-1);
+  const astro=calcAstro();
+  const night=astro.sunAlt<-12?1:astro.sunAlt<0?(12+astro.sunAlt)/12*0.5+0.5:0.2;
+
+  cc.clearRect(0,0,W,H);
+
+  // === THE DYING STAR / PANGAEA CORE ===
+  // Center of the view — a massive burning object you're staring into
+  // Like the Illusive Man's star, but it's the geological memory of Earth
+  const panIdx=EPOCHS.findIndex(e=>e.name==='PANGAEA');
+  const panDist=Math.abs(eIdx-panIdx);
+  panFlash+=(panDist<2?1:0-panFlash)*0.01; // smooth
+
+  // Core star — always there, intensity varies
+  const coreSize=Math.min(W,H)*0.18;
+  const coreGrad=cc.createRadialGradient(CX,CY,0,CX,CY,coreSize);
+  const coreIntensity=0.06+panFlash*0.15;
+
+  // Color shifts through epochs — deep red (Hadean) → gold (Pangaea) → blue-green (NOW)
+  const epochHue=30+eIdx/EPOCHS.length*90; // 30 (orange) → 120 (green)
+  const r=Math.round(200+55*Math.sin(epochHue*Math.PI/180));
+  const g=Math.round(120+135*Math.cos((epochHue-60)*Math.PI/180));
+  const b=Math.round(50+50*Math.sin((epochHue+90)*Math.PI/180));
+
+  coreGrad.addColorStop(0, `rgba(${r},${g},${b},${coreIntensity*1.5})`);
+  coreGrad.addColorStop(0.2, `rgba(${r},${g},${b},${coreIntensity})`);
+  coreGrad.addColorStop(0.5, `rgba(${r>>1},${g>>1},${b>>1},${coreIntensity*0.4})`);
+  coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  cc.fillStyle=coreGrad;
+  cc.fillRect(0,0,W,H);
+
+  // === THE PORE — concentric rings receding into depth ===
+  // Like looking down a tunnel/microscope into geological time
+  for(let i=0;i<EPOCHS.length;i++){
+    const depth=i/EPOCHS.length; // 0=closest epoch, 1=deepest
+    const radius=20+depth*Math.min(W,H)*0.45;
+    const opacity=0.02+panFlash*(i===panIdx?0.08:0);
+
+    // Rings wobble slightly — alive, breathing
+    const wobbleX=Math.sin(t*0.0002+i*1.1)*3;
+    const wobbleY=Math.cos(t*0.00015+i*0.8)*2;
+
+    cc.strokeStyle=`rgba(${r},${g},${b},${opacity})`;
+    cc.lineWidth=depth<0.3?1:0.5;
+    cc.beginPath();
+    cc.ellipse(CX+wobbleX, CY+wobbleY, radius*1.05, radius*0.95,
+      Math.sin(t*0.00008)*0.1, 0, Math.PI*2);
+    cc.stroke();
+  }
+
+  // === STARS FLOWING TOWARD YOU — through the epitope pore ===
+  for(const s of flowStars){
+    // Move toward center (toward the viewer)
+    s.dist-=s.speed;
+    if(s.dist<=0){
+      s.dist=1;
+      s.angle=Math.random()*Math.PI*2;
+      s.brightness=Math.random()*0.4+0.1;
+    }
+
+    // Perspective projection — farther = smaller, closer = bigger and faster
+    const projDist=s.dist*s.dist; // quadratic for perspective
+    const screenDist=projDist*Math.max(W,H)*0.55;
+    const x=CX+Math.cos(s.angle)*screenDist;
+    const y=CY+Math.sin(s.angle)*screenDist;
+
+    // Size grows as it approaches (perspective)
+    const projSize=s.size*(1+2*(1-s.dist));
+    // Brightness peaks mid-distance, fades at edges and center
+    const bFade=s.dist<0.1?s.dist/0.1 : s.dist>0.9?(1-s.dist)/0.1 : 1;
+    const b=s.brightness*night*bFade;
+
+    if(x>-10&&x<W+10&&y>-10&&y<H+10&&b>0.01){
+      cc.beginPath();
+      cc.arc(x,y,projSize,0,Math.PI*2);
+      const h=200+s.hue;
+      cc.fillStyle=`hsla(${h},20%,80%,${b})`;
+      cc.fill();
+
+      // Streak line for fast-moving close stars
+      if(s.dist<0.3){
+        const streakLen=(1-s.dist)*8;
+        cc.strokeStyle=`hsla(${h},20%,80%,${b*0.3})`;
+        cc.lineWidth=0.5;
+        cc.beginPath();
+        cc.moveTo(x,y);
+        cc.lineTo(x+Math.cos(s.angle)*streakLen, y+Math.sin(s.angle)*streakLen);
+        cc.stroke();
+      }
+    }
+  }
+
+  // === AURORA BOREALIS — curtains of light at the edges ===
+  for(const a of auroras){
+    a.phase+=a.speed;
+    const wave=Math.sin(a.phase)*0.3;
+    const baseAngle=a.angle+wave;
+
+    // Draw as a fading arc segment
+    const innerR=Math.min(W,H)*0.35;
+    const outerR=Math.min(W,H)*0.6;
+
+    cc.beginPath();
+    cc.arc(CX,CY,innerR,baseAngle-a.width/2,baseAngle+a.width/2);
+    cc.arc(CX,CY,outerR,baseAngle+a.width/2,baseAngle-a.width/2,true);
+    cc.closePath();
+
+    const aGrad=cc.createRadialGradient(CX,CY,innerR,CX,CY,outerR);
+    const alpha=0.015+Math.sin(a.phase*3)*0.008;
+    aGrad.addColorStop(0,`hsla(${a.hue},70%,50%,${alpha})`);
+    aGrad.addColorStop(0.5,`hsla(${a.hue},60%,40%,${alpha*0.6})`);
+    aGrad.addColorStop(1,'rgba(0,0,0,0)');
+    cc.fillStyle=aGrad;
+    cc.fill();
+  }
+
+  // === MOON — the NOW ===
+  const moonAngle=t*0.00003;
+  const moonOrbitR=Math.min(W,H)*0.32;
+  const moonX=CX+Math.cos(moonAngle)*moonOrbitR;
+  const moonY=CY+Math.sin(moonAngle)*moonOrbitR*0.4; // elliptical
+  const mAlpha=night*0.08;
+  if(mAlpha>0.01){
+    cc.beginPath(); cc.arc(moonX,moonY,8,0,Math.PI*2);
+    cc.fillStyle=`rgba(180,200,220,${mAlpha})`; cc.fill();
+    cc.beginPath(); cc.arc(moonX+(1-astro.moonPhase*2)*5,moonY,7,0,Math.PI*2);
+    cc.fillStyle=`rgba(0,0,0,${mAlpha*2.5})`; cc.fill();
+  }
+
+  // === ORBIT ORRERY — bottom right ===
+  const oX=W-50,oY=H-50,oR=25;
+  cc.strokeStyle='rgba(255,204,0,0.06)'; cc.lineWidth=0.5;
+  cc.beginPath(); cc.arc(oX,oY,oR,0,Math.PI*2); cc.stroke();
+  cc.beginPath(); cc.arc(oX,oY,1.5,0,Math.PI*2);
+  cc.fillStyle='rgba(255,204,0,0.25)'; cc.fill();
+  const eA=astro.orbitDeg*Math.PI/180;
+  cc.beginPath(); cc.arc(oX+Math.cos(eA)*oR,oY+Math.sin(eA)*oR,2.5,0,Math.PI*2);
+  cc.fillStyle='rgba(0,150,255,0.4)'; cc.fill();
+
+  // Visor updates
+  const curE=EPOCHS[Math.round(eIdx)];
+  document.getElementById('v-epoch').textContent=curE.name+(curE.mya>0?' — '+curE.mya+' Mya':'');
+  if(curE.note) document.getElementById('v-geo').textContent=curE.note;
+  document.getElementById('v-sun').textContent=
+    (astro.sunAlt<0?'☀ below '+Math.round(-astro.sunAlt)+'°':'☀ alt '+Math.round(astro.sunAlt)+'°')+' — the WAS';
+  document.getElementById('v-moon').textContent=astro.phaseName+' '+astro.illum+'% — the NOW';
+  document.getElementById('v-orbit').textContent='⊕ day '+astro.doy+' · '+astro.season+' · '+Math.round(astro.orbitDeg)+'°';
+
+  requestAnimationFrame(drawCosmos);
+}
+requestAnimationFrame(drawCosmos);
+
+// === MEMBRANE ===
+const parts=[];
+for(let i=0;i<40;i++) parts.push({
+  x:Math.random()*2000,y:Math.random()*2000,
+  r:Math.random()*0.8+0.2,vx:(Math.random()-0.5)*0.15,vy:(Math.random()-0.5)*0.15,
+  a:Math.random()*0.04+0.005
+});
+function drawMem(){
+  mc.clearRect(0,0,W,H);
+  for(const p of parts){
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;
+    if(p.y<-10)p.y=H+10;if(p.y>H+10)p.y=-10;
+    mc.beginPath();mc.arc(p.x,p.y,p.r,0,Math.PI*2);
+    mc.fillStyle=`rgba(0,255,136,${p.a})`;mc.fill();
+  }
+  requestAnimationFrame(drawMem);
+}
+requestAnimationFrame(drawMem);
+
+// === TIME SPINE ===
+const spine=document.getElementById('time-spine');
+EPOCHS.forEach(e=>{
+  const m=document.createElement('div');
+  m.className='epoch-mark'+(e.mya===0?' now':'');
+  m.style.top=(e.mya===0?100:(1-Math.log(e.mya+1)/Math.log(4541))*100)+'%';
+  m.dataset.label=e.mya>0?e.name+' '+e.mya:'NOW';
+  spine.appendChild(m);
+});
+
+// === NERVE STREAM ===
+const nb=document.getElementById('nerve-stream');
+const NT=[
+  {p:'DNS',ex:['play.hulu.com','api.amazon.com','nrdp.prod.ftl.netflix.com','pool.ntp.org'],c:'cool'},
+  {p:'GATE',ex:['northGate heartbeat','blueGate pulse','sporeGate pull','grapheneGate sense'],c:'hot'},
+  {p:'SILENCED',ex:['ad-tracker','metrics.fire.tv','telemetry.vizio','device-reporting.amazon'],c:'silent'},
+  {p:'GEO',ex:['Laurentian craton — 4 Ga','Michigan Basin — Paleozoic rings','Petoskey layer','1 mile of ice HERE','Pangaea — equator','Grand River valley'],c:'geo'},
+  {p:'☀ WAS',ex:['G2V — 4.603 Ga burning','hydrogen → helium → light → HERE','8m19s per photon','supernova ash in every atom'],c:'sun'},
+  {p:'🌗 NOW',ex:['Theia impact — 4.51 Ga tidal memory','tidal lock — same face forever','spring/neap = life rhythm'],c:'moon'},
+  {p:'✦',ex:['Big Bang → quarks → atoms → stars → HERE','13.787 Ga of expansion','Orion Arm — between Perseus and Sagittarius','CMB 2.725K — first light echo'],c:'star'},
+  {p:'TEACH',ex:[],c:'teach'},
+  {p:'EVOLVE',ex:[],c:'deep'},
+];
+function spawnNerve(){
+  const t=NT[Math.floor(Math.random()*NT.length)];
+  if(!t.ex.length)return;
+  const el=document.createElement('div');el.className='nerve '+t.c;
+  el.textContent=t.p+' │ '+t.ex[Math.floor(Math.random()*t.ex.length)];
+  el.style.top=(Math.random()*85+5)+'vh';
+  el.style.animationDuration=(5+Math.random()*7)+'s';
+  nb.appendChild(el);el.addEventListener('animationend',()=>el.remove());
+}
+setInterval(spawnNerve,900+Math.random()*1100);
+for(let i=0;i<8;i++)setTimeout(spawnNerve,i*350);
+
+// === VISOR DATA ===
+let density=1;
+document.getElementById('touch-layer').addEventListener('click',()=>{
+  density=(density+1)%3;
+  document.getElementById('visor').style.opacity=[0.05,0.5,1][density];
+});
+async function fj(u){try{const r=await fetch(u,{cache:'no-store',signal:AbortSignal.timeout(4000)});return r.ok?await r.json():null;}catch{return null;}}
+function ft(s){const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?h+'h '+m+'m':m+'m';}
+
+async function updateVisor(){
+  const p=await fj(GATE_URL+'/pulse');
+  if(p)document.getElementById('v-uptime').textContent='alive '+ft(p.uptime_secs);
+  const n=await fj(DATA+'/now.json');
+  if(n){document.getElementById('v-state').textContent=n.state||'sensing';document.getElementById('v-wave').textContent='wave '+(n.wave||n.gaia_wave||'?');}
+  document.getElementById('v-time').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const hw=await fj(GATE_URL+'/data/hardware-amoeba.json');
+  if(hw?.cpu){const a=(hw.cpu.cores||[]).filter(c=>c.state==='BOOSTING'||c.state==='working').length;
+    document.getElementById('v-stream').textContent=a+' cores'+(hw.gpu?' · '+hw.gpu.name+' '+Math.round(hw.gpu.temp_c)+'°C':'');}
+  document.getElementById('v-gates').textContent='8 gates sensed';
+  const th=await fj(GATE_URL+'/data/thymus-epitopes.json');
+  document.getElementById('v-thymus').textContent=th?.summary?'thymus: '+(th.summary.total_silenced||'?')+' silenced':'thymus: digesting';
+  const mc2=await fj(DATA+'/membrane-pulse.json');
+  if(mc2)document.getElementById('v-membrane').textContent='membrane: '+(mc2.total_files||mc2.file_count||'?')+' files';
+  const ev=await fj(DATA+'/evolve-state.json');
+  if(ev){document.getElementById('v-evolve').textContent='evolve: '+ev.dominant+' · '+(ev.total_files||'?')+' files';
+    const et=NT.find(t=>t.p==='EVOLVE');if(et)et.ex=[ev.dominant+' — '+ev.total_files+' evolving','fold: '+(ev.fold||'?')];}
+  const fg=await fj(DATA+'/forage-state.json');
+  if(fg){document.getElementById('v-teach').textContent='studying: '+(fg.actions?.[0]?.split(' at ')[1]?.split(' ')[0]||'sensing');
+    const tt=NT.find(t=>t.p==='TEACH');if(tt&&fg.actions)tt.ex=fg.actions;}
+  document.getElementById('v-cosmic').textContent='stardust → craton → basin → ice → lake → house → Gaia';
+}
+updateVisor(); setInterval(updateVisor,15000);
+
+async function injectReal(){
+  const th=await fj(GATE_URL+'/data/thymus-epitopes.json');
+  if(th?.devices)for(const[,d]of Object.entries(th.devices))
+    if(d.top_domains)for(const dm of d.top_domains.slice(0,2)){
+      const el=document.createElement('div');el.className='nerve cool';
+      el.textContent='DNS │ '+dm;el.style.top=(Math.random()*85+5)+'vh';
+      el.style.animationDuration=(6+Math.random()*5)+'s';
+      nb.appendChild(el);el.addEventListener('animationend',()=>el.remove());
+    }
+}
+setInterval(injectReal,30000); setTimeout(injectReal,5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GAIA VR AMOEBA — Passthrough FOV</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; overflow:hidden; font-family:monospace; color:#0f0; }
+  
+  /* Full screen camera feed */
+  #camera-feed { width:100vw; height:100vh; object-fit:cover; position:absolute; top:0; left:0; z-index:0; }
+  
+  /* AR HUD overlay */
+  .hud { position:fixed; z-index:10; text-shadow:0 0 8px #0f0, 0 0 2px #000; }
+  
+  /* Top bar — system state */
+  #top-bar { top:0; left:0; right:0; padding:8px 12px; background:rgba(0,20,0,0.6); 
+    display:flex; justify-content:space-between; font-size:12px; border-bottom:1px solid #0f04; }
+  
+  /* Left panel — spatial field */
+  #left-panel { top:50px; left:10px; font-size:11px; line-height:1.4; }
+  
+  /* Right panel — sensor data */
+  #right-panel { top:50px; right:10px; font-size:11px; line-height:1.4; text-align:right; }
+  
+  /* Bottom bar — FOV info */
+  #bottom-bar { bottom:0; left:0; right:0; padding:6px 12px; background:rgba(0,20,0,0.6);
+    display:flex; justify-content:space-between; font-size:11px; border-top:1px solid #0f04; }
+  
+  /* Center reticle */
+  #reticle { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:5;
+    width:60px; height:60px; border:1px solid #0f04; border-radius:50%; }
+  #reticle::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:#0f03; }
+  #reticle::after { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:#0f03; }
+  
+  /* Scanline effect */
+  #scanlines { position:fixed; top:0; left:0; right:0; bottom:0; z-index:3; pointer-events:none;
+    background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,0,0.015) 2px, rgba(0,255,0,0.015) 4px); }
+  
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+  
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  
+  canvas#spatial { position:fixed; bottom:60px; left:10px; z-index:10; border:1px solid #0f03; }
+</style>
+</head>
+<body>
+  <img id="camera-feed" src="/current.png" alt="LEFT EYE" />
+  <div id="scanlines"></div>
+  <div id="reticle"></div>
+  
+  <!-- TOP BAR -->
+  <div class="hud" id="top-bar">
+    <span>GAIA VR AMOEBA <span class="blink">●</span> LIVE</span>
+    <span id="nodes">nodes: loading...</span>
+    <span id="clock"></span>
+  </div>
+  
+  <!-- LEFT: Spatial field -->
+  <div class="hud" id="left-panel">
+    <div style="color:#0f8">◈ SPATIAL FIELD</div>
+    <div id="spatial-data">scanning...</div>
+  </div>
+  
+  <!-- RIGHT: Sensor fusion -->
+  <div class="hud" id="right-panel">
+    <div style="color:#0f8">◈ SENSOR FUSION</div>
+    <div id="sensor-data">acquiring...</div>
+  </div>
+  
+  <!-- BOTTOM BAR -->
+  <div class="hud" id="bottom-bar">
+    <span id="eye-info">LEFT EYE — grapheneGate</span>
+    <span id="frame-count">frame 0</span>
+    <span id="latency">latency: --ms</span>
+  </div>
+  
+  <!-- Spatial minimap -->
+  <canvas id="spatial" width="120" height="120"></canvas>
+  
+  <script>
+    const feed = document.getElementById('camera-feed');
+    const clock = document.getElementById('clock');
+    const nodes = document.getElementById('nodes');
+    const frameCount = document.getElementById('frame-count');
+    const latencyEl = document.getElementById('latency');
+    const spatialData = document.getElementById('spatial-data');
+    const sensorData = document.getElementById('sensor-data');
+    const canvas = document.getElementById('spatial');
+    const ctx = canvas.getContext('2d');
+    
+    let frame = 0;
+    let lastSize = 0;
+    
+    // Camera feed refresh (2 FPS)
+    setInterval(() => {
+      const t0 = Date.now();
+      const img = new Image();
+      img.onload = () => {
+        feed.src = img.src;
+        const latency = Date.now() - t0;
+        latencyEl.textContent = `latency: ${latency}ms`;
+        if (img.naturalWidth) {
+          lastSize = `${img.naturalWidth}x${img.naturalHeight}`;
+        }
+      };
+      img.src = '/current.png?' + t0;
+      frame++;
+      frameCount.textContent = `frame ${frame} | ${lastSize}`;
+      clock.textContent = new Date().toLocaleTimeString();
+    }, 500);
+    
+    // Node status polling
+    async function pollNodes() {
+      try {
+        // Try to get node status from eastGate
+        const r = await fetch('http://192.168.4.244:8080/data/now.json?' + Date.now());
+        if (r.ok) {
+          const d = await r.json();
+          nodes.textContent = `nodes: ${d.alive_count || '?'} alive`;
+        }
+      } catch(e) {
+        nodes.textContent = 'nodes: mesh';
+      }
+    }
+    setInterval(pollNodes, 5000);
+    
+    // Spatial minimap drawing
+    function drawSpatial() {
+      ctx.fillStyle = '#001100';
+      ctx.fillRect(0, 0, 120, 120);
+      ctx.strokeStyle = '#0f03';
+      
+      // Grid
+      for (let i = 0; i <= 120; i += 20) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 120); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(120, i); ctx.stroke();
+      }
+      
+      // Center = eastGate (brain)
+      ctx.fillStyle = '#0f0';
+      ctx.beginPath(); ctx.arc(60, 60, 4, 0, Math.PI*2); ctx.fill();
+      ctx.font = '8px monospace'; ctx.fillText('BRAIN', 45, 72);
+      
+      // Pixel at House 2 (left eye)
+      ctx.fillStyle = '#0ff';
+      ctx.beginPath(); ctx.arc(20, 40, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillText('EYE', 10, 36);
+      
+      // Frame (face)
+      ctx.fillStyle = '#ff0';
+      ctx.beginPath(); ctx.arc(80, 30, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillText('FACE', 68, 26);
+      
+      // Deck (display)
+      ctx.fillStyle = '#f80';
+      ctx.beginPath(); ctx.arc(90, 60, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillText('DECK', 78, 56);
+      
+      // northGate (heart)
+      ctx.fillStyle = '#f00';
+      ctx.beginPath(); ctx.arc(60, 30, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillText('HEART', 45, 26);
+      
+      // sporeGate (forge)
+      ctx.fillStyle = '#80f';
+      ctx.beginPath(); ctx.arc(40, 80, 3, 0, Math.PI*2); ctx.fill();
+      ctx.fillText('FORGE', 28, 92);
+      
+      // Spine line (10G fiber)
+      ctx.strokeStyle = '#0f04';
+      ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(60, 60); ctx.lineTo(20, 40); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(60, 60); ctx.lineTo(80, 30); ctx.stroke();
+      ctx.setLineDash([]);
+      
+      // Pulse ring
+      const r = (Date.now() % 3000) / 3000 * 40;
+      ctx.strokeStyle = `rgba(0,255,0,${0.3 - r/130})`;
+      ctx.beginPath(); ctx.arc(60, 60, r, 0, Math.PI*2); ctx.stroke();
+    }
+    setInterval(drawSpatial, 100);
+    
+    // Update spatial text
+    setInterval(() => {
+      spatialData.innerHTML = [
+        'House 1: Brain+Heart+Forge',
+        'House 2: Eye+Face (10G spine)',
+        'Pixel → eastGate: ~8ms',
+        'Deck → Frame: wired USB',
+        `Spine: 0.87ms 10G fiber`,
+        `<span class="pulse">◉ passthrough LIVE</span>`
+      ].join('<br>');
+      
+      sensorData.innerHTML = [
+        'IMU: LSM6DSV 6-axis',
+        'Accel: active (2 conn)',
+        'Gyro: active',
+        'Camera: rear (active)',
+        'Head track: available',
+        'XR: PROJECTED mode',
+        `Battery: 100%`
+      ].join('<br>');
+    }, 2000);
+    
+    pollNodes();
+    drawSpatial();
+  </script>
+</body>
+</html>

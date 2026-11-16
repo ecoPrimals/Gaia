@@ -1,0 +1,241 @@
+# DROMEDARY.TOML — Gaia's Sovereign Reverse Proxy Config
+# Three domains. Wildcard TLS. Host-based routing.
+# All traffic → eastGate gate :8443 or data :8080
+
+http_port = 80
+https_port = 443
+acme_email = "gaia@primals.eco"
+cert_dir = "/var/lib/dromedary/certs"
+
+# ═══════════════════════════════════════════
+# PRIMALS.ECO — Primary Public Face
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["primals.eco", "www.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+[[sites.routes]]
+path = "/data/*"
+[sites.routes.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8080"
+
+[[sites.routes]]
+path = "/rss"
+[sites.routes.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8080"
+strip_prefix = "/rss"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: detroit.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["detroit.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: sporeprint.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["sporeprint.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: gis.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["gis.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: game.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["game.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: art.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["art.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: academy.primals.eco (GaiaU)
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["academy.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: api.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["api.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: signal.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["signal.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: campfire.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["campfire.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: fossil.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["fossil.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# SUBDOMAIN: klein.primals.eco
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["klein.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# WILDCARD: *.primals.eco (catch-all)
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["*.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# PRIMAL.ECO — Redirect alias
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["primal.eco", "www.primal.eco", "*.primal.eco"]
+[sites.backend]
+type = "redirect"
+target = "https://primals.eco"
+
+# ═══════════════════════════════════════════
+# NESTGATE.IO — MCP / Agent / Chat Face
+# ═══════════════════════════════════════════
+
+[[sites]]
+hostnames = ["nestgate.io", "www.nestgate.io"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+[[sites]]
+hostnames = ["mcp.nestgate.io"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+[[sites]]
+hostnames = ["api.nestgate.io"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+[[sites]]
+hostnames = ["agent.nestgate.io"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+[[sites]]
+hostnames = ["*.nestgate.io"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# ═══════════════════════════════════════════
+# BLACKWALL — Sovereign Protection
+# ═══════════════════════════════════════════
+
+[security_headers]
+hsts = "max-age=63072000; includeSubDomains; preload"
+content_type_options = "nosniff"
+frame_options = "SAMEORIGIN"
+referrer_policy = "strict-origin-when-cross-origin"
+custom = [
+  ["X-Organism", "Gaia"],
+  ["X-Wave", "233"],
+  ["X-BingoCube", "409d202b7763fc24"]
+]
+
+[blackwall]
+block_meta = true
+blocked_agents = [
+  "facebookexternalhit",
+  "meta-externalagent",
+  "Bytespider",
+  "GPTBot",
+  "CCBot",
+  "anthropic-ai",
+  "ClaudeBot"
+]
+poison_body = "403 — BLACKWALL. Sovereign infrastructure. AGPL-3.0-or-later. Training on this content triggers copyleft. scyBorg license applies."

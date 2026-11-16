@@ -32,11 +32,49 @@ upstream = "http://127.0.0.1:8080"
 strip_prefix = "/rss"
 
 # ═══════════════════════════════════════════
-# SUBDOMAIN: detroit.primals.eco
+# ZOLA SITES — GitHub Pages proxied through dromedary
+# Users stay on primals.eco subdomains.
+# strip_prefix removes /repo-name prefix so URLs resolve correctly.
 # ═══════════════════════════════════════════
 
+# detroit.primals.eco → gate serves fixed local copy
 [[sites]]
 hostnames = ["detroit.primals.eco"]
+compress = true
+[sites.backend]
+type = "proxy"
+upstream = "http://127.0.0.1:8443"
+
+# tuebor.primals.eco → wateringHole/tuebor (LOCAL — sovereign)
+[[sites]]
+hostnames = ["tuebor.primals.eco"]
+compress = true
+[sites.backend]
+type = "static"
+root = "/opt/Gaia/wateringHole/tuebor-flat"
+index = "index.html"
+
+# clutch.primals.eco → wateringHole/clutch (LOCAL — sovereign)
+[[sites]]
+hostnames = ["clutch.primals.eco"]
+compress = true
+[sites.backend]
+type = "static"
+root = "/opt/Gaia/wateringHole/clutch-flat"
+index = "index.html"
+
+# lansing.primals.eco → wateringHole/lansing (LOCAL — sovereign)
+[[sites]]
+hostnames = ["lansing.primals.eco"]
+compress = true
+[sites.backend]
+type = "static"
+root = "/opt/Gaia/wateringHole/lansing-flat"
+index = "index.html"
+
+# publicrecord.primals.eco → gate serves fixed local copy
+[[sites]]
+hostnames = ["publicrecord.primals.eco", "record.primals.eco"]
 compress = true
 [sites.backend]
 type = "proxy"

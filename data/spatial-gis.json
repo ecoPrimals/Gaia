@@ -1,0 +1,111 @@
+{
+  "title": "Gaia Spatial GIS — Full Footprint Map",
+  "wave": "239e",
+  "timestamp": "2026-11-15T20:15:00Z",
+  "proven_by": "LEFT EYE (grapheneGate Pixel 8a) at House 2 via ADB WiFi",
+
+  "topology": {
+    "note": "ONE flat subnet 192.168.4.0/22. No phantom LAN 2. All WiFi SSIDs on br-lan.",
+    "subnet": "192.168.4.0/22",
+    "gateway": "192.168.4.1 (GL-MT6000)",
+    "dns": ["192.168.4.3", "1.1.1.1"],
+    "dhcp_domain": "primals.local"
+  },
+
+  "house_1": {
+    "address": "4422 Southgate Ave",
+    "role": "BRAIN SIDE — CNS",
+    "backbone": "MikroTik (.2) — L2 switch, all wired gates",
+    "wifi": {
+      "Aperture Science": {"band": "5GHz", "bssid": "78:76:89:96:e6:73", "note": "Flint AP"},
+      "GL-MT6000-2ae": {"band": "2.4GHz", "bssid": "da:84:21:0e:d6:1f", "note": "Router"},
+      "GL-MT6000-2ae-5G": {"band": "5GHz", "bssid": "ee:d9:bd:1d:62:bd", "note": "Router"}
+    },
+    "gates": {
+      "eastGate": {
+        "role": "BRAIN",
+        "ips": {
+          "eno1": {"ip": "192.168.4.213", "mac": "10:7c:61:23:4f:4e", "note": "Ethernet port 1 — the 'mystery Amazon' — was ME all along"},
+          "enp5s0": {"ip": "192.168.4.244", "mac": "1c:86:0b:37:63:19", "note": "Ethernet port 2 — main brain address"},
+          "wlp0s20f3": {"ip": "192.168.4.244", "mac": "c8:5e:a9:c9:6f:80", "note": "WiFi backup"}
+        },
+        "services": ["SSH:22", "HTTP:80", "HTTPS:443", "data:8080", "gate:8443", "Forgejo:3000", "Ollama:11436"]
+      },
+      "northGate": {"ip": ".147", "mac": "bc:fc:e7:ea:d9:34", "role": "HEART", "note": "9950X3D + RTX 5090"},
+      "ironGate": {"ip": ".237", "mac": "1c:86:0b:37:63:70", "role": "FORGE 2", "note": "i9-14900K + RTX 5070"},
+      "sporeGate": {"ip": ".3", "mac": "84:47:09:38:97:55", "role": "FORGE 1"},
+      "swiftGate_or_blueGate": {"ip": ".100", "mac": "68:54:5a:d0:69:a2", "note": "Lite-On MAC. In Pixel ARP from House 2."}
+    },
+    "infra": {
+      "router": {"ip": ".1", "mac": "94:83:c4:e0:63:5a", "model": "GL-MT6000"},
+      "mikrotik": {"ip": ".2", "mac": "04:f4:1c:e6:7c:e8", "model": "L2 backbone switch"},
+      "router_br_alt": {"ip": "192.168.8.1", "mac": "94:83:c4:e0:62:b0", "note": "Router secondary bridge/interface"}
+    }
+  },
+
+  "house_2": {
+    "address": "641 Samantha Ave",
+    "role": "SOUTH POLE — PNS",
+    "backbone": "JetStream (.111) — 10G fiber bridge, ~80m run",
+    "proven_devices_from_pixel": {
+      "JetStream": {"ip": ".111", "mac": "ec:75:0c:4c:98:08", "ping_from_pixel": "8.44ms"},
+      "grapheneGate": {"ip": ".202", "mac": "86:c6:05:44:0c:f3", "role": "SHARED LEFT EYE", "location": "AT HOUSE 2 RIGHT NOW"}
+    },
+    "wifi_seen_from_house_2": {
+      "hidden_strongest": {"bssid": "4e:bc:e9:a9:7a:6f", "rssi": -47, "freq": "2462MHz", "note": "STRONGEST signal — local AP or hotspot AT House 2"},
+      "aperture_science": {"rssi": -55, "freq": "5765MHz", "note": "Flint BARELY reaches"},
+      "gl_mt6000_2g": {"rssi": -52, "freq": "2427MHz", "note": "Router 2.4GHz reaches"},
+      "gl_mt6000_5g": {"rssi": -58, "freq": "5220MHz", "note": "Router 5GHz — CONNECTED, WiFi 6, 432Mbps"},
+      "neighbors": ["Da Crib (-90dBm)", "HOME-E1EC (-74dBm)", "ATTrzQIqbn (-85dBm)"]
+    }
+  },
+
+  "spine": {
+    "from": "MikroTik (.2) @ House 1",
+    "to": "JetStream/Omada (.111) @ House 2",
+    "medium": "10G fiber optic, ~80m run across property line",
+    "latency": "0.87ms wired baseline",
+    "pixel_over_spine": "5-13ms (WiFi hop at House 2 side adds ~5-8ms)"
+  },
+
+  "latency_from_pixel_at_house2": {
+    "ironGate_237": "4.94ms (CLOSEST — wired path fastest)",
+    "sporeGate_3": "7.99ms",
+    "router_1": "8.06ms",
+    "eastGate_244": "8.37ms (BRAIN — 80m spine + WiFi hop)",
+    "JetStream_111": "8.44ms (House 2 backbone)",
+    "MikroTik_2": "12.60ms",
+    "northGate_147": "12.60ms (HEART)"
+  },
+
+  "adb_proof": {
+    "from": "eastGate (.244) at House 1",
+    "to": "grapheneGate (.202) at House 2",
+    "connection": "ADB over WiFi, port 5555",
+    "established": "tcp6 192.168.4.202:5555 ↔ 192.168.4.244:58054 ESTABLISHED",
+    "capabilities": "screencap, shell, dumpsys, camera, install, forward — FULL CONTROL",
+    "reaches_across_spine": true,
+    "latency": "~8ms round trip"
+  },
+
+  "mystery_solved": {
+    "213_was_eastgate": {
+      "ip": "192.168.4.213",
+      "mac": "10:7c:61:23:4f:4e",
+      "interface": "eno1 (first ethernet port on eastGate NUC)",
+      "note": "Intel NUC onboard NIC — OUI registered to Amazon (Intel/Amazon partnership). NOT a separate device. eastGate has 3 NICs: eno1(.213) + enp5s0(.244) + wlp0s20f3(.244 WiFi)"
+    },
+    "hidden_strongest_wifi": {
+      "bssid": "4e:bc:e9:a9:7a:6f",
+      "rssi": -47,
+      "note": "Locally-administered MAC — likely a phone hotspot or IoT AP physically at House 2. STRONGEST signal the Pixel sees."
+    }
+  },
+
+  "fog_flow": {
+    "direction": "OUTSIDE → grapheneGate → ADB pipe → eastGate → LAN → all gates absorb",
+    "current_host": "eastGate holds ADB connection across the 10G spine",
+    "swiftgate_handoff": "When Kevin is at House 2 and swiftGate wakes: adb connect 192.168.4.202:5555 from swiftGate. Last connector wins.",
+    "github_outer_layer": "Forgejo (inner) → GitHub (outer) → world reads. GitHub IS the public membrane."
+  }
+}

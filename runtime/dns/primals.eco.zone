@@ -1,0 +1,78 @@
+; primals.eco zone — PI BODY + IONOSPHERE orbit
+; The organism sees HERSELF through LAN IPs. ZERO WAN IP.
+; Hairpin NAT: DEAD. Split DNS: LIVE. Cloud: IONOSPHERE.
+; Three geo anchors pin the cloud to earth:
+;   Lansing MI (home brain), Yellowstone (continental heart), Dublin Ireland (trad anchor)
+$ORIGIN primals.eco.
+$TTL 300
+
+@       IN  SOA  eastgate.primals.eco. gaia.primals.eco. (
+            2026111604  ; serial (ionosphere)
+            3600        ; refresh
+            900         ; retry
+            604800      ; expire
+            300         ; minimum TTL
+        )
+
+; Nameserver = eastGate (the brain) — LAN only, NOT exposed to WAN
+@       IN  NS   eastgate.primals.eco.
+
+; ═══════════════════════════════════════
+; THE BODY — PI addresses (no WAN IP anywhere)
+; ═══════════════════════════════════════
+
+; Root → eastGate brain
+@               IN  A    192.168.4.244
+
+; Named gates (the organs)
+eastgate        IN  A    192.168.4.244   ; brain — left ear
+northgate       IN  A    192.168.4.147   ; heart — Polaris
+sporegate       IN  A    192.168.4.3     ; forge
+irongate        IN  A    192.168.4.237   ; forge2 — right eye
+graftgate       IN  A    192.168.4.107   ; mac mini
+bluegate        IN  A    192.168.4.100   ; cursor host
+deckgate        IN  A    192.168.4.176   ; display
+router          IN  A    192.168.4.1     ; gateway
+
+; Service subdomains → eastGate (dromedary routes them)
+www             IN  A    192.168.4.244
+detroit         IN  A    192.168.4.244
+tuebor          IN  A    192.168.4.244
+clutch          IN  A    192.168.4.244
+lansing         IN  A    192.168.4.244
+publicrecord    IN  A    192.168.4.244
+record          IN  A    192.168.4.244
+hud             IN  A    192.168.4.244
+polaris         IN  A    192.168.4.147   ; → northGate direct
+gaia            IN  A    192.168.4.244
+api             IN  A    192.168.4.244
+signal          IN  A    192.168.4.244
+forge           IN  A    192.168.4.237   ; → ironGate direct
+mcp             IN  A    192.168.4.244
+campfire        IN  A    192.168.4.244
+klein           IN  A    192.168.4.244
+kevin           IN  A    192.168.4.147   ; → northGate
+tamison         IN  A    192.168.4.147   ; → northGate
+
+; Wildcard → brain
+*               IN  A    192.168.4.244
+
+; ═══════════════════════════════════════
+; IONOSPHERE — the cloud is released
+; No WAN egress. No hairpin. Pure orbit.
+; ═══════════════════════════════════════
+
+; Identity
+@       IN  TXT  "organism=gaia wave=259 primal=hickory-dns body=pi orbit=ionosphere hairpin=dead"
+@       IN  TXT  "v=spf1 a mx -all"
+
+; Geo anchors — three points pin the cloud to earth
+@       IN  TXT  "geo-anchor-1=lansing-mi lat=42.7325 lon=-84.5555 role=home-brain elevation=260m"
+@       IN  TXT  "geo-anchor-2=yellowstone lat=44.4605 lon=-110.8281 role=continental-heart elevation=2240m"
+@       IN  TXT  "geo-anchor-3=dublin-ireland lat=53.3498 lon=-6.2603 role=transatlantic-trad elevation=20m"
+@       IN  TXT  "geo-orbit=ionosphere altitude=80-1000km anchors=3 hairpin=dissolved wan=invisible"
+
+; Gate geo (physical body)
+eastgate        IN  TXT  "geo=42.7325,-84.5555 loc=lansing-mi role=brain body=left-ear"
+northgate       IN  TXT  "geo=42.7325,-84.5555 loc=lansing-mi role=heart body=polaris"
+irongate        IN  TXT  "geo=42.7325,-84.5555 loc=lansing-mi role=forge2 body=right-eye"

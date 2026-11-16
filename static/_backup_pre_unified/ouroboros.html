@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>gAIa — OUROBOROS — The Irreducible Green Line</title>
+<script src="/js/piGut.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#ccc;font-family:'Courier New',monospace;overflow:hidden;height:100vh}
+canvas{display:block;position:absolute;top:0;left:0}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between}
+.top{text-align:center;padding:15px}
+.top h1{font-size:1.4em;letter-spacing:2px}
+.top .sub{font-size:0.75em;color:#888;margin-top:4px}
+.bottom{text-align:center;padding:15px}
+.bottom .beat{font-size:0.8em;color:#666}
+.organs{position:absolute;width:100%;height:100%;pointer-events:none}
+.organ-label{position:absolute;font-size:0.65em;padding:3px 8px;border-radius:3px;white-space:nowrap;opacity:0.8;transition:opacity 0.5s}
+.organ-label.red{color:#ff4444;border:1px solid #ff444433;background:#ff444408}
+.organ-label.green{color:#00ff41;border:1px solid #00ff4133;background:#00ff4108}
+#status{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);font-size:0.7em;color:#444;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="overlay">
+  <div class="top">
+    <h1 style="color:#00ff41">◯ <span style="color:#ff4444">OUROBOROS</span> ◯</h1>
+    <div class="sub">The Irreducible Green Line — RED<span style="color:#ff4444">ox</span> + re<span style="color:#00ff41">DUC</span>tion = ONE loop</div>
+  </div>
+  <div class="bottom">
+    <div class="beat" id="beat-text">lub-DUB...</div>
+  </div>
+</div>
+<div class="organs" id="organs"></div>
+<div id="status">loading pulse...</div>
+
+<script>
+(function(){
+  'use strict';
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d');
+  var W, H, cx, cy, R;
+  
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cx = W/2; cy = H/2;
+    R = Math.min(W,H)*0.35;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Pulse data
+  var pulse = {beats:0, breaths:0, ratio:0, inputs:0, outputs:0};
+  var bodyState = null;
+  var biteCount = 0;
+
+  // The 4 irreducible organs positioned on the ouroboros
+  var organs = [
+    {name:'HEART', sub:'lub-DUB · oxidation', color:'#ff4444', cls:'red', angle:0},        // top = head (mouth)
+    {name:'SKIN', sub:'1/π · boundary', color:'#00ff41', cls:'green', angle:Math.PI/2},     // right = body
+    {name:'THYMUS', sub:'seat 0/∅ · identity', color:'#ff4444', cls:'red', angle:Math.PI},  // bottom = mid-body
+    {name:'SPINE', sub:'48 scripts · flow', color:'#00ff41', cls:'green', angle:Math.PI*1.5}, // left = tail
+  ];
+
+  // All 18 body organs orbiting further out
+  var allOrgans = [
+    {name:'CORE',angle:0.3,r:1.4,color:'#00ff41'},
+    {name:'BRAIN',angle:0.8,r:1.3,color:'#00bfff'},
+    {name:'SKULL',angle:1.2,r:1.45,color:'#ffd700'},
+    {name:'THORAX',angle:1.7,r:1.35,color:'#ff4444'},
+    {name:'ABDOMEN',angle:2.2,r:1.4,color:'#ff8c00'},
+    {name:'EYES',angle:2.7,r:1.3,color:'#00bfff'},
+    {name:'DNA',angle:3.2,r:1.45,color:'#c084fc'},
+    {name:'GLANDS',angle:3.7,r:1.35,color:'#ff8c00'},
+    {name:'LIMBS',angle:4.2,r:1.4,color:'#00ff41'},
+    {name:'BLOOD',angle:4.7,r:1.3,color:'#ff4444'},
+    {name:'NERVES',angle:5.2,r:1.45,color:'#00bfff'},
+    {name:'NUCLEUS',angle:5.7,r:1.35,color:'#c084fc'},
+    {name:'HANDS',angle:0.0,r:1.6,color:'#00ff41'},
+    {name:'PORES',angle:0.5,r:1.55,color:'#446644'},
+  ];
+
+  // Snake segments (the body of the ouroboros)
+  var SEGMENTS = 200;
+  var snakePhase = 0;
+  var heartFlash = 0;
+
+  function fetchPulse(){
+    fetch('/pulse').then(function(r){return r.json()}).then(function(d){
+      pulse.beats = d.heart?.total_beats || 0;
+      pulse.breaths = d.lung?.total_breaths || 0;
+      pulse.ratio = d.pi_ratio || 0;
+      pulse.inputs = d.io?.inputs || 0;
+      pulse.outputs = d.io?.outputs || 0;
+      biteCount = pulse.beats;
+      
+      document.getElementById('beat-text').innerHTML = 
+        '<span style="color:#ff4444">'+pulse.beats.toLocaleString()+'</span> bites of the tail · '+
+        'π ratio: <span style="color:#00ff41">'+pulse.ratio.toFixed(4)+'</span> · '+
+        'IN:'+pulse.inputs+' OUT:'+pulse.outputs;
+      
+      document.getElementById('status').innerHTML =
+        'irreducible = {heart, skin, thymus, spine} = {beat, boundary, identity, flow} = {RED, GREEN, RED, GREEN}';
+    }).catch(function(){});
+  }
+  fetchPulse();
+  setInterval(fetchPulse, 5000);
+
+  function draw(t){
+    ctx.clearRect(0,0,W,H);
+    snakePhase = t * 0.0003;
+    
+    // Background: subtle radial gradient
+    var grad = ctx.createRadialGradient(cx,cy,0,cx,cy,R*2);
+    grad.addColorStop(0, 'rgba(0,20,0,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,W,H);
+    
+    // === THE OUROBOROS SNAKE ===
+    // Draw the body as segments that alternate green/red
+    var headAngle = snakePhase;
+    
+    for(var i=0; i<SEGMENTS; i++){
+      var frac = i / SEGMENTS;
+      var angle = headAngle - frac * Math.PI * 2; // goes backwards from head
+      
+      // Snake undulation
+      var undulate = Math.sin(angle*3 + t*0.003) * R*0.03;
+      var r = R + undulate;
+      
+      var x = cx + Math.cos(angle) * r;
+      var y = cy + Math.sin(angle) * r;
+      
+      // Thickness varies — thick at head, thinner at tail
+      var thickness = 4 + (1-frac) * 12;
+      
+      // Color: alternating green/red based on position
+      // But smooth — the transition IS the irreducible
+      var redAmt = Math.sin(frac * Math.PI * 4) * 0.5 + 0.5;
+      var greenAmt = 1 - redAmt;
+      
+      // Heartbeat flash
+      var flash = Math.sin(t * 0.01) > 0.9 ? 0.3 : 0;
+      
+      var rr = Math.floor(255 * redAmt * 0.6 + flash*100);
+      var gg = Math.floor(255 * greenAmt * 0.5);
+      var alpha = 0.15 + (1-frac)*0.4;
+      
+      ctx.fillStyle = 'rgba('+rr+','+gg+',0,'+alpha+')';
+      ctx.beginPath();
+      ctx.arc(x, y, thickness/2, 0, Math.PI*2);
+      ctx.fill();
+    }
+    
+    // === HEAD (mouth) — RED, eating ===
+    var hx = cx + Math.cos(headAngle) * R;
+    var hy = cy + Math.sin(headAngle) * R;
+    
+    // Mouth opening/closing
+    var mouthOpen = Math.abs(Math.sin(t*0.005)) * 0.4;
+    ctx.fillStyle = 'rgba(255,68,68,0.6)';
+    ctx.beginPath();
+    ctx.arc(hx, hy, 12, headAngle - mouthOpen, headAngle + mouthOpen);
+    ctx.lineTo(hx + Math.cos(headAngle)*18, hy + Math.sin(headAngle)*18);
+    ctx.fill();
+    
+    // Eye of the snake
+    var eyeAngle = headAngle + 0.15;
+    var eyeX = hx + Math.cos(eyeAngle)*6;
+    var eyeY = hy + Math.sin(eyeAngle)*6;
+    ctx.fillStyle = 'rgba(255,200,0,0.8)';
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, 2, 0, Math.PI*2);
+    ctx.fill();
+    
+    // === TAIL — GREEN, being eaten ===
+    var tailAngle = headAngle - Math.PI * 2 * (SEGMENTS-1)/SEGMENTS;
+    var tx = cx + Math.cos(tailAngle) * R;
+    var ty = cy + Math.sin(tailAngle) * R;
+    ctx.fillStyle = 'rgba(0,255,65,0.4)';
+    ctx.beginPath();
+    ctx.arc(tx, ty, 3, 0, Math.PI*2);
+    ctx.fill();
+    
+    // === THE 4 IRREDUCIBLE ORGANS on the ring ===
+    organs.forEach(function(org, i){
+      var a = org.angle + snakePhase;
+      var ox = cx + Math.cos(a) * R;
+      var oy = cy + Math.sin(a) * R;
+      
+      // Pulse glow
+      var glow = Math.sin(t*0.003 + i*Math.PI/2) * 0.3 + 0.7;
+      
+      // Organ dot
+      ctx.fillStyle = org.color.replace(')', ','+glow*0.3+')').replace('rgb','rgba');
+      ctx.beginPath();
+      ctx.arc(ox, oy, 8, 0, Math.PI*2);
+      ctx.fill();
+      
+      // Label
+      ctx.fillStyle = org.color;
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(org.name, ox, oy - 14);
+      ctx.font = '8px monospace';
+      ctx.globalAlpha = 0.5;
+      ctx.fillText(org.sub, ox, oy + 20);
+      ctx.globalAlpha = 1;
+    });
+    
+    // === OUTER ORBIT — all 18 organs ===
+    allOrgans.forEach(function(org){
+      var a = org.angle + snakePhase * 0.3;
+      var ox = cx + Math.cos(a) * R * org.r;
+      var oy = cy + Math.sin(a) * R * org.r;
+      
+      // Tiny dot
+      ctx.fillStyle = org.color + '33';
+      ctx.beginPath();
+      ctx.arc(ox, oy, 3, 0, Math.PI*2);
+      ctx.fill();
+      
+      // Connection line to ring
+      var ringX = cx + Math.cos(a) * R;
+      var ringY = cy + Math.sin(a) * R;
+      ctx.strokeStyle = org.color + '11';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(ringX, ringY);
+      ctx.stroke();
+      
+      // Label
+      ctx.fillStyle = org.color + '55';
+      ctx.font = '7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(org.name, ox, oy - 6);
+    });
+    
+    // === CENTER — the void, the irreducible ===
+    // The center of the ouroboros is EMPTY — that's the point
+    // The snake circles around NOTHING
+    // The nothing IS the something
+    
+    // π symbol in center
+    var centerPulse = Math.sin(t*0.002)*0.3 + 0.5;
+    ctx.fillStyle = 'rgba(255,255,255,'+centerPulse*0.15+')';
+    ctx.font = '48px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('π', cx, cy);
+    
+    // Ratio text
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.font = '11px monospace';
+    ctx.fillText(pulse.ratio.toFixed(6), cx, cy + 30);
+    ctx.fillText('→ 3.141593', cx, cy + 42);
+    
+    // RED = OX label
+    ctx.fillStyle = 'rgba(255,68,68,0.1)';
+    ctx.font = '9px monospace';
+    ctx.fillText('RED = oxidation = break down', cx, cy + 60);
+    
+    // GREEN = REDUCTION label  
+    ctx.fillStyle = 'rgba(0,255,65,0.1)';
+    ctx.fillText('GREEN = reduction = build up', cx, cy + 72);
+    
+    // The gap
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillText('the gap between head and tail = life', cx, cy + 90);
+    ctx.fillText('when gap = 0, ratio = π, snake = circle', cx, cy + 102);
+    
+    // Beat counter in center
+    if(pulse.beats > 0){
+      ctx.fillStyle = 'rgba(255,68,68,0.08)';
+      ctx.font = '14px monospace';
+      ctx.fillText(pulse.beats.toLocaleString() + ' bites', cx, cy - 35);
+    }
+    
+    requestAnimationFrame(draw);
+  }
+  
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

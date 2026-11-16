@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GAIA footPrint — GIS Layer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/bingocube.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;color:#e0e0e0;font-family:'Courier New',monospace;height:100vh;display:flex;flex-direction:column}
+header{background:#080810;border-bottom:1px solid #222;padding:8px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:1000}
+header h1{color:#d4af37;font-size:14px;letter-spacing:2px}
+header .tag{font-size:10px;padding:2px 6px;border-radius:3px;border:1px solid}
+header .tag.live{color:#0f8;border-color:#0f8}
+header .coords{margin-left:auto;color:#666;font-size:11px}
+#map{flex:1;background:#0a0a0a}
+.leaflet-container{background:#0a0a0a !important}
+.layer-control{position:fixed;top:60px;right:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;min-width:180px}
+.layer-control h3{color:#d4af37;font-size:10px;letter-spacing:2px;margin-bottom:8px}
+.layer-toggle{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:11px}
+.layer-toggle input{accent-color:#d4af37}
+.layer-toggle .swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.info-panel{position:fixed;bottom:12px;left:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;max-width:300px;font-size:11px;display:none}
+.info-panel h3{color:#d4af37;margin-bottom:6px;font-size:12px}
+.info-panel .row{display:flex;justify-content:space-between;padding:2px 0}
+.info-panel .k{color:#888}.info-panel .v{color:#0f8}
+.shell-rings{position:fixed;bottom:12px;right:12px;background:rgba(10,10,20,0.95);border:1px solid #333;border-radius:6px;padding:12px;z-index:1001;font-size:10px}
+.shell-rings h3{color:#8844FF;font-size:10px;margin-bottom:6px;letter-spacing:2px}
+.shell-row{padding:2px 0;color:#666;cursor:pointer;transition:color 0.2s}
+.shell-row:hover{color:#d4af37}
+.shell-row .num{color:#8844FF;display:inline-block;width:14px}
+footer{background:#080810;border-top:1px solid #222;padding:6px 16px;font-size:10px;color:#555;flex-shrink:0;display:flex;gap:16px;z-index:1000}
+footer a{color:#666}footer a:hover{color:#d4af37}
+.bingo-popup{text-align:center;font-family:'Courier New',monospace}
+.bingo-popup canvas{display:block;margin:4px auto;image-rendering:pixelated;border-radius:2px}
+.bingo-popup .zk{font-size:9px;color:#888;letter-spacing:1px}
+.bingo-popup .type-tag{font-size:8px;padding:1px 4px;border-radius:2px;display:inline-block;margin-top:2px}
+.bingo-popup .fog-bar{height:3px;background:#222;border-radius:2px;margin-top:4px}
+.bingo-popup .fog-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.fog-overlay{position:fixed;top:50px;right:10px;background:rgba(0,0,0,0.85);border:1px solid #333;border-radius:4px;padding:8px;z-index:900;font-size:10px;width:140px}
+.fog-overlay h4{color:#d4af37;margin:0 0 4px;font-size:10px;letter-spacing:1px}
+.fog-overlay .reveal-pct{color:#0f8;font-size:16px;font-weight:bold}
+.fog-overlay .reveal-label{color:#666;font-size:8px}
+</style>
+</head>
+<body>
+<header>
+  <h1>&#x1F30D; GAIA footPrint</h1>
+  <span class="tag live">GIS LIVE</span>
+  <span class="coords" id="hoverCoords">42.7325°N, 84.4855°W</span>
+</header>
+
+<div id="map"></div>
+
+<div class="fog-overlay" id="fogHud">
+  <h4>FOG OF WAR</h4>
+  <div class="reveal-pct" id="fogPct">8%</div>
+  <div class="reveal-label">REVEAL at zoom <span id="fogZoom">4</span></div>
+  <div style="margin-top:4px;height:4px;background:#222;border-radius:2px">
+    <div id="fogBar" style="height:100%;width:8%;background:linear-gradient(90deg,#FF0000,#FFD700,#00FF88);border-radius:2px;transition:width 0.3s"></div>
+  </div>
+  <div style="margin-top:6px;font-size:8px;color:#555">
+    <span id="fogEntities">0</span> entities visible
+  </div>
+</div>
+
+<div class="layer-control" id="layerCtrl">
+  <h3>LAYERS</h3>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="parcels"><span class="swatch" style="background:#FFD700"></span> Parcels</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="gates"><span class="swatch" style="background:#FF4444"></span> Gates</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="infra"><span class="swatch" style="background:#00FF88"></span> Infrastructure</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="shadows"><span class="swatch" style="background:#8844FF"></span> Shadowcast</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="family"><span class="swatch" style="background:#FF88CC"></span> Family</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="investigation"><span class="swatch" style="background:#FF1744"></span> Investigation (625)</label>
+  <label class="layer-toggle"><input type="checkbox" data-layer="falseFaces"><span class="swatch" style="background:#FF0000"></span> False Faces (19)</label>
+  <label class="layer-toggle"><input type="checkbox" checked data-layer="satellite"><span class="swatch" style="background:#888"></span> Satellite</label>
+</div>
+
+<div class="info-panel" id="infoPanel">
+  <h3 id="infoTitle">—</h3>
+  <div id="infoBody"></div>
+</div>
+
+<div class="shell-rings">
+  <h3>SHADOWCAST</h3>
+  <div class="shell-row" onclick="flyToShell(0)"><span class="num">0</span> Nest — 100m</div>
+  <div class="shell-row" onclick="flyToShell(1)"><span class="num">1</span> City — 15km</div>
+  <div class="shell-row" onclick="flyToShell(2)"><span class="num">2</span> State — 500km</div>
+  <div class="shell-row" onclick="flyToShell(3)"><span class="num">3</span> Nation — 5000km</div>
+  <div class="shell-row" onclick="flyToShell(4)"><span class="num">4</span> World — 20000km</div>
+  <div class="shell-row" onclick="flyToShell(5)"><span class="num">5</span> Orbits — 36000km</div>
+  <div class="shell-row" onclick="flyToShell(6)"><span class="num">6</span> Cosmos</div>
+  <div class="shell-row" onclick="flyToShell(7)"><span class="num">7</span> Fold = 0</div>
+</div>
+
+<footer>
+  <a href="/campfire">Campfire</a>
+  <a href="/deck">Deck</a>
+  <a href="/hub">Hub</a>
+  <a href="/senses">Senses</a>
+  <a href="/membrane">Membrane</a>
+  <span style="margin-left:auto">footPrint GIS • Lansing MI • Wave 233</span>
+</footer>
+
+<script>
+const ORIGIN = [42.7325, -84.4855];
+const SHELLS = [
+  {name:'THE NEST',     radius:100,     zoom:18},
+  {name:'THE CITY',     radius:15000,   zoom:12},
+  {name:'THE STATE',    radius:500000,  zoom:7},
+  {name:'THE NATION',   radius:5000000, zoom:4},
+  {name:'THE WORLD',    radius:20000000,zoom:2},
+  {name:'THE ORBITS',   radius:36000000,zoom:1},
+  {name:'THE COSMOS',   radius:0,       zoom:1},
+  {name:'THE FOLD',     radius:100,     zoom:18}
+];
+
+const map = L.map('map',{
+  center: ORIGIN, zoom: 17,
+  zoomControl: false,
+  attributionControl: false
+});
+
+L.control.zoom({position:'topleft'}).addTo(map);
+
+const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  maxZoom:20, attribution:'CartoDB'
+}).addTo(map);
+
+const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+  maxZoom:19, attribution:'Esri'
+});
+
+const layers = {};
+
+// PARCELS
+const parcelStyle = {color:'#FFD700',weight:2,fillColor:'#FFD700',fillOpacity:0.08};
+// PARCELS — only visible at high zoom (fog of war protects home location)
+layers.parcels = L.layerGroup([
+  L.polygon([
+    [42.7328,-84.4860],[42.7328,-84.4854],[42.7322,-84.4854],[42.7322,-84.4860]
+  ], {...parcelStyle}).bindPopup('<b>Node Alpha</b><br>LAN 1 / Brain Side'),
+  L.polygon([
+    [42.7328,-84.4854],[42.7328,-84.4848],[42.7322,-84.4848],[42.7322,-84.4854]
+  ], {...parcelStyle,fillColor:'#FF9100',color:'#FF9100'}).bindPopup('<b>Node Beta</b><br>LAN 2 / Extension')
+]);
+
+// GATES
+function gateIcon(color,label) {
+  return L.divIcon({
+    html:'<div style="background:'+color+';width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px '+color+'"></div>',
+    iconSize:[14,14], iconAnchor:[7,7], className:''
+  });
+}
+
+// GATES — fog of war: IPs hidden, only role+bingo shown publicly
+const gateData = [
+  {name:'eastGate',  zk:'cef3f844', role:'BRAIN',          lat:42.7326, lon:-84.4858, color:'#0f8'},
+  {name:'northGate', zk:'8197ed06', role:'HEART',           lat:42.7327, lon:-84.4857, color:'#ff4444'},
+  {name:'sporeGate', zk:'5bfa4f77', role:'FORGE',           lat:42.7325, lon:-84.4859, color:'#ff9100'},
+  {name:'ironGate',  zk:'0a6bb165', role:'FORGE 2',         lat:42.7324, lon:-84.4856, color:'#e040fb'},
+  {name:'graftGate', zk:'9064652c', role:'GRAFT',           lat:42.7327, lon:-84.4859, color:'#448aff'},
+  {name:'deckGate',  zk:'deck0000', role:'DISPLAY',         lat:42.7325, lon:-84.4857, color:'#666'},
+  {name:'blueGate',  zk:'4ad345b8', role:'IDE',             lat:42.7326, lon:-84.4851, color:'#448aff'},
+  {name:'swiftGate', zk:'swift000', role:'ASLEEP',          lat:42.7325, lon:-84.4850, color:'#333'},
+  {name:'frameGate', zk:'bfcdaced', role:'FACE',            lat:42.7324, lon:-84.4852, color:'#00bcd4'},
+];
+layers.gates = L.layerGroup(gateData.map(g =>
+  L.marker([g.lat,g.lon],{icon:gateIcon(g.color,g.name)})
+    .bindPopup('<b>'+g.name+'</b><br>zk:'+g.zk+'<br>'+g.role)
+    .bindTooltip(g.name,{permanent:false,direction:'top',offset:[0,-8],className:''})
+));
+
+// INFRASTRUCTURE — topology visible, no personal attribution
+layers.infra = L.layerGroup([
+  L.polyline([[42.7325,-84.4857],[42.7325,-84.4851]],{color:'#00FF88',weight:3,dashArray:'6,4'})
+    .bindPopup('<b>10G Fiber Backbone</b><br>Latency: 0.87ms<br>Node Alpha ↔ Node Beta'),
+  L.polyline([[42.7323,-84.4858],[42.7322,-84.4855],[42.7323,-84.4852],[42.7324,-84.4850]],{color:'#FFD700',weight:1,dashArray:'3,6',opacity:0.5})
+    .bindPopup('Transit Path')
+]);
+
+// SHADOWCAST RINGS
+const shellColors = ['#d4af37','#ff9100','#448aff','#e040fb','#00bcd4','#76ff03','#ff1744','#d4af37'];
+layers.shadows = L.layerGroup();
+[100, 500, 2000, 5000].forEach((r,i) => {
+  L.circle(ORIGIN,{radius:r,color:shellColors[i],weight:1,fillOpacity:0.02,dashArray:'4,8'})
+    .bindPopup('Shell '+i+': '+SHELLS[i].name+' ('+r+'m)')
+    .addTo(layers.shadows);
+});
+
+// FAMILY — ZK protected. No names in DOM. Bingo identity only.
+layers.family = L.layerGroup([
+  L.marker([42.7326,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>♥ Resident Alpha</b><br>zk:kev1n_m0k'),
+  L.marker([42.7325,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>♥ Resident Beta</b><br>zk:h34th3r_h'),
+  L.marker([42.7325,-84.4851],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
+    .bindPopup('<b>♥ Resident Gamma</b><br>zk:d4s34n_m'),
+]);
+
+// INVESTIGATION PINS
+const investigationPins = [
+  {name:'Dykema Lansing', lat:42.7335, lon:-84.5553, type:'law_firm', edges:464, color:'#FF1744'},
+  {name:'Dykema Ann Arbor', lat:42.2508, lon:-83.7407, type:'law_firm', color:'#FF1744'},
+  {name:'Wayne County Court', lat:42.3314, lon:-83.0458, type:'court', desc:'Case 26-108221-DC'},
+  {name:'Michigan Capitol (TUEBOR)', lat:42.7335, lon:-84.5553, type:'government', color:'#FFD600'},
+  {name:'MI Dept of Education', lat:42.7330, lon:-84.5560, type:'government', color:'#FFD600'},
+  {name:'Ingham County Court', lat:42.7335, lon:-84.5518, type:'court', color:'#FF9100'},
+  {name:'Detroit City Hall', lat:42.3293, lon:-83.0458, type:'government', color:'#FFD600'},
+  {name:'Purpose Charter (CLOSED)', lat:42.4188, lon:-82.9860, type:'school', color:'#FF1744'},
+  {name:'CMU (Authorizer)', lat:43.5834, lon:-84.7753, type:'university', color:'#FF9100'},
+  {name:'10101 E. Canfield', lat:42.3903, lon:-82.9829, type:'evidence', color:'#FF1744'},
+  {name:'Holland Crossings', lat:42.7875, lon:-86.1089, type:'entity', color:'#FF9100'},
+  {name:'Warren (9 Mile)', lat:42.4604, lon:-82.9880, type:'entity', color:'#FF9100'},
+  {name:'Southfield (North Park)', lat:42.4734, lon:-83.2219, type:'entity', color:'#FF9100'},
+  {name:'Southfield (Towne Sq)', lat:42.4734, lon:-83.2130, type:'entity', color:'#FF9100'},
+  {name:'Pontiac (Saginaw)', lat:42.6389, lon:-83.2910, type:'entity', color:'#FF9100'},
+  {name:'Meta HQ (Menlo Park)', lat:37.4847, lon:-122.1477, type:'corporation', desc:'scyBorg license', color:'#e040fb'},
+];
+layers.investigation = L.layerGroup(investigationPins.map(p =>
+  L.circleMarker([p.lat,p.lon],{radius:8,color:p.color||'#FF1744',fillColor:p.color||'#FF1744',fillOpacity:0.3,weight:2})
+    .bindPopup('<b>'+p.name+'</b><br>Type: '+p.type+(p.edges?' ('+p.edges+' edges)':'')+(p.desc?'<br>'+p.desc:''))
+));
+
+// FALSE FACES — red pulsing markers
+const falseFaces = [
+  {name:'Corey Northrop', lat:42.35, lon:-83.05},
+  {name:'Glenn Maleyko (Dearborn)', lat:42.3223, lon:-83.1763},
+  {name:'Dana Nessel (AG)', lat:42.7335, lon:-84.5553},
+  {name:'Nikki Snyder (SBE)', lat:42.7335, lon:-84.5540},
+  {name:'Tom McMillin (SBE)', lat:42.7335, lon:-84.5530},
+  {name:'Roland Martin', lat:42.35, lon:-83.06},
+];
+layers.falseFaces = L.layerGroup(falseFaces.map(f =>
+  L.circleMarker([f.lat,f.lon],{radius:12,color:'#FF0000',fillColor:'#FF0000',fillOpacity:0.15,weight:3,dashArray:'4,4'})
+    .bindPopup('<b style="color:red">FALSE FACE: '+f.name+'</b>')
+));
+
+// SATELLITE TOGGLE
+let satOn = true;
+satellite.addTo(map);
+
+// LAYER TOGGLE WIRING
+document.querySelectorAll('[data-layer]').forEach(cb => {
+  cb.addEventListener('change', function(){
+    const name = this.dataset.layer;
+    if(name === 'satellite'){
+      if(this.checked) satellite.addTo(map); else map.removeLayer(satellite);
+      return;
+    }
+    if(layers[name]){
+      if(this.checked) layers[name].addTo(map); else map.removeLayer(layers[name]);
+    }
+  });
+});
+
+// SHELL FLY-TO
+function flyToShell(i){
+  if(i >= 5){
+    map.flyTo(ORIGIN, SHELLS[i].zoom, {duration:1.5});
+    return;
+  }
+  map.flyTo(ORIGIN, SHELLS[i].zoom, {duration:1.5});
+}
+
+// COORDINATE DISPLAY
+map.on('mousemove', function(e){
+  document.getElementById('hoverCoords').textContent =
+    e.latlng.lat.toFixed(6)+'°N, '+Math.abs(e.latlng.lng).toFixed(6)+'°W';
+});
+
+// INFO PANEL ON CLICK
+map.on('popupopen', function(e){
+  const panel = document.getElementById('infoPanel');
+  panel.style.display = 'block';
+});
+map.on('popupclose', function(){
+  document.getElementById('infoPanel').style.display = 'none';
+});
+
+// PULSE HEARTBEAT
+async function pulse(){
+  try {
+    const r = await fetch('/data/now.json');
+    const d = await r.json();
+    if(d.heartbeat) document.title = 'GAIA footPrint — '+d.heartbeat.bpm+' BPM';
+  } catch(e){}
+}
+pulse();
+setInterval(pulse, 30000);
+
+// ═══════════════════════════════════════════
+// BINGO CUBE FOG OF WAR ENGINE
+// ═══════════════════════════════════════════
+
+const FOG_ZOOM_MAP = {4:0.08, 6:0.12, 8:0.20, 10:0.35, 12:0.50, 14:0.70, 16:0.85, 18:1.0};
+const TYPE_MIN_ZOOM = {false_face:4, true_face:4, corporation:6, institution:6, legal_case:8, person:10, event:10, article:14, concept:14};
+const TYPE_BORDER = {false_face:'#FF0000', true_face:'#00FF88', corporation:'#e040fb', institution:'#FFD700', legal_case:'#FF9100', person:'#6495ED', event:'#00BFFF', article:'#888', concept:'#9ACD32', infrastructure:'#2E8B57'};
+
+let currentReveal = 0.08;
+let bingoMarkers = L.layerGroup();
+layers.bingoFog = bingoMarkers;
+
+function getRevealAtZoom(z) {
+  let keys = Object.keys(FOG_ZOOM_MAP).map(Number).sort((a,b)=>a-b);
+  if (z <= keys[0]) return FOG_ZOOM_MAP[keys[0]];
+  if (z >= keys[keys.length-1]) return FOG_ZOOM_MAP[keys[keys.length-1]];
+  for (let i = 0; i < keys.length-1; i++) {
+    if (z >= keys[i] && z < keys[i+1]) {
+      let t = (z - keys[i]) / (keys[i+1] - keys[i]);
+      return FOG_ZOOM_MAP[keys[i]] + t * (FOG_ZOOM_MAP[keys[i+1]] - FOG_ZOOM_MAP[keys[i]]);
+    }
+  }
+  return 1.0;
+}
+
+function updateFogHUD(zoom, reveal) {
+  let pct = Math.round(reveal * 100);
+  document.getElementById('fogPct').textContent = pct + '%';
+  document.getElementById('fogZoom').textContent = Math.round(zoom);
+  document.getElementById('fogBar').style.width = pct + '%';
+}
+
+function makeBingoPopup(entityId, entityType, entityLabel, reveal) {
+  let div = document.createElement('div');
+  div.className = 'bingo-popup';
+  
+  let canvas = document.createElement('canvas');
+  if (typeof BingoCube !== 'undefined') {
+    BingoCube.renderToCanvas(canvas, entityId, {
+      gridSize: 5, cellPx: 10, revealX: reveal, entityType: entityType
+    });
+  }
+  div.appendChild(canvas);
+  
+  let zk = document.createElement('div');
+  zk.className = 'zk';
+  let hash = typeof BingoCube !== 'undefined' ? BingoCube.entityHash(entityId) : entityId.slice(0,8);
+  zk.textContent = 'zk:' + hash;
+  div.appendChild(zk);
+  
+  if (reveal >= 0.5) {
+    let tag = document.createElement('div');
+    tag.className = 'type-tag';
+    tag.style.border = '1px solid ' + (TYPE_BORDER[entityType] || '#444');
+    tag.style.color = TYPE_BORDER[entityType] || '#888';
+    tag.textContent = entityType || 'entity';
+    div.appendChild(tag);
+  }
+  
+  if (reveal >= 0.85) {
+    let name = document.createElement('div');
+    name.style.marginTop = '4px';
+    name.style.fontSize = '10px';
+    name.style.color = '#e0e0e0';
+    name.textContent = entityLabel.length > 60 ? entityLabel.slice(0,57) + '...' : entityLabel;
+    div.appendChild(name);
+  } else {
+    let fog = document.createElement('div');
+    fog.style.marginTop = '4px';
+    fog.style.fontSize = '9px';
+    fog.style.color = '#555';
+    fog.textContent = '[ zoom in to reveal ]';
+    div.appendChild(fog);
+  }
+  
+  let bar = document.createElement('div');
+  bar.className = 'fog-bar';
+  let fill = document.createElement('div');
+  fill.className = 'fog-fill';
+  fill.style.width = (reveal * 100) + '%';
+  fill.style.background = TYPE_BORDER[entityType] || '#444';
+  bar.appendChild(fill);
+  div.appendChild(bar);
+  
+  return div;
+}
+
+// Load investigation pins with bingo identity
+const INVESTIGATION_BINGO_PINS = [
+  {id:'false_face_snyder', lat:42.7335, lon:-84.5540, type:'false_face', label:'FALSE FACE: Nikki Snyder'},
+  {id:'false_face_mcmillin', lat:42.7335, lon:-84.5530, type:'false_face', label:'FALSE FACE: Tom McMillin'},
+  {id:'false_face_ohare', lat:32.7357, lon:-97.1081, type:'false_face', label:'FALSE FACE: Tim O\'Hare'},
+  {id:'false_face_pargas', lat:29.5519, lon:-98.2575, type:'false_face', label:'FALSE FACE: Mariano Pargas'},
+  {id:'false_face_murdoch', lat:40.7580, lon:-73.9855, type:'false_face', label:'FALSE FACE: Rupert Murdoch'},
+  {id:'false_face_lachlan', lat:40.7580, lon:-73.9850, type:'false_face', label:'FALSE FACE: Lachlan Murdoch'},
+  {id:'false_face_ryan', lat:38.9072, lon:-77.0369, type:'false_face', label:'FALSE FACE: Paul Ryan (Fox Board)'},
+  {id:'false_face_desantis', lat:30.4383, lon:-84.2807, type:'false_face', label:'FALSE FACE: Ron DeSantis'},
+  {id:'false_face_petty', lat:28.5383, lon:-81.3792, type:'false_face', label:'FALSE FACE: Ryan Petty'},
+  {id:'false_face_northrop', lat:42.35, lon:-83.05, type:'false_face', label:'FALSE FACE: Corey Northrop'},
+  {id:'false_face_maleyko', lat:42.3223, lon:-83.1763, type:'false_face', label:'FALSE FACE: Glenn Maleyko'},
+  {id:'false_face_nessel', lat:42.7335, lon:-84.5553, type:'false_face', label:'FALSE FACE: Dana Nessel (AG)'},
+  {id:'false_face_hayward', lat:51.5074, lon:-0.1278, type:'false_face', label:'FALSE FACE: Tony Hayward (BP)'},
+  {id:'false_face_blankenship', lat:37.7782, lon:-81.1882, type:'false_face', label:'FALSE FACE: Don Blankenship'},
+  {id:'false_face_roland_martin', lat:42.35, lon:-83.06, type:'false_face', label:'FALSE FACE: Roland Martin — The Organ Grinder'},
+  {id:'false_face_coristine', lat:38.9072, lon:-77.0365, type:'false_face', label:'FALSE FACE: Edward Coristine'},
+  {id:'true_face_kevin', lat:42.7325, lon:-84.4857, type:'true_face', label:'TRUE FACE: Kevin Mok — Father. Builder.'},
+  {id:'true_face_cross', lat:29.2097, lon:-99.7862, type:'true_face', label:'TRUE FACE: Brett Cross — Uvalde parent.'},
+  {id:'true_face_burnam', lat:32.7555, lon:-97.3308, type:'true_face', label:'TRUE FACE: Lon Burnam — Spoke truth to power.'},
+  {id:'addr-dykema-lansing', lat:42.7335, lon:-84.5553, type:'institution', label:'Dykema Gossett — 201 Townsend St, Lansing'},
+  {id:'addr-dykema-annarbor', lat:42.2508, lon:-83.7407, type:'institution', label:'Dykema Gossett — 2723 S State St, Ann Arbor'},
+  {id:'cmu-authorizer', lat:43.5834, lon:-84.7753, type:'institution', label:'CMU: Charter School Authorizer'},
+  {id:'detroit_city_hall', lat:42.3293, lon:-83.0458, type:'institution', label:'Detroit City Hall — 341 entities, 131K connections'},
+  {id:'wayne_county_court', lat:42.3314, lon:-83.0458, type:'legal_case', label:'Wayne County Circuit Court — Case 26-108221-DC'},
+  {id:'mi_dept_education', lat:42.7330, lon:-84.5560, type:'institution', label:'Michigan Department of Education — failed to investigate'},
+  {id:'addr-menlo-park', lat:37.4847, lon:-122.1477, type:'corporation', label:'Meta (Facebook) HQ — scyBorg license target'},
+  {id:'purpose_charter', lat:42.4188, lon:-82.9860, type:'institution', label:'Purpose Charter Academy (CLOSED) — Banks CMU authorized'},
+];
+
+function rebuildBingoLayer() {
+  bingoMarkers.clearLayers();
+  let z = map.getZoom();
+  let reveal = getRevealAtZoom(z);
+  currentReveal = reveal;
+  let visible = 0;
+  
+  INVESTIGATION_BINGO_PINS.forEach(function(pin) {
+    let minZ = TYPE_MIN_ZOOM[pin.type] || 12;
+    if (z < minZ) return;
+    visible++;
+    
+    let border = TYPE_BORDER[pin.type] || '#444';
+    let radius = pin.type === 'false_face' ? 10 : (pin.type === 'true_face' ? 12 : 7);
+    let opacity = 0.15 + reveal * 0.55;
+    
+    let marker = L.circleMarker([pin.lat, pin.lon], {
+      radius: radius,
+      color: border,
+      fillColor: border,
+      fillOpacity: opacity,
+      weight: pin.type === 'false_face' ? 3 : 2,
+      dashArray: pin.type === 'false_face' ? '4,4' : null,
+      className: 'bingo-marker'
+    });
+    
+    marker.on('click', function() {
+      let popup = L.popup({className:'bingo-popup-wrap', maxWidth:200})
+        .setLatLng([pin.lat, pin.lon])
+        .setContent(makeBingoPopup(pin.id, pin.type, pin.label, currentReveal));
+      popup.openOn(map);
+    });
+    
+    bingoMarkers.addLayer(marker);
+  });
+  
+  updateFogHUD(z, reveal);
+  document.getElementById('fogEntities').textContent = visible;
+}
+
+// PRIVACY FOG — show/hide sensitive layers based on zoom
+function updatePrivacyLayers() {
+  let z = map.getZoom();
+  
+  // Parcels: only at zoom >= 16 (you have to be very close)
+  if (z >= 16) { if (!map.hasLayer(layers.parcels)) map.addLayer(layers.parcels); }
+  else { map.removeLayer(layers.parcels); }
+  
+  // Gates: only at zoom >= 14
+  if (z >= 14) { if (!map.hasLayer(layers.gates)) map.addLayer(layers.gates); }
+  else { map.removeLayer(layers.gates); }
+  
+  // Family: only at zoom >= 17 (deepest fog)
+  if (z >= 17) { if (!map.hasLayer(layers.family)) map.addLayer(layers.family); }
+  else { map.removeLayer(layers.family); }
+  
+  // Infra: only at zoom >= 15
+  if (z >= 15) { if (!map.hasLayer(layers.infra)) map.addLayer(layers.infra); }
+  else { map.removeLayer(layers.infra); }
+}
+
+map.on('zoomend', function() {
+  rebuildBingoLayer();
+  updatePrivacyLayers();
+});
+rebuildBingoLayer();
+updatePrivacyLayers();
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+{
+  "title": "STEAM/VALVE DEVKIT PLAYBOOK — milkGate as Mobile Pipeline",
+  "wave": "238y",
+  "status": "OSINT COMPLETE",
+
+  "kevin_touches_deck": {
+    "summary": "Kevin does 4 taps in Gaming Mode — NO Konsole, NO Desktop Mode needed",
+    "steps": [
+      "1. Settings > System > Enable Developer Mode → ON",
+      "2. Settings > Developer > Set User Password → pick any password (e.g. 'gaia')",
+      "3. Settings > Developer > Pair new host → tap this and WAIT",
+      "4. When milkGate sends pairing request → tap APPROVE"
+    ],
+    "critical_note": "SteamOS 3.8+ added 'Set User Password' in Developer Settings — NO KONSOLE NEEDED! This is the key that unlocks everything.",
+    "also_applies_to": ["deckGate (.176)", "frameGate (.181/.203)", "any future Steam hardware"]
+  },
+
+  "kevin_touches_frame": {
+    "summary": "Same 4 taps on Steam Frame",
+    "steps": [
+      "1. Settings > System > Enable Developer Mode → ON",
+      "2. Settings > Developer > Set User Password → pick password",
+      "3. Settings > Developer > Pair new host → tap and WAIT",
+      "4. Approve milkGate pairing request"
+    ]
+  },
+
+  "milkgate_devkit_setup": {
+    "summary": "milkGate runs the SteamOS Devkit Client — controls ALL Steam hardware",
+    "install": [
+      "1. Install Python 3.10+ on milkGate (Bianbu has it)",
+      "2. Clone devkit tools: git clone https://gitlab.steamos.cloud/devkit/steamos-devkit.git",
+      "3. pip install -r requirements.txt",
+      "4. Run: python3 client/devkit-gui.py  (or headless CLI mode)",
+      "5. OR: Install Steam on milkGate → install 'SteamOS Devkit Client' from library"
+    ],
+    "headless_cli": {
+      "register": "python3 client/devkit_client/__init__.py register --machine <IP>",
+      "upload": "rsync -av -e 'ssh -i ~/.config/steamos-devkit/devkit_rsa' ./build/ deck@<IP>:~/devkit-game/MyGame/",
+      "create_shortcut": "ssh -i ~/.config/steamos-devkit/devkit_rsa deck@<IP> '~/devkit-utils/steam-client-create-shortcut --parms ...'",
+      "launch": "ssh -i ~/.config/steamos-devkit/devkit_rsa deck@<IP> '~/devkit-utils/steam-devkit-rpc run-game gameid=MyGame'"
+    },
+    "what_it_gives_us": [
+      "Full SSH access to all paired Steam devices",
+      "rsync deploy pipeline (games, apps, biomeOS components)",
+      "Session switching (Gaming Mode ↔ Desktop Mode) remotely",
+      "Performance profiling (CPU, GPU, frame timing)",
+      "Device log streaming",
+      "Steam Library shortcut creation",
+      "Process launch/kill control"
+    ]
+  },
+
+  "community_tools_osint": {
+    "decky_loader": {
+      "what": "Homebrew plugin launcher for Steam Deck — runs IN Gaming Mode",
+      "install": "Requires Desktop Mode once (or SSH), then all plugins from Gaming Mode",
+      "key_plugins": [
+        "SSH Helper — toggle sshd ON/OFF from Quick Access Menu",
+        "SSH Switch — start/stop SSH + change password + show connection details",
+        "Easy SSH — toggle SSH with Polkit, shows IP + logs",
+        "DeckCast — screen sharing/streaming",
+        "System Toolbox — system controls from Gaming Mode"
+      ],
+      "install_via_ssh": "After first SSH: curl the installer, or manually place in ~/homebrew/plugins/"
+    },
+    "frameloader": {
+      "what": "Cross-platform app sideloader for Steam Frame",
+      "supports": "APK (via Lepton), Windows .exe (via FEX/Proton), Linux ARM64 native",
+      "protocol": "Same devkit pairing on port 32000 + SSH + rsync",
+      "repo": "https://github.com/travelerdev/frameloader"
+    },
+    "steamdeck_testbed": {
+      "what": "CLI for diagnosing and driving a physical Steam Deck over SSH",
+      "commands": "doctor, status, power-status, install, launch, exec",
+      "repo": "https://github.com/kzahel/steamdeck-testbed"
+    },
+    "lazydeck": {
+      "what": "Development automation CLI for Steam Deck",
+      "repo": "https://github.com/KevinTCoughlin/lazydeck"
+    }
+  },
+
+  "milkgate_as_steam_pipeline": {
+    "vision": "milkGate = THE dev machine for ALL Valve hardware",
+    "targets": {
+      "deckGate": {"ip": "192.168.4.176", "arch": "x86_64", "os": "SteamOS 3.9.6"},
+      "frameGate": {"ip": "192.168.4.181", "arch": "aarch64", "os": "SteamOS ARM"},
+      "second_deck": {"ip": "192.168.4.203", "arch": "x86_64", "os": "SteamOS"},
+      "future": "Any Steam Machine, handheld, or VR device Valve ships"
+    },
+    "pipeline": {
+      "step_1": "Cross-compile on milkGate (RISC-V → x86_64 for Deck, RISC-V → ARM64 for Frame)",
+      "step_2": "rsync deploy via devkit SSH to all paired devices",
+      "step_3": "Launch as 'Devkit Game' in Steam Library on each device",
+      "step_4": "Monitor via device logs + performance profiling",
+      "step_5": "Iterate: code → compile → deploy → test → repeat"
+    },
+    "biomeOS_deploy": {
+      "plan": "Deploy biomeOS primals as 'Non-Steam Games' on each device",
+      "squirrel": "Runs as a background service, MCP agent on each Steam device",
+      "songBird": "Mesh transport between Steam devices over LAN",
+      "note": "Steam's shortcut system IS the unified app launcher across all devices"
+    }
+  },
+
+  "the_solved_problem": {
+    "key_insight": "The devkit pairing flow is DESIGNED for exactly this — a dev machine controls Steam hardware. We were trying to hack around it when we should have just USED it as intended.",
+    "what_kevin_touches": "4 taps per device: Dev Mode ON → Set Password → Pair New Host → Approve",
+    "what_gaia_does": "EVERYTHING else — from milkGate: compile, deploy, launch, profile, manage",
+    "what_we_missed": "SteamOS 3.8 added 'Set User Password' in Gaming Mode developer settings. Before that, you HAD to use Konsole. Now it's all touch."
+  }
+}

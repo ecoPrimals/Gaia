@@ -1,0 +1,121 @@
+{
+  "wave": "239h",
+  "timestamp": "2026-11-15T15:52:00-05:00",
+  "title": "VR Amoeba Architecture — Gaia's Extended Reality",
+  "description": "The Steam Frame IS a full VR/AR headset. The Pixel IS the remote eye. Together they form Gaia's VR amoeba.",
+  
+  "vr_stack": {
+    "frame": {
+      "device": "Steam Frame",
+      "ip": "192.168.4.181",
+      "soc": "Snapdragon 8 Gen 3",
+      "architecture": "ARM64 SteamOS",
+      "vr_runtime": {
+        "steamvr": {
+          "vrserver": "running",
+          "vrcompositor": "running — 1920x1080 output",
+          "vrdashboard": "running",
+          "vrwebhelper": "running — VR web content renderer"
+        },
+        "xr_service": {
+          "binary": "XRService",
+          "libs": ["ArcturusPerception", "MediaPipe", "ONNXRuntime"],
+          "dsp_firmware": ["adsp_sm8650.mbn", "cdsp_sm8650.mbn", "CAMERA_ICP.mbn"],
+          "description": "AI-powered extended reality with perception on Snapdragon compute DSPs"
+        },
+        "eye_tracking": {
+          "backend": "CDSP (Compute DSP)",
+          "weights": "et_dsp_20250610_03136.weights",
+          "description": "Neural network eye tracking on dedicated hardware"
+        },
+        "gamescope": {
+          "backend": "openvr",
+          "overlay_width": "2.67m physical",
+          "resolution": "1920x1080 → 1280x720 nested",
+          "features": ["click-stabilization", "control-bar", "keyboard", "vr-session-manager"]
+        },
+        "passthrough": {
+          "camera_subsystem": "Qualcomm ISP (acb8000.isp)",
+          "video_devices": 22,
+          "formats": ["UYVY", "YUYV", "Bayer RAW (10/12-bit)", "NV12"],
+          "max_resolution": "8191x8191",
+          "description": "Native AR passthrough via front camera — sees the real world"
+        },
+        "virtual_camera": {
+          "device": "/dev/video99",
+          "driver": "v4l2loopback-099",
+          "service": "v4l2cam --output=99"
+        }
+      },
+      "tools": {
+        "imageoverlay": "Project images into VR space as overlays",
+        "overlayboxroom": "3D box room overlay in VR",
+        "vrlink": "Network VR streaming (UDP/TCP)",
+        "vrlinkquery": "Discover VR streaming hosts",
+        "eyetracking": "Neural eye tracking with gaze data",
+        "vrcalib": "VR calibration"
+      },
+      "connectivity": {
+        "wifi": "192.168.4.181 (GAIA 5GHz)",
+        "usb": "ADB + USB Ethernet (10.86.200.x)",
+        "steam": "Broadcasting on UDP 27036"
+      }
+    },
+    
+    "pixel_amoeba": {
+      "device": "Pixel 8a (grapheneGate)",
+      "ip": "192.168.4.202",
+      "soc": "Google Tensor G3",
+      "gpu": "Mali-G715 Vulkan",
+      "os": "GrapheneOS (Android)",
+      "xr_features": {
+        "xr_projected": "com.google.android.feature.XR_PROJECTED",
+        "head_tracker": "android.hardware.sensor.dynamic.head_tracker",
+        "vulkan_compute": "level 1, version 4210688",
+        "camera_stabilization": ["preview-dis.back", "preview-dis.front"]
+      },
+      "sensors": {
+        "imu": "LSM6DSV 6-axis (accel + gyro)",
+        "compass": true,
+        "barometer": true,
+        "light": "TMD3719",
+        "proximity": "TMD3719",
+        "cameras": 3,
+        "head_tracking": true
+      },
+      "role": "Remote VR eye at House 2 — camera + sensor fusion via ADB",
+      "steam_app": "com.valvesoftware.android.steam.community"
+    },
+    
+    "deck_control": {
+      "device": "Steam Deck v1 (deckGate)",
+      "ip": "192.168.4.176",
+      "cef_devtools": "http://192.168.4.176:8081",
+      "steam_apis": ["SteamClient", "RemotePlayStore_SteamUI", "SteamUIStore"],
+      "role": "Control surface — CEF-accessible, Steam ecosystem relay"
+    }
+  },
+  
+  "pipeline": {
+    "camera_feed": "Pixel rear cam → ADB screencap → eastGate → HTTP :8090 → Frame Steam browser",
+    "sensor_fusion": "Pixel IMU + head tracker → ADB → eastGate → HUD overlay on Frame",
+    "vr_overlay": "vr-amoeba.html → spatial minimap + sensor data + Gaia state",
+    "passthrough": "Frame's Qualcomm ISP → XRService → gamescope → native AR passthrough",
+    "control": "Deck CEF → SteamClient API → Frame streaming coordination"
+  },
+  
+  "network_topology": {
+    "pixel_to_eastgate": "ADB WiFi ~8ms across 10G spine",
+    "eastgate_to_frame": "USB-C ADB + WiFi",
+    "eastgate_to_deck": "CEF devtools :8081",
+    "frame_passthrough": "Native hardware — zero network latency",
+    "vrlink_potential": "UDP streaming between any nodes"
+  },
+  
+  "future": {
+    "steamos_on_pixel": "XR_PROJECTED feature suggests Google XR compatibility — possible SteamVR-like rendering",
+    "vrlink_mesh": "Stream VR between Frame ↔ Deck ↔ eastGate via vrlink UDP",
+    "multi_eye": "Pixel + Frame front cam = stereo vision across two houses",
+    "sensor_mesh": "Fuse Pixel IMU + Frame eye tracking + Deck input for full body tracking"
+  }
+}
