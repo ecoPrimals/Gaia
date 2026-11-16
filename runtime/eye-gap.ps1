@@ -4,7 +4,8 @@
 #   eye-gap.ps1 -Dy -40         move the left eye 40 px up   (+ = down)
 #   eye-gap.ps1 -Dx 20          move the left eye 20 px right
 #   eye-gap.ps1 -Eye right ...  move the right eye instead (it is primary; Windows re-anchors at 0,0)
-param([int]$Dx = 0, [int]$Dy = 0, [ValidateSet('left', 'right')][string]$Eye = 'left')
+#   eye-gap.ps1 -Hz 60          set the left eye's refresh rate (60 eases the iGPU under cross-adapter load)
+param([int]$Dx = 0, [int]$Dy = 0, [ValidateSet('left', 'right')][string]$Eye = 'left', [int]$Hz = 0)
 
 Add-Type -TypeDefinition @"
 using System;
@@ -37,11 +38,23 @@ if (-not $left) { Write-Host "Only one eye is open ($($right.DeviceName)). Nothi
 "right eye  $($right.DeviceName)  at ($($right.Bounds.X),$($right.Bounds.Y))  $($right.Bounds.Width)x$($right.Bounds.Height)"
 "left eye   $($left.DeviceName)  at ($($left.Bounds.X),$($left.Bounds.Y))  $($left.Bounds.Width)x$($left.Bounds.Height)"
 "gap        ($($left.Bounds.X - $right.Bounds.X), $($left.Bounds.Y - $right.Bounds.Y))"
-if ($Dx -eq 0 -and $Dy -eq 0) { exit 0 }
+foreach ($s in $right, $left) {
+    $m = New-Object EyeGap+DEVMODE; $m.dmSize = [Runtime.InteropServices.Marshal]::SizeOf($m)
+    if ([EyeGap]::EnumDisplaySettings($s.DeviceName, -1, [ref]$m)) { "refresh    $($s.DeviceName)  $($m.dmDisplayFrequency) Hz" }
+}
 
 $target = if ($Eye -eq 'left') { $left } else { $right }
 $dm = New-Object EyeGap+DEVMODE; $dm.dmSize = [Runtime.InteropServices.Marshal]::SizeOf($dm)
 if (-not [EyeGap]::EnumDisplaySettings($target.DeviceName, -1, [ref]$dm)) { Write-Host "cannot read $($target.DeviceName)"; exit 1 }
+
+if ($Hz -gt 0) {
+    $dm.dmDisplayFrequency = $Hz
+    $dm.dmFields = 0x400000   # DM_DISPLAYFREQUENCY only
+    $r = [EyeGap]::ChangeDisplaySettingsEx($target.DeviceName, [ref]$dm, [IntPtr]::Zero, 0x01, [IntPtr]::Zero)
+    if ($r -ne 0) { Write-Host "Windows refused $Hz Hz on $($target.DeviceName) (code $r)"; exit 1 }
+    "$Eye eye now $Hz Hz"
+}
+if ($Dx -eq 0 -and $Dy -eq 0) { exit 0 }
 $dm.dmPositionX += $Dx; $dm.dmPositionY += $Dy
 $dm.dmFields = 0x20   # DM_POSITION only
 $CDS_UPDATEREGISTRY = 0x01; $CDS_NORESET = 0x10000000
