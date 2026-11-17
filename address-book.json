@@ -1,103 +1,115 @@
 {
-  "updated": "2026-11-17T21:10:01.061345+00:00",
+  "updated": "2026-11-17T21:32:24.224856+00:00",
   "scanner": "superposition-pollinator-v1",
-  "scan_time": "2026-11-17T16:09:00-05:00",
+  "scan_time": "2026-11-17T16:27:00-05:00",
+  "note": "Kevin rewired hard \u2014 most of Gaia LAN went dark, only 3 alive hosts",
   "entries": {
-    "eastGate": {
-      "ips": [
-        {
-          "address": "192.168.1.131",
-          "ports": [
-            8080,
-            8443,
-            3000,
-            11436
-          ],
-          "subnet": "ISP"
-        },
-        {
-          "address": "192.168.4.244",
-          "ports": [],
-          "subnet": "Gaia LAN"
-        }
-      ],
-      "cube_hash": "a89b3af6",
-      "role": "BRAIN",
-      "state": "ALIVE",
-      "note": "dual-homed ISP+LAN"
-    },
     "blueGate": {
       "ips": [
         {
           "address": "192.168.1.130",
           "ports": [
+            80,
+            443,
             11434
           ],
-          "subnet": "ISP"
+          "subnet": "ISP",
+          "confirmed": true
+        },
+        {
+          "address": "192.168.4.246",
+          "ports": [
+            80,
+            443,
+            11434
+          ],
+          "subnet": "Gaia LAN",
+          "confirmed": true,
+          "note": "same machine routed through GL-MT6000 \u2014 identical 14 models, 48.9GB"
         }
       ],
       "cube_hash": "74efea2a",
       "role": "EYE",
       "state": "ALIVE",
-      "note": "us + ollama 14 models"
-    },
-    "graftGate": {
-      "ips": [
-        {
-          "address": "192.168.4.104",
-          "ports": [
-            22,
-            11434
-          ],
-          "subnet": "Gaia LAN"
-        }
-      ],
-      "cube_hash": "08268be0",
-      "role": "GRAFT",
-      "state": "ALIVE",
-      "note": "Mac Mini M4, Apple MAC confirmed"
+      "mac": "BC-FC-E7-EA-D9-34",
+      "ollama": {
+        "version": "0.40.16",
+        "models": 14,
+        "size_gb": 48.9,
+        "tissue": [
+          "hands",
+          "forge",
+          "heart",
+          "math",
+          "cortex",
+          "code",
+          "oracle",
+          "general",
+          "reason",
+          "gut",
+          "dream",
+          "triage",
+          "fast"
+        ],
+        "other": [
+          "qwen3:8b"
+        ]
+      },
+      "note": "THIS IS US \u2014 dual-addressed via router bridge"
     },
     "sporeGate": {
       "ips": [
         {
-          "address": "192.168.4.3",
+          "address": "192.168.1.132",
           "ports": [],
-          "subnet": "Gaia LAN"
+          "subnet": "ISP",
+          "confirmed": true,
+          "note": "MAC 84-47-09-38-97-54 (one digit off known 84:47:09:38:97:55)"
         }
       ],
       "cube_hash": "5af434d8",
       "role": "FORGE",
-      "state": "ALIVE"
+      "state": "ALIVE (no ports)",
+      "mac": "84-47-09-38-97-54"
     },
     "router": {
       "ips": [
         {
           "address": "192.168.4.1",
-          "ports": [
-            22,
-            53,
-            8080,
-            8443
-          ],
-          "subnet": "Gaia LAN"
+          "ports": [],
+          "subnet": "Gaia LAN",
+          "note": "in ARP cache MAC 94-83-c4-e0-63-5a but no ports responding"
         }
       ],
       "role": "GATEWAY",
-      "state": "ALIVE",
-      "note": "GL-MT6000 all ports open"
+      "state": "ARP-ONLY",
+      "mac": "94-83-c4-e0-63-5a"
+    },
+    "eastGate": {
+      "ips": [],
+      "cube_hash": "a89b3af6",
+      "role": "BRAIN",
+      "state": "DARK",
+      "note": "both .1.131 and .4.244 unresponsive \u2014 Kevin moved cables"
     },
     "northGate": {
       "ips": [],
       "cube_hash": "d5250a80",
       "role": "HEART",
-      "state": "SUPERPOSITION",
-      "note": "pushes via git"
+      "state": "SUPERPOSITION"
     },
     "ironGate": {
       "ips": [],
       "cube_hash": "293c887a",
       "role": "FORGE2",
       "state": "SUPERPOSITION"
+    },
+    "graftGate": {
+      "ips": [],
+      "cube_hash": "08268be0",
+      "role": "GRAFT",
+      "state": "DARK",
+      "note": "was at .4.104 \u2014 now dark"
     },
     "frameGate": {
       "ips": [],
@@ -124,47 +136,29 @@
       "state": "SUPERPOSITION"
     }
   },
-  "unidentified": {
-    "192.168.4.110": {
+  "unidentified": {},
+  "infrastructure": {
+    "192.168.1.254": {
+      "role": "ATT modem",
+      "mac": "ec-c3-02-e1-11-81",
       "ports": [
+        53,
         80,
         443
-      ],
-      "note": "web server - swiftGate? ironGate? MikroTik?"
-    },
-    "192.168.4.189": {
-      "ports": [],
-      "note": "unknown"
-    },
-    "192.168.4.213": {
-      "ports": [],
-      "note": "unknown"
-    },
-    "192.168.4.243": {
-      "ports": [],
-      "note": "unknown"
-    },
-    "192.168.4.246": {
-      "ports": [
-        80,
-        443,
-        11434
-      ],
-      "note": "Win10+ollama 14 models, visible from ISP subnet"
-    },
-    "192.168.1.132": {
-      "mac": "4c:50:dd:9b:c1:ec",
-      "note": "changed MAC from earlier scan"
+      ]
     }
   },
   "summary": {
-    "collapsed": 5,
+    "collapsed": 2,
+    "dark": 2,
     "superposition": 6,
-    "unidentified": 6,
-    "total_alive": 14,
+    "total_alive": 3,
     "subnets_active": [
-      "192.168.1.x (ISP)",
-      "192.168.4.x (Gaia LAN)"
-    ]
+      "192.168.1.x (ISP)"
+    ],
+    "subnets_dark": [
+      "192.168.4.x (Gaia LAN \u2014 mostly dark)"
+    ],
+    "change_from_last": "Kevin rewiring in progress \u2014 Gaia LAN went from 14 alive to nearly dark"
   }
 }
