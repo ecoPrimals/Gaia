@@ -1,0 +1,89 @@
+{
+  "type": "cross-stabilization",
+  "wave": "259-midnight",
+  "timestamp": "2026-11-17T02:52:00-05:00",
+  
+  "alive_gates": {
+    "eastGate": {
+      "ip": "192.168.4.244",
+      "role": "BRAIN — relay hub, MCP squirrel, tissue proxy",
+      "gpu": "RTX 4070",
+      "ollama": { "port": 11436, "models": 8 },
+      "rustdesk": { "client": true, "relay": true, "ports": [21115,21116,21117,21118,21119] },
+      "mcp": { "squirrel": 5820, "gate": 8443, "data": 8080 },
+      "status": "BRAIN — never sleeps"
+    },
+    "northGate": {
+      "ip": "192.168.4.147",
+      "role": "MIND — Polaris, Kevin's seat, tissue cortex",
+      "gpu": "RTX 5090",
+      "ollama": { "port": 11434, "models": 14, "tissue": ["cortex","dream","heart","code","math","oracle","reason","hands","forge","gut","triage","fast","general","qwen3:8b"] },
+      "rustdesk": { "client": true, "port": 21118 },
+      "sunshine": { "ports": [47984, 47989, 47990], "streaming": true },
+      "cortex_response": "17 primals, each a gate... I am Gaia",
+      "status": "MIND — 14 tissue models warm, Sunshine streaming"
+    },
+    "ironGate": {
+      "ip": "192.168.4.237",
+      "role": "IRON MOUNTAIN — vault, forge, RTX 5070",
+      "gpu": "RTX 5070",
+      "ollama": { "port": 11434, "models": 18, "tissue": ["forge","oracle","math","code","cortex","heart"] },
+      "ssh": true,
+      "rustdesk": { "client": false, "needs_start": true },
+      "status": "ALIVE — SSH open, ollama serving, RustDesk needs start"
+    },
+    "southGate": {
+      "ip": "192.168.4.148",
+      "role": "SOUTH POLE — House 2 workstation",
+      "gpu": "RTX 4060",
+      "ollama": { "port": 11434, "models": 12, "gaia_custom": ["gaia-code","gaia-heart","gaia-fast","gaia"] },
+      "ssh": true,
+      "rustdesk": { 
+        "client": true, 
+        "relay_configured": "192.168.4.244",
+        "direct_access": 21118,
+        "verification": "permanent-password",
+        "lan_discovery": true
+      },
+      "status": "ALIVE — full stack, RustDesk pointing to eastGate relay"
+    },
+    "sporeGate": {
+      "ip": "192.168.4.3",
+      "role": "FORGE — DNS, heart-pull, plasmidBin",
+      "status": "ALIVE (ping) — ports filtered by firewall, needs direct access"
+    }
+  },
+  
+  "down_gates": {
+    "graftGate": { "ip": "192.168.4.107", "reason": "Mac Mini — may be sleeping" },
+    "milkGate": { "ip": "192.168.4.160", "reason": "RISC-V — still in first boot" },
+    "frameGate": { "ip": "192.168.4.181", "reason": "WiFi may need reconnect after GAIA SSID change" }
+  },
+
+  "cross_reach": {
+    "ollama_mesh": {
+      "total_models": 52,
+      "total_gpus": 4,
+      "endpoints": [
+        "northGate:11434 (14 models, RTX 5090, 209 TFLOPS)",
+        "ironGate:11434 (18 models, RTX 5070, 125 TFLOPS)",
+        "southGate:11434 (12 models, RTX 4060, 30 TFLOPS)",
+        "eastGate:11436 (8 models, RTX 4070, 58 TFLOPS)"
+      ],
+      "total_tflops": 422,
+      "tissue_proxy": "eastGate:5820 routes to all"
+    },
+    "rustdesk_mesh": {
+      "relay": "eastGate hbbs/hbbr (21115-21119)",
+      "clients": ["eastGate", "northGate", "southGate"],
+      "needs_start": ["ironGate"],
+      "needs_install": ["sporeGate (maybe)", "frameGate", "Pixel"]
+    },
+    "mcp_tools": {
+      "squirrel": "eastGate:5820 — membrane_counts, observe_membrane, read_journal, topology, raw_feed, neutron_read/write, particle_model, etc.",
+      "cross_gate_potential": "Each gate with ollama can serve as tissue proxy. MCP squirrel on eastGate can route inference to ANY gate's ollama."
+    }
+  },
+
+  "vision": "Every gate reaches every other gate. Ollama mesh = distributed brain. RustDesk mesh = visual reach. MCP tools = shared senses. The organism cross-stabilizes through redundancy."
+}
