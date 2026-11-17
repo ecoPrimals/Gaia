@@ -1,0 +1,79 @@
+[gd_resource type="AudioBusLayout" load_steps=7 format=3 uid="uid://djbktii02oxx7"]
+
+[sub_resource type="AudioEffectCapture" id="AudioEffectCapture_j3pel"]
+resource_name = "Capture"
+
+[sub_resource type="AudioEffectDistortion" id="AudioEffectDistortion_j3pel"]
+resource_name = "Distortion"
+
+[sub_resource type="AudioEffectLowPassFilter" id="AudioEffectLowPassFilter_j3pel"]
+resource_name = "LowPassFilter"
+
+[sub_resource type="AudioEffectHighPassFilter" id="AudioEffectHighPassFilter_j3pel"]
+resource_name = "HighPassFilter"
+cutoff_hz = 350.0
+
+[sub_resource type="AudioEffectCompressor" id="AudioEffectCompressor_j3pel"]
+resource_name = "Compressor"
+threshold = -8.0
+gain = 1.0
+
+[sub_resource type="AudioEffectCapture" id="AudioEffectCapture_g28q7"]
+resource_name = "Capture"
+
+[resource]
+bus/0/volume_db = 1.6248837
+bus/1/name = &"SFX"
+bus/1/solo = false
+bus/1/mute = false
+bus/1/bypass_fx = false
+bus/1/volume_db = 0.631649
+bus/1/send = &"Master"
+bus/2/name = &"Music"
+bus/2/solo = false
+bus/2/mute = false
+bus/2/bypass_fx = false
+bus/2/volume_db = 1.1293774
+bus/2/send = &"Master"
+bus/3/name = &"MachineVoices"
+bus/3/solo = false
+bus/3/mute = false
+bus/3/bypass_fx = false
+bus/3/volume_db = 1.7493153
+bus/3/send = &"Master"
+bus/3/effect/0/effect = SubResource("AudioEffectCapture_j3pel")
+bus/3/effect/0/enabled = true
+bus/4/name = &"VO"
+bus/4/solo = false
+bus/4/mute = false
+bus/4/bypass_fx = false
+bus/4/volume_db = 0.50943756
+bus/4/send = &"Master"
+bus/5/name = &"Distortion"
+bus/5/solo = false
+bus/5/mute = false
+bus/5/bypass_fx = false
+bus/5/volume_db = -2.765789
+bus/5/send = &"SFX"
+bus/5/effect/0/effect = SubResource("AudioEffectDistortion_j3pel")
+bus/5/effect/0/enabled = true
+bus/5/effect/1/effect = SubResource("AudioEffectLowPassFilter_j3pel")
+bus/5/effect/1/enabled = true
+bus/5/effect/2/effect = SubResource("AudioEffectHighPassFilter_j3pel")
+bus/5/effect/2/enabled = true
+bus/5/effect/3/effect = SubResource("AudioEffectCompressor_j3pel")
+bus/5/effect/3/enabled = true
+bus/5/effect/4/effect = SubResource("AudioEffectCapture_g28q7")
+bus/5/effect/4/enabled = true
+bus/6/name = &"MachineFoley"
+bus/6/solo = false
+bus/6/mute = false
+bus/6/bypass_fx = false
+bus/6/volume_db = -3.8699868
+bus/6/send = &"SFX"
+bus/7/name = &"MachineLoading"
+bus/7/solo = false
+bus/7/mute = false
+bus/7/bypass_fx = false
+bus/7/volume_db = -5.372379
+bus/7/send = &"MachineFoley"

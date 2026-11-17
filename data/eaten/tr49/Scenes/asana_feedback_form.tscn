@@ -1,0 +1,98 @@
+[gd_scene load_steps=4 format=3 uid="uid://4jqfknmcd653"]
+
+[ext_resource type="Theme" uid="uid://cncgm8t8pvkk6" path="res://Themes/feedback_form_theme.tres" id="1"]
+[ext_resource type="Script" uid="uid://cslxwqx6u6xm4" path="res://Scripts/AsanaFeedbackForm.cs" id="2"]
+[ext_resource type="Script" uid="uid://d2jqt2ds5pepy" path="res://Scripts/Asana.cs" id="3"]
+
+[node name="AsanaFeedbackForm" type="Control" node_paths=PackedStringArray("nameLineEdit", "emailAddressLineEdit", "textEdit", "sendSaveDataCheckBox", "sendScreenshotCheckBox", "sendLogsCheckBox", "submitButton", "progressBar", "asana")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1")
+script = ExtResource("2")
+nameLineEdit = NodePath("VBoxContainer/NameLineEdit")
+emailAddressLineEdit = NodePath("VBoxContainer/EmailAddressLineEdit")
+textEdit = NodePath("VBoxContainer/TextEdit")
+sendSaveDataCheckBox = NodePath("VBoxContainer/HBoxContainer/Send save data CheckBox")
+sendScreenshotCheckBox = NodePath("VBoxContainer/HBoxContainer/Include screenshot CheckBox")
+sendLogsCheckBox = NodePath("VBoxContainer/HBoxContainer/Include logs CheckBox")
+submitButton = NodePath("VBoxContainer/Submit")
+progressBar = NodePath("VBoxContainer/ProgressBar")
+asana = NodePath("AsanaAPI")
+
+[node name="AsanaAPI" type="Node" parent="."]
+script = ExtResource("3")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.92156863)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -414.0
+offset_top = -374.0
+offset_right = 414.0
+offset_bottom = 313.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="SEND FEEDBACK Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "SEND FEEDBACK"
+
+[node name="NameLineEdit" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Your Name"
+
+[node name="EmailAddressLineEdit" type="LineEdit" parent="VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Email address"
+
+[node name="TextEdit" type="TextEdit" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 2
+placeholder_text = "Your feedback: did you see a bug? How did it happen?"
+wrap_mode = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Send save data CheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Include game save file"
+
+[node name="Include screenshot CheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Include screenshot"
+
+[node name="Include logs CheckBox" type="CheckBox" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Include logs"
+
+[node name="SpringSpacer" type="Control" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Submit" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Send Feedback"
+
+[node name="ProgressBar" type="ProgressBar" parent="VBoxContainer"]
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2

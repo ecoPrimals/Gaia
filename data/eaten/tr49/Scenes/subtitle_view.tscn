@@ -1,0 +1,61 @@
+[gd_scene load_steps=6 format=3 uid="uid://cy6c2nalwvmow"]
+
+[ext_resource type="Theme" uid="uid://dcmuqpfoocjly" path="res://Themes/subtitle_theme.tres" id="1"]
+[ext_resource type="Script" uid="uid://ciuii0t5w4pq1" path="res://Scripts/SubtitleView.cs" id="2"]
+[ext_resource type="Texture2D" uid="uid://cf1vtaxk03r7y" path="res://Images/UI/box-shadow.png" id="3"]
+[ext_resource type="Texture2D" uid="uid://5m3rh3b4kohb" path="res://Images/Characters/Portraits/AbbiportraitYoung.png" id="4"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_uc2hm"]
+texture = ExtResource("3")
+texture_margin_left = 45.0
+texture_margin_top = 45.0
+texture_margin_right = 45.0
+texture_margin_bottom = 45.0
+expand_margin_left = 45.0
+expand_margin_top = 45.0
+expand_margin_right = 45.0
+expand_margin_bottom = 45.0
+
+[node name="SubtitleView" type="Control" node_paths=PackedStringArray("shadow", "portrait")]
+custom_minimum_size = Vector2(1400, 50)
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -698.0
+offset_top = 102.0
+offset_right = 702.0
+offset_bottom = 102.0
+grow_horizontal = 2
+mouse_filter = 2
+theme = ExtResource("1")
+script = ExtResource("2")
+shadow = NodePath("Shadow")
+portrait = NodePath("Portrait")
+spaceWidth = 14.0
+preAudioShowDelay = 0.4
+postAudioHideDelay = 0.8
+fadeTime = 1.0
+fadeInDelayPerWord = 0.12
+fadeInPunctuationDelay = 0.1
+maxShadowOpacity = 0.7
+portraitMarginX = 0.0
+
+[node name="Shadow" type="Panel" parent="."]
+modulate = Color(1, 1, 1, 0.4627451)
+layout_mode = 0
+offset_right = 200.0
+offset_bottom = 30.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_uc2hm")
+
+[node name="Portrait" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = -25.0
+offset_top = -25.0
+offset_right = 99.0
+offset_bottom = 99.0
+pivot_offset = Vector2(62, 62)
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5

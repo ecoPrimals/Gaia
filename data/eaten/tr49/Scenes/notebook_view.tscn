@@ -1,0 +1,795 @@
+[gd_scene load_steps=46 format=3 uid="uid://cvdwy5n16hwe8"]
+
+[ext_resource type="Theme" uid="uid://ccs3obe8bgrm6" path="res://Themes/notebook.tres" id="1"]
+[ext_resource type="Script" uid="uid://c126jubb1mi5w" path="res://Scripts/NotebookView.cs" id="2"]
+[ext_resource type="PackedScene" uid="uid://dka0blk1ajgab" path="res://Scenes/author_page.tscn" id="3"]
+[ext_resource type="AudioStream" uid="uid://cpi5qqc444cef" path="res://Audio/Notebook/paper-rustle-1.ogg" id="4"]
+[ext_resource type="AudioStream" uid="uid://c83wpm8e7ltsc" path="res://Audio/Notebook/paper-rustle-2.ogg" id="5"]
+[ext_resource type="AudioStream" uid="uid://w0lmm64i1tpk" path="res://Audio/Notebook/paper-rustle-3.ogg" id="6"]
+[ext_resource type="AudioStream" uid="uid://dmdhq38tc2ds7" path="res://Audio/Notebook/paper-rustle-4.ogg" id="7"]
+[ext_resource type="AudioStream" uid="uid://b8pi5tqsaif3k" path="res://Audio/Notebook/paper-rustle-short-1.ogg" id="8"]
+[ext_resource type="AudioStream" uid="uid://wuyf536rlal8" path="res://Audio/Notebook/paper-rustle-short-2.ogg" id="9"]
+[ext_resource type="AudioStream" uid="uid://c14sagbnjufac" path="res://Audio/Notebook/paper-rustle-short-3.ogg" id="10"]
+[ext_resource type="AudioStream" uid="uid://c4ichydn4sv2q" path="res://Audio/Notebook/paper-rustle-short-4.ogg" id="11"]
+[ext_resource type="AudioStream" uid="uid://dh6mskgbcho6t" path="res://Audio/Notebook/paper-rustle-short-5.ogg" id="12"]
+[ext_resource type="AudioStream" uid="uid://dd04j7wyvvisi" path="res://Audio/Notebook/paper-rustle-short-6.ogg" id="13"]
+[ext_resource type="AudioStream" uid="uid://dehkrig42pahh" path="res://Audio/Notebook/paper-rustle-loop.ogg" id="14"]
+[ext_resource type="Script" uid="uid://bnyu8m5ri08av" path="res://Scripts/CoverPage.cs" id="15"]
+[ext_resource type="Texture2D" uid="uid://dfowcxd0xeav4" path="res://Images/Notebook/cover.png" id="16"]
+[ext_resource type="FontFile" uid="uid://8tbgvwh4vj2l" path="res://Fonts/SpecialElite-Regular.ttf" id="17"]
+[ext_resource type="FontVariation" path="res://Fonts/SpecialElite-Bold.tres" id="18"]
+[ext_resource type="Script" uid="uid://bwctsjj83clg" path="res://Scripts/MainCodesPage.cs" id="19"]
+[ext_resource type="PackedScene" uid="uid://b20hym77s7ddb" path="res://Scenes/code_single_entry.tscn" id="20"]
+[ext_resource type="Texture2D" uid="uid://s2y585fha20i" path="res://Images/Notebook/printer-paper-mid.png" id="21"]
+[ext_resource type="Theme" uid="uid://diox8j5fck0gv" path="res://Themes/confirmed_code_entry.tres" id="22"]
+[ext_resource type="Script" uid="uid://dxqkigeeoxwwv" path="res://Scripts/Draggable.cs" id="23"]
+[ext_resource type="Texture2D" uid="uid://cf1vtaxk03r7y" path="res://Images/UI/box-shadow.png" id="24"]
+[ext_resource type="PackedScene" uid="uid://rcxrbq7gopkh" path="res://Scenes/printer_paper.tscn" id="25"]
+[ext_resource type="Script" uid="uid://c84xyn1fyahmd" path="res://Scripts/editor_only.gd" id="26"]
+[ext_resource type="PackedScene" uid="uid://c545rob4tknad" path="res://Scenes/puzzle_piece.tscn" id="27"]
+[ext_resource type="Shader" path="res://Shaders/overlay_canvas_item.gdshader" id="28"]
+[ext_resource type="Texture2D" uid="uid://sstwwyvjaa36" path="res://Images/Notebook/torch-light.png" id="29"]
+[ext_resource type="PackedScene" uid="uid://cpyjtybvkmi6x" path="res://Scenes/button_with_prompt.tscn" id="30"]
+[ext_resource type="Texture2D" uid="uid://dlkmku6ya2qcw" path="res://Images/UI/scroll-up-widget.png" id="31"]
+[ext_resource type="Texture2D" uid="uid://bvfvr01hc4v6e" path="res://Images/UI/scroll-down-widget.png" id="32"]
+
+[sub_resource type="Curve" id="Curve_p5yb6"]
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_q6ryg"]
+texture = ExtResource("24")
+texture_margin_left = 45.0
+texture_margin_top = 45.0
+texture_margin_right = 45.0
+texture_margin_bottom = 45.0
+expand_margin_left = 45.0
+expand_margin_top = 45.0
+expand_margin_right = 45.0
+expand_margin_bottom = 45.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h0seo"]
+bg_color = Color(0.577649, 0.537896, 0.456416, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_um1uu"]
+shader = ExtResource("28")
+shader_parameter/strength = 1.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0vyb4"]
+bg_color = Color(0.38039216, 0.3137255, 0.25490198, 0.89411765)
+corner_radius_top_left = 100
+corner_radius_top_right = 100
+corner_radius_bottom_right = 100
+corner_radius_bottom_left = 100
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_p5yb6"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_lj0ar"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_q6ryg"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+shadow_color = Color(0, 0, 0, 0.3764706)
+shadow_size = 4
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_k3oho"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.44313726)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_it7pe"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dkjem"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jdyxl"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+shadow_color = Color(0, 0, 0, 0.3764706)
+shadow_size = 4
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a6lbs"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+bg_color = Color(0, 0, 0, 0.44313726)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[node name="NotebookView" type="Control" node_paths=PackedStringArray("coverPage", "systemPage", "mainCodesPage", "codeAssignmentPageLayout", "newTitleRecordedPageLayout", "backgroundButton", "scrollButtons", "scrollUpButton", "scrollDownButton", "previousPageButton", "nextPageButton", "gamepadSelectModeButton", "gamepadGoToCodeButton", "torchLight", "backgroundDarken", "debugToggleSlideOverButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_behavior_recursive = 1
+mouse_filter = 2
+theme = ExtResource("1")
+script = ExtResource("2")
+coverPage = NodePath("Pages/Cover page")
+systemPage = NodePath("Pages/System codes page")
+mainCodesPage = NodePath("Pages/Main codes page")
+authorPageScene = ExtResource("3")
+codeAssignmentPageLayout = NodePath("Pages/CodeAssignmentPageLayout")
+newTitleRecordedPageLayout = NodePath("Pages/NewTitleRecordedPageLayout")
+backgroundButton = NodePath("BackgroundButton")
+scrollButtons = NodePath("Scroll Buttons")
+scrollUpButton = NodePath("Scroll Buttons/ScrollUpButton")
+scrollDownButton = NodePath("Scroll Buttons/ScrollDownButton")
+previousPageButton = NodePath("PreviousPageButton")
+nextPageButton = NodePath("NextPageButton")
+gamepadSelectModeButton = NodePath("GamepadSelectCodesButton")
+gamepadGoToCodeButton = NodePath("GoToCodeButton")
+torchLight = NodePath("TorchLight")
+backgroundDarken = NodePath("BackgroundDarken")
+debugToggleSlideOverButton = NodePath("DebugToggleSlideOver")
+openSFX = [ExtResource("4"), ExtResource("5"), ExtResource("6"), ExtResource("7")]
+closeSFX = [ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13")]
+changePageSFX = [ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13")]
+continuousPageDragSFX = ExtResource("14")
+continuousPageDragSFXStartTimes = PackedFloat32Array(0, 1.389, 3.268, 5.259, 6.831, 8.573)
+leftOffsetFar = -1363.3800000000049
+leftOffsetNear = -837.7700000000041
+rightOffsetNear = 216.58000000000175
+rightOffsetFar = 522.9700000000012
+leftRotationFar = 3.5800000000017462
+leftRotationNear = -6.399999999994179
+rightRotationFar = 15.029999999998836
+darknessNear = 0.6999999999970896
+darknessFar = 0.4000000000087311
+slideOverRightOffset = 903.7600000000092
+nearFarNormCurvePower = 0.3200000000069849
+nearFarNormCurve = SubResource("Curve_p5yb6")
+pagesDragSpeedScalar = 3.0
+pagesDragDecelleration = 20.0
+
+[node name="BackgroundDarken" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.431373)
+
+[node name="BackgroundButton" type="TextureButton" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Pages" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -14.0
+offset_top = -8.0
+offset_right = 14.0
+offset_bottom = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(974, 548)
+mouse_filter = 2
+
+[node name="Cover page" type="Control" parent="Pages"]
+visible = false
+anchors_preset = 0
+offset_left = 587.0
+offset_top = 97.0
+offset_right = 1401.0
+offset_bottom = 1050.0
+rotation = -0.0174533
+pivot_offset = Vector2(407, 762.4)
+script = ExtResource("15")
+
+[node name="Background" type="TextureRect" parent="Pages/Cover page"]
+layout_mode = 0
+offset_left = -160.47621
+offset_top = -132.04004
+offset_right = 2059.0745
+offset_bottom = 2218.989
+scale = Vector2(0.503, 0.503)
+mouse_filter = 2
+texture = ExtResource("16")
+stretch_mode = 5
+
+[node name="ObjectiveLabel" type="RichTextLabel" parent="Pages/Cover page"]
+layout_mode = 0
+offset_left = 305.54843
+offset_top = 558.1983
+offset_right = 673.106
+offset_bottom = 754.1983
+theme_override_colors/default_color = Color(0, 0.08568736, 0.256234, 1)
+theme_override_constants/line_separation = 10
+theme_override_font_sizes/normal_font_size = 30
+bbcode_enabled = true
+text = "I know how to destroy Endpeace but I need Beatrice's password"
+fit_content = true
+scroll_active = false
+justification_flags = 171
+
+[node name="SourcesLabel" type="RichTextLabel" parent="Pages/Cover page"]
+layout_mode = 0
+offset_left = 306.73795
+offset_top = 719.2436
+offset_right = 683.64246
+offset_bottom = 770.2436
+theme_override_colors/default_color = Color(0.38724893, 0, 0.061499864, 1)
+theme_override_constants/line_separation = 20
+theme_override_constants/paragraph_separation = 20
+theme_override_fonts/normal_font = ExtResource("17")
+theme_override_fonts/bold_font = ExtResource("18")
+theme_override_font_sizes/normal_font_size = 26
+bbcode_enabled = true
+text = "2 of 55 found"
+fit_content = true
+scroll_active = false
+
+[node name="TitlesLabel" type="RichTextLabel" parent="Pages/Cover page"]
+layout_mode = 0
+offset_left = 305.8304
+offset_top = 771.23566
+offset_right = 668.182
+offset_bottom = 851.7694
+theme_override_colors/default_color = Color(0.38724893, 0, 0.061499864, 1)
+theme_override_constants/line_separation = 20
+theme_override_constants/paragraph_separation = 20
+theme_override_fonts/normal_font = ExtResource("17")
+theme_override_fonts/bold_font = ExtResource("18")
+theme_override_font_sizes/normal_font_size = 26
+bbcode_enabled = true
+text = "7 found (2 confirmed)"
+fit_content = true
+scroll_active = false
+
+[node name="System codes page" type="Control" parent="Pages" node_paths=PackedStringArray("codeEntryContainer", "scrollContainer", "scrollableContentContainer", "printerPaper", "verticalLine", "draggable")]
+visible = false
+anchors_preset = 0
+offset_left = 613.00006
+offset_top = 151.0
+offset_right = 1471.9016
+offset_bottom = 1036.0
+rotation = 0.0174533
+pivot_offset = Vector2(407, 708)
+script = ExtResource("19")
+codeEntryScene = ExtResource("20")
+codeEntryContainer = NodePath("Draggable/ScrollContainer/ScrollableContent/CodeEntries")
+scrollContainer = NodePath("Draggable/ScrollContainer")
+scrollableContentContainer = NodePath("Draggable/ScrollContainer/ScrollableContent")
+printerPaper = NodePath("Draggable/ScrollContainer/ScrollableContent/PrinterPaper")
+printerMidSection = ExtResource("21")
+verticalLine = NodePath("Draggable/ScrollContainer/ScrollableContent/Vertical line")
+confirmedEntryTheme = ExtResource("22")
+unknownCodeText = "???"
+draggable = NodePath("Draggable")
+
+[node name="Draggable" type="Control" parent="Pages/System codes page" node_paths=PackedStringArray("scrollContainer")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("23")
+scrollContainer = NodePath("ScrollContainer")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Pages/System codes page/Draggable"]
+clip_contents = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="ScrollableContent" type="Control" parent="Pages/System codes page/Draggable/ScrollContainer"]
+custom_minimum_size = Vector2(0, 2000)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+
+[node name="Shadow" type="Panel" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+self_modulate = Color(1, 1, 1, 0.258824)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.17395
+offset_top = 8.13302
+offset_right = -37.826
+offset_bottom = -32.8671
+grow_horizontal = 2
+grow_vertical = 2
+rotation = -0.023127
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_q6ryg")
+
+[node name="PrinterPaper" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent" instance=ExtResource("25")]
+layout_mode = 0
+offset_left = -14.0
+offset_top = -15.0
+offset_right = 1213.0
+offset_bottom = 1279.0
+scale = Vector2(0.72, 0.72)
+mouse_filter = 2
+
+[node name="Top Title" type="RichTextLabel" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+layout_mode = 0
+offset_left = 69.30049
+offset_top = 20.789003
+offset_right = 792.49866
+offset_bottom = 112.78901
+mouse_filter = 2
+theme_type_variation = &"Heading"
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/normal_font_size = 26
+bbcode_enabled = true
+text = "MACHINE CODES"
+fit_content = true
+scroll_active = false
+horizontal_alignment = 1
+
+[node name="Description Title" type="RichTextLabel" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+layout_mode = 0
+offset_left = 71.295105
+offset_top = 77.76286
+offset_right = 466.2951
+offset_bottom = 169.76288
+mouse_filter = 2
+theme_type_variation = &"Heading"
+bbcode_enabled = true
+text = "DESCRIPTION"
+fit_content = true
+scroll_active = false
+
+[node name="Code" type="RichTextLabel" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+layout_mode = 0
+offset_left = 581.2951
+offset_top = 77.76286
+offset_right = 747.2951
+offset_bottom = 169.76288
+mouse_filter = 2
+theme_type_variation = &"Heading"
+bbcode_enabled = true
+text = "CODE"
+fit_content = true
+scroll_active = false
+horizontal_alignment = 1
+
+[node name="Vertical line" type="Line2D" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+position = Vector2(546.2951, 127.22087)
+points = PackedVector2Array(0, 0, 0, 500)
+width = 2.0
+default_color = Color(0.5019608, 0.4862745, 0.4745098, 1)
+antialiased = true
+
+[node name="Horizontal line" type="Line2D" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+position = Vector2(68.295204, 125.76288)
+points = PackedVector2Array(0, 0, 714, 0)
+width = 2.0
+default_color = Color(0.5019608, 0.4862745, 0.4745098, 1)
+antialiased = true
+
+[node name="CodeEntries" type="Control" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent"]
+anchors_preset = 0
+offset_left = 68.295105
+offset_top = 126.76288
+offset_right = 783.2951
+offset_bottom = 899.7629
+mouse_filter = 1
+
+[node name="CodeSingleEntryExample EDITOR ONLY" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent/CodeEntries" instance=ExtResource("20")]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 715.0
+offset_bottom = 77.0
+
+[node name="EditorOnly" type="Control" parent="Pages/System codes page/Draggable/ScrollContainer/ScrollableContent/CodeEntries/CodeSingleEntryExample EDITOR ONLY"]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("26")
+
+[node name="Main codes page" type="Control" parent="Pages" node_paths=PackedStringArray("codeEntryContainer", "scrollContainer", "scrollableContentContainer", "printerPaper", "verticalLine", "puzzlePieceContainer", "unplacedPiecesRect", "shadow", "draggable")]
+anchors_preset = 0
+offset_left = 617.0
+offset_top = 146.0
+offset_right = 1475.142
+offset_bottom = 1031.0
+rotation = 0.0174533
+pivot_offset = Vector2(407, 708)
+script = ExtResource("19")
+codeEntryScene = ExtResource("20")
+codeEntryContainer = NodePath("Draggable/ScrollContainer/ScrollableContent/CodeEntries")
+scrollContainer = NodePath("Draggable/ScrollContainer")
+scrollableContentContainer = NodePath("Draggable/ScrollContainer/ScrollableContent")
+printerPaper = NodePath("Draggable/ScrollContainer/ScrollableContent/PrinterPaper")
+printerMidSection = ExtResource("21")
+verticalLine = NodePath("Draggable/ScrollContainer/ScrollableContent/Vertical line")
+confirmedEntryTheme = ExtResource("22")
+puzzlePieceScene = ExtResource("27")
+puzzlePieceContainer = NodePath("Draggable/ScrollContainer/ScrollableContent/PuzzlePiecesContainer")
+puzzlePieceOffset = Vector2(-190, 12)
+unplacedPiecesRect = NodePath("Draggable/ScrollContainer/ScrollableContent/PuzzlePiecesUnplacedRect")
+canAssignCodes = true
+newlyDiscoveredTitleColor = Color(0.5882353, 0, 0.02745098, 1)
+badAngleDistanceScalePenalty = 3.0
+shadow = NodePath("Draggable/ScrollContainer/ScrollableContent/Shadow")
+draggable = NodePath("Draggable")
+
+[node name="Draggable" type="Control" parent="Pages/Main codes page" node_paths=PackedStringArray("scrollContainer")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("23")
+scrollContainer = NodePath("ScrollContainer")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Pages/Main codes page/Draggable"]
+clip_contents = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="ScrollableContent" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer"]
+custom_minimum_size = Vector2(0, 2000)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+
+[node name="Shadow" type="Panel" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+self_modulate = Color(1, 1, 1, 0.258824)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 1.5393806
+offset_top = 86.35845
+offset_right = -36.46057
+offset_bottom = 45.358276
+grow_horizontal = 2
+grow_vertical = 2
+rotation = -0.023127
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_q6ryg")
+
+[node name="PrinterPaper" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent" instance=ExtResource("25")]
+layout_mode = 0
+offset_left = -12.634569
+offset_top = 63.225433
+offset_right = 1214.3655
+offset_bottom = 1357.2255
+scale = Vector2(0.72, 0.72)
+mouse_filter = 2
+
+[node name="Title of Work" type="RichTextLabel" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+layout_mode = 0
+offset_left = 71.59821
+offset_top = 267.02377
+offset_right = 466.5982
+offset_bottom = 359.02377
+mouse_filter = 2
+theme_type_variation = &"Heading"
+bbcode_enabled = true
+text = "TITLE OF SOURCE"
+fit_content = true
+scroll_active = false
+
+[node name="Code" type="RichTextLabel" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+layout_mode = 0
+offset_left = 581.5982
+offset_top = 267.02377
+offset_right = 747.5982
+offset_bottom = 359.02377
+mouse_filter = 2
+theme_type_variation = &"Heading"
+bbcode_enabled = true
+text = "CODE"
+fit_content = true
+scroll_active = false
+horizontal_alignment = 1
+
+[node name="Vertical line" type="Line2D" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+position = Vector2(546.5982, 316.48178)
+points = PackedVector2Array(0, 0, 0, 500)
+width = 2.0
+default_color = Color(0.5019608, 0.4862745, 0.4745098, 1)
+antialiased = true
+
+[node name="Horizontal line" type="Line2D" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+position = Vector2(68.59831, 315.02377)
+points = PackedVector2Array(0, 0, 714, 0)
+width = 2.0
+default_color = Color(0.5019608, 0.4862745, 0.4745098, 1)
+antialiased = true
+
+[node name="CodeEntries" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+anchors_preset = 0
+offset_left = 68.59821
+offset_top = 316.02377
+offset_right = 783.5982
+offset_bottom = 1089.0238
+mouse_filter = 1
+
+[node name="CodeSingleEntryExample" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent/CodeEntries" instance=ExtResource("20")]
+layout_mode = 0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 715.0
+offset_bottom = 77.0
+
+[node name="EditorOnly" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent/CodeEntries/CodeSingleEntryExample"]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("26")
+
+[node name="PuzzlePiecesContainer" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+anchors_preset = 0
+offset_left = 68.59821
+offset_top = 316.02377
+offset_right = 783.5982
+offset_bottom = 1089.0238
+mouse_filter = 2
+
+[node name="PuzzlePiecesUnplacedRect" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent"]
+anchors_preset = 0
+offset_left = 107.99239
+offset_top = 92.881805
+offset_right = 746.46014
+offset_bottom = 234.2753
+mouse_filter = 2
+
+[node name="PuzzlePiece EDITOR ONLY" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent" instance=ExtResource("27")]
+layout_mode = 1
+offset_left = 120.22563
+offset_top = 93.148636
+offset_right = 257.73975
+offset_bottom = 128.02753
+
+[node name="EditorOnly" type="Control" parent="Pages/Main codes page/Draggable/ScrollContainer/ScrollableContent/PuzzlePiece EDITOR ONLY"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("26")
+
+[node name="CodeAssignmentPageLayout" type="Control" parent="Pages"]
+visible = false
+anchors_preset = 0
+offset_left = -11.0
+offset_top = 117.0
+offset_right = 803.0
+offset_bottom = 1070.0
+rotation = -0.0489647
+
+[node name="Panel" type="Panel" parent="Pages/CodeAssignmentPageLayout"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_h0seo")
+
+[node name="NewTitleRecordedPageLayout" type="Control" parent="Pages"]
+visible = false
+anchors_preset = 0
+offset_left = 569.0
+offset_top = 89.0
+offset_right = 1383.0
+offset_bottom = 1042.0
+rotation = -0.0489647
+
+[node name="Panel" type="Panel" parent="Pages/NewTitleRecordedPageLayout"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_h0seo")
+
+[node name="TorchLight" type="TextureRect" parent="."]
+z_index = 110
+material = SubResource("ShaderMaterial_um1uu")
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("29")
+
+[node name="NextPageButton" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 1423.0
+offset_top = 70.0
+offset_right = 1610.0
+offset_bottom = 120.0
+focus_mode = 0
+text = "Next Page >"
+
+[node name="PreviousPageButton" type="Button" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 321.0
+offset_top = 70.0
+offset_right = 509.0
+offset_bottom = 120.0
+focus_mode = 0
+text = "< Previous Page"
+
+[node name="GoToCodeButton" parent="." instance=ExtResource("30")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -259.0
+offset_top = -81.0
+offset_right = -32.0
+offset_bottom = -27.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "Go to code"
+actionName = "go_to_code"
+
+[node name="GamepadSelectCodesButton" parent="." instance=ExtResource("30")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -83.0
+offset_top = -150.0
+offset_right = 83.0
+offset_bottom = -96.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Select & Assign Codes"
+
+[node name="DebugToggleSlideOver" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 31.0
+offset_top = -1040.0
+offset_right = 281.0
+offset_bottom = -990.0
+grow_vertical = 0
+focus_mode = 0
+text = "Toggle slide over"
+
+[node name="Scroll Buttons" type="Panel" parent="."]
+z_index = 101
+layout_mode = 0
+offset_left = 1420.0
+offset_top = 527.0
+offset_right = 1484.0
+offset_bottom = 668.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_0vyb4")
+
+[node name="ScrollUpButton" type="Button" parent="Scroll Buttons"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 9.0
+offset_right = 57.0
+offset_bottom = 59.0
+pivot_offset = Vector2(25, 25)
+theme_override_constants/icon_max_width = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_p5yb6")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_lj0ar")
+theme_override_styles/hover = SubResource("StyleBoxFlat_q6ryg")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_k3oho")
+icon = ExtResource("31")
+icon_alignment = 1
+
+[node name="ScrollDownButton" type="Button" parent="Scroll Buttons"]
+layout_mode = 0
+offset_left = 7.0
+offset_top = 83.0
+offset_right = 57.0
+offset_bottom = 133.0
+pivot_offset = Vector2(25, 25)
+theme_override_constants/icon_max_width = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_it7pe")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_dkjem")
+theme_override_styles/hover = SubResource("StyleBoxFlat_jdyxl")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_a6lbs")
+icon = ExtResource("32")
+icon_alignment = 1

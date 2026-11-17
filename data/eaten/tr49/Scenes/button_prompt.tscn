@@ -1,0 +1,75 @@
+[gd_scene load_steps=6 format=3 uid="uid://du5ir16k706vk"]
+
+[ext_resource type="Script" uid="uid://dvi52swe5a2kp" path="res://Scripts/ButtonPrompt.cs" id="1"]
+[ext_resource type="FontFile" uid="uid://dlme16jffw6jn" path="res://Fonts/Montserrat-Regular.ttf" id="2"]
+[ext_resource type="Texture2D" uid="uid://d4nkibms4adko" path="res://Images/UI/button_icons/A.png" id="3"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_v2nl5"]
+content_margin_left = 0.0
+content_margin_top = 2.0
+content_margin_right = 0.0
+content_margin_bottom = 2.0
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.20203938, 0.20203945, 0.20203927, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="FontVariation" id="FontVariation_kwa0m"]
+base_font = ExtResource("2")
+variation_embolden = 1.17
+
+[node name="ButtonPrompt" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 94.5
+offset_top = 179.0
+offset_right = 94.5
+offset_bottom = 179.0
+mouse_filter = 2
+mouse_behavior_recursive = 1
+script = ExtResource("1")
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_v2nl5")
+
+[node name="TextMarginContainer" type="MarginContainer" parent="PanelContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 1
+
+[node name="Text" type="Label" parent="PanelContainer/TextMarginContainer"]
+layout_mode = 2
+theme_override_fonts/font = SubResource("FontVariation_kwa0m")
+theme_override_font_sizes/font_size = 16
+text = "SPACE"
+vertical_alignment = 1
+
+[node name="Icon" type="TextureRect" parent="PanelContainer"]
+custom_minimum_size = Vector2(40, 26)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 5

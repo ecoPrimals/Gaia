@@ -1,0 +1,165 @@
+[gd_scene load_steps=23 format=3 uid="uid://b25lhb7l2feso"]
+
+[ext_resource type="Script" uid="uid://qkbeet3urqc2" path="res://Scripts/Credits.cs" id="1"]
+[ext_resource type="PackedScene" uid="uid://taum3xt2pxk4" path="res://Scenes/scrolling_credit_title.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://d0r1ymtl6cv28" path="res://Scenes/centered_actor_credit.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://clw3pn5v1mbq0" path="res://Scenes/simple_credit.tscn" id="4"]
+[ext_resource type="Shader" uid="uid://j5evucsn7gnp" path="res://Shaders/credits.gdshader" id="5"]
+[ext_resource type="Texture2D" uid="uid://cpq0vv4ysgv4" path="res://Images/TheMachine/radial-pattern.png" id="6"]
+[ext_resource type="Theme" uid="uid://ckn0dpf4xu5kr" path="res://Themes/default_card_theme.tres" id="7"]
+[ext_resource type="Script" uid="uid://c5o3qh5p3vvmi" path="res://Scripts/CreditsLabel.cs" id="8"]
+[ext_resource type="AudioStream" uid="uid://bro6pu2krykw1" path="res://Audio/Machine/tamper-click.ogg" id="9"]
+[ext_resource type="AudioStream" uid="uid://s2lug0tbb07x" path="res://Audio/Machine/tamper-click-2.ogg" id="10"]
+[ext_resource type="AudioStream" uid="uid://b1y4lua20ahdl" path="res://Audio/SFX/electric-fuzz-1.ogg" id="11"]
+[ext_resource type="AudioStream" uid="uid://d0chxcx45r881" path="res://Audio/SFX/electric-fuzz-2.ogg" id="12"]
+[ext_resource type="FontVariation" path="res://Fonts/SpecialElite-Bold.tres" id="13"]
+[ext_resource type="AudioStream" uid="uid://nxf21x6whv8b" path="res://Audio/Machine/tiny-click-1.ogg" id="14"]
+[ext_resource type="AudioStream" uid="uid://b3jmlc866ar5v" path="res://Audio/Machine/tiny-click-2.ogg" id="15"]
+[ext_resource type="AudioStream" uid="uid://bkv3mwc6favt2" path="res://Audio/Machine/tiny-click-3.ogg" id="16"]
+[ext_resource type="AudioStream" uid="uid://dgvepfsa867pw" path="res://Audio/Machine/tiny-click-4.ogg" id="17"]
+[ext_resource type="AudioStream" uid="uid://da4m8kppldpuc" path="res://Audio/Machine/tiny-click-6.ogg" id="18"]
+[ext_resource type="AudioStream" uid="uid://bfo4diqvrj37k" path="res://Audio/Machine/tiny-click-7.ogg" id="19"]
+[ext_resource type="Script" uid="uid://krbg7e5vgugs" path="res://Scripts/delete_on_load.gd" id="20"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_l6rxe"]
+viewport_path = NodePath("Credits/CreditsSubViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_j07ll"]
+resource_local_to_scene = true
+shader = ExtResource("5")
+shader_parameter/screen_texture = SubResource("ViewportTexture_l6rxe")
+shader_parameter/radial_texture = ExtResource("6")
+
+[node name="Credits" type="Control" node_paths=PackedStringArray("title", "subtitleLine1", "subtitleLine2", "scrollingContents")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+scrollSpeed = 80.0
+title = NodePath("Credits/CreditsSubViewport/CreditsInner/Title")
+subtitleLine1 = NodePath("Credits/CreditsSubViewport/CreditsInner/Subtitle line 1")
+subtitleLine2 = NodePath("Credits/CreditsSubViewport/CreditsInner/Subtitle line 2")
+scrollingContents = NodePath("Credits/CreditsSubViewport/CreditsInner/ScrollingContents")
+scrollingCreditTitleScene = ExtResource("2")
+actorCreditScene = ExtResource("3")
+simpleCreditScene = ExtResource("4")
+screenEdgeCharacterHideMargin = 120.0
+
+[node name="Black background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Credits" type="SubViewportContainer" parent="."]
+material = SubResource("ShaderMaterial_j07ll")
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -960.0
+offset_top = -540.0
+offset_right = 960.0
+offset_bottom = 540.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CreditsSubViewport" type="SubViewport" parent="Credits"]
+transparent_bg = true
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="CreditsInner" type="Control" parent="Credits/CreditsSubViewport"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("7")
+
+[node name="Title" type="Control" parent="Credits/CreditsSubViewport/CreditsInner"]
+modulate = Color(1, 0.56078434, 0.36862746, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -205.0
+offset_top = -94.0
+offset_right = 290.0
+offset_bottom = 145.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("8")
+characterWriteInSFX = [ExtResource("9"), ExtResource("10")]
+deconstructSFX = [ExtResource("11"), ExtResource("12")]
+text = "TR-49"
+font = ExtResource("13")
+fontSize = 140
+metadata/_custom_type_script = "uid://c5o3qh5p3vvmi"
+
+[node name="Subtitle line 1" type="Control" parent="Credits/CreditsSubViewport/CreditsInner"]
+modulate = Color(1, 0.56202835, 0.36835083, 1)
+anchors_preset = 0
+offset_left = 676.0
+offset_top = 497.0
+offset_right = 1255.6
+offset_bottom = 566.0
+script = ExtResource("8")
+characterWriteInSFX = [ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18"), ExtResource("19")]
+deconstructSFX = [ExtResource("11"), ExtResource("12")]
+text = "Written and directed by"
+font = ExtResource("13")
+fontSize = 40
+characterSpacing = 0.9
+metadata/_custom_type_script = "uid://c5o3qh5p3vvmi"
+
+[node name="Subtitle line 2" type="Control" parent="Credits/CreditsSubViewport/CreditsInner"]
+anchors_preset = 0
+offset_left = 832.0
+offset_top = 582.0
+offset_right = 1084.0
+offset_bottom = 651.0
+script = ExtResource("8")
+characterWriteInSFX = [ExtResource("14"), ExtResource("15"), ExtResource("16"), ExtResource("17"), ExtResource("18"), ExtResource("19")]
+deconstructSFX = [ExtResource("11"), ExtResource("12")]
+text = "Jon Ingold"
+font = ExtResource("13")
+fontSize = 40
+characterSpacing = 0.9
+metadata/_custom_type_script = "uid://c5o3qh5p3vvmi"
+
+[node name="ScrollingContents" type="VBoxContainer" parent="Credits/CreditsSubViewport/CreditsInner"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -504.0
+offset_top = 794.0
+offset_right = 504.0
+offset_bottom = 2359.0
+grow_horizontal = 2
+
+[node name="Scrolling credit title EXAMPLE ONLY" parent="Credits/CreditsSubViewport/CreditsInner/ScrollingContents" instance=ExtResource("2")]
+layout_mode = 2
+script = ExtResource("20")
+
+[node name="Spacer EXAMPLE ONLY" type="Control" parent="Credits/CreditsSubViewport/CreditsInner/ScrollingContents"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+script = ExtResource("20")
+
+[node name="CenteredActorCredit EXAMPLE ONLY" parent="Credits/CreditsSubViewport/CreditsInner/ScrollingContents" instance=ExtResource("3")]
+layout_mode = 2
+script = ExtResource("20")

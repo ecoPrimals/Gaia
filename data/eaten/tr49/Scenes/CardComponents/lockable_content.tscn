@@ -1,0 +1,110 @@
+[gd_scene load_steps=4 format=3 uid="uid://d4c6utxlfl6ui"]
+
+[ext_resource type="Script" uid="uid://1tacughu1yva" path="res://Scripts/CardContainer.cs" id="1"]
+[ext_resource type="Texture2D" uid="uid://dk1rbmyakfjrq" path="res://Images/UI/lock.png" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g7ylq"]
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.79607844, 0.5294118, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[node name="ClippedContainer" type="Control" node_paths=PackedStringArray("contentContainer")]
+clip_contents = true
+custom_minimum_size = Vector2(0, 70)
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("1")
+contentContainer = NodePath("Content")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Footer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Footer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="LeftBracket" type="Control" parent="Footer/HBoxContainer"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Footer/HBoxContainer/LeftBracket"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -50.0
+offset_right = 50.0
+offset_bottom = -22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_g7ylq")
+
+[node name="Icon" type="TextureRect" parent="Footer/HBoxContainer"]
+modulate = Color(1, 0.79607844, 0.5294118, 1)
+custom_minimum_size = Vector2(30, 60)
+layout_mode = 2
+size_flags_vertical = 8
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="Footer/HBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+size_flags_vertical = 8
+text = "ENTER CODE TO EXPAND"
+vertical_alignment = 1
+
+[node name="RightBracket" type="Control" parent="Footer/HBoxContainer"]
+clip_contents = true
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Panel" type="Panel" parent="Footer/HBoxContainer/RightBracket"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -50.0
+offset_top = -50.0
+offset_right = -10.0
+offset_bottom = -22.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_g7ylq")

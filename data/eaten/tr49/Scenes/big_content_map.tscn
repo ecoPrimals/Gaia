@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3 uid="uid://7utj3oecjt5a"]
+
+[ext_resource type="Script" uid="uid://d2ikcyeigu2p3" path="res://Scripts/BigContentMap.cs" id="1"]
+[ext_resource type="PackedScene" uid="uid://bjioln3lms5hu" path="res://Scenes/card_view.tscn" id="2"]
+[ext_resource type="Script" uid="uid://bib2flom1iei8" path="res://Scripts/CardSlotRenderer.cs" id="3"]
+
+[node name="BigContentMap" type="Control" node_paths=PackedStringArray("cardView1", "cardView2", "cardSlotRenderer")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 10000.0
+offset_bottom = 10000.0
+script = ExtResource("1")
+cardView1 = NodePath("CardView1")
+cardView2 = NodePath("CardView2")
+cardSlotRenderer = NodePath("CardSlotRenderer")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.21403763, 0.117307685, 8.4228816e-08, 1)
+
+[node name="CardView1" parent="." instance=ExtResource("2")]
+layout_mode = 1
+anchors_preset = 0
+
+[node name="CardView2" parent="." instance=ExtResource("2")]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 5393.0
+offset_top = 3130.0
+offset_right = 6417.0
+offset_bottom = 4154.0
+
+[node name="CardSlotRenderer" type="Node" parent="."]
+script = ExtResource("3")
+cardPackedScene = ExtResource("2")

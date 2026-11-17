@@ -1,0 +1,206 @@
+[gd_scene load_steps=4 format=3 uid="uid://cqbb7xussjn2y"]
+
+[ext_resource type="Script" uid="uid://c8xt876sgbjt4" path="res://Scripts/SettingsView.cs" id="1"]
+[ext_resource type="FontFile" uid="uid://8tbgvwh4vj2l" path="res://Fonts/SpecialElite-Regular.ttf" id="2"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ryuj7"]
+content_margin_left = 20.0
+content_margin_top = 4.0
+content_margin_right = 20.0
+content_margin_bottom = 4.0
+draw_center = false
+expand_margin_left = 20.0
+
+[node name="SettingsView" type="Control" node_paths=PackedStringArray("fullscreenButton", "subtitlesButton", "hapticButton", "reduceGlitchEffectsButton", "reduceHintsButton", "masterVolumeSlider", "sfxVolumeSlider", "voicesVolumeSlider", "musicVolumeSlider", "fpsLimitMenuButton")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+fullscreenButton = NodePath("VBoxContainer/Toggles/Toggles left/Fullscreen")
+subtitlesButton = NodePath("VBoxContainer/Toggles/Toggles left/Subtitles")
+hapticButton = NodePath("VBoxContainer/Toggles/Toggles left/Vibration")
+reduceGlitchEffectsButton = NodePath("VBoxContainer/Toggles/Toggles right/Reduce Glitch Effects")
+reduceHintsButton = NodePath("VBoxContainer/Toggles/Toggles right/Reduce Hints")
+masterVolumeSlider = NodePath("VBoxContainer/Master Volume/Slider")
+sfxVolumeSlider = NodePath("VBoxContainer/SFX Volume/Slider")
+voicesVolumeSlider = NodePath("VBoxContainer/Voices Volume/Slider")
+musicVolumeSlider = NodePath("VBoxContainer/Music Volume/Slider")
+fpsLimitMenuButton = NodePath("VBoxContainer/Framerate Limit/MenuButton")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.9254902)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -438.5
+offset_top = -481.5
+offset_right = 438.5
+offset_bottom = 481.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 35
+
+[node name="Spacer2" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.56078434, 0.36862746, 1)
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 50
+text = "Settings"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="Spacer" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="Toggles" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Toggles left" type="VBoxContainer" parent="VBoxContainer/Toggles"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Fullscreen" type="CheckBox" parent="VBoxContainer/Toggles/Toggles left"]
+custom_minimum_size = Vector2(274.8, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Fullscreen"
+
+[node name="Subtitles" type="CheckBox" parent="VBoxContainer/Toggles/Toggles left"]
+custom_minimum_size = Vector2(274.8, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Subtitles"
+
+[node name="Vibration" type="CheckBox" parent="VBoxContainer/Toggles/Toggles left"]
+custom_minimum_size = Vector2(274.8, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Vibration"
+
+[node name="Toggles right" type="VBoxContainer" parent="VBoxContainer/Toggles"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="Reduce Glitch Effects" type="CheckBox" parent="VBoxContainer/Toggles/Toggles right"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Reduce Glitch Effects"
+
+[node name="Reduce Hints" type="CheckBox" parent="VBoxContainer/Toggles/Toggles right"]
+custom_minimum_size = Vector2(390, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Reduce Hints"
+
+[node name="Master Volume" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Label" type="Label" parent="VBoxContainer/Master Volume"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Master Volume"
+horizontal_alignment = 2
+
+[node name="Slider" type="HSlider" parent="VBoxContainer/Master Volume"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05000000000291038
+value = 1.0
+
+[node name="SFX Volume" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Label" type="Label" parent="VBoxContainer/SFX Volume"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "SFX Volume"
+horizontal_alignment = 2
+
+[node name="Slider" type="HSlider" parent="VBoxContainer/SFX Volume"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05000000000291038
+value = 1.0
+
+[node name="Voices Volume" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Label" type="Label" parent="VBoxContainer/Voices Volume"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Voice Volume"
+horizontal_alignment = 2
+
+[node name="Slider" type="HSlider" parent="VBoxContainer/Voices Volume"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05000000000291038
+value = 1.0
+
+[node name="Music Volume" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Label" type="Label" parent="VBoxContainer/Music Volume"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Music Volume"
+horizontal_alignment = 2
+
+[node name="Slider" type="HSlider" parent="VBoxContainer/Music Volume"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05000000000291038
+value = 1.0
+
+[node name="Framerate Limit" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 30
+
+[node name="Label" type="Label" parent="VBoxContainer/Framerate Limit"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+text = "Framerate limit"
+horizontal_alignment = 2
+
+[node name="MenuButton" type="MenuButton" parent="VBoxContainer/Framerate Limit"]
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_ryuj7")
+text = "60 fps"

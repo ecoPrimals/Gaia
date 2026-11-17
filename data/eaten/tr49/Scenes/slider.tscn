@@ -1,0 +1,33 @@
+[gd_scene load_steps=3 format=3 uid="uid://bfvl5f3i8l1fu"]
+
+[ext_resource type="Script" uid="uid://dub7jyf4ebbyl" path="res://Scripts/Slider.cs" id="1"]
+
+[sub_resource type="Curve2D" id="Curve2D_11snj"]
+resource_local_to_scene = true
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -169, 96, -119.687, 1.31781, 119.687, -1.31781, 25, 34, 0, 0, 0, 0, 223, 99)
+}
+point_count = 3
+
+[node name="KnobWithPath" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_left = 336.0
+offset_top = 172.0
+offset_right = 336.0
+offset_bottom = 172.0
+
+[node name="SliderKnob" type="TextureButton" parent="." node_paths=PackedStringArray("path")]
+layout_mode = 0
+offset_left = -24.0
+offset_top = -32.0
+offset_right = 28.0
+offset_bottom = 35.0
+pivot_offset = Vector2(26.07, 32.79)
+stretch_mode = 5
+script = ExtResource("1")
+path = NodePath("../Path")
+
+[node name="Path" type="Path2D" parent="."]
+position = Vector2(-24, -31)
+curve = SubResource("Curve2D_11snj")

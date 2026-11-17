@@ -1,0 +1,53 @@
+[gd_scene load_steps=7 format=3 uid="uid://cxg2a6ytf0udr"]
+
+[ext_resource type="Texture2D" uid="uid://bhxpxunhm31j1" path="res://Images/scenery/dust-particles.png" id="1"]
+
+[sub_resource type="Curve" id="Curve_ne31e"]
+_data = [Vector2(0, 0), 0.0, 1.4, 0, 0, Vector2(0.4699793, 0.8444523), 0.0, 0.0, 0, 0, Vector2(1, 0.003971696), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_ypas7"]
+width = 128
+curve = SubResource("Curve_ne31e")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ne31e"]
+lifetime_randomness = 0.25
+emission_shape = 3
+emission_box_extents = Vector3(2, 2, 2)
+angle_min = 1.0728836e-05
+angle_max = 360.00003
+initial_velocity_max = 0.099999994
+angular_velocity_min = -100.000015
+angular_velocity_max = 99.999985
+gravity = Vector3(0, 0, 0)
+scale_min = 0.02
+scale_max = 0.08
+color = Color(1, 1, 1, 0.06666667)
+alpha_curve = SubResource("CurveTexture_ypas7")
+anim_offset_max = 1.0
+turbulence_enabled = true
+turbulence_noise_strength = 10.0
+turbulence_noise_scale = 1.0
+turbulence_influence_min = 1.0
+turbulence_influence_max = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y6f8l"]
+transparency = 1
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1")
+billboard_mode = 3
+particles_anim_h_frames = 2
+particles_anim_v_frames = 2
+particles_anim_loop = false
+grow_amount = 1.743
+
+[sub_resource type="QuadMesh" id="QuadMesh_ypas7"]
+material = SubResource("StandardMaterial3D_y6f8l")
+size = Vector2(0.1, 0.1)
+
+[node name="GeneralDust" type="GPUParticles3D"]
+amount = 300
+lifetime = 4.0
+trail_lifetime = 2.44
+process_material = SubResource("ParticleProcessMaterial_ne31e")
+draw_pass_1 = SubResource("QuadMesh_ypas7")

@@ -1,0 +1,1461 @@
+[gd_scene load_steps=170 format=3 uid="uid://bx6svx86l8xjf"]
+
+[ext_resource type="Script" uid="uid://0mkucdd0ocqo" path="res://Scripts/Main.cs" id="1"]
+[ext_resource type="Script" uid="uid://d038e5656hqxm" path="res://Scripts/StoryController.cs" id="2"]
+[ext_resource type="Resource" uid="uid://d4ivshcxv17mf" path="res://TR49_Ink/cardcatalogue.ink" id="3"]
+[ext_resource type="Script" uid="uid://cwefjjdt83lc1" path="res://Scripts/GameCamera.cs" id="4"]
+[ext_resource type="Script" uid="uid://b7o7u2cq0fipg" path="res://Scripts/LightsController.cs" id="5"]
+[ext_resource type="Texture2D" uid="uid://kwnct5m87yig" path="res://Images/scenery/floor-lighting-0.png" id="6"]
+[ext_resource type="Texture2D" uid="uid://cub3de4wilj6w" path="res://Images/scenery/floor-lighting-1.png" id="7"]
+[ext_resource type="Texture2D" uid="uid://ddo0rypxr4nxo" path="res://Images/scenery/floor-lighting-2.png" id="8"]
+[ext_resource type="Material" uid="uid://dtxm43hcmailm" path="res://Materials/fog_particle_process_material.tres" id="9"]
+[ext_resource type="Script" uid="uid://bgwsmyjvegtxp" path="res://Scripts/MachineUI.cs" id="10"]
+[ext_resource type="Resource" uid="uid://croo8biht5i2v" path="res://FlickerSettings/loadingCardFlicker.tres" id="11"]
+[ext_resource type="Resource" uid="uid://dvhxbhbqwi7jf" path="res://FlickerSettings/lowCoherenceFlicker.tres" id="12"]
+[ext_resource type="Texture2D" uid="uid://bv1h0k481f30d" path="res://Images/TheMachine/Terminal_Light.png" id="13"]
+[ext_resource type="Script" uid="uid://cibimn28w6k0" path="res://Scripts/LitSprite3D.cs" id="14"]
+[ext_resource type="Texture2D" uid="uid://bl4xbujhsn31x" path="res://Images/TheMachine/Terminal_Dark.png" id="15"]
+[ext_resource type="Texture2D" uid="uid://dc2cqp2300nhi" path="res://Images/TheMachine/FlipperBox_Light2.png" id="16"]
+[ext_resource type="Texture2D" uid="uid://binw5r80tusgx" path="res://Images/TheMachine/FlipperBox_Dark2.png" id="17"]
+[ext_resource type="PackedScene" uid="uid://dfx04x7gt0tby" path="res://Scenes/single_flipper.tscn" id="18"]
+[ext_resource type="Script" uid="uid://d3ebfmhnrt0ye" path="res://Scripts/GearShifter.cs" id="19"]
+[ext_resource type="Texture2D" uid="uid://cd35t5jo4w2o1" path="res://Images/TheMachine/FlipperBoxHandle_light.png" id="20"]
+[ext_resource type="Shader" uid="uid://ce4gqtmj4rvuo" path="res://Shaders/crt-for-quad3d.gdshader" id="21"]
+[ext_resource type="Texture2D" uid="uid://cvasqxvdwawhi" path="res://Images/UI/1024px-circle.png" id="22"]
+[ext_resource type="Texture2D" uid="uid://cpq0vv4ysgv4" path="res://Images/TheMachine/radial-pattern.png" id="23"]
+[ext_resource type="Texture2D" uid="uid://btswec1w5c6kr" path="res://Images/Characters/Fisheye/Alice/Aliz_Fisheye_1.png" id="24"]
+[ext_resource type="PackedScene" uid="uid://7utj3oecjt5a" path="res://Scenes/big_content_map.tscn" id="25"]
+[ext_resource type="Script" uid="uid://bpyqlx1ii23b7" path="res://Scripts/CircleSelector.cs" id="26"]
+[ext_resource type="PackedScene" uid="uid://4y46xapddve8" path="res://Scenes/circle_selector_single_character.tscn" id="27"]
+[ext_resource type="Script" uid="uid://dhodyvkod5lcy" path="res://Scripts/CircleSelectorKnob.cs" id="28"]
+[ext_resource type="Texture2D" uid="uid://dtllxqocpk2td" path="res://Images/TheMachine/RingHandle_Light.png" id="29"]
+[ext_resource type="Script" uid="uid://krbg7e5vgugs" path="res://Scripts/delete_on_load.gd" id="30"]
+[ext_resource type="Texture2D" uid="uid://bq4syn0wm665l" path="res://Images/TheMachine/specular-dome-reflections.png" id="31"]
+[ext_resource type="Script" uid="uid://dvpd2ojll6g18" path="res://Scripts/gui_3d.gd" id="32"]
+[ext_resource type="PackedScene" uid="uid://c8ay4wqogp4ns" path="res://Scenes/scroll_button.tscn" id="33"]
+[ext_resource type="Texture2D" uid="uid://bgtjfsvg8vfxf" path="res://Images/TheMachine/Scroll_Up_Unpressed_Unlit.png" id="34"]
+[ext_resource type="Texture2D" uid="uid://43vcmmmtq1as" path="res://Images/TheMachine/Scroll_Up_Pressed_Unlit.png" id="35"]
+[ext_resource type="Texture2D" uid="uid://ddpgqudtsluld" path="res://Images/TheMachine/Scroll_Up_Unpressed_Lit.png" id="36"]
+[ext_resource type="Texture2D" uid="uid://d0own2u1h52j3" path="res://Images/TheMachine/Scroll_Up_Pressed_Lit.png" id="37"]
+[ext_resource type="Texture2D" uid="uid://b0optn8g2kjal" path="res://Images/TheMachine/Scroll_Down_UnPressed_Unlit.png" id="38"]
+[ext_resource type="Texture2D" uid="uid://buxh0wqho2ulf" path="res://Images/TheMachine/Scroll_Down_Pressed_Unlit.png" id="39"]
+[ext_resource type="Texture2D" uid="uid://d2502tf4mu3am" path="res://Images/TheMachine/Scroll_Down_Unpressed_Lit.png" id="40"]
+[ext_resource type="Texture2D" uid="uid://nnjs8jtufu4o" path="res://Images/TheMachine/Scroll_Down_Pressed_Lit.png" id="41"]
+[ext_resource type="Texture2D" uid="uid://crc7mio8rqnc3" path="res://Images/TheMachine/Speaker_Lit.png" id="42"]
+[ext_resource type="Script" uid="uid://cos2la1wjtg0t" path="res://Scripts/SpeakerGrille.cs" id="43"]
+[ext_resource type="Script" uid="uid://cdb4iyqr1m2lv" path="res://Scripts/MachineFlicker.cs" id="44"]
+[ext_resource type="StyleBox" uid="uid://dwwcudi44r5p8" path="res://Scenes/CardComponents/row_item_style_box.tres" id="45"]
+[ext_resource type="Theme" uid="uid://ckn0dpf4xu5kr" path="res://Themes/default_card_theme.tres" id="46"]
+[ext_resource type="Script" uid="uid://ksgculmamqnu" path="res://Scripts/MachineAudio.cs" id="47"]
+[ext_resource type="AudioStream" uid="uid://cclx6iautcjaq" path="res://Audio/Machine/metalic-slide-loop.ogg" id="48"]
+[ext_resource type="AudioStream" uid="uid://dfarbehpp0t01" path="res://Audio/Machine/gear-shift-soft-3.ogg" id="49"]
+[ext_resource type="AudioStream" uid="uid://br7mt84angj46" path="res://Audio/Machine/gear-shift-soft-2.ogg" id="50"]
+[ext_resource type="AudioStream" uid="uid://1fv003qju8ji" path="res://Audio/Machine/gear-shift-soft.ogg" id="51"]
+[ext_resource type="AudioStream" uid="uid://diu6u6kvwx6os" path="res://Audio/Machine/small-deep-metallic-click-2.ogg" id="52"]
+[ext_resource type="AudioStream" uid="uid://dguj6y8x5hywg" path="res://Audio/Machine/small-deep-metallic-click-3.ogg" id="53"]
+[ext_resource type="AudioStream" uid="uid://b8taui5it8ymh" path="res://Audio/Machine/small-deep-metallic-click.ogg" id="54"]
+[ext_resource type="AudioStream" uid="uid://wcflr33a1nn6" path="res://Audio/Machine/gear-thunk-engage.ogg" id="55"]
+[ext_resource type="AudioStream" uid="uid://cing185im1lam" path="res://Audio/Machine/metalic-big-kerklunk.ogg" id="56"]
+[ext_resource type="AudioStream" uid="uid://cqrqicixkrn11" path="res://Audio/Machine/circle-metal-slide-loop.ogg" id="57"]
+[ext_resource type="AudioStream" uid="uid://nxf21x6whv8b" path="res://Audio/Machine/tiny-click-1.ogg" id="58"]
+[ext_resource type="AudioStream" uid="uid://b3jmlc866ar5v" path="res://Audio/Machine/tiny-click-2.ogg" id="59"]
+[ext_resource type="AudioStream" uid="uid://bkv3mwc6favt2" path="res://Audio/Machine/tiny-click-3.ogg" id="60"]
+[ext_resource type="AudioStream" uid="uid://dgvepfsa867pw" path="res://Audio/Machine/tiny-click-4.ogg" id="61"]
+[ext_resource type="AudioStream" uid="uid://da4m8kppldpuc" path="res://Audio/Machine/tiny-click-6.ogg" id="62"]
+[ext_resource type="AudioStream" uid="uid://bfo4diqvrj37k" path="res://Audio/Machine/tiny-click-7.ogg" id="63"]
+[ext_resource type="AudioStream" uid="uid://bro6pu2krykw1" path="res://Audio/Machine/tamper-click.ogg" id="64"]
+[ext_resource type="AudioStream" uid="uid://s2lug0tbb07x" path="res://Audio/Machine/tamper-click-2.ogg" id="65"]
+[ext_resource type="AudioStream" uid="uid://bfqqo8gkaxc27" path="res://Audio/Machine/flip-1.ogg" id="66"]
+[ext_resource type="AudioStream" uid="uid://c3txwff64c1ke" path="res://Audio/Machine/flip-2.ogg" id="67"]
+[ext_resource type="AudioStream" uid="uid://cnpdsttlekivn" path="res://Audio/Machine/flip-3.ogg" id="68"]
+[ext_resource type="AudioStream" uid="uid://dsbiu40op66m3" path="res://Audio/Machine/flip-4.ogg" id="69"]
+[ext_resource type="AudioStream" uid="uid://6utvh8c21208" path="res://Audio/Machine/flip-5.ogg" id="70"]
+[ext_resource type="AudioStream" uid="uid://bh6bu8krcd1ia" path="res://Audio/Machine/flip-6.ogg" id="71"]
+[ext_resource type="AudioStream" uid="uid://bx7k2ou28wyq5" path="res://Audio/Machine/flip-7.ogg" id="72"]
+[ext_resource type="AudioStream" uid="uid://ci2ocabi3sfr4" path="res://Audio/Machine/flip-8.ogg" id="73"]
+[ext_resource type="AudioStream" uid="uid://b4aox5p0anei8" path="res://Audio/Machine/flip-9.ogg" id="74"]
+[ext_resource type="AudioStream" uid="uid://b62yb6wd5ei5w" path="res://Audio/Machine/printer-click-start-up.ogg" id="75"]
+[ext_resource type="AudioStream" uid="uid://mb3r4h1po7t4" path="res://Audio/Machine/printer-hum-loop.ogg" id="76"]
+[ext_resource type="AudioStream" uid="uid://i8rtvhqjvd4r" path="res://Audio/Machine/printer-spin-up.ogg" id="77"]
+[ext_resource type="AudioStream" uid="uid://dspsu2pd02h1a" path="res://Audio/Machine/printer-complete.ogg" id="78"]
+[ext_resource type="AudioStream" uid="uid://badscynme7crl" path="res://Audio/Machine/electric-zap.ogg" id="79"]
+[ext_resource type="AudioStream" uid="uid://bcw50qsrsiehu" path="res://Audio/Machine/electric-zap-2.ogg" id="80"]
+[ext_resource type="AudioStream" uid="uid://bm7m8heny88ut" path="res://Audio/Machine/electric-zap-3.ogg" id="81"]
+[ext_resource type="AudioStream" uid="uid://32a1po8xode2" path="res://Audio/Machine/electric-tiny-tick-2.ogg" id="82"]
+[ext_resource type="AudioStream" uid="uid://cuh5k38rxu525" path="res://Audio/Machine/electric-tiny-tick.ogg" id="83"]
+[ext_resource type="AudioStream" uid="uid://d388wbligotwt" path="res://Audio/Machine/mini-hum.ogg" id="84"]
+[ext_resource type="AudioStream" uid="uid://dvbr478ua71ab" path="res://Audio/SFX/weird-cymbal.ogg" id="85"]
+[ext_resource type="AudioStream" uid="uid://dbiy75jdyq17v" path="res://Audio/Machine/printer-hum-loop-2.ogg" id="86"]
+[ext_resource type="AudioStream" uid="uid://dsbh07c4ubyk7" path="res://Audio/Machine/button-press-down.ogg" id="87"]
+[ext_resource type="AudioStream" uid="uid://wbepfc30xloa" path="res://Audio/Machine/button-press-release.ogg" id="88"]
+[ext_resource type="PackedScene" uid="uid://0mcmnwfaco21" path="res://Scenes/room.tscn" id="89"]
+[ext_resource type="Environment" uid="uid://bcjm27liqm3sh" path="res://environment.tres" id="90"]
+[ext_resource type="PackedScene" uid="uid://cvdwy5n16hwe8" path="res://Scenes/notebook_view.tscn" id="91"]
+[ext_resource type="Script" uid="uid://cn8gqu4l33lbe" path="res://Scripts/black_bars.gd" id="92"]
+[ext_resource type="Script" uid="uid://bjtwgrdicf7fj" path="res://Scripts/GameHUD.cs" id="93"]
+[ext_resource type="Script" uid="uid://b4olby8nk4ehf" path="res://Scripts/ScoresView.cs" id="94"]
+[ext_resource type="PackedScene" uid="uid://cc2a6bdba8qwd" path="res://Scenes/single_score.tscn" id="95"]
+[ext_resource type="Script" uid="uid://wsnyfwq0mdcb" path="res://Scripts/HUDButtons.cs" id="96"]
+[ext_resource type="Texture2D" uid="uid://b4pow6bvlrsem" path="res://Images/UI/blob.png" id="97"]
+[ext_resource type="PackedScene" uid="uid://dhl8a2gjbqn8k" path="res://Scenes/hud_round_button.tscn" id="98"]
+[ext_resource type="Texture2D" uid="uid://dig0pniepysc1" path="res://Images/UI/round-buttons/title-icon-disabled.png" id="99"]
+[ext_resource type="PackedScene" uid="uid://du5ir16k706vk" path="res://Scenes/button_prompt.tscn" id="100"]
+[ext_resource type="Texture2D" uid="uid://8k6lmdkrwyga" path="res://Images/UI/round-buttons/large-button-normal.png" id="101"]
+[ext_resource type="Texture2D" uid="uid://rg52onqmjh7y" path="res://Images/UI/round-buttons/large-button-pressed.png" id="102"]
+[ext_resource type="Texture2D" uid="uid://byu30xyr6y5x3" path="res://Images/UI/round-buttons/large-button-hover.png" id="103"]
+[ext_resource type="Texture2D" uid="uid://cus4q0r0epww0" path="res://Images/UI/round-buttons/large-button-disabled.png" id="104"]
+[ext_resource type="Texture2D" uid="uid://bs5re2c7ks022" path="res://Images/UI/round-buttons/intercom-icon-normal.png" id="105"]
+[ext_resource type="Texture2D" uid="uid://rmvrtvnpvn85" path="res://Images/UI/round-buttons/intercom-icon-highlight.png" id="106"]
+[ext_resource type="Texture2D" uid="uid://n42ub7fd7fp5" path="res://Images/UI/round-buttons/intercom-icon-disabled.png" id="107"]
+[ext_resource type="Texture2D" uid="uid://chjrehanl4c4d" path="res://Images/UI/round-buttons/journal-icon-normal.png" id="108"]
+[ext_resource type="Texture2D" uid="uid://82rt2huglura" path="res://Images/UI/round-buttons/journal-icon-highlight.png" id="109"]
+[ext_resource type="Texture2D" uid="uid://i58ohjp5veux" path="res://Images/UI/round-buttons/journal-icon-disabled.png" id="110"]
+[ext_resource type="Script" uid="uid://bee4omkdh66fg" path="res://Scripts/PopupManager.cs" id="111"]
+[ext_resource type="PackedScene" uid="uid://cxvv0nw0aytqx" path="res://Scenes/popup.tscn" id="112"]
+[ext_resource type="Texture2D" uid="uid://nvbcusla7u3c" path="res://Images/UI/menu-cog.png" id="113"]
+[ext_resource type="Script" uid="uid://dws1pmrbijdv3" path="res://Scripts/CogMenuButton.cs" id="114"]
+[ext_resource type="Script" uid="uid://chrf5t57ws5jk" path="res://Scripts/ProjectedControl.cs" id="115"]
+[ext_resource type="Script" uid="uid://cda8jts716jhn" path="res://Scripts/CodeEntryPrompt.cs" id="116"]
+[ext_resource type="FontFile" uid="uid://8pnl68gknba3" path="res://Fonts/Montserrat-Bold.ttf" id="117"]
+[ext_resource type="Script" uid="uid://djqgcftb4o576" path="res://Scripts/CodeEntryHorizontalAxisPrompt.cs" id="118"]
+[ext_resource type="Texture2D" uid="uid://bl0io2bhmbelf" path="res://Images/UI/button_icons/dpad-horizontal.png" id="119"]
+[ext_resource type="PackedScene" uid="uid://cc41ryafjt6aq" path="res://Scenes/animated_thumbstick.tscn" id="120"]
+[ext_resource type="Texture2D" uid="uid://dv87454wjolbb" path="res://Images/UI/rotation-arrow.png" id="121"]
+[ext_resource type="Texture2D" uid="uid://dqixqub2bki81" path="res://Images/UI/fast-forward-chevron.png" id="122"]
+[ext_resource type="Script" uid="uid://b0xya7ftbk1vp" path="res://Scripts/MobileFastForwardButton.cs" id="123"]
+[ext_resource type="Script" uid="uid://ce1qu3p2f3cdx" path="res://Scripts/Tooltips.cs" id="124"]
+[ext_resource type="PackedScene" uid="uid://c1h4ea58pgbq3" path="res://Scenes/tooltip.tscn" id="125"]
+[ext_resource type="Script" uid="uid://dq126xeripch3" path="res://Scripts/DebugSavePicker.cs" id="126"]
+[ext_resource type="PackedScene" uid="uid://5oxfr6tumpg8" path="res://Scenes/vo_controller.tscn" id="127"]
+[ext_resource type="PackedScene" uid="uid://b6ln75yn4ysv6" path="res://Scenes/title_splash_screen.tscn" id="128"]
+[ext_resource type="PackedScene" uid="uid://b25lhb7l2feso" path="res://Scenes/credits.tscn" id="129"]
+[ext_resource type="PackedScene" uid="uid://cqbb7xussjn2y" path="res://Scenes/settings_view.tscn" id="130"]
+[ext_resource type="PackedScene" uid="uid://4jqfknmcd653" path="res://Scenes/asana_feedback_form.tscn" id="131"]
+[ext_resource type="PackedScene" path="res://Scenes/alert_view.tscn" id="132"]
+[ext_resource type="Script" uid="uid://ci3nu5haxa1jq" path="res://Scripts/GlobalBackButton.cs" id="133"]
+[ext_resource type="PackedScene" uid="uid://cpyjtybvkmi6x" path="res://Scenes/button_with_prompt.tscn" id="134"]
+[ext_resource type="Texture2D" uid="uid://f1qgypk73mca" path="res://Images/UI/left-chevron.png" id="135"]
+[ext_resource type="Script" uid="uid://c1yjf5d8nf5yq" path="res://Scripts/SaveLoadManager.cs" id="136"]
+[ext_resource type="Script" uid="uid://u1edy00if1md" path="res://Scripts/BackgroundMusicPlayer.cs" id="137"]
+[ext_resource type="AudioStream" uid="uid://ct1qs6c23w6it" path="res://Music/SynthStem_ForCredits.ogg" id="138"]
+[ext_resource type="AudioStream" uid="uid://c3p4ydmiehljy" path="res://Music/OpeningFull.mp3" id="139"]
+[ext_resource type="Script" uid="uid://bgh24gwuae2xl" path="res://Scripts/steam_wrapper.gd" id="140"]
+[ext_resource type="Script" uid="uid://6us2nr7aoc27" path="res://Scripts/Screenshotter.cs" id="141"]
+
+[sub_resource type="Curve" id="Curve_gsvbx"]
+_data = [Vector2(0, 0), 0.0, 1.8362089, 0, 1, Vector2(0.1882353, 0.34563935), 0.0, 0.0, 0, 0, Vector2(0.2630252, 0.82663137), 0.0, 0.0, 0, 0, Vector2(0.29243696, 0.35092497), 0.0, 0.0, 0, 0, Vector2(0.35798317, 0.3710103), 0.0, 0.0, 0, 0, Vector2(0.4159664, 0.6701768), 0.0, 0.0, 0, 0, Vector2(0.42689076, 0.36889607), 0.0, 0.0, 0, 0, Vector2(0.5210084, 0.37523884), 0.0, 0.0, 0, 0, Vector2(0.5378151, 0.8171172), 0.0, 0.0, 0, 0, Vector2(0.6092437, 0.37206745), 0.0, 0.0, 0, 0, Vector2(0.7184874, 0.3741817), 0.0, 0.0, 0, 0, Vector2(0.74537814, 1), 0.0, 0.0, 0, 0, Vector2(1, 1), 0.0, 0.0, 1, 0]
+point_count = 13
+
+[sub_resource type="Curve" id="Curve_jut3y"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.1564626, 0.09350681), 1.2173356, 1.2173356, 0, 0, Vector2(0.23015875, 0.33734202), 0.0, 0.0, 0, 0, Vector2(0.31746033, 0.39328068), 0.0, 0.0, 0, 0, Vector2(0.41836736, 0.32873607), 0.0, 0.0, 0, 0, Vector2(0.56349206, 0.7991945), 1.3554364, 1.3554364, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 7
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ynmfv"]
+size = Vector3(0.2, 0.2, 0.2)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_juos8"]
+viewport_path = NodePath("Room3D/Machine/ScreenAndDial/ScreenTexture/ScreenViewport")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_7sicb"]
+resource_local_to_scene = true
+render_priority = 0
+next_pass = null
+shader = ExtResource("21")
+shader_parameter/screen_texture = SubResource("ViewportTexture_juos8")
+shader_parameter/mask_texture = ExtResource("22")
+shader_parameter/radial_texture = ExtResource("23")
+shader_parameter/blur_effect = 0.0
+shader_parameter/turn_off_effect = 1.0
+shader_parameter/ripple_progress = 0.0
+shader_parameter/extra_brightness = 1.6000000760000002
+shader_parameter/reduce_glitch_effects = 0.0
+
+[sub_resource type="QuadMesh" id="QuadMesh_a2530"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ynmfv"]
+transparency = 1
+albedo_color = Color(0.45882353, 0.43137255, 1, 0.19607843)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ynmfv"]
+material = SubResource("StandardMaterial3D_ynmfv")
+size = Vector3(0.4, 0.5, 0.03)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hpc6h"]
+size = Vector3(0.4, 0.5, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7k868"]
+transparency = 1
+blend_mode = 1
+specular_mode = 2
+albedo_texture = ExtResource("31")
+
+[sub_resource type="QuadMesh" id="QuadMesh_hpc6h"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_6ml46"]
+height = 0.01
+radius = 0.2578125
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_y86h7"]
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.5803922, 0.5019608, 0.3254902, 0.13725491)
+corner_radius_top_left = 30
+corner_radius_top_right = 30
+corner_radius_bottom_right = 30
+corner_radius_bottom_left = 30
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_s8vy0"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.79607844, 0.75686276, 0.7058824, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_size = 2
+shadow_offset = Vector2(0, 4)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_cblf0"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_nay3j"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ovafv"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_owhal"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_uv6w5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_v2nl5"]
+content_margin_left = 0.0
+content_margin_top = 2.0
+content_margin_right = 0.0
+content_margin_bottom = 2.0
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.20203938, 0.20203945, 0.20203927, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="FontVariation" id="FontVariation_kwa0m"]
+base_font = ExtResource("117")
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_adgm5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_qxkn4"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_130ps"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_odn5n"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_b12iu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ovafv"]
+content_margin_right = 10.0
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.31220165, 0.31220198, 0.3122018, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nay3j"]
+content_margin_right = 10.0
+bg_color = Color(0, 0, 0, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(1, 0.5647059, 0.2, 1)
+corner_radius_top_left = 50
+corner_radius_top_right = 50
+corner_radius_bottom_right = 50
+corner_radius_bottom_left = 50
+
+[node name="Main" type="Node"]
+script = ExtResource("1")
+
+[node name="StoryController" type="Node" parent="." node_paths=PackedStringArray("gameCamera", "machineUI", "voController", "notebookView", "notebookButton", "nameButton", "talkButton", "scoresView", "menuButton", "machineAudio", "backgroundMusicPlayer", "musicPlayer", "introFadeFromBlack", "steamWrapper")]
+script = ExtResource("2")
+story = ExtResource("3")
+gameCamera = NodePath("../Room3D/Camera3D")
+machineUI = NodePath("../Room3D/Machine")
+voController = NodePath("../ScreenSpaceUI/VOController")
+notebookView = NodePath("../ScreenSpaceUI/NotebookView")
+notebookButton = NodePath("../ScreenSpaceUI/GameHUD/HUDButtons/NotebookButton")
+nameButton = NodePath("../ScreenSpaceUI/GameHUD/HUDButtons/TitleButton")
+talkButton = NodePath("../ScreenSpaceUI/GameHUD/HUDButtons/IntercomButton")
+scoresView = NodePath("../ScreenSpaceUI/GameHUD/ScoresView")
+menuButton = NodePath("../ScreenSpaceUI/GameHUD/CogMenuButton")
+machineAudio = NodePath("../Room3D/Machine/MachineAudio")
+backgroundMusicPlayer = NodePath("../BackgroundMusicPlayer")
+musicPlayer = NodePath("../BackgroundMusicPlayer/BackgroundMusic")
+introFadeFromBlack = NodePath("../ScreenSpaceUI/IntroFadeFromBlack")
+slowIntroFadeDuration = 30.0
+steamWrapper = NodePath("../Steam")
+
+[node name="DelayTimer" type="Timer" parent="StoryController"]
+wait_time = 5.0
+one_shot = true
+
+[node name="IntercomDelayTimer" type="Timer" parent="StoryController"]
+wait_time = 0.21
+one_shot = true
+
+[node name="MachineCodeDelayBeforeSearchTimer" type="Timer" parent="StoryController"]
+one_shot = true
+
+[node name="Room3D" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="Room3D" node_paths=PackedStringArray("worldEnvironment")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.03, 1.208, 9.342005)
+fov = 70.0
+script = ExtResource("4")
+standardDuration = 0.5
+basePosition = Vector3(-0.04, 1.545, 0.72)
+initialFarOutOffset = Vector3(0, 0.3, 2.48)
+notebookOffset = Vector3(0, 0.15, 0.4)
+sideCrossRefOffset = Vector3(-0.42, 0, -0.05)
+menuOffset = Vector3(-0.195, 0, -0.15)
+worldEnvironment = NodePath("../WorldEnvironment")
+desaturateModeBrightness = 0.9000000000087311
+desaturateModeSaturation = 0.1999999999970896
+desaturateModeContrast = 2.0
+
+[node name="LightsController" type="Node3D" parent="Room3D" node_paths=PackedStringArray("screenReflection")]
+script = ExtResource("5")
+groupSwitchOnDelays = PackedFloat32Array(0, 0, 1, 2, 3)
+floorLightingTextures = [ExtResource("6"), ExtResource("7"), ExtResource("8")]
+flickerCurve = SubResource("Curve_gsvbx")
+screenReflection = NodePath("../Machine/ScreenAndDial/reflections")
+fogParticleProcessMaterial = ExtResource("9")
+fogParticlesUnlitColor = Color(0.11647143, 0.1302355, 0.11991312, 1)
+
+[node name="Machine" type="Node3D" parent="Room3D" node_paths=PackedStringArray("crtScreen", "bigContentMap", "hiddenImage", "flipperDigits", "circleSelector", "scrollUpButton", "scrollDownButton", "tutorialAnimatedThumbstick", "tutorialAnimatedThumbstickArrows", "gameCamera", "gearShifter", "machineAudio", "machineFlicker")]
+script = ExtResource("10")
+crtScreen = NodePath("ScreenAndDial/ScreenTexture")
+bigContentMap = NodePath("ScreenAndDial/ScreenTexture/ScreenViewport/BigContentMap")
+hiddenImage = NodePath("ScreenAndDial/ScreenTexture/ScreenViewport/HiddenImage/HiddenImage")
+flipperDigits = [NodePath("FlipperBox/Flippers/Letter1"), NodePath("FlipperBox/Flippers/Letter2"), NodePath("FlipperBox/Flippers/Number1"), NodePath("FlipperBox/Flippers/Number2")]
+circleSelector = NodePath("ScreenAndDial/CircleSelector")
+scrollUpButton = NodePath("ScreenAndDial/Scroll buttons/Scroll up button")
+scrollDownButton = NodePath("ScreenAndDial/Scroll buttons/Scroll down button")
+tutorialAnimatedThumbstick = NodePath("../../ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt")
+tutorialAnimatedThumbstickArrows = NodePath("../../ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt/Arrows")
+gameCamera = NodePath("../Camera3D")
+gearShifter = NodePath("FlipperBox/GearShifter")
+machineAudio = NodePath("MachineAudio")
+screenTurnOnOffCurve = SubResource("Curve_jut3y")
+screenTurnOnOffDuration = 1.5
+machineFlicker = NodePath("FlickerEffect")
+tr49CardFlickerSettings = ExtResource("11")
+lowCoherenceCardFlickerSettings = ExtResource("12")
+
+[node name="MainTerminal" type="Sprite3D" parent="Room3D/Machine"]
+transform = Transform3D(0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.051, -0.041, 0, 0.256)
+sorting_offset = 0.2
+centered = false
+offset = Vector2(-2048, -89.42)
+shaded = true
+texture = ExtResource("13")
+script = ExtResource("14")
+litTexture = ExtResource("13")
+unlitTexture = ExtResource("15")
+unlitColor = Color(1, 1, 1, 1)
+
+[node name="FlipperBox" type="Sprite3D" parent="Room3D/Machine"]
+transform = Transform3D(0.032, 0, 0, 0, 0.032, 0, 0, 0, 0.033, 0.29127005, 1.5974326, 0.256)
+sorting_offset = 0.25
+pixel_size = 0.0135
+shaded = true
+texture = ExtResource("16")
+script = ExtResource("14")
+litTexture = ExtResource("16")
+unlitTexture = ExtResource("17")
+unlitColor = Color(1, 1, 1, 1)
+
+[node name="Flippers" type="Node3D" parent="Room3D/Machine/FlipperBox"]
+transform = Transform3D(31.562498, 0, 0, 0, 31.562498, 0, 0, 0, 37.666668, 0.83477783, -0.13414383, 0.075537205)
+
+[node name="Letter1" parent="Room3D/Machine/FlipperBox/Flippers" node_paths=PackedStringArray("machineAudio") instance=ExtResource("18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.085253656, 0.00080525875, 0)
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="Letter2" parent="Room3D/Machine/FlipperBox/Flippers" node_paths=PackedStringArray("machineAudio") instance=ExtResource("18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.029468404, 0.0010385513, 0)
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="Number1" parent="Room3D/Machine/FlipperBox/Flippers" node_paths=PackedStringArray("machineAudio") instance=ExtResource("18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.023984864, 0.00028073788, 0)
+useLetters = false
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="Number2" parent="Room3D/Machine/FlipperBox/Flippers" node_paths=PackedStringArray("machineAudio") instance=ExtResource("18")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.07950297, 0.00035762787, 0)
+useLetters = false
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="GearShifter" type="Node3D" parent="Room3D/Machine/FlipperBox" node_paths=PackedStringArray("gearStick", "positionAnchors", "area3D", "machineAudio")]
+transform = Transform3D(31.249998, 0, 0, 0, 31.249998, 0, 0, 0, 30.303032, -3.6190825, -1.9542542, 0.06017542)
+script = ExtResource("19")
+gearStick = NodePath("Gear-stick")
+positionAnchors = [NodePath("HomePosition"), NodePath("Position1"), NodePath("Position2"), NodePath("Position3"), NodePath("Position4")]
+area3D = NodePath("Gear-stick/Area3D")
+sinkSpeed = 0.2
+sinkXThreshold = 0.002
+machineAudio = NodePath("../../MachineAudio")
+
+[node name="Gear-stick" type="Sprite3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(0.34, 0, 0, 0, 0.34, 0, 0, 0, 0.34, 0.00015253991, -0.0054917336, 0)
+sorting_offset = 0.5
+offset = Vector2(43.59, -44.04)
+pixel_size = 0.001
+texture = ExtResource("20")
+script = ExtResource("14")
+unlitColor = Color(0.3016528, 0.3016528, 0.30165276, 1)
+
+[node name="Area3D" type="Area3D" parent="Room3D/Machine/FlipperBox/GearShifter/Gear-stick"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Room3D/Machine/FlipperBox/GearShifter/Gear-stick/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.118632615, -0.090765245, 0)
+shape = SubResource("BoxShape3D_ynmfv")
+
+[node name="PromptAnchor" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter/Gear-stick"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.063, -0.18, 0)
+
+[node name="HomePosition" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.005748749, 0.030379772, 0)
+
+[node name="Position1" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.049376816, -0.025792122, 0)
+
+[node name="Position2" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09954949, -0.025792122, 0)
+
+[node name="Position3" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.14937122, -0.025792122, 0)
+
+[node name="Position4" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.19852819, -0.025792122, 0)
+
+[node name="FlipperButtonPromptAttachPoint" type="Node3D" parent="Room3D/Machine/FlipperBox/GearShifter"]
+transform = Transform3D(0.5617352, 0, 0, 0, 0.5617352, 0, 0, 0, 0.5717662, -0.0066921264, 0.05769968, -0.0015617311)
+
+[node name="ScreenAndDial" type="Node3D" parent="Room3D/Machine"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.24008325, 1.5437074, 0.25249273)
+
+[node name="ScreenTexture" type="MeshInstance3D" parent="Room3D/Machine/ScreenAndDial"]
+transform = Transform3D(0.57, 0, 0, 0, 0.57, 0, 0, 0, 0.838, 0, 0, 0)
+sorting_offset = -0.5
+material_override = SubResource("ShaderMaterial_7sicb")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_a2530")
+skeleton = NodePath("../..")
+
+[node name="ScreenViewport" type="SubViewport" parent="Room3D/Machine/ScreenAndDial/ScreenTexture"]
+transparent_bg = true
+size = Vector2i(2048, 2048)
+size_2d_override = Vector2i(1024, 1024)
+size_2d_override_stretch = true
+render_target_update_mode = 4
+
+[node name="HiddenImage" type="Control" parent="Room3D/Machine/ScreenAndDial/ScreenTexture/ScreenViewport"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1024.0
+offset_bottom = 1024.0
+
+[node name="HiddenImage" type="TextureRect" parent="Room3D/Machine/ScreenAndDial/ScreenTexture/ScreenViewport/HiddenImage"]
+self_modulate = Color(0.227451, 0.4, 0.321569, 1)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 107.0
+offset_top = 107.0
+offset_right = -107.0
+offset_bottom = -107.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("24")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BigContentMap" parent="Room3D/Machine/ScreenAndDial/ScreenTexture/ScreenViewport" instance=ExtResource("25")]
+anchors_preset = 0
+
+[node name="CircleSelector" type="Node3D" parent="Room3D/Machine/ScreenAndDial" node_paths=PackedStringArray("knob", "machineAudio")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.001, 0)
+script = ExtResource("26")
+knob = NodePath("Knob")
+singleCharacterPackedScene = ExtResource("27")
+machineAudio = NodePath("../../MachineAudio")
+knobRadius = 0.29
+petalsRadius = 0.275
+irisHideScale = 1.164
+irisSpringInTime = 0.4
+
+[node name="Knob" type="Node3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector" node_paths=PackedStringArray("area3D")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.294, 0.01)
+script = ExtResource("28")
+area3D = NodePath("Area3D")
+
+[node name="KnobSprite" type="Sprite3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector/Knob"]
+transform = Transform3D(0.13, 0, 0, 0, 0.13, 0, 0, 0, 0.09, 0, 0.00020551682, 0)
+sorting_offset = 0.6
+pixel_size = 0.002
+texture = ExtResource("29")
+script = ExtResource("14")
+unlitColor = Color(0.09206989, 0.0920699, 0.09206989, 1)
+
+[node name="ThumbstickTutorialAnchor" type="Node3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector/Knob/KnobSprite"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.643, 0)
+
+[node name="Area3D" type="Area3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector/Knob"]
+transform = Transform3D(0.13, 0, 0, 0, 0.102, 0, 0, 0, 0.09, 0, 0.00020551682, 0)
+
+[node name="Cube visualisation" type="MeshInstance3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector/Knob/Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0, 0, 0)
+visible = false
+sorting_offset = 1.0
+mesh = SubResource("BoxMesh_ynmfv")
+skeleton = NodePath("../../KnobSprite")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector/Knob/Area3D"]
+shape = SubResource("BoxShape3D_hpc6h")
+
+[node name="LetterRing" type="Node3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector"]
+
+[node name="SingleCharacter EXAMPLE" parent="Room3D/Machine/ScreenAndDial/CircleSelector/LetterRing" instance=ExtResource("27")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.23967063, 0)
+script = ExtResource("30")
+
+[node name="NumberRing" type="Node3D" parent="Room3D/Machine/ScreenAndDial/CircleSelector"]
+
+[node name="reflections" type="MeshInstance3D" parent="Room3D/Machine/ScreenAndDial"]
+transform = Transform3D(0.565, 0, 0, 0, 0.565, 0, 0, 0, 0.565, 0, 0, 0)
+sorting_offset = -0.3
+material_override = SubResource("StandardMaterial3D_7k868")
+cast_shadow = 0
+mesh = SubResource("QuadMesh_hpc6h")
+
+[node name="GUI3D" type="Node3D" parent="Room3D/Machine/ScreenAndDial" node_paths=PackedStringArray("node_viewport", "node_quad", "node_area")]
+script = ExtResource("32")
+node_viewport = NodePath("../ScreenTexture/ScreenViewport")
+node_quad = NodePath("../ScreenTexture")
+node_area = NodePath("../Area3D")
+
+[node name="Area3D" type="Area3D" parent="Room3D/Machine/ScreenAndDial"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Room3D/Machine/ScreenAndDial/Area3D"]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.0077209473, -1.4819915e-10, -0.0016095936)
+shape = SubResource("CylinderShape3D_6ml46")
+
+[node name="Scroll buttons" type="Node3D" parent="Room3D/Machine/ScreenAndDial"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+
+[node name="Scroll up button" parent="Room3D/Machine/ScreenAndDial/Scroll buttons" node_paths=PackedStringArray("machineAudio") instance=ExtResource("33")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.33142677, 0.022405028, 0)
+normal = ExtResource("34")
+pressed = ExtResource("35")
+lit = ExtResource("36")
+litPressed = ExtResource("37")
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="Scroll down button" parent="Room3D/Machine/ScreenAndDial/Scroll buttons" node_paths=PackedStringArray("machineAudio") instance=ExtResource("33")]
+transform = Transform3D(-1, 8.742278e-08, 0, -8.742278e-08, -1, 0, 0, 0, 1, -0.32952884, -0.06388104, 0)
+normal = ExtResource("38")
+pressed = ExtResource("39")
+lit = ExtResource("40")
+litPressed = ExtResource("41")
+machineAudio = NodePath("../../../MachineAudio")
+
+[node name="SpeakerGrilleLit" type="Sprite3D" parent="Room3D/Machine"]
+transform = Transform3D(0.235, 0, 0, 0, 0.235, 0, 0, 0, 0.235, 0.29682672, 1.3310204, 0.256)
+sorting_offset = 0.3
+pixel_size = 0.001
+texture = ExtResource("42")
+script = ExtResource("43")
+levelFalloffTime = 0.1
+pulseSpeed = 30.0
+pulseMinBrightness = 0.8
+
+[node name="FlickerEffect" type="Node" parent="Room3D/Machine" node_paths=PackedStringArray("machineAudio")]
+script = ExtResource("44")
+rowItemStyleBox = ExtResource("45")
+defaultCardTheme = ExtResource("46")
+machineAudio = NodePath("../MachineAudio")
+
+[node name="MachineAudio" type="Node" parent="Room3D/Machine" node_paths=PackedStringArray("machineViewport")]
+script = ExtResource("47")
+machineViewport = NodePath("../ScreenAndDial/ScreenTexture/ScreenViewport")
+gearSlideLoopSound = ExtResource("48")
+gearMovementStartSounds = [ExtResource("49"), ExtResource("50")]
+gearHomeClunkSound = ExtResource("51")
+gearPassedCornerSounds = [ExtResource("52"), ExtResource("53"), ExtResource("54")]
+gearArrivedInGearSounds = [ExtResource("55")]
+gearReturnedToHomeSounds = [ExtResource("56")]
+circleSelectorKnobLoopSound = ExtResource("57")
+circleSelectorKnobLoopMaxSpeed = 2.0
+circleSelectorChangedCharacterSounds = [ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63")]
+circleSelectorPressedCharacterSounds = [ExtResource("64"), ExtResource("65")]
+circleSelectorPressedCharacterPitchScale = 0.5
+flipperDigitFlippedSounds = [ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("72"), ExtResource("73"), ExtResource("74")]
+flipperDigitFlippedPitchVariance = 0.5
+flipperDigitFlippedPitchScale = 3.0
+cardSectionUnlockedSound = ExtResource("75")
+loadingCardSound = ExtResource("75")
+cardMapMovementLoopSound = ExtResource("76")
+longTravelCardSlotCount = 8
+cardMapMovementStartSound = ExtResource("77")
+cardMapMovementCompleteSound = ExtResource("78")
+cardLerpArrivalProximity = 0.4
+flickerStartedSounds = [ExtResource("79"), ExtResource("80"), ExtResource("81")]
+linkButtonHoverOrFocusChangeSounds = [ExtResource("82"), ExtResource("83")]
+linkButtonHoverOrFocusChangeVolume = 0.5
+linkButtonPressedSounds = [ExtResource("80"), ExtResource("81"), ExtResource("79")]
+linkButtonPressedVolume = 0.4
+linkButtonAppearedSounds = [ExtResource("84")]
+linkButtonAppearedPitchVariance = 0.05
+linkButtonAppearedVolume = 1.0
+rippleScreenSounds = [ExtResource("85")]
+screenScrollLoopSound = ExtResource("86")
+screenScrollMaxSpeed = 500.0
+screenScrollSmoothTime = 0.15
+scrollButtonPressedSound = ExtResource("87")
+scrollButtonReleasedSound = ExtResource("88")
+
+[node name="Room" parent="Room3D" instance=ExtResource("89")]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Room3D"]
+environment = ExtResource("90")
+
+[node name="ScreenSpaceUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="NotebookView" parent="ScreenSpaceUI" node_paths=PackedStringArray("gameCamera") instance=ExtResource("91")]
+visible = false
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -960.0
+offset_top = -540.0
+offset_right = 960.0
+offset_bottom = 540.0
+gameCamera = NodePath("../../Room3D/Camera3D")
+pagesShowHideFadeProportion = 0.5
+pagesHiddenScale = 0.1999999999970896
+pagesHiddenSquash = 0.3000000000029104
+pagesHiddenOffsetX = 200.0
+pagesHiddenOffsetY = 200.0
+pagesNewTitleHiddenScale = 0.1999999999970896
+pageSlideDuration = 0.8000000000029104
+pageFlowSmoothTime = 0.15000000000873115
+
+[node name="Blackbars" type="Control" parent="ScreenSpaceUI" node_paths=PackedStringArray("hud_buttons")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("92")
+hud_buttons = NodePath("../GameHUD/HUDButtons")
+
+[node name="Top" type="ColorRect" parent="ScreenSpaceUI/Blackbars"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 250.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Bottom" type="ColorRect" parent="ScreenSpaceUI/Blackbars"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -250.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="IntroFadeFromBlack" type="ColorRect" parent="ScreenSpaceUI"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="GameHUD" type="Control" parent="ScreenSpaceUI" node_paths=PackedStringArray("hudButtons", "flipperButtonPrompt", "gameCamera")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("93")
+hudButtons = NodePath("HUDButtons")
+flipperButtonPrompt = NodePath("CodeEntryProjectedPrompt")
+gameCamera = NodePath("../../Room3D/Camera3D")
+
+[node name="ScoresView" type="PanelContainer" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("scoresContainer")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -308.0
+offset_top = 16.0
+offset_right = 26.0
+offset_bottom = 104.0
+grow_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_y86h7")
+script = ExtResource("94")
+singleScoreScene = ExtResource("95")
+scoresContainer = NodePath("MarginContainer/VBoxContainer")
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenSpaceUI/GameHUD/ScoresView"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScreenSpaceUI/GameHUD/ScoresView/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 4
+
+[node name="SingleScore EXAMPLE" parent="ScreenSpaceUI/GameHUD/ScoresView/MarginContainer/VBoxContainer" instance=ExtResource("95")]
+layout_mode = 2
+
+[node name="DELETE ON LOAD" type="Node" parent="ScreenSpaceUI/GameHUD/ScoresView/MarginContainer/VBoxContainer/SingleScore EXAMPLE"]
+script = ExtResource("30")
+delete_parent = true
+
+[node name="HUDButtons" type="Control" parent="ScreenSpaceUI/GameHUD"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 570.0
+offset_right = 570.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("96")
+
+[node name="BigBgShadow" type="TextureRect" parent="ScreenSpaceUI/GameHUD/HUDButtons"]
+modulate = Color(0, 0, 0, 1)
+layout_mode = 0
+offset_left = -209.0
+offset_top = -180.0
+offset_right = 774.0
+offset_bottom = 663.0
+mouse_filter = 2
+texture = ExtResource("97")
+
+[node name="TitleButton" parent="ScreenSpaceUI/GameHUD/HUDButtons" instance=ExtResource("98")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 121.0
+offset_top = -168.0
+offset_right = 260.0
+offset_bottom = -29.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+disabledInnerImage = ExtResource("99")
+
+[node name="InnerImage" parent="ScreenSpaceUI/GameHUD/HUDButtons/TitleButton" index="0"]
+offset_left = 18.0
+offset_top = 10.0
+offset_right = -18.0
+offset_bottom = -26.0
+
+[node name="Glow" parent="ScreenSpaceUI/GameHUD/HUDButtons/TitleButton" index="1"]
+offset_left = 18.0
+offset_top = 10.0
+offset_right = -18.0
+offset_bottom = -26.0
+
+[node name="ButtonPrompt" parent="ScreenSpaceUI/GameHUD/HUDButtons/TitleButton" instance=ExtResource("100")]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -19.5
+offset_top = -33.0
+offset_right = 20.5
+offset_bottom = 7.0000305
+grow_horizontal = 2
+grow_vertical = 0
+actionName = "set_title"
+
+[node name="IntercomButton" parent="ScreenSpaceUI/GameHUD/HUDButtons" instance=ExtResource("98")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -92.5
+offset_top = -222.0
+offset_right = 92.5
+offset_bottom = -21.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+texture_normal = ExtResource("101")
+texture_pressed = ExtResource("102")
+texture_hover = ExtResource("103")
+texture_disabled = ExtResource("104")
+normalInnerImage = ExtResource("105")
+highlightInnerImage = ExtResource("106")
+disabledInnerImage = ExtResource("107")
+
+[node name="InnerImage" parent="ScreenSpaceUI/GameHUD/HUDButtons/IntercomButton" index="0"]
+offset_left = 27.0
+offset_right = -27.0
+offset_bottom = -31.0
+texture = ExtResource("105")
+
+[node name="Glow" parent="ScreenSpaceUI/GameHUD/HUDButtons/IntercomButton" index="1"]
+offset_left = 26.5
+offset_right = -27.5
+offset_bottom = -32.0
+texture = ExtResource("106")
+
+[node name="ButtonPrompt" parent="ScreenSpaceUI/GameHUD/HUDButtons/IntercomButton" instance=ExtResource("100")]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -39.0
+offset_right = 20.0
+offset_bottom = 1.0000305
+grow_horizontal = 2
+grow_vertical = 0
+actionName = "intercom"
+
+[node name="NotebookButton" parent="ScreenSpaceUI/GameHUD/HUDButtons" instance=ExtResource("98")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -265.0
+offset_top = -168.0
+offset_right = -126.0
+offset_bottom = -29.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+normalInnerImage = ExtResource("108")
+highlightInnerImage = ExtResource("109")
+disabledInnerImage = ExtResource("110")
+
+[node name="InnerImage" parent="ScreenSpaceUI/GameHUD/HUDButtons/NotebookButton" index="0"]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -28.0
+texture = ExtResource("108")
+
+[node name="Glow" parent="ScreenSpaceUI/GameHUD/HUDButtons/NotebookButton" index="1"]
+offset_left = 21.0
+offset_top = 16.952934
+offset_right = -25.314621
+offset_bottom = -25.000008
+texture = ExtResource("109")
+
+[node name="ButtonPrompt" parent="ScreenSpaceUI/GameHUD/HUDButtons/NotebookButton" instance=ExtResource("100")]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -19.5
+offset_top = -33.0
+offset_right = 20.5
+offset_bottom = 7.0000305
+grow_horizontal = 2
+grow_vertical = 0
+actionName = "notebook"
+
+[node name="PopupManager" type="Control" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("titlePopup", "intercomPopup", "notebookPopup", "cornerPopup", "notebookButton")]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("111")
+titlePopup = NodePath("TitlePopup")
+intercomPopup = NodePath("IntercomPopup")
+notebookPopup = NodePath("NotebookPopup")
+cornerPopup = NodePath("CornerPopup")
+notebookButton = NodePath("../HUDButtons/NotebookButton")
+
+[node name="NotebookPopup" parent="ScreenSpaceUI/GameHUD/PopupManager" node_paths=PackedStringArray("attachTo") instance=ExtResource("112")]
+layout_mode = 1
+offset_left = 596.0
+offset_top = -155.0
+offset_right = 1196.0
+offset_bottom = -48.0
+pivot_offset = Vector2(650, 53)
+attachTo = NodePath("../../HUDButtons/NotebookButton")
+attachSide = 1
+
+[node name="Tail" parent="ScreenSpaceUI/GameHUD/PopupManager/NotebookPopup" index="1"]
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -15.0
+offset_top = -0.5
+offset_right = 13.0
+offset_bottom = 67.57272
+rotation = -1.5707964
+
+[node name="TitlePopup" parent="ScreenSpaceUI/GameHUD/PopupManager" node_paths=PackedStringArray("attachTo", "collidingPopup") instance=ExtResource("112")]
+layout_mode = 1
+offset_left = 1421.0
+offset_top = -348.0
+offset_right = 2021.0
+offset_bottom = -241.0
+pivot_offset = Vector2(300, 200)
+attachTo = NodePath("../../HUDButtons/TitleButton")
+collidingPopup = NodePath("../IntercomPopup")
+overlapExtensionOffset = 170.0
+
+[node name="PanelContainer" parent="ScreenSpaceUI/GameHUD/PopupManager/TitlePopup" index="0"]
+offset_left = -419.0
+offset_right = 181.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_s8vy0")
+
+[node name="Tail" parent="ScreenSpaceUI/GameHUD/PopupManager/TitlePopup" index="1"]
+modulate = Color(0.79607844, 0.75686276, 0.7058824, 1)
+offset_left = -13.0
+offset_right = 15.0
+offset_bottom = 70.0
+
+[node name="CloseX" parent="ScreenSpaceUI/GameHUD/PopupManager/TitlePopup" index="2"]
+offset_left = -110.0
+offset_right = -91.69231
+
+[node name="IntercomPopup" parent="ScreenSpaceUI/GameHUD/PopupManager" node_paths=PackedStringArray("attachTo") instance=ExtResource("112")]
+layout_mode = 1
+offset_left = 1229.0
+offset_top = -370.0
+offset_right = 1829.0
+offset_bottom = -263.0
+attachTo = NodePath("../../HUDButtons/IntercomButton")
+
+[node name="Tail" parent="ScreenSpaceUI/GameHUD/PopupManager/IntercomPopup" index="1"]
+offset_bottom = 49.0
+
+[node name="CornerPopup" parent="ScreenSpaceUI/GameHUD/PopupManager" instance=ExtResource("112")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 44.0
+offset_top = -158.0
+offset_right = 644.0
+offset_bottom = -51.0
+grow_vertical = 0
+pivot_offset = Vector2(0, 100)
+
+[node name="Tail" parent="ScreenSpaceUI/GameHUD/PopupManager/CornerPopup" index="1"]
+visible = false
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -15.0
+offset_top = -0.5
+offset_right = 13.0
+offset_bottom = 67.57272
+rotation = -1.5707964
+
+[node name="PopupDebugTestButtons" type="Control" parent="ScreenSpaceUI/GameHUD/PopupManager"]
+visible = false
+anchors_preset = 0
+offset_left = 1639.0
+offset_top = -203.0
+offset_right = 1679.0
+offset_bottom = -163.0
+
+[node name="DebugToggleTitle" type="Button" parent="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons"]
+layout_mode = 0
+offset_left = -580.0
+offset_top = -305.0
+offset_right = -357.0
+offset_bottom = -237.0
+text = "Toggle Title"
+
+[node name="DebugToggleIntercom" type="Button" parent="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons"]
+layout_mode = 0
+offset_left = -322.0
+offset_top = -385.0
+offset_right = -99.0
+offset_bottom = -317.0
+text = "Toggle Intercom"
+
+[node name="DebugToggleNotebook" type="Button" parent="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons"]
+layout_mode = 0
+offset_left = -97.0
+offset_top = -304.0
+offset_right = 126.0
+offset_bottom = -236.0
+text = "Toggle Notebook"
+
+[node name="CogMenuButton" type="Button" parent="ScreenSpaceUI/GameHUD"]
+layout_mode = 1
+offset_left = 47.0
+offset_top = 43.0
+offset_right = 152.0
+offset_bottom = 148.0
+focus_mode = 0
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 0.7647059)
+theme_override_colors/icon_focus_color = Color(1, 1, 1, 0.7647059)
+theme_override_colors/icon_pressed_color = Color(1, 0.70631003, 0.5327043, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 0.9098039)
+theme_override_constants/icon_max_width = 80
+theme_override_styles/normal = SubResource("StyleBoxEmpty_cblf0")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_nay3j")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_ovafv")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_owhal")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_uv6w5")
+icon = ExtResource("113")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("114")
+
+[node name="CodeEntryProjectedPrompt" type="Control" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("target")]
+anchors_preset = 0
+offset_left = 1341.0
+offset_top = 346.0
+offset_right = 1341.0
+offset_bottom = 346.0
+script = ExtResource("115")
+target = NodePath("../../../Room3D/Machine/FlipperBox/GearShifter/FlipperButtonPromptAttachPoint")
+
+[node name="CodeEntryPrompt" type="Control" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt" node_paths=PackedStringArray("desktopPrompt", "gamepadPrompt", "machineUI", "triggerLabel")]
+anchors_preset = 0
+script = ExtResource("116")
+desktopPrompt = NodePath("TabDesktopButtonPrompt")
+gamepadPrompt = NodePath("HoldRTGamepad")
+machineUI = NodePath("../../../../Room3D/Machine")
+triggerLabel = NodePath("HoldRTGamepad/PanelContainer/TextMarginContainer/VBoxContainer/RT")
+
+[node name="HoldRTGamepad" type="Control" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt"]
+anchors_preset = 0
+mouse_filter = 2
+mouse_behavior_recursive = 1
+
+[node name="PanelContainer" type="PanelContainer" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt/HoldRTGamepad"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(20, 20)
+theme_override_styles/panel = SubResource("StyleBoxFlat_v2nl5")
+
+[node name="TextMarginContainer" type="MarginContainer" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt/HoldRTGamepad/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 3
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt/HoldRTGamepad/PanelContainer/TextMarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = -6
+
+[node name="HOLD" type="Label" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt/HoldRTGamepad/PanelContainer/TextMarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.55638164, 0.55638164, 0.5563816, 1)
+theme_override_fonts/font = SubResource("FontVariation_kwa0m")
+theme_override_font_sizes/font_size = 14
+text = "HOLD"
+vertical_alignment = 1
+
+[node name="RT" type="Label" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt/HoldRTGamepad/PanelContainer/TextMarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_fonts/font = SubResource("FontVariation_kwa0m")
+theme_override_font_sizes/font_size = 22
+text = "RT"
+vertical_alignment = 1
+
+[node name="TabDesktopButtonPrompt" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedPrompt/CodeEntryPrompt" instance=ExtResource("100")]
+process_mode = 3
+visible = false
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -23.0
+offset_top = -20.0
+offset_right = 21.5
+offset_bottom = 20.0
+grow_vertical = 2
+actionName = "code_entry_mode"
+
+[node name="CodeEntryHorizontalAxisProjectedPrompt" type="Control" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("target")]
+anchors_preset = 0
+offset_left = 1065.0
+offset_top = 427.0
+offset_right = 1065.0
+offset_bottom = 427.0
+script = ExtResource("115")
+target = NodePath("../../../Room3D/Machine/FlipperBox/GearShifter/Gear-stick/PromptAnchor")
+
+[node name="CodeEntryHorizontalAxisPrompt" type="Control" parent="ScreenSpaceUI/GameHUD/CodeEntryHorizontalAxisProjectedPrompt" node_paths=PackedStringArray("machineUI")]
+anchors_preset = 0
+script = ExtResource("118")
+machineUI = NodePath("../../../../Room3D/Machine")
+
+[node name="DPadIcon" type="TextureRect" parent="ScreenSpaceUI/GameHUD/CodeEntryHorizontalAxisProjectedPrompt/CodeEntryHorizontalAxisPrompt"]
+layout_mode = 0
+offset_left = -30.0
+offset_top = -30.0
+offset_right = 30.0
+offset_bottom = 30.0
+pivot_offset = Vector2(30, 30)
+texture = ExtResource("119")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CodeEntryProjectedThumbstickPrompt" type="Control" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("target")]
+anchors_preset = 0
+offset_left = 479.0
+offset_top = 489.0
+offset_right = 479.0
+offset_bottom = 489.0
+script = ExtResource("115")
+target = NodePath("../../../Room3D/Machine/ScreenAndDial/CircleSelector/Knob/KnobSprite/ThumbstickTutorialAnchor")
+
+[node name="AnimatedThumbstick" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt" instance=ExtResource("120")]
+layout_mode = 1
+offset_right = 0.0
+offset_bottom = 0.0
+scale = Vector2(0.9, 0.9)
+
+[node name="Arrows" type="Control" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt"]
+modulate = Color(1, 1, 1, 0.73333335)
+anchors_preset = 0
+scale = Vector2(0.68, 0.68)
+
+[node name="left-arrow" type="TextureRect" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt/Arrows"]
+layout_mode = 0
+offset_left = -272.25
+offset_top = -18.0
+offset_right = 4.75
+offset_bottom = 147.0
+scale = Vector2(0.83, 0.83)
+texture = ExtResource("121")
+
+[node name="right-arrow" type="TextureRect" parent="ScreenSpaceUI/GameHUD/CodeEntryProjectedThumbstickPrompt/Arrows"]
+layout_mode = 0
+offset_left = 52.0
+offset_top = -18.0
+offset_right = 329.0
+offset_bottom = 147.0
+scale = Vector2(0.83, 0.83)
+texture = ExtResource("121")
+flip_h = true
+
+[node name="MobileFastForwardButton" type="Button" parent="ScreenSpaceUI/GameHUD" node_paths=PackedStringArray("gameCamera")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -124.0
+offset_top = -157.0
+offset_right = -21.0
+offset_bottom = -42.70996
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+theme_override_colors/icon_normal_color = Color(0.99999946, 0.88273144, 0.6969219, 0.26666668)
+theme_override_colors/icon_focus_color = Color(1, 0.88235295, 0.69803923, 0.26666668)
+theme_override_colors/icon_pressed_color = Color(1, 0.8862745, 0.7019608, 0.6117647)
+theme_override_colors/icon_hover_color = Color(1, 0.8862745, 0.7019608, 0.4)
+theme_override_constants/icon_max_width = 64
+theme_override_styles/normal = SubResource("StyleBoxEmpty_adgm5")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_qxkn4")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_130ps")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_odn5n")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_b12iu")
+icon = ExtResource("122")
+icon_alignment = 1
+expand_icon = true
+script = ExtResource("123")
+gameCamera = NodePath("../../../Room3D/Camera3D")
+
+[node name="Tooltips" type="Control" parent="ScreenSpaceUI" node_paths=PackedStringArray("camera")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("124")
+tooltipPackedScene = ExtResource("125")
+camera = NodePath("../../Room3D/Camera3D")
+
+[node name="Tooltip EXAMPLE" parent="ScreenSpaceUI/Tooltips" instance=ExtResource("125")]
+layout_mode = 0
+offset_left = 612.0
+offset_top = 996.0
+offset_right = 612.0
+offset_bottom = 996.0
+
+[node name="DELETE" type="Node" parent="ScreenSpaceUI/Tooltips/Tooltip EXAMPLE"]
+script = ExtResource("30")
+delete_parent = true
+
+[node name="DebugButtons" type="HBoxContainer" parent="ScreenSpaceUI"]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 22.0
+offset_right = 951.0
+offset_bottom = 89.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="DebugLightsToggleButton" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Toggle lights"
+
+[node name="DebugScreenToggleButton" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Toggle screen"
+
+[node name="DebugUnredactButton" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Unredact"
+
+[node name="DebugShowSplash" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Show Splash"
+
+[node name="DebugShowCredits" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Show Credits"
+
+[node name="DebugShowScreenRipple" type="Button" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+custom_minimum_size = Vector2(226.54, 67.54)
+layout_mode = 2
+text = "Ripple Screen"
+
+[node name="DebugSavePicker" type="MenuButton" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+layout_mode = 2
+text = "Load Save..."
+item_count = 1
+popup/item_0/id = 0
+script = ExtResource("126")
+
+[node name="DebugCameraPos" type="PanelContainer" parent="ScreenSpaceUI/DebugButtons"]
+visible = false
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScreenSpaceUI/DebugButtons/DebugCameraPos"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+alignment = 1
+
+[node name="HSlider" type="HSlider" parent="ScreenSpaceUI/DebugButtons/DebugCameraPos/VBoxContainer"]
+layout_mode = 2
+max_value = 1.0
+step = 0.0
+
+[node name="Label" type="Label" parent="ScreenSpaceUI/DebugButtons/DebugCameraPos/VBoxContainer"]
+layout_mode = 2
+text = "Camera Pos"
+horizontal_alignment = 1
+
+[node name="VOController" parent="ScreenSpaceUI" instance=ExtResource("127")]
+z_index = 101
+layout_mode = 1
+
+[node name="TitleSplashScreen" parent="ScreenSpaceUI" instance=ExtResource("128")]
+visible = false
+layout_mode = 1
+
+[node name="Credits" parent="ScreenSpaceUI" node_paths=PackedStringArray("backgroundMusicPlayer") instance=ExtResource("129")]
+visible = false
+layout_mode = 1
+backgroundMusicPlayer = NodePath("../../BackgroundMusicPlayer")
+
+[node name="SettingsView" parent="ScreenSpaceUI" instance=ExtResource("130")]
+visible = false
+layout_mode = 1
+
+[node name="AsanaFeedbackForm" parent="ScreenSpaceUI" instance=ExtResource("131")]
+visible = false
+layout_mode = 1
+teamDefaultAssignee = "jon.ingold@inklestudios.com"
+
+[node name="AlertView" parent="ScreenSpaceUI" instance=ExtResource("132")]
+visible = false
+layout_mode = 1
+
+[node name="GlobalBackButton" type="Control" parent="ScreenSpaceUI" node_paths=PackedStringArray("desktopAndConsoleButton", "mobileButton")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+grow_vertical = 0
+script = ExtResource("133")
+desktopAndConsoleButton = NodePath("DesktopAndConsoleButton")
+mobileButton = NodePath("MobileButton")
+
+[node name="DesktopAndConsoleButton" parent="ScreenSpaceUI/GlobalBackButton" instance=ExtResource("134")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 21.0
+offset_top = -73.0
+offset_right = 187.0
+offset_bottom = -19.0
+grow_vertical = 0
+text = "Back"
+actionName = "ui_cancel"
+
+[node name="MobileButton" type="Button" parent="ScreenSpaceUI/GlobalBackButton"]
+layout_mode = 0
+offset_left = 68.0
+offset_top = -143.0
+offset_right = 166.0
+offset_bottom = -45.0
+focus_mode = 0
+theme_override_colors/icon_normal_color = Color(1, 1, 1, 0.8235294)
+theme_override_colors/icon_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/icon_pressed_color = Color(1, 0.5647059, 0.2, 1)
+theme_override_colors/icon_hover_color = Color(1, 1, 1, 1)
+theme_override_constants/icon_max_width = 26
+theme_override_styles/normal = SubResource("StyleBoxFlat_ovafv")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_nay3j")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ovafv")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_ovafv")
+theme_override_styles/focus = SubResource("StyleBoxFlat_ovafv")
+icon = ExtResource("135")
+icon_alignment = 1
+
+[node name="SaveLoadManager" type="Node" parent="." node_paths=PackedStringArray("machineUI", "backgroundMusicPlayer")]
+script = ExtResource("136")
+machineUI = NodePath("../Room3D/Machine")
+backgroundMusicPlayer = NodePath("../BackgroundMusicPlayer")
+
+[node name="BackgroundMusicPlayer" type="Node" parent="." node_paths=PackedStringArray("musicPlayer")]
+script = ExtResource("137")
+musicPlayer = NodePath("BackgroundMusic")
+creditsMusic = ExtResource("138")
+
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="BackgroundMusicPlayer"]
+stream = ExtResource("139")
+volume_db = -5.0
+bus = &"Music"
+
+[node name="Steam" type="Node" parent="."]
+script = ExtResource("140")
+
+[node name="Screenshotter" type="Node" parent="." node_paths=PackedStringArray("controlsToHide")]
+script = ExtResource("141")
+controlsToHide = [NodePath("../ScreenSpaceUI/DebugButtons")]
+
+[connection signal="pressed" from="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons/DebugToggleTitle" to="ScreenSpaceUI/GameHUD/PopupManager" method="DebugToggleTitlePopup"]
+[connection signal="pressed" from="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons/DebugToggleIntercom" to="ScreenSpaceUI/GameHUD/PopupManager" method="DebugToggleIntercomPopup"]
+[connection signal="pressed" from="ScreenSpaceUI/GameHUD/PopupManager/PopupDebugTestButtons/DebugToggleNotebook" to="ScreenSpaceUI/GameHUD/PopupManager" method="DebugToggleNotebookPopup"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugLightsToggleButton" to="Room3D/LightsController" method="DebugToggleLights"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugScreenToggleButton" to="Room3D/Machine" method="DebugToggleScreen"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugUnredactButton" to="StoryController" method="DebugUnredactCard"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugShowSplash" to="ScreenSpaceUI/TitleSplashScreen" method="ShowSplash"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugShowCredits" to="ScreenSpaceUI/Credits" method="DebugShowCredits"]
+[connection signal="pressed" from="ScreenSpaceUI/DebugButtons/DebugShowScreenRipple" to="Room3D/Machine" method="RippleScreen"]
+[connection signal="value_changed" from="ScreenSpaceUI/DebugButtons/DebugCameraPos/VBoxContainer/HSlider" to="Room3D/Camera3D" method="SetDebugPosition"]
+
+[editable path="Room3D/Machine/ScreenAndDial/CircleSelector/LetterRing/SingleCharacter EXAMPLE"]
+[editable path="ScreenSpaceUI/GameHUD/HUDButtons/TitleButton"]
+[editable path="ScreenSpaceUI/GameHUD/HUDButtons/IntercomButton"]
+[editable path="ScreenSpaceUI/GameHUD/HUDButtons/NotebookButton"]
+[editable path="ScreenSpaceUI/GameHUD/PopupManager/NotebookPopup"]
+[editable path="ScreenSpaceUI/GameHUD/PopupManager/TitlePopup"]
+[editable path="ScreenSpaceUI/GameHUD/PopupManager/IntercomPopup"]
+[editable path="ScreenSpaceUI/GameHUD/PopupManager/CornerPopup"]

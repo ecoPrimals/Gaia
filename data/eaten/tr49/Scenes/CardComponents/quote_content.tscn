@@ -1,0 +1,79 @@
+[gd_scene load_steps=4 format=3 uid="uid://b0m3q707x6xi3"]
+
+[ext_resource type="Script" uid="uid://1tacughu1yva" path="res://Scripts/CardContainer.cs" id="1"]
+[ext_resource type="Texture2D" uid="uid://cry1em0b5y22q" path="res://Images/UI/quote-mark.png" id="2"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_sn1pl"]
+
+[node name="Quote" type="PanelContainer" node_paths=PackedStringArray("contentContainer")]
+size_flags_horizontal = 3
+size_flags_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxEmpty_sn1pl")
+script = ExtResource("1")
+contentContainer = NodePath("HBoxContainer/MarginContainer/ContentContainer")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="QuoteLineAndIcon" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 24
+
+[node name="QuoteLineAndIconStack" type="VBoxContainer" parent="HBoxContainer/QuoteLineAndIcon"]
+custom_minimum_size = Vector2(45, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="QuoteMark" type="TextureRect" parent="HBoxContainer/QuoteLineAndIcon/QuoteLineAndIconStack"]
+custom_minimum_size = Vector2(50, 44.18)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Lines" type="Control" parent="HBoxContainer/QuoteLineAndIcon/QuoteLineAndIconStack"]
+custom_minimum_size = Vector2(30, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="Left" type="ColorRect" parent="HBoxContainer/QuoteLineAndIcon/QuoteLineAndIconStack/Lines"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 7.0
+offset_right = 11.0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Right" type="ColorRect" parent="HBoxContainer/QuoteLineAndIcon/QuoteLineAndIconStack/Lines"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 17.0
+offset_right = 21.0
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 20
+
+[node name="ContentContainer" type="VBoxContainer" parent="HBoxContainer/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 5

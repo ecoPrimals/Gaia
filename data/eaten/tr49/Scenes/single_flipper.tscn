@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3 uid="uid://dfx04x7gt0tby"]
+
+[ext_resource type="Script" uid="uid://dsd4o1yg5uthy" path="res://Scripts/FlipperDigit.cs" id="1"]
+[ext_resource type="Shader" uid="uid://c2kruoldl8hwp" path="res://Shaders/flipper-glow.gdshader" id="2"]
+[ext_resource type="Texture2D" uid="uid://hiwpbxfb2jh7" path="res://Images/TheMachine/flipper-highlight-glow.png" id="3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wvpus"]
+transparency = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_yx7qc"]
+render_priority = 0
+next_pass = null
+shader = ExtResource("2")
+shader_parameter/texture_albedo = ExtResource("3")
+shader_parameter/alpha_multiplier = 0.62400002964
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wvpus"]
+size = Vector3(0.047851563, 0.072509766, 0.01586914)
+
+[node name="Letter1" type="Node3D"]
+script = ExtResource("1")
+useLetters = true
+smoothTime = 0.15000000000873115
+maxSpeed = 12.0
+selectedColor = Color(0.97660345, 0.75185305, 0.6877632, 1)
+litColor = Color(0.69803923, 0.7254902, 0.65882355, 1)
+material = SubResource("StandardMaterial3D_wvpus")
+flipperSeparation = 0.01000000000931322
+
+[node name="3DFlipper" type="Node3D" parent="."]
+transform = Transform3D(0.06, 0, 0, 0, 0.06, 0, 0, 0, 0.06, 0, 0, 0)
+
+[node name="Glow" type="Sprite3D" parent="."]
+transform = Transform3D(-0.09, -9.814727e-09, 0, 1.3589623e-08, -0.065, 0, 0, 0, 0.875, 0, 0.001, 0)
+sorting_offset = 3.5
+material_override = SubResource("ShaderMaterial_yx7qc")
+modulate = Color(1, 1, 1, 0.5019608)
+texture = ExtResource("3")
+
+[node name="Area3D" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("BoxShape3D_wvpus")

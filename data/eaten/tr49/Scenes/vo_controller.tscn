@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3 uid="uid://5oxfr6tumpg8"]
+
+[ext_resource type="Script" uid="uid://rimxm4ocx2m0" path="res://Scripts/VOController.cs" id="1"]
+[ext_resource type="PackedScene" uid="uid://cy6c2nalwvmow" path="res://Scenes/subtitle_view.tscn" id="2"]
+[ext_resource type="Script" uid="uid://ciuii0t5w4pq1" path="res://Scripts/SubtitleView.cs" id="3"]
+[ext_resource type="Script" uid="uid://krbg7e5vgugs" path="res://Scripts/delete_on_load.gd" id="4"]
+[ext_resource type="AudioStream" uid="uid://d1sn0fb1s48yc" path="res://Audio/SFX/static.ogg" id="5"]
+
+[node name="VOController" type="Control" node_paths=PackedStringArray("staticAudioPlayer", "walkieTalkieNoise")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+subtitleScene = ExtResource("2")
+staticAudioPlayer = NodePath("StaticStreamPlayer")
+walkieTalkieNoise = NodePath("WalkieTalkieNoise")
+
+[node name="SubtitleView EXAMPLE" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_top = 85.0
+offset_bottom = 85.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("3")
+
+[node name="DELETE ON LOAD" type="Node" parent="SubtitleView EXAMPLE"]
+script = ExtResource("4")
+delete_parent = true
+
+[node name="StaticStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5")
+bus = &"SFX"
+playback_type = 1
+parameters/looping = false
+
+[node name="WalkieTalkieNoise" type="AudioStreamPlayer" parent="."]
+volume_db = -5.665
+bus = &"SFX"

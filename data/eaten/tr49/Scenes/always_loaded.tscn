@@ -1,0 +1,56 @@
+[gd_scene load_steps=7 format=3 uid="uid://xs7kjol6mrs7"]
+
+[ext_resource type="AudioStream" uid="uid://c4wrpedns35bh" path="res://Audio/Ambiences/CaveAmbientLoop.ogg" id="1"]
+[ext_resource type="Script" uid="uid://bk4py3bwuvgmk" path="res://Scripts/AmbientAudio.cs" id="2"]
+[ext_resource type="Script" uid="uid://46k5ocdxhxfl" path="res://Scripts/FadeToBlack.cs" id="3"]
+[ext_resource type="Script" uid="uid://cfy5seq4o8kcf" path="res://Scripts/FastForward.cs" id="4"]
+[ext_resource type="Script" uid="uid://dcqdh2kug6lt0" path="res://Scripts/Haptic.cs" id="5"]
+
+[sub_resource type="Curve" id="Curve_svfmf"]
+_data = [Vector2(0, 0), 0.0, 2.8166327, 0, 0, Vector2(0.5184485, 0.85361016), 0.6302634, 0.6302634, 0, 0, Vector2(1, 1), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[node name="AlwaysLoaded" type="Node"]
+
+[node name="CaveAmbience" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("1")
+volume_db = -80.0
+autoplay = true
+bus = &"SFX"
+parameters/looping = true
+script = ExtResource("2")
+volumeCurve = SubResource("Curve_svfmf")
+
+[node name="ScreenSpace fade to black" type="Control" parent="."]
+z_index = 1000
+z_as_relative = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FadeToBlack" type="ColorRect" parent="ScreenSpace fade to black"]
+z_index = 1000
+z_as_relative = false
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+script = ExtResource("3")
+
+[node name="FastForward" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="Haptics" type="Node" parent="."]
+script = ExtResource("5")

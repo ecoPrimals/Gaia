@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3 uid="uid://cc2a6bdba8qwd"]
+
+[ext_resource type="Script" uid="uid://dnwu5i24ibnjq" path="res://Scripts/SingleScore.cs" id="1"]
+[ext_resource type="FontFile" uid="uid://dlme16jffw6jn" path="res://Fonts/Montserrat-Regular.ttf" id="2"]
+[ext_resource type="FontFile" uid="uid://cj6hhm71kplue" path="res://Fonts/Montserrat-Medium.ttf" id="3"]
+[ext_resource type="Texture2D" uid="uid://bxagomjnxph3d" path="res://Glyphs/psi.png" id="4"]
+
+[node name="SingleScore" type="Control" node_paths=PackedStringArray("scoreLabel", "textLabel", "psiImage")]
+custom_minimum_size = Vector2(240, 60)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 258.0
+offset_bottom = 60.0
+script = ExtResource("1")
+scoreLabel = NodePath("ScoreAndTotal")
+textLabel = NodePath("Label")
+psiImage = NodePath("psi")
+
+[node name="ScoreAndTotal" type="RichTextLabel" parent="."]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 0
+offset_top = 5.0
+offset_right = 120.0
+offset_bottom = 55.0
+theme_override_fonts/normal_font = ExtResource("2")
+theme_override_fonts/bold_font = ExtResource("3")
+bbcode_enabled = true
+text = "[b][font_size=40]35[/font_size][/b][color=gray][font_size=22]/50[/font_size][/color]"
+fit_content = true
+scroll_active = false
+horizontal_alignment = 2
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = 133.0
+offset_top = 22.0
+offset_right = 343.0
+offset_bottom = 61.0
+theme_override_colors/font_color = Color(0.5411765, 0.43137255, 0.36862746, 1)
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 22
+text = "FOUND"
+
+[node name="psi" type="TextureRect" parent="."]
+visible = false
+modulate = Color(0.5411765, 0.43137255, 0.36862746, 1)
+layout_mode = 0
+offset_left = 133.0
+offset_top = 17.47
+offset_right = 163.0
+offset_bottom = 47.469986
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5

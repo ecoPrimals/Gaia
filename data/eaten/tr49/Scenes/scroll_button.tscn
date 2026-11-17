@@ -1,0 +1,27 @@
+[gd_scene load_steps=5 format=3 uid="uid://c8ay4wqogp4ns"]
+
+[ext_resource type="Script" uid="uid://cjls2eifvrhvl" path="res://Scripts/ScrollButton.cs" id="1"]
+[ext_resource type="Texture2D" uid="uid://bgtjfsvg8vfxf" path="res://Images/TheMachine/Scroll_Up_Unpressed_Unlit.png" id="2"]
+[ext_resource type="Script" uid="uid://cibimn28w6k0" path="res://Scripts/LitSprite3D.cs" id="3"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_7k868"]
+margin = 0.01
+size = Vector3(0.036132813, 0.038085938, 0.03)
+
+[node name="Scroll button" type="Node3D" node_paths=PackedStringArray("area3D", "sprite")]
+script = ExtResource("1")
+area3D = NodePath("Area3D")
+sprite = NodePath("ScrollButtonSprite")
+
+[node name="Area3D" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.007771611)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.00019180495, 0)
+shape = SubResource("BoxShape3D_7k868")
+
+[node name="ScrollButtonSprite" type="Sprite3D" parent="."]
+sorting_offset = 2.0
+pixel_size = 0.0004
+texture = ExtResource("2")
+script = ExtResource("3")

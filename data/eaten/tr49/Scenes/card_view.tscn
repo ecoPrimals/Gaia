@@ -1,0 +1,174 @@
+[gd_scene load_steps=24 format=3 uid="uid://bjioln3lms5hu"]
+
+[ext_resource type="Theme" uid="uid://ckn0dpf4xu5kr" path="res://Themes/default_card_theme.tres" id="1"]
+[ext_resource type="Script" uid="uid://co260h1yu20vf" path="res://Scripts/CardView.cs" id="2"]
+[ext_resource type="PackedScene" uid="uid://du3arg0vrht6f" path="res://Scenes/CardComponents/title_content.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://cs5jwqde7pqso" path="res://Scenes/CardComponents/glyph_content.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://b0m3q707x6xi3" path="res://Scenes/CardComponents/quote_content.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://1pjqvmvg0nm6" path="res://Scenes/CardComponents/row_content.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://d3sukaix155s1" path="res://Scenes/CardComponents/row_item_content.tscn" id="7"]
+[ext_resource type="PackedScene" uid="uid://blx5x7iotyirh" path="res://Scenes/CardComponents/header_section_content.tscn" id="8"]
+[ext_resource type="PackedScene" uid="uid://cudop8gkferm7" path="res://Scenes/CardComponents/footer_section_content.tscn" id="9"]
+[ext_resource type="PackedScene" uid="uid://dpiwcdi2guosy" path="res://Scenes/CardComponents/section_content.tscn" id="10"]
+[ext_resource type="PackedScene" uid="uid://dnsupk6o6jvqu" path="res://Scenes/CardComponents/game_menu_section_content.tscn" id="11"]
+[ext_resource type="PackedScene" uid="uid://d4c6utxlfl6ui" path="res://Scenes/CardComponents/lockable_content.tscn" id="12"]
+[ext_resource type="PackedScene" uid="uid://b1tgv4m4jkil7" path="res://Scenes/CardComponents/card_text_content.tscn" id="13"]
+[ext_resource type="PackedScene" uid="uid://bvp6gamgqibbf" path="res://Scenes/CardComponents/quote_text_content.tscn" id="14"]
+[ext_resource type="Shader" uid="uid://bauyhtb5rcb8q" path="res://Shaders/photo.gdshader" id="15"]
+[ext_resource type="Texture2D" uid="uid://b7iklugjo8n4e" path="res://Images/TheMachine/screen-image-mask.png" id="16"]
+[ext_resource type="Texture2D" uid="uid://dckxa48ylrxq3" path="res://Images/Characters/Photos/Aliz_Photo.png" id="17"]
+[ext_resource type="Texture2D" uid="uid://c38gveo4ujufs" path="res://Images/TheMachine/particle-spin.png" id="18"]
+[ext_resource type="Script" uid="uid://dxqkigeeoxwwv" path="res://Scripts/Draggable.cs" id="19"]
+[ext_resource type="Script" path="res://Scripts/scroll_speed_modifier.gd" id="20"]
+[ext_resource type="Script" uid="uid://krbg7e5vgugs" path="res://Scripts/delete_on_load.gd" id="21"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_kneos"]
+draw_center = false
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+corner_radius_top_left = 512
+corner_radius_top_right = 512
+corner_radius_bottom_right = 512
+corner_radius_bottom_left = 512
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_oa6dy"]
+shader = ExtResource("15")
+shader_parameter/alpha_mask = ExtResource("16")
+shader_parameter/tint_color = Color(0.82289404, 0.46206695, 0.4434093, 0.5686275)
+shader_parameter/mask_scale = 1.0
+
+[node name="CardView" type="Control" node_paths=PackedStringArray("cardContentContainer", "scrollContainer")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1024.0
+offset_bottom = 1024.0
+mouse_filter = 1
+theme = ExtResource("1")
+script = ExtResource("2")
+defaultCardTheme = ExtResource("1")
+titleContentScene = ExtResource("3")
+glyphContentScene = ExtResource("4")
+quoteContentScene = ExtResource("5")
+rowContentScene = ExtResource("6")
+rowItemContentScene = ExtResource("7")
+headerSectionContentScene = ExtResource("8")
+footerSectionContentScene = ExtResource("9")
+authorSectionContentScene = ExtResource("10")
+gameMenuSectionContentScene = ExtResource("11")
+lockableSectionContentScene = ExtResource("12")
+textContentScene = ExtResource("13")
+quoteTextContentScene = ExtResource("14")
+rowItemScene = ExtResource("7")
+cardContentContainer = NodePath("Draggable/ContentScrollContainer/MarginContainer/Content")
+scrollContainer = NodePath("Draggable/ContentScrollContainer")
+particleSpinSpeed = 5000.0
+particlesFadeInPeriod = 0.2
+particlesMinScale = 0.0
+particlesMaxScale = 1.0
+blinkHalfClosedTime = 0.03
+blinkClosedTime = 0.08
+minTimeBetweenBlinks = 10.0
+maxTimeBetweenBlinks = 60.0
+faceScaleSpeed = 0.331
+faceRotationSpeed = 0.251
+
+[node name="Preview Circle" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_kneos")
+
+[node name="Image" type="TextureRect" parent="."]
+visible = false
+material = SubResource("ShaderMaterial_oa6dy")
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 109.0
+offset_top = 104.0
+offset_right = -83.0
+offset_bottom = -88.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(416, 416)
+texture = ExtResource("17")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="ParticleSpin" type="TextureRect" parent="Image"]
+modulate = Color(0.331464, 0.765402, 0.370946, 1)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(416, 416)
+texture = ExtResource("18")
+expand_mode = 1
+
+[node name="Draggable" type="Control" parent="." node_paths=PackedStringArray("scrollContainer")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("19")
+scrollContainer = NodePath("ContentScrollContainer")
+
+[node name="ContentScrollContainer" type="ScrollContainer" parent="Draggable"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 101.0
+offset_top = 10.0
+offset_right = -95.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+scroll_vertical_custom_step = 1.0
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+script = ExtResource("20")
+scroll_multiplier = 0.1
+
+[node name="MarginContainer" type="MarginContainer" parent="Draggable/ContentScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/margin_left = 50
+theme_override_constants/margin_top = 50
+theme_override_constants/margin_right = 50
+theme_override_constants/margin_bottom = 600
+
+[node name="Content" type="VBoxContainer" parent="Draggable/ContentScrollContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="PreviewContentOnlyWillBeDeleted" type="RichTextLabel" parent="Draggable/ContentScrollContainer/MarginContainer/Content"]
+layout_mode = 2
+theme_override_constants/line_separation = 6
+theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 30
+theme_override_font_sizes/bold_italics_font_size = 30
+theme_override_font_sizes/italics_font_size = 30
+theme_override_font_sizes/mono_font_size = 30
+bbcode_enabled = true
+text = "[i]Out flew the web and floated wide;[/i]
+[i]The mirror crack'd from side to side;[/i]
+[i]\"The curse is come upon me,\" cried...[/i]
+For operational instructions, enter [url=HO77][color=#744c00]HO77[/color][/url]."
+fit_content = true
+horizontal_alignment = 1
+script = ExtResource("21")

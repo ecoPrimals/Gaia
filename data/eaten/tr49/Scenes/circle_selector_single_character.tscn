@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3 uid="uid://4y46xapddve8"]
+
+[ext_resource type="Texture2D" uid="uid://booln5nsf123i" path="res://Images/Petals/Single Petal 0.png" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e4517"]
+size = Vector3(0.05, 0.04, 0.01)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e4517"]
+transparency = 1
+albedo_color = Color(1, 0.36078432, 0.36078432, 0.3137255)
+
+[sub_resource type="BoxMesh" id="BoxMesh_e4517"]
+material = SubResource("StandardMaterial3D_e4517")
+size = Vector3(0.05, 0.04, 0.01)
+
+[node name="SingleCharacter" type="Node3D"]
+
+[node name="FullGraphic" type="Sprite3D" parent="."]
+transform = Transform3D(-0.028, 4.2278825e-09, 0, -4.2278825e-09, -0.028, 0, 0, 0, 0.384, 0.0039882297, -0.017, 0)
+sorting_offset = -0.1
+texture = ExtResource("1")
+
+[node name="Area3D" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.0048917066)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.016130859, 0)
+shape = SubResource("BoxShape3D_e4517")
+
+[node name="Cube visualisation" type="MeshInstance3D" parent="Area3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0, -0.016, 0)
+visible = false
+mesh = SubResource("BoxMesh_e4517")
+skeleton = NodePath("../../..")

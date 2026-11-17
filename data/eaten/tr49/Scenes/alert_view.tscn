@@ -1,0 +1,113 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" uid="uid://b7r3d8n22vdio" path="res://Scripts/AlertView.cs" id="1"]
+[ext_resource type="PackedScene" path="res://Scenes/alert_button.tscn" id="2"]
+[ext_resource type="FontFile" uid="uid://8tbgvwh4vj2l" path="res://Fonts/SpecialElite-Regular.ttf" id="3"]
+[ext_resource type="Script" uid="uid://krbg7e5vgugs" path="res://Scripts/delete_on_load.gd" id="4"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_h1bgf"]
+bg_color = Color(0.11172, 0.181273, 0.216709, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[node name="AlertView" type="Control" node_paths=PackedStringArray("background", "alertBox", "headingLabel", "buttonsContainer")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+background = NodePath("Darken")
+alertBox = NodePath("AlertBox")
+headingLabel = NodePath("AlertBox/Heading")
+buttonScene = ExtResource("2")
+buttonsContainer = NodePath("AlertBox/VBoxContainer")
+
+[node name="Darken" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -5.0
+offset_top = -5.0
+offset_right = 5.0
+offset_bottom = 5.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8862745)
+
+[node name="AlertBox" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -472.0
+offset_top = -197.0
+offset_right = 472.0
+offset_bottom = 148.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="AlertBox"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_h1bgf")
+
+[node name="Heading" type="Label" parent="AlertBox"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -563.0
+offset_top = -374.5
+offset_right = 563.0
+offset_bottom = -68.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 0.56078434, 0.36862746, 1)
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 50
+text = "Are you sure you wish to quit?"
+horizontal_alignment = 1
+vertical_alignment = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AlertBox"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -852.0
+offset_top = 0.5
+offset_right = 852.0
+offset_bottom = 430.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Resume EXAMPLE" parent="AlertBox/VBoxContainer" instance=ExtResource("2")]
+layout_mode = 2
+script = ExtResource("4")
+
+[node name="Reset EXAMPLE" parent="AlertBox/VBoxContainer" instance=ExtResource("2")]
+layout_mode = 2
+text = "Reset"
+script = ExtResource("4")
+
+[node name="Quit EXAMPLE" parent="AlertBox/VBoxContainer" instance=ExtResource("2")]
+layout_mode = 2
+text = "Quit"
+script = ExtResource("4")
