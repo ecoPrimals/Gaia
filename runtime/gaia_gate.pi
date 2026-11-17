@@ -591,10 +591,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         }
         if host in _SCOPED_HOSTS:
             self._serve_static(_SCOPED_HOSTS[host]); return
+        # KLEIN FOLD — HUD domains: browser gets HTML (CIS), fetch gets JSON (TRANS)
+        # Same URL, two faces. Accept header IS the fold line.
+        _HUD_HOSTS = ("hud.primals.eco","hud.nestgate.io","hud.primal.eco")
+        if host in _HUD_HOSTS:
+            _accept = self.headers.get("Accept","")
+            if "text/html" in _accept:
+                self._serve_static("senses.html"); return
+            # else: fall through to JSON/API routes (agent face)
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
             if host in ("primals.eco","www.primals.eco","primal.eco"): self._serve_static("primals.html"); return
-            if host in ("hud.primals.eco","hud.nestgate.io","hud.primal.eco"): self._serve_static("senses.html"); return
+            if host in _HUD_HOSTS: self._serve_static("senses.html"); return
             if host in ("water.primals.eco",): self._serve_static("water.html"); return
             if host in ("nestgate.io","www.nestgate.io"): self._serve_static("nestgate.html"); return
             if host in ("sporeprint.primals.eco","www.sporeprint.primals.eco","sporePrint.primals.eco"):
