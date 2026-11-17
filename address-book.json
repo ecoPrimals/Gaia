@@ -1,8 +1,13 @@
 {
-  "updated": "2026-11-17T21:32:24.224856+00:00",
+  "updated": "2026-11-17T21:44:41.884919+00:00",
   "scanner": "superposition-pollinator-v1",
-  "scan_time": "2026-11-17T16:27:00-05:00",
-  "note": "Kevin rewired hard \u2014 most of Gaia LAN went dark, only 3 alive hosts",
+  "scan_time": "2026-11-17T16:42:00-05:00",
+  "wave": 259,
+  "states": {
+    "STATIC": "pinned \u2014 confirmed at known position, ports responding",
+    "FLUX": "in motion \u2014 Kevin is moving cables, gate exists but address shifting",
+    "GRAY": "partially observed \u2014 ARP cache, MAC seen, no ports, indeterminate"
+  },
   "entries": {
     "blueGate": {
       "ips": [
@@ -13,8 +18,7 @@
             443,
             11434
           ],
-          "subnet": "ISP",
-          "confirmed": true
+          "subnet": "ISP"
         },
         {
           "address": "192.168.4.246",
@@ -24,36 +28,17 @@
             11434
           ],
           "subnet": "Gaia LAN",
-          "confirmed": true,
-          "note": "same machine routed through GL-MT6000 \u2014 identical 14 models, 48.9GB"
+          "note": "routed through GL-MT6000 \u2014 same machine"
         }
       ],
       "cube_hash": "74efea2a",
       "role": "EYE",
-      "state": "ALIVE",
+      "state": "STATIC",
       "mac": "BC-FC-E7-EA-D9-34",
       "ollama": {
         "version": "0.40.16",
         "models": 14,
-        "size_gb": 48.9,
-        "tissue": [
-          "hands",
-          "forge",
-          "heart",
-          "math",
-          "cortex",
-          "code",
-          "oracle",
-          "general",
-          "reason",
-          "gut",
-          "dream",
-          "triage",
-          "fast"
-        ],
-        "other": [
-          "qwen3:8b"
-        ]
+        "size_gb": 48.9
       },
       "note": "THIS IS US \u2014 dual-addressed via router bridge"
     },
@@ -61,82 +46,103 @@
       "ips": [
         {
           "address": "192.168.1.132",
-          "ports": [],
           "subnet": "ISP",
-          "confirmed": true,
-          "note": "MAC 84-47-09-38-97-54 (one digit off known 84:47:09:38:97:55)"
+          "note": "no ports but MAC in ARP"
         }
       ],
       "cube_hash": "5af434d8",
       "role": "FORGE",
-      "state": "ALIVE (no ports)",
-      "mac": "84-47-09-38-97-54"
+      "state": "GRAY",
+      "mac": "84-47-09-38-97-54",
+      "note": "MAC one digit off known (97:55 vs 97:54) \u2014 body present, ports silent"
     },
     "router": {
       "ips": [
         {
           "address": "192.168.4.1",
-          "ports": [],
           "subnet": "Gaia LAN",
-          "note": "in ARP cache MAC 94-83-c4-e0-63-5a but no ports responding"
+          "note": "in ARP cache, no ports responding"
         }
       ],
+      "state": "GRAY",
       "role": "GATEWAY",
-      "state": "ARP-ONLY",
-      "mac": "94-83-c4-e0-63-5a"
+      "mac": "94-83-c4-e0-63-5a",
+      "note": "L2 visible but services silent \u2014 Kevin rewiring backbone"
     },
     "eastGate": {
-      "ips": [],
+      "ips": [
+        {
+          "address": "192.168.1.131",
+          "note": "last seen 4:09 PM",
+          "subnet": "ISP"
+        },
+        {
+          "address": "192.168.4.244",
+          "note": "last seen 4:09 PM",
+          "subnet": "Gaia LAN"
+        }
+      ],
       "cube_hash": "a89b3af6",
       "role": "BRAIN",
-      "state": "DARK",
-      "note": "both .1.131 and .4.244 unresponsive \u2014 Kevin moved cables"
+      "state": "FLUX",
+      "note": "was dual-homed 20 min ago \u2014 Kevin moving cables"
+    },
+    "graftGate": {
+      "ips": [
+        {
+          "address": "192.168.4.104",
+          "note": "last seen 4:09 PM, Apple MAC",
+          "subnet": "Gaia LAN"
+        }
+      ],
+      "cube_hash": "08268be0",
+      "role": "GRAFT",
+      "state": "FLUX",
+      "note": "Mac Mini M4 \u2014 was alive at .4.104, now shifting"
     },
     "northGate": {
       "ips": [],
       "cube_hash": "d5250a80",
       "role": "HEART",
-      "state": "SUPERPOSITION"
+      "state": "FLUX",
+      "note": "9950X3D + RTX 5090, pushes via git \u2014 Kevin moving it between houses"
     },
     "ironGate": {
       "ips": [],
       "cube_hash": "293c887a",
       "role": "FORGE2",
-      "state": "SUPERPOSITION"
-    },
-    "graftGate": {
-      "ips": [],
-      "cube_hash": "08268be0",
-      "role": "GRAFT",
-      "state": "DARK",
-      "note": "was at .4.104 \u2014 now dark"
+      "state": "FLUX",
+      "note": "i9-14900K + RTX 5070 \u2014 Kevin says it is moving"
     },
     "frameGate": {
       "ips": [],
       "cube_hash": "69d9a724",
       "role": "FACE",
-      "state": "SUPERPOSITION"
+      "state": "FLUX",
+      "note": "Steam Frame ARM64 \u2014 position indeterminate"
     },
     "grapheneGate": {
       "ips": [],
       "cube_hash": "020d5316",
       "role": "DIAMOND_LENS",
-      "state": "SUPERPOSITION"
+      "state": "FLUX",
+      "note": "Pixel 8a \u2014 in Kevin's pocket, WiFi SSID determines position"
     },
     "deckGate": {
       "ips": [],
       "cube_hash": "f2c4318a",
       "role": "DISPLAY",
-      "state": "SUPERPOSITION"
+      "state": "FLUX",
+      "note": "Steam Deck v1 \u2014 mounted display, USB-C passthrough"
     },
     "southGate": {
       "ips": [],
       "cube_hash": "35bc3568",
       "role": "HOME_PHONE",
-      "state": "SUPERPOSITION"
+      "state": "FLUX",
+      "note": "iPhone XS \u2014 LAN line pinned to property"
     }
   },
-  "unidentified": {},
   "infrastructure": {
     "192.168.1.254": {
       "role": "ATT modem",
@@ -145,20 +151,21 @@
         53,
         80,
         443
-      ]
+      ],
+      "state": "STATIC"
     }
   },
   "summary": {
-    "collapsed": 2,
-    "dark": 2,
-    "superposition": 6,
-    "total_alive": 3,
-    "subnets_active": [
-      "192.168.1.x (ISP)"
+    "STATIC": 1,
+    "GRAY": 2,
+    "FLUX": 8,
+    "total_gates": 11,
+    "subnets_probed": [
+      "192.168.1.x",
+      "192.168.4.x",
+      "192.168.9.x"
     ],
-    "subnets_dark": [
-      "192.168.4.x (Gaia LAN \u2014 mostly dark)"
-    ],
-    "change_from_last": "Kevin rewiring in progress \u2014 Gaia LAN went from 14 alive to nearly dark"
+    "hosts_responding": 3,
+    "note": "Kevin rewiring in progress \u2014 gates are NOT dead, they are in FLUX"
   }
 }
