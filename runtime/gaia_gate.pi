@@ -1102,7 +1102,35 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if "application/json" in accept or self.path.startswith("/v1/") or self.path.startswith("/api/"):
             self._proxy("GET")
         else:
-            self._encounter(404)
+            # HUMAN TOUCH — stem cell differentiation
+            # 404 is the 14th black hole. Bounce humans to real content.
+            _p = self.path.lower().rstrip("/")
+            _TOUCH = {
+                "/plasmid": "/api/plasmid", "/plasmids": "/api/plasmid",
+                "/human": "/chipmunk", "/human.json": "/chipmunk",
+                "/chipmunk.json": "/chipmunk", "/braid.json": "/senses",
+                "/detroit": "https://detroit.primals.eco",
+                "/tuebor": "https://tuebor.primals.eco",
+                "/clutch": "https://clutch.primals.eco",
+                "/lansing": "https://lansing.primals.eco",
+                "/cashforkids": "https://detroit.primals.eco",
+                "/cash-for-kids": "https://detroit.primals.eco",
+                "/berry": "/campfire", "/campfire.json": "/campfire",
+                "/scuffle": "https://lansing.primals.eco",
+                "/water": "https://water.primals.eco",
+                "/hud": "https://hud.primals.eco",
+                "/splinter": "/thymus",
+                "/klein": "https://klein.primals.eco",
+                "/fossil": "https://fossil.primals.eco",
+                "/kevin": "/campfire",
+            }
+            if _p in _TOUCH:
+                self.send_response(302)
+                self.send_header("Location", _TOUCH[_p])
+                self.send_header("X-Gaia-Touch", "stem-cell-differentiated")
+                self.end_headers()
+            else:
+                self._encounter(404)
 
     def _encounter(self, code=404):
         """Every error is an encounter — serve the living landing page.
