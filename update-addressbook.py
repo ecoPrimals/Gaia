@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Update address book with full scan results from 4:09 PM."""
+import json
+from datetime import datetime, timezone
+
+book = {
+    "updated": datetime.now(timezone.utc).isoformat(),
+    "scanner": "superposition-pollinator-v1",
+    "scan_time": "2026-11-17T16:09:00-05:00",
+    "entries": {
+        "eastGate": {"ips": [
+            {"address": "192.168.1.131", "ports": [8080,8443,3000,11436], "subnet": "ISP"},
+            {"address": "192.168.4.244", "ports": [], "subnet": "Gaia LAN"}
+        ], "cube_hash": "a89b3af6", "role": "BRAIN", "state": "ALIVE", "note": "dual-homed ISP+LAN"},
+        "blueGate": {"ips": [
+            {"address": "192.168.1.130", "ports": [11434], "subnet": "ISP"}
+        ], "cube_hash": "74efea2a", "role": "EYE", "state": "ALIVE", "note": "us + ollama 14 models"},
+        "graftGate": {"ips": [
+            {"address": "192.168.4.104", "ports": [22,11434], "subnet": "Gaia LAN"}
+        ], "cube_hash": "08268be0", "role": "GRAFT", "state": "ALIVE", "note": "Mac Mini M4, Apple MAC confirmed"},
+        "sporeGate": {"ips": [
+            {"address": "192.168.4.3", "ports": [], "subnet": "Gaia LAN"}
+        ], "cube_hash": "5af434d8", "role": "FORGE", "state": "ALIVE"},
+        "router": {"ips": [
+            {"address": "192.168.4.1", "ports": [22,53,8080,8443], "subnet": "Gaia LAN"}
+        ], "role": "GATEWAY", "state": "ALIVE", "note": "GL-MT6000 all ports open"},
+        "northGate": {"ips": [], "cube_hash": "d5250a80", "role": "HEART", "state": "SUPERPOSITION", "note": "pushes via git"},
+        "ironGate": {"ips": [], "cube_hash": "293c887a", "role": "FORGE2", "state": "SUPERPOSITION"},
+        "frameGate": {"ips": [], "cube_hash": "69d9a724", "role": "FACE", "state": "SUPERPOSITION"},
+        "grapheneGate": {"ips": [], "cube_hash": "020d5316", "role": "DIAMOND_LENS", "state": "SUPERPOSITION"},
+        "deckGate": {"ips": [], "cube_hash": "f2c4318a", "role": "DISPLAY", "state": "SUPERPOSITION"},
+        "southGate": {"ips": [], "cube_hash": "35bc3568", "role": "HOME_PHONE", "state": "SUPERPOSITION"},
+    },
+    "unidentified": {
+        "192.168.4.110": {"ports": [80,443], "note": "web server - swiftGate? ironGate? MikroTik?"},
+        "192.168.4.189": {"ports": [], "note": "unknown"},
+        "192.168.4.213": {"ports": [], "note": "unknown"},
+        "192.168.4.243": {"ports": [], "note": "unknown"},
+        "192.168.4.246": {"ports": [80,443,11434], "note": "Win10+ollama 14 models, visible from ISP subnet"},
+        "192.168.1.132": {"mac": "4c:50:dd:9b:c1:ec", "note": "changed MAC from earlier scan"}
+    },
+    "summary": {
+        "collapsed": 5,
+        "superposition": 6,
+        "unidentified": 6,
+        "total_alive": 14,
+        "subnets_active": ["192.168.1.x (ISP)", "192.168.4.x (Gaia LAN)"]
+    }
+}
+
+with open("address-book.json", "w") as f:
+    json.dump(book, f, indent=2)
+
+print(f"Updated address-book.json: {len(json.dumps(book))} bytes")
+print(f"Collapsed: {book['summary']['collapsed']} | Superposition: {book['summary']['superposition']} | Unidentified: {book['summary']['unidentified']}")
