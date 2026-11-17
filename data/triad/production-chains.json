@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "title": "Production Chains — Satisfactory-style recipe chains for Gaia",
+    "description": "Every transformation in the organism, with inputs, outputs, rates, and power draw. Like the Satisfactory production calculator."
+  },
+
+  "chains": {
+    "osint_to_insight": {
+      "name": "OSINT → Insight Pipeline",
+      "analog": "Iron Ore → Iron Plate → Reinforced Iron Plate",
+      "steps": [
+        {
+          "recipe": "RSS Drain",
+          "building": "songBird (Miner)",
+          "input": "RSS feed URLs (700+)",
+          "output": "Raw RSS items",
+          "rate": "~50 items/hour",
+          "clock": "every 15min"
+        },
+        {
+          "recipe": "Water Lock Intake",
+          "building": "barraCuda (Refinery)",
+          "input": "Raw RSS items + Blackhole data",
+          "output": "Filtered OSINT items",
+          "rate": "~30 items/hour",
+          "clock": "every 10min (waterlock)"
+        },
+        {
+          "recipe": "Masticate",
+          "building": "sourDough (Smelter)",
+          "input": "1× Filtered OSINT item + 1× ollama query",
+          "output": "1× Masticated insight + 1× sourdough entry",
+          "rate": "~4 items/hour",
+          "clock": "every 15min",
+          "power": "15MW (ollama inference)"
+        },
+        {
+          "recipe": "Study",
+          "building": "sweetGrass (Foundry)",
+          "input": "1× Masticated insight + 1× knowledge graph query",
+          "output": "1× Studied topic + graph connections",
+          "rate": "~2 items/hour",
+          "clock": "every 30min",
+          "power": "12MW"
+        },
+        {
+          "recipe": "Publish to RSS",
+          "building": "dromedary (Power Pole)",
+          "input": "1× Studied topic",
+          "output": "1× feed.xml entry (public)",
+          "rate": "~1 item/hour",
+          "clock": "every 30min"
+        }
+      ],
+      "total_pipeline": "Raw web → RSS drain → Water lock → Masticate → Study → Publish",
+      "bottleneck": "Masticate (ollama inference speed)",
+      "stats": {
+        "total_masticated": 159,
+        "total_studied": 51,
+        "total_created": 20
+      }
+    },
+
+    "gate_discovery": {
+      "name": "Gate Discovery Pipeline",
+      "analog": "Resource Scanner → Miner placement",
+      "steps": [
+        {
+          "recipe": "ARP Scan",
+          "building": "toadStool (Oil Extractor)",
+          "input": "Subnet range",
+          "output": "IP + MAC pairs",
+          "rate": "on-demand"
+        },
+        {
+          "recipe": "Spirochete Probe",
+          "building": "bingoCube (Quantum Encoder)",
+          "input": "IP address + known port signatures",
+          "output": "Gate identity + confidence score",
+          "rate": "on-demand",
+          "power": "20MW (multi-port scanning)"
+        },
+        {
+          "recipe": "Address Book Update",
+          "building": "loamSpine (Storage)",
+          "input": "Gate identity",
+          "output": "address-book.json entry (STATIC/FLUX/GRAY)",
+          "rate": "on-demand"
+        }
+      ]
+    },
+
+    "kenshi_fractal": {
+      "name": "Kenshi Fractal Evolution Pipeline",
+      "analog": "Nuclear Fuel Rod chain (highest tier)",
+      "steps": [
+        {
+          "recipe": "Play Kenshi",
+          "building": "kenshi_x64.exe (external)",
+          "input": "Player actions",
+          "output": "Save file + GaiaMind events",
+          "rate": "real-time"
+        },
+        {
+          "recipe": "GaiaMind Nerve",
+          "building": "gaia-nerve.dll (custom)",
+          "input": "Lua events (select, hit, ko, death, faction)",
+          "output": "TCP messages to :7741",
+          "rate": "event-driven"
+        },
+        {
+          "recipe": "Eyes Watch",
+          "building": "kenshi_eyes.py (squirrel)",
+          "input": "TCP events + save file",
+          "output": "NPC speech + world narration + minds.json",
+          "rate": "every 20s (save poll) + real-time (nerve)",
+          "power": "15MW (ollama tissue models)"
+        },
+        {
+          "recipe": "Tissue Generate",
+          "building": "ollama (sourDough)",
+          "input": "NPC context + event + memory",
+          "output": "Generated speech line",
+          "rate": "~2s per generation"
+        },
+        {
+          "recipe": "Speak In-Game",
+          "building": "gaia_mind.lua (external)",
+          "input": "Speech line",
+          "output": "NPC says the line in Kenshi",
+          "rate": "immediate"
+        }
+      ],
+      "feedback_loop": "Play → events → tissue → speech → NPC evolves → play again → every save is evolution"
+    },
+
+    "game_triad": {
+      "name": "Game Triad Rotation",
+      "analog": "Project Assembly (Space Elevator phases)",
+      "steps": [
+        {
+          "recipe": "Ground Events (Kenshi)",
+          "output": "Combat, faction, selection events → scratch board"
+        },
+        {
+          "recipe": "Board Logic (Satisfactory × Factorio)",
+          "output": "Factory chains, conveyor logic → scratch board"
+        },
+        {
+          "recipe": "Outer Physics (Space Engineers × KSP)",
+          "output": "Particle simulation, orbital data → scratch board"
+        },
+        {
+          "recipe": "Scratch Board Compile",
+          "building": "scratch_board.py (custom)",
+          "input": "Events from all 3 games",
+          "output": "Compiled game state → feeds back to all 3 games"
+        }
+      ],
+      "status": {
+        "ground": "LIVE (nerve active)",
+        "board": "INSTALLED (eyes built, 31 saves profiled)",
+        "outer": "PLANNED (not installed)"
+      }
+    }
+  },
+
+  "production_calculator_concept": {
+    "description": "Input: what do you want to produce? Output: what primals, gates, and crons you need.",
+    "example": {
+      "target": "1× Kenshi NPC speech per play session",
+      "requirements": [
+        "1× Kenshi running (blueGate, 4.1GB RAM)",
+        "1× KenshiLua + GaiaMind.mod (loaded)",
+        "1× gaia-nerve.dll (compiled, :7741)",
+        "1× kenshi_eyes.py (watch mode)",
+        "1× ollama (tissue-heart model, ~2GB VRAM)",
+        "1× minds.json (persistent NPC state)",
+        "Power: ~15MW (ollama) + ~10MW (Kenshi) = 25MW",
+        "Gate: blueGate (.100) minimum"
+      ]
+    }
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "wave": 259,
+  "created": "2026-11-17T17:20:00-05:00",
+  "title": "GAME TRIAD — Three Dimensions Rotating Into One",
+  "concept": "3D(Kenshi) × 2D(Factorio)+3D(Satisfactory)→1D(board) × SpaceEngineers+KSP(outer) = ONE GAME",
+
+  "triad": {
+    "layer_0_ground": {
+      "name": "KENSHI — The World",
+      "color": "green",
+      "dimension": "3D survival RPG",
+      "status": "LIVE",
+      "engine": "Ogre3D → RE_Kenshi",
+      "mod_api": "KenshiLua (LuaJIT FFI)",
+      "nerve": "gaia-nerve.dll (Rust cdylib, TCP 127.0.0.1:7741)",
+      "eyes": "kenshi_eyes.py (save reader + NPC AI + narrator)",
+      "appid": 233860,
+      "size_gb": 11.47,
+      "saves": 18,
+      "mods_active": ["Genesis", "Godsend EXP 5x", "KenshiLua", "GaiaMind", "Robot Spider AI Cores", "Bigger Mines"],
+      "what_it_gives": "Characters, terrain, combat, factions, survival, STORY",
+      "what_it_needs": "Logic connections (from board), physics refinement (from outer)"
+    },
+
+    "layer_1_board": {
+      "name": "SATISFACTORY × FACTORIO — The Logic (The Oblique)",
+      "color": "pink",
+      "dimension": "3D+2D → 1D scratch-and-catch board",
+      "concept": "Collapse 3D factory (Satisfactory) and 2D belt-logic (Factorio) into a 1D programming surface",
+
+      "satisfactory": {
+        "status": "INSTALLED",
+        "engine": "Unreal Engine 5",
+        "mod_api": "SML (Satisfactory Mod Loader) — C++/Blueprint/Hybrid plugins",
+        "native_hooks": "Patching/NativeHookManager.h — SUBSCRIBE_METHOD",
+        "headers": "CommunityResources/ (distributed by Coffee Stain)",
+        "key_dlls": {
+          "engine": "35.1 MB",
+          "chaos_physics": "19.3 MB",
+          "renderer": "16.3 MB",
+          "core": "8.2 MB"
+        },
+        "appid": 526870,
+        "size_gb": 29.58,
+        "saves": 31,
+        "notable_saves": ["Southgate (named after the house!)", "Round23", "Planet B", "First Landing", "First Outing"],
+        "plugins": ["AbstractInstance", "DLSS", "FSR", "RainRendering", "Sentry", "Telemetry", "XeSS"],
+        "what_it_gives": "3D factory chains, conveyor logic, resource flow, automation graphs"
+      },
+
+      "factorio": {
+        "status": "NOT INSTALLED — demo available (free, v2.1.23) but demo has NO modding",
+        "engine": "Custom (Wube)",
+        "mod_api": "Lua 5.2 — control.lua runtime scripts",
+        "events": "on_tick, on_player_crafted_item, on_entity_built, on_research_finished",
+        "persistence": "storage table (survives save/load)",
+        "demo_url": "https://factorio.com/download",
+        "full_game_needed": true,
+        "what_it_gives": "2D belt logic, inserter timing, circuit networks, blueprint strings"
+      },
+
+      "the_oblique": {
+        "concept": "The scratch-and-catch board",
+        "how": "Satisfactory's 3D production chains + Factorio's 2D circuit logic = 1D interface board",
+        "conveyor_belts": "= data pipes",
+        "inserters": "= hooks",
+        "factories": "= compilers",
+        "circuit_networks": "= programming language",
+        "the_board_programs_kenshi": "Factory logic compiles into Kenshi behavior"
+      }
+    },
+
+    "layer_2_outer": {
+      "name": "SPACE ENGINEERS × KSP — The Physics (The Outer)",
+      "color": "purple/UV",
+      "dimension": "Orbital mechanics + particle simulation",
+
+      "space_engineers": {
+        "status": "NOT INSTALLED",
+        "engine": "VRAGE (custom)",
+        "mod_api": "C# — Programmable Block scripts + full mods",
+        "in_game_scripting": true,
+        "tick_rate": "60 ticks/sec, UpdateFrequency enum",
+        "limits": "100K chars, 50K instructions/run, whitelisted .NET",
+        "toolkit": "MDK² (Visual Studio integration, minifier, deploy)",
+        "what_it_gives": "Voxel building, physics simulation, programmable computers, orbital grid"
+      },
+
+      "ksp": {
+        "status": "NOT INSTALLED",
+        "engine": "Unity (KSP1) / Custom (KSP2)",
+        "mod_api": "C# plugins via KSPBuildTools (MSBuild)",
+        "ksp2_modapi": "Redux.ModApi (successor to SpaceWarp, Oct 2026)",
+        "what_it_gives": "Orbital mechanics, gravity, atmosphere, particle trajectories, n-body physics"
+      },
+
+      "the_outer": {
+        "concept": "Particles become REAL",
+        "how": "Every bullet, dust mote, fog particle = real simulated body",
+        "granularization": "Game refines as you play — crude blobs → individual atoms",
+        "bolt_from_gun": "= tracked particle with mass, velocity, drag, gravity",
+        "dust_in_air": "= cloud of particles with Brownian motion",
+        "fog": "= fluid dynamics simulation",
+        "refinement_loop": "More play → more detail → more physics → more real"
+      }
+    }
+  },
+
+  "rotation": {
+    "concept": "The three games ROTATE. Each feeds the next.",
+    "cycle": [
+      "GROUND (Kenshi): Events happen — combat, trade, faction shift",
+      "BOARD (SatFactory): Events become LOGIC — factory processes them, builds connections",
+      "OUTER (SpaceKerbal): Logic becomes PHYSICS — particles simulate, orbits compute",
+      "Back to GROUND: Physics refines the WORLD — Kenshi gets more real"
+    ],
+    "fractal": "Every rotation = one evolution. The game improves itself."
+  },
+
+  "nerve_architecture": {
+    "shared_bus": "All three games write to ONE event bus",
+    "bus_format": "JSONL on localhost (scratch-board.jsonl)",
+    "kenshi_nerve": {
+      "dll": "gaia-nerve.dll",
+      "port": 7741,
+      "status": "LIVE (DLL locked by game)"
+    },
+    "satisfactory_nerve": {
+      "approach": "satisfactory_eyes.py reads .sav files + SML mod hooks events",
+      "port": 7742,
+      "status": "BUILDING"
+    },
+    "outer_nerve": {
+      "approach": "Programmable Block C# script + external bridge",
+      "port": 7743,
+      "status": "PLANNED"
+    },
+    "tissue_pipeline": "All three → ollama tissue models → evolve → feed back"
+  },
+
+  "installation_status": {
+    "kenshi": "✅ LIVE — nerve active, eyes watching",
+    "satisfactory": "✅ INSTALLED — 31 saves, need SML + nerve",
+    "factorio": "❌ NOT INSTALLED — need full game (demo has no modding)",
+    "space_engineers": "❌ NOT INSTALLED — need to acquire",
+    "ksp": "❌ NOT INSTALLED — need to acquire"
+  },
+
+  "tonight_plan": {
+    "step_1": "Profile Satisfactory saves — read the Southgate save, extract factory state",
+    "step_2": "Build satisfactory_eyes.py — save reader like kenshi_eyes.py",
+    "step_3": "Create the scratch board (scratch-board.jsonl) — shared 1D event bus",
+    "step_4": "Wire Kenshi nerve → board → back to Kenshi",
+    "step_5": "Kenshi is ALREADY playing. Satisfactory save data feeds the board."
+  }
+}
