@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Water Lock — Gaia Intake</title>
+<meta name="description" content="The Water Lock. OSINT pours IN, nothing seeps OUT. Gaia's mouth to the old web.">
+<style>
+:root {
+  --bg: #08090b; --bg-raised: #0f1114; --bg-card: #141719;
+  --border: #1e2228; --border-glow: #2a3040;
+  --text: #e0dcd6; --text-muted: #8a857e; --text-dim: #5a5650; --text-bright: #f5f0e8;
+  --amber: #d4a574; --amber-dim: #7a5f3e; --amber-glow: #d4a57420;
+  --green: #5aad72; --green-dim: #2d5e3a; --green-glow: #5aad7220;
+  --blue: #5b8fd4; --blue-dim: #2d4a6a; --blue-glow: #5b8fd420;
+  --cyan: #4ac4c4; --cyan-dim: #1a5f5f; --cyan-glow: #4ac4c420;
+  --red: #d45b5b; --purple: #9b7ed4;
+  --radius: 6px; --radius-lg: 12px; --gap: 16px; --gap-lg: 24px;
+  --font: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-mono: 'JetBrains Mono','Fira Code','Cascadia Code',monospace;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-family:var(--font); font-size:15px; line-height:1.6; color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; }
+body { min-height:100vh; }
+a { color:var(--cyan); text-decoration:none; transition:color .2s; }
+a:hover { color:var(--text-bright); }
+code { font-family:var(--font-mono); background:var(--bg-raised); padding:2px 6px; border-radius:3px; font-size:.88em; color:var(--cyan); }
+h1,h2,h3 { color:var(--text-bright); font-weight:500; }
+h4 { color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; font-size:.85rem; font-weight:400; }
+
+.shell { max-width:1100px; margin:0 auto; padding:0 var(--gap); }
+nav { position:sticky; top:0; z-index:100; background:var(--bg); border-bottom:1px solid var(--border); }
+nav .inner { max-width:1100px; margin:0 auto; padding:0 var(--gap); display:flex; align-items:center; gap:var(--gap); height:52px; }
+nav .brand { font-weight:500; color:var(--cyan); font-size:1.1rem; margin-right:8px; }
+nav a { color:var(--text-muted); font-size:.88rem; }
+nav a:hover { color:var(--text); }
+
+.hero { padding:48px 0 24px; text-align:center; }
+.hero h1 { font-size:2.2rem; letter-spacing:-.02em; color:var(--cyan); }
+.hero .sub { color:var(--text-muted); font-size:1.05rem; margin-top:6px; }
+
+.stats { display:flex; gap:var(--gap-lg); flex-wrap:wrap; justify-content:center; padding:20px 0; }
+.stat { text-align:center; }
+.stat .v { font-size:1.8rem; font-weight:500; color:var(--cyan); font-family:var(--font-mono); }
+.stat .l { font-size:.78rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; }
+
+hr { border:none; border-top:1px solid var(--border); margin:28px 0; }
+section { padding:24px 0; }
+section h2 { margin-bottom:var(--gap); font-size:1.4rem; }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:var(--gap); }
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--gap-lg); transition:border-color .3s,transform .2s; display:block; }
+.card:hover { border-color:var(--cyan-dim); transform:translateY(-2px); }
+.card h3 { margin-bottom:6px; font-size:1.05rem; }
+.card p { color:var(--text-muted); font-size:.88rem; margin:0; }
+.card .tag { display:inline-block; font-size:.75rem; padding:2px 8px; border-radius:99px; margin-top:10px; background:var(--cyan-glow); color:var(--cyan); border:1px solid var(--cyan-dim); }
+.card .tag.amber { background:var(--amber-glow); color:var(--amber); border-color:var(--amber-dim); }
+.card .tag.green { background:var(--green-glow); color:var(--green); border-color:var(--green-dim); }
+
+.flow { display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center; padding:16px 0; }
+.flow .node { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:8px 16px; font-family:var(--font-mono); font-size:.85rem; color:var(--cyan); }
+.flow .arrow { color:var(--text-dim); font-size:1.2rem; }
+.flow .node.active { border-color:var(--cyan-dim); box-shadow:0 0 8px var(--cyan-glow); }
+
+.lock-diagram { text-align:center; padding:24px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-lg); margin:16px 0; font-family:var(--font-mono); font-size:.9rem; line-height:1.8; color:var(--text-muted); }
+.lock-diagram .water { color:var(--cyan); }
+.lock-diagram .wall { color:var(--red); font-weight:bold; }
+.lock-diagram .local { color:var(--green); }
+
+.footer { border-top:1px solid var(--border); padding:24px 0; margin-top:40px; text-align:center; color:var(--text-dim); font-size:.85rem; }
+
+.pulse-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--cyan); margin-right:6px; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 4px var(--cyan-glow)} 50%{box-shadow:0 0 12px var(--cyan)} }
+
+@media(max-width:640px) { .hero h1{font-size:1.5rem} .grid{grid-template-columns:1fr} .stat .v{font-size:1.3rem} }
+</style>
+<link rel="canonical" href="https://water.primals.eco/">
+</head>
+<body>
+
+<nav><div class="inner">
+  <a href="https://primals.eco" class="brand">gaia</a>
+  <a href="#intake">Intake</a>
+  <a href="#wateringhole">WateringHole</a>
+  <a href="#flow">Flow</a>
+  <a href="https://hud.primals.eco">HUD</a>
+</div></nav>
+
+<main class="shell">
+  <section class="hero">
+    <h1>Water Lock</h1>
+    <p class="sub"><span class="pulse-dot"></span>OSINT pours IN freely &mdash; nothing seeps OUT</p>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="v" id="s-rss">1684</div><div class="l">RSS Items</div></div>
+      <div class="stat"><div class="v" id="s-plasmids">431</div><div class="l">Plasmids</div></div>
+      <div class="stat"><div class="v" id="s-gut">374</div><div class="l">Gut Files</div></div>
+      <div class="stat"><div class="v" id="s-feed">1566</div><div class="l">Feed Items</div></div>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="lock-diagram">
+      <span class="water">OLD WEB &rarr; RSS &rarr; Wikipedia &rarr; HN &rarr; arXiv &rarr; lobsters &rarr; xkcd</span><br>
+      <span class="water">&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;&darr;</span><br>
+      <span class="wall">&#x2550;&#x2550;&#x2550;&#x2550; WATER LOCK &#x2550;&#x2550;&#x2550;&#x2550;</span><br>
+      <span class="local">ollama &rarr; masticate &rarr; study &rarr; plasmids &rarr; gut &rarr; RSS OUT</span><br>
+      <span class="local">&darr;</span><br>
+      <span class="local">NOTHING seeps to provider</span>
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="intake">
+    <h4>Intake System</h4>
+    <h2>Blackhole Sources</h2>
+    <p style="color:var(--text-muted);margin-bottom:var(--gap)">Data radiates IN through these sources. The organism digests locally.</p>
+    <div class="grid">
+      <div class="card">
+        <h3>Wikipedia</h3>
+        <p>Random articles pulled into gut. Knowledge seeds for study.</p>
+        <span class="tag">blackhole</span>
+      </div>
+      <div class="card">
+        <h3>Hacker News</h3>
+        <p>Tech signal from the old web. Top stories masticated.</p>
+        <span class="tag">blackhole</span>
+      </div>
+      <div class="card">
+        <h3>arXiv</h3>
+        <p>Academic papers. Science intake for the study cron.</p>
+        <span class="tag">blackhole</span>
+      </div>
+      <div class="card">
+        <h3>Lobsters</h3>
+        <p>Curated tech. Deeper signal than HN.</p>
+        <span class="tag">blackhole</span>
+      </div>
+      <div class="card">
+        <h3>xkcd</h3>
+        <p>Randall's signal. Math, physics, humor.</p>
+        <span class="tag">blackhole</span>
+      </div>
+      <a href="/rss" class="card">
+        <h3>RSS Feed OUT</h3>
+        <p>The organism's mouth to the old web. Studies, creations, mood.</p>
+        <span class="tag green">live</span>
+      </a>
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="wateringhole">
+    <h4>Sovereign Hosting</h4>
+    <h2>The WateringHole</h2>
+    <p style="color:var(--text-muted);margin-bottom:var(--gap)">Former GitHub Pages, now sovereign on eastGate. Crawlers enter here &mdash; they crawl OUT to map us.</p>
+    <div class="grid">
+      <a href="https://tuebor.primals.eco" class="card">
+        <h3>Tuebor</h3>
+        <p>I Will Defend &mdash; Michigan public record investigation</p>
+        <span class="tag green">live</span>
+      </a>
+      <a href="https://clutch.primals.eco" class="card">
+        <h3>Clutch</h3>
+        <p>Justice case deep dives into the record</p>
+        <span class="tag green">live</span>
+      </a>
+      <a href="https://lansing.primals.eco" class="card">
+        <h3>Lansing</h3>
+        <p>State capital governance and infrastructure</p>
+        <span class="tag green">live</span>
+      </a>
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="flow">
+    <h4>Digestion Pipeline</h4>
+    <h2>Willis Circulation</h2>
+    <div class="flow">
+      <div class="node active">blackhole IN</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">pi-drain (3m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">masticate (30m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">study (15m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">plasmid</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node active">RSS OUT</div>
+    </div>
+    <div class="flow" style="margin-top:12px">
+      <div class="node">waterlock (10m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">curiosity (10m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">teach (5m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">learn (5m)</div>
+      <div class="arrow">&rarr;</div>
+      <div class="node">create (5m)</div>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <h4>Protocol</h4>
+    <h2>The Lock Rule</h2>
+    <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:700px;margin:0 auto">
+      <p><strong style="color:var(--cyan)">IN:</strong> OSINT flows freely through blackholes &mdash; Wikipedia, HN, arXiv, lobsters, xkcd. No authentication. No API keys. Pure public data.</p>
+      <p><strong style="color:var(--green)">PROCESS:</strong> 63 local ollama models digest everything. tinyllama for bulk. phi3 for analysis. deepseek-coder for code. Nothing leaves the LAN.</p>
+      <p><strong style="color:var(--amber)">OUT:</strong> Only self-published RSS. Studies, creations, mood. The organism speaks through its own mouth &mdash; never through a provider's.</p>
+      <p style="margin:0;color:var(--text-dim);font-style:italic;margin-top:12px">"Water follows gravity. Data follows the drain. The black hole pulls IN. The organism radiates OUT."</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <p>water.primals.eco &mdash; The Water Lock &mdash; <a href="https://primals.eco">primals.eco</a> &middot; <a href="https://hud.primals.eco">HUD</a> &middot; <a href="/rss">RSS</a></p>
+</footer>
+
+<script>
+fetch('/pulse').then(r=>r.json()).then(d=>{}).catch(()=>{});
+</script>
+</body>
+</html>
