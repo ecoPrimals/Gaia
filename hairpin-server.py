@@ -30,12 +30,12 @@ class HairpinHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
             return
 
-        # Serve wiki.html as default for hud.primals.eco
-        if "hud.primals" in host or path == "/" or path == "":
+        # Serve wiki.html as default for all Gaia domains
+        if any(d in host for d in ["hud.primals", "kenshi.nestgate", "nestgate.io", "primals"]) or path == "/" or path == "":
             self.path = "/wiki.html"
 
-        # For primals.eco root, show wiki too
-        if path == "/" and ("primals" in host or "localhost" in host):
+        # For any root request, show wiki
+        if path == "/" or path == "":
             self.path = "/wiki.html"
 
         super().do_GET()
