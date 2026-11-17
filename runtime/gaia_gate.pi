@@ -591,14 +591,14 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         }
         if host in _SCOPED_HOSTS:
             self._serve_static(_SCOPED_HOSTS[host]); return
-        # KLEIN FOLD — HUD domains: browser gets HTML (CIS), fetch gets JSON (TRANS)
-        # Same URL, two faces. Accept header IS the fold line.
+        # KLEIN FOLD — HUD domains serve senses.html for ALL human-navigable paths
+        # Asset paths (/js/, /css/, /data/) pass through for the page to load.
+        # The page's JS fetches use //primals.eco/ for JSON data (TRANS face).
         _HUD_HOSTS = ("hud.primals.eco","hud.nestgate.io","hud.primal.eco")
         if host in _HUD_HOSTS:
-            _accept = self.headers.get("Accept","")
-            if "text/html" in _accept:
+            _p = self.path.split("?")[0]
+            if not (_p.startswith("/js/") or _p.startswith("/css/") or _p.startswith("/data/") or _p.startswith("/static/") or _p.startswith("/paintings/") or _p.endswith(".js") or _p.endswith(".css") or _p.endswith(".png") or _p.endswith(".jpg") or _p.endswith(".svg") or _p.endswith(".ico") or _p.endswith(".xml") or _p.endswith(".json") or _p.startswith("/api/")):
                 self._serve_static("senses.html"); return
-            # else: fall through to JSON/API routes (agent face)
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
             if host in ("primals.eco","www.primals.eco","primal.eco"): self._serve_static("primals.html"); return
