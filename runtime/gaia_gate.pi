@@ -1246,7 +1246,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
                 with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
-            except Exception as e: self._json({"error":str(e)})
+            except Exception as e:
+                self._json({"error":str(e)})
                 return
         # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
         if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
@@ -1532,7 +1533,7 @@ def ear_loop():
                     r = urllib.request.urlopen(url, timeout=5)
                     size = len(r.read())
                     heard["ear"].append({"name":name,"ok":True,"ms":int((time.time()-t0)*1000),"bytes":size})
-        except Exception as e:
+            except Exception as e:
                 heard["ear"].append({"name":name,"ok":False,"ms":int((time.time()-t0)*1000),"error":str(e)[:100]})
         alive = sum(1 for e in heard["ear"] if e["ok"])
         total = len(heard["ear"])
@@ -1563,7 +1564,7 @@ if __name__=="__main__":
     threading.Thread(target=agglutinate,daemon=True).start()
     # WebPI on :8080
     WEB_PORT=8080
-def _start_webpi():
+    def _start_webpi():
         try:
             webpi=_load("webpi","webpi.pi")
             webpi._thymus_memory=visitor_memory; webpi._thymus_log=lambda e: _log_caddy(ACCESS_LOG,e)
