@@ -1864,6 +1864,57 @@ pre { background: var(--bg-raised); border: 1px solid var(--border); border-radi
         <div id=d-geo></div>
       </div>
     </div>
+    <div class="hud-card hud-card-full" id="thymus-gut" style="margin-bottom:12px">
+      <div class=hud-card-title style="display:flex;justify-content:space-between;align-items:center">
+        <span>Thymus — 20 Organisms</span>
+        <span id="thymus-alive" style="color:#3fb950;font-size:11px">loading...</span>
+      </div>
+      <div id="thymus-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px;padding:4px 0;font:11px monospace"></div>
+      <div style="margin-top:6px;display:flex;gap:12px;font-size:10px;color:#8b949e">
+        <span><span style="color:#3fb950">●</span> alive</span>
+        <span><span style="color:#d4a574">●</span> dormant</span>
+        <span id="thymus-files" style="color:#58a6ff">—</span>
+        <span id="thymus-cascade" style="color:#f0883e">—</span>
+      </div>
+    </div>
+    <script>
+    (function(){
+      function loadThymus(){
+        fetch('/thymus').then(function(r){return r.json()}).then(function(d){
+          var g=document.getElementById('thymus-grid');
+          var alive=0, total=0, files=0;
+          if(!g)return;
+          g.innerHTML='';
+          var names=Object.keys(d.organisms||{}).sort();
+          names.forEach(function(name){
+            var o=d.organisms[name];
+            total++;
+            files+=o.files||0;
+            var isAlive=o.alive;
+            if(isAlive)alive++;
+            var color=isAlive?'#3fb950':'#7a5f3e';
+            var border=isAlive?'rgba(90,184,122,.4)':'rgba(122,95,62,.3)';
+            var bg=isAlive?'rgba(90,184,122,.08)':'rgba(122,95,62,.05)';
+            var el=document.createElement('div');
+            el.style.cssText='border:1px solid '+border+';border-radius:4px;padding:4px 6px;background:'+bg+';';
+            el.innerHTML='<div style="color:'+color+';font-weight:bold;font-size:11px">'+name+'</div>'
+              +'<div style="color:#8b949e;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+((o.species||'')+' — '+(o.niche||''))+'">'+((o.species||'').split('(')[0].trim())+'</div>'
+              +'<div style="color:#58a6ff;font-size:9px">'+(o.files||0).toLocaleString()+' files</div>';
+            g.appendChild(el);
+          });
+          var as=document.getElementById('thymus-alive');
+          if(as)as.textContent=alive+'/'+total+' alive';
+          var fs=document.getElementById('thymus-files');
+          if(fs)fs.textContent=files.toLocaleString()+' total files';
+          var cs=document.getElementById('thymus-cascade');
+          var sc=d.signaling_cascade||{};
+          if(cs&&sc.harvest)cs.textContent='built: '+sc.harvest.built+' · sync: '+(sc.sync?sc.sync.repos_synced:0)+'/17';
+        }).catch(function(){});
+      }
+      loadThymus();
+      setInterval(loadThymus,60000);
+    })();
+    </script>
     <div class=hud-card style=margin-top:1.2em>
       <div class=hud-card-title>Ecosystem — primals.eco network</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;padding:.5em 0"><a
