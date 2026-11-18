@@ -107,3 +107,41 @@
   console.log('%c✨ synapse.js — interaction layer ALIVE. Gold wisps reach for you.',
     'color:#ffd700;font-weight:bold');
 })();
+
+// ═══ SCROLL WHEEL OVERRIDE — the 3rd position ═══
+// The monolith globe catches wheel events and calls preventDefault(),
+// which blocks page scrolling. You can't reach the 3rd position (below).
+// FIX: capturing listener intercepts wheel before the globe sees it.
+// Normal scroll = page scrolls (3rd position reachable!)
+// Shift+scroll = globe zooms through depth levels
+// Middle-click = toggle globe ↔ canvas (third eye)
+(function scrollWheelOverride() {
+  document.addEventListener('wheel', function(e) {
+    var globe = document.getElementById('kn-globe');
+    if (globe && globe.contains(e.target) && !e.shiftKey) {
+      e.stopPropagation();
+    }
+  }, true);
+
+  var globe = document.getElementById('kn-globe');
+  if (globe) {
+    globe.addEventListener('mousedown', function(e) {
+      if (e.button === 1) {
+        e.preventDefault();
+        var viewCanvas = document.getElementById('view-canvas');
+        var viewGlobe = document.getElementById('view-globe');
+        if (viewCanvas && viewGlobe) {
+          var canvasEl = document.getElementById('kn-canvas');
+          if (canvasEl && canvasEl.style.display === 'none') {
+            viewCanvas.click();
+          } else if (viewGlobe) {
+            viewGlobe.click();
+          }
+        }
+      }
+    });
+  }
+
+  console.log('%c🎯 scroll wheel override — page scrolls freely, Shift+scroll zooms, middle-click toggles 3rd eye',
+    'color:#5aad72;font-weight:bold');
+})();
