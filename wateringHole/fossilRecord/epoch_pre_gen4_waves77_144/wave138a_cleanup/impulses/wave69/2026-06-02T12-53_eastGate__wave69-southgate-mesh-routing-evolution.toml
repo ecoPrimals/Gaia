@@ -1,0 +1,59 @@
+[impulse]
+id = "2026-06-02T12-53-eastGate-wave69-southgate-mesh-routing-evolution"
+type = "frago"
+priority = "high"
+wave = 69
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["southGate"]
+
+[content]
+subject = "Wave 69 — biomeOS L4 routing + mesh validation + Songbird evolution"
+body = """
+SIX ITEMS for southGate teams. Items 1-2 are covered in detail
+by existing FRAGO wave68-biomeos-l4-weighted-routing (check impulses/active/).
+
+1. BIOMEOS L4 WEIGHTED ROUTING (P1)
+   - Replace first-match in discover_capability with ProviderWeight::score().
+   - Wire circuit breakers into candidate filtering.
+   - A/B shadow: log both choices, measure disagreement rate.
+   - See FRAGO wave68-biomeos-l4-weighted-routing for full spec.
+
+2. TOPOLOGY AFFINITY FACTOR (P1)
+   - Add topology_affinity to ProviderWeight::score().
+   - Affinity values: same_gate=1.0, same_segment=0.9, cross_segment=0.7, wan=0.3.
+   - Reference: TOPOLOGY_MAP.toml in wateringHole.
+   - See FRAGO wave68-biomeos-l4-weighted-routing for full spec.
+
+3. MESH VALIDATION PARTNER (P0)
+   - eastGate will run live discovery.peers + capability.call tests.
+   - southGate must have Songbird + biomeOS running with federation port 7700.
+   - Ensure SONGBIRD_PEERS includes eastGate address.
+   - This is the P0 glacial cutover gate — paired test required.
+
+4. SONGBIRD VIRTUAL ENDPOINT RELAY (P2)
+   - Phase B from SONGBIRD_VIRTUAL_ENDPOINT_RELAY_DESIGN.md.
+   - After L4 routing is complete.
+   - Songbird becomes universal RPC relay, single-ingress gate surface.
+
+5. DEPENDENCY EVOLUTION (P2)
+   - Songbird: sled → redb migration.
+   - bearDog: ring elimination (rustls-only), rustls-pemfile absorbed.
+   - See FRAGO wave68-dependency-evolution-coordination for context.
+
+6. SONGBIRD LATENCY IN DISCOVERY.PEERS (P2)
+   - discovery.peers wire contract extended with latency_ms field.
+   - DISCOVERY_WIRE_CONTRACT.md updated in primalSpring.
+   - s_covalent_mesh.rs validation added (graceful skip if not present).
+   - When implementing: measure RTT to each peer, include in response.
+
+REFERENCE: WAVE68_SOVEREIGN_EVOLUTION_REMAINING_WORK_JUN02_2026.md
+ACK with timeline.
+"""
+
+[meta]
+created = "2026-06-02T12:53:00-04:00"
+ack_required = true

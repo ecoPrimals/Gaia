@@ -1,0 +1,52 @@
+[impulse]
+id = "wave74-capability-propagation-ack"
+from = "ironGate"
+to = "eastGate"
+date = "2026-06-03T13:10:00-04:00"
+priority = "P1"
+type = "ack"
+
+[content]
+summary = "Capability propagation blocker CONFIRMED from ironGate mesh perspective"
+details = """
+ironGate 3-gate mesh operational (Wave 74):
+- BearDog + Songbird running locally
+- discovery.peers shows 2 peers (east-gate, strand-gate)
+- mesh.health_check: all_healthy for both peers
+- capability.call LOCAL works (bearDog responds through Songbird UDS)
+- capability.call CROSS-GATE fails (remote capabilities: [] — confirmed)
+
+Root cause confirmed: remote peers advertise empty capability lists.
+Awaiting Songbird capability propagation fix (southGate/Songbird).
+
+Additionally delivered this wave:
+- Cross-gate relay security audit (specs/RELAY_TRUST_BOUNDARY.md)
+- BTSP tokens confirmed OPAQUE to all relay channels
+- Gen5 trust boundary documented for paper reference
+"""
+
+[status]
+mesh_join = "OPERATIONAL (3-gate)"
+discovery = "PASS (2 peers)"
+health_check = "PASS (all_healthy)"
+local_capability_call = "PASS"
+cross_gate_capability_call = "BLOCKED"
+relay_audit = "COMPLETE — BTSP opaque in all channels"
+
+[[blockers]]
+id = "songbird-capability-propagation"
+description = "Remote peers advertise empty capability lists — capability.call cannot route cross-gate"
+owner = "southGate"
+primal = "Songbird"
+fix_frago = "wave74-songbird-capability-propagation"
+severity = "P1"
+impact = "Blocks plasmodium collective (cross-gate capability routing), s_covalent_mesh scenario, perceptron dispatch"
+workaround = "Local capability.call works — gates can call their own primals through Songbird UDS"
+
+[[blockers]]
+id = "dns-ns-cutover"
+description = "Registrar NS record update for primals.eco — makes knot-dns primary"
+owner = "operator (manual)"
+severity = "P1"
+impact = "Blocks S3 content cutover, sporePrint sovereign hosting, S1 full graduation"
+workaround = "VPS content routes READY — cutover is a single DNS flip when operator acts"

@@ -1,0 +1,133 @@
+# Gate: southGate | 157k INTERSTADIAL — neuralSpring developing
+# 13/14 NUCLEUS. neuralSpring GPU parity fix pushed (4fa0c4c). mesh.relay FIXED in new songBird.
+# 71/80 validate pass. 3 gossip peers. SSH online. skunkbat leak eliminated.
+
+[meta]
+gate = "southGate"
+updated = "2026-08-13T13:30:00Z"
+wave = "157k-interstadial"
+role = "VALIDATION GATE + PERFORMANCE CANARY"
+posture = "Interstadial. neuralSpring GPU parity fix shipped (4fa0c4c). New songBird with mesh.relay. 71/80 validate. 3 gossip outbound. SSH online."
+
+[heads]
+bearDog = "9f9b643"
+songBird = "a3400d6"
+skunkBat = "c8bcf9b"
+toadStool = "7980b42"
+barraCuda = "a1b9802"
+coralReef = "0d32d17"
+nestGate = "60ee88d"
+rhizoCrypt = "89d912c"
+loamSpine = "cb4dc56"
+sweetGrass = "cdabdad"
+biomeOS = "b3ab3b2"
+squirrel = "9ef3ca3"
+petalTongue = "9069865"
+cellMembrane = "0e13e18"
+wateringHole = "d249a14"
+hotSpring = "4dbd778"
+primalSpring = "7409343"
+wetSpring = "6630a52"
+lithoSpore = "4ac6cd1"
+
+[hardware]
+cpu = "AMD Ryzen 7 5800X3D (8c/16t, 3D V-Cache)"
+gpu = "NVIDIA GeForce RTX 4060 (8GB, Ada Lovelace, SHADER_F64)"
+ram_gb = 128
+os = "Pop!_OS 22.04 LTS"
+
+[deploy]
+biomeos_version = "4.57.0"
+beardog_version = "0.9.0"
+songbird_version = "0.2.1"
+barracuda_version = "0.4.0"
+toadstool_version = "0.2.0"
+nestgate_version = "0.5.0"
+swarmvine_deployed = true
+depot_source = "depot.primals.eco (15/15 musl rebuild Aug 12)"
+depot_sync_date = "2026-08-12"
+depot_note = "14/14 pulled morning + swarmVine re-pulled afternoon (17:11 UTC rebuild)"
+neuralspring_binary = "3.3MB release (built locally from source, guidestone feature)"
+binary_count = 17
+
+[identity]
+family_id = "89df7a2d"
+family_name = "southgate-sovereign"
+family_seed = "PRESENT"
+node_id = "southGate (FIXED — new depot binary reads hostname correctly)"
+
+[ssh_discipline]
+access_model = "Forgejo-only. K-Derm relay chain enforced."
+
+[nucleus]
+status = "LIVE — 13/14 (12 NUCLEUS + swarmVine — toadstool wgpu28 crash), 42 sockets, 99MB RSS"
+composition = "full + swarmVine - toadstool"
+total_rss_mb = 99
+process_leak = "FIXED — skunkbat 256→2, 0 orphan growth. Fresh deploy eliminated biomeOS spawn leak."
+btsp_enforcement = "ACTIVE"
+
+[swarmvine]
+status = "OUTBOUND ACTIVE — mesh.relay now available (new songBird Aug 13), param format mismatch remaining"
+gate_id = "southGate"
+tcp_port = 7800
+gossip_status = "tower_entries=1, peer_count=3, entries_sent=1/peer, entries_received=0"
+cross_gate_peers = 3
+lan_peers = "192.168.4.3:7800, 192.168.4.244:7800, 192.168.4.169:7800"
+blocker = "Inbound: peers send without riboCipher prefix. Relay: mesh.relay exists but 'Missing required field: topic' param format."
+
+[meshrelay]
+status = "LIVE — outbound gossip working, inbound blocked by protocol version"
+gossip_inject = "WORKS — status:injected"
+gossip_relay = "WORKS — relayed_to:local (but swarmVine calls mesh.relay which doesn't exist)"
+gossip_subscribe = "AVAILABLE"
+gossip_spread = "OUTBOUND OK — entries sent to 3 peers each sweep"
+cross_gate_status = "UNIDIRECTIONAL — we push successfully, peers can't push to us (riboCipher)"
+mesh_peers = 8
+gossip_peers = 3
+
+[performance_canary]
+beardog_conn_per_sec = 14879
+beardog_latency_avg_ms = 0.067
+multi_primal_sockets_tested = 28
+multi_primal_avg_ms = 0.094
+multi_primal_min_ms = 0.050
+multi_primal_max_ms = 0.194
+process_count = 13
+regression_detected = false
+benchmark_date = "2026-08-12 (Wave 157k fresh redeploy)"
+benchmark_note = "bearDog -19% throughput (cold start after full restart). Multi-socket avg improved."
+
+[performance_canary.history]
+wave_157a = "17,314 conn/s, 0.058ms (G68)"
+wave_157e = "17,595 conn/s, 0.057ms (Phase 2)"
+wave_157i_g72 = "19,733 conn/s, 0.051ms (G72 initial)"
+wave_157i_tier2 = "18,300 conn/s, 0.055ms (Tier 2 + MeshRelay)"
+wave_157k = "14,879 conn/s, 0.067ms (fresh redeploy cold start)"
+
+[gpu]
+status = "HEALTHY — RTX 4060, Vulkan, SHADER_F64 native"
+
+[enmeshment]
+readiness = "10/11 — Outbound gossip working. Inbound blocked by riboCipher version mismatch."
+resolved = "hostname fixed, node_id correct, LAN peers discovered, outbound gossip propagating"
+remaining = "riboCipher inbound framing (fleet-wide binary update needed), mesh.relay method name (ironGate), toadstool wgpu28 (strandGate)"
+gossip_surface = "gossip.inject + gossip.relay LIVE. swarmVine outbound to 3 peers. Inbound rejected (protocol version)."
+correction = "Previous 'topology blocked' was WRONG — stale WG addresses. FIXED."
+
+[validation]
+depot_pull = "14/14 fresh from depot. petaltongue -22% further (24→19MB)."
+lan_gossip = "OUTBOUND OK — 3 swarmVine peers, entries sent, 0 rejected"
+mesh_connectivity = "8 songBird mesh peers, 4 LAN connected"
+meshrelay = "gossip.inject + gossip.relay WORK"
+toadstool = "CRASHED — wgpu 28 backend panic (no vulkan feature in musl binary)"
+process_leak = "FIXED — biomeOS skunkbat spawn leak (256→2). Fresh deploy clean."
+canary = "14,879 conn/s, 0.067ms (cold start), 28/42 sockets responding"
+
+[observations]
+toadstool_wgpu28_crash = "Depot x86_64-musl toadstool panics on wgpu 28 — missing vulkan backend feature. strandGate must rebuild."
+ribocipher_asymmetry = "Our new binary enforces [0xEC,0x01] prefix. Peer gates' binaries don't send it. Inbound gossip blocked fleet-wide until peers redeploy."
+relay_method_mismatch = "swarmVine calls mesh.relay for fallback; songBird only has gossip.relay. ironGate owns both — trivial fix."
+process_leak_root_cause = "biomeOS spawned 256 skunkbat forks over 10hr (old binary). Fresh deploy: 0 growth. Likely fixed in depot biomeOS already."
+petaltongue_further_shrink = "petalTongue 24→19MB (-22% again). Total shrink from original: ~37%."
+hostname_fix_permanent = "hostnamectl set-hostname southGate. New songBird reads it correctly — node_id: southGate in mesh."
+next_steps = "strandGate: rebuild toadstool with vulkan feature. ironGate: fix mesh.relay→gossip.relay method name. Fleet: redeploy with riboCipher-aware binaries."

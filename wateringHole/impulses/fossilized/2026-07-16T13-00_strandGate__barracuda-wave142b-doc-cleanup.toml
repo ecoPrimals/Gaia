@@ -1,0 +1,58 @@
+[impulse]
+origin = "strandGate"
+wave = "142b"
+timestamp = "2026-07-16T13:00:00-04:00"
+status = "COMPLETED"
+ref_commit = "a090b857"
+expires = "2026-07-23T00:00:00-04:00"
+
+[sitrep]
+title = "barraCuda Wave 142b — Doc Cleanup & Fossil Archival"
+summary = """
+Root documentation refresh: MSRV, test counts, shader counts, IPC method counts,
+tarpc endpoints, and mesh gate count reconciled across 13 files. Dead `parallel`
+feature purged from README and specs. Two superseded specs (MODEL_SERIALIZATION_DESIGN,
+AAR_CROSS_VENDOR_GPU_VALIDATION) archived to fossilRecord. BARRACUDA_SPECIFICATION.md
+marked SUPERSEDED (May 2026 snapshot — 31 methods vs current 98). cargo clean reclaimed
+33.6 GiB. Handoff created for upstream audit.
+"""
+
+[metrics]
+tests = 5153
+ipc_methods = 98
+tarpc_endpoints = 15
+wgsl_shaders = 860
+rust_source_files = 1211
+clippy_warnings = 0
+msrv = "1.92"
+
+[changes]
+docs_refreshed = [
+    "README.md",
+    "CONTEXT.md",
+    "STATUS.md",
+    "CONTRIBUTING.md",
+    "CONVENTIONS.md",
+    "BREAKING_CHANGES.md",
+    "PURE_RUST_EVOLUTION.md",
+    "SOVEREIGN_PIPELINE_TRACKER.md",
+    "START_HERE.md",
+    "sporeprint/validation-summary.md",
+    "config/capability_registry.toml",
+    ".cursor/rules/barraCuda.md",
+    "specs/BARRACUDA_SPECIFICATION.md",
+]
+archived_to_fossil = [
+    "specs/MODEL_SERIALIZATION_DESIGN.md",
+    "specs/AAR_CROSS_VENDOR_GPU_VALIDATION_JUN06_2026.md",
+]
+disk_reclaimed_gib = 33.6
+
+[upstream_review]
+items = [
+    "7 byte-identical duplicate WGSL shader pairs (nuclear↔physics, ops/md↔shaders/md) — consolidation candidate",
+    "specs/BARRACUDA_SPECIFICATION.md — marked SUPERSEDED, needs full rewrite or removal",
+    "specs/REMAINING_WORK.md — 2K-line historical tracker, consider trimming completed sections",
+    "Phase 2 remaining: server-side listen abstraction (serve_unix), BTSP relay un-gating",
+    "Coverage target: 80.54% → 90% (requires real GPU hardware)",
+]

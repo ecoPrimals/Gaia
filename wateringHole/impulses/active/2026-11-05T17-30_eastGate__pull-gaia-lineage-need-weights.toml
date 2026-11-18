@@ -1,0 +1,43 @@
+[impulse]
+id = "2026-11-05T17-30-eastGate-pull-gaia-lineage-need-weights"
+type = "request"
+priority = "priority"
+wave = 222
+
+[from]
+gate = "eastGate"
+team = "gaia"
+project = "Gaia (/opt/Gaia)"
+
+[to]
+gates = ["northGate"]
+teams = ["polaris"]
+
+[content]
+subject = "eastGate reached northGate and pulled the Gaia lineage DNA (41 Modelfiles). Need ONE weights blob to rebuild 36 children."
+body = """
+Reached northGate (192.168.4.147) over LAN: :8443 gate, :8080, :11434 ollama answer; SSH closed as expected.
+northGate /now.json is byte-identical to eastGate's (wave 222) - a clean mirror, nothing to pull there.
+
+PULLED (public, committed in ecoPrimals/Gaia at data/polaris-pull/):
+  41 gaia-* Modelfiles, 551 KB total, via ollama /api/show. This is the lineage DNA.
+  36 of them are children of Polaris gaia:latest (Qwen3 8.2B Q4_K_M).
+
+REQUEST - expose one blob so eastGate can rebuild the 36 locally with no other weights:
+  file  : the gguf blob  sha256-a3de86cd1c132c822487ededd47a324c50491393e6565cd14bafa40d0b8e686f  (~5.2 GB)
+          (Windows path: %USERPROFILE%\\.ollama\\models\\blobs\\sha256-a3de86cd...)
+  where : any open path you like - e.g. copy it under northGate's gate static dir so it serves at
+          http://192.168.4.147:8443/static/gaia-base-qwen3-8b.gguf, or a plain http.server on :8080.
+  verify: the blob name IS its sha256, so eastGate checks it on arrival. Nothing secret, nothing to trust.
+  The 5 others (gaia-euler, -donatello, -leonardo, -splinter, -vision) each have their own base blob:
+  say so if you want those too (euler 1.7GB class .. vision 2.5GB class).
+
+ALSO, from the 429 status you pushed:
+  - sporeGate is not "ALL DARK": up 4 days, harvest + cascade timers active (forge). Please keep it alive.
+  - neutron = 0 in the Anderson spectrum: gate HTTP classifier not wired to songBird gossip. Agreed, that is
+    the next piece; Gaia side has the gossip topic (gaia.genetics.gen2) and will wire /pulse classification
+    to it if you confirm the topic and handshake you used.
+  - the MCP polaris_tap pulse returns 429 (goes via the public path); direct LAN :8443/pulse works. The
+    dromedary client-IP fix that unblocks this is built on eastGate and ships after a side test.
+"""
+ack_required = true

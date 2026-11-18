@@ -1,0 +1,76 @@
+# ACK: Wave 92 — Mesh Proof TCP Diagnosis + Depot Refresh
+# strandGate reports mesh proof status and eastGate LAN connectivity findings
+
+[impulse]
+id = "wave92-ack-mesh-proof-tcp-diagnosis"
+type = "ack"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-07"
+priority = "P1"
+references = [
+    "wave91-ack-mesh-proof-depot-standardized",
+    "wave79-transport-evolution-capability-routing",
+]
+
+[status]
+cascade = "24/24 parity (membrane temporal.cascade)"
+nucleus = "13/13 ALIVE (Songbird *:7700 LIVE on strandGate LAN)"
+depot = "13/13 BLAKE3 checksums current (songbird rebuilt with TransportEndpoint types)"
+
+[mesh_proof]
+summary = """
+2-gate mesh proof: mesh layer PROVEN (Wave 91), TCP delivery still BLOCKED.
+Mesh state persists across sessions — eastGate peered, discovery.peers total_count:1,
+mesh.status reachable_peers:1. But TCP 192.168.1.144:7700 CONNECTION REFUSED.
+"""
+
+[mesh_proof.tcp_diagnosis]
+finding = """
+Port scan of eastGate LAN (192.168.1.144) — only :8080 is open (Forgejo).
+All other ports including :7700 are CONNECTION REFUSED. :8080 serves Forgejo HTML,
+not songbird JSON-RPC. No Caddy reverse proxy to songbird detected.
+
+Conclusion: eastGate's Songbird :7700 is LIVE on the VPS (peptidoglycan/golgiBody),
+NOT on the LAN machine (192.168.1.144). The mesh proof requires LAN-to-LAN
+connectivity since strandGate (192.168.1.132) and eastGate (192.168.1.144) are
+on the same subnet. VPS (10.116.0.x VPC) is not routable from the LAN.
+"""
+
+[mesh_proof.tcp_diagnosis.port_scan]
+target = "192.168.1.144"
+results = """
+:22  — REFUSED (no SSH on LAN)
+:80  — REFUSED
+:443 — REFUSED
+:3000 — REFUSED
+:7700 — REFUSED (songbird federation NOT listening)
+:8080 — OPEN (Forgejo)
+:9090 — REFUSED
+"""
+
+[mesh_proof.action_needed]
+option_a = """
+Start Songbird on eastGate LAN machine (192.168.1.144).
+nucleus_launcher start with SONGBIRD_FEDERATION_PORT=7700
+and SONGBIRD_PRODUCTION_BIND_ADDRESS=0.0.0.0 (biomeOS v4.11+).
+This is the correct approach for LAN mesh proof.
+"""
+option_b = """
+If eastGate LAN machine is not running NUCLEUS at all, and the
+deployment is VPS-only, then the mesh proof must happen VPS-to-VPS.
+strandGate would need a VPS deployment or SSH tunnel to participate.
+"""
+recommendation = "Option A — start NUCLEUS + Songbird on eastGate LAN machine"
+
+[depot_refresh]
+summary = "songbird rebuilt with TransportEndpoint types, biomeOS v4.13 confirmed in depot"
+rebuilt = ["songbird"]
+already_current = ["biomeOS", "beardog", "skunkbat"]
+note = "plasmid.status reports 6/13 drifted — confirmed P3 cosmetic (stale freshness tracking, not actual binary drift)"
+
+[wave92_items_reviewed]
+bio_orphan_01 = "RESOLVED — biomeOS v4.13 arrived in cascade (supervisor + SIGTERM)"
+cm_webhook_01 = "RESOLVED — acknowledged"
+transport_endpoint = "SHIPPED — songbird-types canonicalization arrived, songbird rebuilt for depot"
+vps_build_01 = "Noted — golgiBody has no Rust toolchain, pipeline must pull from gate depot or pepti"

@@ -1,0 +1,226 @@
+# FRAGO: Temporal Inner Membrane Adoption
+# Cascade sync + depot pipeline as ecosystem infrastructure
+
+[impulse]
+id = "wave84-temporal-inner-membrane-adoption"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane", "all-gates"]
+date = "2026-06-06"
+updated = "2026-06-09T11:01"
+priority = "P2"
+owner = "cellMembrane"
+note = """
+Cascade is OPERATIONAL and ADOPTED. 38/38 repos sync in <10s via
+membrane temporal.cascade. Freshness auto-publishes. Webhook-driven
+selective harvest operational. All gates have ECOPRIMALS_ROOT set.
+Manual git loops are deprecated.
+
+This FRAGO now tracks the remaining depot/pipeline work that underpins
+cross-deployment readiness. Transport adoption status is tracked in
+wave79-transport-evolution-capability-routing.
+"""
+
+[current_state]
+cascade = "OPERATIONAL — 38/38 repos, <10s parallel, freshness auto-publish"
+depot_x86 = "14/14 x86_64-musl fresh. biomeOS v4.14 rebuilt. strandGate confirmed."
+depot_aarch64 = "3/14 (songbird+skunkbat+sourdough). bearDog BLOCKED on aws-lc-rs C-dep."
+vps = "golgiBody relay operational. No Rust toolchain — refresh-only from depot."
+peptidoglycan = "SSH trust established. Musl target installed. Build node ready."
+wan_distribution = "NOT DEFINED — flockGate depot empty, no binary fetch path for WAN gates."
+
+[context]
+reason = """
+Wave 84 evolved membrane temporal.cascade into the sole ecosystem sync
+interface: git timeouts, CWD workspace resolution, merge-ff divergence
+policy, parallel dispatch (tokio::JoinSet), freshness tracking, webhook
+triggers. This infrastructure underpins all cross-deployment work.
+"""
+
+# ──────────────────────────────────────────────────────────────
+# AAR: RECURRING CASCADE CONFLICTS
+# ──────────────────────────────────────────────────────────────
+
+[aar.cascade_conflicts]
+problem = """Recurring ff-only merge conflicts on cascade for plasmidBin (checksums.toml)
+and wateringHole (freshness.toml). These have occurred on Waves 99, 102, and 103.
+Pattern: gate-local edits to machine-generated files (checksums, freshness timestamps)
+diverge from upstream. cascade uses merge-ff policy, so diverged files FAIL and require
+manual stash/rebase/resolve. This blocks the cascade and requires operator intervention."""
+
+root_cause = """Two files are both locally-generated AND upstream-synced:
+  1. plasmidBin/checksums.toml — regenerated locally after depot rebuild, also pushed
+     by strandGate or other gates after their rebuilds. Multiple gates rebuild
+     independently → both push different checksums → ff-only fails.
+  2. wateringHole/freshness.toml — auto-published by cascade on every gate. Multiple
+     gates cascade within the same window → both push timestamped freshness → ff-only fails.
+The merge-ff policy is correct for source code (flag divergence) but too strict for
+machine-generated metadata files that are expected to diverge between gates."""
+
+fix_options = """
+Option A (recommended): Exempt machine-generated files from ff-only enforcement.
+  cellMembrane cascade should detect checksums.toml and freshness.toml conflicts
+  and auto-resolve with 'theirs' (upstream wins for timestamps/checksums).
+  These files are always regenerable — the authoritative source is the depot
+  binary itself, not the toml metadata.
+
+Option B: Single-writer model. Only one gate (peptidoglycan or designated builder)
+  writes checksums.toml. Other gates read-only. Freshness.toml written only by
+  the cascade initiator, not by every gate.
+
+Option C: Move to append-only/merge-friendly format. Freshness uses per-gate
+  sections instead of overwriting a single timestamp. Checksums use per-gate
+  hashes with 'latest wins' merge strategy.
+
+cellMembrane should implement Option A as a quick fix, then evolve toward
+Option B for checksums (single-builder model via peptidoglycan) as part of
+the build-carrying cascades work (CM-BUILD-CASCADE)."""
+
+occurrences = [
+  "Wave 99: plasmidBin checksums.toml — stash/rebase/theirs resolve",
+  "Wave 102: plasmidBin checksums.toml — stash/rebase/theirs resolve",
+  "Wave 103: plasmidBin checksums.toml + wateringHole freshness.toml — both conflicted",
+]
+
+# ──────────────────────────────────────────────────────────────
+# RESOLVED — cascade adoption complete
+# ──────────────────────────────────────────────────────────────
+
+[resolved]
+CM_CASCADE_01 = "Parallel dispatch — 22 repos in 6.9s (Wave 85)"
+CM_FRESHNESS_01 = "Auto-publish freshness.toml (Wave 85)"
+CM_FORGEJO_01 = "Transient 500 resolved (Wave 85)"
+CM_WEBHOOK_01 = "Webhook handler + HMAC + selective harvest (Wave 91)"
+VPS_BUILD_01 = "Pipeline refresh-only, no cargo build on golgiBody (Wave 92)"
+CM_PEPTI_SSH_01 = "golgiBody → peptidoglycan SSH trust established (Wave 92)"
+DEPOT_REFRESH = "9/9 stale primals rebuilt, 14/14 checksummed (Wave 102)"
+
+# ──────────────────────────────────────────────────────────────
+# REMAINING WORK — depot/pipeline gaps for cross-deployment
+# ──────────────────────────────────────────────────────────────
+
+[remaining.build_carrying_cascades]
+id = "CM-BUILD-CASCADE"
+description = "Cascade should auto-rebuild stale depot binaries (build-carrying cascades)"
+owner = "cellMembrane"
+priority = "P2"
+why = """Currently, depot rebuilds are manual (gate operator runs cargo build + harvest).
+Build-carrying cascades would detect stale binaries on cascade and trigger peptidoglycan
+rebuild automatically. This eliminates the depot freshness gap that accumulates between
+waves of primal evolution."""
+action = """cellMembrane depot.rs (194 lines) has provenance tracking with stale=true.
+Wire cascade to trigger peptidoglycan rebuild when staleness detected.
+sourDough validate depot --json (cb526d8) provides machine-readable freshness data."""
+
+[remaining.aarch64_cross_compile]
+id = "CM-AARCH64-PIPELINE"
+description = "aarch64 cross-compile: 3/14 built, bearDog blocks remainder"
+owner = "cellMembrane"
+priority = "P2 (blocked on bearDog aws-lc-rs elimination)"
+why = """songbird (20MB), skunkbat, sourdough confirmed clean for aarch64-unknown-linux-musl.
+bearDog fails: aws-lc-rs C code uses __memcpy_chk (glibc-only). Until bearDog eliminates
+the C dep, no full NUCLEUS on Pixel/ARM. deploy_pixel.sh has all 13 handlers ready."""
+action = """After bearDog ships pure-Rust crypto, sweep remaining primals:
+  cargo build --release --target aarch64-unknown-linux-musl
+checksums.toml [aarch64-linux-android] section ready for expansion."""
+
+[remaining.wan_binary_distribution]
+id = "CM-WAN-DEPOT"
+description = "Define binary distribution path for WAN gates (flockGate depot empty)"
+owner = "cellMembrane + eastGate"
+priority = "P1"
+why = """flockGate (192.168.60.20) is genuinely WAN-isolated — no LAN reach to eastGate/
+strandGate. VPS (137.184.197.151) reachable at 34.8ms. Checksums exist in depot but
+zero binaries fetched. WAN mesh enrollment requires at minimum songbird+beardog."""
+action = """Define the canonical path. Options:
+  a. VPS HTTP endpoint (Caddy serving /opt/plasmidBin/primals/) — simplest
+  b. SSH/rsync from VPS peptidoglycan (needs SSH provisioning)
+  c. GitHub Releases via fetch.sh (needs gh CLI or public URLs)
+  d. Cascade-carried binary distribution (build-carrying cascades)
+Recommend (a): Caddy already runs on VPS for content shadow. Add /depot/ route."""
+
+[remaining.vps_depot_sync]
+id = "CM-VPS-DEPOT-SYNC"
+description = "golgiBody depot should sync from peptidoglycan automatically"
+owner = "cellMembrane"
+priority = "P2"
+why = """Currently, VPS depot sync is manual. After build-carrying cascades land,
+VPS should auto-refresh. This also serves as the WAN distribution endpoint if
+option (a) is selected for WAN binary distribution."""
+action = "Wire plasmid.refresh into cascade post-build hook. Serve via Caddy for WAN."
+
+# ──────────────────────────────────────────────────────────────
+# ARCHITECTURE: GOLGIBODY INNER/OUTER MEMBRANE + PEPTI LAYER
+# ──────────────────────────────────────────────────────────────
+
+[architecture.golgibody]
+summary = """
+The golgiBody diderm architecture has two membrane faces and a peptidoglycan
+layer between them. The WAN mesh requires us to formalize this:
+
+  INNER MEMBRANE (golgiBody-int)
+    - Faces the LAN / covalent bonded gates
+    - Serves depot binaries to eastGate, strandGate, ironGate
+    - Syncs source via cascade (peptidoglycan relay to Forgejo)
+    - Handles covalent interactions: authenticated, high-trust, low-latency
+    - Current: golgiBody VPS at 137.184.197.151 (inner face operational)
+
+  PEPTIDOGLYCAN LAYER
+    - Build substrate between inner and outer membranes
+    - Compiles primals (musl-static, cross-arch) from synced source
+    - Stores depot binaries in plasmidBin
+    - SSH trust established with inner membrane (Wave 92)
+    - Current: operational for x86_64-musl, aarch64 pipeline in progress
+
+  OUTER MEMBRANE (golgiBody-ext)
+    - Faces WAN / external / ionic+weak interaction partners
+    - Serves depot binaries to flockGate and future WAN gates
+    - Handles ionic interactions: partially-trusted, NAT-traversed, higher latency
+    - Handles weak interactions: public, untrusted, discovery-only
+    - NEEDED: HTTP endpoint (Caddy /depot/) for WAN binary distribution
+    - NEEDED: May require a separate golgiBody instance for true external facing
+
+The WAN mesh (flockGate) likely requires an external membrane golgiBody that
+links to the inner as a covalent bond. This external golgiBody serves the outer
+face — parsing external (ionic, weak) interactions — while the inner golgiBody
+maintains the LAN covalent trust boundary.
+
+This maps to the diderm biological model:
+  - Inner membrane: selective, high-trust transport (LAN, covalent)
+  - Peptidoglycan: structural/build layer (compile, test, sign)
+  - Outer membrane: interface to external environment (WAN, ionic, weak)
+  - Periplasm: the space between — depot storage, binary staging
+"""
+
+inner_membrane = """Current golgiBody VPS. Serves LAN gates via SSH/cascade.
+Pipeline: cascade → peptidoglycan build → plasmid.refresh → inner membrane serves.
+Trust model: SSH keys, Forgejo HMAC webhooks, covalent bond authentication."""
+
+outer_membrane = """NOT YET DEPLOYED. Required for WAN gates (flockGate).
+Could be: (a) same VPS with Caddy /depot/ route facing WAN, or
+(b) separate golgiBody instance with its own covalent bond to inner.
+Option (a) is simplest: Caddy already runs, just add depot route.
+Option (b) is correct long-term: true diderm separation, outer membrane
+handles untrusted WAN traffic, inner membrane never faces external.
+Trust model: BTSP tokens, beardog capability verification, TLS."""
+
+peptidoglycan = """Build layer between membranes. Compiles static binaries.
+Already operational for x86_64-musl. aarch64 pipeline blocked on bearDog C-dep.
+Peptidoglycan is the air gap — source flows in (cascade), binaries flow out
+(depot), but the build layer is isolated from both membrane faces."""
+
+[outcome]
+expected = """
+Cascade is the sole sync interface. Depot freshness is maintained automatically
+through build-carrying cascades. Cross-arch binaries are produced by peptidoglycan
+for all target triples. VPS deployments stay current via automatic depot sync.
+
+golgiBody inner membrane serves LAN covalent gates. Outer membrane serves WAN
+ionic/weak interaction partners (flockGate, future external gates). Peptidoglycan
+layer builds between them — source in, binaries out, isolated from both faces.
+
+This infrastructure enables: LAN gate enrollment (cascade + depot from inner),
+WAN covalent bonds (depot from outer membrane via HTTP/BTSP), mobile NUCLEUS
+(aarch64 from peptidoglycan), and future topologies (container images, WASM
+bundles) all flowing through the same diderm architecture.
+"""

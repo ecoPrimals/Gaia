@@ -1,0 +1,123 @@
+# Wave 121 — Sovereign Transport Envelope
+# Issued: Jun 22, 2026 07:40 EDT
+# From: sporeGate overwatch
+# To: Tower team (songBird + bearDog), cellMembrane team, all gate overwatch
+
+[meta]
+wave = 121
+issued_by = "sporeGate_overwatch"
+issued_at = "2026-06-22T07:40:00-04:00"
+supersedes = ""
+
+[context]
+summary = """
+With network hardening complete (DNS blocklist, DoT, nftables rate limiting),
+the physical topology is now robust. The next evolution is separating the
+DIGITAL topology from the PHYSICAL topology — so ISP/[ISP] sees only encrypted
+blobs, not what we're doing or where we're going.
+
+The ecosystem already has the primitives. This impulse proposes wiring them
+into an operational sovereign transport envelope.
+"""
+
+[existing_primitives]
+songbird_relay = """
+Lineage-gated UDP relay, STUN server, beacon mesh pathfinding,
+sovereign .onion signaling (feature-gated), full Tor circuit support
+(tor_handler.rs), multi-tier NAT coordinator, TURN fallback for
+cross-gate capability.call dispatch.
+"""
+beardog_btsp = """
+4-step ephemeral-key handshake, TOFU trust, ChaCha20-Poly1305 framing,
+relay.authorize (lineage gate), ntor handshake + cell crypto for Tor Phase 2,
+BirdSong genetic lineage for contact exchange.
+"""
+cellmembrane_transport = """
+TransportEndpoint enum (uds/tcp/mesh_relay), K-Derm relay chain (git sync),
+three membrane channels (Signal/Relay/Surface).
+"""
+dark_forest = """
+Two-seed genetic model (beacon + lineage), encrypted multicast beacons,
+IND-CPA secure discovery. whitePaper/technical/DARK_FOREST_PROTOCOL.md
+"""
+nat_traversal = """
+7-tier sovereign NAT traversal: direct punch → family STUN → family relay →
+beacon mesh → sovereign .onion → Tor circuits → TURN fallback.
+whitePaper/technical/SOVEREIGN_NAT_TRAVERSAL.md
+"""
+
+[proposal]
+name = "SOVEREIGN-TRANSPORT-ENVELOPE"
+priority = "P2"
+description = """
+Model on Tor's onion routing principle, but using our own primitives —
+not Tor itself. sporeGate wraps sovereign outbound traffic in layers of
+BTSP-encrypted hops through the WireGuard mesh and VPS relay chain.
+
+Key insight: the PHYSICAL topology ([ISP] → sporeGate → LAN → switches → gates)
+and the DIGITAL topology (onion-wrapped hops through songBird relays) are
+designed and operated independently. [ISP]/ISP sees encrypted blobs to golgi.
+golgi sees encrypted blobs to next hop. Only the exit sees the destination.
+
+This leverages existing code — songbird-sovereign-onion, beardog ntor crypto,
+Dark Forest beacon discovery — and wires it into operational topology via
+cellMembrane's TransportEndpoint.mesh_relay.
+"""
+
+[proposal.phases]
+phase1_name = "Mesh-Level Encryption Audit"
+phase1_description = """
+Verify all inter-gate traffic on the WireGuard overlay is fully opaque.
+Ensure no plaintext leaks on eno1 (LAN). Map which primal IPC currently
+uses UDS (good), TCP (acceptable on LAN), or HTTP (needs wrapping).
+"""
+phase1_owner = "sporeGate overwatch"
+
+phase2_name = "songBird Relay Activation"
+phase2_description = """
+Activate songBird relay on golgiBody-ext (outer membrane). Enable the
+sovereign .onion feature gate in songbird-onion-relay. Wire bearDog
+relay.authorize for lineage-gated access. This gives us a sovereign
+relay endpoint that is NOT our WireGuard hub — separation of relay
+and mesh identity.
+"""
+phase2_owner = "Tower team (flockGate)"
+
+phase3_name = "cellMembrane Transport Graduation"
+phase3_description = """
+Graduate cellMembrane's TransportEndpoint.mesh_relay from typed-but-unused
+to operational. When a primal resolves a remote capability, the transport
+layer routes through songBird mesh relay instead of direct TCP, providing
+multi-hop opacity. This is the ad-hoc wiring that eventually becomes
+a first-class cellMembrane abstraction.
+"""
+phase3_owner = "cellMembrane team"
+
+phase4_name = "Dark Forest Operational Deployment"
+phase4_description = """
+Deploy Dark Forest beacon mesh on the LAN for zero-metadata local discovery.
+Gates discover each other via encrypted beacons, not static DNS entries.
+bearDog lineage gates all connections. External observers see only encrypted
+UDP multicast — indistinguishable from noise.
+"""
+phase4_owner = "Tower team + sporeGate overwatch"
+
+[proposal.design_principle]
+description = """
+Physical topology = hardware, cables, switches, WiFi — designed for
+bandwidth, latency, redundancy. Operates at L1-L3.
+
+Digital topology = onion hops, relay chains, beacon discovery — designed for
+privacy, sovereignty, identity. Operates at L4-L7 via Tower Atomic.
+
+cellMembrane abstracts the boundary: gates declare capabilities, the
+transport layer decides how to reach them. Today it's direct TCP on LAN.
+Tomorrow it's multi-hop BTSP-encrypted relay through songBird mesh.
+The primal code doesn't change — only the TransportEndpoint resolution does.
+"""
+
+[affected_repos]
+songBird = "Enable `onion` feature gate, activate relay on golgi-ext"
+bearDog = "Wire relay.authorize into operational relay chain"
+cellMembrane = "Graduate mesh_relay transport, add relay resolution"
+wateringHole = "Updated gen5/ and whitePaper/technical/ docs"

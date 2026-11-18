@@ -1,0 +1,44 @@
+# Impulse: SoloKey Solo 2 plugged into sporeGate — hardware topology change
+# Gate: eastGate | Wave: 138b | Time: 2026-07-14T11:53:00Z
+
+[meta]
+gate = "eastGate"
+wave = "138b"
+timestamp = "2026-07-14T11:53:00Z"
+type = "hardware-change"
+
+[event]
+action = "SOLOKEY-PLUGGED"
+device = "SoloKeys Solo 2 Security Key"
+usb_id = "1209:beee"
+hid_path = "/dev/hidraw4"
+bus = "Bus 007 Device 002"
+permissions = "crw-rw----+ (ACL set)"
+
+[topology]
+# SoloKey is physically connected to the sporeGate NUC.
+# eastGate observes it locally (sporeGate is the local machine
+# that eastGate operates on via terminal).
+physical_host = "sporeGate"
+observable_from = ["eastGate", "sporeGate"]
+fido2_rp_id = "primals.eco"
+
+[impact]
+beardog_fido2_discover = "ready — /dev/hidraw4 should appear in device list"
+beardog_fido2_entropy = "ready — CTAP2 GetAssertion for hardware entropy harvest"
+local_ceremony_e2e = "unblocked — SoloKey + bearDog keygen → Loam Certificate mint"
+solokey_physical_test = "IMMEDIATE — run beardog.fido2.discover from primalSpring"
+
+[notes]
+message = """
+SoloKey Solo 2 plugged into sporeGate NUC. Hardware visible on /dev/hidraw4.
+All SOLOKEY-CEREMONY code from Wave 138a is shipped and ready.
+SOLOKEY-PHYSICAL test is now unblocked — proceeding with:
+  1. beardog.fido2.discover — verify device enumeration
+  2. beardog.fido2.register — create FIDO2 credential with rp_id=primals.eco
+  3. beardog.fido2.entropy — harvest Tier 2 hardware entropy via CTAP2
+  4. Full ceremony: entropy → bearDog keygen → Loam Certificate (if loamSpine is live)
+
+This is the first physical hardware trust ceremony in the ecosystem.
+Second SoloKey remains available for ironGate (secondary).
+"""

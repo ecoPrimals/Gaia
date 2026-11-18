@@ -1,0 +1,57 @@
+# wateringHole Impulse — barraCuda Wave 156k
+# GPU Buffer Alignment Fix + Test Promotion + Deep Debt Sweep
+
+[impulse]
+timestamp = "2026-08-06T15:30:00-04:00"
+gate = "eastGate"
+primal = "barraCuda"
+wave = "156k"
+author = "strandGate"
+
+[summary]
+title = "GPU buffer alignment panic fix, 13 test promotions, deep debt sweep"
+description = """
+Root-caused 3 persistent test failures to bytemuck::cast_slice alignment panic \
+in the canonical GPU readback path (map_staging_buffer + submit_and_map). \
+GPU mapped memory may not be aligned to T's requirement (f64 needs 8-byte, \
+mapped buffer can be 4-byte aligned). Fixed with aligned_copy_from_mapped<T>() \
+that copies through byte slices. This was a deep runtime bug affecting all \
+f64 GPU readback operations.
+
+Additionally promoted 13 tests from #[ignore] to active by removing redundant \
+double-gating (tests had both #[ignore] and get_test_device_if_f64_gpu_available() \
+early-return). All 13 pass on both real GPU and llvmpipe.
+
+Dead OdeFunction type alias removed. mul_add evolution applied. Zero clippy \
+warnings (--workspace --all-features --all-targets). 12-axis deep debt scan clean.
+"""
+
+[metrics]
+tests_before = 4970
+tests_after = 4984
+failures_fixed = 3
+tests_promoted_from_ignore = 13
+ipc_methods = 100
+clippy_warnings = 0
+allow_attributes = 0
+production_unwrap = 0
+files_changed = 12
+
+[quality]
+cargo_check = "pass"
+cargo_test = "4,984 passed, 0 failed, 0 ignored (unit/integration)"
+cargo_clippy = "zero warnings (--workspace --all-features --all-targets)"
+cargo_fmt = "no drift"
+
+[changes]
+files = [
+    "crates/barracuda/src/device/wgpu_device/buffers.rs",
+    "crates/barracuda/src/ops/max_abs_diff_f64.rs",
+    "crates/barracuda/src/ops/grid/spin_orbit_f64_tests.rs",
+    "crates/barracuda/src/ops/boltzmann_sampling_f64.rs",
+    "crates/barracuda/src/ops/md/electrostatics/pppm_gpu/mod.rs",
+    "crates/barracuda/tests/three_springs/edge_case_tests.rs",
+    "crates/barracuda/src/ops/rk_stage.rs",
+    "crates/barracuda/src/ops/mod.rs",
+    "crates/barracuda/src/rng.rs",
+]

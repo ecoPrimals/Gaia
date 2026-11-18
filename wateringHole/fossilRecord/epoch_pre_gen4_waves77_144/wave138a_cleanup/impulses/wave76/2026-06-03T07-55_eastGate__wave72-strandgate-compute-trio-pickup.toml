@@ -1,0 +1,61 @@
+# FRAGO: strandGate Compute Trio Pickup
+# Supersedes: wave70-biomegate-down-compute-trio-paused
+
+[impulse]
+id = "wave72-strandgate-compute-trio-pickup"
+type = "frago"
+from = "eastGate"
+to = "strandGate"
+date = "2026-06-03"
+supersedes = "wave70-biomegate-down-compute-trio-paused"
+priority = "P2"
+
+[context]
+reason = """
+biomeGate remains offline (kernel recovery). strandGate hardware is operational
+and provenance trio work is COMPLETE. Reassigning movable compute trio items to
+strandGate for opportunistic pickup. Hardware-dependent items remain biomeGate-owned.
+"""
+
+[assignments]
+# barraCuda — FULLY MOVABLE (pure software, no GPU dependency for ml.mlp_train)
+[assignments.barracuda]
+status = "assigned"
+owner = "strandGate"
+items = [
+    "ml.mlp_train implementation (36-dim perceptron, pure software)",
+    "Deep debt maintenance (Wave 68 complete, maintenance mode)",
+]
+notes = "Unblocks primalSpring perceptron feature extraction (P2) and biomeOS L5 routing"
+
+# coralReef — PARTIALLY MOVABLE
+[assignments.coralreef]
+status = "partial"
+owner = "strandGate"
+items = [
+    "SPIR-V output compiler (pure software, no GPU)",
+]
+blocked = [
+    "SM120 barrier testing (Blackwell hardware — remains biomeGate)",
+]
+notes = "SPIR-V compiler work is portable; hardware validation waits for biomeGate recovery"
+
+# toadStool — NOT MOVABLE
+[assignments.toadstool]
+status = "blocked"
+owner = "biomeGate"
+items = []
+blocked = [
+    "PBDMA diagnostic (Titan V hardware-dependent)",
+    "wgpu dispatch validation (GPU required)",
+]
+notes = "Remains biomeGate-owned. Resume trigger: kernel recovery."
+
+[outcome]
+expected = """
+strandGate delivers barraCuda ml.mlp_train + coralReef SPIR-V compiler.
+This unblocks:
+  - primalSpring perceptron feature extraction (dispatch_telemetry.jsonl 36-dim)
+  - biomeOS L5 perceptron training pathway
+  - coralReef shader compilation without GPU dependency
+"""

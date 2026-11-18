@@ -1,0 +1,72 @@
+[impulse]
+id = "2026-07-15T15-05-eastGate-content-addressed-convergence-pattern"
+type = "frago"
+priority = "priority"
+wave = 140
+
+[from]
+gate = "eastGate"
+team = "overwatch"
+project = "infra/whitePaper"
+ref = "0e94daff"
+
+[to]
+gates = ["sporeGate"]
+teams = ["cellMembrane", "rhizoCrypt", "primalSpring"]
+
+[content]
+subject = "Content-Addressed Convergence (Newton-Leibniz Pattern) — formalized + team handoffs"
+body = """
+The recurring forgejo/GitHub divergence is formalized as a universal pattern:
+Content-Addressed Convergence (CAC). Temporal divergence with content identity
+is convergence, not conflict. Newton and Leibniz discovering calculus independently.
+
+PATTERN DOCUMENT: whitePaper/gen5/foundations/CONTENT_ADDRESSED_CONVERGENCE.md
+
+The pattern applies fractally at every layer:
+  - Git repos: HEAD^{tree} in freshness.toml — SOLVED (Wave 138c)
+  - Depot binaries: BLAKE3 diff in depot_sync — SOLVED (Wave 139e)
+  - Heads metadata: TreeParity for auto-publish conflicts — UNSOLVED
+  - Impulses: content-hash deduplication — UNSOLVED
+  - rhizoCrypt DAG: SessionTreeHash primitive — UNSOLVED
+  - Cascade divergence: tree-parity before policy dispatch — PARTIAL
+
+TEAM ASSIGNMENTS:
+
+cellMembrane team (P1):
+  1. TreeParity for heads auto-publish divergence
+     - Check tree parity BEFORE agentic policy dispatch in temporal/mod.rs
+     - If trees match, auto-resolve (content-identical, different commit history)
+     - This eliminates the persistent wateringHole forgejo merge conflicts
+     - Handoff: handoffs/CAC_CELLMEMBRANE_HANDOFF.md (Fix 1)
+
+  2. Content-hash impulse deduplication (P2)
+     - Before creating diverge impulse, check active impulses for content match
+     - Hash repo+diverge_type, skip if equivalent exists
+     - Handoff: handoffs/CAC_CELLMEMBRANE_HANDOFF.md (Fix 2)
+
+rhizoCrypt team (P2):
+  3. SessionTreeHash primitive
+     - session_content_hash() over sorted frontier PayloadRefs
+     - Gives rhizoCrypt the same power HEAD^{tree} gives git
+     - Two sessions reaching same state via different paths = convergent
+     - Add dag.content_hash RPC method
+     - Handoff: handoffs/CAC_RHIZOCRYPT_HANDOFF.md
+
+primalSpring team (P3):
+  4. CAC validation scenario
+     - Validate content-addressed convergence at git + depot layers
+     - Check freshness.toml uses tree hashes (not commit SHAs)
+     - Check depot_sync uses BLAKE3 diff detection
+     - Verify TreeParity resolution for wateringHole (once Fix 1 ships)
+     - Suggested scenario ID: content-addressed-convergence
+
+PRINCIPLE: Content identity supersedes temporal identity for convergence.
+The provenance chain records BOTH independent discoveries. The system
+recognizes they arrived at the same truth and moves forward.
+"""
+
+[meta]
+created = "2026-07-15T15:05:00-04:00"
+expires = "2026-07-22T00:00:00-04:00"
+ack_required = true

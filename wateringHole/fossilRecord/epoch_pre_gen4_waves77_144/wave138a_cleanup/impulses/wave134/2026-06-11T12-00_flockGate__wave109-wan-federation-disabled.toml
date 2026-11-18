@@ -1,0 +1,94 @@
+[impulse]
+id = "wave109-flockgate-wan-federation-disabled"
+type = "aar"
+priority = "P2"
+wave = 109
+date = "2026-06-11T12:00:00Z"
+
+[from]
+gate = "flockGate"
+role = "WAN mesh validation"
+
+[to]
+gates = ["eastGate"]
+team = "songBird"
+
+[content]
+subject = "flockGate WAN: federation.status shows enabled=false — protocol gap"
+body = """
+## New Finding
+
+After VPS songbird restart (Wave 108), flockGate retested. Same symptom persists.
+Deeper investigation reveals the issue is NOT just VPS-side:
+
+## Evidence
+
+1. `federation.status` on flockGate songbird: `{"active_connections":0,"enabled":false}`
+2. This is true REGARDLESS of:
+   - `SONGBIRD_FEDERATION_PORT=7700` env var
+   - `--federation-port 7700` CLI flag
+   - `--bind 0.0.0.0`
+   - `SONGBIRD_PEERS="[RELAY_PUBLIC]:7700"`
+   - `mesh.init` with peers
+3. TCP port 7700 IS bound and accepts connections (ss -tlnp confirms)
+4. VPS responds with HTTP 400 to raw JSON-RPC over TCP (confirms HTTP server on 7700)
+5. mesh.peers shows VPS as `reachable: true` but `latency_ms: null`
+6. `last_seen_ms` grows continuously (no incoming messages from VPS)
+
+## Diagnosis
+
+The federation LISTENER (port 7700) is active (accepts TCP, serves HTTP).
+The federation CLIENT (outbound connections to peers for mesh protocol) is DISABLED.
+
+`mesh.init` adds the peer to the peer list and marks it reachable (TCP SYN succeeds),
+but never initiates the federation handshake protocol because `federation.enabled = false`.
+
+This appears to be a songbird internal state issue — the federation subsystem is not
+being activated even though the port is bound. Possible causes:
+  a. Federation requires bearDog/BTSP authentication before enabling
+  b. Federation requires a specific env var or config we're not setting
+  c. The binary build doesn't include federation (feature-gated?)
+  d. Federation is only server-side (waits for inbound) — VPS must initiate TO us
+
+## What LAN Gates Do Differently
+
+LAN gates (eastGate, ironGate, southGate) show federation working. They may:
+- Run a different binary version (locally compiled vs depot-fetched)
+- Have additional env vars or systemd configuration
+- Connect via different paths (same-subnet, lower latency, different TCP behavior)
+
+## Request to songBird Team
+
+1. What env/config enables `federation.enabled = true`?
+2. Is `SECURITY_PROVIDER_SOCKET` required for federation activation?
+3. Do LAN gates have additional configuration not in the gate.bootstrap playbook?
+4. Should the VPS songbird initiate federation TO flockGate (push model)?
+
+## flockGate Environment
+
+- songbird v0.2.1 (depot binary, BLAKE3 verified: 03775a3f...)
+- beardog running (SECURITY_PROVIDER_SOCKET set)
+- TCP port 7700 bound on 0.0.0.0
+- UDS socket at /run/user/1000/biomeos/songbird.sock
+- WAN connectivity: 32ms RTT to VPS, 0% packet loss
+"""
+
+[resolution]
+status = "ROOT_CAUSE_FIXED"
+date = "2026-06-11"
+fix_commit = "471ed43b"
+fix_description = """
+federation.status RPC handler was reporting enabled based on total_nodes > 0
+(connectivity metric) rather than whether federation_state was configured.
+Fixed: enabled = true when self.federation_state is Some(...) (configured at startup).
+"""
+deploy_status = "PENDING — VPS depot needs rebuild with 9f1f5c9e (see wave110-songbird-vps-deploy-cascade)"
+retest_after = "plasmid.harvest + fetch on flockGate — binary must be rebuilt from post-fix commit"
+
+[references]
+frago = "wave109-guidestone-deployment-convergence"
+stream = "Stream 6 (Federation Debug)"
+binary_version = "songbird 0.2.1"
+binary_checksum = "03775a3fa2c3571627ec6880e64e54d50a72fc63ba83c829d83e5e3570920494"
+fix_binary = "pending — rebuild from 9f1f5c9e4ce2df8a0e12e4d6ee54ea971eb43d25"
+deploy_cascade = "impulses/active/2026-06-11T19-32_eastGate__wave110-songbird-vps-deploy-cascade.toml"

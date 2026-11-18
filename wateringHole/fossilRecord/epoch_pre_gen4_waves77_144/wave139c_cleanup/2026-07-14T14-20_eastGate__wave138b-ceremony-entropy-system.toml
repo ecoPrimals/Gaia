@@ -1,0 +1,105 @@
+# Impulse: Tap-Sequence Entropy Ceremony System — bearDog FIDO2 Evolution
+# Origin: eastGate / sporeGate | Wave 138b
+# Date: 2026-07-14T14:20:00Z
+
+[meta]
+gate = "eastGate"
+wave = "138b"
+timestamp = "2026-07-14T14:20:00Z"
+category = "cross-team-handoff"
+priority = "HIGH"
+aar = "handoffs/SOLOKEY_CEREMONY_ENTROPY_AAR_138b.md"
+
+[summary]
+title = "beardog.fido2.ceremony — Multi-Source Tap-Sequence Entropy System"
+description = """
+Implemented a full tap-sequence entropy ceremony in bearDog: the human taps a SoloKey \
+N times in rapid succession, each tap producing a CTAP2 GetAssertion with a fresh \
+OS-RNG challenge. The hardware signature nonce (Tier 2), the human motor timing jitter \
+(Tier 3), and the OS-RNG challenge (Tier 1) are mixed per-tap via BLAKE3 keyed hash \
+into a single 32-byte entropy output.
+
+This is a new entropy source for the genetic process and Loam Certificate seeding, \
+combining three physically independent sources where no single compromise can predict \
+the output.
+
+Live hardware exploration discovered a P0 SoloKey firmware issue: the device enters \
+an irrecoverable ERR_CHANNEL_BUSY state after timed-out CTAP2 commands. Only physical \
+unplug/replug clears it. CTAPHID_CANCEL (0x91) support was added to mitigate stale \
+channel data but cannot fix the firmware-level lock.
+
+All code compiles clean, 33 tests passing, 0 warnings.
+"""
+
+[impacts]
+
+[impacts.bearDog]
+team = "bearDog"
+priority = "P0"
+items = [
+    "New IPC method: beardog.fido2.ceremony (tap_count, purpose, credential_id, rp_id)",
+    "New types: TapTimingEntropy, CtapResponseWithTiming, CeremonyTap, CeremonyResult",
+    "New CTAPHID_CANCEL (0x91) in ctaphid_init for stale channel recovery",
+    "524 lines added across hid_transport.rs, provider.rs, fido2.rs, mod.rs",
+    "P0-CARRIED: SOLOKEY-BUSY-LOCK — device bricks after timeout, needs replug",
+    "P1-CARRIED: CEREMONY-LIVE-TEST — physical replug then 3-5 tap rapid-cycle test",
+]
+
+[impacts.primalSpring]
+team = "primalSpring"
+priority = "P1"
+items = [
+    "New scenarios to write: s_fido2_ceremony_tap_sequence, s_fido2_timing_entropy_quality",
+    "New scenario: s_fido2_ceremony_to_loam — full ceremony to Loam Certificate seed",
+    "New scenario: s_fido2_channel_recovery — graceful ERR_CHANNEL_BUSY handling",
+    "New scenario: s_fido2_device_replug_detection — USB re-enumeration handling",
+    "CeremonyResult statistics API available for validation assertions",
+]
+
+[impacts.skunkBat]
+team = "skunkBat"
+priority = "P3"
+items = [
+    "TAP-BIOMETRIC-PROFILE: Build per-operator timing profile from ceremony rhythm data",
+    "Inter-tap intervals and reaction jitter form a keystroke-dynamics-like biometric",
+    "ceremony.timing_summary.inter_tap_intervals_ms available in IPC response",
+    "Over many ceremonies, can build 'who touched' fingerprint per operator",
+    "Feed into skunkBat behavioral anomaly detection for operator identity assurance",
+]
+
+[impacts.lithoSpore]
+team = "lithoSpore"
+priority = "P2"
+items = [
+    "LOAM-SEED-INTEGRATION: Wire beardog.fido2.ceremony entropy output into Loam Certificate generation",
+    "Ceremony provides 32 bytes of Tier 3 (human-attested) entropy for root key seeding",
+    "ES256 credential signatures preferred over Ed25519 for entropy harvest (per-signature random k nonce)",
+]
+
+[impacts.cellMembrane]
+team = "cellMembrane"
+priority = "P3"
+items = [
+    "Awareness: bearDog FIDO2 ceremony produces signed entropy anchored to hardware credential",
+    "Future: ceremony attestation chain could feed into cascade signing trust model",
+]
+
+[protocol_notes]
+entropy_tiers = """
+Tier 1 — OS-RNG challenge (32 bytes/tap): rand::random()
+Tier 2 — ES256 hardware RNG nonce (~64 bytes/tap): SoloKey internal CSPRNG
+Tier 3 — Human temporal (20 bytes/tap): reaction_ns, inter_tap_interval_ns, eagain_count, keepalive_count
+5 taps = ~600 bytes multi-source → 32 bytes via BLAKE3 keyed hash
+"""
+mixing_key = "blake3::hash(b'beardog_loam_ceremony_v1________')"
+ipc_method = "beardog.fido2.ceremony"
+ipc_response_fields = "entropy, taps_completed, taps_requested, tier, timing_summary, sources, purpose"
+
+[hardware_findings]
+device = "SoloKey Solo 2 (VID:1209, PID:BEEE)"
+firmware = "2.3.196"
+ctaphid_version = 2
+capabilities = "WINK + CBOR (0x05)"
+p0_bug = "ERR_CHANNEL_BUSY (0x06) after timed-out CTAP2 command — only fix is physical unplug/replug"
+usb_reset_effective = false
+ctaphid_cancel_effective = "partial — clears channel-level stale data but not firmware-level busy lock"

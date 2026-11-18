@@ -1,0 +1,49 @@
+# RESOLVED: coralReef transport evolution — TRANSPORT_ENDPOINT adoption
+#
+# coralReef now accepts $TRANSPORT_ENDPOINT env var for launcher-injected
+# transport binding. Wire-compatible with sourDough TransportEndpoint.
+# First non-exempt primal to adopt the standard.
+
+[impulse]
+id = "wave100-coralreef-transport-evolution"
+type = "resolution"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-08"
+priority = "LOW"
+status = "resolved"
+
+[resolution]
+commit = "0a2f2f61"
+branch = "main"
+summary = """
+Implemented TRANSPORT_ENDPOINT injection per sourDough canonical standard.
+
+New module: ipc::transport
+- TransportEndpoint enum (serde-tagged, wire-compatible with sourdough-core)
+- ResolvedBind enum (UdsOnly, TcpOnly, Both)
+- resolve_bind() function (env → CLI fallback resolution)
+
+Both cmd_server variants (tarpc + non-tarpc) now use resolve_bind().
+When $TRANSPORT_ENDPOINT is set:
+  - {"transport":"uds","path":"..."} → bind UDS only at that path
+  - {"transport":"tcp","host":"...","port":N} → bind TCP only at that address
+  - Unset/empty → current behavior (UDS + TCP, CLI flags)
+
+19 new tests: wire format roundtrip, resolution logic, error paths.
+Zero self-binding anti-patterns (TCP default was already 127.0.0.1:0).
+sourdough validate transport should pass clean.
+"""
+
+[resolution.compliance]
+transport_endpoint_env = true
+uds_only_mode = true
+tcp_only_mode = true
+cli_fallback_preserved = true
+self_binding_violations = 0
+wire_format = "sourDough TransportEndpoint (serde tagged)"
+
+[resolution.verification]
+tests_added = 19
+total_tests = "3280+"
+clippy_warnings = 0

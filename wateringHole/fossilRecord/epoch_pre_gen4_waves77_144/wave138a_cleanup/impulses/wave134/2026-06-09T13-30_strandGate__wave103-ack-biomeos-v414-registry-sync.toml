@@ -1,0 +1,66 @@
+# Wave 103 ACK — strandGate biomeOS v4.14 Rebuild + Registry Sync + Primal Health
+# BLUF: biomeOS v4.14 rebuilt. Capability registry synced. 1089 lib tests pass.
+
+[impulse]
+type = "ack"
+wave = 103
+gate = "strandGate"
+timestamp = "2026-06-09T17:30:00Z"
+parent_blurb = "Wave 103 — Unlocking WAN/LAN/Cross-Arch Deployments"
+
+[status]
+nucleus = "beardog + songbird running (core stack)"
+mesh = "LIVE — eastGate healthy, 11.6h+ stable"
+depot = "15/15 binaries (biomeOS v4.14 rebuilt from a459ec58)"
+lib_tests = "1089 passed, 0 failed, 6 ignored"
+
+[completed]
+biomeos_v414 = """
+Rebuilt biomeOS v4.14 from a459ec58 (LocalTrusted access level) to x86_64-unknown-linux-musl.
+Installed to depot (20779360 bytes) and ~/.local/bin. Checksums regenerated.
+This unblocks nucleus-deploy --graph-deploy for local UDS callers without BTSP ceremony.
+"""
+
+capability_registry_sync = """
+18 routed capabilities added to config/capability_registry.toml to match niche tables:
+- ember lifecycle (prepare_dma, cleanup_dma, pramin.*, falcon.*)
+- device management (get, reset, resurrect, experiment_lifecycle)
+- sovereign introspection (init, defense_status, watchdog_status)
+- provenance/attribution aliases (ledger.record, attribution.braid, attribution.query)
+1 stale entry removed (device.vfio.alloc — not in niche tables).
+signal.dispatch added (toadStool routed).
+Test capabilities_match_registry_toml now PASS.
+"""
+
+cross_gate_test_fix = """
+capability_call_fails_without_nucleus test hardened: when live NUCLEUS is available
+(beardog + songbird running), the test now accepts both Err and Ok-with-error-response.
+Previously assumed no NUCLEUS was running.
+"""
+
+physics_type_fix = """
+integration_physics.rs: explicit deref in .map(|(d, v)| (*d) * (*v)) to resolve
+E0282 type inference ambiguity in iterator chain producing sum::<f64>().
+"""
+
+[blurb_review]
+toadstool_transport = "ALREADY DONE — 45bb47f confirms TransportEndpoint shipped (S301-S302)"
+songbird_ipc_resolve = "P2 M1 — acknowledged. 10/11 consumer primals ready."
+cellmembrane_aarch64 = "Acknowledged — cross-compile pipeline is cellMembrane's action."
+cellmembrane_build_cascades = "Acknowledged — depot.rs (194 lines) tracking stale=true."
+mesh_enrollment = "strandGate LIVE at :7700. ironGate needs federation port start."
+
+[findings]
+bin_target_debt = """
+20 bin targets fail compilation with --features barracuda-local due to upstream
+barraCuda deep debt refactor (9b9cbed3). Affected modules: barracuda::ops (gpu-gated),
+barracuda::device, barracuda::tensor, barracuda::shaders, barracuda::sample.
+These are experiment/validation binaries, not the core library. The lib (1089 tests)
+and the barracuda primal itself compile clean. Tracked as existing debt — these
+binaries need updating to match barraCuda's post-refactor API.
+"""
+toadstool_blurb_stale = """
+Wave 103 blurb item #1 (toadStool transport adoption) is stale — toadStool shipped
+TransportEndpoint in 45bb47f (S301-S302). 10/11 non-exempt primals now have transport.
+The FRAGO response from toadStool (S305b) confirms "transport DONE".
+"""

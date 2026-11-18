@@ -1,0 +1,79 @@
+# FRAGO: westGate Enrollment — skunkBat Family Onboarding
+# Updated Wave 80: skunkBat v0.2.6 ships --socket (UDS-only default)
+
+[impulse]
+id = "wave73-westgate-skunkbat-enrollment"
+type = "frago"
+from = "eastGate"
+to = "westGate"
+date = "2026-06-03"
+updated = "2026-06-07"
+priority = "P1"
+owner = "wateringHole overwatch"
+note = "Wave 91: 2-gate mesh proof PROVEN (eastGate + strandGate). mesh.init, discovery.peers (1 peer), mesh.health_check (all_healthy:true) all pass. capability.call routing operational but TCP delivery to eastGate LAN :7700 blocked (CONNECTION REFUSED — binding/firewall coordination needed). strandGate confirmed mesh peer: Songbird *:7700 LIVE, 13/13 primals ALIVE, plasmidBin depot standardized (13/13 BLAKE3). westGate enrollment template validated — mesh.init with bootstrap_peers [{node_id, address}] format confirmed working. westGate enrolls via membrane CLI: membrane plasmid.fetch → nucleus_launcher start. Hardware-gated — overwatch tracks."
+
+[context]
+reason = """
+westGate incoming. skunkBat (defense primal) needs family seed enrollment
+and mesh integration. Wave 80 update: v0.2.6 ships --socket flag with
+implicit --no-tcp (ecosystem convention). UDS-only is the stadial gate
+default. No standalone TCP ports. Songbird handles all routing.
+BD-TRUST-01 resolved — mesh.init auto-exchanges trust (zero operator).
+10G backbone installed — LAN mesh at wire speed, sub-ms latency.
+"""
+
+[enrollment]
+gate_name = "westGate"
+gate_type = "Physical (LAN)"
+bond_type = "Covalent"
+primary_primal = "skunkBat"
+subnet = "192.168.1.0/24"
+transport = "uds_only"
+
+[enrollment.prerequisites]
+operator = "westGate operator"
+hardware = "TBD (incoming)"
+network = "Same subnet as eastGate (192.168.1.x) — 10G backbone LIVE"
+repos_needed = [
+    "nestGate",
+    "wateringHole",
+    "plasmidBin",
+    "bearDog",
+    "songBird",
+    "skunkBat",
+]
+
+[enrollment.steps]
+step_1 = "Create .gate identity file: echo 'westGate' > .gate"
+step_2 = "Clone ecoPrimals tree + submodule init"
+step_3 = "Install plasmidBin: cargo install --path infra/plasmidBin"
+step_4 = "Set family seed: export FAMILY_ID=westgate NODE_ID=tower1"
+step_5 = "Start nucleus_launcher (UDS-only default): nucleus_launcher start --family-id westgate"
+step_6 = "Songbird federation: nucleus_launcher start --family-id westgate --federation-port 7700 --peers east-gate@192.168.1.144:7700,strand-gate@192.168.1.132:7700"
+step_7 = "Songbird mesh.init auto-exchanges trust via BD-TRUST-01 (zero operator)"
+step_8 = "Verify: discovery.peers returns 2+ peers, mesh.health_check all_healthy"
+step_9 = "Fire sitrep: impulse.post --to eastGate --type sitrep --subject 'westGate online'"
+
+[enrollment.mesh_config]
+songbird_node_id = "west-gate"
+songbird_federation_port = 7700
+songbird_peers = "east-gate@192.168.1.144:7700,strand-gate@192.168.1.132:7700"
+security_transport = "uds:///run/membrane/beardog.sock"
+note = "No standalone TCP ports. Songbird :7700 is the only TCP surface."
+
+[enrollment.validation]
+check_1 = "discovery.peers returns peer_count >= 2"
+check_2 = "mesh.health_check shows all_healthy: true"
+check_3 = "skunkBat defense.status responds on UDS (/run/membrane/skunkbat.sock)"
+check_4 = "primalSpring s_covalent_mesh scenario passes with westGate as 3rd peer"
+check_5 = "No standalone TCP ports open (only Songbird :7700 federation)"
+check_6 = "auth.exchange_trust completes bidirectionally (BD-TRUST-01)"
+
+[outcome]
+expected = """
+westGate joins the mesh as 3rd physical gate (UDS-only posture). Enables:
+  - plasmodium collective validation (3+ gates required for stadial)
+  - skunkBat defense capabilities available cross-mesh via Songbird routing
+  - Network threat monitoring from a distinct vantage point
+  - Zero port configuration — mesh self-organizes via capability discovery
+"""

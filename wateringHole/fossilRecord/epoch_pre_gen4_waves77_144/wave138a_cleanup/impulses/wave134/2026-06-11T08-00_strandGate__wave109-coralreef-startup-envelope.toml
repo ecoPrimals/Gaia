@@ -1,0 +1,44 @@
+# FRAGO: STARTUP-CR-01 — Standard primal startup envelope
+# Resolved: 2026-06-11
+# Origin: Wave 109 cascade (guideStone deployment convergence)
+
+[frago]
+id = "STARTUP-CR-01"
+title = "Unify --rpc-bind with --port --bind-mode standard envelope"
+status = "resolved"
+priority = "P2"
+source_gate = "strandGate"
+target_primal = "coralReef"
+wave_opened = 109
+wave_resolved = 109
+
+[context]
+problem = """
+coralReef used --rpc-bind HOST:PORT as its server startup flag.
+Ecosystem standard envelope is: $PRIMAL server --bind-mode $MODE --port $PORT.
+Deploy scripts needed per-primal case blocks for coralReef's custom flag.
+"""
+
+resolution = """
+Added standard envelope flags:
+- --port <PORT>: TCP port (u16), constructs 127.0.0.1:PORT
+- --bind-mode <MODE>: CLI override for PRIMAL_BIND_MODE env var
+  (tcp_only, fallback, auto) — passed through resolve_bind_with_mode()
+- --rpc-bind kept as hidden deprecated alias for backward compat
+- resolve_effective_bind(): priority chain rpc-bind > port > env > default
+- resolve_bind_with_mode(): accepts optional CLI bind-mode override
+
+Standard invocation: coralreef server --bind-mode tcp_only --port 9730
+"""
+
+commit = "7bc90e53"
+tests_passing = 3310
+clippy_warnings = 0
+
+[verification]
+command = "coralreef server --bind-mode tcp_only --port 9730"
+expected = "Starts JSON-RPC TCP on 127.0.0.1:9730, skips UDS + tarpc"
+
+[ecosystem_standard]
+envelope = "$PRIMAL server --bind-mode $PRIMAL_BIND_MODE --port $PORT"
+guidestone_property = "P1 (Deterministic), P4 (Environment-Agnostic)"

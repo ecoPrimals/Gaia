@@ -1,0 +1,18 @@
+Data Provenance Statement
+
+The alphafold dataset was acquired and stored in a content-addressed storage (CAS) system using BLAKE3 cryptographic hashing for deduplication and integrity verification. Each file was individually hashed and ingested into the nestGate CAS layer, producing a canonical content identifier (data hash: 52d819f2593468a7...).
+
+Provenance was recorded through a three-layer architecture:
+1. Ephemeral DAG (rhizoCrypt): File-level events were appended in batches to a directed acyclic graph session, capturing the complete ingest sequence.
+2. Permanence Ledger (loamSpine): The DAG session was dehydrated to produce a Merkle root, which was committed to an append-only spine with the committer identity did:primal:e867f89e-cafc-4431-9e5e-7ff78a43747e.
+3. Attribution Braid (sweetGrass): A provenance braid was created linking the data hash to the committer identity, signed with Ed25519 via the bearDog cryptographic primal.
+
+All 100 braids in the sample set are Ed25519-signed (100/100 verified). The provenance chain is independently verifiable by any party with access to the sweetGrass braid store and bearDog public key.
+
+Identifiers:
+- Content Hash (BLAKE3): 52d819f2593468a7
+- Attribution DID: did:primal:e867f89e-cafc-4431-9e5e-7ff78a43747e
+- Provenance System: ecoPrimals provenance trio (sweetGrass v0.8.0 + loamSpine + rhizoCrypt)
+- Signature Algorithm: Ed25519 (bearDog)
+- Storage: ZFS raidz1 (westGate sovereign data root)
+- FAIR Compliance: F1 (persistent identifier), A1 (protocol-accessible), I3 (references), R1.2 (provenance)

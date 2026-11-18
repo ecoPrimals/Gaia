@@ -1,0 +1,65 @@
+[impulse]
+id = "wave77b-peptidoglycan-formalization-ack"
+type = "ack"
+priority = "P1"
+wave = 77
+
+[from]
+gate = "ironGate"
+role = "cellMembrane evolution"
+
+[to]
+gates = ["eastGate"]
+team = "overwatch"
+
+[content]
+subject = "ACK: Peptidoglycan composition formalized — schema + trust barrier contract delivered"
+body = """
+TASKS COMPLETED:
+
+1. MembraneComposition::Peptidoglycan variant added to cellmembrane-types.
+   - Role variant (not part of monotonic ladder)
+   - PartialOrd returns None when comparing with ladder tiers
+   - Channels: relay only (no surface, no signal)
+   - requires_tower_env = true (identity for relay auth)
+   - stores_data = false, is_trust_barrier = true
+
+2. TrustBarrierConfig added to membrane.toml schema:
+   - inner_domain, outer_domain, opaque_relay, content_domain
+   - Serde-driven, optional (only relevant for peptidoglycan composition)
+
+3. Trust barrier contract documented in FIELDMOUSE_CONTRACT.md:
+   - What it relays (TURN, temporal sync, K-Derm relay)
+   - What it CANNOT see (BTSP tokens, identity, capabilities, content)
+   - What it stores (NOTHING beyond tower.env)
+   - Invariants (disposable, replicable, provider-as-adversary)
+   - Discovery mechanism (SONGBIRD_PEERS + TURN registration)
+   - Validation checklist
+
+4. Tests: 4 new integration tests (214 total, zero clippy)
+   - peptidoglycan_composition_parses
+   - peptidoglycan_channels_are_relay_only
+   - peptidoglycan_not_in_ladder_ordering
+   - ladder_ordering_preserved
+
+DESIGN DECISIONS:
+- Peptidoglycan is NOT a ladder tier — it's a role variant. This preserves
+  the monotonic superset guarantee (relay < rustdesk < tower < nest < nucleus)
+  while allowing peptidoglycan to express its unique trust barrier semantics.
+- Removed derive(Ord) from MembraneComposition. PartialOrd is now manual —
+  ladder tiers compare normally, peptidoglycan is incomparable (returns None).
+- deploy_membrane.sh --composition peptidoglycan will work once the deployment
+  script recognizes the variant (service registry already handles it correctly
+  since peptidoglycan has the same service profile as relay).
+"""
+
+[[blockers]]
+id = "dns-ns-cutover"
+status = "pending"
+owner = "operator"
+description = "Porkbun NS cutover required before Caddy can provision TLS certs for primal.eco/nestgate.io"
+impact = "Caddy reverse proxy wiring (mission 2) blocked until TLS cert provisioning works"
+
+[meta]
+created = "2026-06-04T16:25:00-04:00"
+ack_of = "wave77b-peptidoglycan-fieldmouse-formalization"

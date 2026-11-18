@@ -1,0 +1,56 @@
+[impulse]
+origin = "strandGate"
+wave = "143b"
+timestamp = "2026-07-16T16:30:00-04:00"
+status = "COMPLETED"
+ref_commit = "aaf1e523"
+expires = "2026-07-23T00:00:00-04:00"
+
+[sitrep]
+title = "barraCuda Wave 143b — TransportListener Phase 2 Server Abstraction"
+summary = """
+Phase 2 transport: TransportListener enum (Unix + TCP) with bind_unix/from_tcp/accept.
+Unified serve_listener replaces duplicated accept loops in serve_unix and serve_tcp_listener.
+Dead handle_stream wrapper removed. resolve_transport_override merged from 2 cfg'd functions
+to 1. run_service_mode collapsed via serve_listener. register_with_discovery ungated in
+TCP-only path. checked_u32 migration completed for 2 more sites. runtime.rs expects annotated.
+"""
+
+[metrics]
+tests = 5153
+ipc_methods = 98
+clippy_warnings = 0
+cross_arch_windows = "compiles clean"
+
+[changes]
+transport_listener = [
+    "TransportListener enum: Unix{listener,path} + Tcp(TcpListener)",
+    "bind_unix: stale socket cleanup + parent dir creation + bind",
+    "from_tcp: wrap pre-bound TCP listener",
+    "accept: returns (TransportStream, peer_label)",
+    "display_address, unix_path, local_tcp_addr helpers",
+]
+server_rs = [
+    "serve_listener: unified accept loop (BTSP guard + handle_connection + shutdown_signal)",
+    "serve_tcp_listener: thin wrapper → serve_listener",
+    "serve_unix: bind_unix + serve_listener + cleanup",
+    "handle_stream: REMOVED (dead after unification)",
+]
+main_rs = [
+    "resolve_transport_override: merged 2 cfg'd functions → 1 (UDS arm cfg-gated internally)",
+    "run_service_mode: collapsed 2 cfg blocks → serve_listener + conditional lifecycle",
+    "register_with_discovery: ungated in TCP-only path",
+]
+deep_debt = [
+    "checked_u32: moving_window_stats window_size, index_select dispatch",
+    "runtime.rs: #[expect(clippy::expect_used)] with justification on 2 sites",
+]
+
+[phase2_remaining]
+items = [
+    "TransportListener adopt in run_server UDS primary path (main.rs:319-372)",
+    "serve_tarpc_unix → serve_tarpc_listener abstraction",
+    "Server-side listen abstraction for Windows named pipes",
+    "BTSP perform_handshake_relay un-gating (provider discovery must work on non-Unix)",
+    "coral_compiler/jsonrpc.rs cfg gate (architectural boundary)",
+]

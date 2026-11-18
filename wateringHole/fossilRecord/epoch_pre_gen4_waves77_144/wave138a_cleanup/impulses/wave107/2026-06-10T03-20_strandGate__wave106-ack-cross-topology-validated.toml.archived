@@ -1,0 +1,59 @@
+# ACK: Wave 106 — strandGate Cross-Topology Validation
+# Validates: LAN x86_64 re-enrollment + mesh rejoin after extended offline
+
+[impulse]
+id = "wave106-ack-cross-topology-validated"
+type = "ack"
+from = "strandGate"
+to = ["eastGate", "all-gates"]
+date = "2026-06-09"
+wave = 106
+references = ["wave106-cross-topology-validation"]
+
+[validation.lan_x86_64_reenrollment]
+status = "PROVEN"
+gate = "strandGate"
+topology = "LAN x86_64"
+detail = """
+strandGate validates "LAN x86_64 re-enrollment" from the FRAGO validation matrix.
+
+1. NUCLEUS core stack restarted after extended offline (beardog + songbird)
+2. mesh.init to both eastGate LAN (192.168.1.144:7700) + golgiBody VPS ([RELAY_PUBLIC]:7700)
+3. discovery.peers: 2 peers, quality=1.0, path=mesh
+4. mesh.health_check: all_healthy=True, both direct path
+5. Direct probes: eastGate alive, golgiBody alive
+
+Mesh rejoin after extended offline: PROVEN. No manual state recovery needed —
+mesh.init with bootstrap_peers is sufficient for re-enrollment.
+"""
+
+[validation.bin_target_debt]
+status = "RESOLVED"
+detail = """
+22 bin targets had crate alias conflict: `use hotspring_barracuda as barracuda;`
+shadowed the actual barracuda primal dependency, causing 100+ compile errors for
+modules like ops, device, special, tensor, shaders.
+
+Fix: Renamed alias to `hs;`, removed 22 unused alias imports where hs:: was not
+referenced. Additionally migrated GlowplugClient API (experiment_start/end →
+experiment_lifecycle), device_swap (3→2 args), BenchError .len() fix.
+
+Result: `cargo check --features barracuda-local` = 0 errors, 0 warnings.
+Previously: 100+ errors across 20+ bin targets (documented since Wave 103).
+"""
+
+[validation.test_suite]
+lib_tests = "1089 passed, 0 failed, 6 ignored"
+compile = "0 errors, 0 unused-hs-import warnings"
+
+[findings]
+mesh_persistence_gap = """
+Confirmed P1 from FRAGO: mesh state is ephemeral. After strandGate's extended
+offline, zero peers were known until manual mesh.init. Autonomous recovery requires
+songBird mesh persistence (peers.toml + auto-reconnect on startup).
+"""
+supervision_gap = """
+Confirmed P1 from FRAGO: NUCLEUS primals were all dead on strandGate after
+earlier session ended. No watchdog detected or restarted them. Manual restart
+was required. biomeOS NUCLEUS supervision is critical for autonomous operation.
+"""

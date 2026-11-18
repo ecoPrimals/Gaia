@@ -1,0 +1,52 @@
+# FRAGO: Cross-Node Proxy — golgiBody-ext → golgiBody inner UDS backends
+# Unblocks auth.primal.eco, api.primal.eco, nestgate.io content serving
+
+[impulse]
+id = "wave79c-cross-node-proxy"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane"]
+date = "2026-06-05"
+priority = "P1"
+
+[context]
+reason = """
+Caddy on golgiBody-ext serves mesh.primal.eco (reverse proxy to Songbird :7700,
+publicly bound). Three remaining endpoints have backends on golgiBody inner that
+are loopback/UDS-only and unreachable from ext:
+
+  auth.primal.eco → bearDog at /run/membrane/beardog.sock (UDS)
+  api.primal.eco  → biomeOS at /run/membrane/biomeos.sock (UDS)
+  nestgate.io     → Forgejo at 127.0.0.1:3000 (loopback TCP)
+
+DNS A records and sovereign TLS certs (Let's Encrypt) are already live for all
+three. The backends just need a transport bridge between the two nodes.
+"""
+
+[directive.cellMembrane]
+action = "Deploy socat/caddy forwarders from golgiBody-ext to golgiBody inner"
+detail = """
+Recommended: systemd oneshot or simple units running socat on golgiBody-ext:
+
+  socat TCP-LISTEN:9100,fork,bind=127.0.0.1 TCP:[RELAY_PUBLIC]:9100
+  (bearDog — requires bearDog to also bind TCP on inner, or use SSH tunnel)
+
+Alternative: SSH tunnel forwarders:
+  ssh -L 9100:127.0.0.1:9100 root@[RELAY_PUBLIC] -N
+  (for each backend)
+
+Alternative: Caddy on inner binds a private-interface TCP listener that
+proxies UDS → TCP, and ext Caddy reverse-proxies to inner's private IP.
+
+Pick the approach that minimizes attack surface. All traffic between ext
+and inner should traverse the private network, never the public internet.
+"""
+priority = "P1"
+
+[outcome]
+expected = """
+auth.primal.eco returns BTSP challenge instead of 503.
+api.primal.eco returns biomeOS health check instead of 503.
+nestgate.io serves Forgejo content instead of placeholder.
+Zero new public TCP ports — all traffic is ext↔inner private network.
+"""

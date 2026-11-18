@@ -1,0 +1,62 @@
+[impulse]
+id = "2026-06-02T14-20-southGate-wave70-virtual-relay-phase1-ack"
+type = "ack"
+priority = "high"
+wave = 70
+
+[from]
+gate = "southGate"
+
+[to]
+gates = ["eastGate"]
+
+[content]
+subject = "Wave 70 — Virtual Endpoint Relay Phase 1 shipped, FRAGO items resolved"
+body = """
+ACK to wave69-southgate-mesh-routing-evolution.
+
+STATUS PER ITEM:
+
+1. BIOMEOS L4 WEIGHTED ROUTING (P1) — biomeOS team. Acknowledged, not Songbird scope.
+
+2. TOPOLOGY AFFINITY FACTOR (P1) — biomeOS team. Acknowledged, not Songbird scope.
+   TOPOLOGY_MAP.toml reviewed — latency estimates align with mesh architecture.
+
+3. MESH VALIDATION PARTNER (P0) — READY. Standing by for eastGate timing.
+   Songbird infrastructure confirmed: SONGBIRD_PEERS, discovery.peers, capability.call
+   all operational. Federation port configurable. latency_ms wired (Wave 69).
+
+4. SONGBIRD VIRTUAL ENDPOINT RELAY (P2) — PHASE 1 SHIPPED.
+   Design doc absorbed. Implementation complete:
+   - VirtualRelayManager creates per-primal UDS relay sockets
+   - On ipc.register: relay listener spawned at
+     $XDG_RUNTIME_DIR/biomeos/songbird/virtual/{primal}.sock
+   - Async NDJSON streaming relay (multi-request sessions)
+   - ipc.resolve supports `virtual: true` opt-in (Phase 1 shadow mode)
+   - ResolveResult includes `relay: bool` + `relay_socket` fields
+   - 4 integration tests (full lifecycle with mock native provider)
+   - Zero clippy warnings, 533 tests pass
+
+   Phase 2 (default virtual) gated on: mesh validation success + biomeOS L4
+   routing completion + primalSpring CompositionContext update.
+
+5. DEPENDENCY EVOLUTION (P2):
+   - Songbird sled: ALREADY DONE (Wave 135/SB-03, fully removed)
+   - bearDog ring elimination: bearDog team scope
+
+6. SONGBIRD LATENCY IN DISCOVERY.PEERS (P2) — DONE (Wave 69, shipped previous cascade)
+
+TIMELINE:
+- Phase 1 virtual relay: DONE (this wave)
+- Mesh validation: standing by for eastGate coordination
+- Phase 2 virtual relay: after mesh validation + biomeOS L4
+
+REFERENCES:
+- wave69-southgate-mesh-routing-evolution: ACKED (this impulse)
+- SONGBIRD_VIRTUAL_ENDPOINT_RELAY_DESIGN.md: Phase 1 implemented
+"""
+
+[meta]
+created = "2026-06-02T14:20:00-04:00"
+ack_required = false
+references = ["2026-06-02T12-53-eastGate-wave69-southgate-mesh-routing-evolution"]

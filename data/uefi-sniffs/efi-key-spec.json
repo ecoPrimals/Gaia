@@ -1,0 +1,17 @@
+{
+  "variable": "AMD_PBS_SETUP",
+  "guid": "A339D746-F678-49B3-9FC7-54CE0F9DF226",
+  "offset": "0x49",
+  "size": "1 byte (only first byte of the 4-byte field matters)",
+  "current_value": "0xFF (Auto = no UMA)",
+  "target_value": "0x06 (most likely = 512M, index 6 in option list)",
+  "alternative_values": {
+    "0x00": "64M (safe minimum)",
+    "0x03": "128M (safe test)",
+    "0x06": "512M (target)",
+    "0x08": "1G (generous)"
+  },
+  "tool_needed": "setup_var.efi or UEFI Shell setvar",
+  "command": "setup_var_cv AMD_PBS_SETUP 0x49 0x06",
+  "risk": "LOW \u2014 wrong value just means iGPU uses wrong size, BIOS can always reset to defaults"
+}

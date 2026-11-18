@@ -1,0 +1,36 @@
+# FRAGO: CR-TARPC-01 — Skip tarpc bind when PRIMAL_BIND_MODE=tcp_only
+# Resolved: 2026-06-10
+# Origin: Wave 107 cascade (grapheneGate bind abstraction)
+
+[frago]
+id = "CR-TARPC-01"
+title = "Skip tarpc UDS bind when PRIMAL_BIND_MODE=tcp_only"
+status = "resolved"
+priority = "P2"
+source_gate = "strandGate"
+target_primal = "coralReef"
+wave_opened = 107
+wave_resolved = 107
+
+[context]
+problem = """
+coralReef tarpc server unconditionally binds a UDS socket via
+default_tarpc_bind(), even when PRIMAL_BIND_MODE=tcp_only. On
+grapheneGate (Android/Pixel 8), SELinux denies UDS bind() in
+non-standard paths, causing startup failure.
+"""
+
+resolution = """
+cmd_server now checks if resolve_bind() returned TcpOnly. When true,
+tarpc server is skipped entirely — JSON-RPC TCP serves all 17 methods.
+tarpc_bound/tarpc_handle are Optional, capability advertisement omits
+tarpc transport, shutdown join handles absence gracefully.
+"""
+
+commit = "b1ec1f4b"
+tests_passing = 3304
+clippy_warnings = 0
+
+[verification]
+command = "PRIMAL_BIND_MODE=tcp_only coralreef server --rpc-bind 127.0.0.1:9730"
+expected = "Server starts without tarpc UDS bind, JSON-RPC TCP on :9730"

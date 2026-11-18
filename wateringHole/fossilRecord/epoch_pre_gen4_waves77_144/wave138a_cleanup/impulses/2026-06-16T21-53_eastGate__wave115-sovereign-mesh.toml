@@ -1,0 +1,225 @@
+# FRAGO: Wave 115 — Sovereign Mesh & Gate Hardening
+# From: eastGate overwatch
+# Date: 2026-06-16
+# Replaces: wave114-sovereign-compute (ARCHIVED — 6/7 exit criteria cleared, CODE COMPLETE)
+# Context: Wave 114 proved depot deploys to NUC (fieldGate 13/13), genetics 11/11,
+#          RustDesk relay operational, sporeGate live as LAN periplasm.
+#          Wave 115 hardens the mesh: persistence, inter-gate remote, team autonomy.
+
+[impulse]
+id = "wave115-sovereign-mesh"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane/sporeGate", "ironGate/projectNUCLEUS", "ops"]
+date = "2026-06-16"
+priority = "P1"
+owner = "sporeGate (LAN hardware), cellMembrane IDE (code+VPS), ironGate (ABG)"
+
+note = """
+Wave 115 objective: Harden what Wave 114 proved. THREE DEDICATED SUBTEAMS:
+- eastGate (this IDE): primalSpring evolution, NUCLEUS validation, overwatch coordination
+- sporeGate Overwatch (Cursor on NUC): LAN/WAN/VPS topology exploration, K-Derm plasma
+  membrane deployment, gate enrollment, hardware solving. Dedicated subteam like biomeGate
+  (GPU eras) but for network sovereignty.
+- cellMembrane Team (separate Cursor IDE on sporeGate): code evolution, VPS (golgi+pepti),
+  cascade pipeline, depot, Forgejo, typed models, sovereignty shadows
+- Co-evolution: sporeGate overwatch deploys what cellMembrane builds. Both push to same repos.
+- ironGate: projectNUCLEUS/ABG compute access (offline — reassigned)"""
+
+# ──────────────────────────────────────────────────────────────
+# ENTRY STATE (Jun 16 21:53 EDT)
+# ──────────────────────────────────────────────────────────────
+
+[entry_state]
+genetics = "11/11 ALL primals accept mito-beacon"
+depot_x86 = "13/13 built from HEAD (pepti Jun 16 02:27Z)"
+depot_aarch64 = "13/13 built on pepti (Jun 15)"
+vcs_parity = "17/17 origin = forgejo (wateringHole, cellMembrane, all primals)"
+golgi = "HEALTHY — 13/13 alive, depot verified, hbbs+hbbr ACTIVE, RustDesk key generated"
+pepti = "ALIVE — cellMembrane at HEAD, build authority ready"
+sporegate = "LIVE — 13/13 alive, NAT active (11GB forwarded), DHCP 6 leases, RustDesk configured, hairpin NAT fixed"
+fieldgate = "OFFLINE — was 13/13 alive, currently unreachable (powered off?)"
+northgate = "RustDesk configured, NUCLEUS pending"
+eastgate = "Overwatch, RustDesk sovereign relay, primalSpring dev"
+cascade_fix = "ff-merge preferred (8f4e4eb) — SHA divergence reduced"
+relay_key = "[RUSTDESK_KEY_PURGED]"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 1: Inter-Gate Remote Access (RustDesk Sovereign Mesh)
+# ──────────────────────────────────────────────────────────────
+
+[stream1]
+id = "RUSTDESK-SOVEREIGN-MESH"
+owner = "cellMembrane/sporeGate"
+priority = "P1"
+description = """All gates addressable via sovereign RustDesk relay.
+Any tower can remote to any other. Hairpin NAT solved for same-NAT peers."""
+
+[stream1.tasks]
+golgi_relay = { status = "✅ DONE", note = "hbbs+hbbr active, key generated, ports 21115-21117" }
+sporegate_client = { status = "✅ DONE", note = "Configured, service active" }
+eastgate_client = { status = "✅ DONE", note = "Configured via GUI, hairpin NAT fixed" }
+northgate_client = { status = "✅ DONE", note = "Configured, can reach sporeGate + eastGate" }
+fieldgate_client = { status = "TODO", note = "Gate offline — deploy when back up" }
+hairpin_nat = { status = "✅ DONE", note = "eno1→eno1 accept + LAN masquerade. Persisted to /etc/nftables.conf" }
+eastgate_ssh = { status = "✅ DONE", note = "openssh-server installed Jun 17 15:43. sporeGate pubkey authorized. sporeGate can: ssh eastgate@192.168.4.244" }
+omada_mgmt_plane = { status = "✅ DONE", note = "Omada SDN Controller v5.15 installed on sporeGate. Switch adopted. All 8 SFP+ ports mapped, 18 clients visible. VLAN capabilities documented. AAR filed." }
+omada_towers_push = { status = "READY → relay migration", note = "18 devices visible on Omada. Use public relay session to connect → push sovereign config. No SSH required (RustDesk handles it). Relay migration pattern: public → sovereign → mesh." }
+northgate_sovereign = { status = "READY → operator", note = "northGate is on backbone (CRS310), Windows/5090. RustDesk works. Push sovereign config via existing public relay session. Hobby system — 5090 idle compute after NUCLEUS covalent proven." }
+flockgate_wan_relay = { status = "READY → sporeGate", note = "Use existing public relay session or SSH hop via golgi. sovereign-relay-push.sh wan" }
+eero_bridge = { status = "✅ DONE", note = "Operator set bridge mode via Eero app Jun 17 18:35. Eero rebooting. WiFi clients will get DHCP from sporeGate (192.168.4.x). Flat cytoplasm achieved." }
+lan_local_relay = { status = "P3-FUTURE", note = "Run hbbs on sporeGate for zero-WAN-latency LAN connections" }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 2: Gate Persistence (systemd)
+# ──────────────────────────────────────────────────────────────
+
+[stream2]
+id = "GATE-PERSISTENCE"
+owner = "sporeGate (deploy) + cellMembrane IDE (code)"
+priority = "P1"
+description = """sporeGate already has systemd units (13/13 persisted, confirmed Jun 16 22:48).
+Remaining: fieldGate + northGate units, and bootstrap robustness (code fix in cellMembrane)."""
+
+[stream2.tasks]
+sporegate_units = { status = "✅ DONE", owner = "sporeGate", note = "13 systemd services + membrane-nucleus.target. Boot-persisted. Confirmed Jun 16." }
+fieldgate_units = { status = "BLOCKED", owner = "sporeGate", note = "fieldGate offline (dead CMOS). Same pattern when hardware returns." }
+northgate_units = { status = "DEFERRED", owner = "operator/northGate agent", note = "northGate is Windows hobby system. NUCLEUS when covalent deployments proven on Linux gates first." }
+bootstrap_hang_fix = { status = "✅ DONE", owner = "cellMembrane IDE", note = "Per-phase tokio::time::timeout (120s) shipped in ea18d6d. gate.bootstrap split into nucleus.rs + mesh.rs." }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 3: northGate NUCLEUS Deployment
+# ──────────────────────────────────────────────────────────────
+
+[stream3]
+id = "NORTHGATE-MESH-NODE"
+owner = "operator + northGate agent"
+priority = "P3"
+description = """northGate is operator's hobby system (Windows, RTX 5090). Stays personal.
+Becomes a mesh node for idle GPU compute once NUCLEUS covalent deploys are proven on Linux gates.
+Same pattern as any Steam gaming computer joining the sovereign mesh when idle."""
+
+[stream3.tasks]
+sovereign_relay = { status = "READY", note = "Push sovereign RustDesk config via existing public relay session. Operator does this." }
+windows_ssh = { status = "TODO", note = "Windows OpenSSH Server via Settings → Optional Features. Enables remote management." }
+nucleus_proof = { status = "BLOCKED", note = "Prove covalent NUCLEUS on Linux gates (sporeGate, eastGate) first. Then port patterns to Windows." }
+gpu_idle_compute = { status = "FUTURE", note = "5090 available for toadStool/barraCuda workloads when NUCLEUS Windows port exists." }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 4: projectNUCLEUS / ABG Access (ironGate)
+# ──────────────────────────────────────────────────────────────
+
+[stream4]
+id = "ABG-COMPUTE-ACCESS"
+owner = "ironGate/projectNUCLEUS"
+priority = "P2"
+description = """First ABG member end-to-end: external user → relay → NUC → workload.
+Access tier architecture (Observer/Reviewer/User/Operator) enforced by bearDog."""
+
+[stream4.tasks]
+access_tier_spec = { status = "SPEC DONE", note = "gardens/projectNUCLEUS tiered access doc exists" }
+first_member_e2e = { status = "TODO", note = "External ABG member connects via RustDesk, accesses compute" }
+jupyterhub_integration = { status = "TODO", note = "toadStool as sovereign JupyterHub replacement" }
+cursor_pairing = { status = "TODO", note = "IDE-level pair programming via relay" }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 5: VPS Convergence (sporeGate/cellMembrane)
+# ──────────────────────────────────────────────────────────────
+
+[stream5]
+id = "VPS-CONVERGENCE"
+owner = "cellMembrane/sporeGate"
+priority = "P1"
+description = """sporeGate takes FULL OWNERSHIP of VPS layer (golgi + pepti).
+Must be able to: SSH in, manage Forgejo, restart relay, trigger builds, run cascade.
+Also: consolidate depot paths, replace bash deploy script, decide pepti operational tier.
+Dual-channel handoff (USB + Git) active until sporeGate is fully autonomous."""
+
+[stream5.tasks]
+depot_path_consolidation = { status = "P1-TODO", owner = "cellMembrane IDE", note = "golgi has 3 depot paths → single canonical. Required before checksums.toml generation." }
+depot_integrity_tooling = { status = "P1-TODO", owner = "cellMembrane IDE", note = "No membrane depot.integrity command to generate checksums.toml from scratch. gate.status probe exists but needs the file." }
+harvest_multi_arch = { status = "P1-TODO", owner = "cellMembrane IDE", note = "plasmid.harvest builds local arch only. No automated multi-arch pipeline. pepti does x86_64; aarch64 needs cross-compile flag or second builder." }
+bash_to_rust_refresh = { status = "TODO", owner = "cellMembrane IDE", note = "Replace deploy_membrane.sh with plasmid.refresh" }
+pepti_operational_tier = { status = "TODO", owner = "cellMembrane IDE", note = "Deploy Tower Atomic (beardog+songbird+skunkbat) for self-validation" }
+golgi_membrane_update = { status = "DONE", note = "golgi at HEAD (9dc6a1d)" }
+sporegate_golgi_ssh = { status = "✅ DONE", note = "Key added Jun 16 22:35. sporeGate can: ssh root@[RELAY_PUBLIC]" }
+sporegate_pepti_ssh = { status = "✅ DONE", note = "Key added Jun 16 22:35. sporeGate can: ssh root@[RELAY_PUBLIC]" }
+vps_handoff_complete = { status = "✅ DONE", note = "sporeGate confirmed: SSH golgi+pepti, cascade push/pull, Forgejo key registered. FRAGO response filed Jun 16 22:48." }
+bridge_evolution = { status = "P3", note = "socat bridges → Rust-native relay with mTLS" }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 6: Event-Driven Cascade (cellMembrane)
+# ──────────────────────────────────────────────────────────────
+
+[stream6]
+id = "EVENT-DRIVEN-CASCADE"
+owner = "cellMembrane IDE"
+priority = "P1"
+description = """webhook.rs exists (440 lines) but only processes Forgejo push events → local ops.
+No GitHub webhook → Forgejo sync path. Bidirectional event-driven cascade is not wired.
+This is the cellMembrane team's primary code evolution target."""
+
+[stream6.tasks]
+forgejo_webhook = { status = "PARTIAL", owner = "cellMembrane IDE", note = "webhook.rs handles Forgejo push events → local operations. Needs: → trigger cascade to GitHub remote." }
+github_webhook = { status = "TODO", owner = "cellMembrane IDE", note = "No GitHub → Forgejo sync path exists. Needs GitHub Actions or webhook endpoint on golgi." }
+eliminate_force_push = { status = "TODO", owner = "cellMembrane IDE", note = "Goal: zero manual intervention for VCS parity" }
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 7: K-Derm Plasma Membrane Convergence
+# ──────────────────────────────────────────────────────────────
+
+[stream7]
+id = "KDERM-PLASMA-CONVERGENCE"
+owner = "cellMembrane IDE + sporeGate (deploy)"
+priority = "P2"
+description = """sporeGate IS the physical plasma membrane. Its nftables rules ARE the channel
+proteins. cellMembrane firewall.rs already generates composition-deterministic UFW rules.
+Convergence goal: sporeGate's live nftables config is generated from FirewallRuleset::for_composition()
+rather than hand-written. Hardware inventory cataloged (whitePaper/technical/HARDWARE_INVENTORY.md).
+All L2 fabric (CRS310, Omada, TL-SG605S-M2) is cytoplasm — no security policy, just switching."""
+
+[stream7.tasks]
+hardware_inventory = { status = "✅ DONE", note = "All devices cataloged with K-Derm layer mapping in whitePaper/technical/HARDWARE_INVENTORY.md" }
+kderm_mapping = { status = "✅ DONE", note = "Physical topology → envelope model mapping documented. sporeGate=plasma membrane, L2=cytoplasm, VPS=periplasm+outer." }
+firewall_nftables_gen = { status = "✅ DONE", owner = "cellMembrane IDE", note = "to_nftables_script() + NftablesConfig shipped (da39d5f). Full nft -f idempotent generation from composition. 21 firewall tests." }
+gate_preflight = { status = "✅ DONE", owner = "cellMembrane IDE", note = "gate.preflight scanner shipped (11a7c68). Interface detect, IP conflicts, port 53, NM, IPv6 forwarding." }
+sporegate_nftables_deployed = { status = "✅ DONE", owner = "sporeGate", note = "sporegate-nftables.nft generated and committed to compute-sharing/configs/. Matches live config." }
+hairpin_nat_in_composition = { status = "TODO", owner = "cellMembrane IDE", note = "Hairpin NAT (eno1→eno1 masquerade) is a plasma membrane property. Encode in MembraneComposition for diderm-with-LAN topologies." }
+att_passthrough_prep = { status = "READY", note = "Operator has Device Access Code (#283>#66<>) for BGW320. IP passthrough eliminates double-NAT, makes sporeGate sole boundary." }
+omada_vlan_audit = { status = "✅ DONE", note = "Omada probed: 1 flat VLAN (default), no isolation, supportMultiVlan=true. VLAN segmentation proposal documented in AAR. sporeGate overwatch owns next steps." }
+house2_gates_accessible = { status = "CONFIRMED", note = "House 2 gates reachable on data plane (Omada L2 forwarding live). SSH blocked (no openssh-server). Management plane investigation ongoing." }
+wireguard_3node = { status = "✅ DONE", note = "golgi (10.13.37.1), sporeGate (10.13.37.2), pepti (10.13.37.4) — 3-node mesh LIVE. 35ms/31ms latency." }
+cytoplasm_zones = { status = "✅ DONE", owner = "sporeGate overwatch", note = "TOPOLOGY_MAP.toml v4.0.0: backbone, house2, eero_wifi zones defined. CYTOPLASM_ZONES_SPEC.md handed to cellMembrane team." }
+fresh_binary_harvest = { status = "P1-TODO", owner = "cellMembrane team", note = "sporeGate binary is stale (v0.1.0, 9dc6a1d). Needs fresh harvest from pepti with gate.preflight/firewall.generate/depot.integrity." }
+
+# ──────────────────────────────────────────────────────────────
+# CARRY (not blocking Wave 115 close)
+# ──────────────────────────────────────────────────────────────
+
+[carry]
+att_passthrough = "P2: Eliminate double-NAT. [ISP] gateway → IP passthrough to sporeGate MAC."
+crs310_l2_only = "P2: Strip L3 config from CRS310, pure switch (after sporeGate stable)."
+aarch64_harvest_stale = "P2: aarch64 depot is Jun 15 (pre-genetics wave on some primals). Rebuild."
+sourdough_x86_missing = "P2: sourdough binary not in x86_64 depot."
+sporegate_family_seed = "✅ RESOLVED: Secrets installed Jun 16 22:48 (family.key, beacon.seed, env populated)."
+fieldgate_offline = "P2: Was 13/13, now unreachable. Check power/IP when physically present."
+version_tags = "P3: Only 5/13 primals tagged. Hygiene debt."
+neuralapi_hollow = "P3: biomeOS neuralAPI has 0 registered capabilities."
+ipv6_disabled = "P3: sporeGate has IPv6 forwarding disabled (caused iPhone stalls). Re-enable with proper NAT66 or PD."
+network_segmentation = "P3: VLANs on CRS310 once routing is stable (compute/mobile/guest/mgmt)."
+beardog_family_seed_deprecation = "P3: Unify FAMILY_SEED / BEARDOG_FAMILY_SEED."
+nuclear_lineage_per_user = "P3: Per-ABG-member permissions via Nuclear genetics tier."
+git_credential_seeding = "P2: Gate provisioning does not include git identity. gate.bootstrap should detect missing git config and WARN. Pepti should be credential depot — gates fetch identity on enrollment. USB kit should include gitconfig fragment for operator."
+
+# ──────────────────────────────────────────────────────────────
+# GATES
+# ──────────────────────────────────────────────────────────────
+
+[gates]
+sporegate = "LIVE: LAN periplasm router + cellMembrane owner. 13/13 alive. NAT/DHCP/DNS/RustDesk. Hairpin NAT fixed. SSH keys on Forgejo+GitHub."
+northgate = "ONBOARDING: RustDesk configured, NUCLEUS pending. Gaming/remote node."
+fieldgate = "OFFLINE: Was 13/13 alive, mesh enrolled. Currently unreachable."
+eastgate = "Overwatch: primalSpring dev, RustDesk sovereign, pair-programmer."
+irongate = "REASSIGNED: projectNUCLEUS/ABG compute access, JupyterHub/toadStool."
+golgi = "HEALTHY: Forgejo, hbbs+hbbr relay, mesh hub, 13/13 alive."
+pepti = "BUILD AUTHORITY: cargo, both arch toolchains, cellMembrane at HEAD."

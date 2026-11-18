@@ -1,0 +1,67 @@
+# Wave 103 FRAGO — songBird: Flaky Tests Eliminated + Production Stubs Evolved
+# BLUF: Root-cause of flaky ipc_resolve test found and fixed. Deep debt stubs evolved.
+
+[impulse]
+type = "frago"
+wave = 103
+gate = "eastGate"
+timestamp = "2026-06-09T14:50:00Z"
+priority = "P2"
+references = [
+    "wave102-ack-depot-refresh-mesh-live",
+]
+
+[primal]
+name = "songBird"
+commit = "b1ca36c5"
+parent_commit = "80a7b882"
+tests = 14604
+failures = 0
+flaky = 0
+clippy_warnings = 0
+
+[changes]
+summary = "Flaky test root-cause analysis + production stub evolution"
+
+[changes.flaky_test_fix]
+test = "ipc_resolve_returns_transport_endpoint_json_sourdough_wire_compat"
+root_cause = """
+VirtualRelayManager::default_base_dir() resolves to a shared filesystem path
+($XDG_RUNTIME_DIR/biomeos/songbird/virtual/). Concurrent tests calling
+ipc.register raced on binding the same UDS socket (e.g. beardog.sock),
+causing EADDRINUSE failures.
+"""
+fix = """
+IpcServiceHandler::new_isolated() — test-only constructor that gives each test
+instance a unique temp directory for relay sockets (keyed by PID + nanos).
+Applied across 34 test sites in service_tests.rs, dispatch.rs, meta.rs.
+"""
+production_impact = """
+This flakiness masked a real design issue: the production relay manager uses
+env-derived paths without namespace isolation. In multi-instance deployments,
+concurrent Songbird processes could collide on relay sockets. The test fix
+validates the isolation pattern that production should adopt for multi-tenant.
+"""
+
+[changes.stubs_evolved]
+mdns_discovery = "UniversalAdapter::discover_from_mdns wired to songbird-config::MdnsDiscovery"
+service_locator = "discover_from_registry_with → real UDS JSON-RPC to ipc.resolve"
+service_registration = "register_with_http_registry → real UDS JSON-RPC to ipc.register"
+consul_discovery = "DiscoveryMethod::ConsulService → blocking HTTP GET to Consul agent"
+
+[changes.pruned]
+deprecated_aliases = "discover_security_provider_socket removed from 3 crates (zero callers)"
+deprecated_functions = "well_known::{gaming, websocket, security} removed (zero callers)"
+dead_field = "RelayEntry::native_target removed (written but never read)"
+
+[changes.test_stability]
+jwt_races = "7 orchestrator integration tests fixed — ScopedEnv replaces unsafe env mutation"
+
+[depot]
+action_required = "rebuild songbird from b1ca36c5 for strandGate depot"
+build_target = "x86_64-unknown-linux-musl"
+
+[next]
+step_1 = "Depot rebuild on strandGate (b1ca36c5)"
+step_2 = "Continue deep debt: audit remaining env-var races across workspace"
+step_3 = "Validate multi-instance relay isolation pattern for production"

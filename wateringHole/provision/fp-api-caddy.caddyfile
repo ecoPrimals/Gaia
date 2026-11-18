@@ -1,0 +1,130 @@
+# footPrint GIS Proxy — Caddy config snippet
+#
+# Phase A of Drawbridge Weak Bond pattern.
+# Caddy handles TLS to upstream GIS services natively, bypassing SOCKET-DIR-UNIFY.
+# Client calls: /footprint/ext/{host}/{path}
+# Caddy strips prefix and reverse-proxies to https://{host}/{path}
+#
+# Integration: merge these handle blocks into the primals.eco site block
+# in provision-golgi.sh, REPLACING the existing handle_path /footprint/* block.
+#
+# Author: flockGate overwatch | Wave 137b | Jul 13, 2026
+
+# ── Updated footprint block with ext proxy routes ──────────────────────
+
+handle_path /footprint/* {
+    # GIS proxy routes — 10 weak bond hosts
+    # Caddy terminates TLS upstream; client only sees same-origin /footprint/ext/...
+
+    handle_path /ext/overpass-api.de/* {
+        reverse_proxy https://overpass-api.de {
+            header_up Host overpass-api.de
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/nominatim.openstreetmap.org/* {
+        reverse_proxy https://nominatim.openstreetmap.org {
+            header_up Host nominatim.openstreetmap.org
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/hazards.fema.gov/* {
+        reverse_proxy https://hazards.fema.gov {
+            header_up Host hazards.fema.gov
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/epqs.nationalmap.gov/* {
+        reverse_proxy https://epqs.nationalmap.gov {
+            header_up Host epqs.nationalmap.gov
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/sdmdataaccess.sc.egov.usda.gov/* {
+        reverse_proxy https://sdmdataaccess.sc.egov.usda.gov {
+            header_up Host sdmdataaccess.sc.egov.usda.gov
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/services1.arcgis.com/* {
+        reverse_proxy https://services1.arcgis.com {
+            header_up Host services1.arcgis.com
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/services2.arcgis.com/* {
+        reverse_proxy https://services2.arcgis.com {
+            header_up Host services2.arcgis.com
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/gisagocss.state.mi.us/* {
+        reverse_proxy https://gisagocss.state.mi.us {
+            header_up Host gisagocss.state.mi.us
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/gisp.mcgi.state.mi.us/* {
+        reverse_proxy https://gisp.mcgi.state.mi.us {
+            header_up Host gisp.mcgi.state.mi.us
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    handle_path /ext/gis2.cityofeastlansing.com/* {
+        reverse_proxy https://gis2.cityofeastlansing.com {
+            header_up Host gis2.cityofeastlansing.com
+            header_up User-Agent "FootPrint-HomePlanner/2.0"
+            transport http {
+                tls
+            }
+        }
+    }
+
+    # Deny any ext host not in the allowlist
+    handle_path /ext/* {
+        respond "403 Forbidden — host not in weak bond registry" 403
+    }
+
+    # SPA static files (existing behavior)
+    root * /opt/ecoPrimals/compositions/footprint/dist/client
+    header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org https://*.arcgis.com; font-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+    encode gzip
+    try_files {path} /index.html
+    file_server
+}

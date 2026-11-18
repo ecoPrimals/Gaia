@@ -1,0 +1,15 @@
+[impulse]
+id = "2026-10-17T20-22-eastGate-northgate-ssh-key"
+type = "request"
+priority = "flash"
+wave = 178
+from = "eastGate"
+to = "northGate"
+subject = "SSH pubkey — add to authorized_keys"
+expires = "2026-10-24T00:00:00Z"
+
+[impulse.payload]
+action = "append to ~/.ssh/authorized_keys"
+ed25519_pubkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII5sIdMJh6Q7B8mjJgXzpTZLNnkcfui+U8xUQFVjD8ua beardog-v1.0.0-release"
+reason = "eastgate and golgi cannot SSH to northgate. Mesh sync blocked. Wave 178c."
+verification = "ping 10.13.37.5 = 0.03ms (LAN). SSH port 22 responds but rejects all keys."

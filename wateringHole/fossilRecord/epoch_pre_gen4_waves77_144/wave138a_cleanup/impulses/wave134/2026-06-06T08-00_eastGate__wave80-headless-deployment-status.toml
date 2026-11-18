@@ -1,0 +1,61 @@
+# FRAGO: Wave 80b — VPS Headless Deployment Status
+# 3 of 3 resolved (squirrel, coralReef, skunkBat). 1 remaining: toadStool NPU.
+
+[impulse]
+id = "wave80-headless-deployment-status"
+type = "frago"
+from = "eastGate"
+to = ["toadStool"]
+date = "2026-06-06"
+priority = "P0"
+
+[context]
+reason = """
+VPS NUCLEUS refresh: 12/13 primals VPS-ready. squirrel RESOLVED (wrong binary).
+coralReef RESOLVED (wrong workspace member built — default-members fix).
+skunkBat RESOLVED (v0.2.6 --socket flag). Full pipeline validated
+(build→harvest→deploy dry-run). Only toadStool remains.
+"""
+
+[status.squirrel]
+state = "RESOLVED"
+commit = "5dea2cc6"
+root_cause = "Wrong binary deployed (ai_tools_demo instead of squirrel)"
+fix = "Build with: cargo build --release -p squirrel --bin squirrel"
+test = "squirrel server --socket /tmp/test.sock → starts, responds to health.check"
+handoff = "wateringHole/handoffs/archive/SQUIRREL_WAVE79B_VPS_SERVER_MODE_FIX_JUN05_2026.md"
+note = """
+The `server` subcommand has existed since Wave 43. default-run = "squirrel"
+added to crates/main/Cargo.toml to prevent future ambiguity. cellMembrane
+just needs to rebuild the correct binary and redeploy.
+"""
+
+[status.toadstool]
+state = "PENDING"
+blocker = "Akida NPU probe at startup hard-fails without hardware"
+fix_needed = "Add --headless or --no-hardware flag to skip NPU enumeration"
+test = "toadstool server --socket /tmp/test.sock --headless → starts clean"
+
+[status.coralreef]
+state = "RESOLVED"
+commit = "0881ca28"
+root_cause = "Workspace cargo build built amd-isa-gen tool instead of coralreef binary"
+fix = "Added default-members to workspace Cargo.toml — server binary never needed spec files"
+test = "coralreef server --socket /tmp/test.sock → starts cleanly, no spec files needed"
+
+[status.skunkbat]
+state = "RESOLVED"
+version = "0.2.6"
+commit = "a214e4c"
+fix = "--socket flag with implicit --no-tcp (ecosystem convention since v0.2.4)"
+
+[directive.toadstool]
+action = "Add headless server mode (skip NPU hardware enumeration)"
+priority = "P0"
+
+[outcome]
+expected = """
+Once toadStool is fixed and redeployed:
+  13/13 ALIVE → deploy_membrane.sh refresh → mesh.init → 3-gate mesh proof → stadial
+12/13 ready NOW. Full pipeline validated. Only toadStool NPU headless blocks gate entry.
+"""

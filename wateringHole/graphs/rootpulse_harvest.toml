@@ -1,0 +1,66 @@
+# rootpulse_harvest.toml — Per-target harvest provenance
+#
+# Records individual build events with full target/commit/blake3 traceability.
+# This is the authority for multi-target drift detection:
+#   "Was primal X built for target Y from commit Z?"
+#
+# The flat provenance.toml suffers from single-target overwrite (serde
+# flatten collision on shared field names). This graph stores per-target
+# provenance natively, queried by drift detection before falling back
+# to the flat file.
+
+[graph]
+name = "rootpulse_harvest"
+description = "Record per-target build provenance for drift detection"
+version = "0.1.0"
+trigger = "rootpulse.harvest"
+
+# ── Record: store build event ────────────────────────────────────────
+
+[[steps]]
+name = "record_build"
+primal = "rhizoCrypt"
+operation = "dag.append"
+description = "Append build event to provenance DAG: primal + target + commit + blake3"
+inputs = ["PRIMAL_NAME", "TARGET_TRIPLE", "COMMIT_SHA", "BLAKE3_HASH", "BUILDER_GATE", "BUILT_AT"]
+outputs = ["dag_ref"]
+fallback = "skip"
+
+# ── Sign: bearDog attestation ────────────────────────────────────────
+
+[[steps]]
+name = "sign_build"
+primal = "bearDog"
+operation = "auth.sign"
+description = "Sign build record with builder gate identity"
+inputs = ["dag_ref"]
+outputs = ["signed_record"]
+fallback = "skip"
+
+# ── Index: queryable provenance ──────────────────────────────────────
+
+[[steps]]
+name = "index_provenance"
+primal = "nestGate"
+operation = "index.upsert"
+description = "Index build record for drift queries: (primal, target) → (commit, blake3, built_at)"
+inputs = ["signed_record", "PRIMAL_NAME", "TARGET_TRIPLE"]
+outputs = ["index_ref"]
+fallback = "skip"
+
+# ── Query interface (used by drift detection) ────────────────────────
+
+[[steps]]
+name = "query_build"
+primal = "nestGate"
+operation = "index.query"
+description = "Query last build for (primal, target) — returns commit + blake3 or null"
+inputs = ["PRIMAL_NAME", "TARGET_TRIPLE"]
+outputs = ["last_commit", "last_blake3", "last_built_at"]
+condition = "query_mode"
+fallback = "skip"
+
+[metadata]
+biological_analog = "ribosome translation record — tracks which mRNA (commit) produced which protein (binary) for which cell type (target)"
+query_contract = "{ primal, target } → { commit, blake3, built_at } — the canonical drift detection source"
+flat_file_relationship = "provenance.toml is written as a cache after each harvest; trio is the authority"

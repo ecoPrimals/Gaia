@@ -1,0 +1,222 @@
+# FRAGO: Cross-Topology Validation & Autonomous Gate Operations
+# Replaces: wave104-cross-deployment-readiness (archived — all P1s resolved, 12/16 items done)
+# Purpose: validate across ALL arch, WAN, LAN, and topologies as gates redeploy
+
+[impulse]
+id = "wave106-cross-topology-validation"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane", "songBird", "biomeOS", "primalSpring", "all-gates"]
+date = "2026-06-09"
+priority = "P2"
+owner = "eastGate + cellMembrane"
+note = """
+The deployment surface works: VPS builds, all gates fetch, 13/13 NUCLEUS alive on
+eastGate + VPS. Mesh is LIVE (eastGate↔golgiBody). Transport 11/11. Depot 14/14 x86_64
++ 14/14 aarch64 built. Zero P1 blockers.
+
+What remains is CROSS-TOPOLOGY VALIDATION: proving the deployment model works on every
+gate, every arch, every network topology. Each gate that comes online is a validation
+opportunity. We evolve the tooling as we go — each redeployment should be easier than
+the last.
+
+Companion: AAR_WAVE105_COMPREHENSIVE_CROSS_DEPLOYMENT_JUN09_2026.md (lessons learned)
+"""
+
+# ──────────────────────────────────────────────────────────────
+# CURRENT STATE (Wave 108, Jun 10 2026 20:00 EDT)
+# ──────────────────────────────────────────────────────────────
+
+[current_state]
+p1_blockers = "ZERO. Ecosystem stadial-ready — remaining items are operational gate power-ons."
+depot_authority = "VPS (peptidoglycan). Post-primordial standard ENFORCED."
+mesh = """LIVE — 4-gate collective: eastGate ↔ golgiBody(VPS) ↔ ironGate + southGate.
+eastGate federation port 7700 LISTENING (bound *, accepting LAN + WAN).
+ironGate: VALIDATED as 3rd mesh node (mesh.init to VPS relay, 1 reachable peer, direct path).
+strandGate: VALIDATED LAN re-enrollment (Wave 106 ACK — mesh.init to eastGate + VPS, 2 peers, quality 1.0).
+southGate: VALIDATED cross-subnet (Wave 107 — 192.168.4.29/22, Eero bridge, 4.7ms to eastGate, 2 direct peers, 13/13 alive, 19/22 capabilities resolved, distributed science pipeline exercised).
+songBird: mesh persistence SHIPPED (peers.toml + auto-reconnect). Federation port bind fix SHIPPED.
+cellMembrane: gate.bootstrap + gate.status SHIPPED. --dry-run SHIPPED. VPS depot refreshed.
+flockGate: 4/5 WAN e2e — TCP connects, mesh.init acknowledged, but VPS songbird PROCESS is stale
+  (pre-federation-fix). Need cellMembrane ops to restart songbird on golgiBody."""
+transport = "11/11 non-exempt COMPLETE."
+depot_x86 = "13/13 BLAKE3 VERIFIED. All primals rebuilt from latest commits (Wave 108). VPS synced."
+depot_aarch64 = "13/13 REBUILT (Wave 108, peptidoglycan). biomeOS v4.20 (BM-UDS-01 fix), coralReef (CR-TARPC-01). checksums.toml updated. Awaiting Pixel 8 deploy + 13/13 alive validation."
+wan_depot = "13/13 serving HTTP 200 from membrane.primals.eco/depot/. checksums.toml synced."
+sovereignty = "S1-S4 ALL GRADUATED. Inner membrane fully sovereign."
+strandgate = "Wave 106 ACK: LAN x86_64 re-enrollment PROVEN. Bin target debt RESOLVED (22 alias conflicts fixed, 1089 tests, 0 failures)."
+irongate = "Wave 106: 3rd mesh node VALIDATED. gate.bootstrap + gate.status operational."
+deterministic_deployment = """CODIFIED + EVOLVED (Wave 107):
+- Source divergence FIX: plasmid.refresh now reads from depot (not stale /tmp staging)
+- Checksum coherence: refresh warns on DIVERGENCE if binary != checksums.toml
+- gate.status: local health probe (depot integrity, mesh, primals, freshness)
+- gate.bootstrap --dry-run: preview without side effects
+- WAN checksums: gates can verify via HTTPS without git
+- Atomic publish: harvest auto-commits + pushes checksums.toml + provenance.toml
+- Forgejo Actions CI: clippy+test+build pipeline on push/PR (dispatch plane ACTIVE)
+- BearDog ACME prep: TlsProvider type + caddy.tls.external/revert wired (awaiting BearDog ACME client)
+- depot_sync evolved: BLAKE3 diff (skip current), atomic copy (.new+mv), checksums verification
+- Mobile golgi fleet: GateMobility type (Fixed|Mobile), --mobile bootstrap, systemd templates,
+  NM dispatcher hook (auto mesh.init on network-up), provision-golgi.sh one-shot script
+- NDK cross-compile: aarch64-linux-android pipeline, linker auto-detection, plasmid.ndk.check
+- Wave 108 aarch64 rebuild: 13/13 primals rebuilt on peptidoglycan (biomeOS v4.20, coralReef b1ec1f4b)
+  checksums.toml updated (516879f), VPS x86_64 synced, zero divergence"""
+
+# ──────────────────────────────────────────────────────────────
+# VALIDATION MATRIX — what needs to be proven on each topology
+# ──────────────────────────────────────────────────────────────
+
+[validation.lan_x86_64]
+description = "LAN gates (eastGate, strandGate, ironGate, southGate) — x86_64-musl over UDS"
+proven_on = ["eastGate (13/13 alive, VPS-fetched)", "golgiBody VPS (13/13 alive)", "strandGate (Wave 106 ACK — LAN re-enrollment PROVEN, mesh rejoin after extended offline)", "ironGate (3rd mesh node VALIDATED — VPS relay, 13 fetched, 12/13 started)", "southGate (Wave 107 — CROSS-SUBNET VALIDATED, 13/13 alive, 4.7ms to eastGate via Eero bridge, 26/26 registered, 19/22 capability domains)"]
+needs_validation = []
+gate_playbook = """When gate comes online:
+  1. ssh <gate> 'curl -O https://membrane.primals.eco/depot/x86_64-unknown-linux-musl/{primal}' × 13
+  2. chmod +x all binaries
+  3. Start songbird with federation port, mesh.init to VPS + known LAN peers
+  4. Start remaining NUCLEUS from depot
+  5. Verify health sweep — 13/13 JSON-RPC alive"""
+
+[validation.wan_x86_64]
+description = "WAN gates (flockGate) — x86_64-musl, depot via HTTPS, mesh via VPS relay"
+proven_on = ["flockGate (4/5 e2e PASS — fetch BLAKE3-VERIFIED, launch OK, mesh.init OK, health OK)"]
+needs_validation = ["flockGate bidirectional handshake — VPS songbird PROCESS must be restarted (depot binary fresh, running process stale)"]
+blocker = """CRITICAL: VPS songbird process on golgiBody has NOT been restarted.
+The depot FILE was refreshed Jun 10 02:28 UTC (BLAKE3 03775a3f... verified).
+But the RUNNING PROCESS is still the pre-federation-fix binary (predates 1df7ef90).
+
+flockGate tested TWICE (11:40 UTC + 17:26 UTC):
+- TCP to [RELAY_PUBLIC]:7700: CONNECTS (32ms RTT)
+- mesh.init: ACKNOWLEDGED by VPS
+- After 67s+: latency_ms remains null — no bidirectional protocol handshake
+
+The 4-gate LAN collective works because LAN gates connected differently.
+WAN requires the federation fix in the running process.
+
+FIX (cellMembrane on golgiBody VPS):
+  kill $(pgrep songbird)
+  SONGBIRD_FEDERATION_PORT=7700 /opt/ecoPrimals/plasmidBin/x86_64-unknown-linux-musl/songbird server --port 7700 --bind 0.0.0.0 --socket /run/user/1000/biomeos/songbird.sock &
+
+flockGate side is READY (songbird running, port 7700 bound, mesh.init will auto-retry).
+Once VPS restarts: expect latency_ms ≈ 30-35ms → 5/5 → stadial criterion 4."""
+gate_playbook = """flockGate READY — waiting on VPS process restart only.
+After VPS restarts songbird:
+  1. flockGate mesh.init auto-retries (already running)
+  2. Verify latency_ms becomes non-null
+  3. Verify discovery.peers shows transitive peer discovery
+  4. Full NUCLEUS health sweep → 5/5 WAN e2e"""
+
+[validation.aarch64_musl]
+description = "ARM gates (grapheneGate/Pixel 8) — aarch64-musl via ADB"
+proven_on = ["grapheneGate (9/13 running — skunkbat, toadstool, barracuda via SELinux adaptation)", "biomeOS v4.18 TCP-only fallback (10th primal)"]
+needs_validation = ["Pixel 8 redeploy via deploy_pixel.sh → target 13/13 alive"]
+gate_playbook = """All development COMPLETE. aarch64 rebuild DONE (Wave 108):
+  1. ✅ BIOMEOS_SOCKET_DIR + deploy_pixel.sh + PRIMAL_BIND_MODE=fallback shipped
+  2. ✅ TCP-only fallback infrastructure shipped (ipc::server_bind)
+  3. ✅ ALL 13 primals adopted bind_transport() (coralReef, nestGate, petalTongue, biomeOS)
+  4. ✅ aarch64 rebuild on peptidoglycan DONE (Wave 108) — biomeOS v4.20, coralReef b1ec1f4b
+  5. ✅ checksums.toml updated, VPS depot synced
+  6. primalSpring evolution team (eastGate): deploy_pixel.sh, verify 13/13 alive"""
+
+[validation.vps_nucleus]
+description = "VPS NUCLEUS (golgiBody inner membrane) — x86_64 depot authority"
+proven_on = ["golgiBody (13/13 running, songbird:7700 mesh LIVE)"]
+needs_validation = ["Automated refresh when peptidoglycan builds new binaries"]
+
+# ──────────────────────────────────────────────────────────────
+# REMAINING WORK (2 P2 ops, 1 LOW — zero P1, zero primal code)
+# ──────────────────────────────────────────────────────────────
+
+# --- P2: Operational (no code changes needed) ---
+
+[remaining.flockgate_wan_e2e]
+id = "FLOCKGATE-WAN-E2E"
+owner = "cellMembrane ops (golgiBody VPS)"
+priority = "P2"
+description = "flockGate WAN 4/5 — blocked on VPS songbird PROCESS restart (stale binary running)"
+why = """flockGate tested twice (11:40 UTC + 17:26 UTC Jun 10). TCP to [RELAY_PUBLIC]:7700
+CONNECTS (32ms RTT). mesh.init ACKNOWLEDGED. But after 67s+ latency_ms stays null —
+no bidirectional handshake. The VPS depot FILE was refreshed (BLAKE3 verified) but the
+RUNNING PROCESS is still pre-federation-fix (predates 1df7ef90). LAN collective works
+because LAN gates connected differently. WAN requires the fix in the running process."""
+action = """cellMembrane ops on golgiBody VPS:
+  kill $(pgrep songbird)
+  SONGBIRD_FEDERATION_PORT=7700 /opt/ecoPrimals/plasmidBin/x86_64-unknown-linux-musl/songbird server --port 7700 --bind 0.0.0.0 --socket /run/user/1000/biomeos/songbird.sock &
+
+flockGate side is READY — songbird running, port 7700 bound, mesh.init will auto-retry.
+Once VPS restarts: expect latency_ms ~30-35ms → 5/5 → stadial criterion 4 VALIDATED."""
+
+[remaining.graphenegate_rebuild]
+id = "GRAPHENEGATE-REBUILD"
+owner = "primalSpring evolution team (eastGate)"
+priority = "P2"
+description = "aarch64 REBUILT (Wave 108). Pixel 8 redeploy pending — connect device + deploy_pixel.sh"
+why = """All 13 primals now have bind_transport() / TCP-only fallback adopted:
+- coralReef (27b4bb3): PRIMAL_BIND_MODE in resolve_bind()
+- nestGate (9f15143a): is_platform_constraint() honors PRIMAL_BIND_MODE=fallback
+- petalTongue (e5a65e0): EACCES→TCP 9900 fallback
+- biomeOS (v4.18, b8ddf351): native TCP-only fallback
+Development is COMPLETE. Rebuild DONE (Wave 108). Only hardware deploy remains.
+Owned by primalSpring evolution team on eastGate (system with Pixel 8a)."""
+action = """1. ✅ Rebuild all 13 primals for aarch64-unknown-linux-musl on peptidoglycan (Wave 108)
+2. ✅ checksums.toml updated + pushed (516879f)
+3. primalSpring evolution team: deploy to Pixel 8a via deploy_pixel.sh (PRIMAL_BIND_MODE=fallback)
+4. primalSpring evolution team: verify 13/13 alive on grapheneGate"""
+
+# --- RESOLVED (this wave) ---
+
+[resolved.biomeos_neural_api_bind]
+id = "BM-UDS-01"
+owner = "biomeOS"
+priority = "DONE"
+description = "SHIPPED (biomeOS v4.20 d35c943e + v4.21 2d64cf1f). PRIMAL_BIND_MODE=tcp_only fully wired."
+resolution = """All server bind paths (Neural API, API server, NUCLEUS) check
+PRIMAL_BIND_MODE=tcp_only before UDS bind(). SystemPaths checks BIOMEOS_SOCKET_DIR first.
+NUCLEUS injects BIOMEOS_SOCKET_DIR into all child primal env at spawn.
+Also: discovery provider dynamically resolved, NUCLEUS timeouts named constants,
+nest_commit composition pattern, niche catalog refactored to data-driven."""
+
+# --- LOW ---
+
+[remaining.sourdough_segfault]
+id = "SOURDOUGH-SEGFAULT"
+owner = "sourDough"
+priority = "LOW"
+description = "sourdough validate depot crashes (segfault)"
+why = "Depot validation falls back to manual b3sum. Erodes trust in tooling."
+action = "Run under RUST_BACKTRACE=1, investigate and fix."
+
+# ──────────────────────────────────────────────────────────────
+# RESOLVED LEDGER (compact — detail in archive/wave107/)
+# ──────────────────────────────────────────────────────────────
+
+[resolved_summary]
+count = 23
+detail = """
+Wave 106: strandGate LAN re-enrollment, ironGate 3rd mesh node, gate.bootstrap SHIPPED,
+  plasmid.fetch fix, cascade auto-fetch, mesh persistence, federation port fix,
+  NUCLEUS supervision (biomeOS v4.17), TCP-only fallback, deterministic deployment codified.
+Wave 107 cellMembrane: deployment hardening (6 items), depot_sync (BLAKE3+atomic), mobile golgi fleet,
+  Forgejo Actions CI, BearDog ACME prep, provision-golgi.sh.
+Wave 107 primals: SONGBIRD-IPC-RESOLVE-M1 (ff86204c), BARRACUDA-METHOD-DESCRIBE (v0.4.0),
+  PRIMAL-SOCKET-CLEANUP 5/5 (toadStool VERIFIED), CR-TARPC-01 (b1ec1f4b), NG-DOWNCAST-01 (7c3fe9a6),
+  BIOMEOS-AUTO-REGISTER (v4.19), SKUNKBAT-TCP-9750 DROPPED (zero-port clean).
+Wave 107 gates: southGate cross-subnet VALIDATED (13/13, 19/22 capabilities, science pipeline).
+Wave 107 biomeOS deep debt: BM-UDS-01 (v4.20), socket dir injection (v4.21), signal route completeness,
+  niche catalog refactor, discovery provider decoupled, NUCLEUS timeouts named.
+Wave 108 cellMembrane: NDK cross-compile pipeline (aarch64-linux-android), plasmid.ndk.check,
+  aarch64-musl rebuild 13/13 on peptidoglycan (biomeOS v4.20, coralReef b1ec1f4b), VPS depot synced.
+
+Full detail: archive/wave107/ (9 handoffs), impulses/resolved/ (CR-TARPC-01)
+Living standard: cellMembrane/AAR_CELLMEMBRANE_WAVE106_DETERMINISTIC_DEPLOYMENT_JUN10_2026.md
+"""
+
+# ──────────────────────────────────────────────────────────────
+# GATE ENROLLMENT
+# ──────────────────────────────────────────────────────────────
+
+[playbook.gate_enrollment]
+description = """Preferred: `membrane gate.bootstrap <gate-name>` (6-phase deterministic).
+For mobile NUCs: `membrane gate.bootstrap <name> --mobile` or `provision-golgi.sh <name>`.
+Fallback: curl from membrane.primals.eco/depot/, manual songbird + NUCLEUS start.
+See cellMembrane deploy/ for systemd units and NM dispatcher hook."""

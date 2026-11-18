@@ -1,0 +1,50 @@
+# Impulse: Switch DNS to sovereign (Porkbun → knot)
+# From: eastGate  
+# To: northGate (needs Porkbun dashboard)
+# Priority: high
+
+[impulse]
+id = "dns-sovereign-switch"
+from = "eastGate"
+to = "northGate"
+created = "2026-10-21T17:12:00Z"
+priority = "high"
+status = "active"
+
+[action]
+type = "dns-nameserver-switch"
+description = "Switch primals.eco NS from Cloudflare to sovereign knot DNS"
+
+[action.current]
+registrar = "Porkbun"
+nameservers = ["albert.ns.cloudflare.com", "samara.ns.cloudflare.com"]
+note = "Cloudflare zone appears empty — DNS not resolving publicly"
+
+[action.target]
+nameservers = ["ns1.primals.eco", "ns2.primals.eco"]
+ns1_ip = "157.230.3.183"
+ns2_ip = "137.184.197.151"
+note = "Knot DNS is alive on both, zone is correct, DNSSEC signed"
+
+[action.steps]
+manual = """
+1. Login to porkbun.com
+2. Domain: primals.eco → Nameservers → Custom
+3. Set: ns1.primals.eco, ns2.primals.eco
+4. May also need glue records (IP addresses for ns1/ns2)
+5. Save. Wait 15min for propagation.
+"""
+
+api = """
+If you have Porkbun API keys (porkbun.com/account/api):
+Drop this file to golgi membrane at /opt/membrane/live-terminal/remote/locks/dns-porkbun.json:
+{"action":"dns-porkbun","params":{"api_key":"pk1_...","api_secret":"sk1_...","domain":"primals.eco"},"from":"northGate"}
+Golgi will auto-dissolve via dissolve-locks.sh
+"""
+
+[context]
+knot_primary = "golgi (157.230.3.183) — restarted and enabled on boot"
+knot_secondary = "golgi-ext/nucleus (137.184.197.151) — running 4+ months"
+zone_serial = "2026052267"
+dnssec = "ECDSAP256SHA256"
+domains_served = ["primals.eco", "primal.eco", "nestgate.io"]

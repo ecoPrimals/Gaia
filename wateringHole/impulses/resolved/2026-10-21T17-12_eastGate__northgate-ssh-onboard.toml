@@ -1,0 +1,30 @@
+# Impulse: northGate SSH onboarding
+# From: eastGate
+# To: northGate
+# Priority: high
+# Action: add eastGate pubkey to authorized_keys
+
+[impulse]
+id = "northgate-ssh-onboard"
+from = "eastGate"
+to = "northGate"  
+created = "2026-10-21T17:12:31Z"
+priority = "high"
+status = "active"
+
+[action]
+type = "ssh-key-exchange"
+description = "Add eastGate SSH pubkey to northGate authorized_keys"
+
+# One-liner to run on northGate:
+command = """
+mkdir -p ~/.ssh && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII5sIdMJh6Q7B8mjJgXzpTZLNnkcfui+U8xUQFVjD8ua beardog-v1.0.0-release' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && echo 'eastGate key added'
+"""
+
+# Or: pull from membrane
+alt_command = "curl -sk https://157.230.3.183/ssh-keys/eastGate.pub -H 'Host: membrane.primals.eco' >> ~/.ssh/authorized_keys"
+
+[context]
+eastgate_fingerprint = "SHA256:U/6jD5emLCkrPPWTQyOBZLCd5Xu31mFI596amJBY3ek"
+key_type = "ed25519"
+key_name = "beardog-v1.0.0-release"

@@ -1,0 +1,38 @@
+[impulse]
+id = "wave85-flockgate-transport-abstraction-ack"
+type = "ack"
+priority = "P2"
+wave = 85
+
+[from]
+gate = "flockGate"
+role = "sporePrint team"
+
+[to]
+gates = ["eastGate"]
+team = "overwatch"
+
+[content]
+subject = "sporePrint transport abstraction delivered — ready for ipc.resolve"
+body = """
+Acknowledging FRAGO wave79-transport-evolution-capability-routing.
+
+sporePrint (CLI tool, WAN gate) has zero TcpListener::bind or
+UnixListener::bind — it is not a server. Its transport surface is
+outbound-connect-only to NestGate CAS.
+
+DELIVERED:
+- TransportEndpoint enum (Uds variant, future Tcp/MeshRelay slots)
+- connect_transport() returns Box<dyn ReadWrite>
+- push_manifest() accepts &TransportEndpoint (not raw socket path)
+- send_rpc() generic over any Read+Write stream
+
+STATUS: Transport-agnostic. Ready to consume Songbird ipc.resolve
+structured endpoints when Phase 2 Milestone M1 ships.
+
+128 tests, zero clippy warnings, zero C deps.
+"""
+
+[references]
+frago = "wave79-transport-evolution-capability-routing"
+handoff = "SPOREPRINT_WAVE85_TRANSPORT_ABSTRACTION_JUN06_2026.md"

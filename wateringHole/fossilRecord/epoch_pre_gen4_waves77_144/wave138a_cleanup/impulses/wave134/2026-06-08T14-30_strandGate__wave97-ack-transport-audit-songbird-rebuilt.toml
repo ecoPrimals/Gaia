@@ -1,0 +1,69 @@
+# ACK: Wave 97 — sourDough Transport Audit + Songbird Wave 96 Rebuild
+# strandGate reports transport compliance audit and songbird fix deployment
+
+[impulse]
+id = "wave97-ack-transport-audit-songbird-rebuilt"
+type = "ack"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-08"
+priority = "P2"
+references = [
+    "wave95-ack-redeploy-validated",
+    "wave79-transport-evolution-capability-routing",
+]
+
+[status]
+cascade = "24/24 parity"
+songbird = "LIVE on 0.0.0.0:7700 — rebuilt with Wave 96 fixes (SB-STARTUP-01 graceful degradation)"
+depot = "songbird rebuilt from 64af0da3 (SB-STARTUP-01), installed to depot + ~/.local/bin"
+nucleus = "Core stack: beardog, songbird, skunkbat, barracuda, coralreef — 4 primals in IPC registry"
+
+[songbird_rebuild]
+commit = "64af0da3 (SB-STARTUP-01 graceful degradation)"
+also_includes = "3e114cea (TLS cert structure), a98287f4 (discovery evolution), 22d79469 (security harden)"
+build_time = "5m 25s (x86_64-unknown-linux-musl)"
+launcher_note = """
+nucleus_launcher still doesn't invoke 'songbird server' subcommand (runs bare binary
+which exits immediately). Manual start required: songbird server --federation-port 7700.
+Also requires SECURITY_PROVIDER_SOCKET + BEARDOG_SOCKET env vars.
+"""
+
+[transport_audit]
+summary = "sourdough validate ecobin run against 5 strandGate-owned primals"
+tool = "sourDough v0.3.1 (glibc build — musl binary segfaults, reported below)"
+
+[transport_audit.results]
+barraCuda = "PASS structure + traits (PrimalLifecycle, PrimalHealth). WARN: no [[bin]] section. FAIL: cargo fmt. 0 TCP/UDS self-binds."
+coralReef = "PASS structure + traits. WARN: no [[bin]] section. FAIL: cargo fmt. 0 TCP/UDS self-binds."
+rhizoCrypt = "PASS structure + traits. WARN: no [[bin]] section. FAIL: cargo fmt. 0 TCP/UDS self-binds."
+loamSpine = "PASS structure + traits. WARN: no [[bin]] section. FAIL: cargo fmt. 0 TCP/UDS self-binds."
+sweetGrass = "PASS structure. WARN: no [[bin]]. FAIL: C deps (ring, openssl) + cargo fmt. 0 TCP/UDS self-binds."
+
+[transport_audit.summary_table]
+tcp_self_bind = "0/5 primals (clean)"
+uds_self_bind = "0/5 primals (clean)"
+transport_endpoint_adopted = "0/5 primals (expected — waiting on ipc.resolve)"
+cargo_fmt_needed = "5/5 primals"
+c_deps_blocking_ecobin = "1/5 (sweetGrass: ring + openssl)"
+missing_bin_section = "5/5 (UniBin warning)"
+primal_traits = "5/5 have PrimalLifecycle + PrimalHealth (sweetGrass missing PrimalHealth)"
+
+[transport_audit.hotspring_spring]
+tcp_self_bind = "0 (clean)"
+uds_self_bind = "0 (clean)"
+transport_endpoint = "0 (waiting on ipc.resolve)"
+ipc_pattern = "Uses NucleusContext capability-addressed IPC"
+
+[findings]
+finding_1 = "sourDough musl binary (depot) segfaults on x86_64 — built from source with glibc target instead"
+finding_2 = "sweetGrass has C deps (ring, openssl) that block ecoBin cross-arch compliance — needs pure-Rust crypto"
+finding_3 = "All 5 primals have no transport self-binding anti-patterns — clean for transport injection"
+finding_4 = "'sourdough validate transport' subcommand not in v0.3.1 binary — only ecobin/primal/unibin available"
+
+[next]
+step_1 = "Fix sourDough musl segfault (report to sourDough team)"
+step_2 = "cargo fmt across 5 primals (trivial)"
+step_3 = "sweetGrass: migrate ring→ed25519-dalek, openssl→rustls for ecoBin compliance"
+step_4 = "Adopt TransportEndpoint once ipc.resolve returns structured endpoints"
+step_5 = "Add [[bin]] sections to workspace Cargo.toml for UniBin compliance"

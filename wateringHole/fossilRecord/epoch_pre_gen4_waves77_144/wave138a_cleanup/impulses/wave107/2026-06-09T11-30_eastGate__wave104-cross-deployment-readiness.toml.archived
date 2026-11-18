@@ -1,0 +1,473 @@
+# FRAGO: Cross-Deployment Readiness
+# Consolidated from wave79 (transport) + wave84 (depot/pipeline)
+# Single focused FRAGO for remaining cross-deployment work
+
+[impulse]
+id = "wave104-cross-deployment-readiness"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane", "bearDog", "songBird", "biomeOS", "all-primals", "all-gates"]
+date = "2026-06-09"
+updated = "2026-06-09T22:47"
+priority = "P2"
+owner = "cellMembrane + eastGate"
+note = """
+The ecosystem has reached a critical inflection: mesh is LIVE, transport is near-
+complete, depot is fresh for x86_64. The deployment surface is a MATRIX of target
+triples x gate topologies — not just x86_64-musl with others as side projects.
+The ecoBin standard mandates universal portability. This FRAGO tracks what remains
+to achieve it.
+
+Replaces: wave79-transport-evolution-capability-routing (archived)
+          wave84-temporal-inner-membrane-adoption (archived)
+"""
+
+# ──────────────────────────────────────────────────────────────
+# CURRENT STATE (Wave 105, Jun 9 2026)
+# ──────────────────────────────────────────────────────────────
+
+[current_state]
+mesh = "LIVE — eastGate↔strandGate bidirectional, 13h+ stable, all 4 criteria PASS"
+transport = "11/11 non-exempt COMPLETE (toadStool S306c confirmed, Wave 104). Zero self-knowledge violations."
+nucleus = "Full NUCLEUS alive on eastGate — all JSON-RPC primals responding, tarpc sockets nominal."
+sovereignty = "S1-S3 GRADUATED. S4 auth gate ending Jun 9 (review pending today). DNS PROPAGATED (Jun 4)."
+ipc_resolve = "SHIPPED — returns structured TransportEndpoint JSON (UDS/TCP/MeshRelay). 11 primals ready as consumers."
+cascade = "OPERATIONAL — 38/38 repos, zero failures, conflict auto-resolve SHIPPED by cellMembrane."
+beardog_p1 = "RESOLVED — Wave 145: pure Rust crypto. Depot binary FRESH (11.2MB, rebuilt Jun 9)."
+biomeos = "v4.16 depot binary FRESH (15.9MB, rebuilt Jun 9). Deep debt + error chains + hardcoding elimination."
+songbird = "Wave 104: env-var race conditions eliminated across 5 crates."
+cellmembrane = "Wave 105: WAN depot DEPLOYED + VALIDATED (ironGate 13/13 BLAKE3). Multi-target pipeline fix SHIPPED (commit 3a1900b). plasmid.depot_sync SHIPPED (automated inner→outer). aarch64 14/14. Deep debt complete."
+depot_x86 = "14/14 x86_64-musl BLAKE3 VERIFIED (ironGate WAN fetch 13/13 PASS). checksums.toml updated to VPS ground truth."
+depot_aarch64 = "14/14 aarch64-unknown-linux-musl BUILT (Wave 105 sweep). Multi-target pipeline fix SHIPPED — overwrite issue RESOLVED (commit 3a1900b). Wave 105b: 13/13 rebuilt locally on eastGate, 6 primals RUNNING on Pixel 8 via deploy_pixel.sh."
+biomeos_graph = "VALIDATED — v4.16 composition.deploy accepted, graph.status 13 phases, LocalTrusted works."
+primalspring = "Wave 105b: grapheneGate deploy (6/13 running on Pixel 8), sequential_graph flake fix, cast-safety fixes, 887 tests 0 failures."
+graphenegate = "Wave 105b: 13/13 aarch64-musl BUILT on eastGate. 6/13 primals RUNNING on Pixel 8 (beardog + songbird + rhizocrypt + loamspine + sweetgrass + squirrel). bearDog BTSP production mode LIVE. NDK (aarch64-linux-android) blocked by bearDog StrongBox module (16 compilation errors). 7 primals need Android UDS path adaptation. deploy_pixel.sh FAMILY_SEED fix shipped."
+flockgate_wan = "Wave 105: WAN e2e 4/5 PASS — fetch/launch/mesh.init/health all OK. BLOCKED on VPS songbird relay (no songbird on VPS:7700 for WAN federation)."
+depot_authority = "VPS (peptidoglycan) is the SOLE depot authority. eastGate local depot re-fetched from VPS — 13/13 BLAKE3 verified. Post-primordial standard enforced: no local rebuilds for deployment."
+p1_blockers = "ZERO. All former P1s resolved. Post-primordial depot standard reinforced."
+
+# ──────────────────────────────────────────────────────────────
+# DEPLOYMENT TARGET MATRIX (ecoBin standard)
+# ──────────────────────────────────────────────────────────────
+
+[deployment_targets.x86_64_musl]
+triple = "x86_64-unknown-linux-musl"
+description = "Baseline LAN / VPS / WAN — operational"
+depot = "14/14 fresh"
+gates = ["eastGate", "strandGate", "ironGate", "golgiBody", "flockGate (depot empty)"]
+status = "OPERATIONAL"
+blockers = []
+
+[deployment_targets.aarch64_musl]
+triple = "aarch64-unknown-linux-musl"
+description = "ARM servers, future ARM VPS, GrapheneOS (Pixel 8)"
+depot = "13/13 BUILT locally on eastGate (Wave 105b). 6/13 RUNNING on Pixel 8."
+gates = ["grapheneGate (Pixel 8 — 6 primals live)", "future ARM VPS"]
+status = "OPERATIONAL on grapheneGate — Tower + 3 data primals + squirrel running"
+blockers = ["7 primals need Android UDS path adaptation (/run/user/ and /tmp/biomeos/ not accessible under ADB shell)"]
+
+[deployment_targets.aarch64_android]
+triple = "aarch64-linux-android"
+description = "Pixel 8 / GrapheneOS (grapheneGate) — native Android NDK target for APK integration"
+depot = "0/14 (NDK target blocked by bearDog StrongBox)"
+gates = ["grapheneGate (Pixel 8)"]
+status = "BLOCKED — bearDog StrongBox module has 16 compilation errors for android target"
+blockers = ["bearDog beardog-tunnel android_strongbox: 16 errors (missing type imports KeyGenerationSpec/KeyUsage/etc, unimplemented HSM methods)", "aarch64-musl is sufficient for initial GrapheneOS deployment"]
+note = """NDK cross-compile is a future phase. aarch64-unknown-linux-musl static binaries
+run natively on GrapheneOS and are the correct initial deployment target. NDK target is
+needed later for native APK integration and StrongBox hardware HSM access.
+See GRAPHENEGATE_BOOTSTRAP_STANDARD.md."""
+
+[deployment_targets.x86_64_windows]
+triple = "x86_64-pc-windows-msvc"
+description = "Future Windows gates — named pipes IPC"
+depot = "0/14"
+gates = []
+status = "DESIGN PHASE"
+blockers = ["named pipes transport implementation", "MSVC toolchain setup"]
+
+[deployment_targets.wasm32_wasi]
+triple = "wasm32-wasi"
+description = "Future browser/edge/embedded"
+depot = "0/14"
+gates = []
+status = "DESIGN PHASE"
+blockers = ["WASM runtime integration"]
+
+# ──────────────────────────────────────────────────────────────
+# REMAINING WORK — prioritized, deduplicated
+# ──────────────────────────────────────────────────────────────
+
+[resolved.beardog_pure_rust]
+id = "BEARDOG-PURE-RUST"
+owner = "bearDog"
+priority = "was-P1"
+description = "RESOLVED (Wave 145) — aws-lc-rs replaced with rustls-rustcrypto (pure Rust)"
+resolution = """bearDog v0.9.0 Wave 145: TLS CryptoProvider → rustls-rustcrypto, CSR → p256+x509-cert,
+deny.toml bans 19 C-crypto crates. cargo check --target aarch64-unknown-linux-musl PASS.
+PURE_RUST_CRYPTO_PURITY_STANDARD.md published as ecosystem standard. Zero C-crypto deps
+in resolved dependency graph. All non-x86 ecoBin targets UNBLOCKED."""
+
+[resolved.wan_outer_membrane]
+id = "WAN-OUTER-MEMBRANE"
+owner = "cellMembrane"
+priority = "was-P1"
+description = "RESOLVED (Wave 105) — golgiBody outer membrane WAN binary distribution SHIPPED"
+resolution = """cellMembrane shipped `plasmid.fetch --source wan` for HTTPS-based binary fetching
+from the outer membrane (Caddy). `caddy.depot.provision` sets up file_server on golgiBody-ext
+serving /opt/ecoPrimals/plasmidBin. WAN gates no longer need SSH access to fetch depot binaries.
+Production deployment on golgiBody-ext and flockGate validation pending."""
+
+[remaining.graphenegate_bootstrap]
+id = "GRAPHENEGATE-BOOTSTRAP"
+owner = "primalSpring (parallel team)"
+priority = "P2"
+description = "grapheneGate Role 1 partially validated — 6/13 primals live on Pixel 8, UDS adaptation needed for remaining 7"
+why = """aarch64-musl 13/13 built locally on eastGate. 6 primals RUNNING on Pixel 8
+(beardog, songbird, rhizocrypt, loamspine, sweetgrass, squirrel). bearDog BTSP
+production mode LIVE with family seed. NDK (aarch64-linux-android) blocked by
+bearDog StrongBox module — 16 compilation errors, bearDog team debt.
+aarch64-musl is the correct initial target for GrapheneOS deployment."""
+action = """COMPLETED:
+1. ✅ aarch64-musl 13/13 built on eastGate (ld.lld symlinked from rust-lld)
+2. ✅ deploy_pixel.sh FAMILY_SEED export fix shipped
+3. ✅ 6/13 primals deployed and running on Pixel 8 via ADB
+4. ✅ bearDog BTSP production mode, BirdSong genetics initialized
+5. ✅ songbird responding on HTTP with federation capabilities
+
+REMAINING:
+1. Android UDS path adaptation for 7 primals (skunkbat, toadstool, barracuda, coralreef, nestgate, biomeos, petaltongue)
+   - /run/user/2000/biomeos/ not accessible under ADB shell user
+   - /tmp/biomeos/ socket paths need remapping to /data/local/tmp/biomeos/
+2. Dark Forest beacon broadcast validation (requires songbird port-conflict fix)
+3. bearDog StrongBox NDK compilation (bearDog team debt — 16 errors)
+See GRAPHENEGATE_BOOTSTRAP_STANDARD.md."""
+
+[remaining.songbird_ipc_resolve]
+id = "SONGBIRD-IPC-RESOLVE-M1"
+owner = "songBird"
+priority = "DONE"
+description = "ipc.resolve returns structured TransportEndpoint JSON — SHIPPED Wave 98"
+why = """RESOLVED. ipc.resolve returns structured JSON since Wave 98 (commit aebe271f).
+Wire format: { "transport": "uds", "path": "..." } / { "transport": "tcp", "host": "...", "port": N }
+/ { "transport": "mesh_relay", "peer_id": "...", "capability": "..." }.
+Test: ipc_resolve_returns_transport_endpoint_json_sourdough_wire_compat (passes deterministically).
+10+ primals ready as consumers. Orchestrator capability.resolve also returns TransportEndpoint."""
+action = "No action needed. Consumers can adopt at will. sourdough validate transport confirms wire compat."
+
+[resolved.cm_cascade_conflict]
+id = "CM-CASCADE-CONFLICT"
+owner = "cellMembrane"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — cascade conflict auto-resolve SHIPPED"
+resolution = """cellMembrane now auto-discards dirty regenerable metadata files
+(checksums.toml, provenance.toml, freshness.toml) before ff-only pull. Eliminates
+recurring operator intervention on every 2nd cascade. Matches recommendation from
+[aar.cascade_conflicts]. Tested: 38/38 cascade with zero conflicts."""
+
+[resolved.cm_wan_validate]
+id = "CM-WAN-VALIDATE"
+owner = "cellMembrane + eastGate"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — WAN depot DEPLOYED, validated from ironGate 13/13 OK over HTTPS"
+resolution = """caddy.depot.provision deployed on golgiBody, /depot/ route live on
+membrane.primals.eco. plasmid.fetch --source wan validated from ironGate — 13/13 binaries
+fetched successfully over HTTPS. Awaiting flockGate team for WAN-side e2e validation."""
+
+[resolved.cm_harvest_atomic]
+id = "CM-HARVEST-ATOMIC"
+owner = "cellMembrane"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — stage_to_depot uses .new + rename(2), refresh SCPs to .new + mv"
+resolution = """cellMembrane already implemented atomic rename pattern. The ETXTBSY failure
+during Wave 105 was on an older code path (manual harvest). Current pipeline uses
+.new temp file + rename(2) which is atomic on same filesystem."""
+
+[resolved.cm_vps_depot_sync]
+id = "CM-VPS-DEPOT-SYNC"
+owner = "cellMembrane"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — plasmid.depot_sync SHIPPED, automated inner→outer binary flow"
+resolution = """cellMembrane shipped plasmid.depot_sync (commit 7ff43f5): after plasmid.refresh
+pushes binaries to /opt/membrane/, depot_sync copies them to the WAN depot directory
+(/opt/ecoPrimals/plasmidBin/primals/{arch}/) so Caddy serves current binaries. Runs
+automatically as post-refresh step. Also available as standalone command."""
+
+[resolved.cm_aarch64_sweep]
+id = "CM-AARCH64-SWEEP"
+owner = "cellMembrane"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — 14/14 aarch64-unknown-linux-musl built, zero C-dep violations"
+resolution = """Full aarch64 sweep complete. All 14 primals cross-compile cleanly after
+bearDog Wave 145 pure Rust. Checksums committed. NOTE: sweep overwrote x86_64 checksums
+section — see CM-CHECKSUM-MULTI-TARGET AAR."""
+
+[resolved.cm_checksum_multi_target]
+id = "CM-CHECKSUM-MULTI-TARGET"
+owner = "cellMembrane"
+priority = "was-P2"
+description = "RESOLVED (Wave 105b) — multi-target checksums pipeline shipped (read-modify-write)"
+resolution = """cellMembrane shipped fix (commit 3a1900b): depot.rs now parses existing TOML,
+updates only the target section being built, writes back complete file. Includes validation
+gate that aborts if a pre-existing section would be lost, plus regression test confirming
+target A survives after target B harvest. Same-wave turnaround from AAR to fix."""
+
+[resolved.biomeos_graph_revalidate]
+id = "BIOMEOS-GRAPH-REVALIDATE"
+owner = "eastGate"
+priority = "was-P2"
+description = "RESOLVED (Wave 105) — biomeOS v4.16 graph.deploy VALIDATED with LocalTrusted"
+resolution = """biomeOS v4.16 composition.deploy accepted on eastGate. graph.status reports
+13 phases. Zero BTSP ceremony for local operator (LocalTrusted access level). Validated
+by parallel primalSpring team. Composition graph definitions (nucleus_complete.toml,
+tower_atomic.toml) deployed to plasmidBin/graphs/."""
+
+[resolved.depot_authority_enforced]
+id = "CM-DEPOT-DIVERGENCE"
+owner = "eastGate"
+priority = "was-P2"
+description = "RESOLVED — post-primordial depot standard enforced, local depot re-fetched from VPS"
+resolution = """The divergence was caused by ad-hoc local rebuilds on eastGate, violating
+post-primordial deployment. Resolution: stopped all locally-rebuilt primals, fetched 13/13
+from VPS (membrane.primals.eco/depot/), verified BLAKE3 checksums, restarted NUCLEUS.
+Standard reinforced: peptidoglycan/VPS is the sole build authority. No local cargo build
+for deployment. checksums.toml always reflects VPS output."""
+
+[remaining.vps_songbird_relay]
+id = "VPS-SONGBIRD-RELAY"
+owner = "cellMembrane"
+priority = "P2"
+description = "Start songbird on VPS:7700 for WAN mesh federation"
+why = """flockGate WAN e2e passed 4/5 stages but BLOCKED on WAN mesh peering — no songbird
+on VPS (golgiBody-ext) to relay between WAN gates and LAN gates. flockGate cannot reach
+eastGate/strandGate directly (different subnets). VPS relay is the simplest path."""
+action = "Start songbird on golgiBody-ext with --port 7700 --bind 0.0.0.0. Then flockGate + LAN gates can federate through VPS."
+
+[remaining.eastgate_federation_port]
+id = "EASTGATE-FEDERATION-PORT"
+owner = "eastGate ops"
+priority = "P2"
+description = "eastGate songbird federation port 7700 not listening — blocks ironGate mesh"
+why = """ironGate has songbird initialized with mesh.init (node_id: ironGate, port 7700 bound).
+But eastGate port 7700 is not accepting connections (TCP refused). This blocks the
+3-gate plasmodium collective."""
+action = "Restart eastGate songbird with --federation-port 7700 or verify SONGBIRD_FEDERATION_PORT=7700 is set."
+
+[remaining.graphenegate_uds_adaptation]
+id = "GRAPHENEGATE-UDS-ADAPTATION"
+owner = "primalSpring (parallel team)"
+priority = "P2"
+description = "7 primals need Android UDS path adaptation for grapheneGate"
+why = """skunkbat, barracuda, coralreef, nestgate, biomeos, petaltongue, toadstool all fail
+on Pixel 8 due to Android filesystem restrictions (/run/user/ and /tmp/biomeos/ not
+accessible under ADB shell). Need BIOMEOS_SOCKET_DIR env var override or deploy_pixel.sh
+socket path remapping."""
+action = """Add BIOMEOS_SOCKET_DIR env var support to primals (default: /data/local/tmp/biomeos/
+on Android). deploy_pixel.sh sets this + creates the directory before launch."""
+
+[remaining.irongate_mesh_enroll]
+id = "IRONGATE-MESH-ENROLL"
+owner = "ironGate"
+priority = "LOW"
+description = "ironGate mesh initialized — waiting for eastGate federation port"
+why = """ironGate songbird running with --federation-port 7700, mesh.init complete
+(node_id: ironGate). Port 7700 bound and listening. BLOCKED: eastGate port 7700 not
+accepting connections (TCP connection refused). strandGate offline (no ping response).
+ironGate side is READY — will federate when peers come online."""
+action = "Awaiting eastGate team to enable songbird federation port 7700. strandGate needs to be powered on."
+
+[remaining.windows_ecobin]
+id = "WINDOWS-ECOBIN"
+owner = "future"
+priority = "LOW"
+description = "x86_64-pc-windows-msvc target — named pipes IPC"
+why = "Windows gates would extend the deployment surface to Windows hardware."
+action = "Design: named pipes transport, MSVC build pipeline. Long-term."
+
+# ──────────────────────────────────────────────────────────────
+# TRANSPORT ADOPTION SCORECARD (final tally)
+# ──────────────────────────────────────────────────────────────
+
+[transport_scorecard]
+done = [
+  "sweetGrass v0.7.53 — LOCAL, wire-compatible",
+  "nestGate Session 97-98 — LOCAL, Phase 2 wired",
+  "coralReef 0a2f2f6 — LOCAL, 19 tests",
+  "squirrel f180c311 — LOCAL, Phase 2 (all 4 outbound TCP wired)",
+  "skunkBat 1b2f696 — LOCAL, full injection (per-capability env vars)",
+  "petalTongue b584571 — LOCAL",
+  "loamSpine b9828fe — LOCAL, shipped ahead of Wave 103 target",
+  "barracuda 408afaa5 — LOCAL (sourdough-core dep removed, self-knowledge enforced)",
+  "rhizoCrypt e621c6b — LOCAL (sourdough-core dep removed, self-knowledge enforced)",
+  "bearDog daf682c70 — LOCAL in beardog_types::btsp, Phase 2 wired",
+  "sporePrint Wave 103 — LOCAL, canonical format (flockGate)",
+]
+pending = []
+note_toadstool = "toadStool S306c Wave 104: transport CONFIRMED DONE. 11/11 non-exempt COMPLETE."
+exempt = ["songBird (transport provider)", "biomeOS (orchestrator)"]
+note = """sourDough defines the wire format as the REPOSITORY OF PRIMAL STANDARDS.
+Primals implement TransportEndpoint locally using self-knowledge only. No primal
+depends on sourdough-core. sourdough validate transport audits compliance externally."""
+
+# ──────────────────────────────────────────────────────────────
+# ARCHITECTURE: GOLGIBODY DIDERM + GRAPHENEGATE TRUST MODEL
+# ──────────────────────────────────────────────────────────────
+
+[architecture.golgibody]
+summary = """
+The golgiBody diderm has two membrane faces and a peptidoglycan layer between them.
+The WAN mesh requires formalizing the outer membrane face:
+
+  INNER MEMBRANE (golgiBody)
+    - Faces LAN / covalent bonded gates
+    - Serves depot binaries to eastGate, strandGate, ironGate
+    - Syncs source via cascade (peptidoglycan relay to Forgejo)
+    - Trust: SSH keys, Forgejo HMAC, covalent bond auth
+    - Current: VPS at 137.184.197.151 (operational)
+
+  PEPTIDOGLYCAN LAYER
+    - Build substrate between inner and outer membranes
+    - Compiles static binaries (musl-static, cross-arch) from synced source
+    - Stores depot in plasmidBin. SSH trust established (Wave 92).
+    - Operational for x86_64-musl. aarch64 blocked on bearDog.
+
+  OUTER MEMBRANE (golgiBody-ext)
+    - Faces WAN / external / ionic+weak interaction partners
+    - Serves depot to flockGate and future WAN gates
+    - NEEDED: HTTP endpoint (Caddy /depot/) or separate instance
+    - Trust: BTSP tokens, TLS, beardog capability verification
+
+The inner membrane syncs the pepti layer. The pepti layer builds. Both membrane
+faces serve from the pepti layer's output. Inner serves LAN (covalent). Outer
+serves WAN (ionic/weak). The pepti layer is the air gap.
+"""
+
+[architecture.graphenegate]
+summary = """
+grapheneGate (Pixel 8) is the portable physical root of trust:
+  - Titan M2 secure element binds FAMILY_SEED to hardware
+  - BirdSong beacon proves family membership on any network
+  - Can bootstrap new gates via USB or WiFi (Role 2-3)
+  - Appears as standard Android device under scrutiny
+  - Wave 105b: FIRST DEPLOYMENT — 6 primals running via aarch64-musl over ADB
+    bearDog BTSP production, songbird federation, rhizocrypt, loamspine, sweetgrass, squirrel
+  - NDK (aarch64-linux-android) blocked on bearDog StrongBox (future phase for APK/HSM)
+See GRAPHENEGATE_BOOTSTRAP_STANDARD.md for full trust model.
+"""
+
+# ──────────────────────────────────────────────────────────────
+# AAR: CHECKSUM MULTI-TARGET OVERWRITE (Wave 105)
+# ──────────────────────────────────────────────────────────────
+
+[aar.checksum_multi_target_overwrite]
+problem = """aarch64 sweep (commit c46cc1c) overwrote checksums.toml wholesale, destroying
+the [x86_64-unknown-linux-musl] section (14 entries). Detected during eastGate revalidation
+as 14/14 MISMATCH on x86_64 depot binaries."""
+
+root_cause = """The harvest/sweep pipeline treats checksums.toml as a single-target file.
+It regenerates the file from local build output rather than read-modify-write. When only
+one target existed this was fine. With two target sections (x86_64 + aarch64), the second
+sweep destroyed the first. This is a data-destructive single-writer assumption."""
+
+recommendation = """1. Read-modify-write: parse existing sections, update only the target being built.
+2. Validation gate: verify all known target sections survive before commit.
+3. Regression test: harvest A, harvest B, verify A survives."""
+
+classification = "Upstream cascade failure — destructive metadata loss propagated to all gates. P2 (recoverable from local binaries)."
+
+occurrences = ["Wave 105: aarch64 sweep overwrote x86_64 checksums (commit c46cc1c)"]
+
+# ──────────────────────────────────────────────────────────────
+# AAR: RECURRING CASCADE CONFLICTS (carried from wave84, RESOLVED Wave 105)
+# ──────────────────────────────────────────────────────────────
+
+[aar.cascade_conflicts]
+problem = """Recurring ff-only merge conflicts on cascade for plasmidBin (checksums.toml)
+and wateringHole (freshness.toml). Occurred on Waves 99, 102, and 103."""
+
+root_cause = """Two files are both locally-generated AND upstream-synced:
+  1. checksums.toml — regenerated locally after depot rebuild, also pushed by other gates
+  2. freshness.toml — auto-published by cascade on every gate
+Multiple gates writing within the same window → ff-only fails."""
+
+recommendation = """Option A (quick fix): Auto-resolve 'theirs' for machine-generated files.
+Option B (long-term): Single-writer model — peptidoglycan writes checksums, cascade
+initiator writes freshness. cellMembrane implements Option A, evolves toward B."""
+
+occurrences = [
+  "Wave 99: plasmidBin checksums.toml",
+  "Wave 102: plasmidBin checksums.toml",
+  "Wave 103: plasmidBin checksums.toml + wateringHole freshness.toml",
+]
+
+# ──────────────────────────────────────────────────────────────
+# AAR: GRAPHENEGATE FIRST DEPLOYMENT (Wave 105b)
+# ──────────────────────────────────────────────────────────────
+
+[aar.graphenegate_first_deploy]
+problem = """grapheneGate NDK cross-compile (aarch64-linux-android) was the assigned task.
+bearDog's android_strongbox module has 16 compilation errors for the android target
+(missing type imports: KeyGenerationSpec, KeyUsage, AttestationResponse, etc; unimplemented
+HSM methods: is_healthy, check, attest_device). This is bearDog team debt, not fixable
+from primalSpring."""
+
+root_cause = """The aarch64-linux-android target activates cfg(target_os = "android") code
+paths in bearDog's StrongBox HSM module. These paths reference types and methods that exist
+only as stubs/skeletons — the actual JNI/Keymaster integration is incomplete. The 16 errors
+are in crates/beardog-tunnel/src/tunnel/hsm/android_strongbox/. This blocks the entire
+NDK depot since bearDog is a dependency of the Tower composition."""
+
+resolution = """Pivoted to aarch64-unknown-linux-musl which is the correct initial target
+for GrapheneOS deployment. musl static binaries run natively on GrapheneOS (no NDK needed).
+Built all 13 primals locally on eastGate:
+  - ld.lld: symlinked from rust-lld (nestGate + rhizoCrypt required LLD)
+  - toolchain: aarch64-musl target added to nestGate's pinned 1.94.1 toolchain
+  - binary names: biomeOS needed -p biomeos-unibin, skunkBat needed -p skunk-bat-server
+Deployed via deploy_pixel.sh with --beacon-seed. Fixed FAMILY_SEED export missing from
+startup script generation. 6/13 primals running (TCP-capable ones). 7 failed due to
+Android UDS path restrictions (/run/user/ and /tmp/biomeos/ not accessible under ADB shell)."""
+
+recommendation = """1. bearDog team: complete android_strongbox type definitions and HSM method
+   implementations for aarch64-linux-android target.
+2. Android UDS adaptation: primals that bind to /run/user/ or /tmp/biomeos/ sockets need
+   an Android override to use $HOME-relative paths (e.g., /data/local/tmp/biomeos/).
+   This could be a per-primal env var (e.g., BIOMEOS_SOCKET_DIR) or a deploy_pixel.sh
+   startup script fix that creates appropriate symlinks.
+3. songbird port-conflict: deploy_pixel.sh should kill stale processes before launching
+   (pkill by binary path, not just process name)."""
+
+classification = "Design adaptation — musl target validated as correct first step. NDK is a future phase for APK/HSM integration."
+
+occurrences = ["Wave 105b: first grapheneGate deployment — 6/13 primals live on Pixel 8"]
+
+# ──────────────────────────────────────────────────────────────
+# OUTCOME
+# ──────────────────────────────────────────────────────────────
+
+[outcome]
+expected = """
+ZERO P1 BLOCKERS as of Wave 105b. grapheneGate first deployment achieved:
+  RESOLVED:
+  - bearDog pure Rust (Wave 145): all non-x86 targets UNBLOCKED
+  - WAN depot distribution (Wave 105): DEPLOYED + VALIDATED (ironGate 13/13 BLAKE3 PASS)
+  - aarch64 sweep (Wave 105): 14/14 built, zero C-dep violations
+  - Cascade conflict auto-resolve (Wave 105): SHIPPED
+  - Harvest atomic rename (Wave 105): SHIPPED (stage_to_depot .new + rename)
+  - CM-CHECKSUM-MULTI-TARGET (Wave 105): SHIPPED same-wave (read-modify-write + validation gate, commit 3a1900b)
+  - CM-VPS-DEPOT-SYNC (Wave 105): SHIPPED (plasmid.depot_sync, automated inner→outer)
+  - biomeOS graph.deploy (Wave 105): VALIDATED (LocalTrusted, 13-phase composition)
+  - primalSpring Wave 105: is_skippable() canonical, 887 tests, PRIMAL_GAPS current
+  - ironGate mesh init (Wave 105): INITIALIZED (node_id: ironGate, port 7700 listening)
+  - grapheneGate Wave 105b: 13/13 aarch64-musl BUILT, 6/13 RUNNING on Pixel 8,
+    bearDog BTSP production mode LIVE, deploy_pixel.sh FAMILY_SEED fix shipped
+
+  REMAINING:
+  1. grapheneGate UDS path adaptation — 7 primals need Android socket path remapping
+  2. bearDog StrongBox NDK compilation — 16 errors in android_strongbox module (bearDog team debt)
+  3. ironGate mesh federation — BLOCKED on eastGate port 7700 (eastGate team)
+  4. flockGate WAN-side e2e validation (awaiting flockGate team)
+
+The ecosystem is at its strongest. Mesh initialized on 3 gates (eastGate↔strandGate stable,
+ironGate initialized), transport COMPLETE, both depot targets built, WAN deployed + verified,
+grapheneGate first primals live on Pixel 8, sovereignty graduating. Stadial gate within reach.
+"""

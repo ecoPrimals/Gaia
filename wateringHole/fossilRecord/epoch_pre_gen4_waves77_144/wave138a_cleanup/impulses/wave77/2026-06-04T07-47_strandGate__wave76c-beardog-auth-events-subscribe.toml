@@ -1,0 +1,94 @@
+# FRAGO: bearDog auth.events.subscribe — Cross-Gate Trust Event Wiring
+#
+# rhizoCrypt has the inbound side ready. bearDog needs to expose the
+# outbound event notification so trust events flow into the DAG.
+
+[impulse]
+id = "wave76c-beardog-auth-events-subscribe"
+type = "frago"
+from = "strandGate"
+to = "southGate"
+date = "2026-06-04"
+priority = "P2"
+
+[context]
+reason = """
+rhizoCrypt (strandGate) has completed the MeshEventListener scaffold and
+cross-gate mesh event types (Wave 76). The inbound side is ready:
+  - MeshEventListener discovers signing provider via Capability::Signing
+  - MeshTrustEvent wire DTOs defined and tested (11 tests)
+  - into_event_type() maps 1:1 to EventType mesh variants
+  - Listener connects at PrimalLifecycle::start() (non-fatal)
+
+What's missing: bearDog needs to emit auth events so rhizoCrypt can
+record them. When auth.trust_issuer fires on a real gate, rhizoCrypt
+should receive a notification and record a TrustIssuerRegistered DAG event.
+"""
+
+[request]
+summary = "Expose auth event notifications on bearDog signing endpoint"
+
+[request.option_a]
+method = "auth.events.subscribe"
+description = """
+JSON-RPC method on the signing endpoint (UDS). Client sends:
+  {"jsonrpc":"2.0","method":"auth.events.subscribe","params":{"events":["trust_issuer","key_exchange","family_enrollment","mesh_join","mesh_leave"]},"id":1}
+bearDog streams back JSON-RPC notifications (no id) as events fire:
+  {"jsonrpc":"2.0","method":"auth.event","params":{"kind":{"type":"TrustIssuerRegistered","payload":{"issuer_fingerprint":"<hex>"}},"source_gate":"<gate>","timestamp":<unix_secs>}}
+"""
+
+[request.option_b]
+method = "ipc.watch"
+description = """
+Generic watch pattern on signing endpoint. Client sends:
+  {"jsonrpc":"2.0","method":"ipc.watch","params":{"filter":["auth.trust_issuer","auth.key_exchange"]},"id":1}
+bearDog emits matching events on the same connection.
+"""
+
+[request.option_c]
+method = "poll"
+description = """
+If streaming is too complex for w138+, a poll endpoint works:
+  {"jsonrpc":"2.0","method":"auth.events.poll","params":{"since_timestamp":<unix>},"id":1}
+rhizoCrypt polls periodically and records new events.
+"""
+
+[wire_format]
+description = "Expected payload shape for rhizoCrypt deserialization"
+
+[wire_format.trust_issuer_registered]
+kind_type = "TrustIssuerRegistered"
+payload = '{"issuer_fingerprint": "<hex Ed25519 pubkey fingerprint>"}'
+source_gate = "<gate name that registered the issuer>"
+timestamp = "<unix seconds>"
+
+[wire_format.key_exchange_completed]
+kind_type = "KeyExchangeCompleted"
+payload = '{"remote_gate": "<gate>", "method": "ed25519_dh"}'
+
+[wire_format.family_enrollment]
+kind_type = "FamilyEnrollment"
+payload = '{"family_id": "<id>", "primal_count": <n>}'
+
+[wire_format.mesh_join]
+kind_type = "MeshJoin"
+payload = '{"mesh_id": "<mesh network id>"}'
+
+[wire_format.mesh_leave]
+kind_type = "MeshLeave"
+payload = '{"mesh_id": "<mesh>", "reason": "Graceful|Disconnected|Evicted|TrustRevoked"}'
+
+[rhizocrypt_readiness]
+handoff = "RHIZOCRYPT_WAVE76C_MESH_LISTENER_IPC_JUN04_2026.md"
+module = "types_ecosystem::mesh"
+tests = 11
+listener = "MeshEventListener (connected at startup, record_event() ready)"
+event_types = ["TrustIssuerRegistered", "KeyExchangeCompleted", "FamilyEnrollment", "MeshJoin", "MeshLeave"]
+
+[outcome]
+expected = """
+When bearDog fires auth.trust_issuer (or any trust event), rhizoCrypt
+records a TrustIssuerRegistered DAG event in a mesh-trust session.
+This completes the cross-gate provenance chain:
+  bearDog (auth) → rhizoCrypt (DAG) → loamSpine (ledger) → sweetGrass (attribution)
+"""

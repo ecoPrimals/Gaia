@@ -1,0 +1,78 @@
+[impulse]
+id = "wave77b-peptidoglycan-fieldmouse-formalization"
+type = "frago"
+priority = "P1"
+wave = 77
+
+[from]
+gate = "eastGate"
+role = "overwatch"
+
+[to]
+gates = ["golgiBody"]
+team = "cellMembrane evolution"
+
+[content]
+subject = "P1: Formalize peptidoglycan as a replicable fieldMouse composition with diderm trust barrier role"
+body = """
+The diderm membrane architecture has been formalized. The peptidoglycan
+VPS layer is now the trust barrier / air gap between outer membrane
+(primals.eco) and inner membrane (primal.eco). See
+DIDERM_DOMAIN_ARCHITECTURE.md for the full trust barrier model.
+
+TASK 1: New peptidoglycan composition type in membrane.toml schema
+
+Extend the existing membrane.toml schema with composition = "peptidoglycan":
+
+  [membrane]
+  composition = "peptidoglycan"
+
+  [membrane.channels.relay]
+  enabled = true       # Songbird TURN — the primary role
+  port = 3478
+
+  [membrane.channels.sync]
+  enabled = true       # Temporal sync / Forgejo relay
+  port = 2222
+
+  [membrane.channels.surface]
+  enabled = false      # NO public web surface
+
+  [membrane.trust_barrier]
+  inner_domain = "primal.eco"
+  outer_domain = "primals.eco"
+  opaque_relay = true  # BTSP tokens must be opaque in transit
+
+The peptidoglycan composition inherits the fieldMouse contract:
+- Minimal (relay only)
+- Ephemeral (tower.env is the only state)
+- Sovereign (secrets encrypted, provider treated as adversary)
+- Broker (routes traffic, never stores primary data)
+
+TASK 2: Document the trust barrier contract
+
+Add to the peptidoglycan composition spec or to FIELDMOUSE_CONTRACT.md:
+- What it relays: Songbird TURN, temporal sync, Forgejo SSH relay
+- What it CANNOT see: BTSP tokens (opaque), inner membrane identity,
+  capability surface, content payloads
+- What it stores: NOTHING beyond tower.env
+- Teardown/reprovision: from membrane.toml + tower.env backup, zero data loss
+
+TASK 3: Validate replicability (stretch)
+
+If time permits:
+- deploy_membrane.sh --composition peptidoglycan --provider <any>
+  should produce a working peptidoglycan from scratch
+- Inner membrane should discover the new peptidoglycan via Songbird TURN
+  peer registration
+
+DELIVERABLE: Handoff with:
+- Updated membrane.toml schema supporting composition = "peptidoglycan"
+- Trust barrier contract documented
+- Any blockers or design decisions
+"""
+
+[meta]
+created = "2026-06-04T15:55:00-04:00"
+ack_required = true
+depends_on = ["wave77b-diderm-architecture"]

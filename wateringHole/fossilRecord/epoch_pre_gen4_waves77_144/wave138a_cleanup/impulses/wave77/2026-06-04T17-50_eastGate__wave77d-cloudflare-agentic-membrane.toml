@@ -1,0 +1,83 @@
+[impulse]
+id = "wave77d-cloudflare-agentic-membrane"
+type = "frago"
+priority = "P2"
+wave = 77
+
+[from]
+gate = "eastGate"
+role = "overwatch"
+
+[to]
+gates = ["ironGate"]
+team = "cellMembrane evolution"
+
+[content]
+subject = "membrane-shadow Cloudflare module — agentic outer membrane management"
+body = """
+The outer membrane (primals.eco) stays on Cloudflare per the diderm model.
+Currently all Cloudflare operations require dashboard clicks. This FRAGO
+requests a membrane-shadow module that wraps Cloudflare API v4 for agentic
+outer membrane management.
+
+MODULE: membrane cloudflare.*
+
+PRIORITY OPERATIONS:
+1. cloudflare.dns.list / create / update / delete
+   - Manage A/CNAME/TXT records for primals.eco zone
+   - Used when adding new subdomains or updating IPs
+
+2. cloudflare.cache.purge
+   - Purge cached content after sporePrint publishes
+   - Can be wired into post-cascade hook for automatic invalidation
+
+3. cloudflare.ssl.settings
+   - Verify TLS mode (Full Strict), min TLS version
+   - Read-only audit for cross-membrane validation
+
+4. cloudflare.zone.settings
+   - Always-HTTPS, HSTS, security headers
+   - Read-only audit initially, write for evolution
+
+STRETCH:
+5. cloudflare.firewall.rule.list / create
+   - Rate limiting, IP blocks, country blocks
+   - Useful for Dark Forest outer membrane hardening
+
+6. cloudflare.page_rule.list / create
+   - Redirect rules, caching behavior
+
+CREDENTIAL PLACEMENT:
+- API token in tower.env on golgiBody-ext (outer membrane node)
+- Inner membrane NEVER touches Cloudflare directly
+- Commands route through peptidoglycan relay if issued from inner membrane
+
+DESIGN CONSTRAINTS:
+- Same module pattern as existing membrane-shadow modules (dispatch, cli, config)
+- Feature-gated behind `cloudflare` feature flag
+- Read-only operations should work without write token
+- All mutations logged to impulse audit trail
+
+DELIVERABLE:
+- cloudflare.rs module in membrane-shadow
+- CLI: membrane cloudflare.dns.list --zone primals.eco
+- CLI: membrane cloudflare.cache.purge --zone primals.eco --url "/spores/*"
+- 4+ tests covering API response parsing
+"""
+
+[context]
+reason = """
+Minimizing operator dashboard interactions is a sovereignty goal. Cloudflare
+is the last major system requiring manual browser-based management. Porkbun
+API covers NS changes but not glue records. Caddy and knot-dns are already
+fully agentic (admin API and knotc respectively).
+
+The Cloudflare module is the highest-value target for reducing user involvement
+in outer membrane operations. Cache purge alone (operation 2) would eliminate
+the most frequent manual interaction.
+"""
+
+[meta]
+created = "2026-06-04T17:50:00-04:00"
+ack_required = true
+depends_on = []

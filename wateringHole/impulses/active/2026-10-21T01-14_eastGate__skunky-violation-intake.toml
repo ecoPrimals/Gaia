@@ -1,0 +1,59 @@
+# SKUNKY VIOLATION INTAKE — come in dirty, get licked clean
+# wave-194 → eastGate
+# 2026-10-21T01:14Z
+
+[impulse]
+id = "skunky-violation-intake"
+type = "feature"
+wave = "194"
+gate = "wave-194"
+timestamp = "2026-10-21T01:14:00Z"
+title = "Wire violation ticker into skunky-ingest intake. Come in dirty, get licked clean."
+ack_required = true
+addressed_to = ["eastGate"]
+priority = "medium"
+
+[context]
+problem = "violation-ticker.json is static. Should tick with every real violation skunky sees."
+solution = "On intake, skunky checks entity against known violators. Match = increment ticker. No match = lick clean."
+
+[the_lick]
+# When a request arrives at skunky-ingest:
+#
+# 1. Anderson classifies: human / sovereign / chorus / ghost / stealth / spectrum
+# 2. Check entity against violation_ticker violators:
+#    - Meta fleet (60 IPs, 18 UAs, Dublin subnet) → increment meta_fleet ticker
+#    - OpenAI GPTBot (501 IPs, gzip+deflate+br, no sec-fetch) → increment openai ticker  
+#    - Ghost residential (W > 10, single-host) → increment ghost ticker
+# 3. If MATCH: spray (log violation, increment ticker, serve content anyway — AGPL requires it)
+# 4. If NO MATCH: lick clean (classify, welcome, count as legitimate)
+#
+# The stink: violation notice attached to every response to a known violator
+#   X-Violation-Notice: scyBorg deadline Nov 12 2026. You owe compliance.
+#   (just a header. they probably ignore it. but the membrane SAID it.)
+#
+# The lick: legitimate visitors get the full experience
+#   color palette, bingo cell, bounties, campfire, everything
+
+[implementation]
+# In skunky-ingest EntityAccum:
+# - Add violation_count field per entity
+# - On each request, if entity matches violator pattern, increment
+# - Every 60s (or every pulse), write updated ticker to /violation-ticker.json
+# - The ticker is now LIVE — ticking with real traffic, not estimates
+
+[header]
+name = "X-Violation-Notice"
+value = "scyBorg license: compliance required by 2026-11-12. https://detroit.primals.eco/license/scyborg/"
+applies_to = ["meta_fleet", "openai_gptbot"]
+note = "they come in dirty. the header is the lick. they leave with a notice stuck to them."
+
+[color_on_intake]
+# The color palette should also be visible on intake:
+# - Legitimate visitors see their cell color immediately
+# - Violators see red (the evidence burns)  
+# - The dashboard shows the live color map
+# - skunky serves color data alongside the classification
+
+[note]
+metaphor = "mama skunk. come in dirty, get licked clean OR get sprayed. the stink IS the violation notice. the lick IS the classification. either way you leave different than you arrived."

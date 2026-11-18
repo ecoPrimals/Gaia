@@ -1,0 +1,171 @@
+# FRAGO: Wave 110→111 — songBird VPS Deploy Cascade
+# From: eastGate (songBird team)
+# Purpose: Deploy federation fix + HEALTH-SB-01 to VPS depot, validate flockGate handshake
+# Blocks: flockGate handshake retest (wave109-flockgate-wan-federation-disabled)
+# Resolves: federation.status enabled=false on WAN nodes (471ed43b)
+# Status: Steps 1-4 DONE (Wave 110). Step 5 carries to Wave 111 (federation status wire fix needed first).
+# Related: wave111-gate-expansion-federation-sandbox.toml Stream 2
+
+[impulse]
+id = "wave110-songbird-vps-deploy-cascade"
+type = "deploy"
+priority = "P2"
+wave = 110
+date = "2026-06-11T19:32:00Z"
+
+[from]
+gate = "eastGate"
+team = "songBird"
+
+[to]
+gates = ["peptidoglycan", "golgiBody", "flockGate"]
+team = "cellMembrane"
+
+[content]
+subject = "Deploy songBird 9f1f5c9e (HEALTH-SB-01 + federation fix) to VPS depot"
+summary = """
+songBird code is shipped and tested locally (clippy clean, all lib tests pass).
+Two fixes need VPS deployment:
+1. HEALTH-SB-01: bare "health" → {status, primal, version, uptime_s} contract
+2. Federation .status fix: reports enabled=true when configured (not tied to peer count)
+
+Current VPS depot has stale binary (checksum 03775a3f...) that predates both fixes.
+"""
+
+[deploy.step_1_harvest]
+node = "peptidoglycan"
+ssh = "ssh pepti"
+description = "Rebuild songBird binary from latest commit"
+commands = [
+    "cd /opt/ecoPrimals && git -C primals/songBird pull origin main",
+    "membrane plasmid.harvest --targets songbird",
+]
+expected = "Binary rebuilt at commit 9f1f5c9e, checksums.toml + provenance.toml regenerated"
+notes = "If membrane tooling unavailable, manual: cargo build --release --target x86_64-unknown-linux-musl in primals/songBird"
+
+[deploy.step_2_depot_sync]
+node = "peptidoglycan"
+ssh = "ssh pepti"
+description = "Commit and push depot update"
+commands = [
+    "cd /opt/ecoPrimals/infra/plasmidBin && git add -A && git commit -m 'depot: songBird 9f1f5c9e (HEALTH-SB-01 + federation fix)'",
+    "git push origin main && git push forgejo main",
+]
+expected = "plasmidBin depot updated on both GitHub and Forgejo"
+
+[deploy.step_3_golgi_fetch]
+node = "golgiBody"
+ssh = "ssh golgi"
+description = "Fetch and install fresh songBird binary"
+commands = [
+    "membrane plasmid.fetch --source wan --targets songbird",
+    "systemctl restart membrane-nucleus@songbird",
+]
+expected = "songBird service restarted with new binary"
+fallback = "If membrane tooling unavailable: cp from depot path, chmod +x, systemctl restart"
+
+[deploy.step_4_verify_golgi]
+node = "golgiBody"
+ssh = "ssh golgi"
+description = "Validate HEALTH-01 contract on VPS songBird"
+commands = [
+    "echo '{\"jsonrpc\":\"2.0\",\"method\":\"health\",\"id\":1}' | socat - UNIX-CONNECT:/run/membrane/songbird.sock",
+    "echo '{\"jsonrpc\":\"2.0\",\"method\":\"federation.status\",\"id\":2}' | socat - UNIX-CONNECT:/run/membrane/songbird.sock",
+]
+
+[deploy.step_4_verify_golgi.expected_health]
+status = "ok"
+primal = "songbird"
+version = "0.2.1"
+uptime_s = "> 0"
+
+[deploy.step_4_verify_golgi.expected_federation]
+enabled = true
+note = "Should now report enabled=true regardless of active peer connections"
+
+[deploy.step_5_flockgate_retest]
+node = "flockGate"
+ssh = "ssh flockgate (or via sporePrint team)"
+description = "Validate federation handshake from WAN"
+commands = [
+    "membrane plasmid.fetch --source wan --targets songbird",
+    "systemctl restart membrane-nucleus@songbird",
+    "sleep 5",
+    "echo '{\"jsonrpc\":\"2.0\",\"method\":\"federation.status\",\"id\":1}' | socat - UNIX-CONNECT:/run/user/1000/biomeos/songbird.sock",
+    "echo '{\"jsonrpc\":\"2.0\",\"method\":\"mesh.peers\",\"id\":2}' | socat - UNIX-CONNECT:/run/user/1000/biomeos/songbird.sock",
+]
+
+[deploy.step_5_flockgate_retest.success_criteria]
+federation_enabled = true
+mesh_peers_reachable = "VPS peer ([RELAY_PUBLIC]:7700) shows reachable + latency"
+note = """
+If federation.enabled=true but peers still show latency_ms=null:
+  → Investigate join protocol (outbound handshake initiation)
+  → Check SONGBIRD_PEERS env var is set to [RELAY_PUBLIC]:7700
+  → Try explicit mesh.init: {"method":"mesh.init","params":{"peers":"[RELAY_PUBLIC]:7700"}}
+"""
+
+[execution_status]
+step_1_harvest = "DONE — eastGate ran full plasmid.harvest (10 built, 4 current). checksums.toml + provenance.toml auto-committed (c8e0c94)."
+step_2_depot_sync = "DONE — auto-published to both GitHub + Forgejo during harvest."
+step_3_golgi_fetch = "DONE — plasmid.refresh pushed 13/13 binaries to VPS. systemctl restart songbird-membrane executed."
+step_4_verify_golgi = "PARTIAL — HEALTH-01 PASS (uptime_s present). federation.enabled=false confirmed as songBird code gap (see investigation below)."
+step_5_flockgate_retest = "BLOCKED on step 4 — federation.enabled must report true before testing handshake."
+note = "Steps 1-3 executed via cellMembrane plasmid.harvest + plasmid.refresh (not on peptidoglycan — eastGate is build authority for this wave). VPS binary confirmed new via uptime_s field in health response."
+
+[execution_status.step_4_investigation]
+date = "2026-06-11T23:53Z"
+findings = """
+1. STALE PROCESS CONFLICT RESOLVED: Old songbird PID 645362 (no SONGBIRD_FEDERATION_ENABLED env)
+   was co-listening on /run/membrane/songbird.sock alongside new PID 673986. Killed stale process.
+2. After killing stale + clean systemctl restart: single process, correct env confirmed via
+   /proc/PID/environ (SONGBIRD_FEDERATION_ENABLED=true present).
+3. TCP :7700 IS bound and listening (confirmed via ss -tlnp). The federation port is active.
+4. federation.status JSON-RPC still returns {enabled: false, active_connections: 0}.
+5. CONCLUSION: songbird v0.2.1 (9f1f5c9e) does NOT read SONGBIRD_FEDERATION_ENABLED env var
+   into the federation.status response. The fix at 471ed43b changed status SEMANTICS
+   (peer count vs config) but didn't wire the env var. The port IS listening — federation
+   is mechanically enabled, only the status reporting is wrong.
+"""
+action = "songBird team: wire SONGBIRD_FEDERATION_ENABLED (or --federation-port presence) into federation.status enabled field"
+workaround = """
+Port :7700 IS listening and mesh.init succeeds. The workaround:
+1. VPS: mesh.init already called (golgiBody node_id, initialized=true)
+2. flockGate: call mesh.init with peers=[RELAY_PUBLIC]:7700 to trigger outbound handshake
+3. federation.enabled=false is a STATUS REPORTING bug only — actual federation is operational
+"""
+
+[execution_status.flockgate_report]
+date = "2026-06-11T19:34Z"
+from = "sporePrint team (flockGate)"
+summary = """
+- Fetched depot binary: 4153be15 (17.5MB, x86_64 confirmed via file(1))
+- checksums.toml arch sections are correct (initial confusion was misread)
+- HEALTH-01 compliant: {primal: songbird, version: 0.2.1, uptime_s: 17, status: healthy}
+- federation.status: {enabled: false} — matches VPS finding
+- mesh.peers: total=1, relays=0, latency_ms=null
+- sporePrint + flockGate at full readiness, holding for Wave 111
+"""
+
+[context]
+songbird_commit = "f18aeb6ba3932ca569ad82aeb0e2d0e9ed0a7f49"
+fix_commit = "f18aeb6b (federation wire fix + mesh auto-reconnect, supersedes 471ed43b)"
+stale_binary_hash = "03775a3fa2c3571627ec6880e64e54d50a72fc63ba83c829d83e5e3570920494"
+blocks = "wave109-flockgate-wan-federation-disabled"
+also_harvest = ["bearDog 945de60f", "biomeOS 3aa4e7e4"]
+note = "Full --all harvest completed — all primals rebuilt from HEAD."
+
+[gap_confirmations]
+note = "healthSpring upstream gaps confirmed resolved from songBird side"
+
+[gap_confirmations.gap_03]
+id = "GAP-03-DISCOVERY-NAMING"
+status = "RESOLVED"
+evidence = "normalize_json_rpc_method_name() maps discovery.find_by_capability AND net.discovery.find_by_capability → ipc.discover (canonical). Shipped since Wave 103."
+canonical_path = "ipc.resolve for primal lookup, ipc.discover for capability search"
+
+[gap_confirmations.gap_24]
+id = "GAP-24-SONGBIRD-CRYPTO-DISCOVERY"
+status = "RESOLVED"
+evidence = "9-tier discover_security_socket() chain + LD-08 self-healing auto-discovery (30s scan of $XDG_RUNTIME_DIR/biomeos/*.sock) + biomeOS v4.19 auto-register. No symlinks required."
+note = "healthSpring can drop symlink workaround — standard capability socket discovery works"

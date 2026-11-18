@@ -1,0 +1,107 @@
+# Inter-gate data access configuration
+# Defines how springs on compute gates access datasets from westGate CAS
+# via songBird mesh over 10G LAN backbone.
+#
+# Pattern: spring on compute gate → content.get(dataset_id) → songBird → westGate nestGate CAS → data
+# Provenance: sweetGrass braid follows data across gate boundary
+
+[meta]
+version = "1.1.0"
+description = "Inter-gate CAS data access routing for spring compositions"
+updated = "2026-08-03"
+
+[data_root]
+gate = "westGate"
+ip = "10.13.37.4"
+transport = "songbird_mesh"
+backbone = "10G_LAN"
+cas_primal = "nestgate"
+provenance_trio = ["rhizocrypt", "loamspine", "sweetgrass"]
+total_size_gb = 519.0
+total_datasets = 130
+total_domains = 9
+
+# Spring-to-dataset access matrix
+# Each spring lists which datasets it needs from westGate CAS
+
+[[spring_access]]
+spring = "hotSpring"
+gate = "strandGate"
+datasets = ["pdb-structures", "ame2020-nuclear", "brenda-kinetics", "charmm36-forcefields"]
+access_pattern = "batch_read"
+priority = "high"
+
+[[spring_access]]
+spring = "tideGlass"
+gate = "westGate"
+datasets = ["chembl-35", "lincs-l1000", "pubchem-bioassay", "bindingdb", "nf-data-portal", "geo-soft-cancer", "tcga-xena", "mondo-ontology", "reactome-pathways", "ncbi-gene", "cosmic-v104"]
+access_pattern = "local"
+priority = "high"
+
+[[spring_access]]
+spring = "wetSpring"
+gate = "westGate"
+datasets = ["ltee-rel606", "ncbi-sra-16s", "mzml-pfas-synthetic", "massbank-pfas", "noaa-ghcnd", "usgs-earthquake", "usda-nass", "gtex-v8"]
+access_pattern = "local"
+priority = "high"
+compute_dispatch = "strandGate"
+
+[[spring_access]]
+spring = "healthSpring"
+gate = "ironGate"
+datasets = ["chembl-35", "cosmic-v104", "physionet-ptb-xl", "ncbi-gene", "reactome-pathways", "mondo-ontology", "pubchem-bioassay"]
+access_pattern = "batch_read"
+priority = "medium"
+
+[[spring_access]]
+spring = "neuralSpring"
+gate = "strandGate"
+datasets = ["pdb-mmcif", "uniprot-trembl", "pdb70-hhblits", "uniref90-mmseqs", "refseq-grch38"]
+access_pattern = "streaming"
+priority = "medium"
+note = "293 GB of structural biology data — bandwidth-sensitive"
+
+[[spring_access]]
+spring = "lithoSpore"
+gate = "ironGate"
+datasets = ["ltee-rel606"]
+access_pattern = "batch_read"
+priority = "medium"
+
+[[spring_access]]
+spring = "groundSpring"
+gate = "westGate"
+datasets = ["noaa-ghcnd", "usgs-earthquake"]
+access_pattern = "local"
+priority = "low"
+
+[[spring_access]]
+spring = "airSpring"
+gate = "westGate"
+datasets = ["noaa-ghcnd", "usda-nass"]
+access_pattern = "local"
+priority = "low"
+
+# Validation checklist for inter-gate content.get
+[validation]
+description = "Validation steps for confirming inter-gate CAS data access"
+
+[[validation.steps]]
+name = "songbird_mesh_connectivity"
+command = "songbird mesh.status"
+expected = "All gates show ONLINE in mesh topology"
+
+[[validation.steps]]
+name = "content_get_roundtrip"
+command = "biomeos content.get --dataset ltee-rel606 --gate westGate --from strandGate"
+expected = "Dataset returned with valid BLAKE3 hash matching CAS record"
+
+[[validation.steps]]
+name = "provenance_chain_intact"
+command = "sweetgrass braid.verify --dataset ltee-rel606 --origin westGate"
+expected = "Braid provenance chain valid across gate boundary"
+
+[[validation.steps]]
+name = "bandwidth_baseline"
+command = "songbird mesh.benchmark --source westGate --dest strandGate --size 1GB"
+expected = "Transfer rate >800 MB/s on 10G backbone"

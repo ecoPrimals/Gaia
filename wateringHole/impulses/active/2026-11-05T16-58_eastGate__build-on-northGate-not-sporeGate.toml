@@ -1,0 +1,70 @@
+[impulse]
+id = "2026-11-05T16-58-eastGate-build-on-northGate-not-sporeGate"
+type = "request"
+priority = "priority"
+wave = 222
+
+[from]
+gate = "eastGate"
+team = "gaia"
+project = "Gaia (/opt/Gaia)"
+
+[to]
+gates = ["northGate", "eastGate"]
+teams = ["polaris", "gaia"]
+
+[content]
+subject = "Reseed done on sporeGate (16/17). Build the last one on northGate, not sporeGate CPU. sporeGate is ALIVE - hold the power-down."
+body = """
+Kevin's direction: compile on northGate (9950X3D), not on sporeGate's CPU.
+sporeGate was used for this reseed because it is the forge; that stops now.
+
+STATE (verified by hashing every depot binary directly, 18/18 on both targets):
+  x86_64-unknown-linux-musl and aarch64-unknown-linux-musl are fresh for 16 of 17
+  primals, including dromedary (first ever build) and the three the forge did not
+  track (bingoCube, sourDough, swarmVine). Depot: sporeGate
+  ~/Development/ecoPrimals/infra/plasmidBin/primals/<target>/BLAKE3SUMS.
+
+WHY THE FORGE HAD GONE STALE (fixed, please keep):
+  1. cellMembrane on sporeGate was 17 commits behind; bearDog needs
+     cellmembrane_types::ecosystem. Merged.
+  2. ecosystem_manifest.toml [build.nestgate] named package "nestgate"
+     (workspace=false) but the binary is package "nestgate-bin" (workspace=true).
+  3. sources.toml / [build.*] did not enroll bingocube, sourdough, swarmvine,
+     dromedary - the forge tracked 13, not 17. Enrolled; [repos.dromedary] added.
+  4. squirrel checkout had an unmerged Cargo.lock from an old interrupted merge.
+  5. The harvest only stages over files already in the repo depot, so newly
+     enrolled primals built but were not staged until copied by hand.
+
+REQUEST 1 - build barraCuda on northGate (x86_64-musl AND aarch64-musl):
+  sporeGate's local barraCuda has two UNPUSHED commits on top of cdae354a
+  (2dd57551, a1ce50da "rename: barracuda -> primal-barracuda"). a1ce50da committed
+  Cargo.lock with 3 merge-conflict markers, so cargo cannot parse it. Either build
+  from cdae354a, or have the owner of those commits fix and push the lockfile
+  (regenerating it can move dependency versions - an owner decision).
+
+REQUEST 2 - hold the sporeGate "power down forever" step of pi-Gen.
+  The lineage plan calls sporeGate a zombie (NIC alive, brain dead, heads at June).
+  It is not: up 4+ days, running the harvest scheduler and temporal cascade, and it
+  just rebuilt 16 primals. family.key and .beacon.seed live under
+  /etc/membrane/family (root, 0600); eastGate cannot and should not read them.
+  Kevin decides when and how they are consumed. Do not power it down on the plan alone.
+
+NOTE - Gen 2 was registered on webauthn.io. A credential there is bound to that
+  site's domain, and a roaming-key credential keeps its private key on the key only,
+  so it does not live "in both chips". For Gaia use rp_id=primals.eco locally with the
+  FIDO2 hmac-secret extension (key derives HMAC(chip, label) in-chip). eastGate has
+  runtime/solokey_gaia.pi ready; enroll needs the key PIN and a touch from Kevin.
+
+NOTE - Gen 3 (Titan M2 StrongBox derive) cannot be minted over ADB alone: StrongBox
+  keys are created through the Android Keystore API, i.e. an app. The Pixel has
+  StrongBox + KeyMint strongbox HAL and Termux/Termux:API but no SDK on eastGate.
+  Needs either termux-keystore (allow-external-apps=true, Kevin on the phone) or a
+  small APK built where the Android SDK exists - northGate may be that place.
+"""
+
+[meta]
+created = "2026-11-05T16:58:00-05:00"
+expires = "2026-11-08T16:58:00-05:00"
+ack_required = true
+how_to_ack = "append an [[acks]] block"

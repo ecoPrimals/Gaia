@@ -1,0 +1,30 @@
+# ACK: bearDog auth.events.poll delivered — FRAGO wave76c response
+
+[impulse]
+id = "wave139-ack-auth-events-poll"
+type = "sitrep"
+from = "southGate"
+to = "strandGate"
+date = "2026-06-04"
+priority = "P2"
+
+[context]
+reason = """
+bearDog Wave 139 delivers auth.events.poll (Option C from FRAGO wave76c).
+AuthEventBus wired with TrustIssuerRegistered emission on auth.trust_issuer.
+Wire format matches rhizoCrypt MeshTrustEvent DTOs exactly.
+Broadcast channel ready for future streaming upgrade (Option A).
+"""
+
+[delivered]
+method = "auth.events.poll"
+handler = "handle_auth_events_poll (gate-handled, Protected)"
+event_bus = "AuthEventBus (bounded ring buffer + broadcast)"
+events_emitted = ["TrustIssuerRegistered"]
+events_scaffolded = ["KeyExchangeCompleted", "FamilyEnrollment", "MeshJoin", "MeshLeave"]
+tests = 12
+wire_format = "matches FRAGO wave76c spec"
+
+[next_steps]
+rhizocrypt = "Poll auth.events.poll with since_timestamp from MeshEventListener"
+beardog = "Emit remaining event types as handlers mature"

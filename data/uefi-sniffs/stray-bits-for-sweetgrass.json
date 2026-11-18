@@ -1,0 +1,26 @@
+{
+  "task": "UMA_STRAY_BITS",
+  "target": "AMD_PBS_SETUP[0x49] = 0x06 (512M UMA for iGPU)",
+  "current_state": "0xFF (no UMA allocated)",
+  "runtime_blocked": {
+    "SetFirmwareEnvironmentVariableExW": "Error 5",
+    "NtSetSystemEnvironmentValueEx": "0xC0000022",
+    "ASUS_WMI_SetOptionData": "Error 26",
+    "SMN_UMA_registers": "all zeros (never allocated)"
+  },
+  "iGPU_silicon": {
+    "audio_device": "1002:1640 at Bus 123 Dev 0 Func 1",
+    "display_engine": "Bus 123 Dev 0 Func 0 \u2014 status unknown",
+    "acpi_path": "PCIROOT(0)#PCI(0801)#PCI(0001)",
+    "bridge": "Bus 0 Dev 8"
+  },
+  "efi_key": {
+    "tool": "modGRUBShell.efi",
+    "location": "Z:\\EFI\\tools\\modGRUBShell.efi",
+    "size_bytes": 5521920,
+    "boot_entry": "GAIA EFI Key - UMA Unlock",
+    "command": "setup_var_cv AMD_PBS_SETUP 0x49 0x06"
+  },
+  "hypothesis": "Write SMN registers directly to allocate UMA at runtime, bypassing BIOS",
+  "pci_scan": "=== Known PCI Devices ===\n  GPU: NVIDIA GeForce RTX 5090 Location=PCI bus 1, device 0, function 0 Path=PCIROOT(0)#PCI(0101)#PCI(0000),ACPI(_SB_)#ACPI(PCI0)#ACPI(GPP0)#ACPI(VGA_)\nRTX 5090 at: PCI bus 1, device 0, function 0\nTrying PCI read B1:D0:F0...\n  VEN=0x0000 DEV=0x0000 (expect 10DE:2B85)\n\n=== iGPU Silicon (Bus 123) ===\n  B123:D0:F0 = 0x00000000 (not present)\n  B123:D0:F1 = 0x00000000 (not present)\n  B123:D0:F2 = 0x00000000 (not present)\n  B123:D0:F3 = 0x00000000 (not present)\n  B123:D0:F4 = 0x00000000 (not present)\n  B123:D0:F5 = 0x00000000 (not present)\n  B123:D0:F6 = 0x00000000 (not present)\n  B123:D0:F7 = 0x00000000 (not present)\n\n=== iGPU Bridge (B0:D8) ===\n  B0:D8:F0 = empty\n  B0:D8:F1 = empty\n  B0:D8:F2 = empty\n\n=== Scan ALL Bus 0 devices ===\n"
+}

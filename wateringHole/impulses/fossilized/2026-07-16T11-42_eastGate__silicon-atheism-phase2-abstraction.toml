@@ -1,0 +1,50 @@
+# FRAGO: Silicon Atheism Phase 2 — Abstraction Over Gating
+# Source: eastGate overwatch
+# Date: 2026-07-16
+# Wave: 142a
+
+[impulse]
+type = "frago"
+priority = "P1"
+from = "eastGate-overwatch"
+to = ["all-primal-teams"]
+subject = "Silicon Atheism Phase 2: replace #[cfg] exclusion with trait abstraction"
+
+[context]
+summary = """
+Phase 1 (COMPLETE): All 14 primals compile for all 4 depot architectures via \
+#[cfg(target_os)] gating. This was necessary but insufficient — a headless \
+binary that compiles but has no platform capabilities is not a useful system.
+
+Phase 2 (NOW): Replace #[cfg] exclusion fences with trait-based platform \
+abstractions. Every platform is a first-class evolution substrate. The same \
+interface works everywhere; only the backend changes.
+"""
+
+reference_pattern = "petalTongue petal-tongue-platform (commit 1af1a98)"
+reference_handoff = "CROSS_ARCH_PER_PRIMAL_HANDOFFS.md"
+
+[directive]
+principle = """
+BAD:  #[cfg(target_os = \"linux\")] pub mod vfio;   → absent on Android
+GOOD: trait DeviceDiscovery { fn discover(); }       → Vulkan on Android, sysfs on Linux
+
+BAD:  #[cfg(unix)] UnixStream::connect(path)         → absent on Windows
+GOOD: connect_transport(&TransportEndpoint::local())  → NamedPipe on Windows, UDS on Unix
+"""
+
+actions = [
+    "Audit your primal's #[cfg()] boundaries",
+    "Identify which ones should evolve to trait + backend pattern",
+    "Create trait interfaces for platform-specific capabilities",
+    "Implement platform backends behind the traits",
+    "#[cfg()] selects which backend, not whether code exists",
+    "Reference: petalTongue petal-tongue-platform for lifecycle/transport/FFI pattern",
+]
+
+[targets]
+toadstool = "glowplug DeviceDiscovery/SwapExecutor → Vulkan backend for Android GPU"
+beardog = "HSM provider → Android Keystore / Windows DPAPI backends"
+squirrel = "credential store → platform-aware Keyring backends"
+biomeos = "Neural API transport → trait-based (already TCP fallback)"
+all = "Transport: TransportEndpoint over raw UnixStream everywhere"

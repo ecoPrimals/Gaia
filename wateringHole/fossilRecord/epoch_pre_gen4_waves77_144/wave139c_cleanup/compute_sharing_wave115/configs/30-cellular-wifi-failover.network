@@ -1,0 +1,37 @@
+# Cellular failover WAN — WiFi hotspot connection via wlp3s0
+#
+# Use this INSTEAD of 30-cellular-failover.network when connecting to
+# the phone hotspot via WiFi rather than USB tether.
+#
+# Prerequisites:
+#   1. Remove wlp3s0 from NetworkManager management:
+#      Add to /etc/NetworkManager/conf.d/99-unmanage-wired.conf:
+#        interface-name:wlp3s0
+#   2. Create /etc/wpa_supplicant/wpa_supplicant-wlp3s0.conf:
+#        network={
+#            ssid="YourPhoneHotspotSSID"
+#            psk="YourHotspotPassword"
+#            priority=1
+#        }
+#   3. Enable: sudo systemctl enable --now wpa_supplicant@wlp3s0.service
+#
+# WARNING: This takes WiFi away from NetworkManager. Only use when you
+# want dedicated cellular failover. For OOB management via [ISP] WiFi,
+# keep NetworkManager managing wlp3s0 and use USB tether instead.
+#
+# To activate:
+#   sudo cp this-file /etc/systemd/network/30-cellular-wifi-failover.network
+#   sudo systemctl restart systemd-networkd
+
+[Match]
+Name=wlp3s0
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=no
+
+[DHCPv4]
+UseDNS=no
+UseRoutes=yes
+RouteMetric=500
+UseMTU=yes

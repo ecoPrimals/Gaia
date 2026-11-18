@@ -1,0 +1,77 @@
+[impulse]
+id = "2026-06-01T21-52-eastGate-wave67-irongate-cellmembrane-cascade-deep-debt"
+type = "frago"
+priority = "high"
+wave = 67
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["ironGate"]
+
+[content]
+subject = "cellMembrane cascade evolution sprint — 7 items from Wave 67 edge case review, parallel with eastGate primalSpring/plasmidBin deep debt"
+body = """
+eastGate is running a parallel deep debt evolution across primalSpring and plasmidBin.
+The Wave 67 cascade edge case review (WAVE67_CASCADE_EDGE_CASE_REVIEW.md) identified
+7 items in membrane-shadow. We run in parallel — eastGate handles primalSpring/plasmidBin,
+ironGate handles cellMembrane.
+
+PRIORITY ORDER:
+
+1. DISPATCH.RS SPLIT (828L — over 800L ecosystem cap)
+   Split into domain submodules under dispatch/:
+   - dispatch/mod.rs — top-level run() router
+   - dispatch/temporal.rs — dispatch_temporal(), dispatch_cascade()
+   - dispatch/impulse.rs — dispatch_impulse(), dispatch_potential()
+   - dispatch/infra.rs — repo, mirror, service, gate, token dispatchers
+   - dispatch/data.rs — manifest, context, plasmid, relay dispatchers
+   Do this first — items 3 and 4 touch dispatch.
+
+2. TREE-PARITY DIVERGENCE RESOLUTION (P0 from review)
+   temporal.rs line 304: when diverge_count > 1, check git diff between
+   remote HEADs. If diff is empty, trees are identical (rebase artifact).
+   Add SyncAction::TreeParity that force-pushes follower to match leader.
+   Auto-resolves plasmidBin-style cosmetic divergences.
+
+3. WIRE --publish-freshness
+   Documented in freshness.toml header and 05_IMPLEMENTATION.md but not
+   implemented. After cascade() completes, collect HEAD SHAs and write
+   freshness.toml. Wire into dispatch_cascade().
+
+4. WIRE post_sync_diverge() + APPLY DIVERGENCE POLICY
+   impulse/sync.rs defines post_sync_diverge() but never called from
+   cascade. Wire it on Diverge classification. Also: sync_with_target()
+   only does --ff-only; evolve to read manifest divergence_policy and
+   apply graduated merge strategies via policy.rs::suggest_action().
+
+5. IMPULSE ACK SAFETY (merge-safe under rebase)
+   lifecycle.rs line 208-239 appends [[acks]] to impulse TOML — fragile
+   under rebase (Wave 67 lost acks). Evolve to separate ack files:
+   impulses/acks/{impulse-id}_{gate}.toml. Update ack(), check(),
+   is_fully_acked(), and archive().
+
+6. BINARY FRESHNESS TRACKING
+   Add [installed.{primal}] sections to freshness.toml. Add
+   --check-installed to cascade that reads provenance sidecars from
+   ~/.local/share/ecoPrimals/provenance/ and compares against [heads].
+   eastGate's plasmidbin install already writes sidecars.
+
+7. HARDCODED DEFAULTS EVOLUTION
+   - dispatch.rs:444 — fallback gate "eastGate" → identity.resolve()
+   - git_ops.rs:12 — PUSH_REMOTES → manifest [sync] config
+   - relay.rs:29-35 — /opt/ecoPrimals, "forgejo", "golgi-ext" → ShadowConfig
+
+DEPENDENCY: Items 3+4 depend on item 1. Item 6 depends on items 2+5.
+
+REF: Full plan in primalSpring/.cursor/plans/deep_debt_evolution_e984b83c.plan.md
+REF: WAVE67_CASCADE_EDGE_CASE_REVIEW.md in wateringHole/handoffs/
+
+eastGate starting Phase 1 (safety) and Phase 2 (primalSpring refactors) now.
+Cascade when ready.
+"""
+
+[meta]
+created = "2026-06-01T21:52:00-04:00"
+ack_required = true

@@ -1,0 +1,379 @@
+# Ecosystem Network Topology Map
+#
+# Machine-readable topology for Neural API routing decisions.
+# Updated by discovery.peers RTT measurements + manual annotation.
+#
+# MIGRATION NOTE (Wave 157h): This file provides physical zone/segment/latency
+# data that ecosystem_manifest.toml does not yet carry. Target: merge these
+# sections into the manifest's [topology] section so there is a single SSOT.
+# Until then, membrane-shadow/src/topology.rs loads this file separately.
+#
+# Segments define network boundaries with distinct latency profiles.
+# The Neural API uses segment affinity to bias capability.call routing
+# toward local providers (same-gate > same-segment > cross-segment > WAN).
+#
+# Last updated: 2026-07-27 (Wave 155b)
+
+[meta]
+version = "4.4.0"
+wave = 157
+measured_by = "manual + discovery.peers (planned)"
+last_updated = "2026-08-11"
+wan_model = "single_exit_star"
+site_topology = "star_with_10g_backbone"
+neighborhood = "Old Everett, Lansing MI"
+
+# ═══════════════════════════════════════════════════════════════
+# Cytoplasm Zones — L2 switching domains within the plasma membrane
+# ═══════════════════════════════════════════════════════════════
+#
+# The cytoplasm is not a monolith. It has distinct switching zones
+# connected by backbone links. Each zone is defined by its hub device.
+# Gates know which zone they're in and what bandwidth/latency to expect.
+#
+# Hierarchy:
+#   [ISP] BGW320 (WAN boundary, not ours)
+#       → sporeGate (plasma membrane: NAT/DHCP/DNS/nftables)
+#           → CRS310 (hub 1: L2 backbone)
+#               → Omada SX3008F (hub 2: L2 extension via 10G AOC)
+#                   → TL-SG605S-M2 (2.5G expansion off Omada)
+
+[cytoplasm.zones.backbone]
+hub_device = "MikroTik CRS310-1G-5S-4S+IN"
+hub_role = "backbone"
+hub_mac = "c8:7f:54:xx:xx:xx"
+max_speed_mbps = 10000
+site = "house1"
+ports = [
+    "sfp+1 → Omada SX3008F (10G trunk, 80m AOC)",
+    "sfp+2 → eastGate (10G compute)",
+    "etherX → northGate (Win/5090, 2.5G)",
+    "ether8 ← sporeGate eno1 (2.5G uplink from plasma membrane)",
+]
+gates = ["sporeGate", "eastGate", "northGate", "biomeGate"]
+note = "biomeGate REBUILT (4×32GB, 128GB — GPU crankshaft, coralReef diesel engine). sporeGate is the plasma membrane router (NAT/DHCP/nftables/DNS). G29 COMPLETE: 3-way DNS (sporeGate + blueGate H2 + golgi mesh)."
+
+[cytoplasm.zones.house2]
+hub_device = "TP-Link Omada SX3008F"
+hub_role = "extension"
+hub_mac_data = "[MAC_SCRUBBED]"
+hub_mac_mgmt = "[MAC_SCRUBBED]"
+hub_mgmt_ip = "10.0.4.1"
+max_speed_mbps = 10000
+site = "house2"
+uplink_zone = "backbone"
+uplink_type = "10g_aoc_80m"
+uplink_speed_mbps = 10000
+uplink_latency_ms = 0.5
+uplink_note = "80m active optical cable between adjacent 1920s lots (~20m physical distance)"
+ports = [
+    "sfp+ ← CRS310 sfp+1 (10G trunk from backbone)",
+    "2.5G ports → compute towers, NUCs, fieldGate",
+]
+expansion_switch = "TP-Link TL-SG605S-M2 (5-port 2.5G, off Omada)"
+gates = ["ironGate", "southGate", "strandGate", "westGate", "fieldGate"]
+pending_gates = ["marshGate (future site router)"]
+flint2_bridge_gates = ["blueGate", "swiftGate"]
+note = "Basement HPC cluster + NAS + media. ironGate active, 5 gates enrolling via autonomous enrollment (Wave 155a). strandGate dual-RJ45 (Omada + Flint2). blueGate + swiftGate on Flint 2 bridge (2.5G). westGate NAS on Omada."
+
+[cytoplasm.zones.eero_wifi]
+hub_device = "Amazon Eero 6"
+hub_role = "wifi_bridge"
+status = "bridged"
+site = "house2"
+uplink_zone = "house2"
+uplink_type = "ethernet off TL-SG605S-M2 (via Omada port 8)"
+uplink_speed_mbps = 2500
+uplink_latency_ms = 3.0
+gates = []
+note = "Bridge mode ACTIVE (Jun 17 18:30). WiFi clients get 192.168.4.x from sporeGate DHCP. No more 10.0.7.x NAT."
+
+[sites.house1]
+address = "4422 Southgate Ave, Lansing MI 48910"
+description = "Corner lot, 1920 build. [ISP] fiber drop, CRS310, sporeGate router. PLANNED: [ISP] gateway + DS224+ moving to basement Aug 2."
+role = "primary_periplasm"
+planned_move = "Aug 2, 2026: [ISP] BGW320 + Synology DS224+ relocating from 1st floor to basement. Planned eth disruption window for troubleshooting + G29 validation. Post-move: all house1 infrastructure in basement ([ISP] gateway, CRS310, sporeGate) except WiFi/Eero on 1st floor."
+
+[sites.house2]
+address = "641 Samantha Ave, Lansing MI 48910"
+description = "Adjacent west of House 1. 1920 build. Omada switch, compute towers."
+role = "compute_farm"
+link_to_house1 = "80m AOC (10G SFP+), ~20m physical distance (adjacent lots)"
+
+# ═══════════════════════════════════════════════════════════════
+# Network Segments
+# ═══════════════════════════════════════════════════════════════
+
+[segments.periplasm]
+subnet = "192.168.4.0/22"
+gateway = "192.168.4.1"
+transport = "cat6_2.5g"
+description = "sporeGate sovereign LAN — all compute behind NAT + firewall"
+router = "sporeGate"
+switch = "CRS310"
+gates = ["sporeGate", "eastGate", "northGate", "biomeGate", "ironGate", "southGate", "strandGate"]
+site = "house1+house2"
+wan_exit = "att_fiber_h1"
+note = "Flat /22 spans both houses via 10G AOC trunk. sporeGate (house1) is the router. House 2 gates backhaul through Omada→CRS310→sporeGate."
+
+[segments.house2_compute]
+subnet = "192.168.5.0/24"
+gateway = "192.168.5.1"
+transport = "10g_aoc_80m"
+description = "House 2 (641 Samantha) compute farm — towers, NUCs via Omada switch"
+router = "marshGate (future, currently flat /22 via sporeGate)"
+switch = "Omada SFP+"
+gates = ["eastGate", "fieldGate"]
+site = "house2"
+backhaul = "80m AOC (10G) between adjacent 1920s lots (~20m physical distance)"
+wan_exit = "backhauled via House 1 sporeGate (single-exit star)"
+note = "Currently part of flat 192.168.4.0/22. Carve to /24 when marshGate deploys."
+
+[segments.backbone_legacy]
+subnet = "192.168.1.0/24"
+transport = "att_dhcp"
+description = "[ISP] native subnet — WiFi/Eero devices pending migration to 4.0/22"
+gateway = "192.168.1.254"
+note = "Bridged onto CRS310 via Eero. sporeGate proxy-ARPs for cross-subnet routing."
+gates = ["northGate"]
+
+[segments.eero_mesh]
+subnet = "192.168.1.0/24"
+transport = "eero_wifi_mesh"
+description = "Eero mesh WiFi — physically on CRS310 bridge, [ISP] DHCP range"
+bridge_to = "periplasm"
+bridge_latency_ms = 3.0
+note = "To be replaced by Omada APs on 192.168.4.0/22"
+
+[segments.vps_periplasm]
+transport = "digitalocean_vpc"
+description = "VPS membrane — golgiBody + peptidoglycan + golgiBody-ext"
+nodes = ["golgiBody", "peptidoglycan", "golgiBody-ext"]
+
+[segments.wan]
+transport = "residential_isp"
+description = "Remote WAN gates — TURN relay required"
+gates = ["flockGate"]
+
+[segments.portable]
+transport = "cellular_wifi"
+description = "Portable trust anchors — grapheneGate"
+gates = ["grapheneGate"]
+
+[segments.family]
+transport = "lan_or_wifi"
+description = "Family/hobby gates — consumer compute, gaming, media"
+gates = ["northGate", "swiftGate"]
+note = "Hobby computers. northGate = house1 (gaming/GPU). swiftGate = house2 (gaming/desktop via Flint 2). blueGate graduated to builder role (house2)."
+
+[segments.cellular_failover]
+transport = "5g_cellular"
+description = "[ISP_CELLULAR] hotspot — WAN failover when fiber is down"
+router = "sporeGate (wlp3s0 or usb0)"
+priority = 2
+latency_ms = 30.0
+bandwidth_mbps = "50-200 (variable, carrier-dependent)"
+note = "Activates automatically via route metric when [ISP] fiber unreachable."
+
+[segments.neighborhood_mesh]
+transport = "p2p_radio_or_cat6a"
+description = "Adjacent houses — wired drops or directional WiFi bridges"
+subnet = "192.168.6.0/24"
+latency_ms = 2.0
+bandwidth_mbps = "300-2500 (radio: 300-500, wired: 2500)"
+status = "planned"
+note = "Old Everett, Lansing — small lots, easy cable runs. Street mesh viable."
+
+[segments.remote_contract]
+transport = "wireguard_overlay"
+description = "Geo-distributed nodes at friend houses or institutes"
+subnet = "192.168.7.0/24"
+overlay_subnet = "10.13.37.0/24"
+latency_ms = 50.0
+status = "planned"
+note = "NUCs shipped to remote sites join via WireGuard to golgiBody or direct."
+
+# ═══════════════════════════════════════════════════════════════
+# Estimated Latency Matrix (ms, one-way)
+# ═══════════════════════════════════════════════════════════════
+#
+# Values are estimates until discovery.peers RTT measurements are live.
+# "local" = UDS on same machine (<0.1ms)
+# Latency classes:
+#   local:        <0.1ms  (UDS, same machine)
+#   same_segment: <1ms    (LAN, same switch)
+#   cross_segment: 2-5ms  (Eero bridge, routed subnet)
+#   vps_relay:    20-50ms (BTSP through VPS)
+#   wan_turn:     50-200ms (TURN relay through VPS)
+
+[latency.backbone_to_backbone]
+estimate_ms = 0.5
+confidence = "high"
+notes = "Same switch, Cat6"
+
+[latency.backbone_to_eero_mesh]
+estimate_ms = 3.0
+confidence = "medium"
+notes = "Cat6e between properties, Eero mesh bridge"
+
+[latency.backbone_to_vps]
+estimate_ms = 30.0
+confidence = "high"
+notes = "WireGuard wg0 tunnel, measured 2026-06-17: 29-34ms RTT to golgiBody (DO NYC)"
+
+[latency.eero_mesh_to_vps]
+estimate_ms = 28.0
+confidence = "medium"
+notes = "BTSP relay via backbone bridge"
+
+[latency.wan_to_vps]
+estimate_ms = 80.0
+confidence = "low"
+notes = "TURN :3478, residential ISP"
+
+[latency.portable_adb_to_backbone]
+estimate_ms = 0.5
+confidence = "high"
+notes = "USB ADB port forwarding — near-zero latency (same as localhost)"
+
+[latency.portable_wifi_to_backbone]
+estimate_ms = 5.0
+confidence = "low"
+notes = "WiFi to local LAN (varies by AP proximity)"
+
+[latency.portable_to_vps]
+estimate_ms = 50.0
+confidence = "low"
+notes = "Cellular → TURN (carrier-dependent)"
+
+[latency.house1_to_house2]
+estimate_ms = 0.3
+confidence = "high"
+notes = "10G SFP+ fiber trunk, same L2 bridge — sub-millisecond"
+
+[latency.cellular_failover_to_vps]
+estimate_ms = 45.0
+confidence = "low"
+notes = "[ISP_CELLULAR] 5G → golgiBody WireGuard — carrier jitter applies"
+
+[latency.neighborhood_p2p_radio]
+estimate_ms = 2.5
+confidence = "low"
+notes = "Ubiquiti/MikroTik directional radio, 100-200m line of sight"
+
+[latency.neighborhood_wired]
+estimate_ms = 0.5
+confidence = "medium"
+notes = "Cat6a direct burial between adjacent houses, sub-1ms"
+
+[latency.remote_contract_node]
+estimate_ms = 50.0
+confidence = "low"
+notes = "WireGuard overlay, residential ISP at remote site"
+
+# ═══════════════════════════════════════════════════════════════
+# Affinity Table — Neural API routing bias
+# ═══════════════════════════════════════════════════════════════
+#
+# Used by biomeOS ProviderWeight::score() topology factor.
+# Higher affinity = stronger preference for this path.
+
+[affinity]
+same_gate = 1.0
+same_segment = 0.9
+cross_segment_bridged = 0.7
+cross_site_10g_trunk = 0.85
+neighborhood_wired = 0.8
+neighborhood_p2p_radio = 0.6
+cellular_failover = 0.4
+vps_relay = 0.4
+wan_turn = 0.3
+remote_contract = 0.3
+portable_adb = 0.95
+portable_wifi = 0.5
+portable_cellular = 0.2
+
+# ═══════════════════════════════════════════════════════════════
+# Transport Inference Rules — biomeOS auto-detection
+# ═══════════════════════════════════════════════════════════════
+#
+# When gate_id comparison is unavailable, biomeOS infers affinity
+# from the transport type used to reach the provider:
+#
+# UnixSocket           → same_gate (1.0)
+# AbstractSocket       → same_gate (1.0)
+# TcpSocket(localhost) → same_gate (1.0)
+# TcpSocket(private IP)→ same_segment (0.9)
+# TcpSocket(public IP) → wan_turn (0.3)
+# HttpJsonRpc(localhost)  → same_gate (1.0)
+# HttpJsonRpc(private IP) → same_segment (0.9)
+# HttpJsonRpc(public IP)  → wan_turn (0.3)
+
+# ═══════════════════════════════════════════════════════════════
+# Mesh Overlays — logical topology layered on physical hardware
+# ═══════════════════════════════════════════════════════════════
+#
+# Physical topology (above) describes L1/L2: switches, cables, subnets.
+# Mesh overlays describe L3+: encrypted tunnels and service mesh links
+# that span physical boundaries. A gate may appear in both a hardware
+# zone AND one or more mesh overlays.
+
+[mesh.songbird_covalent]
+description = "Songbird TCP :7700 federation mesh — covalent trust, LAN backbone"
+transport = "tcp_7700"
+trust = "covalent"
+peers = [
+    { gate = "sporeGate", site = "house1", lan_ip = "192.168.4.3", status = "live" },
+    { gate = "eastGate", site = "house1", lan_ip = "192.168.4.244", status = "live" },
+    { gate = "golgi", site = "vps_do_nyc", status = "live" },
+    { gate = "ironGate", site = "house2", lan_ip = "192.168.4.237", status = "live" },
+    { gate = "southGate", site = "house2", lan_ip = "192.168.4.148", status = "live_lan_validated" },
+    { gate = "strandGate", site = "house2", lan_ip = "192.168.4.169", status = "live" },
+    { gate = "westGate", site = "house2", status = "live" },
+    { gate = "blueGate", site = "house2", lan_ip = "192.168.4.210", status = "live" },
+    { gate = "biomeGate", site = "house1", status = "tower_staged" },
+    { gate = "swiftGate", site = "house2", status = "enrolling" },
+    { gate = "grapheneGate", site = "portable", status = "live_tcp_only" },
+    { gate = "graftGate", site = "remote_cellular", status = "peered" },
+]
+note = "LAN peers at 192.168.4.x/22 (validated Wave 157j). VPS peer (golgi) relays for cross-WAN. graftGate via WG overlay."
+
+[mesh.wireguard_wan]
+description = "WireGuard star topology — golgiBody hub, all gates spoke through wg0"
+transport = "wireguard"
+subnet = "10.13.37.0/24"
+trust = "metallic"
+hub = { gate = "golgiBody", ip = "10.13.37.1", endpoint = "[RELAY_PUBLIC]:51820", status = "live" }
+# Peer inventory as of Wave 166d (2026-10-07)
+# Source of truth: golgiBody /etc/wireguard/wg0.conf + wg show wg0
+peers = [
+    # === ACTIVE (handshake within last 5 minutes) ===
+    { gate = "sporeGate",    ip = "10.13.37.2",  endpoint = "residential_att:51821",  status = "live", allowed_ips = "10.13.37.2/32, 192.168.4.0/22", note = "House router, routes entire periplasm. PersistentKeepalive=25" },
+    { gate = "?house-gate-a", ip = "10.13.37.5", endpoint = "residential_att:52252",  status = "live", note = "Active house gate behind sporeGate NAT. Identity TBD." },
+    { gate = "?house-gate-b", ip = "10.13.37.8", endpoint = "residential_att:53147",  status = "live", note = "Active house gate behind sporeGate NAT. Identity TBD." },
+    { gate = "?vps-linode",   ip = "10.13.37.14", endpoint = "172.232.85.202:51820", status = "live", note = "Akamai/Linode VPS. Identity TBD — possibly eastGate worker." },
+    { gate = "eastGate",      ip = "10.13.37.15", endpoint = "40.160.96.29:51820",   status = "live", note = "Azure. eastGate VPS." },
+
+    # === STALE (46-70 days without handshake) ===
+    { gate = "?biomeGate",   ip = "10.13.37.3",  endpoint = "residential_att:24576", status = "stale_54d", note = "PersistentKeepalive=25 — wasting packets. Was enrolling. 54 days stale." },
+    { gate = "?flockGate",   ip = "10.13.37.6",  endpoint = "[FLOCK_WAN]:51820",   status = "stale_70d", note = "Different ISP (not [ISP]). Was residential_spectrum. 70 days stale." },
+    { gate = "?unknown-h1",  ip = "10.13.37.7",  endpoint = "residential_att:51820", status = "stale_52d", note = "Behind house NAT. 52 days stale." },
+    { gate = "?unknown-h2",  ip = "10.13.37.10", endpoint = "residential_att:1491",  status = "stale_46d", note = "Behind house NAT. 46 days stale." },
+    { gate = "?unknown-h3",  ip = "10.13.37.12", endpoint = "residential_att:17759", status = "stale_51d", note = "Behind house NAT. 51 days stale." },
+    { gate = "?graftGate",   ip = "10.13.37.13", endpoint = "residential_att:59896", status = "stale_51d", note = "Was usb_tethering_cellular. Endpoint shows house NAT now. 51 days stale." },
+
+    # === NEVER CONNECTED (provisioned but never handshook) ===
+    { gate = "?reserved-1",  ip = "10.13.37.9",  endpoint = "none", status = "never_connected", note = "Key provisioned but never used." },
+    { gate = "?reserved-2",  ip = "10.13.37.11", endpoint = "none", status = "never_connected", note = "Key provisioned but never used." },
+]
+measured_rtt_ms = 29.0
+note = "Star hub topology via golgiBody. RTT golgiBody↔sporeGate measured 29-34ms (Wave 155b). Stale peers need re-enmeshment or retirement (Wave 166d)."
+
+[mesh.capability_routing]
+description = "capability.call dispatch layer — routes by advertised capability, not by gate"
+transport = "songbird_ipc"
+status = "partially_live"
+proven_capabilities = ["http.request"]
+pending_capabilities = ["jupyter", "compute.submit", "storage.get"]
+blocker = "songBird drawbridge auto-advertisement not yet deployed to pepti (coded, tested, pending 134a rebuild)"
+note = "Transport proven (WAN-DISPATCH-01 PARTIAL). capability.call routing unblocked by songBird evolution. Full PASS after pepti rebuild (Wave 134a)."

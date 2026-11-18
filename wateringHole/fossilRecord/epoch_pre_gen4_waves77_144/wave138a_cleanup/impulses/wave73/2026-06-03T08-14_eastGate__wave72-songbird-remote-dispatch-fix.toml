@@ -1,0 +1,58 @@
+# FRAGO: Songbird Remote Dispatch Protocol Fix
+# Critical path blocker for cross-gate capability.call
+
+[impulse]
+id = "wave72-songbird-remote-dispatch-fix"
+type = "frago"
+from = "eastGate"
+to = "songBird"
+date = "2026-06-03"
+priority = "P1"
+
+[context]
+reason = """
+Live mesh validation (eastGate ↔ strandGate) proves discovery.peers works.
+However, capability.call cross-gate dispatch is completely broken. Songbird's
+remote_dispatch.rs sends raw TCP JSON-RPC to port 7700, but that port serves
+HTTP (axum). The peer responds with HTTP framing, not JSON, causing:
+
+  "Invalid JSON from remote gate: expected value at line 1 column 1"
+
+This blocks ALL cross-gate capability routing, plasmodium collective
+validation, and multi-gate science dispatch. No workaround exists.
+"""
+
+[evidence]
+test_date = "2026-06-03"
+test_gates = ["eastGate (192.168.1.144)", "strandGate (192.168.1.132)"]
+songbird_version = "0.2.1"
+discovery_peers_works = true
+capability_call_works = false
+error = "Invalid JSON from remote gate: expected value at line 1 column 1"
+
+[fix_required]
+description = """
+remote_dispatch.rs must use HTTP POST to /jsonrpc endpoint when forwarding
+JSON-RPC requests to remote peers, NOT raw TCP framing. The peer's :7700
+port is an HTTP server that only accepts requests at POST /jsonrpc with
+Content-Type: application/json.
+"""
+file = "crates/songbird-universal-ipc/src/remote_dispatch.rs"
+test = "Send capability.call to remote gate, expect JSON-RPC response (not HTTP error)"
+
+[fix_required.secondary]
+description = """
+Wire mesh_seed module into server startup (app/startup_orchestration.rs).
+SONGBIRD_PEERS env var is parsed correctly but spawn_mesh_seed() is never
+called during boot. Results in 'standalone mode' and requires manual mesh.init.
+"""
+file = "crates/songbird-orchestrator/src/app/startup_orchestration.rs"
+test = "Start with SONGBIRD_PEERS set, verify discovery.peers immediately returns peers"
+
+[outcome]
+expected = """
+After fix:
+  1. capability.call routes transparently across gates via HTTP
+  2. SONGBIRD_PEERS auto-bootstraps mesh on startup
+  3. Unblocks Wave 73-74: plasmodium collective (3+ gates meshed)
+"""

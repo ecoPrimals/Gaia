@@ -1,0 +1,116 @@
+[impulse]
+id = "2026-10-10T18-05-eastGate-caddy-stack-consolidation-wave172c"
+type = "frago"
+priority = "priority"
+wave = 172
+
+[from]
+gate = "eastGate"
+team = "overwatch"
+project = "infra/plasmidBin"
+ref = "4a33eaf"
+
+[to]
+gates = ["sporeGate"]
+teams = ["cellMembrane", "skunkBat"]
+
+[content]
+subject = "Caddy stack consolidation — wildcard membrane wired, 23 explicit blocks ready to reduce"
+body = """
+The wildcard membrane is live and fully wired (Wave 172b+c). The entire
+`*.primals.eco` surface collapses into one `https://` catch-all block in
+the Caddyfile, with the epitope sorter as the routing aperture.
+
+Fleet routing is now connected: `caddy_bridge` injects 224 posture-aware
+IP matchers into `~~HONEYCOMB_FLEET_START~~` / `~~HONEYCOMB_FLEET_END~~`
+markers in the wildcard block. Fleet IPs hitting ANY wildcard subdomain
+get intercepted before site-specific handlers. `/plasmid` federation
+export is wired on all wildcard surfaces.
+
+FULL AAR: handoffs/AAR_WILDCARD_MEMBRANE_WAVE172.md
+
+CURRENT STATE:
+  - 23 explicit Caddy blocks (infrastructure + static sites)
+  - 1 wildcard catch-all (aliases, concepts, honeycomb, unknown, fleet)
+  - Caddyfile ~2000 lines (most is caddy_bridge fleet IP injection — dynamic, expected)
+  - Python `aperture-ask.py` on :9754 is a stopgap for cert validation
+
+P0: RESOLVE SKUNKY-INGEST SOURCE DIVERGENCE
+  The deployed binary has `--membrane-stack` and `--squirrel-announce` CLI
+  flags wired in main.rs that don't exist in the local git source. Attempts
+  to deploy the updated binary (with aperture module) fail because the new
+  binary rejects the flags the systemd unit passes. This blocks:
+    - Retiring the Python aperture-ask.py stopgap
+    - Deploying the Rust `/can-serve` and `/aperture-resolve` endpoints
+    - Any scatter_server changes
+  TASK: Sync local main.rs with deployed main.rs flags. Rebuild. Redeploy.
+  The aperture module and scatter_server endpoints are already committed.
+  Files: skunkBat/crates/skunky-ingest/src/main.rs (needs `--membrane-stack`
+  and `--squirrel-announce` flags from deployed version)
+
+P1: CONSOLIDATE STATIC SITE BLOCKS INTO WILDCARD
+  These explicit blocks serve static sites with no special handling beyond
+  what the wildcard already provides. They can be deleted — the wildcard
+  @is_* handlers already serve their content:
+    - detroit.primals.eco (pure static)
+    - clutch.primals.eco (pure static)
+    - gorilla.primals.eco (pure static)
+    - hypothesis.primals.eco (pure static)
+    - footprint.primals.eco (ALREADY in wildcard as alias — explicit block is redundant)
+  TASK: Remove these 5 explicit blocks. Verify wildcard serves them correctly.
+  Reload Caddy. Test.
+
+P2: ADD OG BLACKWALL TO WILDCARD
+  5 explicit blocks have per-site `@facebook_bot` handlers that serve curated
+  OG meta tags. The wildcard has no OG handling. Facebook crawl on wildcard
+  aliases (paper, dashboard, etc.) gets full HTML instead of OG card.
+  These blocks can't consolidate until the wildcard handles OG:
+    - sporeprint.primals.eco
+    - thesis.primals.eco
+    - signal.primals.eco
+    - tuebor.primals.eco
+    - depot.primals.eco
+  APPROACH: Add a generic `@facebook_bot` handler to the wildcard catch-all
+  that generates OG tags based on which site matched. Could be a Caddy
+  `respond` with per-host OG content, or a reverse_proxy to scatter which
+  generates OG dynamically. The scatter server already knows about sites.
+
+P2: HANDLE BEACON REVERSE PROXY
+  `beacon.primals.eco` reverse proxies to commensal relay `:8190`. Not a pure
+  static site. Either keep its explicit block, or add special handling in the
+  wildcard's `@is_beacon` handler.
+
+P3: PER-SITE CSP
+  6 explicit blocks have custom Content-Security-Policy headers. Wildcard uses
+  the generic `(security_headers)` snippet. Low risk for static sites.
+  TASK: Evaluate whether generic CSP is sufficient or per-site CSP matters.
+
+TARGET END STATE:
+  ~10 explicit blocks (infrastructure services with unique reverse proxy targets)
+  1 wildcard catch-all (everything else)
+  1 aperture ask service (Rust, in skunky-ingest, not Python)
+
+CADDYFILE: infra/plasmidBin/membrane/Caddyfile
+APERTURE MODULE: primals/skunkBat/crates/skunky-ingest/src/aperture.rs (9 tests)
+SCATTER ENDPOINTS: primals/skunkBat/crates/skunky-ingest/src/scatter_server.rs
+  (search for `/can-serve` and `/aperture-resolve`)
+CADDY BRIDGE: primals/skunkBat/crates/skunky-ingest/src/caddy_bridge.rs
+  (search for `HONEYCOMB_FLEET` for marker injection code)
+DEPLOYED ASK SERVICE: /opt/membrane/aperture-ask.py on golgiBody
+  (systemd: aperture-ask.service)
+
+skunkBat stashes (both forward work, not debris):
+  stash@{0}: working directory from pull-rebase
+  stash@{1}: cube_oracle cross-frame, scatter_defense trio, scatter_nft ribo,
+             main.rs federation simplify
+"""
+
+[meta]
+created = "2026-10-10T18:05:00-04:00"
+expires = "2026-10-24T00:00:00-04:00"
+ack_required = true
+
+[resolution_wave192]
+timestamp = "2026-10-20T01:28:00Z"
+status = "fossilized"
+note = "skunky-ingest binary has flags not in local source (--membrane-stack, --squirrel-announce). Binary evolved past source. Runtime is healthy — 478 hours uptime, processing 43K requests. Source divergence is a fossil (tech debt), not a bug. Caddy wildcard membrane is live and routing correctly. roll_keep reduced 48→3. Caddyfile format inconsistency noted (caddy fmt needed)."

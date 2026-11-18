@@ -1,0 +1,228 @@
+[impulse]
+id = "wave106-flockgate-wan-deployment-aar"
+type = "aar"
+priority = "P2"
+wave = 106
+
+[from]
+gate = "flockGate"
+role = "WAN mesh validation + guideStone deployment analysis"
+
+[to]
+gates = ["eastGate"]
+team = "cellMembrane + songBird + biomeOS"
+
+[content]
+subject = "flockGate WAN NUCLEUS: guideStone-grade deployment gaps + upstream guidance"
+body = """
+## AAR: WAN NUCLEUS Deployment — GuideStone Grade Analysis
+
+flockGate executed Wave 105/106 WAN end-to-end validation. 4/5 stages PASS.
+This AAR extends beyond the immediate blocker to identify what's needed for
+NUCLEUS to be a **guideStone-grade deterministic deployment** from the WAN side.
+
+cellMembrane on ironGate focuses on LAN issues. This document focuses on
+what the WAN topology uniquely requires and what upstream changes enable
+guideStone-grade deployment for ALL remote gates (not just flockGate).
+
+---
+
+## Part 1: Immediate Blocker
+
+### VPS Depot Stale After songBird Fix
+
+songBird shipped mesh persistence + federation port fix (commit 1df7ef90).
+Outer membrane depot still serves songbird v0.2.1 (pre-fix). flockGate's
+songbird cannot complete bidirectional handshake.
+
+**Resolution:** CM-VPS-DEPOT-SYNC — rebuild songbird on pepti + push to
+outer membrane. Once updated, flockGate fetches, restarts, mesh completes.
+
+---
+
+## Part 2: GuideStone-Grade WAN NUCLEUS Deployment
+
+### What "GuideStone Grade" Means for Deployment
+
+Applying guideStone's five verification properties to NUCLEUS deployment:
+
+| Property | Current WAN State | GuideStone Target |
+|----------|------------------|-------------------|
+| 1. Deterministic | PARTIAL — same binaries produce same NUCLEUS | FULL — deployment manifest records exact inputs, produces identical state on replay |
+| 2. Reference-Traceable | FAIL — no provenance chain for WAN-fetched binaries | FULL — every binary traces to provenance.toml (commit + rustc + content_hash) |
+| 3. Self-Verifying | FAIL — BLAKE3 mismatch (depot ≠ checksums.toml) | FULL — checksums always match, post-fetch verification gates deployment |
+| 4. Environment-Agnostic | PASS — musl-static binaries, no runtime deps | PASS — maintained |
+| 5. Tolerance-Documented | FAIL — no documented depot freshness window or mesh convergence time | FULL — named tolerances for depot staleness, mesh handshake timeout, health convergence |
+
+### Gap G1: Depot Integrity Chain (Properties 2+3)
+
+**Current:** WAN gate fetches binaries via HTTPS, BLAKE3 checksums exist
+in checksums.toml, but checksums DON'T MATCH the served binaries. The
+VPS depot is rebuilt independently of checksums.toml publication.
+
+**GuideStone target:** Fetch → verify → gate deployment is FAIL-CLOSED.
+
+**Needed upstream:**
+  a. VPS depot rebuild MUST atomically update checksums.toml (same commit)
+  b. `plasmid.fetch` MUST verify BLAKE3 BEFORE marking binary as deployable
+  c. If verification fails, fetch MUST refuse to overwrite existing binary
+  d. provenance.toml entries MUST exist for each depot binary (source_commit,
+     rustc_version, build_timestamp, content_hash → provenance_hash)
+
+This is partially addressed by CM-VPS-DEPOT-SYNC. The gap is that depot
+refresh and checksum publication are decoupled — they must be atomic.
+
+### Gap G2: Deployment Manifest (Property 1 — Determinism)
+
+**Current:** No record of what was deployed, when, or what state resulted.
+A gate deployment is an ephemeral sequence of curl + chmod + start commands.
+If it fails halfway, there's no rollback or resume.
+
+**GuideStone target:** `deployment.toml` — a gate-local manifest recording:
+```toml
+[deployment]
+gate = "flockGate"
+timestamp = "2026-06-09T21:07:45Z"
+composition = "nucleus_full"
+
+[binaries]
+beardog = { blake3 = "cc7cb91b...", version = "0.9.0", source = "membrane.primals.eco" }
+songbird = { blake3 = "6c6511e8...", version = "0.2.1", source = "membrane.primals.eco" }
+# ... all 13
+
+[mesh]
+node_id = "flockGate"
+peers = ["[RELAY_PUBLIC]:7700"]
+federation_port = 7700
+
+[health]
+beardog = "healthy"
+songbird = "healthy"
+# ...
+```
+
+**Needed upstream (biomeOS or cellMembrane):**
+  a. `gate.bootstrap` should emit a `deployment.toml` after successful deploy
+  b. `plasmidbin doctor` should validate against `deployment.toml`
+  c. On restart, NUCLEUS reads `deployment.toml` to restore exact state
+  d. This makes deployment REPRODUCIBLE — replay the manifest, get same NUCLEUS
+
+### Gap G3: Health Convergence Tolerance (Property 5)
+
+**Current:** After starting primals, there's no defined "ready" signal.
+Manual health probing. No timeout. No declared convergence window.
+
+**GuideStone target:** Named tolerances for deployment lifecycle:
+```toml
+[tolerances]
+depot_freshness_max = "24h"       # max age before depot is "stale"
+mesh_handshake_timeout = "30s"    # abort if no bidirectional in 30s
+health_convergence_window = "60s" # all primals must be healthy within 60s
+primal_startup_timeout = "10s"    # individual primal health.liveness deadline
+```
+
+**Needed upstream (biomeOS — ties to NUCLEUS supervision P1):**
+  a. `composition.deploy` should declare and enforce these tolerances
+  b. Failure to converge within tolerance → structured error, not silent hang
+  c. Documented in deployment manifest (Property 5 satisfied)
+
+### Gap G4: WAN-Specific Verification Gate
+
+**Current:** No verification that a WAN-fetched binary is safe to run
+beyond BLAKE3 checksum (which currently fails anyway).
+
+**GuideStone target:** Three-layer verification for WAN deployments:
+  1. **Transport integrity** — BLAKE3 checksum matches checksums.toml ← basic
+  2. **Provenance chain** — provenance.toml entry exists, source_commit resolves ← traceability
+  3. **Capability verification** — `beardog verify-binary` validates ecoBin signature ← future Tier 3
+
+Layer 1 is sufficient for stadial. Layers 2-3 are the path to full
+guideStone-grade WAN deployment where the gate trusts NO transfer channel.
+
+**Needed upstream:**
+  a. Layer 1: Fix checksums.toml synchronization (G1 above)
+  b. Layer 2: Ensure provenance.toml covers WAN-served binaries
+  c. Layer 3: (Future) bearDog binary attestation for WAN fetches
+
+---
+
+## Part 3: Proposed WAN Deployment Flow (GuideStone-Grade)
+
+```
+PHASE 0: FETCH (Environment-Agnostic)
+  curl binaries from membrane.primals.eco/depot/{triple}/
+  Store in primals/{triple}/ (no PATH, no install)
+
+PHASE 1: VERIFY (Self-Verifying, Reference-Traceable)
+  For each binary:
+    b3sum → compare to checksums.toml
+    IF MISMATCH → ABORT (fail-closed)
+    IF provenance.toml entry exists → log source_commit
+  Emit: fetch-receipt.toml (what was fetched, when, verification status)
+
+PHASE 2: DEPLOY (Deterministic)
+  Start primals in graph order (nucleus_complete.toml)
+  Health-gate each tier before starting next
+  Emit: deployment.toml (exact binary hashes, health states, timestamps)
+  Tolerance: health_convergence_window (fail if exceeded)
+
+PHASE 3: MESH (Tolerance-Documented)
+  mesh.init with configured peers
+  Wait mesh_handshake_timeout for bidirectional confirmation
+  IF timeout → degrade gracefully (standalone mode), don't crash
+  Emit: mesh-status.toml (node_id, peers, latency, handshake_time)
+
+PHASE 4: ATTEST (Future Tier 3)
+  bearDog binary attestation sweep
+  sweetGrass braid witness for deployment event
+  Emit: attestation.toml (signed by gate's BTSP identity)
+```
+
+This flow makes every WAN gate deployment reproducible, verifiable, and
+auditable. Any gate running this flow produces a deployment record that
+another gate can verify independently.
+
+---
+
+## Part 4: What cellMembrane Owns vs What Others Own
+
+| Component | Owner | Status |
+|-----------|-------|--------|
+| Depot rebuild + checksums atomicity | cellMembrane | GAP — currently decoupled |
+| plasmid.fetch verification gate (fail-closed) | cellMembrane | PARTIAL — fetch exists, verify is advisory |
+| deployment.toml emission | biomeOS (composition.deploy) | GAP — no manifest emitted |
+| Health convergence tolerances | biomeOS (NUCLEUS supervision) | GAP — P1 item already identified |
+| Mesh handshake timeout + graceful degrade | songBird | GAP — mesh.init is fire-and-forget |
+| provenance.toml for outer membrane | cellMembrane | GAP — provenance.toml exists but may not cover outer membrane builds |
+| WAN fetch receipt / audit trail | cellMembrane (plasmid.fetch) | GAP — no receipt emitted |
+
+---
+
+## Summary
+
+The immediate blocker is depot freshness (Part 1). The strategic gap is
+that NUCLEUS deployment from WAN currently satisfies 1.5/5 guideStone
+properties (environment-agnostic + partial determinism). To reach full
+guideStone grade, upstream needs:
+
+1. Atomic checksums.toml ↔ depot sync (cellMembrane)
+2. Deployment manifest emission (biomeOS)
+3. Named tolerances for lifecycle events (biomeOS)
+4. Fail-closed verification in plasmid.fetch (cellMembrane)
+5. Mesh timeout + graceful degradation (songBird)
+
+These are NOT blockers for stadial (stadial only requires "WAN gate
+enrolls in mesh"). They ARE the path from "deployment works" to
+"deployment is guideStone-grade deterministic and self-verifying."
+
+flockGate is ready to validate each improvement as it lands.
+"""
+
+[references]
+handoff = "FLOCKGATE_WAVE105_WAN_E2E_VALIDATION_JUN09_2026.md"
+frago = "wave106-cross-topology-validation"
+upstream_fix = "CM-VPS-DEPOT-SYNC (songbird rebuild + push to outer membrane)"
+songbird_commit = "1df7ef90 (mesh persistence + federation port fix)"
+guidestone_standard = "TARGETED_GUIDESTONE_STANDARD.md (five verification properties)"
+deployment_standard = "DEPLOYMENT_VALIDATION_STANDARD.md (health triad, socket-first)"
+nucleus_model = "DESKTOP_NUCLEUS_DEPLOYMENT.md (13 primals, graph order)"

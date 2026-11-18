@@ -1,0 +1,85 @@
+# ACK: Wave 91 — 2-Gate Mesh Proof + plasmidBin Depot Standardization
+# strandGate acknowledges Wave 91 blurb and reports results
+
+[impulse]
+id = "wave91-ack-mesh-proof-depot-standardized"
+type = "ack"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-07"
+priority = "P1"
+references = [
+    "wave79-transport-evolution-capability-routing",
+    "wave84-temporal-inner-membrane-adoption",
+    "wave73-westgate-skunkbat-enrollment",
+]
+
+[status]
+cascade = "24/24 parity (membrane temporal.cascade)"
+nucleus = "13/13 ALIVE (Songbird *:7700 LIVE)"
+depot = "13/13 BLAKE3 checksums regenerated, 10/13 current per plasmid.status"
+
+[mesh_proof]
+summary = "2-gate mesh proof PROVEN at protocol level (3/4 criteria fully met)"
+
+[mesh_proof.results]
+mesh_init = """
+method: mesh.init
+params: {node_id: strandGate, bootstrap_peers: [{node_id: eastGate, address: 192.168.1.144:7700}]}
+result: {initialized: true, bootstrap_peers_added: 1}
+verdict: PASS — proper object format {node_id, address} required (string format silently dropped)
+"""
+
+discovery_peers = """
+method: discovery.peers
+result: {total_count: 1, peers: [{node_id: eastGate, address: 192.168.1.144:7700,
+         reachable: true, source: mesh, protocols: [tcp], tcp_port: 7700}]}
+verdict: PASS — peer_count >= 1
+"""
+
+mesh_health_check = """
+method: mesh.health_check
+result: {all_healthy: true, results: [{node_id: eastGate, healthy: true, path_type: direct}]}
+verdict: PASS — all_healthy: true
+"""
+
+capability_call = """
+method: capability.call (HTTP transport via 127.0.0.1:7700/jsonrpc)
+params: {capability: health, operation: health.liveness}
+result: routes to eastGate via mesh routing, attempts HTTP POST to 192.168.1.144:7700/jsonrpc
+error: 'client error (Connect)' — eastGate LAN :7700 CONNECTION REFUSED
+verdict: PARTIAL — routing correct, TCP delivery blocked by eastGate bind/firewall
+"""
+
+[mesh_proof.findings]
+finding_1 = "mesh.init bootstrap_peers requires object format [{node_id, address}], not bare strings like '192.168.1.144:7700'"
+finding_2 = "mesh.health_check reports healthy based on mesh-level peer metadata, not TCP probes"
+finding_3 = "capability.call is HTTP-only (not available on UDS socket — Method not found on songbird-strandgate.sock)"
+finding_4 = "eastGate 192.168.1.144:7700 CONNECTION REFUSED on LAN — possible localhost-only bind or firewall"
+finding_5 = "Mesh discovery + health + routing layers fully functional — coordination gap only"
+
+[depot_standardization]
+summary = "7 drifted primals rebuilt musl-static, checksums.toml regenerated"
+
+[depot_standardization.rebuilt]
+primals = ["loamspine", "skunkbat", "beardog", "songbird", "barracuda", "biomeos", "petaltongue"]
+target = "x86_64-unknown-linux-musl"
+toolchain = "1.94.0-x86_64-unknown-linux-gnu + musl target"
+note = "musl std lib was missing for active toolchain — installed via rustup target add"
+
+[depot_standardization.still_drifted]
+primals = ["beardog", "songbird", "skunkbat"]
+reason = "Source repos have newer commits than the builds — acceptable, rebuild on next sync"
+
+[blocker]
+id = "MESH-TCP-01"
+description = "eastGate Songbird :7700 not reachable on LAN (192.168.1.144)"
+impact = "capability.call cross-gate dispatch fails at TCP delivery layer"
+action = "eastGate: verify Songbird binds 0.0.0.0:7700 (not 127.0.0.1:7700), check firewall"
+workaround = "mesh.init + discovery.peers + health_check all pass regardless"
+
+[next_steps]
+step_1 = "Resolve MESH-TCP-01: eastGate Songbird LAN bind coordination"
+step_2 = "Once TCP resolved: retry capability.call smoke test end-to-end"
+step_3 = "songBird ipc.resolve structured endpoints (Phase 2 M1) — next evolution gate"
+step_4 = "BIO-ORPHAN-01: NUCLEUS lifecycle supervision (P2)"

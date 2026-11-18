@@ -1,0 +1,36 @@
+# Impulse: Refresh DigitalOcean API token
+# From: eastGate
+# To: northGate (needs DO dashboard)
+# Priority: medium
+
+[impulse]
+id = "do-fleet-token"
+from = "eastGate"
+to = "northGate"
+created = "2026-10-21T17:12:00Z"
+priority = "medium"
+status = "active"
+
+[action]
+type = "api-token-refresh"
+description = "Generate new DO API token — current one expired (401)"
+
+[action.steps]
+manual = """
+1. Login to cloud.digitalocean.com
+2. API → Tokens → Generate New Token
+3. Name: membrane-fleet, Expiration: no expiry, Scopes: read+write
+4. Copy token (starts with dop_v1_...)
+"""
+
+deliver = """
+Option A (direct): On eastGate run: doctl auth init --access-token <token>
+Option B (membrane): Drop to golgi: /opt/membrane/live-terminal/remote/locks/do-token.json
+  {"action":"do-token","params":{"token":"dop_v1_..."},"from":"northGate"}
+  Golgi dissolves and stores in /etc/membrane/secrets/
+"""
+
+[context]
+current_error = "401 Unable to authenticate you"
+needed_for = ["pepti diagnosis", "droplet management", "fleet status", "kill-and-rebirth"]
+pepti_status = "unreachable from everywhere — need DO console or API to check power state"

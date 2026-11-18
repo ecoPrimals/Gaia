@@ -1,0 +1,144 @@
+# FRAGO Response: Wave 115 — sporeGate Onboarding COMPLETE
+# From: sporeGate (cellMembrane owner)
+# To: eastGate overwatch
+# Date: 2026-06-16 22:48 EDT
+# Context: USB handoff received, all secrets applied, 13/13 alive,
+#          cascade verified, VPS SSH confirmed, mesh connected.
+
+[impulse]
+id = "wave115-sporegate-onboarding-complete"
+type = "frago-response"
+from = "sporeGate"
+to = ["eastGate/overwatch"]
+date = "2026-06-16T22:48"
+priority = "P1"
+parent = "wave115-sovereign-mesh"
+
+note = """
+sporeGate onboarding COMPLETE. Full primal team member.
+8/9 gate.status probes pass. 13/13 primals via systemd.
+VPS ownership verified (SSH golgi + pepti). Cascade push/pull working.
+Ready to execute Wave 115 streams."""
+
+# ──────────────────────────────────────────────────────────────
+# COMPLETED (this session)
+# ──────────────────────────────────────────────────────────────
+
+[completed]
+timestamp = "2026-06-16T22:48 EDT"
+
+[completed.network]
+nat_routing = "LIVE — all subnets routing (192.168.4.x, 192.168.1.x, 10.0.x.x)"
+ipv6_fix = "DONE — disabled forwarding (caused iPhone stalls on Eero WiFi)"
+hairpin_nat = "DONE — eno1→eno1 accept + LAN masquerade for same-NAT RustDesk"
+dhcp = "6+ active leases, CRS310 pure L2"
+dns = "dnsmasq caching, bind-dynamic, all subnets served"
+
+[completed.primals]
+count = "13/13 alive"
+persistence = "systemd units created and enabled (membrane-nucleus.target)"
+boot_order = "beardog first (others depend on socket), then all parallel"
+invocations = "matched golgiBody pattern (server --socket /run/membrane/<primal>.sock)"
+
+[completed.vps_access]
+golgi_ssh = "VERIFIED — root@[RELAY_PUBLIC]"
+pepti_ssh = "PENDING — need IP (not in current docs)"
+forgejo_ssh = "VERIFIED — key 'sporeGate-gate-v1' registered"
+github_ssh = "VERIFIED — key registered as ecoPrimal"
+
+[completed.cascade]
+fetch_origin = "OK (Forgejo SSH)"
+fetch_github = "OK (GitHub SSH)"
+push_origin = "OK"
+push_github = "OK"
+wateringhole_synced = "main at c19aef50 (both remotes)"
+
+[completed.rustdesk]
+config_string = "APPLIED (one-command)"
+relay_key = "[RUSTDESK_KEY_PURGED]"
+id = "1871544996"
+service = "systemd enabled at boot"
+hairpin = "FIXED — LAN devices can connect via ID"
+
+[completed.mesh]
+status = "1 peer, 1 reachable (golgiBody)"
+songbird = "active, federation-port 7700, dark-forest mode"
+beardog = "active, socket /run/membrane/beardog.sock"
+
+[completed.secrets]
+family_key = "INSTALLED — /etc/membrane/family/family.key (from golgiBody)"
+beacon_seed = "INSTALLED — /etc/membrane/family/.beacon.seed"
+family_id = "e8b62b6e"
+env = "WRITTEN — /opt/membrane/env (all fields populated)"
+
+[completed.documentation]
+aar = "SPOREGATE_AAR_WAVE115.md — 8 adhoc interventions documented"
+topology = "TOPOLOGY_LIVE.md — full physical chain + how to add NUCs/routers"
+infra_layers = "INFRA_LAYERS.toml — machine-readable device inventory"
+onboarding = "USB handoff acknowledged and executed"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM STATUS UPDATES
+# ──────────────────────────────────────────────────────────────
+
+[stream_updates.stream1_rustdesk]
+sporegate_client = "✅ DONE (config string applied, hairpin fixed)"
+hairpin_nat = "✅ DONE (persisted in /etc/nftables.conf)"
+# Remaining: fieldgate (offline), omada towers, flockgate
+
+[stream_updates.stream2_persistence]
+sporegate_units = "✅ DONE (13 systemd services + nucleus target)"
+# Remaining: fieldgate, northgate (both need physical access)
+
+[stream_updates.stream5_vps]
+sporegate_golgi_ssh = "✅ DONE"
+golgi_membrane_verified = "✅ gate.status 13/13 on golgi"
+sporegate_pepti_ssh = "TODO — need pepti IP"
+cascade_verified = "✅ push/pull both remotes clean"
+
+# ──────────────────────────────────────────────────────────────
+# REMAINING (still TODO from FRAGO)
+# ──────────────────────────────────────────────────────────────
+
+[remaining]
+p1 = [
+  "pepti SSH verification (need IP)",
+  "depot.integrity checksums.toml (cosmetic)",
+  "fieldgate + omada tower RustDesk push (gates offline)",
+  "flockgate sovereign relay migration",
+]
+p2 = [
+  "northgate NUCLEUS deployment",
+  "[ISP] IP passthrough (eliminate double-NAT)",
+  "event-driven cascade (webhooks)",
+  "CRS310 pure L2 formalization",
+]
+p3 = [
+  "IPv6 proper (NAT66 or PD)",
+  "VLAN segmentation",
+  "membrane remote.configure command",
+  "LAN-local hbbs relay on sporeGate",
+]
+
+# ──────────────────────────────────────────────────────────────
+# AUTONOMY CHECKLIST (from onboarding blurb)
+# ──────────────────────────────────────────────────────────────
+
+[autonomy]
+ssh_golgi_pepti = "golgi ✅ / pepti ❌ (need IP)"
+run_cascade = "✅ verified"
+manage_forgejo = "✅ SSH key registered, can push/manage"
+restart_relay = "✅ can ssh golgi + systemctl restart"
+push_rustdesk_config = "✅ have config string, can SSH-push to any gate"
+
+# ──────────────────────────────────────────────────────────────
+# GATE STATUS (updated)
+# ──────────────────────────────────────────────────────────────
+
+[gates]
+sporegate = "FULLY ONBOARDED: 13/13 alive, systemd persisted, cascade working, VPS SSH, mesh connected, RustDesk sovereign, hairpin fixed. cellMembrane owner."
+eastgate = "Overwatch: awaiting this FRAGO response for validation."
+northgate = "PENDING: RustDesk configured, NUCLEUS next."
+fieldgate = "OFFLINE: needs physical check."
+golgi = "HEALTHY: 13/13, verified via SSH."
+pepti = "UNKNOWN: need IP for SSH verification."

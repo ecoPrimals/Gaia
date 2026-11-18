@@ -1,0 +1,46 @@
+# RESOLVED: skunkBat standard primal startup contract (STARTUP-SB-01)
+#
+# v0.2.10 — --bind-mode flag replaces --no-uds/--no-tcp.
+# Standard envelope: skunkbat server --bind-mode $PRIMAL_BIND_MODE --port $PORT
+
+[impulse]
+id = "wave109-skunkbat-startup-contract"
+type = "resolution"
+from = "eastGate"
+to = "primalSpring"
+date = "2026-06-11"
+priority = "P2"
+status = "resolved"
+frago_ref = "STARTUP-SB-01"
+
+[resolution]
+commit = "00b3436"
+branch = "main"
+version = "0.2.10"
+summary = """
+Standard primal startup contract adopted (Wave 109, Stream 1).
+
+Before: --no-uds / --no-tcp flags (per-primal transport logic).
+After: --bind-mode (uds-only | tcp-only | fallback) — unified contract.
+
+Envelope: skunkbat server --bind-mode $PRIMAL_BIND_MODE --port $PORT
+- Reads PRIMAL_BIND_MODE env var when --bind-mode not passed
+- TRANSPORT_ENDPOINT still overrides bind-mode when set
+- No per-primal case blocks needed in deploy scripts
+- PlatformCapabilities::detect() sets PRIMAL_BIND_MODE; skunkBat just reads it
+
+Removed: --no-uds, --no-tcp (superseded by --bind-mode).
+"""
+
+[resolution.contract]
+bind_mode_flag = true
+env_var_reads_primal_bind_mode = true
+values = ["uds-only", "tcp-only", "fallback"]
+default = "uds-only"
+transport_endpoint_override = true
+per_primal_flags_removed = ["--no-uds", "--no-tcp"]
+
+[resolution.verification]
+total_tests = 506
+clippy_warnings = 0
+version = "0.2.10"
