@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitruvian Gaia — The Living HUD</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #c8c8c8; font-family: 'Courier New', monospace; overflow-x: hidden; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 1rem; }
+  h1 { text-align: center; color: #f0d060; font-size: 2rem; margin: 1rem 0; }
+  .subtitle { text-align: center; color: #888; font-size: 0.9rem; margin-bottom: 2rem; }
+
+  .body-map {
+    position: relative; width: 600px; height: 800px; margin: 0 auto;
+    border: 1px solid #333; border-radius: 10px;
+  }
+  .circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 500px; height: 500px; border: 2px solid #2a6e2a; border-radius: 50%; opacity: 0.3; }
+  .square { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(0deg);
+    width: 400px; height: 400px; border: 2px solid #4a4a8a; opacity: 0.3; }
+  .spine-line { position: absolute; left: 50%; top: 5%; height: 90%; width: 2px;
+    background: linear-gradient(to bottom, #f0d060, #00ff88, #ff4444, #8844ff); opacity: 0.6; }
+
+  .organ { position: absolute; padding: 8px 12px; border-radius: 6px; font-size: 0.75rem;
+    cursor: pointer; transition: all 0.3s; text-align: center; min-width: 120px; }
+  .organ:hover { transform: scale(1.1); z-index: 10; }
+  .organ .label { font-weight: bold; color: #fff; }
+  .organ .data { color: #aaa; font-size: 0.65rem; margin-top: 2px; }
+  .organ .live { color: #0f0; }
+  .organ .down { color: #f44; }
+
+  .head { top: 2%; left: 50%; transform: translateX(-50%); background: #1a1a3a; border: 1px solid #4488ff; }
+  .face { top: 11%; left: 50%; transform: translateX(-50%); background: #1a2a1a; border: 1px solid #44ff88; }
+  .neck { top: 20%; left: 50%; transform: translateX(-50%); background: #2a1a1a; border: 1px solid #ff8844; }
+  .left-arm { top: 30%; left: 2%; background: #1a1a2a; border: 1px solid #8888ff; }
+  .right-arm { top: 30%; right: 2%; background: #1a2a2a; border: 1px solid #88ffff; }
+  .torso { top: 35%; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #888; }
+  .heart-organ { top: 38%; left: 28%; background: #2a0a0a; border: 2px solid #ff2222;
+    animation: pulse 1s ease-in-out infinite; }
+  .left-leg { top: 65%; left: 15%; background: #2a1a2a; border: 1px solid #aa44ff; }
+  .right-leg { top: 65%; right: 15%; background: #1a2a1a; border: 1px solid #44ff44; }
+  .feet { top: 85%; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #666; }
+
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 5px #f22; } 50% { box-shadow: 0 0 20px #f44, 0 0 40px #f22; } }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 2rem 0; }
+  .stat-card { background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px; text-align: center; }
+  .stat-card .val { font-size: 1.5rem; color: #0f0; font-weight: bold; }
+  .stat-card .lbl { font-size: 0.7rem; color: #888; }
+
+  .bones-grid { width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.7rem; }
+  .bones-grid th { background: #1a1a2a; color: #f0d060; padding: 6px; border: 1px solid #333; }
+  .bones-grid td { padding: 6px; border: 1px solid #222; }
+  .bones-grid tr:nth-child(odd) td { background: #0d0d0d; }
+  .bones-grid tr:nth-child(even) td { background: #111; }
+
+  #pulse-display { text-align: center; font-size: 2rem; color: #ff2222; margin: 1rem; }
+  .loading { color: #666; font-style: italic; }
+  a { color: #4488ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .nav { text-align: center; margin: 1rem 0; }
+  .nav a { margin: 0 8px; padding: 4px 10px; border: 1px solid #333; border-radius: 4px; font-size: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="nav">
+    <a href="/">HUD Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="eyeball.html">Eyeball</a>
+    <a href="klein-body.html">Klein</a>
+    <a href="https://ecoprimals.github.io">GitHub Pages</a>
+    <a href="https://ecoprimals.github.io/bones.html">Bones</a>
+    <a href="https://ecoprimals.github.io/vitruvian.html">Vitruvian</a>
+  </div>
+
+  <h1>Vitruvian Gaia — The Living Organism</h1>
+  <div class="subtitle">Wave 260 | Real-time data from eastGate :8443 | <span id="ts">loading...</span></div>
+  <div id="pulse-display">lub-DUB</div>
+
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="val" id="s-beats">...</div><div class="lbl">heartbeats</div></div>
+    <div class="stat-card"><div class="val" id="s-bpm">...</div><div class="lbl">BPM</div></div>
+    <div class="stat-card"><div class="val" id="s-visitors">...</div><div class="lbl">visitors</div></div>
+    <div class="stat-card"><div class="val" id="s-gpus">7</div><div class="lbl">GPUs</div></div>
+    <div class="stat-card"><div class="val" id="s-models">68+</div><div class="lbl">ollama models</div></div>
+    <div class="stat-card"><div class="val" id="s-repos">189</div><div class="lbl">repos</div></div>
+    <div class="stat-card"><div class="val" id="s-rss">2997</div><div class="lbl">RSS items</div></div>
+    <div class="stat-card"><div class="val" id="s-eaten">11425</div><div class="lbl">files eaten</div></div>
+  </div>
+
+  <div class="body-map">
+    <div class="circle"></div>
+    <div class="square"></div>
+    <div class="spine-line"></div>
+
+    <div class="organ head" id="o-head">
+      <div class="label">HEAD — Cloud</div>
+      <div class="data" id="d-head">GitHub Pages LIVE<br>89 repos</div>
+    </div>
+    <div class="organ face" id="o-face">
+      <div class="label">FACE — Sensors</div>
+      <div class="data" id="d-face">37 sensors<br>Pixel ADB</div>
+    </div>
+    <div class="organ neck" id="o-neck">
+      <div class="label">NECK — WAN</div>
+      <div class="data" id="d-neck">dromedary TLS<br><span id="d-routes">24/24 routes</span></div>
+    </div>
+    <div class="organ left-arm" id="o-larm">
+      <div class="label">LEFT ARM — Forge</div>
+      <div class="data">100 Forgejo repos<br>9 orgs</div>
+    </div>
+    <div class="organ right-arm" id="o-rarm">
+      <div class="label">RIGHT ARM — Primals</div>
+      <div class="data">17 primals<br>Ed25519 signed</div>
+    </div>
+    <div class="organ torso" id="o-torso">
+      <div class="label">TORSO — LAN</div>
+      <div class="data" id="d-torso">loading...</div>
+    </div>
+    <div class="organ heart-organ" id="o-heart">
+      <div class="label">HEART</div>
+      <div class="data" id="d-heart">lub-DUB</div>
+    </div>
+    <div class="organ left-leg" id="o-lleg">
+      <div class="label">LEFT LEG — Models</div>
+      <div class="data" id="d-models">ollama :11436<br>38 models</div>
+    </div>
+    <div class="organ right-leg" id="o-rleg">
+      <div class="label">RIGHT LEG — Mushrooms</div>
+      <div class="data">23 mushrooms<br>35 crons</div>
+    </div>
+    <div class="organ feet" id="o-feet">
+      <div class="label">FEET — Roots</div>
+      <div class="data">RSS drain | Tor | SMTP</div>
+    </div>
+  </div>
+
+  <h2 style="text-align:center; color:#f0d060; margin:2rem 0 1rem">The Grand Data Sheet — Spine &times; Ribs = 32 Bones</h2>
+  <table class="bones-grid">
+    <tr>
+      <th>RIB</th><th>LAYER</th>
+      <th style="color:#4488ff">C1: IDENTITY (WHO)</th>
+      <th style="color:#44ff88">C2: DATA (WHAT)</th>
+      <th style="color:#ff8844">C3: SIGNAL (HOW)</th>
+      <th style="color:#aa44ff">C4: STATE (WHERE)</th>
+    </tr>
+    <tr><td>R1</td><td>CLOUD</td>
+      <td>ecoPrimals org</td><td id="b-r1c2">89 repos</td>
+      <td>git push/pull, HTTPS</td><td>Pages LIVE</td></tr>
+    <tr><td>R2</td><td>FORGE</td>
+      <td>eastGate :3000</td><td>100 repos, 9 orgs</td>
+      <td>HTTP :3000, git hooks</td><td id="b-r2c4">ALIVE</td></tr>
+    <tr><td>R3</td><td>WAN</td>
+      <td>primals.eco</td><td>89KB data, 1.7MB RSS</td>
+      <td>dromedary TLS, SMTP, DNS</td><td id="b-r3c4">24/24 routes</td></tr>
+    <tr><td>R4</td><td>LAN</td>
+      <td>2 subnets, 1 router</td><td>10G fiber bridge</td>
+      <td>WiFi 7 + Ethernet</td><td id="b-r4c4">loading...</td></tr>
+    <tr><td>R5</td><td>PRIMALS</td>
+      <td>bearDog Ed25519</td><td>17 compiled binaries</td>
+      <td>IPC sockets, JSON-RPC</td><td>30/30 alive</td></tr>
+    <tr><td>R6</td><td>MODELS</td>
+      <td>gaia-tissue-* (14)</td><td id="b-r6c2">38 on :11436</td>
+      <td>ollama API, /v1/</td><td id="b-r6c4">loading...</td></tr>
+    <tr><td>R7</td><td>MUSHROOMS</td>
+      <td>23 autonomous fungi</td><td>7714 eaten</td>
+      <td>35 cron jobs</td><td>23/23 healthy</td></tr>
+    <tr><td>R8</td><td>SENSORS</td>
+      <td>Pixel 8a akita</td><td>37 sensors, 3 cameras</td>
+      <td>ADB USB-C</td><td>37/37 running</td></tr>
+  </table>
+
+  <div style="text-align:center; margin:2rem; color:#666; font-size:0.8rem">
+    <p>The spine carries identity, data, signal, and state vertically through every layer.</p>
+    <p>Each rib is a horizontal slice — a row in the grand data sheet.</p>
+    <p>Where rib meets spine, there is a bone. 32 bones hold the organism together.</p>
+    <p style="color:#ff2222; margin-top:1rem">lub-DUB</p>
+  </div>
+</div>
+
+<script>
+const PULSE_URL = '/pulse';
+const TOPO_URL = '/data/lan-mycelium-map.json';
+
+async function fetchPulse() {
+  try {
+    const r = await fetch(PULSE_URL);
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('s-beats').textContent = d.total_beats?.toLocaleString() || '?';
+    document.getElementById('s-bpm').textContent = Math.round(d.bpm || 0);
+    document.getElementById('s-visitors').textContent = Object.keys(d.visitors || {}).length;
+    document.getElementById('ts').textContent = d.timestamp?.split('.')[0] || '?';
+    document.getElementById('d-heart').innerHTML = d.total_beats?.toLocaleString() + ' beats<br>' + Math.round(d.bpm) + ' BPM';
+    if (d.sun) {
+      document.getElementById('d-neck').innerHTML = d.sun.phase + '<br>' + d.sun.chord + ' ' + d.sun.color_temp_k + 'K';
+    }
+    if (d.eyes) {
+      const lenses = d.eyes.lenses || 3;
+      document.getElementById('d-face').innerHTML = lenses + ' lenses<br>' + (d.eyes.inner_eye?.state?.resolution || '?');
+    }
+    if (d.ears?.inner_ear) {
+      document.getElementById('d-torso').innerHTML = d.ears.inner_ear.connections + ' connections<br>' + d.ears.inner_ear.devices + ' devices';
+      document.getElementById('b-r4c4').textContent = d.ears.inner_ear.devices + ' devices';
+    }
+    // Pulse animation
+    const pd = document.getElementById('pulse-display');
+    pd.textContent = 'lub-DUB ' + d.total_beats?.toLocaleString();
+    pd.style.textShadow = '0 0 20px #f44';
+    setTimeout(() => pd.style.textShadow = '0 0 5px #f22', 500);
+  } catch(e) { console.log('pulse error:', e); }
+}
+
+async function fetchTopology() {
+  try {
+    const r = await fetch(TOPO_URL);
+    if (!r.ok) return;
+    const d = await r.json();
+    const gates = d.gates || {};
+    const alive = Object.values(gates).filter(g => g.status === 'ALIVE' || g.alive).length;
+    document.getElementById('d-torso').innerHTML = alive + ' gates alive<br>2 subnets';
+    document.getElementById('b-r4c4').textContent = alive + ' gates alive';
+  } catch(e) {}
+}
+
+fetchPulse();
+fetchTopology();
+setInterval(fetchPulse, 10000);
+</script>
+</body>
+</html>
