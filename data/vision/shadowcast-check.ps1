@@ -1,4 +1,4 @@
-﻿# shadowcast-check.ps1 — Run after each reboot to check alignment state
+# shadowcast-check.ps1 — Run after each reboot to check alignment state
 # Part of the 3-cycle shadowcast learning sequence
 # Usage: powershell -ExecutionPolicy Bypass -File shadowcast-check.ps1
 
