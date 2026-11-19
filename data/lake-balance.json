@@ -1,0 +1,99 @@
+{
+  "ts": "2026-11-19T10:03:00-0500",
+  "title": "Lake Balance — WAN Ingress/Egress Flow",
+  "wave": "262.lake",
+  "metaphor": "Gaia is a lake. LAN is the still water. WAN is egress and ingress.",
+  
+  "ingress": {
+    "tor": {
+      "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+      "services": 7,
+      "status": "ACTIVE",
+      "note": "The ONLY ingress path from internet to the lake"
+    },
+    "port_forwards": {
+      "status": "DRAINED",
+      "torpedoes_removed": [
+        "GL-GAIA-HTTP (80→eastGate:80)",
+        "GL-GAIA-HTTPS (443→eastGate:443)",
+        "eastgate-spine-public (8080→eastGate:8080)",
+        "GL-GAIA-SMTP (25→eastGate:25)",
+        "GL-GAIA-SMTP-SUBMIT (587→eastGate:587)",
+        "GL-GAIA-SMTPS (465→eastGate:465)",
+        "GAIA-SIP-UDP (5060→eastGate:5060)",
+        "GAIA-SIP-TCP (5060→eastGate:5060)",
+        "GAIA-RTP (10000-20000→eastGate)",
+        "GAIA-WSS (8089→eastGate:8089)"
+      ],
+      "drained_at": "2026-11-19T09:59:13-0500",
+      "method": "SSH chain: northGate→eastGate(.131)→Router(.4.1)"
+    }
+  },
+  
+  "egress": {
+    "path": "ATT modem (192.168.1.254) → ISP → internet",
+    "public_ip": "162.226.225.148",
+    "latency_google": "12ms",
+    "latency_cloudflare": "12ms",
+    "dns": {
+      "primary": "192.168.1.254 (ATT modem, 69ms)",
+      "fallback": "8.8.8.8 (Google, 173ms)",
+      "fastest": "1.1.1.1 (Cloudflare, 56ms)",
+      "hulu_resolves": true,
+      "netflix_resolves": true
+    },
+    "status": "CLEAN"
+  },
+  
+  "dns_intercept": {
+    "router_policy": "ALL port 53 → 192.168.9.1:53 (router dnsmasq)",
+    "note": "Router intercepts DNS for filtering — kept for clean DNS",
+    "adguard": "DISABLED (using dnsmasq)"
+  },
+  
+  "lake": {
+    "description": "The LAN — still water, internal flow",
+    "alive_gates": ["eastGate", "northGate", "sporeGate", "graftGate", "Router", "MikroTik"],
+    "alive_count": 6,
+    "total_gates": 13,
+    "services": {
+      "eastGate:8443": "gate (HTTP 200)",
+      "eastGate:8080": "data server (HTTP 200)",
+      "eastGate:3000": "Forgejo (HTTP 200)",
+      "eastGate:11436": "ollama (HTTP 200)",
+      "eastGate:80": "dromedary HTTP",
+      "eastGate:443": "dromedary HTTPS",
+      "eastGate:9050": "Tor SOCKS",
+      "Router:8080": "admin (uhttpd)",
+      "Router:8091": "songbird mesh"
+    }
+  },
+  
+  "circulation": {
+    "willis": {
+      "input_rate": 3021,
+      "output_rate": 3326,
+      "healthy": true
+    },
+    "waterlock": {
+      "gate": "CLOSED — all processing local",
+      "total_intake": 7714,
+      "data_files": 1896
+    }
+  },
+  
+  "access": {
+    "router_ssh": {
+      "method": "SSH chain through eastGate",
+      "command": "paramiko: northGate→eastGate(.131)→tunnel→Router(.4.1)",
+      "direct": "BLOCKED from WAN by firewall (by design)"
+    },
+    "note": "Router SSH accessible ONLY through internal tunnel — security by architecture"
+  },
+  
+  "physical_status": {
+    "northGate_ethernet": "DISCONNECTED (cable needs re-seating)",
+    "northGate_wifi": "Aperture Science, 286.8 Mbps, 100% signal",
+    "steamGate_usb": "DISCONNECTED (needs physical reconnect)"
+  }
+}
