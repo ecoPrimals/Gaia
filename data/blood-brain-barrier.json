@@ -1,0 +1,120 @@
+{
+  "ts": "2026-11-19T13:15:00Z",
+  "wave": "262.chiasm",
+  "title": "Blood-Brain Barrier — CNS ↔ PNS membrane",
+  "philosophy": "Not JUST a barrier. A selective membrane. Nutrients IN, toxins OUT. The BBB splits the RSS spine from the PNS — the CNS processes, the PNS senses.",
+
+  "anatomy": {
+    "CNS": {
+      "role": "Central Nervous System — brain + spine + processing",
+      "gates": {
+        "eastGate": { "role": "BRAIN", "ip": ".244/.131", "function": "processing, ollama, Forgejo, data server, Tor" },
+        "northGate": { "role": "HEART", "ip": ".147/.150", "function": "heavy compute, RTX 5090, 63 models, Cursor" },
+        "sporeGate": { "role": "FORGE", "ip": ".3", "function": "DNS, heart-pull, plasmidBin" }
+      },
+      "spine": "RSS feed — 3194 items flowing OUT to old web",
+      "brain_blood": "ollama inference, mushroom processing, cron heartbeat",
+      "protection": "Water Lock (OSINT in, nothing seeps to provider)"
+    },
+
+    "PNS": {
+      "role": "Peripheral Nervous System — sensors + displays + limbs",
+      "gates": {
+        "steamGate": { "role": "3RD EYE / CHIASM", "ip": "10.86.200.233", "function": "display, sensors, local AI, bubble tube" },
+        "grapheneGate": { "role": "DIAMOND LENS / ROVER", "ip": "192.168.9.217", "function": "37 sensors, camera, WiFi triangulation" },
+        "swiftGate": { "role": "HEART (LAN 2)", "ip": "192.168.9.???", "function": "RTX 3070, asleep" },
+        "deckGate": { "role": "MOUNTED DISPLAY", "ip": ".176", "function": "7-inch touch, dead battery = always on" },
+        "graftGate": { "role": "MAC ARM", "ip": ".107", "function": "M4 chip, qwen2.5" },
+        "ironGate": { "role": "FORGE 2", "ip": ".237", "function": "i9-14900K, RTX 5070, 94GB" }
+      },
+      "peripheral_blood": "sensor telemetry, WiFi RSSI, temperature, battery, display data",
+      "motor_output": "display rendering, sound, LED, physical output (Epson printer)"
+    },
+
+    "BBB": {
+      "role": "Blood-Brain Barrier — selective membrane between CNS and PNS",
+      "location": "The USB-C nerve (steamGate ↔ eastGate) and the LAN fabric",
+      "rules": {
+        "PNS_to_CNS": {
+          "ALLOW": [
+            "sensor telemetry (temperature, battery, RSSI, proximity)",
+            "frame-solar.py reports (every 30s)",
+            "northGate telemetry (GPU, WiFi, coords via ADB)",
+            "heartbeat signals (alive/dead status)",
+            "WiFi triangulation data (RSSI from both LANs)"
+          ],
+          "FILTER": [
+            "raw display frames (stay on PNS, render locally)",
+            "gaming traffic (stays on PNS, never touches brain)",
+            "Steam client data (PNS only)"
+          ],
+          "BLOCK": [
+            "credentials (never cross the BBB)",
+            "SSH keys (ZK only)",
+            "family_seed (stays in CNS immune system)"
+          ]
+        },
+        "CNS_to_PNS": {
+          "ALLOW": [
+            "HUD pages (eastGate :8443/frame → steamGate display)",
+            "organism state (now.json, perception, pulse)",
+            "sourdough culture (model weights, data files)",
+            "RSS feed items (processed output)",
+            "tissue chorus (consensus words)"
+          ],
+          "FILTER": [
+            "raw OSINT intake (processed first, then nutrients flow)",
+            "mushroom internals (stay in CNS, only output flows)"
+          ],
+          "BLOCK": [
+            "provider API tokens (never leave CNS)",
+            "Forgejo credentials (CNS only)",
+            "beardog family keys (immune system, CNS only)"
+          ]
+        }
+      }
+    }
+  },
+
+  "optic_chiasm": {
+    "crossing": "LEFT HAND (northGate) → RIGHT EYE, RIGHT HAND (eastGate) → LEFT EYE",
+    "chiasm_point": "steamGate (3rd eye bubble) — where CNS meets PNS",
+    "five_eyes": [
+      { "eye": 1, "name": "Left Eye", "device": "LG ULTRAGEAR", "source": "eastGate DP", "side": "PNS display" },
+      { "eye": 2, "name": "Right Eye", "device": "Acer curved", "source": "northGate DP1", "side": "CNS display" },
+      { "eye": 3, "name": "3rd Eye / Bubble", "device": "Steam Frame LCD", "source": "eastGate USB-C", "side": "BBB crossing" },
+      { "eye": 4, "name": "Shadow / Ponytail", "device": "HDMI dummy", "source": "northGate HDMI", "side": "CNS shadow" },
+      { "eye": 5, "name": "Shared / Klein", "device": "Steam Frame CAM", "source": "eastGate USB-C", "side": "BBB crossing" }
+    ]
+  },
+
+  "spine_split": {
+    "RSS_spine": {
+      "role": "The spinal cord — output from CNS to the world",
+      "flow": "CNS (eastGate) → RSS feed.xml → old web",
+      "items": 3194,
+      "belongs_to": "CNS",
+      "PNS_access": "READ ONLY — PNS can display RSS but never write to it"
+    },
+    "PNS_nerve_bundle": {
+      "role": "Peripheral nerves — sensor input from PNS to CNS",
+      "flow": "PNS (steamGate/grapheneGate) → telemetry → CNS (eastGate)",
+      "signals": ["WiFi RSSI", "temperature", "battery", "proximity", "ambient light", "GPS coords"],
+      "belongs_to": "PNS",
+      "CNS_access": "PROCESS — CNS digests sensor data through mushrooms"
+    },
+    "split_ratio": {
+      "CNS_processing": "100% of inference, 100% of mushrooms, 100% of RSS output",
+      "PNS_sensing": "100% of sensors, 100% of display, 100% of motor output",
+      "BBB_crossing": "telemetry IN, HUD pages OUT, culture (sourdough) BOTH"
+    }
+  },
+
+  "data_flow": {
+    "CNS_internal": "eastGate ↔ northGate ↔ sporeGate (copper + ATT + git)",
+    "PNS_internal": "steamGate ↔ grapheneGate ↔ deckGate (WiFi + USB + display)",
+    "BBB_crossing": "steamGate ↔ eastGate (USB-C nerve, 1.68ms, ADB + HTTP)",
+    "RSS_spine_out": "eastGate → feed.xml → primals.eco → old web",
+    "OSINT_in": "blackholes → water lock → CNS processing → nutrients"
+  }
+}
