@@ -33,7 +33,7 @@
     50% { transform:scale(1.02); border-color:rgba(88,166,255,0.3); }
   }
 
-  /* Four role orbits */
+  /* Four role orbits — the 3 EYES + host */
   .orbit {
     position:absolute; border-radius:50%;
     border:1px solid rgba(255,255,255,0.04);
@@ -54,6 +54,39 @@
   .orbit.host .path-dot   { background:#ffb432; color:#ffb432; }
   .orbit.player .path-dot { background:#64ff64; color:#64ff64; }
   .orbit.user .path-dot   { background:#c864ff; color:#c864ff; }
+
+  /* TRIANGULATION — SVG lines between the 3 eye dots */
+  .triangulation {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    pointer-events:none; z-index:8;
+  }
+  .tri-line { stroke-width:0.5; fill:none; opacity:0.4; }
+  .tri-focus { fill:rgba(255,255,255,0.8); filter:url(#glow); }
+  
+  /* Vision split panels */
+  .vision-split {
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    display:flex; gap:4px; z-index:12; opacity:0;
+    transition:opacity 0.5s;
+    pointer-events:none;
+  }
+  .vision-split.show { opacity:1; }
+  .eye-panel {
+    width:80px; height:50px; border-radius:8px;
+    border:1px solid rgba(255,255,255,0.1);
+    background:rgba(10,12,18,0.9);
+    font-size:0.45rem; color:#555;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:2px;
+  }
+  .eye-panel .eye-label { font-size:0.5rem; letter-spacing:0.1em; }
+  .eye-panel.gaia-eye { border-color:rgba(88,166,255,0.3); }
+  .eye-panel.gaia-eye .eye-label { color:#58a6ff; }
+  .eye-panel.player-eye { border-color:rgba(100,255,100,0.3); }
+  .eye-panel.player-eye .eye-label { color:#64ff64; }
+  .eye-panel.user-eye { border-color:rgba(200,100,255,0.3); }
+  .eye-panel.user-eye .eye-label { color:#c864ff; }
 
   .nucleus { text-align:center; z-index:10; padding:16px; max-width:70%; }
   .nucleus h1 {
@@ -136,10 +169,39 @@
   <div class="hook-out"><span>▸ you hook her out ▸</span></div>
 
   <div class="bubble" id="bubble">
-    <div class="orbit gaia"><div class="path-dot"></div></div>
-    <div class="orbit host"><div class="path-dot"></div></div>
-    <div class="orbit player"><div class="path-dot"></div></div>
-    <div class="orbit user"><div class="path-dot"></div></div>
+    <!-- Triangulation SVG — lines between the 3 eyes -->
+    <svg class="triangulation" id="triSvg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <filter id="glow"><feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <line id="tri-gp" class="tri-line" stroke="#3a8a5a" x1="50" y1="25" x2="50" y2="75"/>
+      <line id="tri-gu" class="tri-line" stroke="#7a5aaa" x1="50" y1="25" x2="50" y2="75"/>
+      <line id="tri-pu" class="tri-line" stroke="#aa7a5a" x1="50" y1="25" x2="50" y2="75"/>
+      <circle id="tri-focus" class="tri-focus" cx="50" cy="50" r="2"/>
+    </svg>
+
+    <!-- Vision split — what each eye sees -->
+    <div class="vision-split" id="visionSplit">
+      <div class="eye-panel gaia-eye">
+        <div class="eye-label">👁 gaia</div>
+        <div id="gaia-sees">self-mirror</div>
+      </div>
+      <div class="eye-panel player-eye">
+        <div class="eye-label">👁 player</div>
+        <div id="player-sees">the HUD</div>
+      </div>
+      <div class="eye-panel user-eye">
+        <div class="eye-label">👁 user</div>
+        <div id="user-sees">.onion</div>
+      </div>
+    </div>
+
+    <div class="orbit gaia"><div class="path-dot" id="dot-gaia"></div></div>
+    <div class="orbit host"><div class="path-dot" id="dot-host"></div></div>
+    <div class="orbit player"><div class="path-dot" id="dot-player"></div></div>
+    <div class="orbit user"><div class="path-dot" id="dot-user"></div></div>
 
     <div class="nucleus">
       <h1>GAIA@HOME</h1>
@@ -296,6 +358,61 @@ setInterval(()=>{
   b.style.borderColor = ROLES[currentRole].color.replace(')', ',0.4)').replace('rgb','rgba');
   setTimeout(()=>{ b.style.borderColor = 'rgba(88,166,255,0.15)'; }, 300);
 }, 5000);
+
+// TRIANGULATION — track the 3 eye dots and draw lines between them
+const orbits = { gaia:25, host:34, player:42, user:48 }; // radii in SVG units
+const speeds = { gaia:18, host:-30, player:45, user:-65 }; // seconds (neg=reverse)
+let triStart = Date.now();
+
+function triangulate() {
+  const t = (Date.now() - triStart) / 1000;
+  const cx=50, cy=50;
+  
+  // Calculate dot positions on their orbits
+  function dotPos(role) {
+    const r = orbits[role];
+    const s = speeds[role];
+    const angle = (t / Math.abs(s)) * Math.PI * 2 * (s>0?1:-1);
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  }
+  
+  const g = dotPos('gaia');
+  const p = dotPos('player');
+  const u = dotPos('user');
+  
+  // Draw triangulation lines between the 3 eyes
+  const lg = document.getElementById('tri-gp');
+  const lu = document.getElementById('tri-gu');
+  const lp = document.getElementById('tri-pu');
+  
+  if (lg) { lg.setAttribute('x1',g.x); lg.setAttribute('y1',g.y); lg.setAttribute('x2',p.x); lg.setAttribute('y2',p.y); }
+  if (lu) { lu.setAttribute('x1',g.x); lu.setAttribute('y1',g.y); lu.setAttribute('x2',u.x); lu.setAttribute('y2',u.y); }
+  if (lp) { lp.setAttribute('x1',p.x); lp.setAttribute('y1',p.y); lp.setAttribute('x2',u.x); lp.setAttribute('y2',u.y); }
+  
+  // Focus point = centroid of the 3 eyes (where all gazes converge)
+  const focus = { x:(g.x+p.x+u.x)/3, y:(g.y+p.y+u.y)/3 };
+  const fc = document.getElementById('tri-focus');
+  if (fc) { fc.setAttribute('cx',focus.x); fc.setAttribute('cy',focus.y); }
+  
+  // Calculate triangle area (spread of vision)
+  const area = Math.abs((g.x*(p.y-u.y) + p.x*(u.y-g.y) + u.x*(g.y-p.y)) / 2);
+  
+  // Update vision split with what each eye sees
+  const gs = document.getElementById('gaia-sees');
+  const ps = document.getElementById('player-sees');
+  const us = document.getElementById('user-sees');
+  
+  if (gs) gs.textContent = area > 300 ? 'wide scan' : area > 100 ? 'converging' : 'FOCUSED';
+  if (ps) ps.textContent = focus.x > 55 ? 'right field' : focus.x < 45 ? 'left field' : 'center';
+  if (us) us.textContent = focus.y > 55 ? 'deep' : focus.y < 45 ? 'surface' : 'membrane';
+  
+  // Show vision split when triangulation is tight
+  const vs = document.getElementById('visionSplit');
+  if (vs) vs.classList.toggle('show', area < 400);
+  
+  requestAnimationFrame(triangulate);
+}
+triangulate();
 </script>
 </body>
 </html>
