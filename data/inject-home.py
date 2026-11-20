@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject GAIA@HOME unified bubble into eastGate — all paths serve it"""
+"""Make GAIA@HOME the ROOT page — gaia/host/player/user replaces localhost"""
 
 import paramiko
 import os
@@ -12,62 +12,87 @@ def run(cmd):
     stdin, stdout, stderr = c.exec_command(cmd, timeout=10)
     return stdout.read().decode('utf-8', errors='replace').strip()
 
-# Read the HTML file
 html_path = os.path.join(os.path.dirname(__file__), 'gaia-home.html')
 with open(html_path, 'r', encoding='utf-8') as f:
     html = f.read()
 
-# Target directories where the web servers serve from
-targets = [
-    '/home/eastgate/.local/share/gaia/data',      # gaia-web :8080 /data/
-    '/home/eastgate/.local/share/gaia',            # gaia-web :8080 /
-    '/opt/Gaia/infra/hud/site/public/data',        # git-tracked data
-    '/opt/Gaia/data',                              # git data
-]
-
-print('=== INJECTING GAIA@HOME ===')
 sftp = c.open_sftp()
 
-for tgt in targets:
-    exists = run(f'test -d {tgt} && echo YES || echo NO')
-    if exists == 'YES':
-        path = f'{tgt}/gaia-home.html'
-        try:
-            with sftp.open(path, 'w') as f:
-                f.write(html)
-            print(f'  INJECTED: {path}')
-        except Exception as e:
-            print(f'  FAILED: {path} — {e}')
-    else:
-        print(f'  SKIP: {tgt} (not found)')
+# Inject to ALL data directories
+data_targets = [
+    '/home/eastgate/.local/share/gaia/data/gaia-home.html',
+    '/opt/Gaia/infra/hud/site/public/data/gaia-home.html',
+    '/opt/Gaia/data/gaia-home.html',
+]
+
+for path in data_targets:
+    try:
+        with sftp.open(path, 'w') as f:
+            f.write(html)
+        print(f'  DATA: {path}')
+    except Exception as e:
+        print(f'  SKIP: {path} — {e}')
+
+# NOW make it the INDEX — gaia-web serves from ~/.local/share/gaia/
+# Replace or create index.html there so / serves GAIA@HOME
+index_targets = [
+    '/home/eastgate/.local/share/gaia/index.html',        # gaia-web root /
+    '/home/eastgate/.local/share/gaia/home.html',          # /home.html
+]
+
+for path in index_targets:
+    try:
+        with sftp.open(path, 'w') as f:
+            f.write(html)
+        print(f'  INDEX: {path}')
+    except Exception as e:
+        print(f'  SKIP: {path} — {e}')
+
+# Also inject to dromedary's static dir and gate's static dir
+dromedary_targets = [
+    '/home/eastgate/Development/ecoPrimals/primals/GaiaGate/data/gaia-home.html',
+    '/home/eastgate/Development/ecoPrimals/primals/GaiaGate/data/body/gaia-home.html',
+    '/home/eastgate/Development/ecoPrimals/runtime/membrane/gaia-home.html',
+]
+
+for path in dromedary_targets:
+    try:
+        with sftp.open(path, 'w') as f:
+            f.write(html)
+        print(f'  GATE: {path}')
+    except Exception as e:
+        print(f'  SKIP: {path} — {e}')
 
 sftp.close()
 
-# Verify served
+# Verify ALL access points
 print()
-print('=== VERIFY SERVED ===')
-for port, name in [(8080, 'gaia-web'), (80, 'dromedary'), (8443, 'gate')]:
-    for path in ['/data/gaia-home.html', '/gaia-home.html', '/home']:
-        code = run(f'curl -s -o /dev/null -w "%{{http_code}}" http://127.0.0.1:{port}{path} 2>/dev/null')
-        if code == '200':
-            print(f'  :{port}{path} -> HTTP {code} ({name}) ✓')
+print('=== VERIFICATION ===')
+checks = [
+    (8080, '/data/gaia-home.html', 'gaia-web data'),
+    (8080, '/index.html', 'gaia-web index'),
+    (8080, '/home.html', 'gaia-web /home'),
+    (80,   '/data/gaia-home.html', 'dromedary data'),
+    (80,   '/home', 'dromedary /home'),
+    (8443, '/data/gaia-home.html', 'gate data'),
+    (8443, '/home', 'gate /home'),
+]
 
-# Also check if there's an index route we can hook into
+for port, path, name in checks:
+    code = run(f'curl -s -o /dev/null -w "%{{http_code}}" http://127.0.0.1:{port}{path} 2>/dev/null')
+    marker = 'YES' if code == '200' else 'no'
+    print(f'  :{port}{path:30s} HTTP {code}  ({name}) {marker}')
+
+# Show what gaia-web serves as its root
 print()
-print('=== CURRENT INDEX ROUTES ===')
-# Check what gaia-web Python script serves
-print(run('ps aux | grep "python3.*8080" | grep -v grep | head -3'))
-print()
-# Find the gaia-web script
-gw_path = run("find /home/eastgate -name '*.py' -path '*/gaia*' 2>/dev/null | xargs grep -l '8080' 2>/dev/null | head -5")
-print(f'gaia-web scripts: {gw_path}')
-print()
-# Show the serve root
-if gw_path:
-    first = gw_path.split('\n')[0]
-    print(f'=== {first} (first 50 lines) ===')
-    print(run(f'head -50 {first}'))
+print('=== ROOT INDEX ===')
+root_title = run('curl -s http://127.0.0.1:8080/ 2>/dev/null | grep -o "<title>[^<]*</title>"')
+idx_title = run('curl -s http://127.0.0.1:8080/index.html 2>/dev/null | grep -o "<title>[^<]*</title>"')
+home_title = run('curl -s http://127.0.0.1:8080/home.html 2>/dev/null | grep -o "<title>[^<]*</title>"')
+print(f'  :8080/           → {root_title}')
+print(f'  :8080/index.html → {idx_title}')
+print(f'  :8080/home.html  → {home_title}')
 
 c.close()
 print()
-print('=== DONE ===')
+print('=== GAIA@HOME IS HOME ===')

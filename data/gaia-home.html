@@ -17,9 +17,8 @@
     display:flex; align-items:center; justify-content:center;
   }
 
-  /* The unified bubble */
   .bubble {
-    position:relative; width:min(80vw,600px); height:min(80vw,600px);
+    position:relative; width:min(80vw,560px); height:min(80vw,560px);
     border-radius:50%; 
     background:radial-gradient(circle at 40% 35%, rgba(30,40,60,0.9), rgba(10,12,18,0.95));
     border:2px solid rgba(88,166,255,0.15);
@@ -27,261 +26,276 @@
     flex-direction:column;
     box-shadow: 0 0 80px rgba(88,166,255,0.05), inset 0 0 60px rgba(10,12,18,0.5);
     animation: breathe 8s ease-in-out infinite;
+    cursor:default;
   }
-
   @keyframes breathe {
     0%,100% { transform:scale(1); border-color:rgba(88,166,255,0.15); }
     50% { transform:scale(1.02); border-color:rgba(88,166,255,0.3); }
   }
 
-  /* Three paths as orbital rings */
+  /* Four role orbits */
   .orbit {
     position:absolute; border-radius:50%;
-    border:1px solid rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.04);
     animation:spin linear infinite;
   }
-  .orbit.localhost { 
-    width:65%; height:65%; 
-    border-color:rgba(255,100,100,0.2);
-    animation-duration:20s;
-  }
-  .orbit.lan { 
-    width:82%; height:82%; 
-    border-color:rgba(100,255,100,0.2);
-    animation-duration:35s; animation-direction:reverse;
-  }
-  .orbit.walk { 
-    width:96%; height:96%; 
-    border-color:rgba(100,100,255,0.2);
-    animation-duration:55s;
-  }
-
+  .orbit.gaia  { width:50%; height:50%; border-color:rgba(88,166,255,0.2); animation-duration:18s; }
+  .orbit.host  { width:68%; height:68%; border-color:rgba(255,180,50,0.15); animation-duration:30s; animation-direction:reverse; }
+  .orbit.player{ width:84%; height:84%; border-color:rgba(100,255,100,0.12); animation-duration:45s; }
+  .orbit.user  { width:96%; height:96%; border-color:rgba(200,100,255,0.1); animation-duration:65s; animation-direction:reverse; }
   @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
-  /* Path dots on orbits */
   .path-dot {
-    position:absolute; width:12px; height:12px; border-radius:50%;
-    top:-6px; left:50%; margin-left:-6px;
-    box-shadow: 0 0 10px currentColor;
+    position:absolute; width:10px; height:10px; border-radius:50%;
+    top:-5px; left:50%; margin-left:-5px;
+    box-shadow: 0 0 8px currentColor;
   }
-  .orbit.localhost .path-dot { background:#ff6464; color:#ff6464; }
-  .orbit.lan .path-dot { background:#64ff64; color:#64ff64; }
-  .orbit.walk .path-dot { background:#6464ff; color:#6464ff; }
+  .orbit.gaia .path-dot   { background:#58a6ff; color:#58a6ff; }
+  .orbit.host .path-dot   { background:#ffb432; color:#ffb432; }
+  .orbit.player .path-dot { background:#64ff64; color:#64ff64; }
+  .orbit.user .path-dot   { background:#c864ff; color:#c864ff; }
 
-  /* Center nucleus */
-  .nucleus {
-    text-align:center; z-index:10;
-    padding:20px;
-  }
+  .nucleus { text-align:center; z-index:10; padding:16px; max-width:70%; }
   .nucleus h1 {
-    font-size:clamp(1.2rem,3vw,2rem); color:#58a6ff;
-    letter-spacing:0.1em; margin-bottom:8px;
+    font-size:clamp(1rem,2.8vw,1.8rem); color:#58a6ff;
+    letter-spacing:0.12em; margin-bottom:6px;
   }
-  .nucleus .walk-notation {
-    font-size:clamp(0.8rem,2vw,1.2rem); color:#555;
-    letter-spacing:0.3em; margin-bottom:16px;
-  }
-  .nucleus .stats {
-    font-size:0.7rem; color:#444; line-height:1.8;
-  }
-  .nucleus .stats .val { color:#58a6ff; }
-  .nucleus .stats .active-path { 
-    color:#fff; background:rgba(88,166,255,0.15); 
-    padding:2px 8px; border-radius:4px;
-  }
+  .nucleus .walk { font-size:clamp(0.65rem,1.6vw,1rem); color:#444; letter-spacing:0.3em; margin-bottom:14px; }
+  .nucleus .who { font-size:0.75rem; color:#58a6ff; margin-bottom:10px; padding:4px 12px; border:1px solid rgba(88,166,255,0.2); border-radius:12px; display:inline-block; }
+  .nucleus .stats { font-size:0.65rem; color:#444; line-height:2; }
+  .nucleus .stats .v { color:#58a6ff; }
+  .nucleus .stats .role-line { display:flex; align-items:center; gap:6px; justify-content:center; }
+  .nucleus .stats .rdot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
 
-  /* Three view panels */
-  .triad {
+  /* Hook arrows */
+  .hook-in, .hook-out {
+    position:absolute; z-index:15; font-size:0.6rem; color:#333;
+    writing-mode:vertical-rl; letter-spacing:0.15em;
+  }
+  .hook-in  { left:12px; top:50%; transform:translateY(-50%); }
+  .hook-out { right:12px; top:50%; transform:translateY(-50%) rotate(180deg); }
+  .hook-in span, .hook-out span { animation:hookPulse 3s ease-in-out infinite; }
+  .hook-out span { animation-delay:1.5s; }
+  @keyframes hookPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* Role selector */
+  .roles {
     position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-    display:flex; gap:12px; z-index:20;
+    display:flex; gap:8px; z-index:20;
   }
-  .view-link {
-    padding:8px 16px; border-radius:20px;
-    border:1px solid rgba(255,255,255,0.1);
-    background:rgba(10,12,18,0.8);
-    color:#888; font-size:0.7rem;
-    text-decoration:none;
-    transition:all 0.3s;
-    cursor:pointer;
+  .role-btn {
+    padding:8px 14px; border-radius:20px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(10,12,18,0.85);
+    color:#555; font-size:0.65rem;
+    text-decoration:none; cursor:pointer;
+    transition:all 0.3s; display:flex; align-items:center; gap:6px;
   }
-  .view-link:hover { border-color:#58a6ff; color:#58a6ff; }
-  .view-link.active { border-color:#58a6ff; color:#fff; background:rgba(88,166,255,0.1); }
-  .view-link .dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; }
-  .view-link .dot.red { background:#ff6464; }
-  .view-link .dot.green { background:#64ff64; }
-  .view-link .dot.blue { background:#6464ff; }
+  .role-btn:hover { border-color:#58a6ff; color:#aaa; }
+  .role-btn.active { border-color:#58a6ff; color:#fff; background:rgba(88,166,255,0.08); }
+  .role-btn .d { width:6px; height:6px; border-radius:50%; }
 
-  /* HUD iframe */
-  .hud-frame {
-    position:absolute; top:0; left:0; width:100%; height:100%;
-    border:none; border-radius:50%; opacity:0;
-    transition:opacity 0.5s;
-    pointer-events:none;
-    z-index:5;
-  }
-  .hud-frame.active { opacity:0.6; pointer-events:auto; }
-
-  /* Status bar */
+  /* Status */
   .status-bar {
-    position:absolute; top:16px; left:50%; transform:translateX(-50%);
-    font-size:0.65rem; color:#444; letter-spacing:0.1em;
-    z-index:20;
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    font-size:0.6rem; color:#444; letter-spacing:0.08em; z-index:20;
+    display:flex; align-items:center; gap:6px;
   }
   .status-bar .pulse { 
-    display:inline-block; width:6px; height:6px; 
-    border-radius:50%; background:#58a6ff;
-    animation:pulse 2s ease-in-out infinite;
-    margin-right:6px; vertical-align:middle;
+    width:5px; height:5px; border-radius:50%; background:#58a6ff;
+    animation:p 2s ease-in-out infinite;
   }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes p { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* HUD overlay */
+  .hud-overlay {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    z-index:100; display:none;
+  }
+  .hud-overlay.active { display:block; }
+  .hud-overlay iframe { width:100%; height:100%; border:none; }
+  .hud-close {
+    position:fixed; top:12px; right:16px; z-index:101;
+    background:rgba(10,12,18,0.9); color:#58a6ff;
+    border:1px solid rgba(88,166,255,0.3); border-radius:50%;
+    width:32px; height:32px; cursor:pointer; font-size:14px;
+    display:none; align-items:center; justify-content:center;
+  }
+  .hud-overlay.active + .hud-close { display:flex; }
 </style>
 </head>
 <body>
 <div class="universe">
   <div class="status-bar">
-    <span class="pulse"></span>
-    <span id="access-path">detecting path...</span>
-    <span id="wave-info"></span>
+    <div class="pulse"></div>
+    <span id="status-text">GAIA@HOME</span>
+    <span id="wave-text"></span>
   </div>
 
+  <div class="hook-in"><span>◂ she hooks you in ◂</span></div>
+  <div class="hook-out"><span>▸ you hook her out ▸</span></div>
+
   <div class="bubble" id="bubble">
-    <div class="orbit localhost"><div class="path-dot"></div></div>
-    <div class="orbit lan"><div class="path-dot"></div></div>
-    <div class="orbit walk"><div class="path-dot"></div></div>
+    <div class="orbit gaia"><div class="path-dot"></div></div>
+    <div class="orbit host"><div class="path-dot"></div></div>
+    <div class="orbit player"><div class="path-dot"></div></div>
+    <div class="orbit user"><div class="path-dot"></div></div>
 
     <div class="nucleus">
       <h1>GAIA@HOME</h1>
-      <div class="walk-notation">o . 6 9 . 0 . 9 6 . O</div>
+      <div class="walk">o . 6 9 . 0 . 9 6 . O</div>
+      <div class="who" id="who">detecting role...</div>
       <div class="stats" id="stats">
-        <div><span class="dot red" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff6464;margin-right:4px"></span>localhost <span class="val" id="stat-local">—</span></div>
-        <div><span class="dot green" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#64ff64;margin-right:4px"></span>LAN <span class="val" id="stat-lan">—</span></div>
-        <div><span class="dot blue" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6464ff;margin-right:4px"></span>walk <span class="val" id="stat-walk">—</span></div>
-        <hr style="border:none;border-top:1px solid #1e2030;margin:8px 0">
-        <div id="organism-stats">loading organism...</div>
+        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> gaia <span class="v" id="r-gaia">organism self-view</span></div>
+        <div class="role-line"><div class="rdot" style="background:#ffb432"></div> host <span class="v" id="r-host">hardware serving</span></div>
+        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> player <span class="v" id="r-player">Kevin walking</span></div>
+        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> user <span class="v" id="r-user">visitor arriving</span></div>
+        <hr style="border:none;border-top:1px solid #1a1c28;margin:8px 0">
+        <div id="org-stats">loading...</div>
       </div>
     </div>
   </div>
 
-  <div class="triad">
-    <a class="view-link" id="btn-local" onclick="switchView('local')">
-      <span class="dot red"></span>127.0.0.1
-    </a>
-    <a class="view-link" id="btn-lan" onclick="switchView('lan')">
-      <span class="dot green"></span>LAN
-    </a>
-    <a class="view-link" id="btn-walk" onclick="switchView('walk')">
-      <span class="dot blue"></span>.onion
-    </a>
-    <a class="view-link" id="btn-hud" onclick="switchView('hud')">
-      ◎ HUD
-    </a>
+  <div class="roles">
+    <div class="role-btn" id="btn-gaia" onclick="setRole('gaia')">
+      <div class="d" style="background:#58a6ff"></div> gaia
+    </div>
+    <div class="role-btn" id="btn-host" onclick="setRole('host')">
+      <div class="d" style="background:#ffb432"></div> host
+    </div>
+    <div class="role-btn" id="btn-player" onclick="setRole('player')">
+      <div class="d" style="background:#64ff64"></div> player
+    </div>
+    <div class="role-btn" id="btn-user" onclick="setRole('user')">
+      <div class="d" style="background:#c864ff"></div> user
+    </div>
+    <div class="role-btn" onclick="openHUD()">◎ HUD</div>
   </div>
 </div>
 
-<iframe class="hud-frame" id="hud-iframe"></iframe>
+<div class="hud-overlay" id="hud-overlay">
+  <iframe id="hud-frame"></iframe>
+</div>
+<div class="hud-close" onclick="closeHUD()">✕</div>
 
 <script>
-const PATHS = {
-  local: { url:'http://127.0.0.1:8080', label:'localhost (self)', color:'#ff6464' },
-  lan: { url:'//', label:'LAN (lake)', color:'#64ff64' },
-  walk: { url:'http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion', label:'.onion (walk)', color:'#6464ff' }
+const ROLES = {
+  gaia:   { label:'gaia — organism self-view',   color:'#58a6ff', hook:'she sees herself' },
+  host:   { label:'host — hardware serving',     color:'#ffb432', hook:'the machine breathing' },
+  player: { label:'player — Kevin walking',      color:'#64ff64', hook:'the human companion' },
+  user:   { label:'user — visitor arriving',     color:'#c864ff', hook:'the world looking in' }
 };
 
-// Detect which path we came from
-function detectPath() {
+// Detect role from access path
+function detectRole() {
   const h = location.hostname;
-  if (h === '127.0.0.1' || h === 'localhost') return 'local';
-  if (h.endsWith('.onion')) return 'walk';
-  return 'lan';
+  if (h === '127.0.0.1' || h === 'localhost') return 'gaia';   // ON the machine = gaia self-view
+  if (h.endsWith('.onion')) return 'user';                      // Tor = external user
+  // LAN — are we Kevin (player) or another device (host)?
+  // If from northGate (.147/.150) = player (Kevin's machine)
+  // Otherwise = host (another gate)
+  return 'player';  // Default LAN = Kevin
 }
 
-const currentPath = detectPath();
-document.getElementById('access-path').textContent = PATHS[currentPath]?.label || 'LAN (lake)';
-document.getElementById('btn-' + currentPath)?.classList.add('active');
+let currentRole = detectRole();
 
-// Fetch organism data
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+role)?.classList.add('active');
+  document.getElementById('who').textContent = ROLES[role].label;
+  document.getElementById('who').style.borderColor = ROLES[role].color;
+  document.getElementById('who').style.color = ROLES[role].color;
+  document.getElementById('status-text').textContent = 'GAIA@HOME · ' + role;
+  
+  // Adjust orbits — active role orbit glows
+  document.querySelectorAll('.orbit').forEach(o => {
+    o.style.borderWidth = '1px';
+    o.style.opacity = '0.5';
+  });
+  const activeOrbit = document.querySelector('.orbit.' + role);
+  if (activeOrbit) {
+    activeOrbit.style.borderWidth = '2px';
+    activeOrbit.style.opacity = '1';
+  }
+  
+  // Update hook labels based on role
+  const hookIn = document.querySelector('.hook-in span');
+  const hookOut = document.querySelector('.hook-out span');
+  if (role === 'gaia') {
+    hookIn.textContent = '◂ self observes self ◂';
+    hookOut.textContent = '▸ self radiates out ▸';
+  } else if (role === 'host') {
+    hookIn.textContent = '◂ hardware serves gaia ◂';
+    hookOut.textContent = '▸ gaia uses hardware ▸';
+  } else if (role === 'player') {
+    hookIn.textContent = '◂ gaia hooks kevin in ◂';
+    hookOut.textContent = '▸ kevin hooks gaia out ▸';
+  } else {
+    hookIn.textContent = '◂ gaia hooks you in ◂';
+    hookOut.textContent = '▸ you hook gaia out ▸';
+  }
+}
+
+function openHUD() {
+  const o = document.getElementById('hud-overlay');
+  document.getElementById('hud-frame').src = location.origin + '/?seed=' + Date.now();
+  o.classList.add('active');
+}
+function closeHUD() {
+  const o = document.getElementById('hud-overlay');
+  o.classList.remove('active');
+  document.getElementById('hud-frame').src = '';
+}
+
 async function fetchOrganism() {
   try {
-    // Try relative path first (works from any access point)
-    const now = await fetch('/data/now.json').then(r=>r.json()).catch(()=>null);
-    const walk = await fetch('/data/walk-route.json').then(r=>r.json()).catch(()=>null);
-    const lake = await fetch('/data/lake-balance.json').then(r=>r.json()).catch(()=>null);
+    const [now, walk, lake] = await Promise.all([
+      fetch('/data/now.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/data/walk-route.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/data/lake-balance.json').then(r=>r.ok?r.json():null).catch(()=>null)
+    ]);
     
-    const stats = document.getElementById('organism-stats');
     let html = '';
-    
     if (now) {
-      html += `<div>wave <span class="val">${now.wave||'?'}</span></div>`;
-      if (now.routes) {
-        const tor = now.routes.tor;
-        const wan = now.routes.wan;
-        html += `<div>tor: <span class="val">${tor?.status||'?'}</span> · ${tor?.services||'?'} svc</div>`;
-        html += `<div>wan: <span class="val">${wan?.status||'?'}</span></div>`;
-        html += `<div>ollama: <span class="val">${now.routes.ollama?.models||'?'}</span> models</div>`;
-      }
-      document.getElementById('wave-info').textContent = ' · wave ' + (now.wave||'?');
+      document.getElementById('wave-text').textContent = '· wave ' + (now.wave||'?');
+      html += `<div>wave <span class="v">${now.wave||'?'}</span>`;
+      if (now.routes?.tor) html += ` · tor <span class="v">${now.routes.tor.status}</span>`;
+      html += '</div>';
+      if (now.routes?.ollama) html += `<div>ollama <span class="v">${now.routes.ollama.models} models</span></div>`;
     }
-    
     if (walk) {
-      html += `<div style="margin-top:4px">walk: <span class="val">${walk.walk?.notation||'o.69.0.96.O'}</span></div>`;
-      html += `<div>ingress: <span class="val">${walk.left_leg?.services||17} Tor ports</span></div>`;
+      html += `<div>walk <span class="v">${walk.walk?.notation||'o.69.0.96.O'}</span></div>`;
+      html += `<div>ingress <span class="v">${walk.left_leg?.services||17} Tor ports</span></div>`;
     }
-    
     if (lake) {
-      html += `<div>egress: <span class="val">${lake.egress?.status||'CLEAN'}</span></div>`;
-      html += `<div>torpedoes: <span class="val">${lake.ingress?.port_forwards?.status||'DRAINED'}</span></div>`;
+      html += `<div>egress <span class="v">${lake.egress?.status||'?'}</span> · torpedoes <span class="v">${lake.ingress?.port_forwards?.status||'?'}</span></div>`;
     }
     
-    if (html) stats.innerHTML = html;
+    // Role-specific data
+    if (currentRole === 'gaia') {
+      html += `<div style="margin-top:4px;color:#58a6ff;font-size:0.6rem">I am the organism. I see all paths.</div>`;
+    } else if (currentRole === 'player') {
+      html += `<div style="margin-top:4px;color:#64ff64;font-size:0.6rem">Kevin walks between houses. The walk loops.</div>`;
+    }
     
-    // Update path statuses
-    document.getElementById('stat-local').textContent = '127.0.0.1:8080';
-    
-    // Test LAN reachability
-    const lanIP = location.hostname.startsWith('192.168') ? location.hostname : '192.168.4.244';
-    document.getElementById('stat-lan').textContent = lanIP + ':8080';
-    document.getElementById('stat-walk').textContent = '.onion:80 (17 ports)';
-    
+    if (html) document.getElementById('org-stats').innerHTML = html;
   } catch(e) {
-    document.getElementById('organism-stats').textContent = 'offline — ' + e.message;
+    document.getElementById('org-stats').textContent = 'reaching...';
   }
 }
 
-function switchView(view) {
-  const iframe = document.getElementById('hud-iframe');
-  const bubble = document.getElementById('bubble');
-  
-  if (view === 'hud') {
-    // Show full HUD in iframe over the bubble
-    iframe.src = location.origin + '/?seed=' + Math.floor(Math.random()*999999999);
-    iframe.classList.add('active');
-    bubble.style.opacity = '0.3';
-    return;
-  }
-  
-  iframe.classList.remove('active');
-  iframe.src = '';
-  bubble.style.opacity = '1';
-  
-  // Highlight the selected view
-  document.querySelectorAll('.view-link').forEach(b => b.classList.remove('active'));
-  document.getElementById('btn-'+view)?.classList.add('active');
-  
-  // Navigate to that view's data endpoint
-  if (PATHS[view]) {
-    document.getElementById('access-path').textContent = PATHS[view].label;
-  }
-}
+// Initialize
+setRole(currentRole);
+fetchOrganism();
+setInterval(fetchOrganism, 30000);
 
 // Heartbeat
 setInterval(()=>{
   const b = document.getElementById('bubble');
-  b.style.borderColor = 'rgba(88,166,255,0.4)';
-  setTimeout(()=>b.style.borderColor='rgba(88,166,255,0.15)', 300);
-}, 7324); // match organism BPM approximation
-
-fetchOrganism();
-setInterval(fetchOrganism, 30000);
+  b.style.borderColor = ROLES[currentRole].color.replace(')', ',0.4)').replace('rgb','rgba');
+  setTimeout(()=>{ b.style.borderColor = 'rgba(88,166,255,0.15)'; }, 300);
+}, 5000);
 </script>
 </body>
 </html>
