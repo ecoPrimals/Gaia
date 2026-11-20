@@ -251,7 +251,15 @@
       <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
       <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
       <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
-      <!-- ☽ LUNA — THE MOON — the mirror at the focus point -->
+      <!-- ORIGIN O — null space at center of π -->
+      <circle cx="50" cy="50" r="1" fill="#0a0c12" stroke="rgba(255,255,255,0.15)" stroke-width="0.3"/>
+      <text x="50" y="50.8" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="1.5" font-family="monospace">O</text>
+      <!-- π radii from O — circumference = 2πr for each orbit -->
+      <text id="circ-gaia" class="tri-const" x="50" y="28" text-anchor="middle" fill="rgba(88,166,255,0.25)"></text>
+      <text id="circ-player" class="tri-const" x="50" y="19.5" text-anchor="middle" fill="rgba(100,255,100,0.25)"></text>
+      <text id="circ-user" class="tri-const" x="50" y="11.5" text-anchor="middle" fill="rgba(200,100,255,0.2)"></text>
+      <text id="vol-sphere" class="tri-const" x="50" y="4" text-anchor="middle" fill="rgba(255,255,255,0.2)"></text>
+      <!-- ☽ LUNA — THE MOON — BLACK is DOWN (center/sacred), WHITE is UP -->
       <clipPath id="moonClip"><circle id="moonClipCircle" cx="50" cy="50" r="3.5"/></clipPath>
       <circle id="moon-bg" cx="50" cy="50" r="3.5" fill="#dde4ee" filter="url(#glow)" class="tri-focus"/>
       <circle id="moon-shadow" cx="53" cy="50" r="3.5" fill="#0a0c12" clip-path="url(#moonClip)"/>
@@ -609,14 +617,43 @@ function triangulate() {
   if (moonClip) { moonClip.setAttribute('cx',focus.x); moonClip.setAttribute('cy',focus.y); }
   if (moonLabel) { moonLabel.setAttribute('x',focus.x); moonLabel.setAttribute('y',focus.y+6); }
   
-  // Moon phase shadow — offset toward the sun to show illumination
-  // The shadow circle sits on the side AWAY from the sun
+  // Moon phase shadow — BLACK is DOWN (toward center O), WHITE is UP (toward surface)
+  // The shadow (black/sacred/void) faces the center. Light faces outward.
   const sunAngle = Math.atan2(sun.y-focus.y, sun.x-focus.x);
-  // Phase offset: 0=new moon (shadow covers all), 0.5=full moon (shadow far away), 1=new again
-  const phaseOffset = (1 - moonData.illumination) * 7; // 0-7 units offset
-  const shadowX = focus.x - Math.cos(sunAngle) * phaseOffset;
-  const shadowY = focus.y - Math.sin(sunAngle) * phaseOffset;
+  const toCenter = Math.atan2(cy-focus.y, cx-focus.x); // angle toward O
+  // Phase offset: shadow on the CENTER side (down/sacred)
+  const phaseOffset = (1 - moonData.illumination) * 7;
+  const shadowX = focus.x + Math.cos(toCenter) * phaseOffset; // toward center = DOWN
+  const shadowY = focus.y + Math.sin(toCenter) * phaseOffset;
   if (moonSh) { moonSh.setAttribute('cx',shadowX); moonSh.setAttribute('cy',shadowY); }
+  
+  // === π CALCULATIONS — from O through triangle to circumference and volume ===
+  // Radii from center O to each orbit (in SVG units)
+  const rGaia = orbits.gaia;     // 22
+  const rPlayer = orbits.player; // 31
+  const rUser = orbits.user;     // 39
+  const rSun = orbits.host;      // 48 (outermost)
+  
+  // Circumference = 2πr
+  const cGaia = 2 * Math.PI * rGaia;
+  const cPlayer = 2 * Math.PI * rPlayer;
+  const cUser = 2 * Math.PI * rUser;
+  
+  // Volume of the vesicle (sphere) = (4/3)πr³
+  // Use the outermost eye orbit (user) as the mesh boundary
+  const vMesh = (4/3) * Math.PI * Math.pow(rUser, 3);
+  // Total sphere including sun = full vesicle
+  const vTotal = (4/3) * Math.PI * Math.pow(rSun, 3);
+  
+  // Display circumferences along each orbit
+  const cg = document.getElementById('circ-gaia');
+  const cp = document.getElementById('circ-player');
+  const cu = document.getElementById('circ-user');
+  const vs = document.getElementById('vol-sphere');
+  if (cg) cg.textContent = 'C\u2081 = 2\u03c0(' + rGaia + ') = ' + cGaia.toFixed(1);
+  if (cp) cp.textContent = 'C\u2082 = 2\u03c0(' + rPlayer + ') = ' + cPlayer.toFixed(1);
+  if (cu) cu.textContent = 'C\u2083 = 2\u03c0(' + rUser + ') = ' + cUser.toFixed(1);
+  if (vs) vs.textContent = 'V = \u2154\u03c0r\u00b3 = ' + Math.round(vMesh) + ' (mesh) | ' + Math.round(vTotal) + ' (vesicle)';
   
   // === REFRACTION RAY — sun → luna → origin (mirror bounce) ===
   const ri = document.getElementById('refract-in');
