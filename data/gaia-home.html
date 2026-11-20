@@ -251,9 +251,14 @@
       <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
       <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
       <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
-      <!-- ORIGIN O — null space at center of π -->
-      <circle cx="50" cy="50" r="1" fill="#0a0c12" stroke="rgba(255,255,255,0.15)" stroke-width="0.3"/>
-      <text x="50" y="50.8" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="1.5" font-family="monospace">O</text>
+      <!-- TERRA — Earth IS the null point center. We stand ON it. -->
+      <circle cx="50" cy="50" r="1.5" fill="rgba(30,80,60,0.6)" stroke="rgba(100,200,140,0.3)" stroke-width="0.3"/>
+      <circle cx="50" cy="50" r="0.4" fill="#0a0c12"/>
+      <text x="50" y="48" text-anchor="middle" fill="rgba(100,200,140,0.3)" font-size="2" font-family="monospace">TERRA</text>
+      <text x="50" y="52.5" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-size="1.2" font-family="monospace">42.73°N 84.48°W</text>
+      <!-- Inner/Outer distance model -->
+      <text id="dist-inner" class="tri-const" x="40" y="50" text-anchor="end" fill="rgba(100,255,100,0.25)"></text>
+      <text id="dist-outer" class="tri-const" x="60" y="50" text-anchor="start" fill="rgba(200,100,255,0.25)"></text>
       <!-- π radii from O — circumference = 2πr for each orbit -->
       <text id="circ-gaia" class="tri-const" x="50" y="28" text-anchor="middle" fill="rgba(88,166,255,0.25)"></text>
       <text id="circ-player" class="tri-const" x="50" y="19.5" text-anchor="middle" fill="rgba(100,255,100,0.25)"></text>
@@ -694,6 +699,22 @@ function triangulate() {
   if (cp) cp.textContent = 'C\u2082 = 2\u03c0(' + rPlayer + ') = ' + cPlayer.toFixed(1);
   if (cu) cu.textContent = 'C\u2083 = 2\u03c0(' + rUser + ') = ' + cUser.toFixed(1);
   if (vs) vs.textContent = 'V = \u2154\u03c0r\u00b3 = ' + Math.round(vMesh) + ' (mesh) | ' + Math.round(vTotal) + ' (vesicle)';
+  
+  // === TERRA — inner + outer distance ===
+  // Inner: Kevin walks between houses (~200m = human scale)
+  // Outer: celestial refraction (sun arc, zodiac = cosmic scale)
+  // Fractionality: 45/34 — the ratio that connects inner to outer
+  const innerDist = Math.hypot(p.x-cx, p.y-cy); // player to TERRA
+  const outerDist = Math.hypot(sun.x-cx, sun.y-cy); // sun to TERRA
+  const fraction = outerDist > 0 ? (innerDist / outerDist) : 0;
+  // 45 - 34 = 11° (inner accuracy), 45 + 37 = 82° (outer reach)
+  const innerAngle = 11; // degrees
+  const outerAngle = 82; // degrees
+  
+  const di = document.getElementById('dist-inner');
+  const do2 = document.getElementById('dist-outer');
+  if (di) di.textContent = 'inner ' + innerDist.toFixed(0) + ' \u00b7 ' + innerAngle + '\u00b0';
+  if (do2) do2.textContent = outerAngle + '\u00b0 \u00b7 outer ' + outerDist.toFixed(0);
   
   // === REFRACTION RAY — sun → luna → origin (mirror bounce) ===
   const ri = document.getElementById('refract-in');
