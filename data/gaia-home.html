@@ -86,15 +86,20 @@
     pointer-events:none; z-index:8;
   }
   .tri-line { stroke-width:0.5; fill:none; opacity:0.4; }
-  .tri-focus { fill:rgba(255,255,255,0.8); filter:url(#glow); }
+  .tri-focus { filter:url(#glow); }
   /* Tangent lines — eyes to sun (day/night focus) */
   .tan-line { stroke-width:0.3; fill:none; opacity:0.2; stroke-dasharray:1.5,2; }
+  /* Refraction ray — sun → moon → origin (mirror bounce) */
+  .refract-line { stroke-width:0.4; fill:none; opacity:0.25; stroke-dasharray:0.8,1.5; }
   /* Horizon — UP sky / DOWN ground */
   .horizon { stroke-width:0.4; fill:none; opacity:0.15; }
   /* Perpendicular cross at focus */
   .perp-line { stroke-width:0.25; fill:none; opacity:0.12; stroke-dasharray:1,3; }
+  /* Shadow cast from moon */
+  .shadow-cone { fill:rgba(0,0,0,0.04); stroke:none; }
   /* 3-body label */
   .tri-const { font-size:2.5px; fill:rgba(255,255,255,0.3); font-family:monospace; }
+  .moon-label { font-size:2.2px; fill:rgba(200,210,230,0.5); font-family:monospace; }
   
   /* Vision split panels */
   .vision-split {
@@ -222,8 +227,16 @@
       <!-- PERPENDICULAR cross at focus point (vertical + horizontal) -->
       <line id="perp-v" class="perp-line" stroke="#ffffff" x1="50" y1="20" x2="50" y2="80"/>
       <line id="perp-h" class="perp-line" stroke="#ffffff" x1="20" y1="50" x2="80" y2="50"/>
-      <!-- Focus point -->
-      <circle id="tri-focus" class="tri-focus" cx="50" cy="50" r="2"/>
+      <!-- SHADOW CONE from moon (opposite side from sun) -->
+      <polygon id="shadow-cone" class="shadow-cone" points="50,50 60,30 40,30"/>
+      <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
+      <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
+      <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
+      <!-- ☽ LUNA — THE MOON — the mirror at the focus point -->
+      <clipPath id="moonClip"><circle id="moonClipCircle" cx="50" cy="50" r="3.5"/></clipPath>
+      <circle id="moon-bg" cx="50" cy="50" r="3.5" fill="#dde4ee" filter="url(#glow)" class="tri-focus"/>
+      <circle id="moon-shadow" cx="53" cy="50" r="3.5" fill="#0a0c12" clip-path="url(#moonClip)"/>
+      <text id="moon-phase-label" class="moon-label" x="50" y="56" text-anchor="middle">☽ LUNA</text>
       <!-- 3-body constant -->
       <text id="tri-const-up" class="tri-const" x="50" y="16" text-anchor="middle">↑ A5 SKY</text>
       <text id="tri-const-dn" class="tri-const" x="50" y="86" text-anchor="middle">↓ A3 GROUND</text>
@@ -424,8 +437,9 @@ const orbits = { gaia:22, player:31, user:39, host:48 }; // radii in SVG units
 const speeds = { gaia:18, player:45, user:-65, host:-30 }; // seconds (neg=reverse)
 let triStart = Date.now();
 
-// Fetch real sun data from senses
+// Fetch real sun + moon data from senses
 let sunData = { elevation:-26.8, azimuth:93.5, phase:'night', lat:42.73, lon:-84.48 };
+let moonData = { phase:0.861, name:'last_quarter', illumination:0.5 };
 async function fetchSun() {
   try {
     const r = await fetch('/senses?format=json').then(r=>r.ok?r.json():null).catch(()=>null);
@@ -436,16 +450,25 @@ async function fetchSun() {
       sunData.phase = s.phase || sunData.phase;
       sunData.lat = s.anchor?.lat || sunData.lat;
       sunData.lon = s.anchor?.lon || sunData.lon;
+      if (s.moon) {
+        moonData.phase = s.moon.phase || moonData.phase;
+        moonData.name = s.moon.name || moonData.name;
+        // illumination from phase: 0=new, 0.5=full, 1=new again
+        moonData.illumination = 1 - Math.abs(moonData.phase - 0.5) * 2;
+      }
     }
   } catch(e){}
-  // Update sun label with real data
+  // Update sun label
   const sl = document.getElementById('sun-label');
   const sg = document.getElementById('sun-geo');
-  if (sl) sl.textContent = '☀ ' + sunData.phase.toUpperCase();
-  if (sg) sg.textContent = sunData.lat.toFixed(1) + '° ' + sunData.lon.toFixed(1) + '° · el ' + sunData.elevation.toFixed(0) + '°';
-  // Update sun speed info
+  if (sl) sl.textContent = '\u2600 ' + sunData.phase.toUpperCase();
+  if (sg) sg.textContent = sunData.lat.toFixed(1) + '\u00b0 ' + sunData.lon.toFixed(1) + '\u00b0 \u00b7 el ' + sunData.elevation.toFixed(0) + '\u00b0';
+  // Update sun info in stats
   const rh = document.getElementById('r-host');
-  if (rh) rh.textContent = sunData.phase + ' · az ' + sunData.azimuth.toFixed(0) + '° el ' + sunData.elevation.toFixed(0) + '°';
+  if (rh) rh.textContent = sunData.phase + ' \u00b7 az ' + sunData.azimuth.toFixed(0) + '\u00b0 el ' + sunData.elevation.toFixed(0) + '\u00b0';
+  // Update moon phase label
+  const ml = document.getElementById('moon-phase-label');
+  if (ml) ml.textContent = '\u263d ' + moonData.name.replace(/_/g,' ') + ' ' + Math.round(moonData.illumination*100) + '%';
 }
 fetchSun();
 setInterval(fetchSun, 60000);
@@ -484,10 +507,49 @@ function triangulate() {
   if (tps) { tps.setAttribute('x1',p.x); tps.setAttribute('y1',p.y); tps.setAttribute('x2',sun.x); tps.setAttribute('y2',sun.y); }
   if (tus) { tus.setAttribute('x1',u.x); tus.setAttribute('y1',u.y); tus.setAttribute('x2',sun.x); tus.setAttribute('y2',sun.y); }
   
-  // === FOCUS POINT — centroid of 3 inner eyes ===
+  // === ☽ LUNA — THE MOON at centroid of 3 inner eyes ===
   const focus = { x:(g.x+p.x+u.x)/3, y:(g.y+p.y+u.y)/3 };
-  const fc = document.getElementById('tri-focus');
-  if (fc) { fc.setAttribute('cx',focus.x); fc.setAttribute('cy',focus.y); }
+  // Move the moon to the focus point
+  const moonBg = document.getElementById('moon-bg');
+  const moonSh = document.getElementById('moon-shadow');
+  const moonClip = document.getElementById('moonClipCircle');
+  const moonLabel = document.getElementById('moon-phase-label');
+  if (moonBg) { moonBg.setAttribute('cx',focus.x); moonBg.setAttribute('cy',focus.y); }
+  if (moonClip) { moonClip.setAttribute('cx',focus.x); moonClip.setAttribute('cy',focus.y); }
+  if (moonLabel) { moonLabel.setAttribute('x',focus.x); moonLabel.setAttribute('y',focus.y+6); }
+  
+  // Moon phase shadow — offset toward the sun to show illumination
+  // The shadow circle sits on the side AWAY from the sun
+  const sunAngle = Math.atan2(sun.y-focus.y, sun.x-focus.x);
+  // Phase offset: 0=new moon (shadow covers all), 0.5=full moon (shadow far away), 1=new again
+  const phaseOffset = (1 - moonData.illumination) * 7; // 0-7 units offset
+  const shadowX = focus.x - Math.cos(sunAngle) * phaseOffset;
+  const shadowY = focus.y - Math.sin(sunAngle) * phaseOffset;
+  if (moonSh) { moonSh.setAttribute('cx',shadowX); moonSh.setAttribute('cy',shadowY); }
+  
+  // === REFRACTION RAY — sun → luna → origin (mirror bounce) ===
+  const ri = document.getElementById('refract-in');
+  const ro = document.getElementById('refract-out');
+  if (ri) { ri.setAttribute('x1',sun.x); ri.setAttribute('y1',sun.y); ri.setAttribute('x2',focus.x); ri.setAttribute('y2',focus.y); }
+  // Reflected ray: mirror angle = incident angle reflected through moon toward center
+  if (ro) { ro.setAttribute('x1',focus.x); ro.setAttribute('y1',focus.y); ro.setAttribute('x2',cx); ro.setAttribute('y2',cy); }
+  
+  // === SHADOW CONE — cast from moon, opposite side from sun ===
+  const shadowLen = 15;
+  const awayX = -Math.cos(sunAngle);
+  const awayY = -Math.sin(sunAngle);
+  const coneSpread = 4;
+  const perpX = -awayY;
+  const perpY = awayX;
+  const sc = document.getElementById('shadow-cone');
+  if (sc) {
+    const p1x = focus.x, p1y = focus.y;
+    const p2x = focus.x + awayX*shadowLen + perpX*coneSpread;
+    const p2y = focus.y + awayY*shadowLen + perpY*coneSpread;
+    const p3x = focus.x + awayX*shadowLen - perpX*coneSpread;
+    const p3y = focus.y + awayY*shadowLen - perpY*coneSpread;
+    sc.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+  }
   
   // === HORIZON LINE — tilted by sun elevation (A5 UP sky / A3 DOWN ground) ===
   // Sun elevation maps to horizon tilt: -90°=below, 0°=level, +90°=above
