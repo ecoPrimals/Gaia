@@ -95,8 +95,8 @@
   .horizon { stroke-width:0.4; fill:none; opacity:0.15; }
   /* Perpendicular cross at focus */
   .perp-line { stroke-width:0.25; fill:none; opacity:0.12; stroke-dasharray:1,3; }
-  /* Shadow cast from moon */
-  .shadow-cone { fill:rgba(0,0,0,0.04); stroke:none; }
+  /* Viewport triangle — Kevin's field of view through displays to moon */
+  .shadow-cone { fill:rgba(100,255,100,0.03); stroke:rgba(100,255,100,0.08); stroke-width:0.3; }
   /* 3-body label */
   .tri-const { font-size:2.5px; fill:rgba(255,255,255,0.3); font-family:monospace; }
   .moon-label { font-size:2.2px; fill:rgba(200,210,230,0.5); font-family:monospace; }
@@ -227,8 +227,12 @@
       <!-- PERPENDICULAR cross at focus point (vertical + horizontal) -->
       <line id="perp-v" class="perp-line" stroke="#ffffff" x1="50" y1="20" x2="50" y2="80"/>
       <line id="perp-h" class="perp-line" stroke="#ffffff" x1="20" y1="50" x2="80" y2="50"/>
-      <!-- SHADOW CONE from moon (opposite side from sun) -->
+      <!-- VIEWPORT TRIANGLE — points AT Kevin's eyes through displays + moon -->
       <polygon id="shadow-cone" class="shadow-cone" points="50,50 60,30 40,30"/>
+      <!-- Display labels at triangle vertices -->
+      <text id="vtx-d1" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(255,150,50,0.5)">deckGate</text>
+      <text id="vtx-d2" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(255,150,50,0.5)">frameGate</text>
+      <text id="vtx-apex" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(100,255,100,0.6)">👁</text>
       <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
       <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
       <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
@@ -534,22 +538,32 @@ function triangulate() {
   // Reflected ray: mirror angle = incident angle reflected through moon toward center
   if (ro) { ro.setAttribute('x1',focus.x); ro.setAttribute('y1',focus.y); ro.setAttribute('x2',cx); ro.setAttribute('y2',cy); }
   
-  // === SHADOW CONE — cast from moon, opposite side from sun ===
-  const shadowLen = 15;
-  const awayX = -Math.cos(sunAngle);
-  const awayY = -Math.sin(sunAngle);
-  const coneSpread = 4;
-  const perpX = -awayY;
-  const perpY = awayX;
+  // === VIEWPORT TRIANGLE — points AT Kevin's eyes ===
+  // Apex = player position (Kevin's eyes)
+  // Base vertices = display 1 (deckGate) + display 2 (frameGate) flanking the moon
+  // The moon sits between the two displays — Kevin looks THROUGH displays AT the moon
+  const toPlayerAngle = Math.atan2(p.y - focus.y, p.x - focus.x);
+  const displaySpread = 8; // how far apart the displays are
+  const displayDist = 12;  // how far displays are from moon
+  // Display positions: perpendicular to the moon→player axis, at the moon
+  const dperpX = -Math.sin(toPlayerAngle);
+  const dperpY = Math.cos(toPlayerAngle);
+  const d1 = { x: focus.x + dperpX*displaySpread, y: focus.y + dperpY*displaySpread };
+  const d2 = { x: focus.x - dperpX*displaySpread, y: focus.y - dperpY*displaySpread };
+  
   const sc = document.getElementById('shadow-cone');
   if (sc) {
-    const p1x = focus.x, p1y = focus.y;
-    const p2x = focus.x + awayX*shadowLen + perpX*coneSpread;
-    const p2y = focus.y + awayY*shadowLen + perpY*coneSpread;
-    const p3x = focus.x + awayX*shadowLen - perpX*coneSpread;
-    const p3y = focus.y + awayY*shadowLen - perpY*coneSpread;
-    sc.setAttribute('points', `${p1x},${p1y} ${p2x},${p2y} ${p3x},${p3y}`);
+    // Triangle: apex at player, base at the two displays
+    sc.setAttribute('points', `${p.x},${p.y} ${d1.x},${d1.y} ${d2.x},${d2.y}`);
   }
+  
+  // Display labels
+  const vd1 = document.getElementById('vtx-d1');
+  const vd2 = document.getElementById('vtx-d2');
+  const vapex = document.getElementById('vtx-apex');
+  if (vd1) { vd1.setAttribute('x',d1.x); vd1.setAttribute('y',d1.y-1.5); }
+  if (vd2) { vd2.setAttribute('x',d2.x); vd2.setAttribute('y',d2.y-1.5); }
+  if (vapex) { vapex.setAttribute('x',p.x); vapex.setAttribute('y',p.y-2); }
   
   // === HORIZON LINE — tilted by sun elevation (A5 UP sky / A3 DOWN ground) ===
   // Sun elevation maps to horizon tilt: -90°=below, 0°=level, +90°=above
