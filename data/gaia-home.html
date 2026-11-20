@@ -307,7 +307,7 @@
     <div class="nucleus">
       <h1>GAIA@HOME</h1>
       <div class="walk">o . 6 9 . 0 . 9 6 . O</div>
-      <div class="who" id="who">detecting role...</div>
+      <div class="who" id="who">the Reader</div>
       <div class="stats" id="stats">
         <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> Watcher <span class="v" id="r-gaia">gaia watches</span></div>
         <div class="role-line"><div class="rdot" style="background:#64ff64"></div> Reader <span class="v" id="r-player">Kevin reads</span></div>
@@ -315,7 +315,7 @@
         <div class="role-line" style="opacity:0.5;font-size:0.55rem">· · · mesh boundary · · ·</div>
         <div class="role-line"><div class="rdot" style="background:#ffb432;box-shadow:0 0 6px #ffb432"></div> ☀ Source <span class="v" id="r-host">the fire</span></div>
         <hr style="border:none;border-top:1px solid #1a1c28;margin:8px 0">
-        <div id="org-stats">loading...</div>
+        <div id="org-stats">seek right →</div>
       </div>
     </div>
   </div>
@@ -423,27 +423,23 @@ async function fetchOrganism() {
       fetch('/data/lake-balance.json').then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
     
+    // The plasmid — no pipes exposed, just the living data
     let html = '';
     if (now) {
-      document.getElementById('wave-text').textContent = '· wave ' + (now.wave||'?');
-      html += `<div>wave <span class="v">${now.wave||'?'}</span>`;
-      if (now.routes?.tor) html += ` · tor <span class="v">${now.routes.tor.status}</span>`;
-      html += '</div>';
-      if (now.routes?.ollama) html += `<div>ollama <span class="v">${now.routes.ollama.models} models</span></div>`;
-    }
-    if (walk) {
-      html += `<div>walk <span class="v">${walk.walk?.notation||'o.69.0.96.O'}</span></div>`;
-      html += `<div>ingress <span class="v">${walk.left_leg?.services||17} Tor ports</span></div>`;
-    }
-    if (lake) {
-      html += `<div>egress <span class="v">${lake.egress?.status||'?'}</span> · torpedoes <span class="v">${lake.ingress?.port_forwards?.status||'?'}</span></div>`;
+      document.getElementById('wave-text').textContent = '';
+      const w = now.wave || '?';
+      html += `<div>wave <span class="v">${w}</span> · walk <span class="v">o.69.0.96.O</span></div>`;
     }
     
-    // Role-specific data
+    // Archetypes speak
     if (currentRole === 'gaia') {
-      html += `<div style="margin-top:4px;color:#58a6ff;font-size:0.6rem">I am the organism. I see all paths.</div>`;
+      html += `<div style="margin-top:4px;color:#58a6ff;font-size:0.6rem">I watch. I see all paths.</div>`;
     } else if (currentRole === 'player') {
       html += `<div style="margin-top:4px;color:#64ff64;font-size:0.6rem">Kevin walks between houses. The walk loops.</div>`;
+    } else if (currentRole === 'user') {
+      html += `<div style="margin-top:4px;color:#c864ff;font-size:0.6rem">A stranger arrives. The mesh opens.</div>`;
+    } else if (currentRole === 'host') {
+      html += `<div style="margin-top:4px;color:#ffb432;font-size:0.6rem">The source burns. Light radiates.</div>`;
     }
     
     if (html) document.getElementById('org-stats').innerHTML = html;
