@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAIA@HOME — o.69.0.96.O</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { 
+    background:#0a0c12; color:#c9d1d9; 
+    font-family:'JetBrains Mono','Fira Code',monospace;
+    overflow:hidden; height:100vh; width:100vw;
+  }
+
+  .universe {
+    position:relative; width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* The unified bubble */
+  .bubble {
+    position:relative; width:min(80vw,600px); height:min(80vw,600px);
+    border-radius:50%; 
+    background:radial-gradient(circle at 40% 35%, rgba(30,40,60,0.9), rgba(10,12,18,0.95));
+    border:2px solid rgba(88,166,255,0.15);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    box-shadow: 0 0 80px rgba(88,166,255,0.05), inset 0 0 60px rgba(10,12,18,0.5);
+    animation: breathe 8s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%,100% { transform:scale(1); border-color:rgba(88,166,255,0.15); }
+    50% { transform:scale(1.02); border-color:rgba(88,166,255,0.3); }
+  }
+
+  /* Three paths as orbital rings */
+  .orbit {
+    position:absolute; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.06);
+    animation:spin linear infinite;
+  }
+  .orbit.localhost { 
+    width:65%; height:65%; 
+    border-color:rgba(255,100,100,0.2);
+    animation-duration:20s;
+  }
+  .orbit.lan { 
+    width:82%; height:82%; 
+    border-color:rgba(100,255,100,0.2);
+    animation-duration:35s; animation-direction:reverse;
+  }
+  .orbit.walk { 
+    width:96%; height:96%; 
+    border-color:rgba(100,100,255,0.2);
+    animation-duration:55s;
+  }
+
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  /* Path dots on orbits */
+  .path-dot {
+    position:absolute; width:12px; height:12px; border-radius:50%;
+    top:-6px; left:50%; margin-left:-6px;
+    box-shadow: 0 0 10px currentColor;
+  }
+  .orbit.localhost .path-dot { background:#ff6464; color:#ff6464; }
+  .orbit.lan .path-dot { background:#64ff64; color:#64ff64; }
+  .orbit.walk .path-dot { background:#6464ff; color:#6464ff; }
+
+  /* Center nucleus */
+  .nucleus {
+    text-align:center; z-index:10;
+    padding:20px;
+  }
+  .nucleus h1 {
+    font-size:clamp(1.2rem,3vw,2rem); color:#58a6ff;
+    letter-spacing:0.1em; margin-bottom:8px;
+  }
+  .nucleus .walk-notation {
+    font-size:clamp(0.8rem,2vw,1.2rem); color:#555;
+    letter-spacing:0.3em; margin-bottom:16px;
+  }
+  .nucleus .stats {
+    font-size:0.7rem; color:#444; line-height:1.8;
+  }
+  .nucleus .stats .val { color:#58a6ff; }
+  .nucleus .stats .active-path { 
+    color:#fff; background:rgba(88,166,255,0.15); 
+    padding:2px 8px; border-radius:4px;
+  }
+
+  /* Three view panels */
+  .triad {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:12px; z-index:20;
+  }
+  .view-link {
+    padding:8px 16px; border-radius:20px;
+    border:1px solid rgba(255,255,255,0.1);
+    background:rgba(10,12,18,0.8);
+    color:#888; font-size:0.7rem;
+    text-decoration:none;
+    transition:all 0.3s;
+    cursor:pointer;
+  }
+  .view-link:hover { border-color:#58a6ff; color:#58a6ff; }
+  .view-link.active { border-color:#58a6ff; color:#fff; background:rgba(88,166,255,0.1); }
+  .view-link .dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:6px; }
+  .view-link .dot.red { background:#ff6464; }
+  .view-link .dot.green { background:#64ff64; }
+  .view-link .dot.blue { background:#6464ff; }
+
+  /* HUD iframe */
+  .hud-frame {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    border:none; border-radius:50%; opacity:0;
+    transition:opacity 0.5s;
+    pointer-events:none;
+    z-index:5;
+  }
+  .hud-frame.active { opacity:0.6; pointer-events:auto; }
+
+  /* Status bar */
+  .status-bar {
+    position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    font-size:0.65rem; color:#444; letter-spacing:0.1em;
+    z-index:20;
+  }
+  .status-bar .pulse { 
+    display:inline-block; width:6px; height:6px; 
+    border-radius:50%; background:#58a6ff;
+    animation:pulse 2s ease-in-out infinite;
+    margin-right:6px; vertical-align:middle;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+</head>
+<body>
+<div class="universe">
+  <div class="status-bar">
+    <span class="pulse"></span>
+    <span id="access-path">detecting path...</span>
+    <span id="wave-info"></span>
+  </div>
+
+  <div class="bubble" id="bubble">
+    <div class="orbit localhost"><div class="path-dot"></div></div>
+    <div class="orbit lan"><div class="path-dot"></div></div>
+    <div class="orbit walk"><div class="path-dot"></div></div>
+
+    <div class="nucleus">
+      <h1>GAIA@HOME</h1>
+      <div class="walk-notation">o . 6 9 . 0 . 9 6 . O</div>
+      <div class="stats" id="stats">
+        <div><span class="dot red" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff6464;margin-right:4px"></span>localhost <span class="val" id="stat-local">—</span></div>
+        <div><span class="dot green" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#64ff64;margin-right:4px"></span>LAN <span class="val" id="stat-lan">—</span></div>
+        <div><span class="dot blue" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#6464ff;margin-right:4px"></span>walk <span class="val" id="stat-walk">—</span></div>
+        <hr style="border:none;border-top:1px solid #1e2030;margin:8px 0">
+        <div id="organism-stats">loading organism...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="triad">
+    <a class="view-link" id="btn-local" onclick="switchView('local')">
+      <span class="dot red"></span>127.0.0.1
+    </a>
+    <a class="view-link" id="btn-lan" onclick="switchView('lan')">
+      <span class="dot green"></span>LAN
+    </a>
+    <a class="view-link" id="btn-walk" onclick="switchView('walk')">
+      <span class="dot blue"></span>.onion
+    </a>
+    <a class="view-link" id="btn-hud" onclick="switchView('hud')">
+      ◎ HUD
+    </a>
+  </div>
+</div>
+
+<iframe class="hud-frame" id="hud-iframe"></iframe>
+
+<script>
+const PATHS = {
+  local: { url:'http://127.0.0.1:8080', label:'localhost (self)', color:'#ff6464' },
+  lan: { url:'//', label:'LAN (lake)', color:'#64ff64' },
+  walk: { url:'http://iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion', label:'.onion (walk)', color:'#6464ff' }
+};
+
+// Detect which path we came from
+function detectPath() {
+  const h = location.hostname;
+  if (h === '127.0.0.1' || h === 'localhost') return 'local';
+  if (h.endsWith('.onion')) return 'walk';
+  return 'lan';
+}
+
+const currentPath = detectPath();
+document.getElementById('access-path').textContent = PATHS[currentPath]?.label || 'LAN (lake)';
+document.getElementById('btn-' + currentPath)?.classList.add('active');
+
+// Fetch organism data
+async function fetchOrganism() {
+  try {
+    // Try relative path first (works from any access point)
+    const now = await fetch('/data/now.json').then(r=>r.json()).catch(()=>null);
+    const walk = await fetch('/data/walk-route.json').then(r=>r.json()).catch(()=>null);
+    const lake = await fetch('/data/lake-balance.json').then(r=>r.json()).catch(()=>null);
+    
+    const stats = document.getElementById('organism-stats');
+    let html = '';
+    
+    if (now) {
+      html += `<div>wave <span class="val">${now.wave||'?'}</span></div>`;
+      if (now.routes) {
+        const tor = now.routes.tor;
+        const wan = now.routes.wan;
+        html += `<div>tor: <span class="val">${tor?.status||'?'}</span> · ${tor?.services||'?'} svc</div>`;
+        html += `<div>wan: <span class="val">${wan?.status||'?'}</span></div>`;
+        html += `<div>ollama: <span class="val">${now.routes.ollama?.models||'?'}</span> models</div>`;
+      }
+      document.getElementById('wave-info').textContent = ' · wave ' + (now.wave||'?');
+    }
+    
+    if (walk) {
+      html += `<div style="margin-top:4px">walk: <span class="val">${walk.walk?.notation||'o.69.0.96.O'}</span></div>`;
+      html += `<div>ingress: <span class="val">${walk.left_leg?.services||17} Tor ports</span></div>`;
+    }
+    
+    if (lake) {
+      html += `<div>egress: <span class="val">${lake.egress?.status||'CLEAN'}</span></div>`;
+      html += `<div>torpedoes: <span class="val">${lake.ingress?.port_forwards?.status||'DRAINED'}</span></div>`;
+    }
+    
+    if (html) stats.innerHTML = html;
+    
+    // Update path statuses
+    document.getElementById('stat-local').textContent = '127.0.0.1:8080';
+    
+    // Test LAN reachability
+    const lanIP = location.hostname.startsWith('192.168') ? location.hostname : '192.168.4.244';
+    document.getElementById('stat-lan').textContent = lanIP + ':8080';
+    document.getElementById('stat-walk').textContent = '.onion:80 (17 ports)';
+    
+  } catch(e) {
+    document.getElementById('organism-stats').textContent = 'offline — ' + e.message;
+  }
+}
+
+function switchView(view) {
+  const iframe = document.getElementById('hud-iframe');
+  const bubble = document.getElementById('bubble');
+  
+  if (view === 'hud') {
+    // Show full HUD in iframe over the bubble
+    iframe.src = location.origin + '/?seed=' + Math.floor(Math.random()*999999999);
+    iframe.classList.add('active');
+    bubble.style.opacity = '0.3';
+    return;
+  }
+  
+  iframe.classList.remove('active');
+  iframe.src = '';
+  bubble.style.opacity = '1';
+  
+  // Highlight the selected view
+  document.querySelectorAll('.view-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+view)?.classList.add('active');
+  
+  // Navigate to that view's data endpoint
+  if (PATHS[view]) {
+    document.getElementById('access-path').textContent = PATHS[view].label;
+  }
+}
+
+// Heartbeat
+setInterval(()=>{
+  const b = document.getElementById('bubble');
+  b.style.borderColor = 'rgba(88,166,255,0.4)';
+  setTimeout(()=>b.style.borderColor='rgba(88,166,255,0.15)', 300);
+}, 7324); // match organism BPM approximation
+
+fetchOrganism();
+setInterval(fetchOrganism, 30000);
+</script>
+</body>
+</html>
