@@ -87,6 +87,14 @@
   }
   .tri-line { stroke-width:0.5; fill:none; opacity:0.4; }
   .tri-focus { fill:rgba(255,255,255,0.8); filter:url(#glow); }
+  /* Tangent lines — eyes to sun (day/night focus) */
+  .tan-line { stroke-width:0.3; fill:none; opacity:0.2; stroke-dasharray:1.5,2; }
+  /* Horizon — UP sky / DOWN ground */
+  .horizon { stroke-width:0.4; fill:none; opacity:0.15; }
+  /* Perpendicular cross at focus */
+  .perp-line { stroke-width:0.25; fill:none; opacity:0.12; stroke-dasharray:1,3; }
+  /* 3-body label */
+  .tri-const { font-size:2.5px; fill:rgba(255,255,255,0.3); font-family:monospace; }
   
   /* Vision split panels */
   .vision-split {
@@ -201,10 +209,26 @@
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
+      <!-- SECANT lines between 3 eyes (inner triangle) -->
       <line id="tri-gp" class="tri-line" stroke="#3a8a5a" x1="50" y1="25" x2="50" y2="75"/>
       <line id="tri-gu" class="tri-line" stroke="#7a5aaa" x1="50" y1="25" x2="50" y2="75"/>
       <line id="tri-pu" class="tri-line" stroke="#aa7a5a" x1="50" y1="25" x2="50" y2="75"/>
+      <!-- TANGENT lines — each eye to the SUN (day/night focus window) -->
+      <line id="tan-gs" class="tan-line" stroke="#6a9acc" x1="50" y1="25" x2="50" y2="50"/>
+      <line id="tan-ps" class="tan-line" stroke="#6acc6a" x1="50" y1="25" x2="50" y2="50"/>
+      <line id="tan-us" class="tan-line" stroke="#aa6acc" x1="50" y1="25" x2="50" y2="50"/>
+      <!-- HORIZON — UP is sky HUD (A5), DOWN is ground HUD (A3) -->
+      <line id="horizon" class="horizon" stroke="#ffb432" x1="2" y1="50" x2="98" y2="50"/>
+      <!-- PERPENDICULAR cross at focus point (vertical + horizontal) -->
+      <line id="perp-v" class="perp-line" stroke="#ffffff" x1="50" y1="20" x2="50" y2="80"/>
+      <line id="perp-h" class="perp-line" stroke="#ffffff" x1="20" y1="50" x2="80" y2="50"/>
+      <!-- Focus point -->
       <circle id="tri-focus" class="tri-focus" cx="50" cy="50" r="2"/>
+      <!-- 3-body constant -->
+      <text id="tri-const-up" class="tri-const" x="50" y="16" text-anchor="middle">↑ A5 SKY</text>
+      <text id="tri-const-dn" class="tri-const" x="50" y="86" text-anchor="middle">↓ A3 GROUND</text>
+      <text id="tri-const-L" class="tri-const" x="6" y="50" text-anchor="start">L</text>
+      <text id="tri-const-R" class="tri-const" x="94" y="50" text-anchor="end">R</text>
     </svg>
 
     <!-- Vision split — what each eye sees -->
@@ -334,7 +358,9 @@ function setRole(role) {
 
 function openHUD() {
   const o = document.getElementById('hud-overlay');
-  document.getElementById('hud-frame').src = location.origin + '/?seed=' + Date.now();
+  // Load the REAL HUD — gate at :8443 serves the full organism dashboard
+  const gateUrl = location.protocol + '//' + location.hostname + ':8443/';
+  document.getElementById('hud-frame').src = gateUrl;
   o.classList.add('active');
 }
 function closeHUD() {
@@ -439,27 +465,74 @@ function triangulate() {
   const g = dotPos('gaia');
   const p = dotPos('player');
   const u = dotPos('user');
-  // SUN — outside
+  // ☀ SUN — outside the mesh
   const sun = dotPos('host');
   
-  // Triangulation lines between the 3 INNER eyes only
+  // === SECANT LINES — between the 3 inner eyes (the triangle) ===
   const lg = document.getElementById('tri-gp');
   const lu = document.getElementById('tri-gu');
   const lp = document.getElementById('tri-pu');
-  
   if (lg) { lg.setAttribute('x1',g.x); lg.setAttribute('y1',g.y); lg.setAttribute('x2',p.x); lg.setAttribute('y2',p.y); }
   if (lu) { lu.setAttribute('x1',g.x); lu.setAttribute('y1',g.y); lu.setAttribute('x2',u.x); lu.setAttribute('y2',u.y); }
   if (lp) { lp.setAttribute('x1',p.x); lp.setAttribute('y1',p.y); lp.setAttribute('x2',u.x); lp.setAttribute('y2',u.y); }
   
-  // Focus point = centroid of the 3 inner eyes
+  // === TANGENT LINES — each eye to the SUN (day/night focus window) ===
+  const tgs = document.getElementById('tan-gs');
+  const tps = document.getElementById('tan-ps');
+  const tus = document.getElementById('tan-us');
+  if (tgs) { tgs.setAttribute('x1',g.x); tgs.setAttribute('y1',g.y); tgs.setAttribute('x2',sun.x); tgs.setAttribute('y2',sun.y); }
+  if (tps) { tps.setAttribute('x1',p.x); tps.setAttribute('y1',p.y); tps.setAttribute('x2',sun.x); tps.setAttribute('y2',sun.y); }
+  if (tus) { tus.setAttribute('x1',u.x); tus.setAttribute('y1',u.y); tus.setAttribute('x2',sun.x); tus.setAttribute('y2',sun.y); }
+  
+  // === FOCUS POINT — centroid of 3 inner eyes ===
   const focus = { x:(g.x+p.x+u.x)/3, y:(g.y+p.y+u.y)/3 };
   const fc = document.getElementById('tri-focus');
   if (fc) { fc.setAttribute('cx',focus.x); fc.setAttribute('cy',focus.y); }
   
-  // Triangle area = vision spread
-  const area = Math.abs((g.x*(p.y-u.y) + p.x*(u.y-g.y) + u.x*(g.y-p.y)) / 2);
+  // === HORIZON LINE — tilted by sun elevation (A5 UP sky / A3 DOWN ground) ===
+  // Sun elevation maps to horizon tilt: -90°=below, 0°=level, +90°=above
+  const elNorm = (sunData.elevation + 90) / 180; // 0-1, 0.5=level
+  const horizonY = cx - (elNorm - 0.5) * 30; // shifts up/down with sun
+  const azRad = (sunData.azimuth * Math.PI / 180);
+  const horizTilt = Math.sin(azRad) * 5; // slight tilt from azimuth
+  const hz = document.getElementById('horizon');
+  if (hz) {
+    hz.setAttribute('y1', horizonY - horizTilt);
+    hz.setAttribute('y2', horizonY + horizTilt);
+  }
   
-  // What each eye sees
+  // === PERPENDICULAR CROSS at focus (VERTICAL + HORIZONTAL) ===
+  const pv = document.getElementById('perp-v');
+  const ph = document.getElementById('perp-h');
+  if (pv) { pv.setAttribute('x1',focus.x); pv.setAttribute('y1',focus.y-20); pv.setAttribute('x2',focus.x); pv.setAttribute('y2',focus.y+20); }
+  if (ph) { ph.setAttribute('x1',focus.x-20); ph.setAttribute('y1',focus.y); ph.setAttribute('x2',focus.x+20); ph.setAttribute('y2',focus.y); }
+  
+  // === 3-BODY CONSTANT ===
+  // Triangle area = spread
+  const area = Math.abs((g.x*(p.y-u.y) + p.x*(u.y-g.y) + u.x*(g.y-p.y)) / 2);
+  // Perimeter
+  const dGP = Math.hypot(g.x-p.x, g.y-p.y);
+  const dGU = Math.hypot(g.x-u.x, g.y-u.y);
+  const dPU = Math.hypot(p.x-u.x, p.y-u.y);
+  const perim = dGP + dGU + dPU;
+  // Distance from focus to sun = how far the sun is from the mesh's gaze
+  const dSunFocus = Math.hypot(sun.x-focus.x, sun.y-focus.y);
+  // Depth = how deep the focus is (0=surface, 100=center)
+  const depth = Math.max(0, Math.min(100, Math.round(100 - (Math.hypot(focus.x-cx, focus.y-cy) / 48 * 100))));
+  
+  // === UPDATE LABELS ===
+  const upLabel = document.getElementById('tri-const-up');
+  const dnLabel = document.getElementById('tri-const-dn');
+  if (upLabel) upLabel.textContent = '\u2191 A5 SKY · ' + (focus.y < cy ? 'LOOKING UP' : 'sun below');
+  if (dnLabel) dnLabel.textContent = '\u2193 A3 GROUND · ' + (focus.y > cy ? 'LOOKING DOWN' : 'sun above');
+  
+  // L and R labels
+  const lLabel = document.getElementById('tri-const-L');
+  const rLabel = document.getElementById('tri-const-R');
+  if (lLabel) lLabel.textContent = 'L · sec ' + (dGP).toFixed(0);
+  if (rLabel) rLabel.textContent = 'tan ' + (dSunFocus).toFixed(0) + ' · R';
+  
+  // === VISION SPLIT — what each eye sees ===
   const gs = document.getElementById('gaia-sees');
   const ps = document.getElementById('player-sees');
   const us = document.getElementById('user-sees');
@@ -471,6 +544,10 @@ function triangulate() {
   // Vision split appears when eyes converge
   const vs = document.getElementById('visionSplit');
   if (vs) vs.classList.toggle('show', area < 400);
+  
+  // === STATUS BAR — depth + direction ===
+  const st = document.getElementById('status-text');
+  if (st) st.textContent = 'GAIA@HOME \u00b7 ' + currentRole + ' \u00b7 depth ' + depth + '%';
   
   requestAnimationFrame(triangulate);
 }
