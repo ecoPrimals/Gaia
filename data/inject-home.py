@@ -6,7 +6,7 @@ import os
 
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-c.connect('192.168.4.244', username='eastgate', password='eastgate', timeout=10)
+c.connect('192.168.4.213', username='eastgate', password='eastgate', timeout=10)
 
 def run(cmd):
     stdin, stdout, stderr = c.exec_command(cmd, timeout=10)

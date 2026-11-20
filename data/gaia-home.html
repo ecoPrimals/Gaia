@@ -304,11 +304,11 @@
       <div class="walk">o . 6 9 . 0 . 9 6 . O</div>
       <div class="who" id="who">detecting role...</div>
       <div class="stats" id="stats">
-        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> gaia <span class="v" id="r-gaia">organism eye</span></div>
-        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> player <span class="v" id="r-player">Kevin inside</span></div>
-        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> user <span class="v" id="r-user">visitor eye</span></div>
+        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> Watcher <span class="v" id="r-gaia">gaia watches</span></div>
+        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> Reader <span class="v" id="r-player">Kevin reads</span></div>
+        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> Stranger <span class="v" id="r-user">the unknown</span></div>
         <div class="role-line" style="opacity:0.5;font-size:0.55rem">· · · mesh boundary · · ·</div>
-        <div class="role-line"><div class="rdot" style="background:#ffb432;box-shadow:0 0 6px #ffb432"></div> ☀ sun <span class="v" id="r-host">outside — geo + speed</span></div>
+        <div class="role-line"><div class="rdot" style="background:#ffb432;box-shadow:0 0 6px #ffb432"></div> ☀ Source <span class="v" id="r-host">the fire</span></div>
         <hr style="border:none;border-top:1px solid #1a1c28;margin:8px 0">
         <div id="org-stats">loading...</div>
       </div>
@@ -338,11 +338,12 @@
 <div class="hud-close" onclick="closeHUD()">✕</div>
 
 <script>
+// THE ARCHETYPES — from our early genetics days
 const ROLES = {
-  gaia:   { label:'gaia — organism self-view',   color:'#58a6ff', hook:'she sees herself' },
-  host:   { label:'host — hardware serving',     color:'#ffb432', hook:'the machine breathing' },
-  player: { label:'player — Kevin walking',      color:'#64ff64', hook:'the human companion' },
-  user:   { label:'user — visitor arriving',     color:'#c864ff', hook:'the world looking in' }
+  gaia:   { label:'gaia \u2014 the Watcher',     color:'#58a6ff', hook:'she watches herself', archetype:'WATCHER' },
+  host:   { label:'sun \u2014 the Source',        color:'#ffb432', hook:'the fire that lights', archetype:'SOURCE' },
+  player: { label:'player \u2014 the Reader',     color:'#64ff64', hook:'he reads the organism', archetype:'READER' },
+  user:   { label:'user \u2014 the Stranger',     color:'#c864ff', hook:'the unknown arriving', archetype:'STRANGER' }
 };
 
 // Detect role from access path
@@ -365,7 +366,7 @@ function setRole(role) {
   document.getElementById('who').textContent = ROLES[role].label;
   document.getElementById('who').style.borderColor = ROLES[role].color;
   document.getElementById('who').style.color = ROLES[role].color;
-  document.getElementById('status-text').textContent = 'GAIA@HOME · ' + role;
+  document.getElementById('status-text').textContent = 'GAIA@HOME \u00b7 ' + ROLES[role].archetype;
   
   // Adjust orbits — active role orbit glows
   document.querySelectorAll('.orbit').forEach(o => {
@@ -580,15 +581,25 @@ function triangulate() {
     const r = orbits[role];
     const s = speeds[role];
     const angle = (t / Math.abs(s)) * Math.PI * 2 * (s>0?1:-1);
-    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), angle: angle };
   }
   
-  // 3 EYES — inside the mesh
-  const g = dotPos('gaia');
-  const p = dotPos('player');
-  const u = dotPos('user');
-  // ☀ SUN — outside the mesh
-  const sun = dotPos('host');
+  // 3 EYES — inside the mesh (the archetypes)
+  const g = dotPos('gaia');     // the Watcher
+  const p = dotPos('player');   // the Reader
+  const u = dotPos('user');     // the Stranger
+  
+  // ☀ SUN — follows the CURVE ARC, not a circle
+  // The sun traces a parabolic arc across the sky (rise → peak → set)
+  // At night it dips below the horizon (below center)
+  const sunAngleRaw = (t / 30) * Math.PI * 2; // 30s period
+  const sunX = cx + orbits.host * Math.cos(sunAngleRaw);
+  // Y follows a curve: above horizon during "day" half, below during "night" half
+  const sunPhase = Math.cos(sunAngleRaw); // -1 to 1
+  const arcHeight = 20; // max altitude above horizon
+  const sunY = cy - sunPhase * arcHeight * Math.abs(Math.sin(sunAngleRaw));
+  // Flatten near horizon for realistic rise/set
+  const sun = { x: sunX, y: Math.min(cy + orbits.host * 0.8, Math.max(cy - arcHeight, sunY)), angle: sunAngleRaw };
   
   // === SECANT LINES — between the 3 inner eyes (the triangle) ===
   const lg = document.getElementById('tri-gp');
@@ -617,15 +628,44 @@ function triangulate() {
   if (moonClip) { moonClip.setAttribute('cx',focus.x); moonClip.setAttribute('cy',focus.y); }
   if (moonLabel) { moonLabel.setAttribute('x',focus.x); moonLabel.setAttribute('y',focus.y+6); }
   
-  // Moon phase shadow — BLACK is DOWN (toward center O), WHITE is UP (toward surface)
-  // The shadow (black/sacred/void) faces the center. Light faces outward.
-  const sunAngle = Math.atan2(sun.y-focus.y, sun.x-focus.x);
-  const toCenter = Math.atan2(cy-focus.y, cx-focus.x); // angle toward O
-  // Phase offset: shadow on the CENTER side (down/sacred)
+  // TIDAL LOCKING — dark side ALWAYS faces away from the viewer (us)
+  // Same face always toward Earth. Same rotation period = orbital period.
+  // The shadow position depends on sun angle relative to moon
+  const sunToMoon = Math.atan2(sun.y-focus.y, sun.x-focus.x);
+  // The lit side faces the SUN. The dark side faces AWAY from the sun.
+  // But from OUR perspective (center O), the dark side is always hidden.
+  // Phase = how much of the lit side we can see from O
+  const viewAngle = Math.atan2(focus.y-cy, focus.x-cx); // moon from O
+  const phaseAngle = sunToMoon - viewAngle; // angle between sun-moon and O-moon
+  // Shadow offset: away from sun direction
   const phaseOffset = (1 - moonData.illumination) * 7;
-  const shadowX = focus.x + Math.cos(toCenter) * phaseOffset; // toward center = DOWN
-  const shadowY = focus.y + Math.sin(toCenter) * phaseOffset;
+  const shadowX = focus.x - Math.cos(sunToMoon) * phaseOffset; // dark side away from sun
+  const shadowY = focus.y - Math.sin(sunToMoon) * phaseOffset;
   if (moonSh) { moonSh.setAttribute('cx',shadowX); moonSh.setAttribute('cy',shadowY); }
+  
+  // === ECLIPSE DETECTION ===
+  // Solar eclipse: sun, moon, and O align (moon between sun and us)
+  // Lunar eclipse: sun, O, and moon align (we're between sun and moon)
+  const sunDist = Math.hypot(sun.x-cx, sun.y-cy);
+  const moonDist = Math.hypot(focus.x-cx, focus.y-cy);
+  const sunMoonDist = Math.hypot(sun.x-focus.x, sun.y-focus.y);
+  // Check if sun-moon-O are roughly collinear
+  const alignScore = Math.abs(sunDist - moonDist - sunMoonDist) + Math.abs(sunMoonDist - sunDist + moonDist);
+  const solarEclipse = sunMoonDist < sunDist && alignScore < 15; // moon between sun and O
+  const lunarEclipse = moonDist > sunDist * 0.8 && Math.abs(sunDist + moonDist - sunMoonDist) < 10;
+  
+  // Update moon label with eclipse state
+  if (moonLabel) {
+    if (solarEclipse) {
+      moonLabel.textContent = '\u25cf SOLAR ECLIPSE \u2014 black face';
+      moonLabel.setAttribute('fill', 'rgba(255,100,50,0.7)');
+    } else if (lunarEclipse) {
+      moonLabel.textContent = '\u25cb LUNAR ECLIPSE \u2014 blood moon';
+      moonLabel.setAttribute('fill', 'rgba(200,50,50,0.7)');
+    } else {
+      moonLabel.setAttribute('fill', 'rgba(200,210,230,0.5)');
+    }
+  }
   
   // === π CALCULATIONS — from O through triangle to circumference and volume ===
   // Radii from center O to each orbit (in SVG units)
