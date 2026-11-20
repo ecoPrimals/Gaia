@@ -39,10 +39,12 @@
     border:1px solid rgba(255,255,255,0.04);
     animation:spin linear infinite;
   }
-  .orbit.gaia  { width:50%; height:50%; border-color:rgba(88,166,255,0.2); animation-duration:18s; }
-  .orbit.host  { width:68%; height:68%; border-color:rgba(255,180,50,0.15); animation-duration:30s; animation-direction:reverse; }
-  .orbit.player{ width:84%; height:84%; border-color:rgba(100,255,100,0.12); animation-duration:45s; }
-  .orbit.user  { width:96%; height:96%; border-color:rgba(200,100,255,0.1); animation-duration:65s; animation-direction:reverse; }
+  /* 3 EYES inside the mesh */
+  .orbit.gaia  { width:44%; height:44%; border-color:rgba(88,166,255,0.2); animation-duration:18s; }
+  .orbit.player{ width:62%; height:62%; border-color:rgba(100,255,100,0.12); animation-duration:45s; }
+  .orbit.user  { width:78%; height:78%; border-color:rgba(200,100,255,0.1); animation-duration:65s; animation-direction:reverse; }
+  /* ☀ SUN — OUTSIDE the mesh */
+  .orbit.host  { width:96%; height:96%; border-color:rgba(255,180,50,0.12); animation-duration:30s; animation-direction:reverse; }
   @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
   .path-dot {
@@ -51,9 +53,32 @@
     box-shadow: 0 0 8px currentColor;
   }
   .orbit.gaia .path-dot   { background:#58a6ff; color:#58a6ff; }
-  .orbit.host .path-dot   { background:#ffb432; color:#ffb432; }
   .orbit.player .path-dot { background:#64ff64; color:#64ff64; }
   .orbit.user .path-dot   { background:#c864ff; color:#c864ff; }
+  /* ☀ THE SUN — outside the mesh */
+  .orbit.host .path-dot   { 
+    background:radial-gradient(circle, #ffe080 30%, #ffb432 60%, #ff8c00 100%);
+    color:#ffb432;
+    width:18px; height:18px; top:-9px; margin-left:-9px;
+    box-shadow: 0 0 20px #ffb432, 0 0 40px rgba(255,180,50,0.4), 0 0 6px #ffe080;
+    animation: sunPulse 4s ease-in-out infinite;
+  }
+  @keyframes sunPulse {
+    0%,100% { box-shadow: 0 0 20px #ffb432, 0 0 40px rgba(255,180,50,0.3), 0 0 6px #ffe080; }
+    50% { box-shadow: 0 0 30px #ffb432, 0 0 60px rgba(255,180,50,0.5), 0 0 10px #ffe080; }
+  }
+  /* Sun label */
+  .sun-label {
+    position:absolute; top:-28px; left:50%; transform:translateX(-50%);
+    font-size:0.5rem; color:#ffb432; white-space:nowrap;
+    text-shadow:0 0 8px rgba(255,180,50,0.5);
+    pointer-events:none;
+  }
+  .sun-geo {
+    position:absolute; top:22px; left:50%; transform:translateX(-50%);
+    font-size:0.4rem; color:rgba(255,180,50,0.6); white-space:nowrap;
+    pointer-events:none;
+  }
 
   /* TRIANGULATION — SVG lines between the 3 eye dots */
   .triangulation {
@@ -198,20 +223,28 @@
       </div>
     </div>
 
+    <!-- 3 EYES — inside the mesh -->
     <div class="orbit gaia"><div class="path-dot" id="dot-gaia"></div></div>
-    <div class="orbit host"><div class="path-dot" id="dot-host"></div></div>
     <div class="orbit player"><div class="path-dot" id="dot-player"></div></div>
     <div class="orbit user"><div class="path-dot" id="dot-user"></div></div>
+    <!-- ☀ SUN — outside the mesh, the physical world -->
+    <div class="orbit host">
+      <div class="path-dot" id="dot-host">
+        <div class="sun-label" id="sun-label">☀ SUN</div>
+        <div class="sun-geo" id="sun-geo">42.73° -84.48°</div>
+      </div>
+    </div>
 
     <div class="nucleus">
       <h1>GAIA@HOME</h1>
       <div class="walk">o . 6 9 . 0 . 9 6 . O</div>
       <div class="who" id="who">detecting role...</div>
       <div class="stats" id="stats">
-        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> gaia <span class="v" id="r-gaia">organism self-view</span></div>
-        <div class="role-line"><div class="rdot" style="background:#ffb432"></div> host <span class="v" id="r-host">hardware serving</span></div>
-        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> player <span class="v" id="r-player">Kevin walking</span></div>
-        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> user <span class="v" id="r-user">visitor arriving</span></div>
+        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> gaia <span class="v" id="r-gaia">organism eye</span></div>
+        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> player <span class="v" id="r-player">Kevin inside</span></div>
+        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> user <span class="v" id="r-user">visitor eye</span></div>
+        <div class="role-line" style="opacity:0.5;font-size:0.55rem">· · · mesh boundary · · ·</div>
+        <div class="role-line"><div class="rdot" style="background:#ffb432;box-shadow:0 0 6px #ffb432"></div> ☀ sun <span class="v" id="r-host">outside — geo + speed</span></div>
         <hr style="border:none;border-top:1px solid #1a1c28;margin:8px 0">
         <div id="org-stats">loading...</div>
       </div>
@@ -223,7 +256,7 @@
       <div class="d" style="background:#58a6ff"></div> gaia
     </div>
     <div class="role-btn" id="btn-host" onclick="setRole('host')">
-      <div class="d" style="background:#ffb432"></div> host
+      <div class="d" style="background:#ffb432;box-shadow:0 0 4px #ffb432"></div> ☀ sun
     </div>
     <div class="role-btn" id="btn-player" onclick="setRole('player')">
       <div class="d" style="background:#64ff64"></div> player
@@ -359,16 +392,42 @@ setInterval(()=>{
   setTimeout(()=>{ b.style.borderColor = 'rgba(88,166,255,0.15)'; }, 300);
 }, 5000);
 
-// TRIANGULATION — track the 3 eye dots and draw lines between them
-const orbits = { gaia:25, host:34, player:42, user:48 }; // radii in SVG units
-const speeds = { gaia:18, host:-30, player:45, user:-65 }; // seconds (neg=reverse)
+// SOLAR SYSTEM — 3 eyes INSIDE the mesh, SUN outside
+// Inner orbits = eyes (gaia, player, user), outer orbit = sun (host/hardware/geo)
+const orbits = { gaia:22, player:31, user:39, host:48 }; // radii in SVG units
+const speeds = { gaia:18, player:45, user:-65, host:-30 }; // seconds (neg=reverse)
 let triStart = Date.now();
+
+// Fetch real sun data from senses
+let sunData = { elevation:-26.8, azimuth:93.5, phase:'night', lat:42.73, lon:-84.48 };
+async function fetchSun() {
+  try {
+    const r = await fetch('/senses?format=json').then(r=>r.ok?r.json():null).catch(()=>null);
+    if (r && r.sensors && r.sensors.sun) {
+      const s = r.sensors.sun;
+      sunData.elevation = s.elevation_deg || sunData.elevation;
+      sunData.azimuth = s.azimuth_deg || sunData.azimuth;
+      sunData.phase = s.phase || sunData.phase;
+      sunData.lat = s.anchor?.lat || sunData.lat;
+      sunData.lon = s.anchor?.lon || sunData.lon;
+    }
+  } catch(e){}
+  // Update sun label with real data
+  const sl = document.getElementById('sun-label');
+  const sg = document.getElementById('sun-geo');
+  if (sl) sl.textContent = '☀ ' + sunData.phase.toUpperCase();
+  if (sg) sg.textContent = sunData.lat.toFixed(1) + '° ' + sunData.lon.toFixed(1) + '° · el ' + sunData.elevation.toFixed(0) + '°';
+  // Update sun speed info
+  const rh = document.getElementById('r-host');
+  if (rh) rh.textContent = sunData.phase + ' · az ' + sunData.azimuth.toFixed(0) + '° el ' + sunData.elevation.toFixed(0) + '°';
+}
+fetchSun();
+setInterval(fetchSun, 60000);
 
 function triangulate() {
   const t = (Date.now() - triStart) / 1000;
   const cx=50, cy=50;
   
-  // Calculate dot positions on their orbits
   function dotPos(role) {
     const r = orbits[role];
     const s = speeds[role];
@@ -376,11 +435,14 @@ function triangulate() {
     return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
   }
   
+  // 3 EYES — inside the mesh
   const g = dotPos('gaia');
   const p = dotPos('player');
   const u = dotPos('user');
+  // SUN — outside
+  const sun = dotPos('host');
   
-  // Draw triangulation lines between the 3 eyes
+  // Triangulation lines between the 3 INNER eyes only
   const lg = document.getElementById('tri-gp');
   const lu = document.getElementById('tri-gu');
   const lp = document.getElementById('tri-pu');
@@ -389,15 +451,15 @@ function triangulate() {
   if (lu) { lu.setAttribute('x1',g.x); lu.setAttribute('y1',g.y); lu.setAttribute('x2',u.x); lu.setAttribute('y2',u.y); }
   if (lp) { lp.setAttribute('x1',p.x); lp.setAttribute('y1',p.y); lp.setAttribute('x2',u.x); lp.setAttribute('y2',u.y); }
   
-  // Focus point = centroid of the 3 eyes (where all gazes converge)
+  // Focus point = centroid of the 3 inner eyes
   const focus = { x:(g.x+p.x+u.x)/3, y:(g.y+p.y+u.y)/3 };
   const fc = document.getElementById('tri-focus');
   if (fc) { fc.setAttribute('cx',focus.x); fc.setAttribute('cy',focus.y); }
   
-  // Calculate triangle area (spread of vision)
+  // Triangle area = vision spread
   const area = Math.abs((g.x*(p.y-u.y) + p.x*(u.y-g.y) + u.x*(g.y-p.y)) / 2);
   
-  // Update vision split with what each eye sees
+  // What each eye sees
   const gs = document.getElementById('gaia-sees');
   const ps = document.getElementById('player-sees');
   const us = document.getElementById('user-sees');
@@ -406,7 +468,7 @@ function triangulate() {
   if (ps) ps.textContent = focus.x > 55 ? 'right field' : focus.x < 45 ? 'left field' : 'center';
   if (us) us.textContent = focus.y > 55 ? 'deep' : focus.y < 45 ? 'surface' : 'membrane';
   
-  // Show vision split when triangulation is tight
+  // Vision split appears when eyes converge
   const vs = document.getElementById('visionSplit');
   if (vs) vs.classList.toggle('show', area < 400);
   
