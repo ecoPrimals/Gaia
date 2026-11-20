@@ -224,6 +224,13 @@
       <line id="tan-us" class="tan-line" stroke="#aa6acc" x1="50" y1="25" x2="50" y2="50"/>
       <!-- HORIZON — UP is sky HUD (A5), DOWN is ground HUD (A3) -->
       <line id="horizon" class="horizon" stroke="#ffb432" x1="2" y1="50" x2="98" y2="50"/>
+      <!-- LAND LINE — L 45° = π/4 — the 45th parallel (Michigan) -->
+      <line id="land-line" stroke="rgba(90,170,90,0.12)" stroke-width="0.3" x1="5" y1="50" x2="95" y2="50"/>
+      <text id="land-label" class="tri-const" x="8" y="48" fill="rgba(90,170,90,0.35)">L 45° = π/4</text>
+      <!-- SUN ARC — the path the sun traces across the sky at this latitude -->
+      <path id="sun-arc" fill="none" stroke="rgba(255,180,50,0.08)" stroke-width="0.3" stroke-dasharray="1,2" d="M 10,50 Q 50,10 90,50"/>
+      <text id="sun-rise-label" class="tri-const" x="12" y="52" fill="rgba(255,180,50,0.3)">↗ rise</text>
+      <text id="sun-set-label" class="tri-const" x="85" y="52" fill="rgba(255,180,50,0.3)">set ↘</text>
       <!-- PERPENDICULAR cross at focus point (vertical + horizontal) -->
       <line id="perp-v" class="perp-line" stroke="#ffffff" x1="50" y1="20" x2="50" y2="80"/>
       <line id="perp-h" class="perp-line" stroke="#ffffff" x1="20" y1="50" x2="80" y2="50"/>
@@ -565,17 +572,43 @@ function triangulate() {
   if (vd2) { vd2.setAttribute('x',d2.x); vd2.setAttribute('y',d2.y-1.5); }
   if (vapex) { vapex.setAttribute('x',p.x); vapex.setAttribute('y',p.y-2); }
   
-  // === HORIZON LINE — tilted by sun elevation (A5 UP sky / A3 DOWN ground) ===
-  // Sun elevation maps to horizon tilt: -90°=below, 0°=level, +90°=above
-  const elNorm = (sunData.elevation + 90) / 180; // 0-1, 0.5=level
-  const horizonY = cx - (elNorm - 0.5) * 30; // shifts up/down with sun
-  const azRad = (sunData.azimuth * Math.PI / 180);
-  const horizTilt = Math.sin(azRad) * 5; // slight tilt from azimuth
+  // === SOLAR GEOMETRY at L 45° = π/4 (Michigan, 42.73°N) ===
+  const latRad = 42.73 * Math.PI / 180;  // ≈ π/4 = 0.7454 rad
+  const declRad = -20.23 * Math.PI / 180; // November declination
+  // Max solar altitude at noon = 90° - lat + decl = 27°
+  const maxAlt = 90 - 42.73 + sunData.elevation; // dynamic
+  // Sunrise azimuth: cos(az) = sin(decl)/cos(lat)
+  const sunriseAz = Math.acos(Math.sin(declRad) / Math.cos(latRad)) * 180 / Math.PI; // ≈118° from N
+  
+  // Horizon line position — tilted by the land angle
+  // The land at 45° creates a 4° visual tilt from true horizontal (45 - 41.73 ≈ 3.27°)
+  const landTilt = (45 - 42.73) * 0.5; // ~1.1 SVG units tilt
   const hz = document.getElementById('horizon');
   if (hz) {
-    hz.setAttribute('y1', horizonY - horizTilt);
-    hz.setAttribute('y2', horizonY + horizTilt);
+    hz.setAttribute('y1', cy - landTilt);
+    hz.setAttribute('y2', cy + landTilt);
   }
+  
+  // Land line — flat at the 45th parallel
+  const ll = document.getElementById('land-line');
+  if (ll) {
+    ll.setAttribute('y1', cy - landTilt);
+    ll.setAttribute('y2', cy + landTilt);
+  }
+  
+  // Sun arc — the parabolic path across the sky
+  // At latitude π/4, max altitude ≈ 27° in November
+  // Arc height = max altitude mapped to SVG (27/90 * 40 ≈ 12 units above horizon)
+  const arcHeight = Math.max(5, (90 + sunData.elevation) / 90 * 25);
+  const arcY = cy - arcHeight;
+  const sa = document.getElementById('sun-arc');
+  if (sa) sa.setAttribute('d', `M 10,${cy} Q 50,${arcY} 90,${cy}`);
+  
+  // Rise/set labels at the horizon intersections
+  const srl = document.getElementById('sun-rise-label');
+  const ssl = document.getElementById('sun-set-label');
+  if (srl) srl.textContent = '\u2197 rise ' + Math.round(sunriseAz) + '\u00b0';
+  if (ssl) ssl.textContent = (360 - Math.round(sunriseAz)) + '\u00b0 set \u2198';
   
   // === PERPENDICULAR CROSS at focus (VERTICAL + HORIZONTAL) ===
   const pv = document.getElementById('perp-v');
