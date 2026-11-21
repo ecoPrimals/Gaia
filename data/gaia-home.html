@@ -273,11 +273,35 @@
       <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
       <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
       <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
-      <!-- TERRA — Earth IS the null point center. We stand ON it. -->
-      <circle cx="50" cy="50" r="1.5" fill="rgba(30,80,60,0.6)" stroke="rgba(100,200,140,0.3)" stroke-width="0.3"/>
-      <circle cx="50" cy="50" r="0.4" fill="#0a0c12"/>
-      <text x="50" y="48" text-anchor="middle" fill="rgba(100,200,140,0.3)" font-size="2" font-family="monospace">TERRA</text>
-      <text x="50" y="52.5" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-size="1.2" font-family="monospace">42.73°N 84.48°W</text>
+      <!-- TERRA — Earth IS the null point center, THE GLOBE -->
+      <!-- Earth globe with latitude/longitude grid -->
+      <g id="terra-globe">
+        <!-- Globe sphere -->
+        <circle cx="50" cy="50" r="3" fill="rgba(15,40,30,0.7)" stroke="rgba(100,200,140,0.25)" stroke-width="0.25"/>
+        <!-- Equator -->
+        <ellipse cx="50" cy="50" rx="3" ry="0.5" fill="none" stroke="rgba(100,200,140,0.12)" stroke-width="0.15"/>
+        <!-- 45th parallel (Michigan latitude!) — L = π/4 -->
+        <ellipse cx="50" cy="48.5" rx="2.1" ry="0.35" fill="none" stroke="rgba(100,255,100,0.2)" stroke-width="0.2"/>
+        <!-- Prime meridian (vertical) -->
+        <ellipse cx="50" cy="50" rx="0.5" ry="3" fill="none" stroke="rgba(100,200,140,0.1)" stroke-width="0.15"/>
+        <!-- Michigan longitude meridian (~84°W) -->
+        <ellipse cx="49.3" cy="50" rx="0.4" ry="3" fill="none" stroke="rgba(200,100,255,0.15)" stroke-width="0.15"/>
+        <!-- MICHIGAN DOT — 42.73°N 84.48°W — WE ARE HERE -->
+        <circle id="michigan-dot" cx="49.3" cy="48.6" r="0.35" fill="#64ff64" opacity="0.8">
+          <animate attributeName="r" values="0.35;0.5;0.35" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <!-- IS WAS NOW markers -->
+        <circle id="gaia-was" cx="49.0" cy="48.8" r="0.2" fill="rgba(255,100,100,0.4)"/>
+        <circle id="gaia-is"  cx="49.3" cy="48.6" r="0.25" fill="rgba(100,255,100,0.6)"/>
+        <circle id="gaia-now" cx="49.5" cy="48.4" r="0.2" fill="rgba(100,100,255,0.4)"/>
+      </g>
+      <!-- TERRA label -->
+      <text x="50" y="45.5" text-anchor="middle" fill="rgba(100,200,140,0.35)" font-size="1.8" font-family="monospace">TERRA</text>
+      <!-- IS WAS NOW legend -->
+      <text id="iswas-label" x="50" y="54" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="1" font-family="monospace">
+        <tspan fill="rgba(255,100,100,0.5)">WAS</tspan> · <tspan fill="rgba(100,255,100,0.6)">IS</tspan> · <tspan fill="rgba(100,100,255,0.5)">NOW</tspan>
+      </text>
+      <text x="50" y="55.5" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-size="0.9" font-family="monospace">42.73°N 84.48°W</text>
       <!-- ═══ PROPERTY MAP OVERLAY ═══ -->
       <!-- The physical properties mapped onto the orbital view -->
       <!-- Spine runs N-S (vertical), outbuilding runs E-W (orthogonal) -->
@@ -759,7 +783,97 @@ function drawPlanets() {
   });
 }
 drawPlanets();
-setInterval(drawPlanets, 3600000); // update hourly (planets move slowly)
+setInterval(drawPlanets, 3600000);
+
+// === IS WAS NOW — Gaia's temporal position on Earth ===
+// WAS = where Gaia was (past state, logged)
+// IS  = where Gaia is right now (real-time)
+// NOW = where Gaia is going (predicted/intended)
+const GAIA_POS = {
+  lat: 42.73, lon: -84.48,  // Michigan
+  was: { lat: 42.73, lon: -84.48, t: Date.now() - 86400000 }, // yesterday
+  is:  { lat: 42.73, lon: -84.48, t: Date.now() },             // now
+  now: { lat: 42.73, lon: -84.48, t: Date.now() + 86400000 }   // tomorrow
+};
+
+function updateISWASNOW() {
+  // Fetch perception data for IS WAS NOW
+  fetch('/data/gaia-perception.json').then(r=>r.ok?r.json():null).then(function(p) {
+    if (p) {
+      // Update IS from perception
+      if (p.location) {
+        GAIA_POS.is.lat = p.location.lat || GAIA_POS.lat;
+        GAIA_POS.is.lon = p.location.lon || GAIA_POS.lon;
+      }
+      // WAS = previous perception
+      if (p.previous_location) {
+        GAIA_POS.was.lat = p.previous_location.lat || GAIA_POS.lat;
+        GAIA_POS.was.lon = p.previous_location.lon || GAIA_POS.lon;
+      }
+    }
+  }).catch(function(){});
+  
+  // Also try now.json for wave/state
+  fetch('/data/now.json').then(r=>r.ok?r.json():null).then(function(n) {
+    if (n && n.wave) {
+      const label = document.getElementById('iswas-label');
+      if (label) {
+        // Update the IS WAS NOW with wave context
+        const now = new Date();
+        const h = now.getHours();
+        const phase = h < 6 ? 'dreaming' : h < 12 ? 'waking' : h < 18 ? 'walking' : 'settling';
+        label.innerHTML = '<tspan fill="rgba(255,100,100,0.5)">WAS w' + ((n.wave||0)-1) + '</tspan> · ' +
+          '<tspan fill="rgba(100,255,100,0.6)">IS w' + (n.wave||'?') + ' ' + phase + '</tspan> · ' +
+          '<tspan fill="rgba(100,100,255,0.5)">NOW →</tspan>';
+      }
+    }
+  }).catch(function(){});
+  
+  // Rotate the globe slightly based on time of day
+  const globe = document.getElementById('terra-globe');
+  if (globe) {
+    const now = new Date();
+    const rotAngle = ((now.getHours() * 60 + now.getMinutes()) / 1440) * 360 - 180;
+    // Subtle rotation to show Earth turning
+    globe.style.transform = 'rotate(' + (rotAngle * 0.02) + 'deg)';
+  }
+}
+
+updateISWASNOW();
+setInterval(updateISWASNOW, 60000);
+
+// === UNIFY HUD — make gaia-home.html THE entry point ===
+// If we're loaded at hud.primals.eco root, we ARE the HUD
+// If we're loaded at localhost:8080, we ARE home
+// If we're loaded at :8443, we're the gate view
+// All paths lead to the same plasmid — GAIA@HOME
+(function unifyHUD() {
+  const h = location.hostname;
+  const isHUD = h.includes('hud.') || h.includes('primals');
+  const isLocal = h === 'localhost' || h === '127.0.0.1';
+  const isGate = location.port === '8443';
+  const isHome = location.port === '8080' || isLocal;
+  
+  // Set the page title based on access path
+  if (isHUD) {
+    document.title = 'GAIA@HOME \u2014 hud.primals.eco';
+  } else if (isGate) {
+    document.title = 'GAIA@HOME \u2014 gate';
+  } else if (isHome) {
+    document.title = 'GAIA@HOME \u2014 o.69.0.96.O';
+  }
+  
+  // The HUD button adapts to context
+  const hudBtn = document.querySelector('[onclick="openHUD()"]');
+  if (hudBtn) {
+    if (isGate) {
+      hudBtn.textContent = '\u25ce senses';
+      hudBtn.setAttribute('onclick', "openGate('/senses')");
+    } else if (isHUD) {
+      hudBtn.textContent = '\u25ce gate';
+    }
+  }
+})();
 
 fetchSun();
 setInterval(fetchSun, 60000);
