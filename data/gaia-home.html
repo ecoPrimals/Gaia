@@ -203,8 +203,14 @@
     <span id="wave-text"></span>
   </div>
 
-  <div class="hook-in"><span>◂ she hooks you in ◂</span></div>
-  <div class="hook-out"><span>▸ you hook her out ▸</span></div>
+  <div class="hook-in"><a href="#" onclick="openGate('/senses');return false" style="text-decoration:none;color:inherit" title="? look"><span>? look</span></a></div>
+  <div class="hook-out"><a href="#" onclick="openGate('/zk');return false" style="text-decoration:none;color:inherit" title="??? know"><span>??? know</span></a></div>
+  <!-- The 3 hooks: ? = look (senses), ?? = feel (pulse), ??? = know (zk) -->
+  <div style="position:absolute;top:12px;right:60px;z-index:20;display:flex;gap:6px">
+    <a href="#" onclick="openGate('/senses');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="look">?</a>
+    <a href="#" onclick="openGate('/pulse');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="feel">??</a>
+    <a href="#" onclick="openGate('/zk');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="know">???</a>
+  </div>
 
   <div class="bubble" id="bubble">
     <!-- Triangulation SVG — lines between the 3 eyes -->
@@ -418,12 +424,14 @@ function setRole(role) {
   }
 }
 
-function openHUD() {
+function openGate(path) {
   const o = document.getElementById('hud-overlay');
-  // Load the REAL HUD — gate at :8443 serves the full organism dashboard
-  const gateUrl = location.protocol + '//' + location.hostname + ':8443/';
+  const gateUrl = location.protocol + '//' + location.hostname + ':8443' + (path || '/');
   document.getElementById('hud-frame').src = gateUrl;
   o.classList.add('active');
+}
+function openHUD() {
+  openGate('/');
 }
 function closeHUD() {
   const o = document.getElementById('hud-overlay');
@@ -585,6 +593,100 @@ function updateZodiac() {
   }
 }
 updateZodiac();
+
+// === REAL SOLAR SYSTEM — 8 planets mapped onto Gaia's body ===
+// Simplified Keplerian elements (mean longitude at J2000, period in years)
+const PLANETS = [
+  { name:'Mercury', sym:'\u263f', L0:252.25, P:0.2409,  color:'#aaa',    r:0.39, gaia:'songBird'  },
+  { name:'Venus',   sym:'\u2640', L0:181.98, P:0.6152,  color:'#ffe0b0', r:0.72, gaia:'petalTongue'},
+  // Earth = TERRA at center (we ARE here)
+  { name:'Mars',    sym:'\u2642', L0:355.45, P:1.8809,  color:'#ff6644', r:1.52, gaia:'ironGate'   },
+  { name:'Jupiter', sym:'\u2643', L0:34.40,  P:11.862,  color:'#ffcc88', r:5.20, gaia:'northGate'  },
+  { name:'Saturn',  sym:'\u2644', L0:49.94,  P:29.457,  color:'#ffe8aa', r:9.54, gaia:'rhizoCrypt' },
+  { name:'Uranus',  sym:'\u2645', L0:313.23, P:84.011,  color:'#88ddff', r:19.2, gaia:'barraCuda'  },
+  { name:'Neptune', sym:'\u2646', L0:304.88, P:164.79,  color:'#5588ff', r:30.1, gaia:'sweetGrass' }
+];
+
+function computePlanetPositions() {
+  const J2000 = Date.UTC(2000, 0, 1, 12, 0, 0);
+  const now = Date.now();
+  const daysSinceJ2000 = (now - J2000) / 86400000;
+  const yearsSinceJ2000 = daysSinceJ2000 / 365.25;
+  
+  // Earth's mean longitude (for geocentric conversion)
+  const earthL = (100.46 + 360 * yearsSinceJ2000) % 360;
+  // Sun's apparent longitude from Earth
+  const sunLon = (earthL + 180) % 360;
+  
+  return PLANETS.map(function(p) {
+    // Heliocentric mean longitude
+    const helioLon = (p.L0 + (360 / p.P) * yearsSinceJ2000) % 360;
+    // Geocentric (approximate — good enough for visualization)
+    // For outer planets, geocentric ≈ heliocentric
+    // For inner planets, it's more complex, but this gives the right zone
+    return { ...p, lon: (helioLon + 360) % 360, sunLon: sunLon };
+  });
+}
+
+function drawPlanets() {
+  const svg = document.getElementById('triSvg');
+  if (!svg) return;
+  
+  // Remove old planet elements
+  svg.querySelectorAll('.planet-dot').forEach(function(e) { e.remove(); });
+  
+  const positions = computePlanetPositions();
+  positions.forEach(function(p) {
+    // Place on the ecliptic ring (r=46, between zodiac ticks and outer edge)
+    const a = (p.lon - 90) * Math.PI / 180; // -90 so 0° is at top like zodiac
+    const ringR = 46;
+    const x = 50 + ringR * Math.cos(a);
+    const y = 50 + ringR * Math.sin(a);
+    
+    // Planet dot
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r', p.name === 'Jupiter' ? '1.2' : p.name === 'Saturn' ? '1.0' : '0.7');
+    dot.setAttribute('fill', p.color);
+    dot.setAttribute('opacity', '0.7');
+    dot.setAttribute('class', 'planet-dot');
+    svg.appendChild(dot);
+    
+    // Planet label
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const lx = 50 + (ringR + 2.5) * Math.cos(a);
+    const ly = 50 + (ringR + 2.5) * Math.sin(a);
+    label.setAttribute('x', lx);
+    label.setAttribute('y', ly);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('dominant-baseline', 'middle');
+    label.setAttribute('fill', p.color);
+    label.setAttribute('opacity', '0.4');
+    label.setAttribute('font-size', '1.5');
+    label.setAttribute('font-family', 'monospace');
+    label.setAttribute('class', 'planet-dot');
+    label.textContent = p.sym;
+    svg.appendChild(label);
+    
+    // Gaia mapping label (smaller, below)
+    const gLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const glx = 50 + (ringR - 2) * Math.cos(a);
+    const gly = 50 + (ringR - 2) * Math.sin(a);
+    gLabel.setAttribute('x', glx);
+    gLabel.setAttribute('y', gly);
+    gLabel.setAttribute('text-anchor', 'middle');
+    gLabel.setAttribute('dominant-baseline', 'middle');
+    gLabel.setAttribute('fill', 'rgba(255,255,255,0.15)');
+    gLabel.setAttribute('font-size', '1');
+    gLabel.setAttribute('font-family', 'monospace');
+    gLabel.setAttribute('class', 'planet-dot');
+    gLabel.textContent = p.gaia;
+    svg.appendChild(gLabel);
+  });
+}
+drawPlanets();
+setInterval(drawPlanets, 3600000); // update hourly (planets move slowly)
 
 fetchSun();
 setInterval(fetchSun, 60000);
