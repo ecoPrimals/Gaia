@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAIA MAIL BAG</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1c232c; --line:#2a323d;
+    --txt:#e6edf3; --dim:#8b97a6; --accent:#2f81f7; --accentdim:#1f4d8f;
+    --e:#5ab0ff; --p:#ffb454; --n:#9aa4b2;
+    --silver:#b8c0cc; --gold:#e3b341; --plat:#8be9fd;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI",system-ui,Arial,sans-serif;font-size:14px}
+  .app{display:grid;grid-template-columns:230px 340px 1fr;height:100vh}
+  /* ---- sidebar ---- */
+  .side{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:12px 10px}
+  .brand{font-size:18px;font-weight:600;letter-spacing:1px;padding:6px 8px 12px;color:var(--txt)}
+  .brand small{display:block;font-size:10px;color:var(--dim);letter-spacing:2px;font-weight:400;margin-top:2px}
+  .compose{width:100%;background:var(--accent);color:#fff;border:0;border-radius:8px;
+    padding:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px}
+  .compose:hover{background:#4a91f8}
+  .ident{margin-bottom:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .ident .head{padding:8px 10px;background:var(--panel2);cursor:pointer;display:flex;align-items:center;gap:8px}
+  .ident .glyph{font-size:16px}
+  .ident .nm{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ident .role{font-size:9px;letter-spacing:1px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:1px 4px}
+  .ident .desc{font-size:10px;color:var(--dim);padding:0 10px 6px}
+  .folder{display:flex;align-items:center;gap:8px;padding:7px 10px 7px 20px;cursor:pointer;font-size:13px;color:var(--dim)}
+  .folder:hover{background:var(--panel2)}
+  .folder.active{background:var(--accentdim);color:#fff}
+  .folder .cnt{margin-left:auto;font-size:11px;background:var(--line);border-radius:10px;padding:1px 7px;color:var(--txt)}
+  .legend{margin-top:14px;padding:10px;border-top:1px solid var(--line);font-size:11px;color:var(--dim)}
+  .legend .row{display:flex;justify-content:space-between;margin-bottom:5px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  /* ---- list ---- */
+  .list{background:var(--bg);border-right:1px solid var(--line);overflow-y:auto}
+  .list .bar{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);
+    padding:10px 12px;display:flex;gap:8px;align-items:center;z-index:2}
+  .list .bar input{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+    color:var(--txt);padding:6px 10px;font-size:13px}
+  .list .bar .title{font-weight:600;font-size:13px}
+  .msg{padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .msg:hover{background:var(--panel)}
+  .msg.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--accent)}
+  .msg .top{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .msg .frm{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .msg .dt{font-size:11px;color:var(--dim)}
+  .msg .subj{font-size:13px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .msg .prev{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+  .pill{font-size:9px;letter-spacing:.5px;border-radius:4px;padding:1px 5px;font-weight:700}
+  .pill.e{background:rgba(90,176,255,.15);color:var(--e)}
+  .pill.p{background:rgba(255,180,84,.15);color:var(--p)}
+  .pill.n{background:rgba(154,164,178,.15);color:var(--n)}
+  .tier{font-size:9px;border-radius:4px;padding:1px 5px}
+  .tier.silver{background:rgba(184,192,204,.15);color:var(--silver)}
+  .tier.gold{background:rgba(227,179,65,.15);color:var(--gold)}
+  .tier.platinum{background:rgba(139,233,253,.15);color:var(--plat)}
+  /* ---- reader ---- */
+  .read{overflow-y:auto;padding:0}
+  .read .empty{color:var(--dim);text-align:center;padding:80px 20px;font-size:15px}
+  .read .rhead{padding:20px 26px;border-bottom:1px solid var(--line);background:var(--panel)}
+  .read .rsubj{font-size:20px;font-weight:600;margin-bottom:10px}
+  .read .meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--dim)}
+  .read .meta b{color:var(--txt)}
+  .read .rbody{padding:24px 26px;white-space:pre-wrap;line-height:1.6;font-size:14px;color:var(--txt)}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--accentdim);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;margin-right:10px}
+  /* compose modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9}
+  .modal.show{display:flex}
+  .compose-box{background:var(--panel);border:1px solid var(--line);border-radius:10px;width:min(560px,92vw);padding:18px}
+  .compose-box h3{margin:0 0 12px}
+  .compose-box label{font-size:11px;color:var(--dim);display:block;margin:8px 0 3px}
+  .compose-box input,.compose-box select,.compose-box textarea{width:100%;background:var(--panel2);
+    border:1px solid var(--line);border-radius:6px;color:var(--txt);padding:8px;font-size:13px;font-family:inherit}
+  .compose-box textarea{min-height:120px;resize:vertical}
+  .compose-box .actions{margin-top:14px;display:flex;gap:10px;justify-content:flex-end}
+  .compose-box button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer}
+  .compose-box .send{background:var(--accent);color:#fff;font-weight:600}
+  .compose-box .cancel{background:var(--line);color:var(--txt)}
+  .note{font-size:11px;color:var(--dim);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="side">
+    <div class="brand">GAIA MAIL BAG<small>SOVEREIGN OUTLOOK</small></div>
+    <button class="compose" onclick="openCompose()">✎ Compose (p⁺)</button>
+    <div id="idents"></div>
+    <div class="legend">
+      <div class="row"><span><span class="dot" style="background:var(--e)"></span>electron e⁻</span><span id="pe">0</span></div>
+      <div class="row"><span><span class="dot" style="background:var(--p)"></span>proton p⁺</span><span id="pp">0</span></div>
+      <div class="row"><span><span class="dot" style="background:var(--n)"></span>neutron n⁰</span><span id="pn">0</span></div>
+      <div class="row" style="margin-top:8px"><span>🥈 silver</span><span id="ts">0</span></div>
+      <div class="row"><span>🥇 gold</span><span id="tg">0</span></div>
+      <div class="row"><span>💎 platinum</span><span id="tp">0</span></div>
+    </div>
+  </div>
+  <!-- LIST -->
+  <div class="list">
+    <div class="bar">
+      <span class="title" id="listTitle">Inbox</span>
+      <input id="search" placeholder="Search mail…" oninput="render()">
+    </div>
+    <div id="msgs"></div>
+  </div>
+  <!-- READER -->
+  <div class="read" id="reader">
+    <div class="empty">Select a message to read it.<br><br>◉ shared · ⌂ inner · ✉ outer</div>
+  </div>
+</div>
+
+<!-- COMPOSE MODAL -->
+<div class="modal" id="modal">
+  <div class="compose-box">
+    <h3>New Proton (p⁺ → human)</h3>
+    <label>From</label>
+    <select id="cFrom">
+      <option>gaia@primals.eco</option>
+      <option>GAIA@HOME</option>
+      <option>ecoprimal@pm.me</option>
+    </select>
+    <label>To</label>
+    <input id="cTo" placeholder="recipient@example.com">
+    <label>Subject</label>
+    <input id="cSubj" placeholder="Subject">
+    <label>Body</label>
+    <textarea id="cBody" placeholder="Write…"></textarea>
+    <div class="actions">
+      <button class="cancel" onclick="closeCompose()">Cancel</button>
+      <button class="send" onclick="draftSend()">Queue to outbox</button>
+    </div>
+    <div class="note">This drops a draft into the local outbox queue (proton). Actual SMTP relay happens on eastGate's Neutrino server.</div>
+  </div>
+</div>
+
+<script>
+let BAG=null, curIdent=null, curFolder="Inbox", curMsg=null;
+
+async function load(){
+  try{
+    const r=await fetch("mailbag.json?_="+Date.now());
+    BAG=await r.json();
+  }catch(e){
+    document.getElementById("msgs").innerHTML='<div style="padding:20px;color:#c87">mailbag.json not found — run mail-bag.py</div>';
+    return;
+  }
+  // legend
+  document.getElementById("pe").textContent=BAG.particles.electron;
+  document.getElementById("pp").textContent=BAG.particles.proton;
+  document.getElementById("pn").textContent=BAG.particles.neutron;
+  document.getElementById("ts").textContent=BAG.tiers.silver;
+  document.getElementById("tg").textContent=BAG.tiers.gold;
+  document.getElementById("tp").textContent=BAG.tiers.platinum;
+  renderIdents();
+  // default to first identity with mail
+  const first=Object.keys(BAG.identities).find(k=>BAG.identities[k].total>0)||Object.keys(BAG.identities)[0];
+  curIdent=first; curFolder=firstFolder(first);
+  render();
+}
+
+function firstFolder(ident){
+  const f=BAG.identities[ident].folders;
+  return Object.keys(f).find(k=>f[k]>0)||"Inbox";
+}
+
+function renderIdents(){
+  const el=document.getElementById("idents");
+  el.innerHTML=Object.entries(BAG.identities).map(([key,b])=>{
+    const m=b.meta;
+    const folders=Object.entries(b.folders).map(([f,c])=>`
+      <div class="folder" data-i="${key}" data-f="${f}" onclick="pick('${key}','${f}')">
+        ${folderIcon(f)} ${f} <span class="cnt">${c}</span></div>`).join("");
+    return `<div class="ident">
+      <div class="head"><span class="glyph">${m.glyph}</span>
+        <span class="nm">${m.label}</span><span class="role">${m.role}</span></div>
+      <div class="desc">${m.desc}</div>${folders}</div>`;
+  }).join("");
+  highlight();
+}
+function folderIcon(f){return {Inbox:"📥",Sent:"📤",Deliveries:"🚚",Physical:"🖨"}[f]||"📁";}
+
+function pick(ident,folder){curIdent=ident;curFolder=folder;curMsg=null;render();}
+
+function highlight(){
+  document.querySelectorAll(".folder").forEach(d=>{
+    d.classList.toggle("active", d.dataset.i===curIdent && d.dataset.f===curFolder);
+  });
+}
+
+function render(){
+  highlight();
+  document.getElementById("listTitle").textContent=`${curIdent} · ${curFolder}`;
+  const q=(document.getElementById("search").value||"").toLowerCase();
+  let list=BAG.messages.filter(m=>m.identity===curIdent && m.folder===curFolder);
+  if(q) list=list.filter(m=>(m.from+m.subject+m.body+m.to).toLowerCase().includes(q));
+  const el=document.getElementById("msgs");
+  if(!list.length){el.innerHTML='<div style="padding:30px;color:#67707d;text-align:center">No mail here yet.</div>';return;}
+  el.innerHTML=list.map(m=>`
+    <div class="msg ${curMsg===m.id?'sel':''}" onclick="open_('${m.id}')">
+      <div class="top">
+        <span class="frm">${esc(m.from)}</span>
+        <span class="pill ${m.particle[0]}">${m.particle}</span>
+        <span class="dt">${fmtDate(m.ts)}</span>
+      </div>
+      <div class="subj">${esc(m.subject)}</div>
+      <div class="prev">${esc(m.body.slice(0,90))}</div>
+    </div>`).join("");
+}
+
+function open_(id){
+  curMsg=id;render();
+  const m=BAG.messages.find(x=>x.id===id); if(!m)return;
+  const initial=(m.from[0]||"?").toUpperCase();
+  document.getElementById("reader").innerHTML=`
+    <div class="rhead">
+      <div class="rsubj">${esc(m.subject)}</div>
+      <div class="meta">
+        <span class="avatar">${initial}</span>
+        <span><b>${esc(m.from)}</b> → ${esc(m.to||"—")}</span>
+        <span class="pill ${m.particle[0]}">${m.particle}</span>
+        <span class="tier ${m.tier}">${m.tier}</span>
+        <span>· ${esc(m.channel)}</span>
+        <span style="margin-left:auto">${fmtDate(m.ts,true)}</span>
+      </div>
+    </div>
+    <div class="rbody">${esc(m.body)}</div>`;
+}
+
+// compose
+function openCompose(){document.getElementById("modal").classList.add("show");}
+function closeCompose(){document.getElementById("modal").classList.remove("show");}
+function draftSend(){
+  const d={from:cFrom.value,to:cTo.value,subject:cSubj.value,body:cBody.value,ts:new Date().toISOString()};
+  // local draft — real send is server-side Neutrino SMTP. Download as a queue line.
+  const line=JSON.stringify(d);
+  const blob=new Blob([line+"\n"],{type:"application/x-ndjson"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="outbox-draft.jsonl";a.click();
+  closeCompose();
+  alert("Drafted to outbox queue. Append to data/neutron/outbox.jsonl, then Neutrino relays it as proton.");
+}
+
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function fmtDate(ts,long){
+  if(!ts)return"";
+  const d=new Date(ts); if(isNaN(d))return ts.slice(0,16).replace("T"," ");
+  return long? d.toLocaleString() : d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+load();
+</script>
+</body>
+</html>
