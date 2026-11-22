@@ -141,14 +141,97 @@
 <script>
 let BAG=null, curIdent=null, curFolder="Inbox", curMsg=null;
 
-async function load(){
-  try{
-    const r=await fetch("mailbag.json?_="+Date.now());
-    BAG=await r.json();
-  }catch(e){
-    document.getElementById("msgs").innerHTML='<div style="padding:20px;color:#c87">mailbag.json not found — run mail-bag.py</div>';
-    return;
+// ---- LIVE SOURCE: eastGate data server (.4.248). Falls back to local snapshot. ----
+const EASTGATE="http://192.168.4.248:8080/data/neutron/";
+const IDMETA={
+  "gaia@primals.eco":{label:"gaia@primals.eco",role:"SHARED",glyph:"\u25C9",desc:"The RSS point — Kevin & Gaia, via SMTP to the old web"},
+  "GAIA@HOME":{label:"GAIA@HOME",role:"INNER",glyph:"\u2302",desc:"Her sovereign inner mesh identity"},
+  "ecoprimal@pm.me":{label:"ecoprimal@pm.me",role:"OUTER",glyph:"\u2709",desc:"Kevin's ProtonMail — the human outer face"},
+};
+const INTERNAL=new Set(["gaia","gaia-thymus","gaia-brain","gaia-heart","polaris","luna","northgate","eastgate","sporegate","amoeba","sourdough","thymus","membrane","chipmunk","squirrel","homunculus","immune"]);
+const EMAIL=/[\w.+-]+@[\w-]+\.[\w.-]+/;
+// client-side redaction (shapes) — scrub secrets that live in raw mail bodies
+const REDACT=[
+  [/sshpass\s+-p\s+'[^']*'/g,"sshpass -p '***'"],
+  [/sshpass\s+-p\s+"[^"]*"/g,'sshpass -p "***"'],
+  [/\b(password|passwd|pwd|secret|token|seed|api[_-]?key)\b\s*[:=]\s*['"]?[^\s'"<>]{3,}/gi,"$1=***"],
+];
+function redactJS(s){s=String(s||"");for(const[p,r]of REDACT)s=s.replace(p,r);return s;}
+function cleanAddr(a){a=String(a||"");const m=EMAIL.exec(a);return m?m[0]:(a.split(">")[0].split("<").pop()||"").trim();}
+function isEmail(a){return EMAIL.test(String(a||""));}
+function baseAuthor(a){return String(a||"").split("-")[0].split("@")[0].toLowerCase();}
+function subjJS(body){const f=String(body||"").split(/[.!?\n]/)[0].trim();return (f.slice(0,88)+(f.length>88?"\u2026":""))||"(no subject)";}
+function classifyJS(frm,to,channel,source){
+  const fl=String(frm).toLowerCase();let particle;
+  if(fl.startsWith("gaia")||fl.includes("gaia@primals")||source==="outbound")particle="proton";
+  else if(channel==="pony-express"||source==="smtp"||isEmail(frm))particle="electron";
+  else if(INTERNAL.has(baseAuthor(frm)))particle="neutron";
+  else if(frm&&frm!=="unknown"&&frm!=="?")particle="electron";
+  else particle="neutron";
+  const bothAgents=INTERNAL.has(baseAuthor(frm))&&INTERNAL.has(baseAuthor(to));
+  let tier=particle==="neutron"?"silver":(bothAgents?"platinum":"gold");
+  return[particle,tier];
+}
+function routeJS(frm,to,particle){const a=(String(frm)+" "+String(to)).toLowerCase();
+  if(a.includes("pm.me")||a.includes("ecoprimal@pm"))return"ecoprimal@pm.me";
+  if(a.includes("primals.eco")||particle==="electron")return"gaia@primals.eco";
+  return"GAIA@HOME";}
+function mk(frm,to,ts,body,channel,source,folder){
+  body=redactJS(body);const[particle,tier]=classifyJS(frm,to,channel,source);
+  return{id:Math.random().toString(36).slice(2,14),ts:String(ts||"").replace("Z","+00:00"),
+    from:cleanAddr(frm)||"unknown",to:cleanAddr(to)||"",subject:redactJS(subjJS(body)),
+    body:String(body).slice(0,4000),channel,particle,tier,identity:routeJS(frm,to,particle),folder};
+}
+// try bases in order: same-origin relative (when served from eastGate), then absolute LAN
+const BASES=["../neutron/", EASTGATE];
+let LIVE_BASE=null;
+async function fetchJSONL(name){
+  const r=await fetch(LIVE_BASE+name+"?_="+Date.now());
+  if(!r.ok)throw new Error(name);
+  return r.text().split("\n").filter(Boolean).map(l=>{try{return JSON.parse(l)}catch(e){return null}}).filter(Boolean);
+}
+async function pickBase(){
+  for(const b of BASES){
+    try{ const r=await fetch(b+"inbox.jsonl?_="+Date.now()); if(r.ok){LIVE_BASE=b;return true;} }catch(e){}
   }
+  return false;
+}
+async function buildLiveBag(){
+  if(!await pickBase())throw new Error("no live base");
+  const[inbox,outbox,pony,maillog,phys]=await Promise.all([
+    fetchJSONL("inbox.jsonl").catch(()=>[]),
+    fetchJSONL("outbox.jsonl").catch(()=>[]),
+    fetchJSONL("pony-express.jsonl").catch(()=>[]),
+    fetchJSONL("mail-log.jsonl").catch(()=>[]),
+    fetchJSONL("physical-mail.jsonl").catch(()=>[]),
+  ]);
+  if(!inbox.length&&!pony.length&&!maillog.length)throw new Error("no live mail");
+  let M=[];
+  inbox.forEach(m=>M.push(mk(m.author,"gaia@primals.eco",m.ts,m.body||"",m.channel||"inbox","inbound","Inbox")));
+  outbox.forEach(m=>M.push(mk(m.from,m.to,m.ts,m.body||"","outbox","outbound","Sent")));
+  pony.forEach(m=>M.push(mk(m.author||m.from,m.to||"",m.ts,m.body||"","pony-express","smtp","Inbox")));
+  maillog.forEach(m=>{const msg=mk(m.from,m.to,m.ts,`SMTP delivery · TLS=${m.tls} · ${m.size} bytes`,"smtp","smtp","Deliveries");msg.subject="\u2709 "+cleanAddr(m.from)+" \u2192 "+cleanAddr(m.to);M.push(msg);});
+  phys.forEach(m=>{const msg=mk("gaia@primals.eco","EPSON (paper)",m.ts,`Printed · ${m.chars||"?"} chars`,"physical","outbound","Physical");msg.subject="\uD83D\uDDA8 "+(m.title||"Printed");M.push(msg);});
+  M.sort((a,b)=>(b.ts||"").localeCompare(a.ts||""));
+  const folders=["Inbox","Sent","Deliveries","Physical"];
+  const identities={};
+  for(const id of Object.keys(IDMETA)){const bag=M.filter(m=>m.identity===id);
+    identities[id]={meta:IDMETA[id],total:bag.length,folders:Object.fromEntries(folders.map(f=>[f,bag.filter(m=>m.folder===f).length]))};}
+  const pc=p=>M.filter(m=>m.particle===p).length, tc=t=>M.filter(m=>m.tier===t).length;
+  return{built:new Date().toISOString(),live:true,identities,
+    particles:{electron:pc("electron"),proton:pc("proton"),neutron:pc("neutron")},
+    tiers:{silver:tc("silver"),gold:tc("gold"),platinum:tc("platinum")},total:M.length,messages:M};
+}
+
+async function load(){
+  let live=false;
+  try{ BAG=await buildLiveBag(); live=true; }
+  catch(e){
+    try{ const r=await fetch("mailbag.json?_="+Date.now()); BAG=await r.json(); }
+    catch(e2){ document.getElementById("msgs").innerHTML='<div style="padding:20px;color:#c87">No mail — eastGate dark and no local snapshot</div>'; return; }
+  }
+  const b=document.querySelector(".brand small");
+  if(b)b.textContent=live?"SOVEREIGN OUTLOOK · LIVE ◉":"SOVEREIGN OUTLOOK · SNAPSHOT";
   // legend
   document.getElementById("pe").textContent=BAG.particles.electron;
   document.getElementById("pp").textContent=BAG.particles.proton;
