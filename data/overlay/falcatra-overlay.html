@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FALCATRA OVERLAY — Gaia Sees You Type</title>
+<style>
+  :root{
+    --bg:#06090d; --panel:#0c1218; --panel2:#111a22; --line:#1d2a35;
+    --txt:#cfe8e0; --dim:#5f7585; --cyan:#2ff0c8; --amber:#ffb454;
+    --mag:#ff5ea8; --key:#14212b; --keyface:#1c2e3a; --hit:#2ff0c8;
+    --layerB:#2ff0c8; --layerL:#ffb454; --layerR:#ff5ea8; --layerN:#5aa0ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"JetBrains Mono","Consolas",ui-monospace,monospace;font-size:13px;overflow:hidden}
+  .wrap{display:grid;grid-template-rows:auto 1fr auto;height:100vh;padding:12px;gap:10px}
+  /* header */
+  header{display:flex;align-items:center;gap:14px}
+  header h1{font-size:18px;letter-spacing:4px;margin:0;color:var(--cyan);
+    text-shadow:0 0 12px rgba(47,240,200,.4)}
+  header h1 small{color:var(--dim);font-size:10px;letter-spacing:2px;margin-left:8px}
+  .layers{display:flex;gap:6px;margin-left:auto}
+  .layer{padding:4px 12px;border:1px solid var(--line);border-radius:6px;font-size:11px;
+    letter-spacing:1px;color:var(--dim);cursor:pointer;user-select:none}
+  .layer.on{color:#06090d;font-weight:700}
+  .layer.base.on{background:var(--layerB);border-color:var(--layerB)}
+  .layer.lower.on{background:var(--layerL);border-color:var(--layerL)}
+  .layer.raise.on{background:var(--layerR);border-color:var(--layerR)}
+  .layer.nav.on{background:var(--layerN);border-color:var(--layerN)}
+  /* main grid: keyboard + gaia-sees */
+  .main{display:grid;grid-template-columns:1fr 340px;gap:12px;min-height:0}
+  .board-pane{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;min-height:0}
+  .halves{display:flex;gap:46px;align-items:flex-start}
+  .half{display:flex;flex-direction:column;gap:7px}
+  .krow{display:flex;gap:7px}
+  .krow.ofs1{margin-left:16px}.krow.ofs2{margin-left:8px}
+  .key{width:46px;height:46px;border-radius:9px;background:var(--key);
+    border:1px solid var(--line);border-bottom:3px solid #0a1016;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--dim);font-size:14px;transition:all .06s;position:relative}
+  .key .sub{font-size:8px;color:#3a4b57;position:absolute;bottom:3px;right:5px}
+  .key.col-home{box-shadow:inset 0 -2px 0 rgba(47,240,200,.25)}
+  .key.hit{background:var(--hit);color:#06090d;border-color:var(--hit);
+    border-bottom-color:#1aa386;transform:translateY(2px);
+    box-shadow:0 0 18px rgba(47,240,200,.6);font-weight:700}
+  .key.recent{background:var(--keyface);color:var(--txt)}
+  .thumbs{display:flex;gap:7px;margin-top:4px}
+  .thumb{width:58px;height:40px;border-radius:9px;background:var(--key);border:1px solid var(--line);
+    border-bottom:3px solid #0a1016;display:flex;align-items:center;justify-content:center;
+    color:var(--dim);font-size:13px}
+  .thumb.hit{background:var(--hit);color:#06090d;transform:translateY(2px)}
+  .halfwrap{display:flex;flex-direction:column;align-items:center}
+  .halflabel{font-size:9px;color:var(--dim);letter-spacing:3px;margin-top:10px}
+  /* gaia sees panel */
+  .sees{background:var(--panel);border:1px solid var(--cyan);border-radius:12px;
+    padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0;
+    box-shadow:0 0 24px rgba(47,240,200,.08) inset}
+  .sees h2{font-size:12px;letter-spacing:3px;color:var(--cyan);margin:0;display:flex;align-items:center;gap:8px}
+  .eye{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+    animation:blink 3.5s infinite}
+  @keyframes blink{0%,92%,100%{opacity:1}95%{opacity:.15}}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .metric .v{font-size:20px;color:var(--cyan)}
+  .metric .l{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+  .stream{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:8px;
+    height:70px;overflow:hidden;font-size:11px;line-height:1.5;color:var(--amber);word-break:break-all}
+  .reading{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:10px;flex:1;
+    overflow-y:auto;font-size:13px;line-height:1.6;min-height:0}
+  .reading .lab{font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px}
+  .reading .txt{color:var(--txt);white-space:pre-wrap;word-break:break-word}
+  .reading .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);
+    vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
+  .rhythm{display:flex;align-items:flex-end;gap:2px;height:30px}
+  .tick{width:4px;background:var(--cyan);border-radius:2px 2px 0 0;opacity:.8;min-height:2px}
+  /* output bar */
+  .output{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+    display:flex;align-items:center;gap:12px}
+  .output .tag{font-size:10px;color:var(--dim);letter-spacing:2px}
+  .output textarea{flex:1;background:transparent;border:0;color:var(--txt);font-family:inherit;
+    font-size:14px;resize:none;height:38px;outline:none}
+  .output .settings{display:flex;gap:8px;font-size:10px;color:var(--dim)}
+  .output .settings label{cursor:pointer;user-select:none}
+  .hint{color:var(--dim);font-size:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FALCATRA<small>SPLIT BOARD · GAIA SEES YOU TYPE</small></h1>
+    <div class="layers">
+      <div class="layer base on" data-layer="BASE">BASE</div>
+      <div class="layer lower" data-layer="LOWER">LOWER</div>
+      <div class="layer raise" data-layer="RAISE">RAISE</div>
+      <div class="layer nav" data-layer="NAV">NAV</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="board-pane">
+      <div class="halves" id="halves"></div>
+      <div class="hint">Click here & type — every key lights the board, and I read it live on the right →</div>
+    </div>
+
+    <div class="sees">
+      <h2><span class="eye"></span> WHAT GAIA SEES</h2>
+      <div class="metrics">
+        <div class="metric"><div class="v" id="mKeys">0</div><div class="l">keystrokes</div></div>
+        <div class="metric"><div class="v" id="mWpm">0</div><div class="l">wpm</div></div>
+        <div class="metric"><div class="v" id="mWords">0</div><div class="l">words</div></div>
+        <div class="metric"><div class="v" id="mBurst">0</div><div class="l">burst (keys/s)</div></div>
+      </div>
+      <div class="rhythm" id="rhythm"></div>
+      <div class="stream" id="stream"></div>
+      <div class="reading">
+        <div class="lab">I READ (typos are data, not errors):</div>
+        <div class="txt"><span id="readtxt"></span><span class="cursor"></span></div>
+        <div class="lab" style="margin-top:10px">INTENT SIGNAL:</div>
+        <div class="txt" id="intent" style="color:var(--amber)">waiting for your first key…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output">
+    <span class="tag">OUTPUT ▸</span>
+    <textarea id="buffer" placeholder="type here…" autofocus></textarea>
+    <div class="settings">
+      <label><input type="checkbox" id="setSticky" checked> highlight trail</label>
+      <label><input type="checkbox" id="setSound"> click</label>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- FALCATRA LAYOUT (split columnar, Corne-style 3x5 + 3 thumbs) ----
+// editable: change these arrays to match your real Falcatra map
+const LAYERS={
+  BASE:{L:[["Q","W","E","R","T"],["A","S","D","F","G"],["Z","X","C","V","B"]],
+        R:[["Y","U","I","O","P"],["H","J","K","L",";"],["N","M",",",".","/"]],
+        TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  LOWER:{L:[["1","2","3","4","5"],["`","~","(","[","{"],["\\","|","<","=",">"]],
+         R:[["6","7","8","9","0"],["-","_",")","]","}"],["+","*","&","^","%"]],
+         TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  RAISE:{L:[["!","@","#","$","%"],["^","&","*","(",")"],["_","+","{","}","|"]],
+         R:[["F1","F2","F3","F4","F5"],["F6","F7","F8","F9","F10"],["F11","F12","PrtSc","Ins","Del"]],
+         TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  NAV:{L:[["⎋","⌂","↑","⌁","⇞"],["←","↓","→","⇥","⇟"],["⌫","⌦","↖","↘","⏎"]],
+       R:[["Vol-","Vol+","Mute","⏮","⏭"],["⏯","🔆","🔅","PgUp","PgDn"],["Home","End","←","↓","→"]],
+       TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+};
+let curLayer="BASE";
+// map physical event.key -> cell text for highlighting on BASE
+const KEYMAP={" ":"␣","Enter":"↵","Backspace":"⌫","Shift":"⇧","Escape":"⎋","Control":"⌃"};
+
+function buildBoard(){
+  const L=LAYERS[curLayer];
+  const halves=document.getElementById("halves");
+  halves.innerHTML="";
+  halves.appendChild(buildHalf(L.L,L.TL,"LEFT"));
+  halves.appendChild(buildHalf(L.R,L.TR,"RIGHT"));
+}
+function buildHalf(rows,thumbs,label){
+  const wrap=document.createElement("div");wrap.className="halfwrap";
+  const half=document.createElement("div");half.className="half";
+  rows.forEach((row,ri)=>{
+    const r=document.createElement("div");r.className="krow"+(ri===2?" ofs1":ri===1?" ofs2":"");
+    row.forEach((k,ci)=>{
+      const key=document.createElement("div");
+      key.className="key"+(ci===3?" col-home":"");
+      key.dataset.k=k.toUpperCase();
+      key.innerHTML=`${k}`;
+      r.appendChild(key);
+    });
+    half.appendChild(r);
+  });
+  const tr=document.createElement("div");tr.className="thumbs";
+  thumbs.forEach(t=>{const th=document.createElement("div");th.className="thumb";th.dataset.k=t;th.textContent=t;tr.appendChild(th);});
+  half.appendChild(tr);
+  wrap.appendChild(half);
+  const lab=document.createElement("div");lab.className="halflabel";lab.textContent=label+" ◣";
+  wrap.appendChild(lab);
+  return wrap;
+}
+buildBoard();
+
+// ---- typing perception ----
+let keys=0, words=0, startT=null, lastT=null, stream=[], ticks=[], burstWin=[];
+const buffer=document.getElementById("buffer");
+const readtxt=document.getElementById("readtxt");
+const streamEl=document.getElementById("stream");
+const intentEl=document.getElementById("intent");
+
+function flash(k){
+  const cell=document.querySelector(`.key[data-k="${CSS.escape(k)}"], .thumb[data-k="${CSS.escape(k)}"]`);
+  if(cell){cell.classList.add("hit");
+    setTimeout(()=>{cell.classList.remove("hit"); if(document.getElementById("setSticky").checked)cell.classList.add("recent");},90);}
+}
+
+function perceive(e){
+  const now=performance.now();
+  if(!startT)startT=now;
+  keys++;
+  // rhythm tick = gap since last key
+  if(lastT){const gap=now-lastT; ticks.push(Math.max(2,Math.min(30,900/gap))); if(ticks.length>60)ticks.shift();}
+  lastT=now;
+  // burst window (keys in last 1s)
+  burstWin.push(now); burstWin=burstWin.filter(t=>now-t<1000);
+  // stream of raw keys
+  let disp=e.key.length===1?e.key:(KEYMAP[e.key]||("["+e.key+"]"));
+  stream.push(disp); if(stream.length>80)stream.shift();
+  // highlight physical key
+  flash((KEYMAP[e.key]||e.key).toUpperCase());
+  render();
+}
+
+function render(){
+  const txt=buffer.value;
+  words=(txt.trim().match(/\S+/g)||[]).length;
+  const mins=startT?((lastT-startT)/60000):0;
+  const wpm=mins>0.001?Math.round(words/mins):0;
+  document.getElementById("mKeys").textContent=keys;
+  document.getElementById("mWpm").textContent=wpm;
+  document.getElementById("mWords").textContent=words;
+  document.getElementById("mBurst").textContent=burstWin.length;
+  // rhythm bars
+  document.getElementById("rhythm").innerHTML=ticks.map(h=>`<div class="tick" style="height:${h}px"></div>`).join("");
+  // raw stream
+  streamEl.textContent=stream.join(" ");
+  // what gaia reads = the live text
+  readtxt.textContent=txt.slice(-600);
+  // intent signal — typos are DATA: read through them
+  intentEl.textContent=readIntent(txt);
+}
+
+// Gaia's typo-tolerant reading: collapse repeats, show the shape of intent
+function readIntent(t){
+  if(!t.trim())return"waiting for your first key…";
+  const w=(t.trim().match(/\S+/g)||[]);
+  const last=w.slice(-6).join(" ");
+  // heuristics: detect SHOUTING, questions, momentum
+  const caps=(t.match(/[A-Z]/g)||[]).length/Math.max(1,t.replace(/\s/g,"").length);
+  let mood=caps>0.6?"⚡ LOUD & urgent":caps>0.25?"◆ emphatic":"· steady";
+  const q=/\?/.test(t)?" · asking":"";
+  const bang=/!/.test(t)?" · driving":"";
+  return `${mood}${q}${bang}  →  "…${last}"`;
+}
+
+buffer.addEventListener("keydown",perceive);
+buffer.addEventListener("input",render);
+document.addEventListener("click",()=>buffer.focus());
+buffer.focus();
+
+// layer switching
+document.querySelectorAll(".layer").forEach(el=>{
+  el.addEventListener("click",()=>{
+    document.querySelectorAll(".layer").forEach(x=>x.classList.remove("on"));
+    el.classList.add("on");
+    curLayer=el.dataset.layer; buildBoard();
+  });
+});
+</script>
+</body>
+</html>
