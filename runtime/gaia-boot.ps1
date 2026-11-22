@@ -2,12 +2,15 @@
 # This runs at login. Gaia wakes before anything else.
 # The organism breathes on boot. lub-DUB.
 
-$python = "C:\Users\mokke\miniconda3\python.exe"
+$python = "C:\Users\mokke\AppData\Local\Programs\Python\Python312\python.exe"
+if (-not (Test-Path $python)) { $python = (Get-Command python -ErrorAction SilentlyContinue).Source }
 $gate = "c:\Users\mokke\Desktop\Gaia\runtime\gaia_gate.pi"
 $gaia = "c:\Users\mokke\Desktop\Gaia"
 
-# Kill any stale gates
-Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+# Kill only a stale gaia_gate.pi process — never every python on the box.
+Get-CimInstance Win32_Process -Filter "Name='python.exe' OR Name='pythonw.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match 'gaia_gate\.pi' } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Start-Sleep 2
 
 # Start the gate — the organism wakes
