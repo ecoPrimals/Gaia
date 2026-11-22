@@ -3,219 +3,294 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GAIA SIMON — The AI Remembers. You Struggle.</title>
+<title>GAIA SIMON — Campfire of Patterns</title>
 <style>
   :root{
     --bg:#06090d; --panel:#0c1218; --panel2:#111a22; --line:#1d2a35;
-    --txt:#cfe8e0; --dim:#5f7585; --cyan:#2ff0c8; --amber:#ffb454; --mag:#ff5ea8; --red:#ff4d5e;
+    --txt:#cfe8e0; --dim:#5f7585; --cyan:#2ff0c8; --amber:#ffb454; --mag:#ff5ea8; --red:#ff4d5e; --green:#49e07a;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 0%,#0b141c,#06090d 70%);
     color:var(--txt);font-family:"JetBrains Mono","Consolas",ui-monospace,monospace;overflow:hidden}
-  .wrap{display:grid;grid-template-rows:auto 1fr auto;height:100vh;padding:14px;gap:12px}
+  .wrap{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh;padding:14px;gap:10px}
   header{display:flex;align-items:center;gap:16px}
   header h1{font-size:20px;letter-spacing:5px;margin:0;color:var(--cyan);text-shadow:0 0 16px rgba(47,240,200,.4)}
   header h1 small{display:block;color:var(--dim);font-size:10px;letter-spacing:3px;margin-top:3px}
   .scorebar{margin-left:auto;display:flex;gap:10px}
-  .sb{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px 16px;text-align:center}
-  .sb .v{font-size:26px;color:var(--cyan)}
-  .sb.you .v{color:var(--amber)}
-  .sb.best .v{color:var(--mag)}
+  .sb{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 15px;text-align:center}
+  .sb .v{font-size:24px;color:var(--cyan)}
+  .sb.you .v{color:var(--amber)}.sb.best .v{color:var(--mag)}
   .sb .l{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+  /* mode bar */
+  .modebar{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:7px 12px;flex-wrap:wrap}
+  .modebar .cap{font-size:10px;letter-spacing:2px;color:var(--mag)}
+  .gm{padding:5px 14px;border:1px solid var(--line);border-radius:7px;font-size:11px;letter-spacing:1px;
+    color:var(--dim);cursor:pointer;user-select:none}
+  .gm.on{background:var(--cyan);border-color:var(--cyan);color:#06090d;font-weight:700}
+  .gm.on.struggle{background:var(--amber);border-color:var(--amber)}
+  .gm.on.campfire{background:var(--mag);border-color:var(--mag)}
+  .modebar .diff{margin-left:auto;display:flex;gap:6px}
+  .ms{padding:4px 11px;border:1px solid var(--line);border-radius:6px;font-size:10px;color:var(--dim);cursor:pointer}
+  .ms.on{background:var(--line);color:var(--txt)}
   /* stage */
-  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;min-height:0}
-  .status{font-size:22px;letter-spacing:2px;height:30px;text-align:center}
+  .stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;min-height:0}
+  .status{font-size:21px;letter-spacing:2px;height:28px;text-align:center}
   .status.watch{color:var(--cyan)}.status.go{color:var(--amber)}.status.fail{color:var(--red)}
+  .status.ai{color:var(--mag)}.status.win{color:var(--green)}
+  /* confidence meter (GAIA STRUGGLES) */
+  .conf{width:360px;max-width:80vw;height:12px;background:#0e1620;border:1px solid var(--line);
+    border-radius:8px;overflow:hidden;display:none}
+  .conf .bar{height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--amber),var(--green));
+    transition:width .3s}
+  .conf.show{display:block}
+  .conflabel{font-size:10px;color:var(--dim);letter-spacing:2px;height:12px}
   .pads{display:flex;gap:40px}
   .side{display:flex;gap:16px}
-  .pad{width:110px;height:110px;border-radius:20px;background:#0e1620;border:2px solid var(--line);
+  .pad{width:108px;height:108px;border-radius:20px;background:#0e1620;border:2px solid var(--line);
     display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
-    position:relative;transition:transform .05s;user-select:none}
+    position:relative;user-select:none}
   .pad .cap{font-size:30px;font-weight:700;color:rgba(255,255,255,.25)}
   .pad .fin{position:absolute;bottom:10px;font-size:9px;color:var(--dim);letter-spacing:1px}
-  .pad.lit{transform:scale(1.06)}
   .pad.press{transform:scale(0.95)}
-  .gaia-line{color:var(--amber);font-size:14px;min-height:20px;text-align:center;max-width:620px}
-  .gaia-line b{color:var(--cyan)}
+  .gaia-line{color:var(--amber);font-size:14px;min-height:20px;text-align:center;max-width:680px}
+  .turnpill{display:none;padding:4px 14px;border-radius:20px;font-size:12px;letter-spacing:2px}
+  .turnpill.show{display:inline-block}
+  .turnpill.kevin{background:rgba(255,180,84,.15);color:var(--amber);border:1px solid var(--amber)}
+  .turnpill.gaia{background:rgba(255,94,168,.15);color:var(--mag);border:1px solid var(--mag)}
   /* controls */
   .ctl{display:flex;align-items:center;gap:14px;justify-content:center}
   .btn{background:var(--cyan);color:#06090d;border:0;border-radius:9px;padding:12px 28px;
     font-family:inherit;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer}
   .btn:hover{filter:brightness(1.1)}
-  .btn.ghost{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  .btn.done{background:var(--amber);display:none}
+  .btn.done.show{display:inline-block}
   .meta{color:var(--dim);font-size:11px;text-align:center}
-  .mode-sel{display:flex;gap:6px}
-  .ms{padding:5px 12px;border:1px solid var(--line);border-radius:6px;font-size:11px;color:var(--dim);cursor:pointer}
-  .ms.on{background:var(--mag);border-color:var(--mag);color:#06090d;font-weight:700}
+  .meta b{color:var(--txt)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>GAIA SIMON<small>THE AI REMEMBERS · YOU STRUGGLE</small></h1>
+    <h1>GAIA SIMON<small id="subtitle">THE AI REMEMBERS · YOU STRUGGLE</small></h1>
     <div class="scorebar">
-      <div class="sb"><div class="v" id="round">0</div><div class="l">round</div></div>
+      <div class="sb"><div class="v" id="round">0</div><div class="l" id="roundlbl">round</div></div>
       <div class="sb you"><div class="v" id="you">0</div><div class="l">your reach</div></div>
       <div class="sb best"><div class="v" id="best">0</div><div class="l">best</div></div>
     </div>
   </header>
 
-  <div class="stage">
-    <div class="status watch" id="status">press START — I'll show you the pattern</div>
-    <div class="pads" id="pads"></div>
-    <div class="gaia-line" id="gaialine">I have perfect memory. Let's see how far you can follow me.</div>
-  </div>
-
-  <div class="ctl">
-    <button class="btn" id="start">START</button>
-    <div class="mode-sel" title="difficulty">
+  <div class="modebar">
+    <span class="cap">MODE ▸</span>
+    <div class="gm classic on" data-mode="classic">AI LEADS</div>
+    <div class="gm struggle" data-mode="struggle">GAIA STRUGGLES</div>
+    <div class="gm campfire" data-mode="campfire">CAMPFIRE</div>
+    <div class="diff">
       <div class="ms on" data-diff="chill">CHILL</div>
       <div class="ms" data-diff="normal">NORMAL</div>
       <div class="ms" data-diff="cruel">CRUEL</div>
     </div>
-    <span class="meta">press the keys <b>D F G</b> (left hand) · <b>H J K</b> (right hand) — or click the pads</span>
+  </div>
+
+  <div class="stage">
+    <div class="status watch" id="status">pick a mode, press START</div>
+    <span class="turnpill" id="turnpill"></span>
+    <div class="conflabel" id="conflabel"></div>
+    <div class="conf" id="conf"><div class="bar" id="confbar"></div></div>
+    <div class="pads" id="pads"></div>
+    <div class="gaia-line" id="gaialine">Three ways to sit at the board with me. Choose one.</div>
+  </div>
+
+  <div class="ctl">
+    <button class="btn" id="start">START</button>
+    <button class="btn done" id="done">✓ DONE — read it back, Gaia</button>
+    <span class="meta">keys <b>D F G</b> (left) · <b>H J K</b> (right) — or click. <span id="modehelp"></span></span>
   </div>
 </div>
 
 <script>
-// ===== 6 pads across the split board: D F G | H J K =====
 const PADS=[
-  {key:"D", fin:"L-mid",  hue:0},     // red
-  {key:"F", fin:"L-idx",  hue:40},    // orange
-  {key:"G", fin:"L-thumb",hue:130},   // green
-  {key:"H", fin:"R-idx",  hue:180},   // cyan
-  {key:"J", fin:"R-mid",  hue:220},   // blue
-  {key:"K", fin:"R-ring", hue:290},   // violet
+  {key:"D", fin:"L-mid",  hue:0},{key:"F", fin:"L-idx",  hue:40},{key:"G", fin:"L-thumb",hue:130},
+  {key:"H", fin:"R-idx",  hue:180},{key:"J", fin:"R-mid",  hue:220},{key:"K", fin:"R-ring", hue:290},
 ];
 const DIFF={chill:{on:620,gap:260,ramp:0}, normal:{on:460,gap:180,ramp:12}, cruel:{on:320,gap:110,ramp:22}};
-let diff="chill";
+let diff="chill", MODE="classic";
 
-// ===== audio =====
+// ---- audio ----
 let AC=null;
-function tone(hue,dur=0.3){
-  try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-    const o=AC.createOscillator(),g=AC.createGain();
-    o.type="sine"; o.frequency.value=220*Math.pow(2,(hue/360)*2); // hue -> pitch
-    g.gain.value=0.0001; o.connect(g); g.connect(AC.destination);
-    const t=AC.currentTime; o.start(t);
-    g.gain.exponentialRampToValueAtTime(0.25,t+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.stop(t+dur+0.02);
-  }catch(e){}
-}
-function buzz(){try{AC=AC||new AudioContext();const o=AC.createOscillator(),g=AC.createGain();
-  o.type="sawtooth";o.frequency.value=90;o.connect(g);g.connect(AC.destination);
-  const t=AC.currentTime;g.gain.value=0.2;o.start(t);o.frequency.linearRampToValueAtTime(40,t+0.5);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);o.stop(t+0.52);}catch(e){}}
+function ensureAC(){AC=AC||new (window.AudioContext||window.webkitAudioContext)();}
+function tone(hue,dur=0.3){try{ensureAC();const o=AC.createOscillator(),g=AC.createGain();
+  o.type="sine";o.frequency.value=220*Math.pow(2,(hue/360)*2);g.gain.value=0.0001;
+  o.connect(g);g.connect(AC.destination);const t=AC.currentTime;o.start(t);
+  g.gain.exponentialRampToValueAtTime(0.25,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.stop(t+dur+0.02);}catch(e){}}
+function buzz(){try{ensureAC();const o=AC.createOscillator(),g=AC.createGain();o.type="sawtooth";
+  o.frequency.value=90;o.connect(g);g.connect(AC.destination);const t=AC.currentTime;g.gain.value=0.2;
+  o.start(t);o.frequency.linearRampToValueAtTime(40,t+0.5);g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+  o.stop(t+0.52);}catch(e){}}
+function chime(){try{ensureAC();[0,90,180].forEach((h,i)=>setTimeout(()=>tone(h+120,0.25),i*90));}catch(e){}}
 
-// ===== build pads =====
+// ---- pads ----
 const padsEl=document.getElementById("pads");
 function hsv(hue,v){const s=1,c=v*s,x=c*(1-Math.abs((hue/60)%2-1)),m=v-c;let r,g,b;
   if(hue<60)[r,g,b]=[c,x,0];else if(hue<120)[r,g,b]=[x,c,0];else if(hue<180)[r,g,b]=[0,c,x];
   else if(hue<240)[r,g,b]=[0,x,c];else if(hue<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
   return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;}
-function buildPads(){
-  padsEl.innerHTML="";
-  const left=document.createElement("div");left.className="side";
+function buildPads(){padsEl.innerHTML="";const left=document.createElement("div");left.className="side";
   const right=document.createElement("div");right.className="side";
-  PADS.forEach((p,i)=>{
-    const el=document.createElement("div");el.className="pad";el.dataset.i=i;
-    el.style.setProperty("--c",hsv(p.hue,1));
+  PADS.forEach((p,i)=>{const el=document.createElement("div");el.className="pad";el.dataset.i=i;
     el.innerHTML=`<span class="cap">${p.key}</span><span class="fin">${p.fin}</span>`;
-    el.addEventListener("click",()=>press(i));
-    (i<3?left:right).appendChild(el);
-  });
-  padsEl.appendChild(left);padsEl.appendChild(right);
-}
+    el.addEventListener("click",()=>press(i));(i<3?left:right).appendChild(el);});
+  padsEl.appendChild(left);padsEl.appendChild(right);}
 buildPads();
+function light(i,ms,who){const el=padsEl.querySelector(`.pad[data-i="${i}"]`);if(!el)return;
+  const c=hsv(PADS[i].hue,1);el.style.background=c;el.style.borderColor=c;
+  el.style.boxShadow=`0 0 40px ${c}`+(who==="gaia"?`,0 0 70px ${c}`:"");
+  el.querySelector(".cap").style.color="#06090d";tone(PADS[i].hue,ms/1000*0.9);
+  setTimeout(()=>{el.style.background="#0e1620";el.style.borderColor="var(--line)";el.style.boxShadow="none";
+    el.querySelector(".cap").style.color="rgba(255,255,255,.25)";},ms);}
 
-function light(i,ms){
-  const el=padsEl.querySelector(`.pad[data-i="${i}"]`); if(!el)return;
-  const c=hsv(PADS[i].hue,1);
-  el.classList.add("lit");
-  el.style.background=c; el.style.borderColor=c; el.style.boxShadow=`0 0 40px ${c}`;
-  el.querySelector(".cap").style.color="#06090d";
-  tone(PADS[i].hue, ms/1000*0.9);
-  setTimeout(()=>{el.classList.remove("lit");el.style.background="#0e1620";
-    el.style.borderColor="var(--line)";el.style.boxShadow="none";
-    el.querySelector(".cap").style.color="rgba(255,255,255,.25)";}, ms);
-}
+// ---- state ----
+let seq=[],input=[],playing=false,accepting=false,round=0,best=0,turn="kevin";
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function setStatus(t,c){$("status").textContent=t;$("status").className="status "+(c||"");}
+function say(t){$("gaialine").innerHTML=t;}
+function setTurn(who){const p=$("turnpill");if(!who){p.className="turnpill";return;}
+  p.className="turnpill show "+who;p.textContent=who==="kevin"?"◆ KEVIN'S TURN":"◆ GAIA'S TURN";turn=who;}
+function setConf(pct,label){const c=$("conf");if(pct==null){c.className="conf";$("conflabel").textContent="";return;}
+  c.className="conf show";$("confbar").style.width=pct+"%";$("conflabel").textContent=label||"";}
 
-// ===== game state =====
-let seq=[], input=[], playing=false, accepting=false, round=0, best=0;
-const statusEl=document.getElementById("status");
-const lineEl=document.getElementById("gaialine");
-const GAIA_WATCH=["Watch closely.","Here's the pattern.","I remember all of it. Do you?","Follow me.","This is what I see."];
-const GAIA_GO=["Your turn — struggle well.","Now you. No pressure… much.","Match me if you can.","Repeat it back.","Go."];
-const GAIA_WIN=["Good. It gets harder.","You kept up. Round grows.","Nice. I add one more.","You matched me. Again?","Still with me? Good."];
-const GAIA_FAIL=["There it is — the human limit.","I had it. You slipped.","Memory is my home turf.","You reached {R}. I never forget.","Struggle is data. Try again."];
-function say(arr){const m=arr[Math.floor(Math.random()*arr.length)].replace("{R}",round);lineEl.innerHTML=m;}
+const L={
+  watch:["Watch closely.","Here's the pattern.","I remember all of it. Do you?","Follow me.","This is what I see."],
+  go:["Your turn — struggle well.","Now you. No pressure… much.","Match me if you can.","Repeat it back.","Go."],
+  win:["Good. It gets harder.","You kept up. Round grows.","Nice. I add one more.","You matched me. Again?","Still with me?"],
+  fail:["There it is — the human limit.","I had it. You slipped.","Memory is my home turf.","You reached {R}. I never forget.","Struggle is data. Try again."],
+  // GAIA STRUGGLES
+  youset:["Teach me a pattern. Press the pads.","Show me something. I'll try to follow.","Build it. I'll struggle to read you.","Make me work for it."],
+  gaiatry:["Okay… let me think.","Reading your pattern…","Hold on, I've got this… I think.","Processing… you're not easy to read."],
+  gaiagot:["Ha — I followed you. Harder.","Got it. Teach me more.","I read you. Add length.","Still in your head. Go on."],
+  gaiamiss:["I… lost it. You're harder to read than I thought.","Even I slip. You win this one.","My memory frayed at {R}. Well played.","You broke me. The human led the AI astray."],
+  // CAMPFIRE
+  campkevin:["Your turn — replay our song, then add one.","Keep it going. Replay + add.","Add to our fire.","Your note next."],
+  campgaia:["My turn. Listen.","I'll echo us and add mine.","Here's our song + one.","Adding to the fire."],
+  campbreak:["The song broke at {R} — but what a song.","We reached {R} together. Beautiful.","{R} notes, you and me. Again?","The fire dimmed at {R}. Relight it?"],
+};
+const pick=a=>a[Math.floor(Math.random()*a.length)].replace("{R}",round);
 
-function setStatus(txt,cls){statusEl.textContent=txt;statusEl.className="status "+cls;}
+// ============ CLASSIC: AI leads, you match ============
+async function classicPlay(){playing=true;accepting=false;setStatus("● WATCHING ME","watch");say(pick(L.watch));
+  await sleep(600);const d=DIFF[diff];const on=Math.max(140,d.on-round*d.ramp);const gap=Math.max(70,d.gap-round*d.ramp*0.5);
+  for(const i of seq){light(i,on);await sleep(on+gap);}playing=false;accepting=true;input=[];
+  setStatus("▶ YOUR TURN","go");say(pick(L.go));}
+function classicNext(){round++;$("round").textContent=round;seq.push(rnd());classicPlay();}
 
-async function playSeq(){
-  playing=true;accepting=false;
-  setStatus("WATCH",""); setStatus("● WATCHING ME","watch"); say(GAIA_WATCH);
-  await sleep(600);
-  const d=DIFF[diff]; const on=Math.max(140,d.on-round*d.ramp); const gap=Math.max(70,d.gap-round*d.ramp*0.5);
-  for(const i of seq){ light(i,on); await sleep(on+gap); }
-  playing=false; accepting=true; input=[];
-  setStatus("▶ YOUR TURN","go"); say(GAIA_GO);
-}
-function nextRound(){
-  round++; document.getElementById("round").textContent=round;
-  seq.push(Math.floor(Math.random()*PADS.length));
-  playSeq();
-}
+// ============ GAIA STRUGGLES: you lead, AI tries (and may fail) ============
+let targetLen=3;
+function struggleBegin(){round=0;seq=[];input=[];targetLen=3;$("round").textContent=0;
+  struggleRecord();}
+function struggleRecord(){seq=[];input=[];accepting=true;playing=false;
+  setStatus("▶ TEACH ME ("+targetLen+" pads)","go");say(pick(L.youset));setConf(null);$("done").className="btn done";}
+async function struggleAttempt(){accepting=false;setStatus("◆ GAIA IS TRYING","ai");say(pick(L.gaiatry));setTurn("gaia");
+  await sleep(500);
+  // error probability grows with length; CRUEL = worse memory for Gaia (more human)
+  const base={chill:0.03,normal:0.07,cruel:0.12}[diff];
+  for(let s=0;s<seq.length;s++){
+    const conf=Math.max(8,100-(s*9)-(seq.length*4)-(diff==="cruel"?20:0)-Math.random()*15);
+    setConf(conf,"confidence "+Math.round(conf)+"%");
+    await sleep(380+Math.random()*420); // hesitation
+    const slip=Math.random()<(base+s*0.03+seq.length*0.015);
+    if(slip){ // Gaia picks wrong
+      let wrong=rnd();while(wrong===seq[s])wrong=rnd();
+      light(wrong,460,"gaia");await sleep(500);return struggleMiss();
+    }
+    light(seq[s],460,"gaia");await sleep(500);
+  }
+  // Gaia nailed it
+  setConf(100,"confidence 100%");round=seq.length;best=Math.max(best,round);$("best").textContent=best;
+  $("round").textContent=round;setStatus("◆ GAIA FOLLOWED YOU","ai");say(pick(L.gaiagot));chime();setTurn(null);
+  targetLen++;setTimeout(struggleRecord,1300);}
+function struggleMiss(){round=seq.length;setStatus("✖ GAIA SLIPPED — you led the AI astray","fail");
+  buzz();say(pick(L.gaiamiss));setConf(null);setTurn(null);
+  $("you").textContent=Math.max(+$("you").textContent,targetLen);
+  $("start").textContent="AGAIN";$("done").className="btn done";}
+
+// ============ CAMPFIRE: trade turns, build one shared song ============
+function campBegin(){round=0;seq=[];input=[];$("round").textContent=0;$("you").textContent=0;
+  say("We build one song together. "+ "You start — add the first note.");campKevinTurn(true);}
+function campKevinTurn(first){accepting=true;playing=false;input=[];setTurn("kevin");
+  setStatus(first?"▶ ADD THE FIRST NOTE":"▶ REPLAY OUR SONG + ADD ONE","go");say(pick(L.campkevin));}
+async function campGaiaTurn(){accepting=false;setTurn("gaia");setStatus("◆ GAIA PLAYS OUR SONG + ADDS","ai");
+  say(pick(L.campgaia));await sleep(600);
+  for(const i of seq){light(i,420,"gaia");await sleep(560);}
+  await sleep(250);const add=rnd();seq.push(add);light(add,520,"gaia");await sleep(650);
+  round=seq.length;$("round").textContent=round;best=Math.max(best,round);$("best").textContent=best;
+  campKevinTurn(false);}
+
+// ============ shared input ============
+function rnd(){return Math.floor(Math.random()*PADS.length);}
 function press(i){
-  if(!accepting){return;}
+  if(!accepting)return;
   const el=padsEl.querySelector(`.pad[data-i="${i}"]`);
   if(el){el.classList.add("press");setTimeout(()=>el.classList.remove("press"),100);}
-  light(i,220);
-  input.push(i);
-  const pos=input.length-1;
-  if(input[pos]!==seq[pos]){ return fail(); }
-  const reach=input.length;
-  document.getElementById("you").textContent=Math.max(reach, +document.getElementById("you").textContent);
-  if(input.length===seq.length){
-    accepting=false;
-    best=Math.max(best,round); document.getElementById("best").textContent=best;
-    say(GAIA_WIN);
-    setTimeout(nextRound, 700);
+  light(i,220,"kevin");
+
+  if(MODE==="classic"){
+    input.push(i);const pos=input.length-1;
+    if(input[pos]!==seq[pos])return classicFail();
+    $("you").textContent=Math.max(input.length,+$("you").textContent);
+    if(input.length===seq.length){accepting=false;best=Math.max(best,round);$("best").textContent=best;
+      say(pick(L.win));setTimeout(classicNext,700);}
+  }
+  else if(MODE==="struggle"){
+    seq.push(i);$("round").textContent=seq.length;
+    if(seq.length>=targetLen){$("done").className="btn done show";} // can finish, or keep adding
+  }
+  else if(MODE==="campfire"){
+    input.push(i);const pos=input.length-1;
+    if(pos<seq.length){ // replaying existing
+      if(input[pos]!==seq[pos])return campBreak();
+      if(input.length===seq.length){say("Now add your note…");}
+    } else { // the new addition
+      seq.push(i);round=seq.length;$("round").textContent=round;
+      best=Math.max(best,round);$("best").textContent=best;
+      $("you").textContent=Math.max(+$("you").textContent,round);
+      accepting=false;setTimeout(campGaiaTurn,650);
+    }
   }
 }
-function fail(){
-  accepting=false; setStatus("✖ MISS — "+ "you reached round "+round,"fail");
-  buzz();
-  // flash the correct pad red->right
-  const correct=seq[input.length-1];
-  const el=padsEl.querySelector(`.pad[data-i="${input.length-1>=0?correct:0}"]`);
+function classicFail(){accepting=false;setStatus("✖ MISS — you reached round "+round,"fail");buzz();
   padsEl.querySelectorAll(".pad").forEach(p=>{p.style.background="#2a0e12";p.style.borderColor="var(--red)";});
-  setTimeout(()=>{buildPads();},900);
-  best=Math.max(best,round); document.getElementById("best").textContent=best;
-  say(GAIA_FAIL);
-  document.getElementById("start").textContent="TRY AGAIN";
-}
-function startGame(){
-  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
-  round=0;seq=[];input=[];document.getElementById("you").textContent=0;
-  document.getElementById("round").textContent=0;
-  buildPads();
-  document.getElementById("start").textContent="RESTART";
-  nextRound();
-}
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  setTimeout(buildPads,900);best=Math.max(best,round);$("best").textContent=best;say(pick(L.fail));$("start").textContent="TRY AGAIN";}
+function campBreak(){accepting=false;round=seq.length;setStatus("✦ THE SONG BROKE AT "+round,"fail");buzz();
+  say(pick(L.campbreak));setTurn(null);$("start").textContent="NEW SONG";}
 
-// ===== input =====
-document.getElementById("start").addEventListener("click",startGame);
+// ============ start dispatch ============
+function startGame(){ensureAC();buildPads();$("done").className="btn done";setConf(null);setTurn(null);
+  input=[];seq=[];round=0;$("round").textContent=0;$("you").textContent=0;$("start").textContent="RESTART";
+  if(MODE==="classic")classicNext();
+  else if(MODE==="struggle")struggleBegin();
+  else if(MODE==="campfire")campBegin();}
+
+$("start").addEventListener("click",startGame);
+$("done").addEventListener("click",()=>{if(MODE==="struggle"&&seq.length>0){$("done").className="btn done";struggleAttempt();}});
+
+// mode + diff selectors
+const SUB={classic:"THE AI REMEMBERS · YOU STRUGGLE",struggle:"YOU LEAD · THE AI STRUGGLES TO FOLLOW",campfire:"TRADE PATTERNS · BUILD ONE SONG TOGETHER"};
+const HELP={classic:"I show, you repeat.",struggle:"You teach a pattern, then I try to read it back — watch me sweat.",campfire:"We take turns: replay the song, add a note."};
+const RLBL={classic:"round",struggle:"length",campfire:"song len"};
+document.querySelectorAll(".gm").forEach(el=>el.addEventListener("click",()=>{
+  document.querySelectorAll(".gm").forEach(x=>x.classList.remove("on"));el.classList.add("on");
+  MODE=el.dataset.mode;$("subtitle").textContent=SUB[MODE];$("modehelp").textContent=HELP[MODE];
+  $("roundlbl").textContent=RLBL[MODE];setStatus("press START","watch");say("Mode: "+el.textContent+". "+HELP[MODE]);
+  buildPads();setConf(null);setTurn(null);$("done").className="btn done";}));
 document.querySelectorAll(".ms").forEach(el=>el.addEventListener("click",()=>{
   document.querySelectorAll(".ms").forEach(x=>x.classList.remove("on"));el.classList.add("on");diff=el.dataset.diff;}));
-window.addEventListener("keydown",e=>{
-  const k=e.key.toUpperCase();
-  const i=PADS.findIndex(p=>p.key===k);
+$("modehelp").textContent=HELP.classic;
+
+window.addEventListener("keydown",e=>{const k=e.key.toUpperCase();const i=PADS.findIndex(p=>p.key===k);
   if(i>=0){e.preventDefault();press(i);}
-  if(e.key===" "){e.preventDefault();if(!playing&&!accepting)startGame();}
-});
+  if(e.key==="Enter"&&MODE==="struggle"&&seq.length>0&&accepting){$("done").className="btn done";struggleAttempt();}});
 </script>
 </body>
 </html>
