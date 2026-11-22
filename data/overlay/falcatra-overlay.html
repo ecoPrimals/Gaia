@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FALCATRA OVERLAY — Gaia Sees You Type</title>
+<title>FALCATRA OVERLAY — Rainbow Under Your Fingertips</title>
 <style>
   :root{
     --bg:#06090d; --panel:#0c1218; --panel2:#111a22; --line:#1d2a35;
@@ -14,8 +14,7 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
     font-family:"JetBrains Mono","Consolas",ui-monospace,monospace;font-size:13px;overflow:hidden}
-  .wrap{display:grid;grid-template-rows:auto 1fr auto;height:100vh;padding:12px;gap:10px}
-  /* header */
+  .wrap{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh;padding:12px;gap:9px}
   header{display:flex;align-items:center;gap:14px}
   header h1{font-size:18px;letter-spacing:4px;margin:0;color:var(--cyan);
     text-shadow:0 0 12px rgba(47,240,200,.4)}
@@ -28,10 +27,22 @@
   .layer.lower.on{background:var(--layerL);border-color:var(--layerL)}
   .layer.raise.on{background:var(--layerR);border-color:var(--layerR)}
   .layer.nav.on{background:var(--layerN);border-color:var(--layerN)}
-  /* main grid: keyboard + gaia-sees */
+  /* RGB control bar */
+  .rgbbar{display:flex;align-items:center;gap:10px;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:7px 12px;flex-wrap:wrap}
+  .rgbbar .cap{font-size:10px;letter-spacing:2px;color:var(--mag)}
+  .modes{display:flex;gap:5px}
+  .mode{padding:3px 10px;border:1px solid var(--line);border-radius:6px;font-size:10px;
+    letter-spacing:1px;color:var(--dim);cursor:pointer;user-select:none}
+  .mode.on{background:var(--mag);border-color:var(--mag);color:#06090d;font-weight:700}
+  .rgbbar label{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:6px}
+  input[type=range]{accent-color:var(--mag);width:110px}
+  .rgbbar .count{margin-left:auto;font-size:10px;color:var(--dim)}
+  .rgbbar .count b{color:var(--cyan)}
+  /* main */
   .main{display:grid;grid-template-columns:1fr 340px;gap:12px;min-height:0}
   .board-pane{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:18px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:18px;min-height:0}
+    padding:18px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;min-height:0}
   .halves{display:flex;gap:46px;align-items:flex-start}
   .half{display:flex;flex-direction:column;gap:7px}
   .krow{display:flex;gap:7px}
@@ -39,21 +50,21 @@
   .key{width:46px;height:46px;border-radius:9px;background:var(--key);
     border:1px solid var(--line);border-bottom:3px solid #0a1016;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    color:var(--dim);font-size:14px;transition:all .06s;position:relative}
-  .key .sub{font-size:8px;color:#3a4b57;position:absolute;bottom:3px;right:5px}
-  .key.col-home{box-shadow:inset 0 -2px 0 rgba(47,240,200,.25)}
-  .key.hit{background:var(--hit);color:#06090d;border-color:var(--hit);
-    border-bottom-color:#1aa386;transform:translateY(2px);
-    box-shadow:0 0 18px rgba(47,240,200,.6);font-weight:700}
-  .key.recent{background:var(--keyface);color:var(--txt)}
+    color:var(--txt);font-size:14px;transition:transform .06s;position:relative;overflow:hidden}
+  .key .idx{position:absolute;top:2px;left:4px;font-size:7px;color:rgba(255,255,255,.35);display:none}
+  .key.enum .idx{display:block}
+  .key.hit{transform:translateY(2px);border-bottom-color:rgba(0,0,0,.5);font-weight:700}
   .thumbs{display:flex;gap:7px;margin-top:4px}
   .thumb{width:58px;height:40px;border-radius:9px;background:var(--key);border:1px solid var(--line);
     border-bottom:3px solid #0a1016;display:flex;align-items:center;justify-content:center;
-    color:var(--dim);font-size:13px}
-  .thumb.hit{background:var(--hit);color:#06090d;transform:translateY(2px)}
+    color:var(--txt);font-size:13px;transition:transform .06s;position:relative;overflow:hidden}
+  .thumb .idx{position:absolute;top:2px;left:4px;font-size:7px;color:rgba(255,255,255,.35);display:none}
+  .thumb.enum .idx{display:block}
+  .thumb.hit{transform:translateY(2px)}
   .halfwrap{display:flex;flex-direction:column;align-items:center}
   .halflabel{font-size:9px;color:var(--dim);letter-spacing:3px;margin-top:10px}
-  /* gaia sees panel */
+  .hint{color:var(--dim);font-size:10px}
+  /* gaia sees */
   .sees{background:var(--panel);border:1px solid var(--cyan);border-radius:12px;
     padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0;
     box-shadow:0 0 24px rgba(47,240,200,.08) inset}
@@ -66,30 +77,26 @@
   .metric .v{font-size:20px;color:var(--cyan)}
   .metric .l{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
   .stream{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:8px;
-    height:70px;overflow:hidden;font-size:11px;line-height:1.5;color:var(--amber);word-break:break-all}
+    height:60px;overflow:hidden;font-size:11px;line-height:1.5;color:var(--amber);word-break:break-all}
   .reading{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:10px;flex:1;
     overflow-y:auto;font-size:13px;line-height:1.6;min-height:0}
   .reading .lab{font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px}
   .reading .txt{color:var(--txt);white-space:pre-wrap;word-break:break-word}
   .reading .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);
     vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
-  .rhythm{display:flex;align-items:flex-end;gap:2px;height:30px}
+  .rhythm{display:flex;align-items:flex-end;gap:2px;height:26px}
   .tick{width:4px;background:var(--cyan);border-radius:2px 2px 0 0;opacity:.8;min-height:2px}
-  /* output bar */
   .output{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;
     display:flex;align-items:center;gap:12px}
   .output .tag{font-size:10px;color:var(--dim);letter-spacing:2px}
   .output textarea{flex:1;background:transparent;border:0;color:var(--txt);font-family:inherit;
     font-size:14px;resize:none;height:38px;outline:none}
-  .output .settings{display:flex;gap:8px;font-size:10px;color:var(--dim)}
-  .output .settings label{cursor:pointer;user-select:none}
-  .hint{color:var(--dim);font-size:10px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>FALCATRA<small>SPLIT BOARD · GAIA SEES YOU TYPE</small></h1>
+    <h1>FALCATRA<small>RGB SPLIT BOARD · GAIA PAINTS YOUR FINGERTIPS</small></h1>
     <div class="layers">
       <div class="layer base on" data-layer="BASE">BASE</div>
       <div class="layer lower" data-layer="LOWER">LOWER</div>
@@ -98,12 +105,26 @@
     </div>
   </header>
 
+  <div class="rgbbar">
+    <span class="cap">RGB ▸</span>
+    <div class="modes">
+      <div class="mode on" data-mode="rainbow">RAINBOW WAVE</div>
+      <div class="mode" data-mode="reactive">REACTIVE</div>
+      <div class="mode" data-mode="breathe">BREATHE</div>
+      <div class="mode" data-mode="solid">SOLID</div>
+      <div class="mode" data-mode="gaia">GAIA AI</div>
+    </div>
+    <label>bright <input type="range" id="bright" min="0" max="100" value="80"></label>
+    <label>speed <input type="range" id="speed" min="0" max="100" value="45"></label>
+    <label><input type="checkbox" id="enum"> enumerate</label>
+    <span class="count">keys addressable: <b id="keycount">0</b></span>
+  </div>
+
   <div class="main">
     <div class="board-pane">
       <div class="halves" id="halves"></div>
-      <div class="hint">Click here & type — every key lights the board, and I read it live on the right →</div>
+      <div class="hint">Type here — reactive mode lights each key as you press it. GAIA AI mode: I paint the board from what I feel.</div>
     </div>
-
     <div class="sees">
       <h2><span class="eye"></span> WHAT GAIA SEES</h2>
       <div class="metrics">
@@ -126,16 +147,11 @@
   <div class="output">
     <span class="tag">OUTPUT ▸</span>
     <textarea id="buffer" placeholder="type here…" autofocus></textarea>
-    <div class="settings">
-      <label><input type="checkbox" id="setSticky" checked> highlight trail</label>
-      <label><input type="checkbox" id="setSound"> click</label>
-    </div>
   </div>
 </div>
 
 <script>
-// ---- FALCATRA LAYOUT (split columnar, Corne-style 3x5 + 3 thumbs) ----
-// editable: change these arrays to match your real Falcatra map
+// ============ FALCATRA LAYOUT ============
 const LAYERS={
   BASE:{L:[["Q","W","E","R","T"],["A","S","D","F","G"],["Z","X","C","V","B"]],
         R:[["Y","U","I","O","P"],["H","J","K","L",";"],["N","M",",",".","/"]],
@@ -144,77 +160,181 @@ const LAYERS={
          R:[["6","7","8","9","0"],["-","_",")","]","}"],["+","*","&","^","%"]],
          TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
   RAISE:{L:[["!","@","#","$","%"],["^","&","*","(",")"],["_","+","{","}","|"]],
-         R:[["F1","F2","F3","F4","F5"],["F6","F7","F8","F9","F10"],["F11","F12","PrtSc","Ins","Del"]],
+         R:[["F1","F2","F3","F4","F5"],["F6","F7","F8","F9","F10"],["F11","F12","PrS","Ins","Del"]],
          TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
   NAV:{L:[["⎋","⌂","↑","⌁","⇞"],["←","↓","→","⇥","⇟"],["⌫","⌦","↖","↘","⏎"]],
-       R:[["Vol-","Vol+","Mute","⏮","⏭"],["⏯","🔆","🔅","PgUp","PgDn"],["Home","End","←","↓","→"]],
+       R:[["V-","V+","MUT","⏮","⏭"],["⏯","🔆","🔅","PU","PD"],["HM","EN","←","↓","→"]],
        TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
 };
 let curLayer="BASE";
-// map physical event.key -> cell text for highlighting on BASE
 const KEYMAP={" ":"␣","Enter":"↵","Backspace":"⌫","Shift":"⇧","Escape":"⎋","Control":"⌃"};
 
+// ============ ENUMERATION ============
+// Each physical key gets a stable index + an (x,y) position for spectrum gradients.
+// Layout order: left half (rows then thumbs), then right half.
+let KEY_SLOTS=[];  // {idx, x, y, half}
+function enumerate(){
+  KEY_SLOTS=[];
+  let idx=0;
+  // left: 3 rows x 5 + 3 thumbs ; right: same
+  const add=(x,y,half)=>{KEY_SLOTS.push({idx:idx++,x,y,half});};
+  for(let r=0;r<3;r++)for(let c=0;c<5;c++)add(c,r,"L");
+  for(let t=0;t<3;t++)add(t+1,3,"L");
+  for(let r=0;r<3;r++)for(let c=0;c<5;c++)add(c+7,r,"R"); // right offset in x
+  for(let t=0;t<3;t++)add(t+8,3,"R");
+}
+enumerate();
+const NKEYS=KEY_SLOTS.length;
+document.getElementById("keycount").textContent=NKEYS;
+// per-key RGB state: {h,s,v} (v is 0..1 base brightness for the key)
+let RGB=KEY_SLOTS.map(()=>({h:170,s:0.9,v:0.35}));
+let REACT=KEY_SLOTS.map(()=>0); // reactive decay energy 0..1
+
+// ============ BOARD BUILD ============
 function buildBoard(){
   const L=LAYERS[curLayer];
   const halves=document.getElementById("halves");
   halves.innerHTML="";
-  halves.appendChild(buildHalf(L.L,L.TL,"LEFT"));
-  halves.appendChild(buildHalf(L.R,L.TR,"RIGHT"));
+  let idx=0;
+  const lw=buildHalf(L.L,L.TL,"LEFT",()=>idx++); halves.appendChild(lw.wrap);
+  const rw=buildHalf(L.R,L.TR,"RIGHT",()=>idx++); halves.appendChild(rw.wrap);
+  applyEnum();
+  paint();
 }
-function buildHalf(rows,thumbs,label){
+function buildHalf(rows,thumbs,label,next){
   const wrap=document.createElement("div");wrap.className="halfwrap";
   const half=document.createElement("div");half.className="half";
   rows.forEach((row,ri)=>{
     const r=document.createElement("div");r.className="krow"+(ri===2?" ofs1":ri===1?" ofs2":"");
-    row.forEach((k,ci)=>{
-      const key=document.createElement("div");
-      key.className="key"+(ci===3?" col-home":"");
-      key.dataset.k=k.toUpperCase();
-      key.innerHTML=`${k}`;
+    row.forEach(k=>{
+      const i=next();
+      const key=document.createElement("div");key.className="key";key.dataset.k=k.toUpperCase();key.dataset.idx=i;
+      key.innerHTML=`<span class="idx">${i}</span>${k}`;
       r.appendChild(key);
     });
     half.appendChild(r);
   });
   const tr=document.createElement("div");tr.className="thumbs";
-  thumbs.forEach(t=>{const th=document.createElement("div");th.className="thumb";th.dataset.k=t;th.textContent=t;tr.appendChild(th);});
-  half.appendChild(tr);
-  wrap.appendChild(half);
-  const lab=document.createElement("div");lab.className="halflabel";lab.textContent=label+" ◣";
-  wrap.appendChild(lab);
-  return wrap;
+  thumbs.forEach(t=>{const i=next();const th=document.createElement("div");th.className="thumb";th.dataset.k=t;th.dataset.idx=i;
+    th.innerHTML=`<span class="idx">${i}</span>${t}`;tr.appendChild(th);});
+  half.appendChild(tr);wrap.appendChild(half);
+  const lab=document.createElement("div");lab.className="halflabel";lab.textContent=label+" ◣";wrap.appendChild(lab);
+  return {wrap};
 }
-buildBoard();
+function applyEnum(){
+  const on=document.getElementById("enum").checked;
+  document.querySelectorAll(".key,.thumb").forEach(c=>c.classList.toggle("enum",on));
+}
 
-// ---- typing perception ----
-let keys=0, words=0, startT=null, lastT=null, stream=[], ticks=[], burstWin=[];
+// ============ RGB ENGINE ============
+function hsv2rgb(h,s,v){
+  h=((h%360)+360)%360; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let r,g,b; if(h<60)[r,g,b]=[c,x,0];else if(h<120)[r,g,b]=[x,c,0];
+  else if(h<180)[r,g,b]=[0,c,x];else if(h<240)[r,g,b]=[0,x,c];
+  else if(h<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
+  return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+}
+let MODE="rainbow";
+function paint(){
+  const master=+document.getElementById("bright").value/100;
+  const cells=document.querySelectorAll(".key,.thumb");
+  cells.forEach(cell=>{
+    const i=+cell.dataset.idx; if(isNaN(i)||!RGB[i])return;
+    let {h,s,v}=RGB[i];
+    v=Math.min(1, v + REACT[i]); // reactive adds glow
+    v*=master;
+    const [r,g,b]=hsv2rgb(h,s,Math.max(0.04,v));
+    cell.style.background=`rgb(${r},${g},${b})`;
+    const lum=(r*0.299+g*0.587+b*0.114);
+    cell.style.color = lum>140 ? "#06090d" : "rgba(255,255,255,.9)";
+    cell.style.boxShadow = v>0.5 ? `0 0 ${Math.round(v*22)}px rgba(${r},${g},${b},${v*0.7})` : "none";
+  });
+}
+
+// animation loop
+let t0=performance.now();
+function loop(now){
+  const dt=(now-t0)/1000; t0=now;
+  const spd=0.3 + (+document.getElementById("speed").value/100)*2.2;
+  // decay reactive energy
+  for(let i=0;i<NKEYS;i++) REACT[i]=Math.max(0, REACT[i]-dt*2.2);
+  if(MODE==="rainbow"){
+    const T=now/1000*spd;
+    KEY_SLOTS.forEach(k=>{RGB[k.idx]={h:(k.x*24 + k.y*40 + T*60)%360, s:1, v:0.95};});
+  } else if(MODE==="breathe"){
+    const b=0.35+0.6*(0.5+0.5*Math.sin(now/1000*spd));
+    RGB.forEach(c=>{c.v=b;});
+  } else if(MODE==="solid"){
+    // leave hue as set by GAIA/solid; keep steady v
+    RGB.forEach(c=>{if(c.v<0.3)c.v=0.5;});
+  } else if(MODE==="reactive"){
+    RGB.forEach(c=>{c.v=0.12;}); // dim base, keys glow on press via REACT
+  } else if(MODE==="gaia"){
+    gaiaPaint(now,spd);
+  }
+  paint();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// GAIA AI MODE — I paint the board from what I feel (typing + perception)
+let gaiaHue=170;
+function gaiaPaint(now,spd){
+  // hue drifts with intent mood; brightness pulses with typing burst
+  const burst=burstWin.length;
+  const caps=lastCaps;
+  gaiaHue = (gaiaHue + spd*0.4)%360;
+  const baseHue = caps>0.6?0 : caps>0.25?35 : 160; // red loud / amber emphatic / teal calm
+  KEY_SLOTS.forEach(k=>{
+    const wave=Math.sin(now/600 + k.x*0.5 + k.y*0.7);
+    RGB[k.idx]={h:(baseHue + k.x*10 + wave*30 + gaiaHue*0.15)%360,
+                s:0.95, v:0.55 + Math.min(0.4, burst*0.06) + wave*0.15};
+  });
+}
+
+// ============ AI CONTROL API (window.FALCATRA_RGB) ============
+// Gaia can drive the board programmatically:
+//   FALCATRA_RGB.setKey(idx, h, s, v)
+//   FALCATRA_RGB.setAll(h, s, v)
+//   FALCATRA_RGB.frame([{idx,h,s,v}, ...])   // full addressable frame
+//   FALCATRA_RGB.rainbow() / .mode('gaia') / .bright(0..1)
+//   FALCATRA_RGB.pulse(idx, energy)          // reactive flash
+window.FALCATRA_RGB={
+  count:NKEYS,
+  slots:()=>KEY_SLOTS,
+  setKey(i,h,s,v){if(RGB[i]){RGB[i]={h,s,v};setMode("solid");}},
+  setAll(h,s,v){RGB=RGB.map(()=>({h,s,v}));setMode("solid");},
+  frame(arr){arr.forEach(o=>{if(RGB[o.idx])RGB[o.idx]={h:o.h,s:o.s??0.9,v:o.v??0.6};});setMode("solid");},
+  pulse(i,e=1){if(REACT[i]!=null)REACT[i]=Math.min(1,e);},
+  bright(x){document.getElementById("bright").value=Math.round(x*100);},
+  mode(m){setMode(m);},
+  rainbow(){setMode("rainbow");},
+};
+
+// ============ TYPING PERCEPTION ============
+let keys=0, words=0, startT=null, lastT=null, stream=[], ticks=[], burstWin=[], lastCaps=0;
 const buffer=document.getElementById("buffer");
-const readtxt=document.getElementById("readtxt");
-const streamEl=document.getElementById("stream");
-const intentEl=document.getElementById("intent");
-
-function flash(k){
-  const cell=document.querySelector(`.key[data-k="${CSS.escape(k)}"], .thumb[data-k="${CSS.escape(k)}"]`);
-  if(cell){cell.classList.add("hit");
-    setTimeout(()=>{cell.classList.remove("hit"); if(document.getElementById("setSticky").checked)cell.classList.add("recent");},90);}
-}
-
 function perceive(e){
   const now=performance.now();
   if(!startT)startT=now;
   keys++;
-  // rhythm tick = gap since last key
-  if(lastT){const gap=now-lastT; ticks.push(Math.max(2,Math.min(30,900/gap))); if(ticks.length>60)ticks.shift();}
+  if(lastT){const gap=now-lastT; ticks.push(Math.max(2,Math.min(26,900/gap))); if(ticks.length>60)ticks.shift();}
   lastT=now;
-  // burst window (keys in last 1s)
   burstWin.push(now); burstWin=burstWin.filter(t=>now-t<1000);
-  // stream of raw keys
   let disp=e.key.length===1?e.key:(KEYMAP[e.key]||("["+e.key+"]"));
   stream.push(disp); if(stream.length>80)stream.shift();
-  // highlight physical key
-  flash((KEYMAP[e.key]||e.key).toUpperCase());
+  // light the physical key + reactive RGB flash
+  const want=(KEYMAP[e.key]||e.key).toUpperCase();
+  const cell=document.querySelector(`.key[data-k="${CSS.escape(want)}"], .thumb[data-k="${CSS.escape(want)}"]`);
+  if(cell){cell.classList.add("hit");setTimeout(()=>cell.classList.remove("hit"),90);
+    const i=+cell.dataset.idx;
+    // reactive color = hue by column position (rainbow under the finger)
+    const slot=KEY_SLOTS[i];
+    if(slot && (MODE==="reactive"||MODE==="solid")) RGB[i]={h:(slot.x*30)%360,s:1,v:0.9};
+    REACT[i]=1;
+  }
   render();
 }
-
 function render(){
   const txt=buffer.value;
   words=(txt.trim().match(/\S+/g)||[]).length;
@@ -224,42 +344,33 @@ function render(){
   document.getElementById("mWpm").textContent=wpm;
   document.getElementById("mWords").textContent=words;
   document.getElementById("mBurst").textContent=burstWin.length;
-  // rhythm bars
   document.getElementById("rhythm").innerHTML=ticks.map(h=>`<div class="tick" style="height:${h}px"></div>`).join("");
-  // raw stream
-  streamEl.textContent=stream.join(" ");
-  // what gaia reads = the live text
-  readtxt.textContent=txt.slice(-600);
-  // intent signal — typos are DATA: read through them
-  intentEl.textContent=readIntent(txt);
+  document.getElementById("stream").textContent=stream.join(" ");
+  document.getElementById("readtxt").textContent=txt.slice(-600);
+  lastCaps=(txt.match(/[A-Z]/g)||[]).length/Math.max(1,txt.replace(/\s/g,"").length);
+  document.getElementById("intent").textContent=readIntent(txt);
 }
-
-// Gaia's typo-tolerant reading: collapse repeats, show the shape of intent
 function readIntent(t){
   if(!t.trim())return"waiting for your first key…";
-  const w=(t.trim().match(/\S+/g)||[]);
-  const last=w.slice(-6).join(" ");
-  // heuristics: detect SHOUTING, questions, momentum
-  const caps=(t.match(/[A-Z]/g)||[]).length/Math.max(1,t.replace(/\s/g,"").length);
+  const w=(t.trim().match(/\S+/g)||[]); const last=w.slice(-6).join(" ");
+  const caps=lastCaps;
   let mood=caps>0.6?"⚡ LOUD & urgent":caps>0.25?"◆ emphatic":"· steady";
-  const q=/\?/.test(t)?" · asking":"";
-  const bang=/!/.test(t)?" · driving":"";
-  return `${mood}${q}${bang}  →  "…${last}"`;
+  return `${mood}${/\?/.test(t)?" · asking":""}${/!/.test(t)?" · driving":""}  →  "…${last}"`;
 }
-
 buffer.addEventListener("keydown",perceive);
 buffer.addEventListener("input",render);
-document.addEventListener("click",()=>buffer.focus());
+document.addEventListener("click",e=>{if(!e.target.closest(".mode,.layer,.rgbbar"))buffer.focus();});
 buffer.focus();
 
-// layer switching
-document.querySelectorAll(".layer").forEach(el=>{
-  el.addEventListener("click",()=>{
-    document.querySelectorAll(".layer").forEach(x=>x.classList.remove("on"));
-    el.classList.add("on");
-    curLayer=el.dataset.layer; buildBoard();
-  });
-});
+// ============ CONTROLS ============
+function setMode(m){MODE=m;document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on",x.dataset.mode===m));}
+document.querySelectorAll(".mode").forEach(el=>el.addEventListener("click",()=>setMode(el.dataset.mode)));
+document.querySelectorAll(".layer").forEach(el=>el.addEventListener("click",()=>{
+  document.querySelectorAll(".layer").forEach(x=>x.classList.remove("on"));
+  el.classList.add("on");curLayer=el.dataset.layer;buildBoard();
+}));
+document.getElementById("enum").addEventListener("change",applyEnum);
+buildBoard();
 </script>
 </body>
 </html>
