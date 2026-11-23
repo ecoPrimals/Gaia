@@ -3005,6 +3005,17 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
 <style id="hud-one-css">
   .hud-masked { display: none !important; }
   main.gaia-shell { padding-bottom: 96px !important; }
+/* mesh: the two bodies side by side, the same rows in the same order */
+#hud-mesh { padding: 18px; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; background: rgba(13,17,23,.6); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; color: #c9d1d9; }
+#hud-mesh .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+#hud-mesh .body { border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+#hud-mesh .body h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; color: #e6edf3; }
+#hud-mesh .body h3 small { color: #6e7681; font-weight: normal; letter-spacing: 0; margin-left: 8px; }
+#hud-mesh dl { display: grid; grid-template-columns: 96px 1fr; gap: 4px 10px; margin: 0; }
+#hud-mesh dt { color: #6e7681; } #hud-mesh dd { margin: 0; overflow-wrap: anywhere; }
+#hud-mesh .ok { color: #5ab87a; } #hud-mesh .gray { color: #8b949e; } #hud-mesh .warn { color: #d29922; }
+#hud-mesh .seam { margin-top: 12px; text-align: center; color: #8b949e; }
+@media (max-width: 700px) { #hud-mesh .pair { grid-template-columns: 1fr; } }
 /* the chiasm bar floats at the bottom edge: leave it room so it never sits on the last line of the page */
 body { padding-bottom: 76px !important; }
   #hud-one {
@@ -3095,6 +3106,10 @@ body { padding-bottom: 76px !important; }
   <div id="hud-hint" aria-live="polite"></div>
 </div>
 <div id="hud-stage"></div>
+<section id="hud-mesh" class="hud-masked" aria-label="mesh">
+  <div class="pair" id="hud-mesh-pair"><div class="body"><h3>this body</h3><dl><dt>state</dt><dd class="gray">asking the gate</dd></dl></div></div>
+  <div class="seam" id="hud-mesh-seam"></div>
+</section>
 <section id="hud-sky" class="hud-masked" aria-label="night sky">
   <a class="moon" data-path="/luna" href="/luna" title="LUNA - the moon is the white paper" aria-label="Luna"></a>
   <div class="moon-words"><a data-path="/luna" href="/luna">LUNA</a><small>the moon is the white paper</small><a data-path="/whitePaper" href="/whitePaper">white paper</a></div>
@@ -3136,6 +3151,7 @@ body { padding-bottom: 76px !important; }
     { key: 'gut', label: 'gut', hint: 'thymus · ecosystem · the record', show: gut.concat(all('.hud-footer')) },
     { key: 'tube', label: 'tube', hint: 'telescope \u2194 microscope - 4422 \u2194 641', show: [tube] },
     { key: 'membrane', label: 'membrane', hint: 'the first HUD\u2019s controls - asleep until her scripts are served from this gate', show: membrane },
+    { key: 'mesh', label: 'mesh', hint: 'this body and the other - each reflects what it sees', take: [D.getElementById('hud-mesh')] },
     { key: 'sky', label: 'night sky', hint: 'the moon is the white paper · the stars are the spore print', take: [sky] }
   ];
   var more = { key: 'more', label: 'more', hint: 'layers that arrived on their own - held here instead of on top of everything', els: [] };
@@ -3198,6 +3214,7 @@ body { padding-bottom: 76px !important; }
     });
     hint.textContent = byKey[key].hint;
     D.body.setAttribute('data-hud-view', key);
+    try { D.dispatchEvent(new CustomEvent('hud-one-view', { detail: key })); } catch (e) {}
     if (!quiet) { try { history.replaceState(null, '', '#' + key); localStorage.setItem('hud_view', key); } catch (e) {} }
   }
 
@@ -3218,6 +3235,36 @@ body { padding-bottom: 76px !important; }
   if (!byKey[first]) { try { first = localStorage.getItem('hud_view'); } catch (e) { first = null; } }
   show(byKey[first] ? first : 'surfaces', true);
   window.addEventListener('hashchange', function () { var k = (location.hash || '').replace('#', ''); if (byKey[k] && k !== current) show(k, true); });
+  /* mesh view: this body and the other, the same rows in the same order. Asked only while the view is open. */
+  (function () {
+    var pair = D.getElementById('hud-mesh-pair'), seam = D.getElementById('hud-mesh-seam'), timer = null;
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function dur(s) { s = +s || 0; return s >= 86400 ? Math.floor(s / 86400) + 'd ' + Math.floor(s % 86400 / 3600) + 'h' : s >= 3600 ? Math.floor(s / 3600) + 'h ' + Math.floor(s % 3600 / 60) + 'm' : Math.floor(s / 60) + 'm'; }
+    function card(b, role) {
+      if (b.answers === false) return '<div class="body"><h3>' + esc(b.name) + '<small>' + role + '</small></h3><dl><dt>address</dt><dd>' + esc(b.ip) + '</dd><dt>state</dt><dd class="gray">GRAY - no answer on :8443 from here</dd></dl></div>';
+      var pi = b.pi_body, rows = [
+        ['address', esc(b.ip || '-')], ['host', esc(b.host || '-')],
+        ['repo tip', esc(b.tip || '-') + ' <span class="gray">' + esc(b.tip_when || '') + '</span>'],
+        ['two holes', b.holes ? '<span class="' + (b.holes === 'level' ? 'ok' : 'warn') + '">' + esc(b.holes) + '</span>' : '<span class="gray">not looked yet</span>'],
+        ['gate up', dur(b.gate_up_secs)],
+        ['pi body', pi ? '<span class="ok">' + pi.up.length + ' up</span>' + (pi.down.length ? ' · <span class="warn">down: ' + esc(pi.down.join(', ')) + '</span>' : '') : '<span class="gray">no nucleus under this gate\u2019s tree</span>']
+      ];
+      return '<div class="body"><h3>' + esc(b.name) + '<small>' + role + '</small></h3><dl>' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl></div>';
+    }
+    function ask() {
+      fetch('/api/mesh').then(function (r) { return r.json(); }).then(function (m) {
+        if (!m || !m.self) throw 0;
+        pair.innerHTML = card(m.self, 'this body') + (m.peers || []).map(function (p) { return card(p, 'the other body'); }).join('');
+        seam.innerHTML = m.level === true ? '<span class="ok">the two bodies hold the same tip</span>' : m.level === false ? '<span class="warn">the two bodies hold different tips</span>' : 'the other body did not answer - only one side of the mirror';
+      }).catch(function () { seam.textContent = 'this gate does not answer /api/mesh'; });
+    }
+    D.addEventListener('hud-one-view', function (e) {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (e.detail === 'mesh') { ask(); timer = setInterval(ask, 30000); }
+    });
+      if (D.body.getAttribute('data-hud-view') === 'mesh') { ask(); timer = setInterval(ask, 30000); }
+  })();
+
   window.hudOne = { show: show, views: function () { return VIEWS.map(function (v) { return v.key; }); } };
 })();
 </script>

@@ -634,6 +634,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path in ("/ptolemy","/geocentric","/ancient","/stars"): self._serve_static("spacedock.html"); return
         if self.path in ("/chromatic","/gis","/chromatic-gis","/map","/lan-map"): self._serve_static("chromatic-gis.html"); return
         if self.path in ("/bingo","/trust","/bingo-trust","/routes","/auth"): self._serve_static("bingo-trust.html"); return
+        if self.path in ("/api/mesh","/api/mesh/self"):
+            try: self._json(_mesh(self.path=="/api/mesh"))
+            except Exception as e: self._json({"error":str(e)})
+            return
         if self.path in ("/hub","/hub.html"): self._serve_static("hub.html"); return
         if self.path in ("/water","/water.html","/watering-hole","/wateringhole","/entrance"): self._serve_static("water.html"); return
         # ── WAVE 239r: Wire all 21 dead routes back to life ──
@@ -1482,6 +1486,59 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 
 # ═══ BACKGROUND ═══
 import subprocess
+# MESH MIRROR - each body says what it is, and what it sees of the other. LAN only, read only.
+_MESH_BODIES={"192.168.4.147":"northGate","192.168.4.248":"eastGate"}
+_MESH_T0=time.time()
+_mesh_cache={"t":0.0,"peers":[]}
+def _pid_alive(pid):
+    if os.name=="nt":
+        import ctypes
+        k=ctypes.windll.kernel32
+        h=k.OpenProcess(0x1000,False,int(pid))   # query only; os.kill(pid,0) would END the process on Windows
+        if not h: return False
+        code=ctypes.c_ulong(); k.GetExitCodeProcess(h,ctypes.byref(code)); k.CloseHandle(h)
+        return code.value==259
+    try: os.kill(int(pid),0); return True
+    except PermissionError: return True
+    except Exception: return False
+def _mesh_self():
+    import socket
+    ip=""
+    try:
+        s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.connect(("192.168.4.1",9)); ip=s.getsockname()[0]; s.close()   # no packet is sent
+    except Exception: pass
+    def g(*a):
+        try: return subprocess.run(["git",*a],cwd=_REPO,capture_output=True,text=True,timeout=10).stdout.strip()
+        except Exception: return ""
+    try: holes=json.load(open(os.path.join(_REPO,"data","gut","watering-holes.json"),encoding="utf-8"))
+    except Exception: holes={}
+    up=[]; down=[]; mem=os.path.join(_REPO,"runtime","membrane")
+    if os.path.isdir(mem):
+        for f in sorted(os.listdir(mem)):
+            if f.endswith("-gaia-pi.pid"):
+                try: ok=_pid_alive(open(os.path.join(mem,f)).read().strip())
+                except Exception: ok=False
+                (up if ok else down).append(f[:-len("-gaia-pi.pid")])
+    return {"name":_MESH_BODIES.get(ip) or socket.gethostname(),"host":socket.gethostname(),"ip":ip,
+            "tip":g("rev-parse","--short=9","HEAD"),"tip_when":g("log","-1","--format=%cd","--date=format:%m-%d %H:%M"),
+            "holes":holes.get("state"),"holes_when":holes.get("ts"),
+            "gate_up_secs":int(time.time()-_MESH_T0),
+            "pi_body":{"up":up,"down":down} if (up or down) else None,
+            "ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
+def _mesh(with_peers=True):
+    me=_mesh_self()
+    if not with_peers: return me
+    if time.time()-_mesh_cache["t"]>30:
+        peers=[]
+        for ip,name in _MESH_BODIES.items():
+            if ip==me["ip"]: continue
+            try:
+                with urllib.request.urlopen("http://%s:8443/api/mesh/self"%ip,timeout=3) as r: p=json.loads(r.read()); p["answers"]=True
+            except Exception: p={"name":name,"ip":ip,"answers":False}
+            peers.append(p)
+        _mesh_cache.update(t=time.time(),peers=peers)
+    return {"self":me,"peers":_mesh_cache["peers"],"level":all(p.get("tip")==me["tip"] for p in _mesh_cache["peers"] if p.get("answers")) if any(p.get("answers") for p in _mesh_cache["peers"]) else None}
+
 def _resync_holes():
     """Two watering holes, one drop. GitHub is the outer hole, the forge is the local one.
     When GitHub is strictly ahead of the forge, carry the drop across as a fast-forward of the forge's main.
