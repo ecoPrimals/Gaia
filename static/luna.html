@@ -814,6 +814,15 @@ setInterval(updateVisor, 15000);
 
 // === FOUR FORCES — visualized as field lines around Earth ===
 function drawForces(t, eX, eY, eR) {
+  // same projection draw() and drawOverlay() carry; it was never in this scope, so the forces never drew
+  function projLatLon(lat, lon) {
+    const now = new Date();
+    const utcH = now.getUTCHours() + now.getUTCMinutes()/60;
+    const subLunarLon = -(utcH * 15);
+    const laR = lat * Math.PI/180, loR = (lon - subLunarLon) * Math.PI/180;
+    const cosC = Math.cos(laR)*Math.cos(loR);
+    return { x: eX + eR * Math.cos(laR) * Math.sin(loR), y: eY - eR * Math.sin(laR), visible: cosC > 0 };
+  }
   // GRAVITY — long-range attraction lines spiraling inward (data being pulled in)
   ctx.strokeStyle = 'rgba(180,120,255,0.04)';
   ctx.lineWidth = 0.3;
@@ -850,10 +859,14 @@ function drawForces(t, eX, eY, eR) {
   }
 
   // WEAK NUCLEAR — occasional decay flashes (transformation events)
-  if(Math.sin(t*0.001) > 0.98) {
-    ctx.fillStyle = 'rgba(255,255,0,0.08)';
-    const wx = eX + (Math.random()-0.5)*eR;
-    const wy = eY + (Math.random()-0.5)*eR;
+  // calm form: one place per event (not a new random place every frame), and it swells and fades instead of blinking
+  const wk = Math.sin(t*0.001);
+  if(wk > 0.98) {
+    const ev = Math.floor((t*0.001 - Math.PI/2) / (2*Math.PI) + 0.5);   // which event this is
+    const hx = Math.sin(ev*12.9898)*43758.5453, hy = Math.sin(ev*78.233)*12543.1234;
+    ctx.fillStyle = 'rgba(255,255,0,' + (0.08*(wk-0.98)/0.02).toFixed(3) + ')';
+    const wx = eX + ((hx - Math.floor(hx)) - 0.5)*eR;
+    const wy = eY + ((hy - Math.floor(hy)) - 0.5)*eR;
     ctx.beginPath(); ctx.arc(wx,wy,3,0,Math.PI*2); ctx.fill();
   }
 }

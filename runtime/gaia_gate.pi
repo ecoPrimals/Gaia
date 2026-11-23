@@ -597,7 +597,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         _HUD_HOSTS = ("hud.primals.eco","hud.nestgate.io","hud.primal.eco")
         if host in _HUD_HOSTS:
             _p = self.path.split("?")[0]
-            if not (_p.startswith("/js/") or _p.startswith("/css/") or _p.startswith("/data/") or _p.startswith("/static/") or _p.startswith("/paintings/") or _p.endswith(".js") or _p.endswith(".css") or _p.endswith(".png") or _p.endswith(".jpg") or _p.endswith(".svg") or _p.endswith(".ico") or _p.endswith(".xml") or _p.endswith(".json") or _p.startswith("/api/")):
+            # Only a human navigation folds back to the HUD. The page's own data fetches (Accept: */*)
+            # pass through to the real routes, so the HUD can read /thymus, /senses, /human from its own name.
+            _wants_page = "text/html" in self.headers.get("Accept", "text/html")
+            if _wants_page and not (_p.startswith("/js/") or _p.startswith("/css/") or _p.startswith("/data/") or _p.startswith("/static/") or _p.startswith("/paintings/") or _p.endswith(".js") or _p.endswith(".css") or _p.endswith(".png") or _p.endswith(".jpg") or _p.endswith(".svg") or _p.endswith(".ico") or _p.endswith(".xml") or _p.endswith(".json") or _p.startswith("/api/")):
                 self._serve_static("senses.html"); return
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
@@ -632,6 +635,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path in ("/chromatic","/gis","/chromatic-gis","/map","/lan-map"): self._serve_static("chromatic-gis.html"); return
         if self.path in ("/bingo","/trust","/bingo-trust","/routes","/auth"): self._serve_static("bingo-trust.html"); return
         if self.path in ("/hub","/hub.html"): self._serve_static("hub.html"); return
+        if self.path in ("/water","/water.html","/watering-hole","/wateringhole","/entrance"): self._serve_static("water.html"); return
         # ── WAVE 239r: Wire all 21 dead routes back to life ──
         if self.path in ("/alexandria","/library"): self._serve_static("alexandria.html"); return
         if self.path in ("/digestive-tract","/digestive","/digestion","/tract"): self._serve_static("digestive-tract.html"); return
@@ -1134,7 +1138,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 "/fossil": "/fossil",
                 "/kevin": "/campfire",
             }
-            if _p in _TOUCH:
+            if _p in _TOUCH and _TOUCH[_p] != _p:  # a path that points at itself would bounce forever
                 self.send_response(302)
                 self.send_header("Location", _TOUCH[_p])
                 self.send_header("X-Gaia-Touch", "stem-cell-differentiated")

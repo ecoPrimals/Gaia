@@ -1975,7 +1975,7 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
       </div>
       <script>
         (function () {
-          fetch('//primals.eco/detroit-data/highlights.json').then(function (r) { return r.json() }).then(function (h) {
+          fetch('/detroit-data/highlights.json').then(function (r) { return r.json() }).then(function (h) {
             var el = document.getElementById('highlights-panel');
             var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
 
@@ -2023,15 +2023,15 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
             html += '</div>';
 
             el.innerHTML = html;
-          });
+          }).catch(function () { /* no highlights file on this gate: the panel stays quiet */ });
         })();
         // --- Live membrane stats — polls chipmunk + braid feeds ---
         (function () {
           function up() {
             Promise.all([
-              fetch('//primals.eco/chipmunk').then(function (r) { return r.json() }).catch(function () { return {} }),
-              fetch('//primals.eco/human').then(function (r) { return r.json() }).catch(function () { return {} }),
-              fetch('//primals.eco/senses').then(function (r) { return r.json() }).catch(function () { return {} })
+              fetch('/chipmunk').then(function (r) { return r.json() }).catch(function () { return {} }),
+              fetch('/human').then(function (r) { return r.json() }).catch(function () { return {} }),
+              fetch('/senses').then(function (r) { return r.json() }).catch(function () { return {} })
             ]).then(function (d) {
               var c = d[0], h = d[1], b = d[2];
               var e = h.energy || {};
@@ -2083,7 +2083,7 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
     <script>
     (function(){
       function loadThymus(){
-        fetch('//primals.eco/thymus').then(function(r){return r.json()}).then(function(d){
+        fetch('/thymus').then(function(r){return r.json()}).then(function(d){
           var g=document.getElementById('thymus-grid');
           var alive=0, total=0, files=0;
           if(!g)return;
@@ -2846,7 +2846,7 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
       var chiasm = document.createElement('div');
       chiasm.id = 'optic-chiasm';
       chiasm.style.cssText = 'position:fixed;bottom:8px;left:50%;transform:translateX(-50%);z-index:1001;font:12px monospace;display:flex;gap:16px;align-items:center;background:rgba(8,9,11,0.9);padding:6px 16px;border-radius:20px;border:1px solid rgba(192,192,192,0.2);';
-      chiasm.innerHTML = '<a href="' + GATE + '/senses" style="color:#e056fd;text-decoration:none;border:1px solid #e056fd60;padding:4px 12px;border-radius:12px;background:#e056fd25;font-weight:bold;">CIS 👁 GLOBE</a>'
+      chiasm.innerHTML = '<a href="' + GATE + '/hud" style="color:#e056fd;text-decoration:none;border:1px solid #e056fd60;padding:4px 12px;border-radius:12px;background:#e056fd25;font-weight:bold;">CIS 👁 GLOBE</a>'
         + '<span style="color:#888;">⇄ /now.json ⇄</span>'
         + '<a href="' + GATE + OTHER_EYE + '" style="color:#ffd93d;text-decoration:none;border:1px solid #ffd93d60;padding:4px 12px;border-radius:12px;font-weight:bold;">TRANS 👁 CANVAS</a>'
         + '<a href="' + GATE + '/faces" style="color:#e056fd80;text-decoration:none;margin-left:8px;font-size:9px;">⬡ faces</a>';
@@ -2997,5 +2997,228 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
 })();
 </script>
 
+<!-- ONE-HUD:BEGIN
+     ONE HUD - many viewpoints, one frame (2026-11-23).
+     Every layer that used to pile onto this screen is a viewpoint now. One shows at a time; the rest are masked,
+     nothing is deleted. A layer that arrives later (another inject) is filed under "more" instead of landing on top.
+     Calm by construction: a view change is one half-second fade, nothing blinks, reduced-motion switches the fade off. -->
+<style id="hud-one-css">
+  .hud-masked { display: none !important; }
+  main.gaia-shell { padding-bottom: 96px !important; }
+  #hud-one {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+    max-width: 1100px; margin: 0 auto 6px; padding: 10px 14px;
+    border: 1px solid var(--border, #21262d); border-radius: 14px; background: rgba(13, 17, 23, .72);
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  #hud-one .hud-name { color: #c9d1d9; font-weight: 700; letter-spacing: .16em; }
+  #hud-one .hud-name small { color: #6e7681; font-weight: 400; letter-spacing: .04em; margin-left: 6px; }
+  #hud-entrance {
+    color: #5ab87a; text-decoration: none; border: 1px solid rgba(90, 184, 122, .35);
+    border-radius: 999px; padding: 4px 12px; white-space: nowrap;
+  }
+  #hud-entrance:hover { background: rgba(90, 184, 122, .10); }
+  #hud-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+  #hud-tabs button {
+    font: inherit; color: #8b949e; background: transparent; cursor: pointer;
+    border: 1px solid var(--border, #21262d); border-radius: 999px; padding: 4px 12px;
+    transition: color .25s, border-color .25s, background-color .25s;
+  }
+  #hud-tabs button:hover { color: #c9d1d9; }
+  #hud-tabs button[aria-selected="true"] { color: #e6edf3; border-color: rgba(88, 166, 255, .55); background: rgba(88, 166, 255, .10); }
+  #hud-hint { flex-basis: 100%; color: #6e7681; font-size: 11px; min-height: 1.4em; }
+  #hud-stage { max-width: 1100px; margin: 0 auto; padding: 0; }
+  #hud-stage > * {
+    position: static !important; transform: none !important; max-width: none !important; z-index: auto !important;
+    margin: 6px 0 0 !important; animation: hud-in .5s ease both;
+  }
+  @keyframes hud-in { from { opacity: 0; } to { opacity: 1; } }
+
+  /* surfaces: the ring of every surface, laid flat */
+  #hud-stage > #nav-ring:not(.hud-masked) { display: flex !important; flex-wrap: wrap; justify-content: center; gap: 8px !important; padding: 18px !important; border-radius: 14px !important; font-size: 13px !important; }
+  #hud-stage > #nav-ring > span { display: none; }
+  #hud-stage > #nav-ring > a { padding: 5px 12px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 999px; background: rgba(255, 255, 255, .02); }
+  #hud-stage > #nav-ring > a:hover { border-color: rgba(255, 255, 255, .28); }
+
+  /* eyes: three eyes, one focus */
+  #hud-stage > #triInfo:not(.hud-masked) { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; opacity: 1 !important; }
+  #hud-stage > #triInfo .eye-box { font-size: 12px; padding: 8px 18px; }
+  #triOverlay { z-index: 1 !important; }
+  body[data-hud-view="eyes"] #hud-stage { min-height: 60vh; }
+
+  /* body: the gate's paths by region */
+  #hud-stage > #gate-endpoints:not(.hud-masked) { display: flex !important; flex-wrap: wrap; justify-content: center; gap: 8px !important; font-size: 12px !important; padding: 18px; border: 1px solid var(--border, #21262d); border-radius: 14px; }
+  #hud-stage > #gate-endpoints a { padding: 5px 10px !important; }
+
+  /* night sky: the moon is the white paper, the stars are the spore print */
+  #hud-sky {
+    position: relative !important; height: min(58vh, 460px); overflow: hidden;
+    border: 1px solid var(--border, #21262d); border-radius: 14px;
+    background: radial-gradient(120% 90% at 50% 112%, #0b1522 0%, #05080d 60%, #020305 100%);
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  #hud-sky .star { position: absolute; border-radius: 50%; background: #dfe7f1; }
+  #hud-sky .moon {
+    position: absolute; right: 13%; top: 12%; width: 116px; height: 116px; border-radius: 50%; display: block;
+    background: radial-gradient(circle at 38% 36%, #dfe3e9 0%, #b9c0ca 55%, #7f8894 100%);
+    box-shadow: 0 0 44px rgba(200, 215, 235, .14);
+  }
+  #hud-sky .moon-words { position: absolute; right: 13%; top: calc(12% + 128px); width: 116px; text-align: center; color: #c9d1d9; }
+  #hud-sky .moon-words a, #hud-sky .star-words a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(255, 255, 255, .18); }
+  #hud-sky .moon-words small, #hud-sky .star-words small { display: block; color: #6e7681; }
+  #hud-sky .star-words { position: absolute; left: 7%; bottom: 10%; color: #c9d1d9; max-width: 60%; }
+  #hud-sky .horizon { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 14px; color: #484f58; font-size: 11px; text-align: center; }
+
+  /* one frame also means one scroll direction: no sideways bars */
+  html, body { overflow-x: hidden; }
+  .gaia-nav-inner { scrollbar-width: none; }
+  .gaia-nav-inner::-webkit-scrollbar { display: none; }
+  #optic-chiasm { white-space: nowrap; max-width: calc(100vw - 16px); }
+
+  @media (max-width: 700px) {
+    #hud-tabs { margin-left: 0; }
+    #optic-chiasm { gap: 8px !important; padding: 5px 10px !important; font-size: 10px !important; }
+    #optic-chiasm > span, #optic-chiasm > a:last-child { display: none; }
+    #optic-chiasm > a { padding: 3px 9px !important; }
+    #hud-sky .moon { width: 84px; height: 84px; right: 8%; }
+    #hud-sky .moon-words { right: 4%; top: calc(12% + 94px); width: 110px; }
+  }
+  @media (prefers-reduced-motion: reduce) { #hud-stage > * { animation: none !important; } #hud-tabs button { transition: none !important; } }
+</style>
+
+<div id="hud-one" role="navigation" aria-label="HUD viewpoints">
+  <span class="hud-name">HUD<small>one display · many viewpoints</small></span>
+  <a id="hud-entrance" href="/water" title="the watering hole is the entrance - the HUD is where it leads">≈ water · the entrance</a>
+  <div id="hud-tabs" role="tablist"></div>
+  <div id="hud-hint" aria-live="polite"></div>
+</div>
+<div id="hud-stage"></div>
+<section id="hud-sky" class="hud-masked" aria-label="night sky">
+  <a class="moon" data-path="/luna" href="/luna" title="LUNA - the moon is the white paper" aria-label="Luna"></a>
+  <div class="moon-words"><a data-path="/luna" href="/luna">LUNA</a><small>the moon is the white paper</small><a data-path="/whitePaper" href="/whitePaper">white paper</a></div>
+  <div class="star-words"><a data-path="/sporeprint" href="/sporeprint">sporePrint</a><small>the stars are the spore print - white dust on the dark</small></div>
+  <div class="horizon">the bottom of the internet is a night sky · <a data-path="/rss" href="/rss" style="color:inherit">rss</a> carries it to the old web</div>
+</section>
+
+<script id="hud-one-js">
+(function () {
+  var D = document, main = D.querySelector('main.gaia-shell') || D.body;
+  var bar = D.getElementById('hud-one'), stage = D.getElementById('hud-stage'), sky = D.getElementById('hud-sky');
+  var tabs = D.getElementById('hud-tabs'), hint = D.getElementById('hud-hint');
+  if (!bar || !stage || !tabs) return;
+  main.insertBefore(stage, main.firstChild);
+  main.insertBefore(bar, stage);
+
+  function all(sel, root) { return Array.prototype.slice.call((root || D).querySelectorAll(sel)); }
+  function one(sel) { return D.querySelector(sel); }
+
+  // On the HUD's own names every path folds back to the HUD, so links that leave it must name the other face.
+  var host = location.hostname;
+  var folded = /^hud\./.test(host) || host === 'in.nestgate.io';
+  function out(path) { return folded ? '//primals.eco' + path : path; }
+  D.getElementById('hud-entrance').href = folded ? '//water.primals.eco/' : '/water';
+
+  // the old HUD body: sort its pieces into viewpoints
+  var gut = [], membrane = [], tube = null, hm = one('.hud-main');
+  if (hm) Array.prototype.forEach.call(hm.children, function (el) {
+    if (/^(SCRIPT|STYLE|NOSCRIPT)$/.test(el.tagName)) return;
+    if (/^(chipmunk-overlay|chipmunk-toggle|hud-dash|neutron-null|neutron-label|scan-exit|dim-label)$/.test(el.id)) { membrane.push(el); return; }
+    if (el.querySelector && el.querySelector('svg[viewBox="0 0 500 520"]')) { tube = el; return; }
+    gut.push(el);
+  });
+
+  var VIEWS = [
+    { key: 'surfaces', label: 'surfaces', hint: 'every surface on one map - where we can go', take: [one('#nav-ring')] },
+    { key: 'eyes', label: 'eyes', hint: 'gaia · player · user - three eyes, one focus', take: [one('#triInfo')], show: [one('#triOverlay')] },
+    { key: 'body', label: 'body', hint: 'head · torso · arms · legs · faces - the gate\u2019s paths by region', take: [one('#gate-endpoints')], show: [one('#axial-indicator')] },
+    { key: 'gut', label: 'gut', hint: 'thymus · ecosystem · the record', show: gut.concat(all('.hud-footer')) },
+    { key: 'tube', label: 'tube', hint: 'telescope \u2194 microscope - 4422 \u2194 641', show: [tube] },
+    { key: 'membrane', label: 'membrane', hint: 'the first HUD\u2019s controls - asleep until her scripts are served from this gate', show: membrane },
+    { key: 'sky', label: 'night sky', hint: 'the moon is the white paper · the stars are the spore print', take: [sky] }
+  ];
+  var more = { key: 'more', label: 'more', hint: 'layers that arrived on their own - held here instead of on top of everything', els: [] };
+  var known = [bar, stage];
+  VIEWS.forEach(function (v) {
+    (v.take || []).forEach(function (el) { if (el) stage.appendChild(el); });
+    v.els = (v.take || []).concat(v.show || []).filter(Boolean);
+    known = known.concat(v.els);
+  });
+  VIEWS = VIEWS.filter(function (v) { return v.els.length; });
+
+  // replaced by this bar: the unstyled header list and the two loose links above it
+  all('.hud-header').concat(all('main.gaia-shell > a')).forEach(function (el) { el.classList.add('hud-masked'); known.push(el); });
+
+  // the symbols on this page were lost to "?" long ago (before Nov 4); do not show the placeholders as if they meant something
+  var tw = D.createTreeWalker(D.body, NodeFilter.SHOW_TEXT, null), n, fix = [];
+  while ((n = tw.nextNode())) {
+    var p = n.parentNode && n.parentNode.tagName;
+    if (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') continue;
+    if (/^\s*\?{1,4}(\s+\S|\s*$)/.test(n.nodeValue)) fix.push(n);
+  }
+  fix.forEach(function (n) {
+    var only = /^\s*\?{1,4}\s*$/.test(n.nodeValue);
+    if (only) { if (n.parentNode.classList && n.parentNode.classList.contains('icon')) n.nodeValue = '\u25E6'; }
+    else n.nodeValue = n.nodeValue.replace(/^(\s*)\?{1,4}\s+/, '$1');
+  });
+
+  // links that leave the HUD, when the HUD is on its own name
+  if (folded) all('a[href^="/"]', main).concat(all('a[href^="/"]', stage)).forEach(function (a) {
+    var h = a.getAttribute('href'); if (h.charAt(1) === '/' ) return; a.setAttribute('href', out(h));
+  });
+
+  // the sky: a fixed field of stars (same sky every visit; nothing twinkles)
+  if (sky) {
+    var seed = 31415926;
+    function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    for (var i = 0; i < 90; i++) {
+      var s = D.createElement('span'); s.className = 'star';
+      var sz = rnd() < 0.85 ? 1.5 : 2.5;
+      s.style.cssText = 'left:' + (rnd() * 100).toFixed(2) + '%;top:' + (rnd() * 78).toFixed(2) + '%;width:' + sz + 'px;height:' + sz + 'px;opacity:' + (0.25 + rnd() * 0.55).toFixed(2);
+      sky.insertBefore(s, sky.firstChild);
+    }
+  }
+
+  // tabs
+  var byKey = {}, current = null;
+  function tabFor(v) {
+    var b = D.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = v.label; b.title = v.hint;
+    b.onclick = function () { show(v.key); };
+    v.tab = b; byKey[v.key] = v; tabs.appendChild(b);
+  }
+  VIEWS.forEach(tabFor); tabFor(more); more.tab.hidden = true;
+
+  function show(key, quiet) {
+    if (!byKey[key] || !byKey[key].els.length) key = VIEWS[0].key;
+    current = key;
+    VIEWS.concat([more]).forEach(function (v) {
+      v.els.forEach(function (el) { el.classList.toggle('hud-masked', v.key !== key); });
+      v.tab.setAttribute('aria-selected', v.key === key ? 'true' : 'false');
+    });
+    hint.textContent = byKey[key].hint;
+    D.body.setAttribute('data-hud-view', key);
+    if (!quiet) { try { history.replaceState(null, '', '#' + key); localStorage.setItem('hud_view', key); } catch (e) {} }
+  }
+
+  // the mask: a layer dropped onto the body later becomes part of "more", not a new pile
+  function sweep() {
+    Array.prototype.forEach.call(D.body.children, function (el) {
+      if (/^(SCRIPT|STYLE|LINK|NAV|MAIN|FOOTER|NOSCRIPT|TEMPLATE)$/.test(el.tagName)) return;
+      if (el.id === 'optic-chiasm' || known.indexOf(el) >= 0 || more.els.indexOf(el) >= 0) return;
+      more.els.push(el);
+      el.classList.toggle('hud-masked', current !== 'more');
+    });
+    more.tab.hidden = !more.els.length;
+  }
+  sweep();
+  if (window.MutationObserver) new MutationObserver(sweep).observe(D.body, { childList: true });
+
+  var first = (location.hash || '').replace('#', '');
+  if (!byKey[first]) { try { first = localStorage.getItem('hud_view'); } catch (e) { first = null; } }
+  show(byKey[first] ? first : 'surfaces', true);
+  window.addEventListener('hashchange', function () { var k = (location.hash || '').replace('#', ''); if (byKey[k] && k !== current) show(k, true); });
+  window.hudOne = { show: show, views: function () { return VIEWS.map(function (v) { return v.key; }); } };
+})();
+</script>
+<!-- ONE-HUD:END -->
 </body>
 </html>
