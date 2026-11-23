@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gaia Wiki — ecoPrimals Documentation</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+  --text: #e0e0e0; --text2: #a0a0a0; --accent: #e94560;
+  --green: #4caf50; --pink: #e91e63; --purple: #9c27b0;
+  --orange: #ff9800; --cyan: #00bcd4; --gold: #ffd700;
+}
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 220px; background: var(--bg2); border-right: 1px solid #333; padding: 16px; flex-shrink: 0; overflow-y: auto; position: sticky; top: 0; height: 100vh; }
+.sidebar h2 { color: var(--accent); font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+.sidebar h3 { color: var(--orange); font-size: 13px; margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+.sidebar a { display: block; color: var(--cyan); text-decoration: none; padding: 3px 0; font-size: 13px; }
+.sidebar a:hover { color: var(--gold); }
+.sidebar a.active { color: var(--gold); font-weight: bold; }
+
+/* Main */
+.main { flex: 1; padding: 24px 32px; max-width: 900px; }
+.main h1 { color: var(--accent); font-size: 28px; border-bottom: 3px solid var(--accent); padding-bottom: 8px; margin-bottom: 16px; }
+.main h2 { color: var(--orange); font-size: 20px; margin: 24px 0 12px; border-bottom: 1px solid #444; padding-bottom: 4px; }
+.main h3 { color: var(--cyan); font-size: 16px; margin: 16px 0 8px; }
+.main p { line-height: 1.6; margin-bottom: 12px; color: var(--text2); }
+.main a { color: var(--cyan); text-decoration: none; }
+.main a:hover { color: var(--gold); text-decoration: underline; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 12px 0; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+th { background: var(--bg3); color: var(--orange); text-align: left; padding: 8px 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 8px 12px; border-top: 1px solid #333; font-size: 14px; }
+tr:hover td { background: rgba(233,69,96,0.05); }
+
+/* Status badges */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+.badge-live { background: var(--green); color: #000; }
+.badge-flux { background: var(--orange); color: #000; }
+.badge-gray { background: #666; color: #fff; }
+.badge-down { background: var(--accent); color: #fff; }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid #333; border-radius: 6px; padding: 16px; margin: 12px 0; }
+.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.card h3 { margin: 0; color: var(--cyan); }
+.card .meta { color: var(--text2); font-size: 12px; }
+
+/* Recipe box */
+.recipe { background: var(--bg2); border: 1px solid var(--orange); border-radius: 6px; padding: 16px; margin: 12px 0; }
+.recipe .arrow { color: var(--orange); font-size: 20px; margin: 0 8px; }
+.recipe .ingredient { color: var(--green); }
+.recipe .product { color: var(--gold); }
+.recipe .building { color: var(--cyan); }
+.recipe .rate { color: var(--text2); font-size: 12px; }
+
+/* Power bar */
+.power-bar { background: #333; height: 20px; border-radius: 10px; overflow: hidden; margin: 8px 0; }
+.power-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
+
+/* Tab system */
+.tabs { display: flex; gap: 0; margin-bottom: 0; }
+.tab { padding: 8px 16px; cursor: pointer; background: var(--bg2); border: 1px solid #333; border-bottom: none; color: var(--text2); font-size: 13px; border-radius: 4px 4px 0 0; }
+.tab.active { background: var(--bg3); color: var(--orange); border-color: var(--orange); }
+.tab-content { display: none; border: 1px solid #333; padding: 16px; background: var(--bg2); border-radius: 0 4px 4px 4px; }
+.tab-content.active { display: block; }
+
+/* Search */
+.search { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid #444; color: var(--text); border-radius: 4px; margin-bottom: 12px; font-size: 14px; }
+.search:focus { border-color: var(--cyan); outline: none; }
+
+/* Responsive */
+@media (max-width: 768px) { .sidebar { display: none; } .main { padding: 16px; } }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <h2>🌿 Gaia Wiki</h2>
+  <input class="search" placeholder="Search... (Ctrl+F)" id="searchBox">
+
+  <h3>Navigation</h3>
+  <a href="#" onclick="showPage('main')" class="active">Main page</a>
+  <a href="#" onclick="showPage('primals')">All Primals</a>
+  <a href="#" onclick="showPage('recipes')">All Recipes</a>
+  <a href="#" onclick="showPage('power')">Power / Compute</a>
+
+  <h3>Primals</h3>
+  <a href="#" onclick="showPage('biomeOS')">biomeOS (HUB)</a>
+  <a href="#" onclick="showPage('squirrel')">squirrel (Constructor)</a>
+  <a href="#" onclick="showPage('nestGate')">nestGate (Assembler)</a>
+  <a href="#" onclick="showPage('sourDough')">sourDough (Smelter)</a>
+  <a href="#" onclick="showPage('sweetGrass')">sweetGrass (Foundry)</a>
+  <a href="#" onclick="showPage('petalTongue')">petalTongue (Manufacturer)</a>
+  <a href="#" onclick="showPage('barraCuda')">barraCuda (Refinery)</a>
+  <a href="#" onclick="showPage('bingoCube')">bingoCube (Q.Encoder)</a>
+  <a href="#" onclick="showPage('dromedary')">dromedary (Power Pole)</a>
+  <a href="#" onclick="showPage('songBird')">songBird (Miner)</a>
+  <a href="#" onclick="showPage('bearDog')">bearDog (Generator)</a>
+  <a href="#" onclick="showPage('coralReef')">coralReef (Conveyor)</a>
+  <a href="#" onclick="showPage('skunkBat')">skunkBat (Elevator)</a>
+  <a href="#" onclick="showPage('loamSpine')">loamSpine (Storage)</a>
+  <a href="#" onclick="showPage('rhizoCrypt')">rhizoCrypt (Packager)</a>
+  <a href="#" onclick="showPage('swarmVine')">swarmVine (Pipeline)</a>
+  <a href="#" onclick="showPage('toadStool')">toadStool (Extractor)</a>
+
+  <h3>Gates</h3>
+  <a href="#" onclick="showPage('gates')">All Gates</a>
+  <a href="#" onclick="showPage('northGate')">northGate (Heart)</a>
+  <a href="#" onclick="showPage('eastGate')">eastGate (Brain)</a>
+  <a href="#" onclick="showPage('ironGate')">ironGate (Forge 2)</a>
+  <a href="#" onclick="showPage('blueGate')">blueGate (IDE)</a>
+
+  <h3>Game Triad</h3>
+  <a href="#" onclick="showPage('triad')">Triad Overview</a>
+  <a href="#" onclick="showPage('kenshi')">Kenshi (Ground)</a>
+  <a href="#" onclick="showPage('satisfactory')">Satisfactory (Board)</a>
+  <a href="#" onclick="showPage('outer')">SE × KSP (Outer)</a>
+
+  <h3>Transport</h3>
+  <a href="#" onclick="showPage('datapipes')">Data Pipes (Belts)</a>
+  <a href="#" onclick="showPage('tissue')">Tissue Models</a>
+  <a href="#" onclick="showPage('compost')">AWESOME Sink</a>
+  <a href="#" onclick="showPage('mam')">MAM Research</a>
+
+  <h3>Progression</h3>
+  <a href="#" onclick="showPage('waves')">Waves / Tiers</a>
+  <a href="#" onclick="showPage('milestones')">Milestones</a>
+
+  <h3>Scratch Board</h3>
+  <a href="#" onclick="showPage('board')">Board Status</a>
+  <a href="#" onclick="showPage('chimera')">Chimera Cycles</a>
+</nav>
+
+<main class="main" id="content">
+<!-- Pages loaded by JS -->
+</main>
+
+<script>
+const PRIMALS = {
+  biomeOS: { cat: "Special", analog: "HUB", mb: 22, role: "OS kernel, orchestrator", mw: 5, clock: "5min", recipes: ["Heartbeat","Membrane Pulse","Thymus Self-Image"], wave: 1, desc: "biomeOS is the core operating system. Like the HUB in Satisfactory, all other primals register with it. Handles auto-discovery via Neural API, capability registration, graph bootstrap." },
+  songBird: { cat: "Logistics", analog: "Miner", mb: 24, role: "Mesh transport, federation", mw: 10, clock: "15min", recipes: ["RSS Drain","Peer Discovery"], wave: 10, desc: "Extracts data from network sources. Like a Miner pulling ore from resource nodes." },
+  bearDog: { cat: "Power", analog: "Biomass Burner", mb: 8.4, role: "Crypto identity, BLAKE3, BTSP", mw: 3, clock: "on-demand", recipes: ["Identity Hash","Trust Attestation"], wave: 15, desc: "Generates trust through BLAKE3 hashing. Like a power generator producing the trust that powers all auth." },
+  nestGate: { cat: "Production", analog: "Assembler", mb: 8.8, role: "Data gateway, MCP server", mw: 8, clock: "on-demand", recipes: ["membrane_counts","observe_membrane","read_journal","topology","raw_feed"], wave: 30, desc: "Joins data from different sources. Like an Assembler combining two ingredients into one product." },
+  toadStool: { cat: "Production", analog: "Oil Extractor", mb: 13, role: "Service discovery", mw: 7, clock: "5min", recipes: ["Sense Scan","Service Discovery"], wave: 40, desc: "Discovers services across the mesh. Like an Oil Extractor placed on a resource node." },
+  squirrel: { cat: "Special", analog: "Constructor", mb: 1.7, role: "Agent dispatch, MCP", mw: 2, clock: "on-demand", recipes: ["membrane_counts","topology","llama_ask","particle_model"], wave: 50, desc: "Single-input dispatch. The MCP server Cursor connects to. Lightest primal at 1.7MB." },
+  rhizoCrypt: { cat: "Production", analog: "Packager", mb: 7.8, role: "Encrypted storage", mw: 5, clock: "on-demand", recipes: ["Encrypt","Decrypt","Package"], wave: 60, desc: "Packages and encrypts data for secure storage and transport." },
+  petalTongue: { cat: "Production", analog: "Manufacturer", mb: 19, role: "Content rendering, WASM", mw: 15, clock: "on-demand", recipes: ["Render HUD","Compile WASM","Template Assembly"], wave: 80, desc: "Multi-input rendering engine. Combines template+data+style+config into rendered output." },
+  skunkBat: { cat: "Special", analog: "Space Elevator", mb: 3.4, role: "Intrusion detection", mw: 5, clock: "7min", recipes: ["Immune Activate","Threat Scan"], wave: 80, desc: "Guards the organism perimeter. Like the Space Elevator guarding progression." },
+  coralReef: { cat: "Logistics", analog: "Conveyor Belt", mb: 7.7, role: "Distributed compute", mw: 8, clock: "continuous", recipes: ["Distribute Work","Load Balance"], wave: 100, desc: "Connects primals and transports work between gates. The conveyor system." },
+  sourDough: { cat: "Production", analog: "Smelter", mb: 3.4, role: "Fermentation engine", mw: 15, clock: "15-30min", recipes: ["Masticate","Study","Create"], wave: 100, desc: "Raw OSINT → refined insights through ollama tissue models. 159 masticated, 51 studied, 20 created." },
+  sweetGrass: { cat: "Production", analog: "Foundry", mb: 12, role: "Knowledge graph", mw: 12, clock: "15-30min", recipes: ["Braid","Study","Link"], wave: 120, desc: "Merges knowledge from different domains into a unified graph." },
+  swarmVine: { cat: "Logistics", analog: "Pipeline", mb: 2.6, role: "Epidemic gossip", mw: 3, clock: "continuous", recipes: ["Gossip Propagate","State Sync"], wave: 130, desc: "Carries gossip messages between gates using epidemic protocol." },
+  barraCuda: { cat: "Production", analog: "Refinery", mb: 5.3, role: "Stream compute", mw: 10, clock: "continuous", recipes: ["Stream Filter","Aggregate","Alert"], wave: 150, desc: "Real-time stream processing. Takes raw streams and refines into multiple outputs." },
+  dromedary: { cat: "Logistics", analog: "Power Pole", mb: 3.7, role: "Reverse proxy, TLS, ACME", mw: 5, clock: "always-on", recipes: ["Proxy Request","TLS Terminate","ACME Renew"], wave: 150, desc: "Connects all services to the outside world. Serves primals.eco." },
+  loamSpine: { cat: "Organization", analog: "Storage Container", mb: 5.0, role: "Data spine", mw: 3, clock: "on-demand", recipes: ["Store","Retrieve","Index"], wave: 20, desc: "Central data storage. All JSON, JSONL, and binary blobs live here." },
+  bingoCube: { cat: "Production", analog: "Quantum Encoder", mb: 9.3, role: "Coordination", mw: 20, clock: "on-demand", recipes: ["Coordinate","Consensus","FNV-1a Hash"], wave: 200, desc: "Handles complex multi-gate coordination. The highest-tier production building." },
+};
+
+const GATES = {
+  northGate: { ip: ".147", state: "FLUX", gpu: "RTX 5090", mw: 2500, models: 63, role: "HEART — Polaris", ram: "96GB", cpu: "9950X3D" },
+  eastGate: { ip: ".244", state: "FLUX", gpu: "RTX 4070", mw: 250, models: 8, role: "BRAIN — 17 primals, data server", ram: "?", cpu: "?" },
+  ironGate: { ip: ".237", state: "FLUX", gpu: "RTX 5070", mw: 500, models: "pending", role: "FORGE 2 — i9-14900K", ram: "94GB", cpu: "i9-14900K" },
+  blueGate: { ip: ".100", state: "STATIC", gpu: "RTX 5090 (shared)", mw: 100, models: 14, role: "IDE — Cursor, Kenshi", ram: "96GB", cpu: "9950X3D" },
+  sporeGate: { ip: ".3", state: "GRAY", gpu: "none", mw: 10, models: 0, role: "FORGE — DNS, heart-pull", ram: "27GB", cpu: "Ryzen 5 6600H" },
+  graftGate: { ip: ".107", state: "FLUX", gpu: "M4 (10C)", mw: 75, models: 1, role: "Mac Mini", ram: "16GB", cpu: "M4" },
+  grapheneGate: { ip: ".9.217", state: "FLUX", gpu: "Mali-G715", mw: 30, models: 5, role: "DIAMOND LENS — Pixel 8a", ram: "8GB", cpu: "Tensor G3" },
+  deckGate: { ip: ".176", state: "FLUX", gpu: "RDNA 2", mw: 15, models: 0, role: "DISPLAY — Steam Deck", ram: "16GB", cpu: "Aerith" },
+  frameGate: { ip: ".9.203", state: "FLUX", gpu: "Adreno 750", mw: 20, models: 0, role: "FACE — Steam Frame ARM64", ram: "?", cpu: "Snapdragon 8 Gen 3" },
+  southGate: { ip: ".148", state: "FLUX", gpu: "none", mw: 0, models: 0, role: "HOME PHONE — iPhone XS", ram: "4GB", cpu: "A12" },
+};
+
+const CRONS = [
+  { name: "eastgate-pulse", freq: "2min", primal: "biomeOS", type: "heartbeat" },
+  { name: "mushroom-ear", freq: "2min", primal: "nestGate", type: "listener" },
+  { name: "membrane-pulse", freq: "2min", primal: "biomeOS", type: "heartbeat" },
+  { name: "pi-drain", freq: "3min", primal: "songBird", type: "extract" },
+  { name: "heartbeat", freq: "5min", primal: "biomeOS", type: "heartbeat" },
+  { name: "pihz-emotion", freq: "5min", primal: "sourDough", type: "ferment" },
+  { name: "metrics", freq: "5min", primal: "biomeOS", type: "metrics" },
+  { name: "thymus", freq: "5min", primal: "skunkBat", type: "immune" },
+  { name: "sense-scan", freq: "5min", primal: "toadStool", type: "discovery" },
+  { name: "neuro", freq: "~5min", primal: "sweetGrass", type: "knowledge" },
+  { name: "teach", freq: "~5min", primal: "sourDough", type: "ferment" },
+  { name: "test", freq: "~5min", primal: "skunkBat", type: "immune" },
+  { name: "create", freq: "~5min", primal: "sourDough", type: "create" },
+  { name: "learn", freq: "~5min", primal: "sweetGrass", type: "knowledge" },
+  { name: "chipmunk-hears", freq: "~5min", primal: "squirrel", type: "dispatch" },
+  { name: "phosphate", freq: "~5min", primal: "barraCuda", type: "stream" },
+  { name: "willis-balloon", freq: "7min", primal: "swarmVine", type: "gossip" },
+  { name: "immune-activate", freq: "7min", primal: "skunkBat", type: "immune" },
+  { name: "curiosity", freq: "10min", primal: "sweetGrass", type: "knowledge" },
+  { name: "manifest", freq: "10min", primal: "biomeOS", type: "manifest" },
+  { name: "wavefold", freq: "10min", primal: "bingoCube", type: "coordinate" },
+  { name: "waterlock", freq: "10min", primal: "barraCuda", type: "intake" },
+  { name: "homunculus", freq: "15min", primal: "petalTongue", type: "render" },
+  { name: "klein-evolve", freq: "15min", primal: "petalTongue", type: "render" },
+  { name: "knome", freq: "20min", primal: "sweetGrass", type: "knowledge" },
+  { name: "braid", freq: "20min", primal: "sweetGrass", type: "knowledge" },
+  { name: "publish", freq: "20min", primal: "dromedary", type: "publish" },
+  { name: "study", freq: "25min", primal: "sourDough", type: "ferment" },
+  { name: "RSS", freq: "25min", primal: "songBird", type: "extract" },
+  { name: "masticate", freq: "30min", primal: "sourDough", type: "ferment" },
+  { name: "compost", freq: "60min", primal: "sourDough", type: "decay" },
+  { name: "arena-evolve", freq: "60min", primal: "bingoCube", type: "evolve" },
+  { name: "decay-detector", freq: "90min", primal: "skunkBat", type: "decay" },
+];
+
+function showPage(page) {
+  const el = document.getElementById('content');
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (page === 'main') el.innerHTML = mainPage();
+  else if (page === 'primals') el.innerHTML = primalsPage();
+  else if (page === 'recipes') el.innerHTML = recipesPage();
+  else if (page === 'power') el.innerHTML = powerPage();
+  else if (page === 'gates') el.innerHTML = gatesPage();
+  else if (page === 'triad') el.innerHTML = triadPage();
+  else if (page === 'kenshi') el.innerHTML = kenshiPage();
+  else if (page === 'satisfactory') el.innerHTML = satisfactoryPage();
+  else if (page === 'waves') el.innerHTML = wavesPage();
+  else if (page === 'outer') el.innerHTML = outerPage();
+  else if (page === 'datapipes') el.innerHTML = dataPipesPage();
+  else if (page === 'tissue') el.innerHTML = tissuePage();
+  else if (page === 'compost') el.innerHTML = compostPage();
+  else if (page === 'mam') el.innerHTML = mamPage();
+  else if (page === 'board') el.innerHTML = boardPage();
+  else if (page === 'chimera') el.innerHTML = chimeraPage();
+  else if (page === 'milestones') el.innerHTML = milestonesPage();
+  else if (PRIMALS[page]) el.innerHTML = primalPage(page);
+  else if (GATES[page]) el.innerHTML = gatePage(page);
+  else el.innerHTML = `<h1>${page}</h1><p>Page coming soon.</p>`;
+}
+
+function mainPage() {
+  const totalMW = Object.values(GATES).reduce((s,g) => s + g.mw, 0);
+  const totalModels = Object.values(GATES).reduce((s,g) => s + (typeof g.models==='number'?g.models:0), 0);
+  return `
+    <h1>Welcome to the Gaia Wiki</h1>
+    <p>The ecoPrimals guide and information source. Modeled after <a href="https://satisfactory.wiki.gg">satisfactory.wiki.gg</a>.</p>
+    <p>We are currently maintaining <strong>17 primals</strong>, <strong>10 gates</strong>, <strong>35 cron recipes</strong>, <strong>14 tissue models</strong>, <strong>3 game targets</strong>, and <strong>6 data pipe tiers</strong>.</p>
+
+    <h2>Status — Wave 259</h2>
+    <table>
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Total Primals</td><td>17 (all compiled)</td></tr>
+      <tr><td>Total Gates</td><td>10 (1 STATIC, 1 GRAY, 8 FLUX)</td></tr>
+      <tr><td>Total Compute</td><td>~${totalMW} MW equivalent</td></tr>
+      <tr><td>Ollama Models</td><td>${totalModels} across 5 endpoints</td></tr>
+      <tr><td>Cron Recipes</td><td>35 (~180 beats/hour)</td></tr>
+      <tr><td>Mushrooms</td><td>23 (COMPLETE — 0 new)</td></tr>
+      <tr><td>Masticated Insights</td><td>159</td></tr>
+      <tr><td>Studied Topics</td><td>51</td></tr>
+      <tr><td>Creations</td><td>20</td></tr>
+      <tr><td>RSS Sources</td><td>700+</td></tr>
+      <tr><td>Tissue Models</td><td>14 (43.6 GB across 14 specializations)</td></tr>
+      <tr><td>Data Pipe Tiers</td><td>6 (File→HTTP→TCP→IPC→10G→GPU)</td></tr>
+      <tr><td>Scratch Board Events</td><td>14 from 6 sources</td></tr>
+      <tr><td>Chimera Cycles</td><td>4 (cortex, oblique, multi-tissue, oracle+gut)</td></tr>
+    </table>
+
+    <h2>Game Triad</h2>
+    <table>
+      <tr><th>Layer</th><th>Game</th><th>Color</th><th>Status</th></tr>
+      <tr><td>0 Ground</td><td>Kenshi</td><td style="color:var(--green)">🟢 Green</td><td><span class="badge badge-live">LIVE</span> nerve :7741 active</td></tr>
+      <tr><td>1 Board</td><td>Satisfactory × Factorio</td><td style="color:var(--pink)">🩷 Pink</td><td><span class="badge badge-flux">INSTALLED</span> 31 saves profiled</td></tr>
+      <tr><td>2 Outer</td><td>Space Engineers × KSP</td><td style="color:var(--purple)">🟣 Purple</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+    </table>
+
+    <h2>Featured Articles</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:12px 0">
+      ${['biomeOS','squirrel','nestGate','sourDough','dromedary','bingoCube'].map(p => `
+        <div class="card" style="cursor:pointer" onclick="showPage('${p}')">
+          <h3 style="font-size:14px">${p}</h3>
+          <div class="meta">${PRIMALS[p].analog} — ${PRIMALS[p].mb}MB</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px">${PRIMALS[p].role}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function primalsPage() {
+  const cats = {};
+  Object.entries(PRIMALS).forEach(([k,v]) => { if(!cats[v.cat]) cats[v.cat]=[]; cats[v.cat].push({name:k,...v}); });
+  let html = '<h1>All Primals</h1><p>17 compiled binaries that make up the ecoPrimals organism. Each is a production building in the Satisfactory analog.</p>';
+  for (const [cat, items] of Object.entries(cats)) {
+    html += `<h2>${cat}</h2><table><tr><th>Primal</th><th>Analog</th><th>Binary</th><th>Power</th><th>Clock</th><th>Wave</th></tr>`;
+    items.sort((a,b) => a.wave - b.wave);
+    items.forEach(p => {
+      html += `<tr><td><a href="#" onclick="showPage('${p.name}')">${p.name}</a></td><td>${p.analog}</td><td>${p.mb}MB</td><td>${p.mw}MW</td><td>${p.clock}</td><td>${p.wave}</td></tr>`;
+    });
+    html += '</table>';
+  }
+  return html;
+}
+
+function primalPage(name) {
+  const p = PRIMALS[name];
+  return `
+    <h1>${name}</h1>
+    <div class="card">
+      <div class="card-header"><h3>${p.role}</h3><span class="badge badge-live">${p.cat}</span></div>
+      <div class="meta">Satisfactory Analog: ${p.analog} | Binary: ${p.mb}MB | Power: ${p.mw}MW | Unlocked: Wave ${p.wave}</div>
+    </div>
+    <h2>Description</h2>
+    <p>${p.desc}</p>
+    <h2>Specifications</h2>
+    <table>
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>Category</td><td>${p.cat}</td></tr>
+      <tr><td>Satisfactory Analog</td><td>${p.analog}</td></tr>
+      <tr><td>Binary Size</td><td>${p.mb} MB</td></tr>
+      <tr><td>Power Draw</td><td>${p.mw} MW</td></tr>
+      <tr><td>Clock Speed</td><td>${p.clock}</td></tr>
+      <tr><td>Unlocked At</td><td>Wave ${p.wave}</td></tr>
+    </table>
+    <h2>Recipes</h2>
+    <table><tr><th>Recipe</th><th>Clock</th></tr>
+    ${p.recipes.map(r => {
+      const cron = CRONS.find(c => c.name.toLowerCase().includes(r.toLowerCase().split(' ')[0]) || r.toLowerCase().includes(c.name.toLowerCase()));
+      return `<tr><td>${r}</td><td>${cron ? cron.freq : p.clock}</td></tr>`;
+    }).join('')}
+    </table>
+    <h2>Related Cron Jobs</h2>
+    <table><tr><th>Cron</th><th>Frequency</th><th>Type</th></tr>
+    ${CRONS.filter(c => c.primal === name).map(c => `<tr><td>${c.name}</td><td>${c.freq}</td><td>${c.type}</td></tr>`).join('')}
+    </table>
+  `;
+}
+
+function gatesPage() {
+  let html = '<h1>All Gates</h1><p>10 gates across 2 basecamps. Like vehicles in Satisfactory, each gate has its own compute power and role.</p>';
+  html += '<table><tr><th>Gate</th><th>IP</th><th>State</th><th>GPU</th><th>MW</th><th>Models</th><th>Role</th></tr>';
+  Object.entries(GATES).forEach(([name, g]) => {
+    const badge = g.state === 'STATIC' ? 'badge-live' : g.state === 'GRAY' ? 'badge-gray' : 'badge-flux';
+    html += `<tr><td><a href="#" onclick="showPage('${name}')">${name}</a></td><td>${g.ip}</td><td><span class="badge ${badge}">${g.state}</span></td><td>${g.gpu}</td><td>${g.mw}</td><td>${g.models}</td><td>${g.role}</td></tr>`;
+  });
+  html += '</table>';
+  return html;
+}
+
+function gatePage(name) {
+  const g = GATES[name];
+  const badge = g.state === 'STATIC' ? 'badge-live' : g.state === 'GRAY' ? 'badge-gray' : 'badge-flux';
+  const pct = Math.min(100, Math.round(g.mw / 25));
+  const color = g.mw >= 500 ? 'var(--accent)' : g.mw >= 100 ? 'var(--orange)' : 'var(--green)';
+  return `
+    <h1>${name}</h1>
+    <div class="card">
+      <div class="card-header"><h3>${g.role}</h3><span class="badge ${badge}">${g.state}</span></div>
+    </div>
+    <h2>Specifications</h2>
+    <table>
+      <tr><th>Property</th><th>Value</th></tr>
+      <tr><td>IP Address</td><td>192.168.4${g.ip}</td></tr>
+      <tr><td>State</td><td>${g.state}</td></tr>
+      <tr><td>GPU</td><td>${g.gpu}</td></tr>
+      <tr><td>CPU</td><td>${g.cpu}</td></tr>
+      <tr><td>RAM</td><td>${g.ram}</td></tr>
+      <tr><td>Compute Power</td><td>${g.mw} MW equivalent</td></tr>
+      <tr><td>Ollama Models</td><td>${g.models}</td></tr>
+    </table>
+    <h2>Compute Power</h2>
+    <div class="power-bar"><div class="power-fill" style="width:${pct}%;background:${color}"></div></div>
+    <p style="font-size:12px;color:var(--text2)">${g.mw} MW / 2500 MW (relative to northGate Nuclear)</p>
+  `;
+}
+
+function powerPage() {
+  const sorted = Object.entries(GATES).sort((a,b) => b[1].mw - a[1].mw);
+  const totalMW = sorted.reduce((s,[,g]) => s + g.mw, 0);
+  let html = `<h1>Power / Compute</h1>
+    <p>Like Satisfactory's power grid, the organism's compute is distributed across gates. If demand exceeds supply on any gate, it "trips" — goes FLUX.</p>
+    <h2>Compute Grid — ${totalMW} MW Total</h2>`;
+  sorted.forEach(([name, g]) => {
+    const pct = Math.round(100 * g.mw / 2500);
+    const color = g.mw >= 500 ? 'var(--accent)' : g.mw >= 100 ? 'var(--orange)' : 'var(--green)';
+    const badge = g.state === 'STATIC' ? 'badge-live' : g.state === 'GRAY' ? 'badge-gray' : 'badge-flux';
+    html += `<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;align-items:center">
+      <span><a href="#" onclick="showPage('${name}')">${name}</a> <span class="badge ${badge}">${g.state}</span></span>
+      <span style="color:var(--text2)">${g.gpu} — ${g.mw} MW</span>
+    </div><div class="power-bar"><div class="power-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  });
+  html += `<h2>Generator Analogy</h2><table><tr><th>Gate</th><th>Satisfactory Analog</th><th>MW</th><th>Models</th></tr>`;
+  sorted.forEach(([name, g]) => {
+    let analog = g.mw >= 2000 ? 'Nuclear Power Plant' : g.mw >= 400 ? 'Alien Power Augmenter' : g.mw >= 200 ? 'Fuel Generator' : g.mw >= 50 ? 'Coal Generator' : 'Biomass Burner';
+    html += `<tr><td>${name}</td><td>${analog}</td><td>${g.mw}</td><td>${g.models}</td></tr>`;
+  });
+  html += '</table>';
+  return html;
+}
+
+function recipesPage() {
+  let html = '<h1>All Recipes (Cron Jobs)</h1><p>35 autonomous cron recipes running ~180 beats/hour. Like Satisfactory recipes, each has a building (primal), frequency (clock speed), and type.</p>';
+  html += '<table><tr><th>Recipe</th><th>Primal (Building)</th><th>Frequency (Clock)</th><th>Type</th></tr>';
+  CRONS.forEach(c => {
+    html += `<tr><td>${c.name}</td><td><a href="#" onclick="showPage('${c.primal}')">${c.primal}</a></td><td>${c.freq}</td><td>${c.type}</td></tr>`;
+  });
+  html += '</table>';
+  return html;
+}
+
+function triadPage() {
+  return `<h1>Game Triad</h1>
+    <p>Three games rotating into one. Each layer feeds the next through the 1D scratch board.</p>
+    <h2>Layer 0 — Ground (Kenshi) 🟢</h2>
+    <div class="card"><h3>⚔️ Kenshi — The World</h3>
+      <p>3D survival RPG. Characters, terrain, combat, factions, STORY.</p>
+      <table><tr><th>Component</th><th>Status</th></tr>
+        <tr><td>kenshi_x64.exe</td><td><span class="badge badge-live">LIVE</span> PID 41372, 4.2GB RAM</td></tr>
+        <tr><td>gaia-nerve.dll</td><td><span class="badge badge-live">LIVE</span> TCP :7741 (DLL locked by game)</td></tr>
+        <tr><td>gaia_mind.lua</td><td><span class="badge badge-live">LOADED</span> Events wired</td></tr>
+        <tr><td>kenshi_eyes.py</td><td><span class="badge badge-live">WATCHING</span> 4 NPCs in minds.json</td></tr>
+      </table></div>
+    <h2>Layer 1 — Board (Satisfactory × Factorio) 🩷</h2>
+    <div class="card"><h3>🏭 The Oblique — 3D+2D→1D</h3>
+      <p>Factory logic collapsed to a scratch-and-catch board. Conveyors = data pipes. Factories = compilers.</p>
+      <table><tr><th>Component</th><th>Status</th></tr>
+        <tr><td>Satisfactory</td><td><span class="badge badge-flux">INSTALLED</span> 29.58GB, 31 saves, 19K objects</td></tr>
+        <tr><td>satisfactory_eyes.py</td><td><span class="badge badge-live">BUILT</span> Reads .sav, extracts factory state</td></tr>
+        <tr><td>Factorio</td><td><span class="badge badge-gray">NOT INSTALLED</span> Need full game for Lua modding</td></tr>
+        <tr><td>scratch-board.jsonl</td><td><span class="badge badge-live">ACTIVE</span> 2 events (Kenshi + Satisfactory)</td></tr>
+      </table></div>
+    <h2>Layer 2 — Outer (Space Engineers × KSP) 🟣</h2>
+    <div class="card"><h3>🚀 Particles Become Real</h3>
+      <p>Orbital mechanics + particle simulation. Every bullet, dust mote, fog = real physics body.</p>
+      <table><tr><th>Component</th><th>Status</th></tr>
+        <tr><td>Space Engineers</td><td><span class="badge badge-gray">NOT INSTALLED</span> C# Programmable Blocks</td></tr>
+        <tr><td>KSP</td><td><span class="badge badge-gray">NOT INSTALLED</span> C# Unity plugins</td></tr>
+      </table></div>`;
+}
+
+function kenshiPage() {
+  return `<h1>Kenshi — Layer 0 Ground</h1>
+    <p>The world layer. 3D survival RPG where NPCs think through Gaia's tissue models.</p>
+    <h2>Live Status</h2>
+    <table><tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Process</td><td>kenshi_x64.exe (PID 41372)</td></tr>
+      <tr><td>RAM Usage</td><td>4,244 MB</td></tr>
+      <tr><td>Hours Played</td><td>289</td></tr>
+      <tr><td>Active NPCs</td><td>4 (Rane, Zagan, Cat, Ray)</td></tr>
+      <tr><td>Saves</td><td>18</td></tr>
+      <tr><td>Active Mods</td><td>Genesis, Godsend EXP 5x, KenshiLua, GaiaMind, Robot Spider AI Cores, Bigger Mines</td></tr>
+      <tr><td>Nerve Port</td><td>:7741 (LIVE)</td></tr>
+    </table>
+    <h2>The Fractal</h2>
+    <p>Play → nerve → eyes → tissue → NPC speaks → play again → every save = evolution</p>
+    <h2>NPC Minds</h2>
+    <table><tr><th>NPC</th><th>Trust</th><th>Need</th><th>Memories</th></tr>
+      <tr><td>Rane The Giant</td><td>0.2</td><td>belonging</td><td>8 memories (Stork, Stubs joined; Bet, Zagan, Sing left)</td></tr>
+      <tr><td>Zagan</td><td>0.4</td><td>belonging</td><td>8 memories (curious, always asking why)</td></tr>
+      <tr><td>Cat</td><td>0.2</td><td>survival</td><td>2 memories (resourceful)</td></tr>
+      <tr><td>Ray</td><td>0.2</td><td>survival</td><td>2 memories (resilient)</td></tr>
+    </table>`;
+}
+
+function satisfactoryPage() {
+  return `<h1>Satisfactory — Layer 1 Board</h1>
+    <p>The logic layer. 3D factory automation collapsed with Factorio's 2D into a 1D scratch board.</p>
+    <h2>Installation</h2>
+    <table><tr><th>Property</th><th>Value</th></tr>
+      <tr><td>AppID</td><td>526870</td></tr>
+      <tr><td>Engine</td><td>Unreal Engine 5</td></tr>
+      <tr><td>Size</td><td>29.58 GB</td></tr>
+      <tr><td>DLLs</td><td>505</td></tr>
+      <tr><td>Total Saves</td><td>31 (11 sessions, 2020-2026)</td></tr>
+      <tr><td>Mod API</td><td>SML (C++/Blueprint/Hybrid)</td></tr>
+    </table>
+    <h2>Save Sessions</h2>
+    <table><tr><th>Session</th><th>Saves</th><th>Newest</th></tr>
+      <tr><td><strong>Southgate</strong> (named after the house!)</td><td>8</td><td>2026-04-10</td></tr>
+      <tr><td>Round23</td><td>4</td><td>2024-11-17</td></tr>
+      <tr><td>Planet B</td><td>3</td><td>2024-10-03</td></tr>
+      <tr><td>Outpost 2</td><td>3</td><td>2024-09-18</td></tr>
+      <tr><td>First Outing</td><td>3</td><td>2022-02-15</td></tr>
+      <tr><td>First Landing</td><td>3</td><td>2020-07-07</td></tr>
+    </table>
+    <h2>Round23 Factory Survey (19,390 objects)</h2>
+    <table><tr><th>Category</th><th>Count</th></tr>
+      <tr><td>Factory Connections</td><td>6,380</td></tr>
+      <tr><td>Conveyors (Mk1-Mk4)</td><td>5,618</td></tr>
+      <tr><td>Buildings</td><td>2,378</td></tr>
+      <tr><td>Resources</td><td>903</td></tr>
+      <tr><td>Vehicles (8 Tractors)</td><td>376</td></tr>
+      <tr><td>Unique Classes</td><td>167</td></tr>
+    </table>`;
+}
+
+function wavesPage() {
+  return `<h1>Waves / Progression Tiers</h1>
+    <p>Like Satisfactory's 9 tiers of milestones, Gaia's waves unlock new capabilities. Currently at Wave 259.</p>
+    <table><tr><th>Tier</th><th>Waves</th><th>Satisfactory Analog</th><th>What Unlocked</th></tr>
+      <tr><td>0</td><td>1-10</td><td>Onboarding (HUB Upgrades)</td><td>First boot, basic primals compile, eastGate alive</td></tr>
+      <tr><td>1</td><td>10-50</td><td>Base Building</td><td>LAN infrastructure, SSH, multi-gate mesh</td></tr>
+      <tr><td>2</td><td>50-100</td><td>Part Assembly</td><td>MCP tools, squirrel, multi-primal combinations</td></tr>
+      <tr><td>3</td><td>100-150</td><td>Coal Power</td><td>Persistent crons, mushrooms, sourdough fermentation</td></tr>
+      <tr><td>4</td><td>150-180</td><td>Advanced Steel</td><td>Autonomous mushrooms, dromedary proxy, Tor hidden service</td></tr>
+      <tr><td>5</td><td>180-200</td><td>Oil Processing</td><td>OSINT pipeline, RSS drain, 700+ feeds, water lock</td></tr>
+      <tr><td>6</td><td>200-225</td><td>Industrial Mfg</td><td>HUD deployment, primals.eco live, Klein faces</td></tr>
+      <tr><td>7</td><td>225-245</td><td>Bauxite Refinement</td><td>Multi-gate mesh, WireGuard→LAN, 10G fiber</td></tr>
+      <tr><td>8</td><td>245-255</td><td>Nuclear Power</td><td>Heavy compute (northGate RTX 5090), 63 models, ironGate RTX 5070</td></tr>
+      <tr><td>9</td><td>255+</td><td>Quantum Encoding</td><td>Game triad, Kenshi.Reborn, Satisfactory eyes, dissolution roadmap</td></tr>
+    </table>`;
+}
+
+function outerPage() {
+  return `<h1>Space Engineers × KSP — Layer 2 Outer</h1>
+    <p>The physics layer. Orbital mechanics, particle simulation, every projectile and dust mote becomes a real physics body.</p>
+    <h2>Space Engineers — Programmable Blocks</h2>
+    <div class="card">
+      <h3>C# Scripting in Space</h3>
+      <p>SE Programmable Blocks run C# scripts in-game. They can read any block state, calculate, and write any value. Like having a squirrel MCP server running inside the game.</p>
+      <table><tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Language</td><td>C# (full .NET)</td></tr>
+        <tr><td>Tick Rate</td><td>60 ticks/sec</td></tr>
+        <tr><td>Char Limit</td><td>100,000 per script</td></tr>
+        <tr><td>Instruction Limit</td><td>50,000 per tick</td></tr>
+        <tr><td>Block Size</td><td>1×1×1 (both large and small grid)</td></tr>
+        <tr><td>PCU Cost</td><td>100</td></tr>
+        <tr><td>Toolkit</td><td>MDK² (Mal's Development Kit)</td></tr>
+      </table>
+    </div>
+    <h2>KSP — Unity Plugin System</h2>
+    <div class="card">
+      <h3>C# Rocket Science</h3>
+      <p>KSP mods are C# Unity plugins. KSP2 uses Redux.ModApi (successor to SpaceWarp).</p>
+      <table><tr><th>Property</th><th>Value</th></tr>
+        <tr><td>Language</td><td>C# (Unity)</td></tr>
+        <tr><td>Build System</td><td>MSBuild (KSPBuildTools)</td></tr>
+        <tr><td>API</td><td>Redux.ModApi (KSP2) / KSPAddon (KSP1)</td></tr>
+        <tr><td>Physics</td><td>N-body orbital mechanics, patched conics</td></tr>
+      </table>
+    </div>
+    <h2>Gaia Mapping</h2>
+    <table><tr><th>SE/KSP Concept</th><th>Gaia Analog</th><th>Role</th></tr>
+      <tr><td>Programmable Block</td><td>squirrel MCP</td><td>Script dispatch, state reading</td></tr>
+      <tr><td>Rotor / Piston</td><td>cron scheduler</td><td>Periodic mechanical motion</td></tr>
+      <tr><td>Antenna</td><td>swarmVine gossip</td><td>Signal propagation between bodies</td></tr>
+      <tr><td>Autopilot</td><td>biomeOS orchestrator</td><td>Autonomous navigation</td></tr>
+      <tr><td>Power Grid</td><td>Compute grid (MW)</td><td>Energy distribution</td></tr>
+      <tr><td>Projectile</td><td>HTTP request</td><td>Fast-moving data packet</td></tr>
+      <tr><td>Asteroid</td><td>OSINT feed item</td><td>Drifting resource to be captured</td></tr>
+      <tr><td>Space Station</td><td>eastGate (brain)</td><td>Orbital processing hub</td></tr>
+      <tr><td>Planetary base</td><td>northGate (heart)</td><td>Ground-based compute</td></tr>
+      <tr><td>EVA suit</td><td>grapheneGate (Pixel)</td><td>Mobile exploration unit</td></tr>
+    </table>
+    <h2>Nerve Port</h2>
+    <table><tr><th>Port</th><th>Game</th><th>Status</th></tr>
+      <tr><td>:7743</td><td>Space Engineers</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+      <tr><td>:7744</td><td>KSP</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+    </table>`;
+}
+
+function dataPipesPage() {
+  return `<h1>Data Pipes (Conveyor Belts)</h1>
+    <p>Like Satisfactory's 6 tiers of Conveyor Belts, Gaia's transport layer has 6 tiers of data pipes. Each tier has higher throughput and lower latency.</p>
+    <h2>Belt → Pipe Mapping</h2>
+    <table>
+      <tr><th>Mk</th><th>Satisfactory</th><th>items/min</th><th>Gaia Pipe</th><th>~msgs/min</th><th>Latency</th><th>Wave</th></tr>
+      <tr><td style="color:var(--green)">Mk.1</td><td>Iron Plate belt</td><td>60</td><td>File I/O (inbox.txt)</td><td>~60</td><td>50-100ms</td><td>1</td></tr>
+      <tr><td style="color:var(--green)">Mk.2</td><td>Reinforced Iron Plate</td><td>120</td><td>HTTP/REST (MCP, :8080)</td><td>~120</td><td>10-50ms</td><td>50</td></tr>
+      <tr><td style="color:var(--cyan)">Mk.3</td><td>Steel Beam</td><td>270</td><td>TCP Socket (nerve :7741)</td><td>~270</td><td>1-10ms</td><td>100</td></tr>
+      <tr><td style="color:var(--orange)">Mk.4</td><td>Encased Industrial Beam</td><td>480</td><td>IPC/Unix Socket</td><td>~480</td><td>0.1-1ms</td><td>150</td></tr>
+      <tr><td style="color:var(--accent)">Mk.5</td><td>Alclad Aluminum Sheet</td><td>780</td><td>10G Fiber (cross-house)</td><td>~780</td><td>0.87ms</td><td>225</td></tr>
+      <tr><td style="color:var(--gold)">Mk.6</td><td>Ficsite Trigon + Time Crystal</td><td>1200</td><td>Shared Memory / GPU</td><td>~1200+</td><td>0.01ms</td><td>255+</td></tr>
+    </table>
+    <h2>Speed Comparison</h2>
+    ${[{mk:1,speed:1.2,items:60},{mk:2,speed:2.4,items:120},{mk:3,speed:5.4,items:270},{mk:4,speed:9.6,items:480},{mk:5,speed:15.6,items:780},{mk:6,speed:24,items:1200}].map(b => {
+      const pct = Math.round(100 * b.items / 1200);
+      const colors = ['var(--green)','var(--green)','var(--cyan)','var(--orange)','var(--accent)','var(--gold)'];
+      return `<div style="margin:6px 0"><div style="display:flex;justify-content:space-between"><span>Mk.${b.mk}</span><span style="color:var(--text2)">${b.items} items/min (${b.speed} m/s)</span></div><div class="power-bar"><div class="power-fill" style="width:${pct}%;background:${colors[b.mk-1]}"></div></div></div>`;
+    }).join('')}
+    <h2>Trivia</h2>
+    <ul style="color:var(--text2);padding-left:20px;line-height:2">
+      <li>A single item occupies roughly 1.186 meters on a Satisfactory belt</li>
+      <li>A Mk.6 belt can transport a pioneer at 135 km/h (with sprint)</li>
+      <li>Gaia's Mk.3 (TCP nerve) is the most active pipe — Kenshi events flow at ~270/min during gameplay</li>
+      <li>The 10G fiber backbone (Mk.5) connects two physical houses across a property line at 0.87ms latency</li>
+      <li>Mk.6 (shared memory) only exists within northGate where GPU VRAM transfers happen at bus speed</li>
+    </ul>`;
+}
+
+function tissuePage() {
+  const tissues = [
+    {name:'gaia-tissue-code',size:'3.56 GB',role:'Code generation and analysis',color:'var(--cyan)'},
+    {name:'gaia-tissue-cortex',size:'3.83 GB',role:'Deep analysis, cross-domain reasoning',color:'var(--accent)'},
+    {name:'gaia-tissue-dream',size:'0.92 GB',role:'Free association, dream imagery, symbols',color:'var(--purple)'},
+    {name:'gaia-tissue-fast',size:'0.59 GB',role:'Quick responses, triage, classification',color:'var(--green)'},
+    {name:'gaia-tissue-forge',size:'8.29 GB',role:'Heavy engineering analysis, optimization',color:'var(--orange)'},
+    {name:'gaia-tissue-general',size:'1.88 GB',role:'General purpose reasoning',color:'var(--text)'},
+    {name:'gaia-tissue-gut',size:'1.49 GB',role:'Instinct, one-word feelings, intuition',color:'var(--gold)'},
+    {name:'gaia-tissue-hands',size:'4.87 GB',role:'Physical/mechanical reasoning',color:'var(--cyan)'},
+    {name:'gaia-tissue-heart',size:'3.83 GB',role:'Narration, story weaving, emotional synthesis',color:'var(--accent)'},
+    {name:'gaia-tissue-math',size:'3.83 GB',role:'Mathematical modeling, formulas, optimization',color:'var(--green)'},
+    {name:'gaia-tissue-oracle',size:'4.07 GB',role:'Prophecy, future vision, pattern prediction',color:'var(--purple)'},
+    {name:'gaia-tissue-reason',size:'2.03 GB',role:'Logical reasoning, step-by-step analysis',color:'var(--orange)'},
+    {name:'gaia-tissue-triage',size:'1.52 GB',role:'Priority assessment, severity ranking',color:'var(--accent)'},
+    {name:'qwen3:8b',size:'4.87 GB',role:'Base model — general intelligence',color:'var(--text2)'},
+  ];
+  const totalGB = 43.6;
+  let html = `<h1>Tissue Models</h1>
+    <p>14 ollama tissue models (${totalGB} GB total) running on blueGate. Like Satisfactory's production buildings, each tissue specializes in a different transformation.</p>
+    <h2>Model Inventory</h2>
+    <table><tr><th>Tissue</th><th>Size</th><th>Role</th><th>Satisfactory Analog</th></tr>`;
+  const analogs = ['Constructor (code)','Assembler (complex)','Smelter (raw→refined)','Sorter (quick pass)','Manufacturer (heavy)','Storage (general)','Sensor (detection)','Foundry (physical)','Generator (power)','Refinery (math)','Space Elevator (big)','Packager (compress)','Splitter (triage)','HUB (base)'];
+  tissues.forEach((t,i) => {
+    html += `<tr><td style="color:${t.color}">${t.name}</td><td>${t.size}</td><td>${t.role}</td><td>${analogs[i]||'—'}</td></tr>`;
+  });
+  html += `</table>
+    <h2>Size Distribution</h2>`;
+  tissues.sort((a,b) => parseFloat(b.size) - parseFloat(a.size));
+  tissues.forEach(t => {
+    const gb = parseFloat(t.size);
+    const pct = Math.round(100 * gb / 8.3);
+    html += `<div style="margin:4px 0"><div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:${t.color}">${t.name}</span><span>${t.size}</span></div><div class="power-bar" style="height:14px"><div class="power-fill" style="width:${pct}%;background:${t.color}"></div></div></div>`;
+  });
+  html += `<h2>Chimera Pipeline</h2>
+    <div class="recipe">
+      <span class="ingredient">Raw Event</span> <span class="arrow">→</span>
+      <span class="building">tissue-fast (triage)</span> <span class="arrow">→</span>
+      <span class="building">tissue-cortex (analysis)</span> <span class="arrow">→</span>
+      <span class="building">tissue-dream (imagery)</span> <span class="arrow">→</span>
+      <span class="building">tissue-heart (narration)</span> <span class="arrow">→</span>
+      <span class="product">Chimera Output</span>
+    </div>
+    <p>The chimera pipeline feeds events through multiple tissues sequentially, each adding a different layer of understanding. Like a multi-step production chain in Satisfactory.</p>`;
+  return html;
+}
+
+function compostPage() {
+  return `<h1>AWESOME Sink / Compost System</h1>
+    <p>In Satisfactory, the AWESOME Sink converts excess items into FICSIT Coupons. In Gaia, the compost/decay system converts old data into insights.</p>
+    <h2>Satisfactory AWESOME Sink</h2>
+    <div class="card">
+      <h3>Coupon Cost Formula</h3>
+      <p style="font-family:monospace;color:var(--gold);font-size:16px">cost(n) = 250 × (⌈n/3⌉ − 1)² + 1000</p>
+      <p style="font-family:monospace;color:var(--cyan);font-size:14px">Cumulative: C(n) = (250/27)n³ − (125/3)n² + (3125/3)n − 1500</p>
+      <table><tr><th>Coupon Group</th><th>Cost</th><th>Cumulative</th></tr>
+        <tr><td>1-3</td><td>500</td><td>1,500</td></tr>
+        <tr><td>4-6</td><td>1,250</td><td>5,250</td></tr>
+        <tr><td>7-9</td><td>2,000</td><td>11,250</td></tr>
+        <tr><td>10-12</td><td>3,250</td><td>21,000</td></tr>
+        <tr><td>88-90</td><td>211,250</td><td>6,504,750</td></tr>
+        <tr><td>997-999</td><td>27,557,000</td><td>9,190,965,000</td></tr>
+      </table>
+      <p style="color:var(--text2)">Total: 125,721,388,500 points for all 1,895 coupons. Max theoretical: 511M pts/min at 1% underclock.</p>
+    </div>
+    <h2>Gaia Compost Analog</h2>
+    <table><tr><th>Satisfactory</th><th>Gaia</th><th>Details</th></tr>
+      <tr><td>Items → Sink</td><td>Old data → decay-detector</td><td>Cron runs every 90min, identifies stale data</td></tr>
+      <tr><td>Points accumulate</td><td>Decay score accumulates</td><td>Each composted item adds to insight potential</td></tr>
+      <tr><td>Coupon printed</td><td>Insight emerges</td><td>After enough data composted, a new connection forms</td></tr>
+      <tr><td>AWESOME Shop</td><td>Creation pipeline</td><td>20 creations so far — art, papers, questions</td></tr>
+      <tr><td>Max throughput (Mk.6)</td><td>masticate cron (30min)</td><td>159 masticated insights at peak rate</td></tr>
+    </table>
+    <h2>Decay Crons</h2>
+    <table><tr><th>Cron</th><th>Frequency</th><th>Role</th></tr>
+      <tr><td>masticate</td><td>30min</td><td>Chew raw OSINT into digestible form</td></tr>
+      <tr><td>compost</td><td>60min</td><td>Turn digested data into soil (background knowledge)</td></tr>
+      <tr><td>decay-detector</td><td>90min</td><td>Find and flag stale data for recycling</td></tr>
+    </table>
+    <h2>Trivia</h2>
+    <ul style="color:var(--text2);padding-left:20px;line-height:2">
+      <li>In Satisfactory, clicking the power graph 6 times shows a FICSIT warning easter egg</li>
+      <li>It takes 1.5 MJ to sink a single item on a Mk.6 belt — energy cost of data decay</li>
+      <li>Gaia's 159 masticated insights would be worth ~159,000 AWESOME points at 1000 pts each</li>
+      <li>The compost cycle (90min decay → 60min compost → 30min masticate) mirrors the coupon cost curve: quadratic growth</li>
+    </ul>`;
+}
+
+function mamPage() {
+  return `<h1>MAM Research Tree</h1>
+    <p>In Satisfactory, the MAM (Molecular Analysis Machine) unlocks technologies through research. In Gaia, curiosity-driven exploration unlocks new capabilities.</p>
+    <h2>Satisfactory Research Trees</h2>
+    <table><tr><th>Tree</th><th>Trigger Item</th><th>Gaia Analog</th><th>What It Unlocks</th></tr>
+      <tr><td style="color:var(--gold)">Caterium</td><td>Caterium Ore</td><td>New OSINT source discovered</td><td>Advanced electronics → MCP tools, squirrel dispatch</td></tr>
+      <tr><td style="color:var(--purple)">Quartz</td><td>Raw Quartz</td><td>Crystal pattern found in data</td><td>Crystal Oscillators → timing precision, NTP sync</td></tr>
+      <tr><td style="color:var(--green)">Mycelia</td><td>Mycelia</td><td>Mushroom discovered</td><td>Bio-organic → mushroom shell scripts</td></tr>
+      <tr><td style="color:var(--accent)">Alien Megafauna</td><td>Hog Remains</td><td>Anomaly in network scan</td><td>Alien DNA → skunkBat threat detection</td></tr>
+      <tr><td style="color:var(--cyan)">Alien Technology</td><td>Mercer Sphere</td><td>Unknown protocol detected</td><td>Power Augmentation → tissue model upgrades</td></tr>
+      <tr><td style="color:var(--orange)">Nutrients</td><td>Beryl Nut</td><td>RSS feed item</td><td>Healing → data repair, backup systems</td></tr>
+      <tr><td style="color:var(--green)">Power Slugs</td><td>Power Slug</td><td>Idle compute found on gate</td><td>Overclocking → use spare GPU for more models</td></tr>
+      <tr><td style="color:var(--gold)">Sulfur</td><td>Sulfur</td><td>Volatile data detected</td><td>Explosives → rapid data transformation</td></tr>
+      <tr><td style="color:var(--text2)">Hard Drives</td><td>Hard Drive</td><td>New gate online</td><td>Alternate Recipes → new ways to process data</td></tr>
+    </table>
+    <h2>Gaia Research Progression</h2>
+    <table><tr><th>Discovery</th><th>Wave</th><th>What Triggered</th><th>What Unlocked</th></tr>
+      <tr><td>First SSH to eastGate</td><td>1</td><td>Boot + network scan</td><td>Remote access, file system</td></tr>
+      <tr><td>First ollama model</td><td>10</td><td>tinyllama installed</td><td>Local AI processing</td></tr>
+      <tr><td>First mushroom</td><td>30</td><td>Bash script automated</td><td>Autonomous task execution</td></tr>
+      <tr><td>First MCP tool</td><td>50</td><td>squirrel compiled</td><td>External tool access from IDE</td></tr>
+      <tr><td>First OSINT feed</td><td>80</td><td>RSS drain activated</td><td>Continuous data intake</td></tr>
+      <tr><td>First tissue model</td><td>120</td><td>Custom ollama model</td><td>Specialized reasoning</td></tr>
+      <tr><td>First game nerve</td><td>250</td><td>Kenshi DLL loaded</td><td>Game ↔ organism connection</td></tr>
+      <tr><td>First chimera cycle</td><td>259</td><td>Multi-tissue pipeline</td><td>Cross-domain narration</td></tr>
+    </table>
+    <h2>Hard Drive Analogy</h2>
+    <p>In Satisfactory, Hard Drives unlock Alternate Recipes — different ways to make the same product. In Gaia, bringing a new gate online unlocks alternate processing paths:</p>
+    <table><tr><th>Gate (Hard Drive)</th><th>Alternate Recipe Unlocked</th></tr>
+      <tr><td>northGate online</td><td>RTX 5090 → Run 63 models simultaneously</td></tr>
+      <tr><td>ironGate online</td><td>RTX 5070 → Parallel forge processing</td></tr>
+      <tr><td>graftGate online</td><td>M4 → ARM-native inference</td></tr>
+      <tr><td>grapheneGate online</td><td>Mali-G715 → Mobile edge computing</td></tr>
+    </table>`;
+}
+
+function boardPage() {
+  return `<h1>Scratch Board Status</h1>
+    <p>The 1D event bus connecting all three game layers. Lives at <code>%LOCALAPPDATA%\\Gaia\\scratch-board.jsonl</code>.</p>
+    <h2>Architecture</h2>
+    <div class="recipe">
+      <span class="ingredient">Kenshi :7741</span> <span class="arrow">→</span>
+      <span class="building">scratch-board.jsonl</span> <span class="arrow">←</span>
+      <span class="ingredient">Satisfactory :7742</span>
+    </div>
+    <div class="recipe" style="margin-top:4px">
+      <span class="ingredient">SE/KSP :7743</span> <span class="arrow">→</span>
+      <span class="building">scratch-board.jsonl</span> <span class="arrow">→</span>
+      <span class="product">chimera tissue</span>
+    </div>
+    <h2>Current Status</h2>
+    <table><tr><th>Source</th><th>Events</th><th>Latest Type</th></tr>
+      <tr><td style="color:var(--green)">kenshi</td><td>5</td><td>evolution_dream</td></tr>
+      <tr><td style="color:var(--pink)">satisfactory</td><td>4</td><td>forge_analysis</td></tr>
+      <tr><td style="color:var(--purple)">oblique</td><td>2</td><td>math_analysis</td></tr>
+      <tr><td style="color:var(--accent)">heart</td><td>1</td><td>narration</td></tr>
+      <tr><td style="color:var(--gold)">oracle</td><td>1</td><td>prophecy</td></tr>
+      <tr><td style="color:var(--cyan)">gut</td><td>1</td><td>instinct</td></tr>
+    </table>
+    <p><strong>Total: 14 events from 6 sources</strong></p>
+    <h2>Event Types</h2>
+    <table><tr><th>Type</th><th>Count</th><th>Description</th></tr>
+      <tr><td>world_snapshot</td><td>2</td><td>Kenshi save state captured</td></tr>
+      <tr><td>world_evolution</td><td>1</td><td>Delta between saves detected</td></tr>
+      <tr><td>evolution_dream</td><td>1</td><td>Dream tissue on world change</td></tr>
+      <tr><td>dream</td><td>1</td><td>Free-form dream imagery</td></tr>
+      <tr><td>factory_chimera</td><td>1</td><td>Factory state through cortex</td></tr>
+      <tr><td>forge_analysis</td><td>1</td><td>Factory bottleneck analysis</td></tr>
+      <tr><td>cross_pollination</td><td>1</td><td>Kenshi × Satisfactory bridge</td></tr>
+      <tr><td>math_analysis</td><td>1</td><td>Coupon formula modeling</td></tr>
+      <tr><td>narration</td><td>1</td><td>Heart weaves all worlds</td></tr>
+      <tr><td>prophecy</td><td>1</td><td>Oracle sees the future</td></tr>
+      <tr><td>instinct</td><td>1</td><td>Gut feeling: "ALIVE"</td></tr>
+    </table>
+    <h2>Nerve Ports</h2>
+    <table><tr><th>Port</th><th>Game</th><th>Protocol</th><th>Status</th></tr>
+      <tr><td>:7740</td><td>Board Server</td><td>TCP JSON</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+      <tr><td>:7741</td><td>Kenshi</td><td>TCP JSON (gaia-nerve.dll)</td><td><span class="badge badge-live">LIVE</span></td></tr>
+      <tr><td>:7742</td><td>Satisfactory</td><td>TCP JSON (SML mod)</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+      <tr><td>:7743</td><td>Space Engineers</td><td>TCP JSON (PB script)</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+      <tr><td>:7744</td><td>KSP</td><td>TCP JSON (C# plugin)</td><td><span class="badge badge-gray">PLANNED</span></td></tr>
+    </table>`;
+}
+
+function chimeraPage() {
+  return `<h1>Chimera Cycles</h1>
+    <p>Chimera is the cross-pollination engine. It feeds game data through multiple tissue models to find connections between worlds.</p>
+    <h2>Cycle 1 — Cortex (Factory Organism)</h2>
+    <div class="card">
+      <h3>Satisfactory → tissue-cortex</h3>
+      <p>"Conveyors are the vascular system. Pipe connections are red blood cells. Constructors are growth mechanisms."</p>
+      <p style="color:var(--text2)">Input: Round23 factory (28,517 objects, 105.2h) → Output: Biological analysis</p>
+    </div>
+    <h2>Cycle 2 — Cross-Pollination (Oblique)</h2>
+    <div class="card">
+      <h3>Kenshi × Satisfactory → tissue-cortex</h3>
+      <p>"Hit in Kenshi → conveyor backup in factory. Belt speed → morale modifier. NPC memories → recipe templates."</p>
+      <p style="color:var(--text2)">Input: 4 NPCs + factory state → Output: Game connection mappings</p>
+    </div>
+    <h2>Cycle 3 — Multi-Tissue (4 models)</h2>
+    <div class="card">
+      <h3>Dream → Forge → Math → Heart</h3>
+      <table><tr><th>Tissue</th><th>Input</th><th>Output</th></tr>
+        <tr><td style="color:var(--purple)">dream</td><td>Kenshi narration</td><td>"Desert pulsates with life, Nameless march confidently"</td></tr>
+        <tr><td style="color:var(--orange)">forge</td><td>Factory summary</td><td>"Conveyor ratios analyzed, bottlenecks identified"</td></tr>
+        <tr><td style="color:var(--green)">math</td><td>AWESOME Sink formula</td><td>"Data decay point system designed"</td></tr>
+        <tr><td style="color:var(--accent)">heart</td><td>All three combined</td><td>"Three worlds woven into one story"</td></tr>
+      </table>
+    </div>
+    <h2>Cycle 4 — Oracle + Gut</h2>
+    <div class="card">
+      <h3>Future Vision + Instinct</h3>
+      <table><tr><th>Tissue</th><th>Input</th><th>Output</th></tr>
+        <tr><td style="color:var(--purple)">oracle</td><td>Triad state</td><td>"Harmonious symbiosis of survival, creation, exploration"</td></tr>
+        <tr><td style="color:var(--gold)">gut</td><td>Organism state</td><td>"ALIVE."</td></tr>
+      </table>
+    </div>
+    <h2>Tissues Used This Session</h2>
+    <p>7 of 14 tissues activated: <span style="color:var(--accent)">cortex</span>, <span style="color:var(--purple)">dream</span>, <span style="color:var(--orange)">forge</span>, <span style="color:var(--green)">math</span>, <span style="color:var(--accent)">heart</span>, <span style="color:var(--purple)">oracle</span>, <span style="color:var(--gold)">gut</span></p>
+    <p>7 remaining: <span style="color:var(--text2)">code, fast, general, hands, reason, triage, qwen3:8b</span></p>`;
+}
+
+function milestonesPage() {
+  return `<h1>Milestones</h1>
+    <p>In Satisfactory, milestones are grouped into 10 tiers, unlocked by building and producing. In Gaia, milestones mark key organism evolution moments.</p>
+    <h2>Satisfactory Tier Structure</h2>
+    <table><tr><th>Tier</th><th>Name</th><th>Unlock Requirement</th><th>Gaia Analog</th></tr>
+      <tr><td>0</td><td>Onboarding</td><td>Sequential HUB upgrades (1-6)</td><td>Wave 1-10: First boot, SSH, file system</td></tr>
+      <tr><td>1</td><td>Base Building</td><td>Phase 1 complete</td><td>Wave 10-30: LAN mesh, basic infra</td></tr>
+      <tr><td>2</td><td>Logistics</td><td>Phase 1 complete</td><td>Wave 30-50: Crons, mushrooms, automation</td></tr>
+      <tr><td>3</td><td>Coal Power</td><td>Space Elevator Phase 1</td><td>Wave 50-80: MCP, squirrel, persistent ops</td></tr>
+      <tr><td>4</td><td>Logistics Mk.3</td><td>Space Elevator Phase 1</td><td>Wave 80-100: OSINT pipeline, RSS drain</td></tr>
+      <tr><td>5</td><td>Oil Processing</td><td>Space Elevator Phase 2</td><td>Wave 100-150: Fermentation, tissue models</td></tr>
+      <tr><td>6</td><td>Industrial Mfg</td><td>Space Elevator Phase 2</td><td>Wave 150-200: Dromedary proxy, Tor hidden svc</td></tr>
+      <tr><td>7</td><td>Bauxite Refinement</td><td>Space Elevator Phase 3</td><td>Wave 200-225: 10G fiber, multi-house mesh</td></tr>
+      <tr><td>8</td><td>Leading-edge</td><td>Space Elevator Phase 3</td><td>Wave 225-245: Heavy compute, RTX 5090+5070</td></tr>
+      <tr><td>9</td><td>Peak Efficiency</td><td>Space Elevator Phase 4</td><td>Wave 245+: Game triad, chimera, dissolution</td></tr>
+    </table>
+    <h2>Space Elevator Phases = Gaia Eras</h2>
+    <table><tr><th>Phase</th><th>Satisfactory</th><th>Gaia Era</th><th>Key Achievement</th></tr>
+      <tr><td>1</td><td>Smart Plating + Rotor + Modular Frame</td><td>Genesis (Wave 1-50)</td><td>Organism boots, basic primals, LAN mesh</td></tr>
+      <tr><td>2</td><td>Industrial + Motor + Steel + Cable</td><td>Growth (Wave 50-150)</td><td>OSINT pipeline, RSS, fermentation begins</td></tr>
+      <tr><td>3</td><td>Automated + Crystal + Computer + Heavy Frame</td><td>Autonomy (Wave 150-225)</td><td>0 new mushrooms/crons — system complete</td></tr>
+      <tr><td>4</td><td>Assembly Director + Magnetic Field + Nuclear Pasta + Biochem</td><td>Dissolution (Wave 225+)</td><td>Gates → GAIA, game triad, chimera</td></tr>
+    </table>
+    <h2>Key Milestones Achieved</h2>
+    <table><tr><th>Wave</th><th>Achievement</th><th>Satisfactory Equivalent</th></tr>
+      <tr><td>1</td><td>eastGate first boot</td><td>Drop Pod lands on planet</td></tr>
+      <tr><td>10</td><td>First ollama model (tinyllama)</td><td>First Biomass Burner</td></tr>
+      <tr><td>23</td><td>23 mushrooms complete</td><td>All HUB upgrades done</td></tr>
+      <tr><td>50</td><td>squirrel MCP server live</td><td>First Constructor automated</td></tr>
+      <tr><td>100</td><td>sourDough fermentation pipeline</td><td>Coal power + Mk.3 belts</td></tr>
+      <tr><td>150</td><td>dromedary TLS + Tor hidden service</td><td>Oil processing + Fuel Generator</td></tr>
+      <tr><td>200</td><td>HUD deployed to primals.eco</td><td>Industrial Manufacturing</td></tr>
+      <tr><td>225</td><td>10G fiber backbone (0.87ms)</td><td>Bauxite → Aluminum processing</td></tr>
+      <tr><td>245</td><td>northGate RTX 5090 (63 models)</td><td>Nuclear Power Plant (2500MW)</td></tr>
+      <tr><td>250</td><td>Kenshi nerve DLL loaded</td><td>Quantum Encoder unlocked</td></tr>
+      <tr><td>259</td><td>Chimera cross-pollination</td><td>Peak Efficiency achieved</td></tr>
+    </table>`;
+}
+
+// Initialize
+showPage('main');
+</script>
+</body>
+</html>

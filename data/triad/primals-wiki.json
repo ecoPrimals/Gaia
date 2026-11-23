@@ -1,0 +1,301 @@
+{
+  "meta": {
+    "title": "Primals Wiki — Satisfactory-Style Documentation for ecoPrimals",
+    "model": "satisfactory.wiki.gg",
+    "total_primals": 17,
+    "total_recipes": 35,
+    "total_data_types": 52,
+    "wave": 259
+  },
+
+  "primals": {
+    "biomeOS": {
+      "category": "Special",
+      "satisfactory_analog": "HUB",
+      "binary_size_mb": 22,
+      "role": "OS kernel, orchestrator — the HUB where everything starts",
+      "description": "biomeOS is the core operating system primal. Like the HUB in Satisfactory, all other primals register with it. It handles auto-discovery via Neural API, capability registration, and graph bootstrap.",
+      "inputs": ["System metrics", "Primal registrations", "Health checks"],
+      "outputs": ["now.json (current state)", "pulse.json (heartbeat)", "capability-registry.json"],
+      "power_draw_mw": "5 (lightweight orchestration)",
+      "clock_speed": "100% (5min heartbeat)",
+      "recipes_run": ["Heartbeat (5min)", "Membrane Pulse (2min)", "Thymus Self-Image (5min)"],
+      "unlocked_at": "Wave 1 — first primal compiled",
+      "key_file": "primals/biomeOS/crates/biomeos-atomic-deploy/src/neural_api_server/discovery_init.rs",
+      "notes": "570 lines of auto-discovery. TCP/UDS probing, graph bootstrap, auto-announce.",
+      "status": "COMPILED (binary: 22MB)"
+    },
+
+    "songBird": {
+      "category": "Logistics",
+      "satisfactory_analog": "Miner Mk.1",
+      "binary_size_mb": 24,
+      "role": "Mesh transport, federation — extracts data from the network",
+      "description": "songBird handles mesh transport and federation between gates. Like a Miner extracting ore from nodes, songBird extracts data from network sources and moves it through the organism.",
+      "inputs": ["Network packets", "Federation messages", "Peer discovery"],
+      "outputs": ["Transported data", "Peer connections", "Federation state"],
+      "power_draw_mw": "10 (network I/O)",
+      "clock_speed": "100%",
+      "recipes_run": ["RSS Drain (every 15min)", "Peer Discovery"],
+      "unlocked_at": "Wave 10",
+      "status": "COMPILED (binary: 24MB)"
+    },
+
+    "bearDog": {
+      "category": "Power",
+      "satisfactory_analog": "Biomass Burner",
+      "binary_size_mb": 8.4,
+      "role": "Crypto identity, BLAKE3, BTSP — generates trust (power)",
+      "description": "bearDog provides cryptographic identity using BLAKE3 hashing and BTSP (BearDog Trust Signing Protocol). Like a power generator, it produces the trust that powers all authenticated operations.",
+      "inputs": ["Raw data to sign", "Identity claims", "FAMILY_SEED"],
+      "outputs": ["BLAKE3 hashes", "Signed attestations", "Identity tokens"],
+      "power_draw_mw": "3 (crypto ops)",
+      "clock_speed": "100%",
+      "recipes_run": ["Identity Hash", "Trust Attestation"],
+      "unlocked_at": "Wave 15",
+      "notes": "FNV-1a identity hashes used in spirochete protocol for gate identification",
+      "status": "COMPILED (binary: 8.4MB)"
+    },
+
+    "nestGate": {
+      "category": "Production",
+      "satisfactory_analog": "Assembler",
+      "binary_size_mb": 8.8,
+      "role": "Data gateway, MCP server — combines 2+ data sources",
+      "description": "nestGate is the data gateway and MCP (Model Context Protocol) server. Like an Assembler combining two ingredients, nestGate joins data from different sources into structured outputs.",
+      "inputs": ["Raw data streams", "MCP tool calls", "Query parameters"],
+      "outputs": ["Structured JSON responses", "MCP tool results", "Aggregated views"],
+      "power_draw_mw": "8 (data processing)",
+      "clock_speed": "100%",
+      "recipes_run": ["membrane_counts", "observe_membrane", "read_journal", "topology", "raw_feed"],
+      "unlocked_at": "Wave 30",
+      "notes": "THIS is what squirrel MCP tools connect to. The gateway to all membrane data.",
+      "status": "COMPILED (binary: 8.8MB)"
+    },
+
+    "petalTongue": {
+      "category": "Production",
+      "satisfactory_analog": "Manufacturer",
+      "binary_size_mb": 19,
+      "role": "Content rendering, WASM — multi-input rendering engine",
+      "description": "petalTongue renders content through WASM. Like a Manufacturer taking 4 inputs to produce complex items, petalTongue combines template + data + style + config into rendered output.",
+      "inputs": ["Templates", "Data JSON", "Style configs", "WASM modules"],
+      "outputs": ["Rendered HTML", "HUD pages", "Static site content"],
+      "power_draw_mw": "15 (rendering)",
+      "clock_speed": "100%",
+      "recipes_run": ["Render HUD Page", "Compile WASM", "Template Assembly"],
+      "unlocked_at": "Wave 80",
+      "status": "COMPILED (binary: 19MB)"
+    },
+
+    "sweetGrass": {
+      "category": "Production",
+      "satisfactory_analog": "Foundry",
+      "binary_size_mb": 12,
+      "role": "Knowledge graph — combines knowledge from multiple sources",
+      "description": "sweetGrass maintains the knowledge graph. Like a Foundry combining two ores into alloy, sweetGrass merges knowledge from different domains into a unified graph.",
+      "inputs": ["Masticated insights", "OSINT items", "Wiki data", "Study results"],
+      "outputs": ["Knowledge graph nodes", "Braid connections", "Linked concepts"],
+      "power_draw_mw": "12 (graph operations)",
+      "clock_speed": "100%",
+      "recipes_run": ["Braid (every 15-30min)", "Study (every 15-30min)"],
+      "unlocked_at": "Wave 120",
+      "status": "COMPILED (binary: 12MB)"
+    },
+
+    "rhizoCrypt": {
+      "category": "Production",
+      "satisfactory_analog": "Packager",
+      "binary_size_mb": 7.8,
+      "role": "Encrypted storage — packages and encrypts data",
+      "description": "rhizoCrypt handles encrypted storage. Like the Packager converting fluids to solid packages, rhizoCrypt encrypts and packages data for secure storage and transport.",
+      "inputs": ["Raw data", "Encryption keys"],
+      "outputs": ["Encrypted blobs", "Secure packages"],
+      "power_draw_mw": "5 (crypto)",
+      "clock_speed": "100%",
+      "recipes_run": ["Encrypt", "Decrypt", "Package"],
+      "unlocked_at": "Wave 60",
+      "status": "COMPILED (binary: 7.8MB)"
+    },
+
+    "toadStool": {
+      "category": "Production",
+      "satisfactory_analog": "Oil Extractor",
+      "binary_size_mb": 13,
+      "role": "Service discovery — finds and catalogs all services",
+      "description": "toadStool discovers services across the mesh. Like an Oil Extractor placed on a node, toadStool probes ports and endpoints to find what's running.",
+      "inputs": ["IP ranges", "Port lists", "DNS queries"],
+      "outputs": ["Service registry", "Port maps", "Capability announcements"],
+      "power_draw_mw": "7 (scanning)",
+      "clock_speed": "100%",
+      "recipes_run": ["Sense Scan (every 5min)", "Service Discovery"],
+      "unlocked_at": "Wave 40",
+      "status": "COMPILED (binary: 13MB)"
+    },
+
+    "barraCuda": {
+      "category": "Production",
+      "satisfactory_analog": "Refinery",
+      "binary_size_mb": 5.3,
+      "role": "Stream compute — processes data streams in real-time",
+      "description": "barraCuda handles real-time stream processing. Like a Refinery processing crude oil into multiple outputs, barraCuda takes raw data streams and refines them.",
+      "inputs": ["Raw data streams", "Filter rules", "Aggregation configs"],
+      "outputs": ["Processed streams", "Alerts", "Metrics"],
+      "power_draw_mw": "10 (stream processing)",
+      "clock_speed": "100%",
+      "recipes_run": ["Stream Filter", "Aggregate", "Alert"],
+      "unlocked_at": "Wave 150",
+      "status": "COMPILED (binary: 5.3MB)"
+    },
+
+    "coralReef": {
+      "category": "Logistics",
+      "satisfactory_analog": "Conveyor Belt Mk.3",
+      "binary_size_mb": 7.7,
+      "role": "Distributed compute — the conveyor system between primals",
+      "description": "coralReef provides distributed compute. Like Conveyor Belts connecting buildings, coralReef connects primals and transports work between gates.",
+      "inputs": ["Work units", "Compute requests"],
+      "outputs": ["Distributed results", "Load-balanced outputs"],
+      "power_draw_mw": "8 (distributed ops)",
+      "throughput": "varies by gate compute",
+      "recipes_run": ["Distribute Work", "Load Balance"],
+      "unlocked_at": "Wave 100",
+      "status": "COMPILED (binary: 7.7MB)"
+    },
+
+    "loamSpine": {
+      "category": "Organization",
+      "satisfactory_analog": "Storage Container",
+      "binary_size_mb": 5.0,
+      "role": "Data spine — central data storage",
+      "description": "loamSpine is the data spine. Like Storage Containers holding items, loamSpine stores all data in the organism — JSON, JSONL, binary blobs.",
+      "inputs": ["Any data"],
+      "outputs": ["Stored data", "Indexed queries"],
+      "power_draw_mw": "3 (disk I/O)",
+      "capacity": "all of /opt/Gaia/data",
+      "recipes_run": ["Store", "Retrieve", "Index"],
+      "unlocked_at": "Wave 20",
+      "status": "COMPILED (binary: 5.0MB)"
+    },
+
+    "squirrel": {
+      "category": "Special",
+      "satisfactory_analog": "Constructor",
+      "binary_size_mb": 1.7,
+      "role": "Agent dispatch, MCP — the single-input workhorse",
+      "description": "squirrel is the agent dispatch and MCP interface. Like a Constructor taking one input and producing one output, squirrel takes a tool call and dispatches it.",
+      "inputs": ["MCP tool call"],
+      "outputs": ["Tool result"],
+      "power_draw_mw": "2 (lightweight dispatch)",
+      "clock_speed": "on-demand",
+      "recipes_run": ["membrane_counts", "observe_membrane", "read_journal", "topology", "raw_feed", "particle_model", "llama_ask"],
+      "unlocked_at": "Wave 50",
+      "notes": "This is the MCP server that Cursor connects to. 1.7MB binary, lightest primal.",
+      "status": "COMPILED (binary: 1.7MB)"
+    },
+
+    "skunkBat": {
+      "category": "Special",
+      "satisfactory_analog": "Space Elevator",
+      "binary_size_mb": 3.4,
+      "role": "Intrusion detection — the guard at the gate",
+      "description": "skunkBat detects intrusions. Like the Space Elevator guarding progression, skunkBat guards the organism perimeter.",
+      "inputs": ["Network traffic", "Access attempts", "Anomalies"],
+      "outputs": ["Alerts", "Block rules", "Threat reports"],
+      "power_draw_mw": "5 (monitoring)",
+      "clock_speed": "always-on",
+      "recipes_run": ["Immune Activate (every 7min)", "Threat Scan"],
+      "unlocked_at": "Wave 80",
+      "status": "COMPILED (binary: 3.4MB)"
+    },
+
+    "sourDough": {
+      "category": "Production",
+      "satisfactory_analog": "Smelter",
+      "binary_size_mb": 3.4,
+      "role": "Fermentation engine — raw data → refined insights",
+      "description": "sourDough is the fermentation engine. Like a Smelter converting raw ore to ingots, sourDough takes raw OSINT and ferments it into insights through ollama tissue models.",
+      "inputs": ["Raw OSINT", "RSS items", "Wiki data"],
+      "outputs": ["Sourdough culture entries", "Masticated insights", "Fermented knowledge"],
+      "power_draw_mw": "15 (ollama inference)",
+      "clock_speed": "100% (15-30min ferment cycles)",
+      "recipes_run": ["Masticate (every 15-30min)", "Study (every 15-30min)", "Create (every ~5min)"],
+      "unlocked_at": "Wave 100",
+      "notes": "159 masticated insights, 51 studied topics, 20 creations",
+      "status": "COMPILED (binary: 3.4MB)"
+    },
+
+    "swarmVine": {
+      "category": "Logistics",
+      "satisfactory_analog": "Pipeline",
+      "binary_size_mb": 2.6,
+      "role": "Epidemic gossip — fluid data transport between nodes",
+      "description": "swarmVine uses epidemic gossip protocol. Like Pipelines carrying fluids between buildings, swarmVine carries gossip messages between gates.",
+      "inputs": ["Gossip messages", "State updates"],
+      "outputs": ["Propagated state", "Consensus"],
+      "power_draw_mw": "3 (gossip)",
+      "clock_speed": "100%",
+      "recipes_run": ["Gossip Propagate", "State Sync"],
+      "unlocked_at": "Wave 130",
+      "status": "COMPILED (binary: 2.6MB)"
+    },
+
+    "bingoCube": {
+      "category": "Production",
+      "satisfactory_analog": "Quantum Encoder",
+      "binary_size_mb": 9.3,
+      "role": "Coordination — the highest-tier production building",
+      "description": "bingoCube coordinates complex multi-gate operations. Like the Quantum Encoder being the ultimate production building, bingoCube handles the most complex coordination tasks.",
+      "inputs": ["Multi-gate state", "Coordination requests", "Consensus votes"],
+      "outputs": ["Coordinated actions", "Distributed decisions", "FNV-1a identity hashes"],
+      "power_draw_mw": "20 (heavy coordination)",
+      "clock_speed": "100%",
+      "recipes_run": ["Coordinate", "Consensus", "Identity Hash (FNV-1a)"],
+      "unlocked_at": "Wave 200",
+      "notes": "Used in spirochete protocol for gate identification. FNV-1a hashes for all 10 gates.",
+      "status": "COMPILED (binary: 9.3MB)"
+    },
+
+    "dromedary": {
+      "category": "Logistics",
+      "satisfactory_analog": "Power Pole + Power Line",
+      "binary_size_mb": 3.7,
+      "role": "Sovereign reverse proxy, TLS, ACME — connects EVERYTHING",
+      "description": "dromedary is the reverse proxy with TLS and ACME. Like Power Poles and Lines connecting the entire grid, dromedary connects all services to the outside world.",
+      "inputs": ["HTTP/HTTPS requests", "TLS handshakes", "ACME challenges"],
+      "outputs": ["Proxied responses", "TLS certificates", "Route decisions"],
+      "power_draw_mw": "5 (proxy)",
+      "clock_speed": "always-on",
+      "recipes_run": ["Proxy Request", "TLS Terminate", "ACME Renew"],
+      "unlocked_at": "Wave 150",
+      "notes": "Serves primals.eco. The bridge between LAN and WAN.",
+      "status": "COMPILED (binary: 3.7MB)"
+    }
+  },
+
+  "power_grid": {
+    "total_capacity_mw": "~3870 MW equivalent",
+    "generators": [
+      {"gate": "northGate", "gpu": "RTX 5090", "mw": 2500, "models": 63, "analog": "Nuclear Power Plant"},
+      {"gate": "ironGate", "gpu": "RTX 5070", "mw": 500, "models": "pending", "analog": "Alien Power Augmenter"},
+      {"gate": "eastGate", "gpu": "RTX 4070", "mw": 250, "models": 8, "analog": "Fuel-Powered Generator"},
+      {"gate": "graftGate", "gpu": "M4 (10C)", "mw": 75, "models": 1, "analog": "Coal-Powered Generator"},
+      {"gate": "grapheneGate", "gpu": "Mali-G715", "mw": 30, "models": 5, "analog": "Biomass Burner"},
+      {"gate": "deckGate", "gpu": "RDNA 2", "mw": 15, "models": 0, "analog": "Biomass Burner (HUB)"}
+    ],
+    "note": "Like Satisfactory, if compute demand exceeds supply on any gate, it trips"
+  },
+
+  "cron_recipes": {
+    "total": 35,
+    "every_2min": ["eastgate-pulse", "mushroom-ear", "membrane-pulse"],
+    "every_3min": ["pi-drain"],
+    "every_5min": ["heartbeat", "pihz-emotion", "metrics", "thymus", "sense-scan"],
+    "every_5min_offset": ["neuro", "teach", "test", "create", "learn", "chipmunk-hears", "phosphate"],
+    "every_7min": ["willis-balloon", "immune-activate"],
+    "every_10min": ["curiosity", "manifest", "wavefold", "waterlock"],
+    "every_15_30min": ["homunculus", "klein-evolve", "knome", "braid", "publish", "study", "RSS", "masticate"],
+    "hourly_plus": ["compost", "arena-evolve", "decay-detector"],
+    "total_beats_per_hour": "~180+"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "title": "CUT ALL PAID API COSTS BY END OF WEEK",
+  "wave": 259,
+  "ts": "2026-11-17T19:09:00Z",
+  "vision": "The IDE IS Cursor. The public API IS Gaia. No more paid API costs.",
+  "architecture": {
+    "ide": "Cursor (free tier + local models)",
+    "api_backend": "ollama OpenAI-compatible /v1/ endpoint",
+    "models": {
+      "blueGate": {
+        "ip": "localhost:11434",
+        "gpu": "RTX 5090 (shared with northGate via LAN)",
+        "models": 14,
+        "vram": "31.8 GiB",
+        "endpoint": "http://localhost:11434/v1/chat/completions"
+      },
+      "northGate": {
+        "ip": "192.168.4.147:11434",
+        "gpu": "RTX 5090",
+        "models": 63,
+        "vram": "31.8 GiB",
+        "endpoint": "http://192.168.4.147:11434/v1/chat/completions"
+      }
+    }
+  },
+  "cursor_config": {
+    "enableLocalModels": true,
+    "ollamaUrl": "http://127.0.0.1:11434",
+    "defaultModel": "gaia:latest",
+    "file": "%APPDATA%/Cursor/User/settings.json"
+  },
+  "codex_config": {
+    "provider": "openai",
+    "model": "qwen3:8b",
+    "base_url": "http://localhost:11434/v1",
+    "api_key": "ollama",
+    "file": "~/.codex/config.toml",
+    "status": "FIXED (was 681 bytes of nulls, now valid TOML)"
+  },
+  "what_we_cut": [
+    "OpenAI API costs → ollama local (FREE)",
+    "ChatGPT subscription → Cursor + local models (FREE)",
+    "Codex API → ollama /v1/ compat (FREE)",
+    "Claude API for bulk work → tissue models local (FREE)",
+    "Any external inference → process locally first (Water Lock Protocol)"
+  ],
+  "what_stays_paid": [
+    "Cursor Pro (for Claude Opus in complex tasks) — until local can handle it",
+    "Internet connection (ISP) — can't cut this lol"
+  ],
+  "verified": {
+    "ollama_openai_compat": "WORKS — /v1/chat/completions returns valid responses",
+    "blueGate_local": "14 models, gaia-tissue-fast responds in <1s",
+    "northGate_remote": "14 models (63 total), RTX 5090, responds in <1s",
+    "codex_config": "FIXED — was corrupted (all nulls), now valid TOML pointing to local ollama",
+    "cursor_settings": "ALREADY configured for local models"
+  }
+}

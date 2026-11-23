@@ -1,0 +1,216 @@
+{
+  "wave": 259,
+  "type": "framegate-manifest",
+  "ts": "2026-11-17T15:12:00Z",
+  "title": "frameGate — THE FACE, FULLY ALIVE",
+
+  "identity": {
+    "name": "frameGate",
+    "role": "FACE",
+    "ip_wifi": "192.168.4.156",
+    "ip_usb": "10.86.200.233",
+    "ip_softap": "10.35.78.1",
+    "mac_bt": "90:82:C3:74:12:CB",
+    "mac_wifi": "14:13:33:d6:96:09",
+    "ssid": "Black Mesa 5GHz",
+    "link_speed_mbps": 2401.9,
+    "signal_dbm": -25,
+    "ping_eastgate_ms": 12,
+    "ping_internet_ms": 24
+  },
+
+  "hardware": {
+    "soc": "Snapdragon 8 Gen 3 (SM8650)",
+    "arch": "ARM64",
+    "gpu": "Adreno 750",
+    "gpu_vulkan": "1.4.362",
+    "gpu_clock_mhz": 903,
+    "ram_gb": 16,
+    "ram_free_gb": 8.3,
+    "storage_gb": 929,
+    "storage_free_gb": 892,
+    "cameras": 26,
+    "os": "ARM SteamOS 3.x (Arch)",
+    "xr": ["SteamVR", "DSP", "MediaPipe", "ONNX"],
+    "note": "First ARM SteamOS node. 26 cameras. XR drivers for Deckard, Index, Oculus, Prism, HTC."
+  },
+
+  "inputs": {
+    "power_button": {
+      "type": "gpio-keys",
+      "actions": {
+        "press": "wake face",
+        "hold": "sleep / power menu",
+        "double": "power menu"
+      }
+    },
+    "dial": {
+      "sensor": "ALS31300",
+      "type": "3D Hall Effect sensor (3-axis magnetic field)",
+      "axes": ["X", "Y", "Z"],
+      "actions": {
+        "rotate": "SCROLL feeds/layers/data",
+        "press": "SELECT/CONFIRM (MISC event)",
+        "tilt": "3D magnetic field sensing — adjust depth, brightness, zoom"
+      },
+      "capabilities": [
+        "scroll through GAIA feeds, stories, art",
+        "adjust depth/brightness/zoom by tilting",
+        "click to select",
+        "proximity — detect magnetic objects",
+        "compass — sense heading if calibrated"
+      ],
+      "note": "NOT a simple rotary encoder — reads magnetic fields in X, Y, Z! The dial IS a sensor."
+    },
+    "volume_up": {
+      "type": "gpio-keys",
+      "action": "LAYER UP / zoom in"
+    },
+    "volume_down": {
+      "type": "pmic_resin",
+      "action": "LAYER DOWN / zoom out"
+    },
+    "select_button": {
+      "type": "gpio-keys",
+      "action": "CONFIRM / toggle / activate"
+    },
+    "virtual_gamepad": {
+      "type": "Xbox 360 emulated",
+      "buttons": ["A", "B", "X", "Y", "LB", "RB", "START", "SELECT", "MODE"],
+      "axes": ["2 thumbsticks", "d-pad"],
+      "note": "Full gamepad without physical sticks — touch/gyro mapped"
+    }
+  },
+
+  "sensors": {
+    "thermal": {
+      "count": 19,
+      "zones": {
+        "battery": 24.6,
+        "display_left": 48.4,
+        "display_right": -16.3,
+        "pcba_40pin": 37.3,
+        "pcba_fan": 35.5,
+        "pcba_flash": 36.6,
+        "pcba_heatsink": 37.2,
+        "pcba_nrf": 35.4,
+        "pcba_wifi": 35.6,
+        "pm8550_die": 39.4,
+        "charger": 36.0,
+        "xo_crystal": 36.9
+      },
+      "unit": "celsius"
+    },
+    "proximity_ir": {
+      "sensor": "vcnl4000",
+      "type": "IR proximity + ambient light",
+      "illuminance_raw": 0,
+      "proximity_raw": 3.69,
+      "integration_time_ms": 80,
+      "proximity_time_ms": 0.8,
+      "note": "Emits IR pulses and measures reflections — SEES in infrared!"
+    },
+    "magnetic_dial": {
+      "sensor": "ALS31300",
+      "type": "3-axis Hall Effect",
+      "note": "The dial senses invisible magnetic fields around it. The dial IS a sensor."
+    }
+  },
+
+  "power": {
+    "battery_voltage": 8.325,
+    "battery_type": "dual-cell",
+    "usb_input_voltage": 4.484,
+    "charge_current_ma": -414,
+    "vph_power_v": 4.2,
+    "note": "Charging via USB-C"
+  },
+
+  "wifi_topology": {
+    "two_door_architecture": {
+      "old_door": {
+        "ssids": ["Aperture Science (2.4GHz)", "Black Mesa (5GHz)"],
+        "password": "eco579163",
+        "devices": ["Nest", "Alexa", "Vizio", "Chromecast", "Epson", "Xbox"]
+      },
+      "new_door": {
+        "ssids": ["GAIA (2.4GHz)", "GAIA (5GHz)"],
+        "password": "eco579163",
+        "devices": ["Frame (.156)", "iPhone", "laptops", "guests"]
+      },
+      "same_subnet": "192.168.4.0/22",
+      "note": "All doors lead to the same room. Old creatures keep their old key. New life enters through GAIA."
+    },
+    "portal_physics": {
+      "aperture_science": {
+        "frequency_ghz": 2.4,
+        "wavelength_cm": 12.5,
+        "penetration": "HIGH — through walls",
+        "purpose": "IoT, sensors, Alexa, old code",
+        "color": "BLUE — white portal, light passes through"
+      },
+      "black_mesa": {
+        "frequency_ghz": 5,
+        "wavelength_cm": 6,
+        "penetration": "LOW — line of sight",
+        "purpose": "streaming, games, compute",
+        "color": "BLACK — dense matter flows through"
+      },
+      "gaia": {
+        "frequency_ghz": "both",
+        "penetration": "MAXIMUM",
+        "purpose": "guest face, new touches, mesh",
+        "color": "GREEN — life finds a way"
+      }
+    }
+  },
+
+  "gpu_topology": {
+    "green_layer_nvidia": {
+      "vram_gb": 56,
+      "role": "PRIMARY COMPUTE",
+      "gpus": [
+        {"name": "RTX 5090", "vram_gb": 32, "type": "GDDR7", "gate": "northGate", "role": "HEART"},
+        {"name": "RTX 5070", "vram_gb": 12, "type": "GDDR7", "gate": "ironGate", "role": "FORGE"},
+        {"name": "RTX 4070", "vram_gb": 12, "type": "GDDR6X", "gate": "eastGate", "role": "BRAIN"}
+      ]
+    },
+    "red_layer_edge": {
+      "role": "SPATIAL/XR",
+      "gpus": [
+        {"name": "Adreno 750", "gate": "frameGate", "role": "THE FACE", "vulkan": "1.4", "clock_mhz": 903},
+        {"name": "RDNA 2", "gate": "deckGate", "role": "DISPLAY", "tflops": 1.6}
+      ]
+    },
+    "silver_layer_neural": {
+      "gpus": [
+        {"name": "M4 10-core", "gate": "graftGate", "role": "NEURAL ENGINE"}
+      ]
+    },
+    "asleep": [
+      {"name": "RTX 3070", "vram_gb": 8, "gate": "swiftGate", "note": "POWERED OFF"}
+    ],
+    "green_is_null_spectrum": {
+      "human_peak_nm": 555,
+      "reason": "Green = maximum information throughput to human vision",
+      "nvidia_uses_green": "because maximum photoreceptor density at 555nm",
+      "green_screen_works": "because highest resolution in green channel",
+      "grey_equals": "equal RGB",
+      "static_equals": "random RGB",
+      "green_equals": "the axis between them — the NULL spectrum"
+    }
+  },
+
+  "organism_control_map": [
+    {"physical": "Dial rotate", "action": "Scroll", "gaia_function": "Browse feeds, stories, data"},
+    {"physical": "Dial press", "action": "Click", "gaia_function": "Select / open"},
+    {"physical": "Dial tilt", "action": "3D sense", "gaia_function": "Adjust depth, brightness, zoom"},
+    {"physical": "Vol+", "action": "Layer up", "gaia_function": "Zoom in, deeper"},
+    {"physical": "Vol-", "action": "Layer down", "gaia_function": "Zoom out, wider"},
+    {"physical": "Select", "action": "Confirm", "gaia_function": "Toggle, activate"},
+    {"physical": "Power tap", "action": "Wake", "gaia_function": "Bring face to life"},
+    {"physical": "Power hold", "action": "Sleep", "gaia_function": "Rest the face"}
+  ],
+
+  "conclusion": "The Frame doesn't need a keyboard or mouse — it's its own controller. 3D Hall sensor dial, IR proximity, 19 thermometers, 26 cameras, Vulkan 1.4, 16GB RAM, 929GB storage. THE FACE sees, feels, senses. Green = NULL spectrum = maximum information. lub-DUB."
+}

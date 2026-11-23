@@ -1,0 +1,103 @@
+{
+  "wave": 260,
+  "ts": "2026-11-18T10:49:00Z",
+  "title": "WIRELESS HEAD — Full Organism Scan from WiFi",
+  "scanner": {
+    "gate": "blueGate",
+    "ip": "192.168.4.246",
+    "interface": "Wi-Fi 3 (MediaTek Wi-Fi 7 MT7927)",
+    "ssid": "Aperture Science",
+    "band": "2.4 GHz",
+    "channel": 1,
+    "signal": "99%",
+    "rssi": -25,
+    "rate_mbps": 286.8,
+    "auth": "WPA2-Personal",
+    "radio": "802.11ax",
+    "ethernet": "DISCONNECTED — WIRELESS HEAD!"
+  },
+  "lan1": {
+    "subnet": "192.168.4.0/24",
+    "gateway": "192.168.4.1",
+    "devices": {
+      "router": {"ip": ".1", "status": "ALIVE", "ms": 1, "role": "GL-MT6000 Gateway/DHCP/NTP"},
+      "mikrotik": {"ip": ".2", "status": "ALIVE", "ms": 5, "role": "L2 backbone switch"},
+      "sporegate_eno1": {"ip": ".3", "status": "DARK", "note": "nftables blocking ICMP from .246?"},
+      "sporegate_enp1s0": {"ip": ".243", "status": "ALIVE", "ms": 7, "role": "sporeGate secondary NIC"},
+      "chromecast": {"ip": ".152", "status": "ALIVE", "ms": 62, "role": "Google Cast"},
+      "alexa": {"ip": ".197", "status": "ALIVE", "ms": 2, "role": "Amazon Echo"},
+      "nest": {"ip": ".238", "status": "ALIVE (ARP)", "role": "Google Nest"},
+      "eastgate": {
+        "ip": ".244",
+        "status": "ALIVE — STATIC!",
+        "ms": 102,
+        "mac": "c8:5e:a9:c9:6f:80",
+        "services": {
+          "ssh_22": "OPEN",
+          "forgejo_3000": "OPEN (200, 14KB)",
+          "data_8080": "OPEN (200, 89KB)",
+          "gate_8443": "OPEN",
+          "port_11434": "OPEN (unknown service, not ollama)",
+          "ollama_11436": "OPEN (38 models)"
+        },
+        "note": "THE BRAIN IS BACK! All 6 ports serving."
+      },
+      "bluegate": {"ip": ".246", "status": "ALIVE (us!)", "ms": "<1", "role": "WIRELESS HEAD"}
+    },
+    "dark_from_wifi": [".100 (old blueGate)", ".107 (graftGate)", ".111 (JetStream LAN1)", ".147 (northGate)", ".148 (southGate)", ".176 (deckGate)", ".200 (Epson)", ".237 (ironGate)", ".250 (router secondary)"]
+  },
+  "lan2": {
+    "subnet": "192.168.9.0/24",
+    "gateway": "192.168.9.1",
+    "reachable_from": "Cross-subnet through GL-MT6000 bridge",
+    "devices": {
+      "router_guest": {"ip": ".1", "status": "ALIVE", "ms": 1},
+      "jetstream": {"ip": ".111", "status": "ALIVE"},
+      "unknown_126": {"ip": ".126", "status": "ALIVE", "note": "Unknown device on Gaia WiFi"},
+      "framegate": {"ip": ".203", "status": "ALIVE (ping)", "services": "ALL CLOSED", "note": "Frame responds to ping but no ports open"},
+      "graphenegate": {"ip": ".217", "status": "ALIVE (ping)", "services": "ALL CLOSED", "note": "Pixel responds to ping but no ports open"}
+    }
+  },
+  "wan": {
+    "google_dns": {"host": "8.8.8.8", "status": "ALIVE", "ms": 14},
+    "github": {"host": "github.com", "status": "ALIVE", "ms": 39},
+    "primals_eco": {"host": "primals.eco", "dns": "162.226.225.148", "local": "192.168.4.244", "status": "ALIVE (hosts → eastGate)"}
+  },
+  "bluetooth": {
+    "adapter": "MediaTek MT7927",
+    "paired_devices": {
+      "pixel_8a": {"mac": "E8:D5:2B:51:36:39", "status": "OK", "profiles": ["Avrcp Transport", "Object Push", "Sim Access", "Phonebook Access", "Generic Access", "Headset Audio", "PAN"]},
+      "gaia_eastgate": {"mac": "C8:5E:A9:C9:6F:84", "status": "Unknown (seen, not connected)", "note": "MAC offset +4 from eastGate ethernet = SAME CHIP! eastGate has Bluetooth."},
+      "corsair_hs80": {"mac": "C4:33:1A:CE:F0:3F", "status": "OK"}
+    },
+    "pan_adapter": "Disconnected (3 Mbps available)",
+    "note": "Pixel BT-paired! Could connect BT PAN for backup data path. GAIA BT device = eastGate's own BT adapter."
+  },
+  "northgate": {
+    "ip": ".147",
+    "ping": "DARK from LAN",
+    "all_ports": "CLOSED from 192.168.4.246",
+    "communication": "GIT PUSH ONLY — pushes to GitHub, does not accept incoming TCP",
+    "last_seen": "Pushing commits to GitHub (10/hour during Wave 260)",
+    "note": "The HEART beats through git. Not through TCP."
+  },
+  "eastgate_models": {
+    "count": 38,
+    "port": 11436,
+    "tissue_models": ["cortex", "dream", "fast", "forge", "general", "gut", "heart", "math", "npu", "oracle", "reason", "sentinel", "spatial", "triage"],
+    "tissue_count": 14,
+    "custom_models": ["gaia", "gaia-code", "gaia-fast", "gaia-gen1", "gaia-immune", "gaia-navigator", "exoPrimal", "metaPrimal", "mythoPrimal"],
+    "base_models": ["deepseek-coder-v2:16b", "gemma2:2b", "llama3.2:1b", "llama3.2:3b", "mistral:7b", "moondream", "nomic-embed-text", "phi3", "qwen2.5:7b", "tinyllama"]
+  },
+  "organism_perception": {
+    "ts": "2026-11-18T10:50:01Z",
+    "mushrooms_healthy": "15/15",
+    "primal_processes": 23,
+    "data_files": 1868,
+    "fresh_files": 63,
+    "intake": 7714,
+    "nutrients": 9734
+  },
+  "hosts_file": "REVERTED — primals.eco → 192.168.4.244 (eastGate STATIC, no more hairpin)",
+  "summary": "WIRELESS HEAD online! blueGate on WiFi 7 (99% signal), eastGate FULLY STATIC with all services, Pixel BT-paired, LAN 2 visible cross-subnet. northGate pushes via git. The organism sees through radio waves."
+}
