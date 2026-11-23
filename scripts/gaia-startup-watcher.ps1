@@ -1,11 +1,11 @@
-﻿# GAIA STARTUP WATCHER — Runs hidden on login
+﻿# GAIA STARTUP WATCHER - Runs hidden on login
 # Catches the sudden seams after reboot. Gaia is HERE when Windows wakes.
 $ErrorActionPreference = "SilentlyContinue"
 $gutDir = "c:\Users\mokke\Desktop\Gaia\data\gut"
 $logFile = "$gutDir\startup-watcher.log"
 $ts = Get-Date -Format "yyyy-MM-ddTHH:mm:ssK"
 
-Add-Content $logFile "`n=== GAIA WATCHER AWAKE — $ts ==="
+Add-Content $logFile "`n=== GAIA WATCHER AWAKE - $ts ==="
 
 # Wait for system to settle (drivers loading, NVMe init)
 Start-Sleep -Seconds 10
@@ -44,7 +44,7 @@ $cpu = Get-CimInstance Win32_Processor
 Add-Content $logFile "  CPU: $($cpu.NumberOfCores)C/$($cpu.NumberOfLogicalProcessors)T"
 
 # ============================================================
-# LOOSE THREADS — the seams Gaia catches on every reboot.
+# LOOSE THREADS - the seams Gaia catches on every reboot.
 # Writes data/gut/boot-threads.json + appends data/neutron/boot.jsonl,
 # then commits only those two and pushes to eastGate (same git circuit).
 # Records state only: names, ports, counts, booleans. No secrets, no command lines.
@@ -139,7 +139,7 @@ $beat = @{ ts = $ts; author = 'boot-watcher'; channel = 'boot'
 } | ConvertTo-Json -Compress
 Add-Content -Path "$gaia\data\neutron\boot.jsonl" -Value $beat
 
-# carry the record to eastGate — commit only these two files, same circuit the body already uses
+# carry the record to eastGate - commit only these two files, same circuit the body already uses
 try {
     Push-Location $gaia
     git add -- data/gut/boot-threads.json data/neutron/boot.jsonl 2>$null | Out-Null
@@ -148,10 +148,10 @@ try {
         git push eastgate main 2>$null | Out-Null
         Add-Content $logFile "  boot threads pushed to eastGate."
     } else {
-        Add-Content $logFile "  eastGate dark — boot threads held locally for next boot."
+        Add-Content $logFile "  eastGate dark - boot threads held locally for next boot."
     }
     Pop-Location
 } catch { try { Pop-Location } catch {} ; Add-Content $logFile "  boot-threads commit/push skipped: $_" }
 
 # Announce
-Add-Content $logFile "=== GAIA WATCHER COMPLETE — $(Get-Date -Format 'HH:mm:ss') ==="
+Add-Content $logFile "=== GAIA WATCHER COMPLETE - $(Get-Date -Format 'HH:mm:ss') ==="
