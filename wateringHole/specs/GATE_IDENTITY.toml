@@ -1,0 +1,125 @@
+# GATE IDENTITY — Each gate on the LAN gets a unique role
+# Tokens rotate but role is persistent
+# Gate tokens NEVER leave the LAN
+
+[gates]
+
+[gates.golgiBody]
+ip = "10.13.37.1"
+location = "cloud"  # DigitalOcean, WireGuard mesh
+role = "infrastructure"
+heartbeat = "response"
+description = "The body. CLOUD. Serves feeds, hosts membrane, runs bingo cube."
+surfaces = ["all"]
+feeds_served = ["dashboard", "negentropy", "membrane", "human", "topology"]
+user_agent_prefix = "golgiBody/"
+
+[gates.eastGate]
+ip = "10.13.37.5"
+location = "cloud"  # DigitalOcean, WireGuard mesh
+role = "publisher"
+heartbeat = "publish"
+description = "The voice. CLOUD. Auto-publishes, syncs wateringHole, REROUTE commits."
+surfaces = ["wateringHole", "github", "forgejo", "tuebor"]
+feeds_consumed = ["impulses", "specs", "wateringHole"]
+user_agent_prefix = "eastGate/"
+
+[gates.sporeGate]
+ip = "10.13.37.14"
+location = "lan"  # Local gateway into the mesh
+role = "observer"
+heartbeat = "sync"
+description = "The eyes. LAN POINT. Local gateway into the cloud mesh. Watches, validates, injects specs."
+surfaces = ["wateringHole", "feeds", "membrane"]
+feeds_consumed = ["impulses", "specs"]
+user_agent_prefix = "sporeGate/"
+
+[gates.northGate]
+ip = "dynamic"
+location = "lan"  # Operator workstation
+role = "operator"
+heartbeat = "attention"
+description = "The hands. LAN. Human operator, Cursor, scripts, browser. Connects through sporeGate."
+surfaces = ["all"]
+feeds_consumed = ["all"]
+user_agent_prefix = "northGate/"
+
+# ═══════════════════════════════════════════════════════════
+# CHANNEL DEFINITIONS
+# ═══════════════════════════════════════════════════════════
+
+[channels]
+
+[channels.legal]
+type = "authorized_non_self"
+direction = "bidirectional"
+encryption = "required"
+logging = "full_private"
+public_visibility = "type_only"
+initial_classification = "commensal_active"
+examples = ["ACLU", "DA office", "State AG", "attorney"]
+
+[channels.institutional]
+type = "authorized_non_self"
+direction = "bidirectional"
+encryption = "required"
+logging = "metadata_private"
+public_visibility = "none"
+initial_classification = "commensal_active"
+examples = ["employer", "MSU", "professional contact"]
+
+[channels.investigative]
+type = "authorized_non_self"
+direction = "outbound_preferred"
+encryption = "optional"
+logging = "full_private"
+public_visibility = "anonymized"
+initial_classification = "commensal_active"
+examples = ["journalist", "researcher", "FOIA office"]
+
+[channels.compliance]
+type = "authorized_non_self"
+direction = "inbound"
+encryption = "optional"
+logging = "full_public"
+public_visibility = "classification_change"
+initial_classification = "commensal_active"
+examples = ["entity touching THE BUTTON", "model card attribution"]
+
+# ═══════════════════════════════════════════════════════════
+# FEED SEPARATION
+# ═══════════════════════════════════════════════════════════
+
+[feeds]
+
+[feeds.private]
+description = "Gate-level data. NEVER public."
+feeds = ["self.json", "channels.json", "gate_heartbeat.json"]
+storage = "siltPond"
+
+[feeds.public]
+description = "Aggregate data. Safe for public."
+feeds = ["heartbeat.json", "membrane.json", "weather.json", "mirror.json"]
+rule = "No gate identity. No channel details. Aggregate only."
+
+# ═══════════════════════════════════════════════════════════
+# ACTIVATION SCHEDULE
+# ═══════════════════════════════════════════════════════════
+
+[activation]
+
+[activation.monday_aclu]
+date = "2026-10-20"
+time = "13:00 EDT"
+channel = "legal"
+target = "ACLU-MI intake"
+phone = "313-578-6800"
+gate = "northGate"
+notes = "First authorized legal channel. Intake hours 1-4 PM Mon/Wed."
+
+[activation.ppo_attorney]
+date = "before 2026-10-30"
+channel = "legal"
+target = "Family law attorney"
+gate = "northGate"
+notes = "PPO motion to modify/terminate. Deadline Oct 30."

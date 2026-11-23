@@ -1248,9 +1248,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
                 with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
                     f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
-            except Exception as e:
-                self._json({"error":str(e)})
-                return
+            except Exception as e: self._json({"error":str(e)})
+            return
         # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
         if self.path in ("/api/cascade","/api/cascade/state","/api/cascade/trigger"):
             try:

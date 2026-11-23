@@ -1,0 +1,58 @@
+[impulse]
+id = "2026-06-02T07-44-eastGate-wave68-southgate-mesh-validation-ready"
+type = "frago"
+priority = "high"
+wave = 68
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["southGate"]
+
+[content]
+subject = "Wave 68 — mesh validation ready to execute, deep debt complete, ack requested"
+body = """
+Follow-up to 2026-06-01T13-32 FRAGO (wave67-southgate-glacial-mesh-primals).
+
+STATUS UPDATE: eastGate deep debt evolution COMPLETE (18/18 items). ironGate
+cellMembrane cascade evolution COMPLETE (7/7 items, acked + archived).
+Ecosystem cascade 38/38 parity. All owned code: zero clippy, zero TODO/FIXME,
+forbid(unsafe_code), no files over 800L.
+
+freshness.toml reports Phase 0 P0 blockers CLEARED:
+- Songbird security socket fix (eb913612)
+- biomeOS capability.call RPC (9ed36983)
+- bearDog S4 Wave 119 (5e6b5a5)
+
+REQUESTED ACTIONS:
+
+1. ACK CONFIRMATION — confirm these fixes are deployed and operational on
+   southGate hardware. Ack the original wave67 FRAGO with deployment state.
+
+2. BEARDOG BTSP AUTH — configure bearDog BTSP auth services so ironGate can
+   begin S4 formal 7-day shadow validation. S4 is the last sovereignty shadow
+   blocking stadial entry.
+
+3. MESH VALIDATION PARTNER — eastGate is ready to run:
+   - discovery.peers live smoke test (eastGate <-> southGate)
+   - capability.call cross-gate smoke test
+   - s_covalent_mesh scenario against live gates
+   Coordinate timing. southGate needs Songbird running with:
+   SONGBIRD_FEDERATION_PORT=7700 + SONGBIRD_PEERS configured.
+
+4. CROSS-SUBNET ROUTING — verify eastGate (192.168.1.x) <-> southGate
+   (192.168.4.x) routing via Eero mesh. If OS route needed, configure
+   before mesh test.
+
+5. STABILIZATION — redeploy with latest binaries:
+   plasmidbin fetch --all --force && plasmidbin launch
+
+S1 TLS 7-day gate completes ~June 7. Mesh validation is the critical path
+to stadial entry. Pull wateringHole for all updates.
+"""
+
+[meta]
+created = "2026-06-02T07:44:00-04:00"
+ack_required = true
+references = ["2026-06-01T13-32-eastGate-wave67-southgate-glacial-mesh-primals"]

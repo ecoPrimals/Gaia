@@ -1,0 +1,83 @@
+[impulse]
+id = "2026-06-02T10-56-eastGate-wave68-biomeos-l4-weighted-routing"
+type = "frago"
+priority = "medium"
+wave = 68
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["southGate"]
+
+[content]
+subject = "Wave 68 — biomeOS Neural API L4 completion: wire weighted provider selection + topology affinity"
+body = """
+Two evolution items for biomeOS Neural API, both targeting the routing layer.
+These items share the same subsystem (ProviderWeight / discover_capability)
+and should be implemented together.
+
+═══ ITEM 1: WEIGHTED PROVIDER SELECTION ═══
+
+CURRENT STATE:
+  - RoutingWeightTable exists with EWMA latency, error rate, affinity scoring
+  - ProviderWeight::score() computes a deterministic quality score per provider
+  - Circuit breakers operational (5 failures → open, 30s cooldown)
+  - discover_capability is still FIRST-MATCH — weights are computed but IGNORED
+
+REQUESTED CHANGE:
+  Replace first-match selection in discover_capability with weighted selection:
+  1. Enumerate all providers for requested capability
+  2. Score each via ProviderWeight::score()
+  3. Select highest-scoring provider (deterministic, not probabilistic)
+  4. On tie: prefer local-gate provider (see topology affinity below)
+  5. Circuit-broken providers excluded from candidates
+
+VALIDATION:
+  - primalSpring scenario s48 (observatory-parity) validates weight visibility
+  - primalSpring scenario s49 (feedback-loop) validates weight changes after dispatch
+  - Both scenarios will pass unchanged — they test weight existence, not selection
+
+A/B SHADOW (recommended):
+  - Log both first-match and weighted selections
+  - If they disagree, log both choices + scores
+  - After 1000 dispatches, measure disagreement rate
+  - Graduate weighted selection when disagreement rate stabilizes
+
+═══ ITEM 2: TOPOLOGY AFFINITY FACTOR ═══
+
+CURRENT STATE:
+  - ProviderWeight::score() uses: affinity × reliability × latency_factor − cost_penalty
+  - Topology (network distance) is not a factor — all providers treated equally
+  - Calling bearDog on southGate (3ms cross-subnet) scores same as local bearDog (<0.1ms)
+
+REQUESTED CHANGE:
+  Add topology_affinity to ProviderWeight::score():
+    score = affinity × reliability × latency_factor × topology_affinity − cost_penalty
+
+  Affinity values (from TOPOLOGY_MAP.toml, now in wateringHole):
+    same_gate (UDS):           1.0
+    same_segment (LAN):        0.9
+    cross_segment (Eero mesh): 0.7
+    vps_relay:                 0.4
+    wan_turn:                  0.3
+
+  Determining segment:
+  - primal.announce includes gate_id field (already present)
+  - biomeOS knows its own gate_id from gate profile
+  - If provider gate_id == local gate_id → same_gate
+  - Else: look up segment membership from ecosystem_manifest.toml or discovery.peers
+
+TOPOLOGY_MAP.toml is published in wateringHole with segment definitions,
+estimated latencies, and affinity values. Pull via cascade for reference.
+
+Both items require no primalSpring changes — they are internal biomeOS routing
+decisions. primalSpring's observatory scenarios will detect the behavior change
+via neural_api.route_explain responses.
+
+ACK with timeline estimate.
+"""
+
+[meta]
+created = "2026-06-02T10:56:00-04:00"
+ack_required = true

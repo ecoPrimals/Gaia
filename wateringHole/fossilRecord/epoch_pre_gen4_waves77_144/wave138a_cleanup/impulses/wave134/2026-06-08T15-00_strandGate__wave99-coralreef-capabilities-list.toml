@@ -1,0 +1,37 @@
+# RESOLVED: coralReef capabilities.list IPC compliance
+#
+# The IPC compliance sweep found 11/12 capabilities PASS because coralReef
+# served the method as `capability.list` (singular) while the probe
+# called `capabilities.list` (plural). Both are now aliases for the
+# same handler.
+
+[impulse]
+id = "wave99-coralreef-capabilities-list"
+type = "resolution"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-08"
+priority = "LOW"
+status = "resolved"
+
+[resolution]
+commit = "15d1702c"
+branch = "main"
+summary = """
+Root cause: coralReef registered its capability discovery method as
+`capability.list` (singular, per Wire Standard Level 3 domain naming).
+The ecosystem IPC compliance sweep probes `capabilities.list` (plural).
+
+Fix: Added plural alias so both `capability.list` and `capabilities.list`
+dispatch to the same handler. SERVED_METHODS now advertises both names.
+MethodGate already allowed the plural form (was classified as public).
+Two new dispatch tests confirm both aliases return the expected response
+shape: {capabilities: [...], methods: [...], transport: [...]}.
+
+IPC compliance: 12/12 capabilities PASS.
+"""
+
+[resolution.verification]
+test_singular = "dispatch_capability_list_singular — PASS"
+test_plural = "dispatch_capabilities_list_plural_alias — PASS"
+response_shape = '{"capabilities":["shader.compile","health","identity","capability","btsp","auth"],"methods":["shader.compile.spirv",...],"transport":["uds","tcp","tarpc"]}'

@@ -1,0 +1,54 @@
+# impulse_post_signed.toml — Graduated impulse flow with primal signing
+#
+# Flow: gate fires impulse → bearDog signs → rhizoCrypt records in DAG
+#       → nestGate stores → songbird relays to mesh
+#
+# This graph replaces membrane-shadow's direct filesystem impulse operations
+# with primal-composed operations orchestrated through biomeOS Neural API.
+
+[graph]
+name = "impulse_post_signed"
+description = "Signed impulse post with DAG recording and mesh relay"
+version = "0.1.0"
+trigger = "impulse.post"
+
+[[steps]]
+name = "compose_impulse"
+primal = "membrane"
+operation = "impulse.compose"
+description = "Build impulse TOML from arguments"
+outputs = ["impulse_payload"]
+
+[[steps]]
+name = "sign_impulse"
+primal = "bearDog"
+operation = "auth.sign"
+description = "Sign impulse payload with gate identity"
+inputs = ["impulse_payload"]
+outputs = ["signed_impulse"]
+fallback = "skip"
+
+[[steps]]
+name = "record_dag"
+primal = "rhizoCrypt"
+operation = "dag.append"
+description = "Record impulse event in the provenance DAG"
+inputs = ["signed_impulse"]
+outputs = ["dag_ref"]
+fallback = "skip"
+
+[[steps]]
+name = "store_impulse"
+primal = "nestGate"
+operation = "content.store"
+description = "Write signed impulse to impulses/active/"
+inputs = ["signed_impulse", "dag_ref"]
+outputs = ["impulse_path"]
+
+[[steps]]
+name = "relay_mesh"
+primal = "songbird"
+operation = "mesh.publish"
+description = "Relay impulse to mesh for near-realtime propagation"
+inputs = ["impulse_path"]
+fallback = "defer"

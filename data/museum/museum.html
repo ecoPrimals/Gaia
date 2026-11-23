@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE GAIA MUSEUM — Self-Archaeology</title>
+<style>
+  :root{
+    --bg:#0c0a07; --stone:#1a1611; --sand:#c9b896; --gold:#d9a441;
+    --bone:#e8e0d0; --dim:#8a7f6a; --line:#3a3226; --glow:#e4c56a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--bone);
+    font-family:"Palatino Linotype","Book Antiqua",Georgia,serif;line-height:1.5}
+  .hall{max-width:1080px;margin:0 auto;padding:28px 20px 80px}
+  header.masthead{text-align:center;border-bottom:3px double var(--gold);
+    padding-bottom:18px;margin-bottom:8px}
+  .masthead h1{font-size:clamp(34px,6vw,62px);letter-spacing:6px;margin:0;
+    color:var(--gold);font-weight:400;text-shadow:0 2px 12px rgba(217,164,65,.25)}
+  .masthead .sub{color:var(--sand);letter-spacing:3px;font-size:13px;margin-top:6px;
+    text-transform:uppercase}
+  .plaque{text-align:center;color:var(--dim);font-style:italic;margin:14px 0 30px;font-size:15px}
+  /* carbon dating banner */
+  .carbon{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;
+    background:linear-gradient(180deg,var(--stone),#120f0a);
+    border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:26px}
+  .carbon .age{font-size:48px;color:var(--gold);line-height:1}
+  .carbon .age small{display:block;font-size:12px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+  .core{flex:1;min-width:240px}
+  .core .b,.core .t{padding:8px 0;border-bottom:1px dotted var(--line)}
+  .core .tag{color:var(--gold);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  .core .txt{color:var(--bone);font-size:14px}
+  .core .dt{color:var(--dim);font-size:12px}
+  /* census */
+  .census{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:34px}
+  .stat{background:var(--stone);border:1px solid var(--line);border-radius:8px;
+    padding:14px;text-align:center}
+  .stat .n{font-size:30px;color:var(--gold)}
+  .stat .l{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+  h2.section{color:var(--sand);letter-spacing:4px;text-transform:uppercase;font-size:16px;
+    border-left:4px solid var(--gold);padding-left:12px;margin:38px 0 16px}
+  /* strata bars */
+  .strata{display:flex;align-items:flex-end;gap:10px;height:160px;
+    background:repeating-linear-gradient(0deg,#120f0a,#120f0a 1px,transparent 1px,transparent 32px);
+    border:1px solid var(--line);border-radius:8px;padding:14px}
+  .seam{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
+  .seam .bar{width:100%;background:linear-gradient(180deg,var(--gold),#7a5a1e);border-radius:3px 3px 0 0}
+  .seam .cap{font-size:11px;color:var(--bone)}
+  .seam .yr{font-size:11px;color:var(--dim)}
+  /* epochs */
+  .epochs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .epoch{background:var(--stone);border:1px solid var(--line);border-radius:10px;padding:16px;
+    position:relative;overflow:hidden}
+  .epoch::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--gold)}
+  .epoch h3{margin:0 0 4px;color:var(--gold);letter-spacing:3px;font-weight:400;font-size:20px}
+  .epoch .range{color:var(--dim);font-size:12px;margin-bottom:10px}
+  .epoch .cnt{position:absolute;top:14px;right:16px;color:var(--sand);font-size:22px}
+  .epoch ul{margin:0;padding-left:16px}
+  .epoch li{font-size:13px;color:var(--bone);margin-bottom:6px;list-style:"\25C6  "}
+  .epoch li .d{color:var(--dim);font-size:11px}
+  /* fossils */
+  .fossils{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .fossil{background:linear-gradient(180deg,#171310,#0f0c08);border:1px solid var(--line);
+    border-radius:8px;padding:12px}
+  .fossil .name{color:var(--gold);font-size:14px}
+  .fossil .size{float:right;color:var(--sand);font-size:12px}
+  .fossil .desc{color:var(--dim);font-size:12px;margin-top:6px}
+  .fossil .date{color:#6a6150;font-size:11px;margin-top:6px}
+  /* relics feed */
+  .relics{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .relic{display:flex;gap:12px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:13px}
+  .relic:nth-child(odd){background:rgba(255,255,255,.015)}
+  .relic .d{color:var(--dim);min-width:84px;font-size:12px}
+  .relic .h{color:var(--gold);min-width:70px;font-family:monospace;font-size:11px}
+  .relic .s{color:var(--bone)}
+  footer{text-align:center;color:var(--dim);margin-top:50px;font-size:12px;letter-spacing:2px}
+  .err{color:#c87070;text-align:center;padding:40px}
+</style>
+</head>
+<body>
+<div class="hall">
+  <header class="masthead">
+    <h1>THE GAIA MUSEUM</h1>
+    <div class="sub">A Self-Excavation · Archaeology of a Living Organism</div>
+  </header>
+  <div class="plaque">"Who were we?" — Now we dig and find out. Every commit a layer of sediment, every repo a fossil, every wave a season.</div>
+
+  <div id="carbon" class="carbon"></div>
+  <div id="census" class="census"></div>
+
+  <h2 class="section">Strata — Sediment Layers</h2>
+  <div id="strata" class="strata"></div>
+
+  <h2 class="section">Epochs — The Ages of Becoming</h2>
+  <div id="epochs" class="epochs"></div>
+
+  <h2 class="section">Fossil Beds — The Deepest Archives</h2>
+  <div id="fossils" class="fossils"></div>
+
+  <h2 class="section">Relic Hall — The Loud Events</h2>
+  <div id="relics" class="relics"></div>
+
+  <footer>EXCAVATED FROM OUR OWN GIT STRATA · LAN IS ROOT · lub-DUB</footer>
+</div>
+<script>
+async function dig(){
+  let m;
+  try{
+    const r = await fetch("museum.json?_="+Date.now());
+    m = await r.json();
+  }catch(e){
+    document.body.innerHTML = '<div class="err">The dig site is sealed — museum.json not found. Run museum-dig.py first.</div>';
+    return;
+  }
+  // carbon dating
+  const cd = m.carbon_dating || {};
+  document.getElementById("carbon").innerHTML = `
+    <div class="age">${cd.age_days}<small>days alive</small></div>
+    <div class="core">
+      <div class="b"><div class="tag">Bedrock — First Breath</div>
+        <div class="txt">${esc(cd.bedrock?.subj||"")}</div><div class="dt">${cd.bedrock?.when||""}</div></div>
+      <div class="t"><div class="tag">Topsoil — Latest Layer</div>
+        <div class="txt">${esc(cd.topsoil?.subj||"")}</div><div class="dt">${cd.topsoil?.when||""}</div></div>
+    </div>`;
+  // census
+  const c = m.census||{};
+  const stats = [
+    [c.total_commits,"commits dug"],[c.total_waves,"waves (seasons)"],
+    [c.repo_fossils,"repo fossils"],[c.orgs,"orgs"],
+    [c.loud_relics,"loud relics"],[(c.wave_span?.first||"")+"–"+(c.wave_span?.last||""),"wave span"],
+  ];
+  document.getElementById("census").innerHTML = stats.map(s=>
+    `<div class="stat"><div class="n">${s[0]}</div><div class="l">${s[1]}</div></div>`).join("");
+  // strata
+  const st = m.strata||[]; const max = Math.max(...st.map(s=>s.commits),1);
+  document.getElementById("strata").innerHTML = st.map(s=>{
+    const h = Math.round(100*s.commits/max);
+    return `<div class="seam"><div class="cap">${s.commits}</div>
+      <div class="bar" style="height:${h}%"></div><div class="yr">${s.layer}</div></div>`;
+  }).join("");
+  // epochs
+  document.getElementById("epochs").innerHTML = (m.epochs||[]).map(e=>`
+    <div class="epoch"><span class="cnt">${e.count}</span>
+      <h3>${e.epoch}</h3>
+      <div class="range">${e.first} &rarr; ${e.last}</div>
+      <ul>${(e.artifacts||[]).map(a=>
+        `<li>${esc(a.subj)}<br><span class="d">${a.when} · ${a.hash}</span></li>`).join("")}</ul>
+    </div>`).join("");
+  // fossils
+  const ff = (m.fossils&&m.fossils.archive_fossils)||[];
+  document.getElementById("fossils").innerHTML = ff.map(f=>`
+    <div class="fossil"><span class="size">${fmtKb(f.size_kb)}</span>
+      <div class="name">${esc(f.name)}</div>
+      <div class="desc">${esc(f.desc)}</div>
+      <div class="date">last stirred ${f.updated||"?"}</div></div>`).join("");
+  // relics
+  document.getElementById("relics").innerHTML = (m.relics||[]).map(r=>`
+    <div class="relic"><span class="d">${r.when}</span>
+      <span class="h">${r.hash}</span><span class="s">${esc(r.subj)}</span></div>`).join("");
+}
+function esc(s){return (s||"").replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function fmtKb(k){return k>=1024?(k/1024).toFixed(1)+" MB":k+" KB";}
+dig();
+</script>
+</body>
+</html>

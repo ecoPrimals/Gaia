@@ -1,0 +1,31 @@
+# rootpulse_diff.toml — Sovereignty verification diff
+#
+# Compares current cascade HEADs against the last rootpulse-committed
+# state. Any mismatch indicates potential VCS tampering (sovereign
+# divergence from the provenance record).
+
+[graph]
+name = "rootpulse_diff"
+description = "Compare cascade HEADs against rootPulse ledger for sovereignty verification"
+version = "0.1.0"
+trigger = "rootpulse.diff"
+
+[[steps]]
+name = "load_ledger_state"
+primal = "nestGate"
+operation = "index.query"
+description = "Load the last committed cascade HEADs from the provenance index"
+inputs = ["WAVE_ID"]
+outputs = ["ledger_heads"]
+fallback = "skip"
+
+[[steps]]
+name = "diff_heads"
+primal = "membrane"
+operation = "rootpulse.compare"
+description = "Compare current HEADs against ledger state, report mismatches"
+inputs = ["CURRENT_HEADS", "ledger_heads"]
+outputs = ["diff_result"]
+
+[metadata]
+biological_analog = "DNA mismatch repair — detect and report replication errors"

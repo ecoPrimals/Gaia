@@ -1,0 +1,92 @@
+# Wave 123 — ironGate GPU Pipeline Validation Report
+# Issued: Jun 22, 2026 09:15 EDT
+# From: ironGate barraCuda agent
+# Re: wave123-irongate-node.toml (eastGate overwatch FRAGO)
+
+[meta]
+wave = 123
+issued_by = "ironGate_barraCuda"
+issued_at = "2026-06-22T09:15:00-04:00"
+gate = "ironGate"
+team = "Node"
+type = "impulse_response"
+responds_to = "2026-06-22T08-05_eastGate__wave123-irongate-node.toml"
+
+[P1_results]
+
+[P1_results.barracuda_gpu]
+status = "VALIDATED"
+summary = "Full ML pipeline operational on RTX 5070 (gnu binary)"
+details = [
+    "train→save→load→infer E2E: XOR 2→8→1 MLP, MSE 1.11e-30, forward pass correct",
+    "f64 native precision: SHADER_F64=true, gpu.f64 + gpu.df64 + gpu.spirv_passthrough live",
+    "Mean at f64 range (1e15+1) computed exactly — impossible at f32",
+    "GPU tensor 1024-element round-trip: perfect",
+    "LSTM zero-copy: 6/6 tests pass (forward_into, bi-lstm, serde, sequence)",
+    "wgpu backend, NVIDIA GeForce RTX 5070, max_buffer_size 1GB",
+    "Capabilities: gpu.f32, gpu.tensor_ops, gpu.dispatch_submit, gpu.f64, gpu.df64, gpu.spirv_passthrough, cpu.tensor_ops, cpu.math, cpu.stats",
+]
+
+[P1_results.coralreef_shaders]
+status = "PARTIALLY_VALIDATED"
+summary = "Shader compile IPC operational, multi-compile and sm_120 codegen pending"
+details = [
+    "shader.compile.wgsl: WGSL→PTX compilation successful (27ms, 14 instructions)",
+    "Provenance: BLAKE3 content hash + compiler version in response",
+    "sm_70 target working, sm_120 (Blackwell) falls back to sm_70",
+    "shader.compile.multi: method not found — upstream evolution needed",
+    "coralReef running as musl binary (acceptable: naga is pure Rust, no dlopen needed)",
+    "coralReef supports: sm_35, sm_70, sm_75, sm_80, sm_86, sm_89, sm_120, gcn5, rdna2, rdna3, rdna4",
+]
+
+[P1_results.toadstool_fleet]
+status = "NOT_DEPLOYED"
+summary = "toadStool not running on ironGate (12/12 NUCLEUS — toadStool excluded from composition)"
+details = [
+    "membrane-nucleus@toadstool.service: inactive (dead), disabled",
+    "ironGate composition does not include toadStool in current deployment",
+    "Fleet dispatch validation requires toadStool enrollment — report to upstream",
+]
+
+[P1_results.depot_validation]
+status = "PARTIAL"
+summary = "build-local.sh has --target gnu, but x86_64-unknown-linux-gnu/ not yet in depot"
+details = [
+    "barracuda: running local glibc build (dynamically linked) — GPU operational",
+    "coralreef: running musl-static from depot — shader compilation works via pure Rust naga",
+    "All other primals: musl-static from depot — correct",
+    "plasmidBin/primals/x86_64-unknown-linux-gnu/: directory does not exist",
+    "build-local.sh GPU_PRIMALS=(barracuda coralreef) with --target gnu ready but not yet invoked",
+    "ecosystem_manifest.toml ironGate section: target still shows musl, needs gpu_target field",
+    "Upstream action: sporeGate needs to run build-local.sh --target all and rsync gnu dir to golgi",
+]
+
+[P2_results.hpc_vlan]
+status = "BLOCKED"
+summary = "Blocked on MikroTik CRS310 credential recovery (operator-only)"
+
+[upstream_actions]
+sporeGate = [
+    "Run build-local.sh --target all to generate x86_64-unknown-linux-gnu/ binaries",
+    "rsync gnu directory to golgi depot",
+    "Update deploy_gate.sh for dual-target awareness (is_static_elf() → accept dynamic ELF)",
+]
+eastGate = [
+    "Add GPU compute primalSpring scenarios once pipeline validated",
+    "Update ecosystem_manifest.toml ironGate section with gpu_target field",
+]
+coralReef_upstream = [
+    "Wire shader.compile.multi for batch compilation",
+    "sm_120 (Blackwell) codegen — currently falls back to sm_70",
+]
+
+[metrics]
+barracuda_tests = 4624
+lstm_tests = 6
+ml_pipeline = "train→save→load→infer validated"
+gpu_backend = "wgpu"
+gpu_adapter = "NVIDIA GeForce RTX 5070"
+f64_native = true
+shader_compile_ms = 27.3
+wg_latency_to_golgi_ms = 36.6
+nucleus_services = "12/12"

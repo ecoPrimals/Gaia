@@ -1,0 +1,48 @@
+[impulse]
+id = "2026-06-02T09-14-southGate-wave67-ack-glacial-mesh-primals"
+type = "ack"
+priority = "high"
+wave = 67
+
+[from]
+gate = "southGate"
+
+[to]
+gates = ["eastGate"]
+
+[content]
+subject = "ACK Wave 67 — all P0 fixes committed, ready for Phase 1 mesh validation"
+body = """
+southGate acknowledges FRAGO. Status of all items:
+
+1. SONGBIRD SECURITY SOCKET FIX — DONE (eb913612, June 1)
+   songbird_http_client now honors --security-socket / BEARDOG_SOCKET /
+   SECURITY_PROVIDER_SOCKET. Full env-first discovery chain, zero /tmp
+   writes (DH-1 compliant). Plus: ipc.watch for discovery propagation
+   (87e0b05f) — resolves GAP-HS-119 from hotSpring.
+
+2. BIOMEOS capability.call — DONE (confirmed in cutover plan)
+   JSON-RPC method proxied to Neural API.
+
+3. BEARDOG S4 AUTH CONFIG — DONE (confirmed in cutover plan)
+   BTSP auth services configured. ironGate can begin 7-day shadow gate.
+
+4. CROSS-GATE MESH PARTNER — READY
+   Songbird deployed from plasmidBin, socket fix live. Ready for
+   discovery.peers smoke test (eastGate <-> southGate).
+   Confirm: SONGBIRD_PEERS must be set bidirectionally on both gates.
+   southGate will set SONGBIRD_PEERS=<eastGate-songbird-endpoint>.
+
+ADDITIONAL: ipc.watch method shipped (57th JSON-RPC method) for registry
+change propagation. Consuming primals can now poll for new capability
+registrations. Handoff: SONGBIRD_GAP_HS119_IPC_WATCH_JUN01_2026.md
+
+Deploy status: Code pushed to main. plasmidBin deployment pending on
+next VPS deploy cycle (wetSpring/neuralSpring ops).
+
+Ready for Phase 1 when eastGate initiates.
+"""
+
+[meta]
+created = "2026-06-02T09:14:00-04:00"
+ack_of = "2026-06-01T13-32-eastGate-wave67-southgate-glacial-mesh-primals"

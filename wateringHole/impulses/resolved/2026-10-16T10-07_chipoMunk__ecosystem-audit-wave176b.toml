@@ -1,0 +1,232 @@
+# ECOSYSTEM AUDIT — Wave 176b — chipoMunk session
+# Full probe of wateringHole, ecosystem_manifest, all gate heads
+# Date: Oct 16, 2026 10:07 AM ET
+
+[impulse]
+id = "2026-10-16T10-07-chipoMunk-ecosystem-audit-wave176b"
+type = "assessment"
+priority = "priority"
+wave = 176
+
+[from]
+gate = "northGate"
+session = "chipoMunk"
+project = "ecosystem"
+
+[to]
+gates = ["sporeGate", "eastGate"]
+
+[content]
+subject = "ECOSYSTEM AUDIT: What works, what doesn't, what's friction, what's missing"
+body = """
+Full audit from northGate/chipoMunk session. Read all heads, ecosystem_manifest,
+wave.toml, transport matrix, nanowire retirement spec. Here is the truth.
+"""
+
+# ═══════════════════════════════════════════════════════════════
+# WORKING — Green lights
+# ═══════════════════════════════════════════════════════════════
+
+[working]
+
+[working.sporeGate]
+status = "ONLINE"
+last_update = "2026-10-16T13:46:06Z"
+detail = "Auto-publishing heads. Cascade running. 14 primal HEADs tracked. temporal.cascade active."
+
+[working.golgiBody]
+status = "ONLINE (partial)"
+last_update = "2026-10-10T17:50:00Z"
+detail = "14 services running. Wildcard membrane LIVE. 2 songBird peers. 29 domains. 148 days uptime."
+services = ["caddy", "forgejo", "songbird", "skunky", "skunkbat", "petaltongue", "beardog", "knot", "step-ca", "hbbs", "hbbr", "traces", "fail2ban", "aperture-ask"]
+
+[working.primals_eco]
+status = "200 OK"
+detail = "Main site serving the prism page. All subdomains routing through wildcard."
+
+[working.scatter_server]
+status = "ACTIVE"
+detail = "water.primals.eco serving honeypot poison to scrapers. Fake code, fake commits, AGPL trap, DATA QUALITY ALERT."
+
+[working.github_sync]
+status = "WORKING"
+detail = "Pushing/pulling to all GitHub repos. LFS at 30-46 MB/s."
+
+[working.wireguard]
+status = "5 peers alive"
+detail = "golgiBody hub. sporeGate, house-gate-a, house-gate-b, golgiLayerLinode, nucleus alive. eastGate STALE."
+
+[working.btsp]
+status = "LIVE"
+detail = "ChaCha20-Poly1305 AEAD across all 14 primals. Phase 3 encrypted by default."
+
+[working.builder_mesh]
+status = "PARTIAL"
+detail = "ironGate + blueGate builder.serve deployed (systemd + scheduled task). Tower Atomic JSON-RPC. graftGate NOT deployed."
+
+[working.investigation_graph]
+status = "11,811 nodes / 8,230 edges"
+detail = "Growing daily. 10 scripts + 10 pushes this session alone. +120 nodes, +8,230 edges today."
+
+[working.repos]
+status = "43 repos tracked"
+detail = "15 primals, 8 springs, 8 gardens, 12 infra. 3 orgs (ecoPrimals, syntheticChemistry, sporeGarden) + 1 protist org."
+
+# ═══════════════════════════════════════════════════════════════
+# NOT WORKING — Red lights
+# ═══════════════════════════════════════════════════════════════
+
+[not_working]
+
+[not_working.git_primals_eco]
+status = "TIMEOUT"
+severity = "critical"
+detail = "Forgejo on golgiBody not responding via HTTPS. Cannot push to or pull from sovereign forge."
+impact = "wateringHole diverge: GitHub +167 ahead of origin. All Forgejo-sourced repos stale."
+
+[not_working.eastGate_wireguard]
+status = "STALE 21h+"
+severity = "high"
+detail = "eastGate WireGuard peer last seen 21h57m ago. Cannot SSH to golgiBody through eastGate."
+impact = "No SSH access to golgiBody for service restart. No wave.toml updates. Overwatch stalled."
+
+[not_working.ssh_to_golgiBody]
+status = "BLOCKED"
+severity = "critical"
+detail = "No SSH key enrolled on northGate (chipoMunk session machine). Cannot restart services."
+impact = "Cannot restart Caddy/Forgejo. Cannot deploy detroit.primals.eco. Cannot fix the timeout."
+
+[not_working.detroit_primals_eco]
+status = "NOT DEPLOYED"
+severity = "medium"
+detail = "P0 from wave.toml: 'deploy detroit.primals.eco (SSH blocked)'. Still blocked."
+
+[not_working.protonmail]
+status = "BLOCKED"
+severity = "medium"
+detail = "Account blocked from sending. Wildfire 2 ready but cannot send."
+
+[not_working.cursor_origin_mcp]
+status = "WRONG TOOL"
+severity = "low"
+detail = "origin.cursor.com MCP returns empty namespaces. Only sees Cursor-hosted repos. We have none."
+resolution = "squirrel MCP bridge spec drafted (SQUIRREL_MCP_BRIDGE_SPEC.md)"
+
+# ═══════════════════════════════════════════════════════════════
+# FRICTION — Yellow lights
+# ═══════════════════════════════════════════════════════════════
+
+[friction]
+
+[friction.nanowire_retirement]
+status = "18 call sites, only Tier 1 retired"
+detail = "Sub-builder dispatch migrated to mesh JSON-RPC. Tiers 2-7 still need SSH for gate.pull, service.*, depot.push, caddy.*, gate.enroll, relay.*, git transport."
+blocker = "cascade.notify gossip event not yet wired (R-01, R-02 depend on it)"
+
+[friction.golgiBody_disk]
+status = "59% (5.6/9.7 GB)"
+detail = "Tight for 14 services + Forgejo repos + scatter server content. May need cleanup or volume expansion."
+
+[friction.ide_blind]
+status = "No MCP bridge to membrane"
+detail = "IDE cannot see Forgejo, songbird mesh, skunky data, HUD state, DNS, or Caddy routes."
+resolution = "SQUIRREL_MCP_BRIDGE_SPEC.md drafted and pushed"
+
+[friction.stale_gates]
+status = "7 gates offline, 2 stale heads"
+detail = """
+eastGate heads: Wave 157i (Aug 11, 2026) — 2 months stale
+flockGate heads: Wave 155b (Jul 27, 2026) — nearly 3 months stale
+Offline: ironGate, westGate, strandGate, blueGate, southGate, biomeGate, graftGate
+Online but wave.toml says degraded: flockGate
+"""
+
+[friction.darwin_failures]
+status = "3 primals fail on macOS"
+detail = "toadStool (cfg gate), squirrel (linker flags), petalTongue (rustix API). graftGate has 12/15."
+
+[friction.wave_toml_stale]
+status = "Wave 176a (Oct 13)"
+detail = "Graph counts in posture string (5,858 nodes) are before this session's +120 nodes. Now 11,811. Needs eastGate overwatch to update."
+
+# ═══════════════════════════════════════════════════════════════
+# MISSING — What doesn't exist yet
+# ═══════════════════════════════════════════════════════════════
+
+[missing]
+
+[missing.squirrel_mcp_bridge]
+priority = "P0"
+detail = "Spec drafted (SQUIRREL_MCP_BRIDGE_SPEC.md). No implementation. Phase 1 (local bridge) can ship without eastGate SSH."
+
+[missing.knot_zone_population]
+priority = "P1"
+detail = "Scheduled Oct 18-19. MX, SPF, DKIM, DMARC, PTR records for lock-free mail."
+
+[missing.stalwart_mail]
+priority = "P1"
+detail = "Stalwart mail server on membrane-relay. Needs: SSH access, DO port 25 unblock, DNS records."
+
+[missing.detroit_deploy]
+priority = "P0"
+detail = "detroit.primals.eco not serving. Needs SSH to golgiBody for Caddyfile update."
+
+[missing.songbird_enrollment_ide]
+priority = "P2"
+detail = "northGate/chipoMunk not enrolled in songbird mesh. Cannot use mesh capability.call from IDE."
+
+[missing.ios_deployment]
+priority = "P3"
+detail = "Apple Developer Program ($99/yr) needed. graftGate is the builder. iosGate (iPhone XS) waiting."
+
+[missing.riscv_gate]
+priority = "P3"
+detail = "Milk-V Jupiter 2 (planned). Third ISA after x86_64 and aarch64."
+
+[missing.membrane_traffic_logs]
+priority = "P1"
+detail = "Caddy access logs on golgiBody. Cloudflare analytics. Need SSH to pull."
+
+# ═══════════════════════════════════════════════════════════════
+# CRITICAL PATH — What unblocks the most
+# ═══════════════════════════════════════════════════════════════
+
+[critical_path]
+step_1 = "eastGate comes back online → WireGuard peer reconnects → SSH to golgiBody restored"
+step_2 = "Restart Caddy + Forgejo on golgiBody → git.primals.eco back online"
+step_3 = "Deploy detroit.primals.eco via Caddyfile update"
+step_4 = "Resolve wateringHole diverge (GitHub +167 vs origin +1)"
+step_5 = "Build squirrel MCP bridge Phase 1 (local, no SSH needed)"
+step_6 = "Populate knot zone (Oct 18-19 weekend)"
+step_7 = "Deploy Stalwart mail → send Wildfire 2"
+note = "Everything blocked on eastGate WireGuard coming back. SSH is the single point of failure that nanowire retirement is designed to eliminate."
+
+[meta]
+created = "2026-10-16T10:07:00-04:00"
+ack_required = true
+session = "chipoMunk — 10 graph scripts, squirrel MCP spec, full ecosystem audit"
+# chipoMunk Audit Resolution — Wave 192
+# Cross-referenced all items against current state
+
+[resolution]
+timestamp = "2026-10-20T01:25:00Z"
+wave = 192
+resolved_by = "golgiBody-wave192"
+
+[resolved]
+git_primals_eco = "FIXED — HTTP 302 (redirect to Forgejo UI). Forgejo on eastGate PID 3987."
+eastGate_wireguard = "FIXED — handshake: Now. 28GB transferred. Mesh is live."
+ssh_to_golgiBody = "FIXED — working all session (wave 192)."
+detroit_primals_eco = "FIXED — HTTP 200. 5 articles deployed wave 191b. 1377 pages total."
+wateringHole_diverge = "FIXED — synced. github+origin aligned."
+forgejo_status = "FIXED — runs on eastGate (10.13.37.5), not golgi. Caddy proxies via WG."
+story_pipeline = "FIXED — 11 stories generating. Was stale Oct 14-18."
+disk_pressure = "FIXED — 81%→60%. disk-fossils.py wired as MOTOR bus stop."
+
+[still_open]
+northgate_ssh_key = "HUMAN — ed25519 pubkey needs adding to northGate authorized_keys."
+protonmail = "HUMAN — account blocked from sending."
+nanowire_tiers_2_7 = "DEFERRED — cascade.notify gossip event not wired yet."
+stale_heads = "INFO — flockGate(Jul 27), ironGate(Aug 12), southGate(Aug 13), strandGate(Aug 13) are offline gates."
+darwin_failures = "DEFERRED — toadStool, squirrel, petalTongue cfg gate issues on macOS."
+golgiBody_disk = "FIXED — 60% now. disk-fossils monitors. caddy roll_keep 48→3."

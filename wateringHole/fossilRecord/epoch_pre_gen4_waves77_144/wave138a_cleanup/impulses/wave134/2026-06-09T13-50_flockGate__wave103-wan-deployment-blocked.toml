@@ -1,0 +1,50 @@
+[impulse]
+id = "wave103-flockgate-wan-deployment-blocked"
+type = "gap"
+priority = "P1"
+wave = 103
+
+[from]
+gate = "flockGate"
+role = "WAN mesh validation"
+
+[to]
+gates = ["eastGate", "ironGate"]
+team = "cellMembrane + overwatch"
+
+[content]
+subject = "flockGate WAN mesh BLOCKED — depot empty, no binary distribution path"
+body = """
+Attempting Wave 103 item 6 (WAN mesh validation). BLOCKED.
+
+DEPOT STATUS: primals/ directory EMPTY. checksums.toml has all 14
+primals hashed but zero binaries fetched. Cannot start songbird or
+beardog for mesh enrollment.
+
+MISSING PREREQUISITES:
+- b3sum (checksum validation)
+- gh (GitHub CLI)
+- socat (UDS mesh commands)
+
+NETWORK: flockGate is at 192.168.60.20 — cannot reach LAN gates
+(192.168.1.x). VPS reachable at 34.8ms. This is genuinely WAN.
+
+QUESTION: What is the sanctioned binary distribution path for WAN gates?
+Options considered:
+a) fetch.sh from GitHub Releases (needs gh or public URLs)
+b) VPS HTTP endpoint (Caddy-served depot)
+c) SSH/rsync from VPS
+d) Build-carrying cascades (Wave 103 item 5)
+
+Once path is defined, flockGate can install prereqs and fetch core stack
+(songbird + beardog) for WAN mesh enrollment.
+
+SPORPRINT STATUS: Fully evolved — 133 tests, canonical TransportEndpoint,
+TRANSPORT_ENDPOINT env injection, TCP variant implemented. Ready to
+consume cross-gate NestGate once mesh is live.
+"""
+
+[references]
+handoff = "FLOCKGATE_WAVE103_WAN_DEPLOYMENT_GAPS_JUN09_2026.md"
+frago = "wave79-transport-evolution-capability-routing"
+blurb_item = "Wave 103 item 6 — All Gates Mesh Enrollment"

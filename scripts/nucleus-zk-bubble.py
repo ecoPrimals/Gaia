@@ -199,7 +199,7 @@ import base64, urllib.request
 
 def forgejo_api(path, method="GET", data=None):
     url = f"http://192.168.4.244:3000/api/v1{path}"
-    creds = base64.b64encode(b"gaia:GaiaForge2026!").decode()
+    creds = base64.b64encode(b"gaia:***").decode()
     headers = {"Authorization": f"Basic {creds}", "Content-Type": "application/json"}
     req = urllib.request.Request(url, headers=headers, method=method)
     if data:

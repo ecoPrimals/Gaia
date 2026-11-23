@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GAIA — Left Eye</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; overflow:hidden; font-family:monospace; color:#3fb950; touch-action:none; }
+
+/* THE PUPIL — camera feed, full screen behind everything */
+#pupil {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  object-fit:cover; z-index:0; transform:scaleX(-1);
+}
+
+/* THE IRIS — ring of data around the pupil */
+#iris {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  z-index:5; pointer-events:none;
+}
+
+/* Iris ring — circular border */
+#iris-ring {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:min(85vw, 85vh); height:min(85vw, 85vh);
+  border:2px solid rgba(63,185,80,0.3); border-radius:50%;
+  box-shadow: 0 0 30px rgba(63,185,80,0.1) inset,
+              0 0 60px rgba(63,185,80,0.05);
+}
+
+/* Iris data points — positioned around the ring */
+.iris-datum {
+  position:absolute; font-size:9px; color:#8b949e;
+  text-shadow:0 0 4px #000, 0 0 8px #000;
+  white-space:nowrap;
+}
+.iris-datum.alive { color:#3fb950; }
+.iris-datum.hot { color:#f0883e; }
+.iris-datum.pulse { color:#f85149; animation:blink 2s ease-in-out infinite; }
+
+/* Top bar — organism identity */
+#top-bar {
+  position:fixed; top:0; left:0; right:0; z-index:10;
+  padding:6px 10px; background:rgba(0,0,0,0.7);
+  display:flex; justify-content:space-between; font-size:10px;
+  border-bottom:1px solid rgba(63,185,80,0.15);
+}
+#top-bar .name { color:#3fb950; font-weight:bold; }
+#top-bar .wave { color:#d29922; }
+
+/* Bottom bar — sensor readout */
+#bottom-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:10;
+  padding:6px 10px; background:rgba(0,0,0,0.7);
+  font-size:9px; border-top:1px solid rgba(63,185,80,0.15);
+  display:flex; justify-content:space-around; flex-wrap:wrap; gap:4px;
+}
+.sensor { color:#58a6ff; }
+.sensor .val { color:#3fb950; }
+
+/* Pupil center reticle */
+#reticle {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:6;
+  width:40px; height:40px; border:1px solid rgba(63,185,80,0.2); border-radius:50%;
+}
+#reticle::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:rgba(63,185,80,0.1); }
+#reticle::after { content:''; position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(63,185,80,0.1); }
+
+/* Left side — gate status */
+#left-iris {
+  position:fixed; top:60px; left:6px; z-index:10; font-size:9px; line-height:1.6;
+  text-shadow:0 0 6px #000;
+}
+.gate { display:flex; gap:4px; align-items:center; }
+.gate .dot { width:6px; height:6px; border-radius:50%; }
+.gate .dot.on { background:#3fb950; box-shadow:0 0 4px #3fb950; }
+.gate .dot.off { background:#484f58; }
+
+/* Right side — cron rings */
+#right-iris {
+  position:fixed; top:60px; right:6px; z-index:10; font-size:9px; line-height:1.6;
+  text-align:right; text-shadow:0 0 6px #000;
+}
+
+/* Golden rings visualization */
+#rings {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:4;
+  pointer-events:none;
+}
+.ring {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  border-radius:50%; border:1px solid; opacity:0.15;
+}
+#ring-dot { width:min(20vw,20vh); height:min(20vw,20vh); border-color:#f0c674; animation:spin 8s linear infinite; }
+#ring-o { width:min(50vw,50vh); height:min(50vw,50vh); border-color:#d29922; animation:spin 20s linear infinite reverse; }
+#ring-O { width:min(80vw,80vh); height:min(80vw,80vh); border-color:#f0883e; animation:spin 60s linear infinite; }
+
+/* Scanlines */
+#scanlines {
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:3; pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(63,185,80,0.01) 3px, rgba(63,185,80,0.01) 6px);
+}
+
+/* BT indicator */
+#bt-status {
+  position:fixed; top:50px; left:50%; transform:translateX(-50%); z-index:10;
+  font-size:8px; color:#58a6ff; text-shadow:0 0 4px #000;
+}
+
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+@keyframes spin { from { transform:translate(-50%,-50%) rotate(0deg); } to { transform:translate(-50%,-50%) rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- THE PUPIL — live camera feed -->
+<video id="pupil" autoplay playsinline muted></video>
+
+<!-- SCANLINES -->
+<div id="scanlines"></div>
+
+<!-- GOLDEN CRON RINGS — O / o / . -->
+<div id="rings">
+  <div class="ring" id="ring-dot"></div>
+  <div class="ring" id="ring-o"></div>
+  <div class="ring" id="ring-O"></div>
+</div>
+
+<!-- IRIS RING -->
+<div id="iris"><div id="iris-ring"></div></div>
+
+<!-- RETICLE -->
+<div id="reticle"></div>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <span class="name">👁 GAIA LEFT EYE</span>
+  <span id="time" class="wave"></span>
+</div>
+
+<!-- BT STATUS -->
+<div id="bt-status">🔵 BT × steamFRAME</div>
+
+<!-- LEFT IRIS — gates -->
+<div id="left-iris">
+  <div class="gate"><span class="dot on"></span><span style="color:#3fb950">east</span></div>
+  <div class="gate"><span class="dot on"></span><span style="color:#3fb950">north</span></div>
+  <div class="gate"><span class="dot on"></span><span style="color:#3fb950">iron</span></div>
+  <div class="gate"><span class="dot on"></span><span style="color:#3fb950">spore</span></div>
+  <div class="gate"><span class="dot off"></span><span style="color:#484f58">graft</span></div>
+  <div class="gate"><span class="dot off"></span><span style="color:#484f58">deck</span></div>
+  <div class="gate"><span class="dot on"></span><span style="color:#58a6ff">frame BT</span></div>
+  <div class="gate"><span class="dot on"></span><span style="color:#d29922">pixel USB</span></div>
+</div>
+
+<!-- RIGHT IRIS — cron rings -->
+<div id="right-iris">
+  <div style="color:#f0c674">. 4 × 2min</div>
+  <div style="color:#d29922">o 20 × 5-15m</div>
+  <div style="color:#f0883e">O 10 × 30-60m</div>
+  <div style="color:#8b949e">~279 bph</div>
+  <div style="color:#58a6ff" id="heartbeat">♥ lub-DUB</div>
+</div>
+
+<!-- BOTTOM BAR — sensors -->
+<div id="bottom-bar">
+  <span class="sensor">WiFi:<span class="val" id="s-wifi">scan</span></span>
+  <span class="sensor">BT:<span class="val" id="s-bt">3 dev</span></span>
+  <span class="sensor">Accel:<span class="val" id="s-accel">—</span></span>
+  <span class="sensor">Light:<span class="val" id="s-light">—</span></span>
+  <span class="sensor">Gyro:<span class="val" id="s-gyro">—</span></span>
+  <span class="sensor">Baro:<span class="val" id="s-baro">—</span></span>
+</div>
+
+<script>
+// PUPIL — activate front camera
+async function openEye() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    document.getElementById('pupil').srcObject = stream;
+  } catch(e) {
+    document.getElementById('pupil').style.background = 
+      'radial-gradient(circle, #0a1628 0%, #000 70%)';
+    document.getElementById('bt-status').textContent = 
+      '⚠ camera: ' + e.message;
+  }
+}
+openEye();
+
+// HEARTBEAT
+let beat = 0;
+setInterval(() => {
+  beat++;
+  const hb = document.getElementById('heartbeat');
+  hb.textContent = beat % 2 === 0 ? '♥ lub' : '♡ DUB';
+  hb.style.color = beat % 2 === 0 ? '#f85149' : '#58a6ff';
+}, 1000);
+
+// TIME
+setInterval(() => {
+  document.getElementById('time').textContent = 
+    new Date().toLocaleTimeString() + ' w259';
+}, 1000);
+
+// DEVICE SENSORS
+if (window.DeviceMotionEvent) {
+  window.addEventListener('devicemotion', e => {
+    const a = e.accelerationIncludingGravity;
+    if (a) document.getElementById('s-accel').textContent = 
+      `${a.x?.toFixed(1)},${a.y?.toFixed(1)},${a.z?.toFixed(1)}`;
+    const r = e.rotationRate;
+    if (r) document.getElementById('s-gyro').textContent =
+      `${r.alpha?.toFixed(0)},${r.beta?.toFixed(0)}`;
+  });
+}
+
+if ('AmbientLightSensor' in window) {
+  try {
+    const als = new AmbientLightSensor();
+    als.addEventListener('reading', () => {
+      document.getElementById('s-light').textContent = als.illuminance + ' lux';
+    });
+    als.start();
+  } catch(e) {}
+}
+
+// FETCH ORGANISM STATE
+async function fetchState() {
+  try {
+    const r = await fetch('//primals.eco/thymus');
+    const d = await r.json();
+    if (d.organisms) {
+      const gates = document.querySelectorAll('.gate');
+      // Update gate dots based on thymus data
+    }
+  } catch(e) {}
+}
+setInterval(fetchState, 60000);
+
+// TOUCH — tap center to toggle scanlines
+document.body.addEventListener('click', () => {
+  const sl = document.getElementById('scanlines');
+  sl.style.display = sl.style.display === 'none' ? '' : 'none';
+});
+</script>
+</body>
+</html>

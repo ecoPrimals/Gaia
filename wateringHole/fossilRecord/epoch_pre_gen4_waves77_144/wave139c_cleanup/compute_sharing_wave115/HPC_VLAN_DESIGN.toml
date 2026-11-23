@@ -1,0 +1,199 @@
+# HPC VLAN Design — Basement Backbone for Compute Gates
+#
+# Isolates high-bandwidth gate-to-gate compute traffic (ToadStool fleet,
+# BarraCuda tensor dispatch, CoralReef shader pipelines) from general
+# WiFi/IoT traffic. All compute gates target 10G SFP+ fiber connections.
+#
+# Authority: sporeGate overwatch (topology)
+# Depends on: MikroTik CRS310 credentials + Omada SX3008F access
+# Status: DESIGNED — implementation blocked on switch credentials
+# Created: 2026-06-21 (Wave 120)
+
+[meta]
+version = "1.0.0"
+wave = 120
+status = "designed"
+blocked_on = ["mikrotik_credentials", "omada_credentials"]
+
+# ═══════════════════════════════════════════════════════════════
+# VLAN Definitions
+# ═══════════════════════════════════════════════════════════════
+
+[vlans.general]
+id = 1
+name = "general"
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+dhcp = "sporeGate dnsmasq ([LAN_IP]-200)"
+purpose = "WiFi clients, IoT, management, phones, laptops"
+tagged = false
+note = "Default VLAN. All ports carry this untagged. Both Flint 2 APs bridge WiFi into this VLAN."
+
+[vlans.hpc]
+id = 10
+name = "hpc"
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+dhcp = "static only"
+purpose = "Gate-to-gate compute: ToadStool fleet, BarraCuda tensor, CoralReef shaders"
+tagged = true
+note = """
+High-bandwidth compute backbone. Only gates participate — no WiFi clients.
+MikroTik and Omada trunk this VLAN over the 10G fiber inter-house link.
+sporeGate joins via eno1.10 tagged sub-interface.
+"""
+
+[vlans.storage]
+id = 20
+name = "storage"
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+dhcp = "static only"
+purpose = "Future NAS, backup targets, bulk data transfer"
+tagged = true
+status = "planned"
+note = "Reserved for when dedicated storage hardware is deployed."
+
+# ═══════════════════════════════════════════════════════════════
+# Physical Switch Topology
+# ═══════════════════════════════════════════════════════════════
+
+[switches.mikrotik]
+model = "CRS310-1G-5S-4S+IN"
+location = "House 1 (basement, with sporeGate)"
+management_ip = "[LAN_IP]"
+ports_gbe = 1
+ports_sfp = 5
+ports_sfp_plus = 4
+firmware = "RouterOS (version unknown)"
+credentials = "unknown — recovery pending"
+
+[switches.mikrotik.port_assignments]
+gbe1 = "sporeGate eno1 (2.5G, VLAN 1 untagged + VLAN 10 tagged trunk)"
+sfp_plus_1 = "10G fiber trunk → Omada SX3008F (all VLANs tagged)"
+sfp_plus_2 = "available (future House 1 compute gate)"
+sfp_plus_3 = "available"
+sfp_plus_4 = "available"
+sfp_1 = "Flint 2 House 1 (VLAN 1 only, when purchased)"
+note = "CRS310 has 4x SFP+ — sufficient for near-term. Upgrade to CRS326 if House 1 gates exceed 4."
+
+[switches.omada]
+model = "SX3008F"
+location = "House 2 (Hub 2)"
+management_ip = "unknown (SDN controller stopped on sporeGate)"
+ports_sfp_plus = 8
+credentials = "unknown — SDN controller was at [LAN_IP]:8043"
+
+[switches.omada.port_assignments]
+sfp_plus_1 = "10G fiber trunk → MikroTik CRS310 (all VLANs tagged)"
+sfp_plus_2 = "eastGate (10G SFP+, i9-12900K, VLAN 1 + VLAN 10)"
+sfp_plus_3 = "ironGate (10G SFP+, VLAN 1 + VLAN 10)"
+sfp_plus_4 = "Flint 2 Hub 2 (via SFP-to-RJ45 module, VLAN 1 only)"
+sfp_plus_5 = "strandGate (deferred)"
+sfp_plus_6 = "northGate (deferred)"
+sfp_plus_7 = "available"
+sfp_plus_8 = "available"
+
+# ═══════════════════════════════════════════════════════════════
+# Gate VLAN Membership
+# ═══════════════════════════════════════════════════════════════
+
+[gates.sporegate]
+vlans = [1, 10]
+interface = "eno1"
+vlan1_ip = "[LAN_IP]/24"
+vlan10_ip = "[LAN_IP]/24"
+vlan10_interface = "eno1.10"
+role = "gateway + controller"
+link_speed = "2.5G"
+note = "VLAN 10 sub-interface created via: ip link add link eno1 name eno1.10 type vlan id 10"
+
+[gates.eastgate]
+vlans = [1, 10]
+switch = "omada"
+port = "sfp_plus_2"
+vlan1_ip = "[LAN_IP]/24"
+vlan10_ip = "[LAN_IP]/24"
+role = "compute (meta atomic)"
+link_speed = "10G"
+note = "i9-12900K, 32GB. Primary compute + primalSpring overwatch."
+
+[gates.irongate]
+vlans = [1, 10]
+switch = "omada"
+port = "sfp_plus_3"
+vlan1_ip = "[LAN_IP]/24"
+vlan10_ip = "[LAN_IP]/24"
+role = "compute (node atomic)"
+link_speed = "10G"
+note = "Pop!_OS. ToadStool, BarraCuda, CoralReef. Needs SFP+ NIC confirmation."
+
+[gates.flint2_hub2]
+vlans = [1]
+switch = "omada"
+port = "sfp_plus_4"
+vlan1_ip = "[LAN_IP]/22"
+role = "WiFi AP (bridge)"
+link_speed = "1G (via SFP-to-RJ45)"
+note = "Bridge only — no HPC traffic. Carries ApertureScience WiFi."
+
+[gates.flint2_house1]
+vlans = [1]
+switch = "mikrotik"
+port = "sfp_1"
+vlan1_ip = "[LAN_IP]/22"
+role = "WiFi AP (bridge) + backup gateway"
+link_speed = "1G"
+status = "planned — awaiting hardware purchase"
+
+# ═══════════════════════════════════════════════════════════════
+# Implementation Steps (when switch credentials recovered)
+# ═══════════════════════════════════════════════════════════════
+
+[implementation]
+note = """
+Phase 1: MikroTik CRS310 (House 1)
+  1. Reset to factory defaults (hold reset 5s)
+  2. Log in as admin (no password)
+  3. Set new password
+  4. Create VLAN 10 bridge
+  5. Assign GbE1 as trunk (VLAN 1 untagged + VLAN 10 tagged)
+  6. Assign SFP+1 as trunk to Omada (all VLANs tagged)
+  7. Remaining ports: VLAN 1 access (untagged)
+
+Phase 2: Omada SX3008F (House 2)
+  1. Restart SDN controller on sporeGate OR access standalone web UI
+  2. Create VLAN 10
+  3. Assign port 1 as trunk to MikroTik (all VLANs tagged)
+  4. Assign eastGate + ironGate ports as trunk (VLAN 1 + 10)
+  5. Assign Flint 2 port as access VLAN 1 only
+
+Phase 3: sporeGate
+  1. Create VLAN sub-interface:
+     ip link add link eno1 name eno1.10 type vlan id 10
+     ip addr add [LAN_IP]/24 dev eno1.10
+     ip link set eno1.10 up
+  2. Add to /etc/systemd/network/ for persistence
+  3. Update nftables to allow inter-VLAN routing (or let MikroTik handle it)
+  4. Update dnsmasq for VLAN 10 DNS if needed
+
+Phase 4: Gates
+  1. eastGate: add VLAN 10 interface, assign [LAN_IP]
+  2. ironGate: add VLAN 10 interface, assign [LAN_IP]
+  3. Update ecosystem_manifest.toml with VLAN assignments
+"""
+
+# ═══════════════════════════════════════════════════════════════
+# Inter-VLAN Routing
+# ═══════════════════════════════════════════════════════════════
+
+[routing]
+note = """
+MikroTik CRS310 handles inter-VLAN routing at hardware speed.
+sporeGate is the default gateway for VLAN 1 (general).
+MikroTik is the default gateway for VLAN 10 (HPC) — [LAN_IP] on MikroTik.
+Or: sporeGate is gateway for both, routing via eno1 + eno1.10.
+
+Recommended: sporeGate as gateway for both (keeps firewall authority).
+MikroTik just does L2 switching + VLAN tagging (no L3 routing needed initially).
+"""

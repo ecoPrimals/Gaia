@@ -1,0 +1,254 @@
+# FRAGO: guideStone-Grade Deployment Convergence
+# Replaces: wave106-cross-topology-validation (archived — all topologies validated)
+# Purpose: evolve all NUCLEUS deployments to guideStone-grade deterministic, functionally
+#          identical across every gate, true postPrimordial from VPS authority.
+
+[impulse]
+id = "wave109-guidestone-deployment-convergence"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane", "biomeOS", "primalSpring", "all-primals", "all-gates"]
+date = "2026-06-11"
+priority = "P2"
+owner = "eastGate + cellMembrane + primalSpring"
+note = """
+Cross-topology validation is COMPLETE: LAN (4 gates), WAN (flockGate 4/5), ARM (grapheneGate
+13/13), VPS (golgiBody 13/13). Deployment works. But "works" is not the goal — the goal is
+every NUCLEUS deployment on every gate being guideStone-grade and functionally identical.
+
+The grapheneGate AAR (Wave 108) exposed 7 abstraction gaps. The flockGate WAN AAR (Wave 106)
+mapped 5 guideStone properties to deployment. This FRAGO structures the convergence into 5
+work streams with clear ownership and guideStone property traceability.
+
+Companion: AAR_GRAPHENEGATE_WAVE108_13_OF_13_DEPLOYED_JUN10_2026.md (7 gaps)
+Living standard: cellMembrane/AAR_CELLMEMBRANE_WAVE106_DETERMINISTIC_DEPLOYMENT_JUN10_2026.md
+"""
+
+# ──────────────────────────────────────────────────────────────
+# GUIDESTONE PROPERTIES APPLIED TO DEPLOYMENT
+# ──────────────────────────────────────────────────────────────
+
+[guidestone]
+description = """Every NUCLEUS deployment must satisfy all 5 guideStone properties:
+
+  P1: DETERMINISTIC — same depot + same gate profile = identical NUCLEUS state
+  P2: REFERENCE-TRACEABLE — every binary traces to provenance.toml (commit, rustc, timestamp, blake3)
+  P3: SELF-VERIFYING — BLAKE3 fail-closed; mismatch = abort, no silent degradation
+  P4: ENVIRONMENT-AGNOSTIC — musl-static ecoBins, no runtime deps, no sudo, no local builds
+  P5: TOLERANCE-DOCUMENTED — named tolerances for depot staleness, mesh handshake, health convergence
+
+The 6 existing deterministic deployment invariants (Wave 106 AAR) are the foundation:
+  Binary authority, Checksum verification, Atomic replacement, Mesh bootstrap,
+  Health verification, Source parity.
+
+This FRAGO adds the abstraction layer that makes those invariants universal across topologies."""
+
+# ──────────────────────────────────────────────────────────────
+# CURRENT STATE (Wave 109, Jun 11 2026)
+# ──────────────────────────────────────────────────────────────
+
+[current_state]
+p1_blockers = "ZERO."
+cross_topology = """ALL VALIDATED:
+  LAN x86_64: eastGate + golgiBody + ironGate + strandGate + southGate (5 gates, 13/13 each)
+  WAN x86_64: flockGate (4/5 — federation.enabled=false, songBird protocol gap, see FLOCKGATE-WAN-FEDERATION)
+  ARM aarch64: grapheneGate (13/13 deployed + alive, Wave 108)
+  VPS: golgiBody (13/13, depot authority)"""
+depot = "14/14 aarch64 + 13/13 x86_64, BLAKE3 verified. VPS synced. checksums.toml + provenance.toml current."
+mesh = "5-gate: eastGate↔golgiBody↔ironGate+southGate + grapheneGate standalone. flockGate blocked on federation protocol."
+sovereignty = "S1-S4 ALL GRADUATED."
+deployment_model = """postPrimordial ENFORCED. gate.bootstrap shipped (6-phase + deployment.toml emission).
+guideStone convergence Wave 109→110:
+  ✅ CLOSED (Stream 1): 6/6 startup contract — bearDog SHIPPED (945de60f, Wave 110).
+  ✅ CLOSED (Stream 1): PlatformCapabilities::detect() landed in primalSpring ipc crate.
+  ✅ CLOSED (Stream 2): FULLY RESOLVED (6/6). plasmid.build, gate profiles, gate engine all wired.
+  PARTIAL (Stream 3): 2/13 primals remain (rhizoCrypt, petalTongue). 11/13 HEALTH-01 compliant.
+                       songBird SHIPPED (471ed43b, Wave 110). LAUNCHER-01 remains.
+  PARTIAL (Stream 4): bearDog BTSP TCP E2E test SHIPPED (945de60f). sweetGrass server-side READY.
+                       Full cross-primal handshake untested.
+  ✅ CLOSED (Stream 5 core): dual_checksum, cascade_restart, process_version, deployment_manifest,
+                       agentic_resolve ALL DONE. Remaining: qs/rp/freshness → Wave 111+.
+  FIXED (flockGate): federation.enabled root cause FOUND + FIXED (471ed43b). Handshake retest needed."""
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 1: Standard Primal Startup Contract (AAR Gaps 1+2)
+# guideStone: P1 (Deterministic), P4 (Environment-Agnostic)
+# ──────────────────────────────────────────────────────────────
+
+[stream1]
+id = "STARTUP-CONTRACT"
+owner = "primalSpring + primal teams"
+priority = "P2"
+guidestone_properties = ["P1-Deterministic", "P4-Environment-Agnostic"]
+description = """Converge all 13 primals on a standard startup envelope.
+No per-primal case blocks in deploy scripts. Every primal accepts:
+  $PRIMAL server --bind-mode $PRIMAL_BIND_MODE --port $PORT
+PlatformCapabilities::detect() auto-senses transport from environment.
+PRIMAL_BIND_MODE becomes override-only."""
+
+[stream1.items]
+beardog = "✅ RESOLVED (945de60f, Wave 110): --bind-mode flag (auto|filesystem|abstract|tcp) + PRIMAL_BIND_MODE env + PORT env fallback. STARTUP-BD-01 CLOSED."
+
+[stream1.resolved]
+nestgate = "RESOLVED (66126899): default HTTP in server mode — STARTUP-NG-01"
+biomeos = "RESOLVED (5311dd3f): guideStone startup contract v4.22 — STARTUP-BM-01 + HEALTH-01"
+coralreef = "RESOLVED (7bc90e5): --port, --bind-mode standard envelope — STARTUP-CR-01"
+barracuda = "RESOLVED (5f0e55e5): --bind-mode / PRIMAL_BIND_MODE replaces --no-unix — STARTUP-BC-01"
+skunkbat = "RESOLVED (00b3436): --bind-mode replaces --no-uds/--no-tcp v0.2.10 — STARTUP-SB-01"
+platform_detect = "RESOLVED (b487dad): PlatformCapabilities::detect() in primalSpring ipc crate — PLATFORM-DETECT-01"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 2: Build Pipeline + Gate Profiles (AAR Gaps 3+4)
+# guideStone: P1 (Deterministic), P2 (Reference-Traceable)
+# ──────────────────────────────────────────────────────────────
+
+[stream2]
+id = "BUILD-PIPELINE-GATE-PROFILES"
+owner = "cellMembrane"
+priority = "P2"
+guidestone_properties = ["P1-Deterministic", "P2-Reference-Traceable"]
+description = """Port build-primal.sh to Rust (membrane plasmid.build). Gate profiles in TOML.
+gate.bootstrap reads profile instead of hardcoding topology assumptions."""
+
+[stream2.items]
+build_cache_fix = "✅ DONE (Wave 109). BUILD-CACHE-01: ephemeral --depth 1 clone inherently prevents stale cache."
+build_elf_fix = "✅ DONE (Wave 109, 9b764a5). BUILD-ELF-01: validate_elf_arch() in plasmid.build + plasmid.harvest."
+harvest_name_fix = "✅ DONE (Wave 109, 9b764a5). HARVEST-NAME-01: binary_name resolution from sources.toml."
+gate_profiles_wiring = "✅ DONE (Wave 109, 9b764a5). GATE-PROFILE-01: GateProfile expanded, gate.profile command."
+gate_engine = "✅ DONE (Wave 110, 456ab08). Gate engine: transport_to_fetch_source(), deploy_pixel.sh abstracted."
+
+[stream2.resolved]
+plasmid_build = "RESOLVED (9b764a5): membrane plasmid.build — 325-line Rust pipeline, ephemeral staging, BLAKE3, provenance"
+deployment_toml = "RESOLVED (9b764a5): deployment.toml emission from gate.bootstrap — guideStone P2"
+gate_profiles_infra = "RESOLVED (9b764a5): gate profile infrastructure in manifest + gate/local.rs"
+health_sweep_jsonrpc = "RESOLVED (9b764a5): health.sweep JSON-RPC validation in gate.bootstrap"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 3: Post-Deploy Validation + Orchestration (AAR Gaps 5+6)
+# guideStone: P3 (Self-Verifying), P5 (Tolerance-Documented)
+# ──────────────────────────────────────────────────────────────
+
+[stream3]
+id = "HEALTH-ORCHESTRATION"
+owner = "primalSpring + biomeOS"
+priority = "P2"
+guidestone_properties = ["P3-Self-Verifying", "P5-Tolerance-Documented"]
+description = """Standard health endpoint across all primals. On-device orchestration for
+grapheneGate. Named tolerances for deployment lifecycle."""
+
+[stream3.items]
+health_rhizocrypt = "REMAINING: HEALTH-RC-01: rhizocrypt converge on JSON-RPC health (different protocol currently)"
+health_petaltongue = "REMAINING: HEALTH-PT-01: petaltongue converge on JSON-RPC health (different protocol currently)"
+health_songbird = "✅ RESOLVED (471ed43b, Wave 110): HEALTH-SB-01 — bare 'health' → {status, primal, version, uptime_s}. federation.enabled root cause fixed."
+launcher = "REMAINING: LAUNCHER-01: nucleus_launcher cross-compiled for aarch64 — dependency-ordered startup, health gating"
+tolerances = """REMAINING: Named tolerances need codification in deployment.toml:
+  depot_freshness_max = 24h, mesh_handshake_timeout = 30s,
+  health_convergence_window = 60s, primal_startup_timeout = 10s"""
+
+[stream3.resolved]
+health_schema = "RESOLVED (b487dad): primalSpring HEALTH-01 schema + s_health_standard validation scenario"
+health_sweetgrass = "RESOLVED (a675425): sweetGrass bare 'health' alias + enriched {status, primal, version, uptime_secs}"
+health_biomeos = "RESOLVED (5311dd3f): biomeOS HEALTH-01 convergence in v4.22"
+health_healthspring = "RESOLVED (c65f89a): healthSpring HEALTH-01 convergence + 12 unit tests"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 4: BTSP End-to-End (AAR Gap 7)
+# guideStone: P3 (Self-Verifying)
+# ──────────────────────────────────────────────────────────────
+
+[stream4]
+id = "BTSP-E2E"
+owner = "primalSpring + sweetGrass + bearDog"
+priority = "P2"
+guidestone_properties = ["P3-Self-Verifying"]
+description = """Validate BTSP handshake end-to-end: bearDog bootstrap keys → client auth →
+sweetGrass/petalTongue accept authenticated requests. Currently: rejection confirmed,
+successful handshake untested."""
+
+[stream4.items]
+btsp_handshake = "REMAINING: BTSP-E2E-01: validate full handshake from bearDog key → client → sweetGrass/petalTongue (sweetGrass server-side READY)"
+btsp_graphenegate = "REMAINING: validate BTSP on grapheneGate TCP-only transport (no UDS involved)"
+
+[stream4.resolved]
+sweetgrass_btsp = "RESOLVED (a675425): sweetGrass v0.7.56 BTSP E2E readiness — BEARDOG_SOCKET resolution, 88 BTSP tests"
+
+# ──────────────────────────────────────────────────────────────
+# STREAM 5: cellMembrane Cascade + quorumSignal + rootPulse
+# guideStone: P2 (Reference-Traceable), P3 (Self-Verifying)
+# ──────────────────────────────────────────────────────────────
+
+[stream5]
+id = "CASCADE-QS-RP"
+owner = "cellMembrane"
+priority = "P2"
+guidestone_properties = ["P2-Reference-Traceable", "P3-Self-Verifying"]
+description = """Divergence hardening. Git temporal cascade is mature (38/38 parity).
+Evolve quorumSignal (SENSE), rootPulse (ACTION), waterFall (SYNC) toward
+guideStone-grade deployment lifecycle."""
+
+[stream5.items]
+dual_checksum = "✅ DONE (Wave 110, 6f26089). gate.bootstrap checksum.git + checksum.wan dual verification (guideStone P3)."
+cascade_restart = "✅ DONE (Wave 110, 6f26089). temporal.cascade --with-restart: BLAKE3 compare + selective primal restart."
+process_version = "✅ DONE (Wave 109, 9b764a5). health_sweep JSON-RPC version probe replaces pgrep."
+deployment_manifest = "✅ DONE (Wave 109, 9b764a5). deployment.toml emission — gate, arch, mobility, timestamp."
+agentic_resolve = "✅ DONE (Wave 110, 1be6358). Authority-first graduated escalation. temporal/resolve.rs extracted."
+qs_signal_graphs = "DEFERRED → Wave 111+. quorumSignal: 15 atomic signal graphs from WATERFALL_TEMPORAL_SYNC.md Phase 2"
+rp_impulse_evolution = "DEFERRED → Wave 111+. rootPulse: impulse lifecycle → full provenance trio"
+freshness_mesh = "DEFERRED → Wave 111+. move freshness.toml → songbird mesh.publish of per-remote HEADs"
+
+# ──────────────────────────────────────────────────────────────
+# PENDING VALIDATION (carried from Wave 108)
+# ──────────────────────────────────────────────────────────────
+
+[pending.flockgate_wan_federation]
+id = "FLOCKGATE-WAN-FEDERATION"
+owner = "songBird team + flockGate ops"
+priority = "P2"
+description = """ROOT CAUSE FOUND + FIXED (Wave 110, 471ed43b):
+federation.status was reporting `enabled: fed_stats.total_nodes > 0` — a CONNECTIVITY metric,
+not a CONFIGURATION flag. Fix: `enabled` now reflects startup configuration
+(self.federation_state is Some → true). Federation activation conditions documented.
+REMAINING: deploy fix to VPS + retest actual handshake on flockGate.
+See impulse: wave110-songbird-health-federation-fix"""
+action = """REMAINING:
+1. Deploy songBird 471ed43b to VPS golgiBody (next cascade --with-rebuild)
+2. Retest flockGate: does federation handshake complete? (active_connections > 0?)
+3. If not: investigate join protocol (POST /api/federation/join response from VPS)"""
+
+# ──────────────────────────────────────────────────────────────
+# LOW
+# ──────────────────────────────────────────────────────────────
+
+[remaining.sourdough_segfault]
+id = "SOURDOUGH-SEGFAULT"
+owner = "sourDough"
+priority = "LOW"
+description = "sourdough validate depot crashes (segfault). Manual b3sum fallback."
+
+# ──────────────────────────────────────────────────────────────
+# RESOLVED LEDGER (Waves 106-108 — compact)
+# ──────────────────────────────────────────────────────────────
+
+[resolved_summary]
+count = 53
+detail = """Waves 106-110 resolved:
+  Wave 106-108 (26): grapheneGate 13/13, VPS songbird restart, BM-UDS-01, CR-TARPC-01,
+    NG-DOWNCAST-01, aarch64 rebuild, NDK, SONGBIRD-IPC, BARRACUDA-METHOD-DESCRIBE,
+    socket cleanup, cross-topology 5-gate, gate.bootstrap, depot_sync, mobile golgi.
+  Wave 109 (13): STARTUP-BC-01 (barraCuda), STARTUP-CR-01 (coralReef), STARTUP-NG-01
+    (nestGate), STARTUP-BM-01 (biomeOS), STARTUP-SB-01 (skunkBat), PLATFORM-DETECT-01
+    (primalSpring ipc), plasmid.build (cellMembrane), deployment.toml emission,
+    gate profile infra, health.sweep JSON-RPC, HEALTH-01 sweetGrass, HEALTH-01 biomeOS,
+    sweetGrass BTSP readiness.
+  Wave 110 (14): STARTUP-BD-01 (bearDog 945de60f — 6/6 startup contract COMPLETE),
+    STARTUP-PS-01 (primalSpring post-primordial reversal — binary deleted),
+    HEALTH-PS-01 (primalSpring no longer serves — arena role),
+    HEALTH-SB-01 (songBird 471ed43b — 11/13 HEALTH-01),
+    federation.enabled root cause fix (songBird 471ed43b),
+    bearDog BTSP-E2E TCP handshake test (945de60f),
+    primalSpring #[allow] zero, clippy -D warnings all-targets clean,
+    tolerances centralization (5 thresholds), primal_names::Atomic enriched,
+    bonding::GateSpecialization added, dual_checksum (cellMembrane 6f26089),
+    cascade_restart (cellMembrane 6f26089), agentic_resolve (cellMembrane 1be6358).
+Full detail: archive/wave107/, archive/wave108/, impulses/resolved/,
+    handoffs/AAR_PRIMALSPRING_WAVE110_POST_PRIMORDIAL_EVOLUTION_JUN11_2026.md"""

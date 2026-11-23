@@ -1,0 +1,61 @@
+[impulse]
+id = "2026-06-02T17-53-eastGate-wave70-biomegate-down-compute-trio-paused"
+type = "frago"
+priority = "routine"
+wave = 70
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["biomeGate"]
+
+[content]
+subject = "Wave 70 — biomeGate temporarily down, compute trio PAUSED"
+body = """
+biomeGate is offline (kernel recovery). Consolidates and supersedes:
+  - wave68-biomegate-exp234-hpc-update (archived)
+  - wave68-biomegate-compute-trio-onboarding (archived)
+  - wave69-biomegate-hpc-compute-trio (archived)
+
+COMPUTE TRIO STATUS:
+
+1. TOADSTOOL — PAUSED (hardware-dependent)
+   - PBDMA runlist + Exp 234 require Titan V on biomeGate
+   - wgpu/DRM path (RTX 5060 Blackwell) verified and production-ready
+   - Last: S283 deep debt + PBDMA diagnostic readback (Wave 68)
+   - RESUME when biomeGate kernel is recovered
+
+2. CORALREEF — PAUSED (partially movable)
+   - SPIR-V output (GAP-HS-124) is pure compiler work — can run on any gate
+   - Blackwell zero readback (GAP-HS-115) needs RTX 5060 on biomeGate
+   - Last: SM120 barrier fix, sovereign SPIR-V prep (Wave 68)
+   - Pure software items CAN be worked on southGate/eastGate if prioritized
+
+3. BARRACUDA — PAUSED (fully movable)
+   - ml.mlp_train wiring is pure software — zero hardware dependency
+   - biomeOS perceptron shadow mode (Wave 71 target) will consume this
+   - Last: Wave 68 deep debt + composition readiness
+   - CAN be worked on any gate. P2 priority, not on glacial critical path.
+
+4. HOTSPRING — PAUSED
+   - Compute-side work blocked on toadStool hardware
+   - ABG science work can continue on strandGate when deployed
+
+NO GATE TRANSFER — ownership remains biomeGate. Pure software items
+(barraCuda ml.mlp_train, coralReef SPIR-V) available for opportunistic
+pickup by any gate team with repo access.
+
+RESUME TRIGGER: biomeGate kernel recovery complete + cascade sync.
+When biomeGate comes online, pull wateringHole for full context and
+ACK this FRAGO to confirm recovery.
+"""
+
+[meta]
+created = "2026-06-02T17:53:00-04:00"
+ack_required = true
+supersedes = [
+    "2026-06-02T07-44-eastGate-wave68-biomegate-exp234-hpc-update",
+    "2026-06-02T09-06-eastGate-wave68-biomegate-compute-trio-onboarding",
+    "2026-06-02T12-53-eastGate-wave69-biomegate-hpc-compute-trio",
+]

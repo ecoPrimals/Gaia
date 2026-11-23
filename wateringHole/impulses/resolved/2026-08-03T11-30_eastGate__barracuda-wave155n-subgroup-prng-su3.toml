@@ -1,0 +1,39 @@
+[impulse]
+timestamp = "2026-08-03T11:30:00Z"
+gate = "eastGate"
+primal = "barraCuda"
+wave = "155n"
+title = "P0 subgroup shader fix + diversity self-recursion + SU(3) disambiguation"
+
+[summary]
+description = """
+Three P0 items from Wave 155n addressed:
+
+P0 #1 (S): Subgroup reduction entry point mismatch — `sum_reduce_subgroup_f64.wgsl`
+had `fn main()` but Rust dispatches `"sum_reduce_f64"`. Pipeline creation failed
+silently on SM100+ devices, causing all scalar readbacks to return 0.0.
+FIX: Renamed entry point to `fn sum_reduce_f64()`.
+
+P0 #2 (L): GPU PRNG pipeline analysis — active HMC path uses `lcg_f64.wgsl`
+→ `prng_gaussian()` → native sqrt/log/cos, polyfilled on NVIDIA via
+`compile_shader_f64`. Polyfill injection and duplicate-definition guards are
+correct. 9.5% KE deficit likely a measurement artifact from the broken subgroup
+reduction (P0 #1). `cpu_mom` workaround remains deployed. Week 3+ item.
+
+P0 #3 (M): Gauge group labeling — barraCuda code is correctly SU(3) throughout
+(zero SU(2) references). 6 docs that said "lattice QCD" without gauge group
+now explicitly say "SU(3) lattice QCD". The SU(2) mislabel is in external
+paper/site artifacts, not in barraCuda.
+
+BONUS: Fixed diversity_f64.wgsl self-recursion bug — inline log_f64() definition
+caused infinite recursion when compile_shader_f64 rewrites body's log() → log_f64().
+Removed inline definition; native log() with auto-injected polyfill is correct.
+"""
+files_changed = 7
+lines_added = 10
+lines_removed = 14
+commit = "b315eec9"
+
+[tags]
+categories = ["shader-fix", "physics-correctness", "documentation"]
+upstream_impact = "hotSpring QCD production on biomeGate unblocked by P0 #1"

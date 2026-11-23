@@ -18,12 +18,12 @@ print("=" * 60)
 # ═══════════════════════════════════════
 print("\n=== 1. ROUTER PORT FORWARDS ===")
 # SSH to router and check current forwards
-out, _ = run("sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'uci show firewall | grep redirect' 2>&1 | head -30")
+out, _ = run("sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'uci show firewall | grep redirect' 2>&1 | head -30")
 print(f"Current firewall redirects:\n{out}\n")
 
 # Fix: change dest_port from 8443 to 80/443 so dromedary catches
 # First, find which rules are the HTTP/HTTPS forwards
-out, _ = run("""sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 '
+out, _ = run("""sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 '
 # Show current rules
 uci show firewall | grep -E "redirect.*name|redirect.*src_dport|redirect.*dest_port|redirect.*dest_ip" | head -40
 ' 2>&1""")
@@ -31,7 +31,7 @@ print(f"Redirect details:\n{out}\n")
 
 # Now fix the forwards
 print("Fixing port forwards...")
-out, _ = run("""sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 '
+out, _ = run("""sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 '
 # Find and fix HTTP redirect (80 → should go to 80, not 8443)
 for i in $(seq 0 20); do
     name=$(uci get firewall.@redirect[$i].name 2>/dev/null)

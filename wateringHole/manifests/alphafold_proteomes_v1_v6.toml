@@ -1,0 +1,39 @@
+# DataManifest: AlphaFold DB — Reference Proteomes v1 through v6
+#
+# Archive of all proteome tar files across all 6 AlphaFold versions,
+# plus bulk metadata (sequences.fasta, accession_ids.csv, etc.).
+# Acquired via rsync from EBI FTP for restart-safe transfer.
+
+[manifest]
+dataset = "alphafold_proteomes_v1_v6"
+display_name = "AlphaFold DB Reference Proteomes v1-v6"
+source = "rsync://ftp.ebi.ac.uk/pub/databases/alphafold"
+version = "v1-v6"
+license = "CC-BY-4.0"
+trust_tier = "T1"
+expected_total = 270
+expected_size_bytes = 536_870_912_000  # ~500 GB
+
+[manifest.acquisition]
+method = "rsync"
+concurrency = 1
+rate_limit_mbps = 400
+checkpoint_interval = 10
+retry_max = 5
+retry_backoff_ms = 30000
+rsync_bwlimit_kbps = 50000
+
+[manifest.entries_source]
+type = "single"
+# url and dest specified per-version in the acquisition script
+
+[manifest.storage]
+base_path = "/mnt/nestgate/cold/zfs/data"
+subdirectory = "alphafold"
+layout = "hierarchical"
+
+[manifest.provenance]
+author = "westgate"
+description = "Complete AlphaFold proteome archive: v1 (20) → v2 (49) → v3 (51) → v4 (53) → v5 (50) → v6 (49) + sequences + metadata"
+tags = ["alphafold", "proteome", "ebi", "rsync", "data-federation"]
+springs_served = ["neuralSpring", "tideGlass", "helixVision"]

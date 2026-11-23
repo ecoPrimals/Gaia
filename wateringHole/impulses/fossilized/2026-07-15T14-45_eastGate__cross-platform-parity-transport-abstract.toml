@@ -1,0 +1,76 @@
+[impulse]
+id = "2026-07-15T14-45-eastGate-cross-platform-parity-transport-abstract"
+type = "frago"
+priority = "priority"
+wave = 140
+
+[from]
+gate = "eastGate"
+team = "overwatch"
+project = "infra/wateringHole"
+ref = "a1377647"
+
+[to]
+gates = ["sporeGate"]
+teams = ["cellMembrane", "bearDog", "biomeOS", "nestGate", "rhizoCrypt", "squirrel", "sweetGrass", "loamSpine", "skunkBat", "coralReef", "barraCuda", "petalTongue", "toadStool", "sourDough", "primalSpring"]
+
+[content]
+subject = "Cross-Platform Parity Audit absorbed — TRANSPORT-ABSTRACT is P1 unlock for 11 primals"
+body = """
+The sporeGate team's Cross-Platform Parity Audit (Wave 139e) has been absorbed
+into overwatch. Full AAR at aars/CROSS_PLATFORM_PARITY_AAR_WAVE139e.md.
+
+KEY FINDING: Phase 2 transport abstraction unblocks 11 of 13 Windows-failing
+primals. songBird already has the reference implementation (NamedPipeServer/Client).
+
+HARVEST RESULT: 45 depot binaries (x86_64-musl 16, aarch64-musl 16, Android 12,
+Windows 1). depot_sync --push mode now operational in cellMembrane (04f6f96).
+primalSpring scenario `platform-type-parity` green (162 scenarios, 1194 tests).
+
+DISSEMINATED ACTION ITEMS (from AAR):
+
+P1 — TRANSPORT-ABSTRACT (cellMembrane team):
+  Create `primal-transport` crate with PrimalStream enum dispatching
+  UDS (unix), NamedPipe (windows), TCP (fallback). songBird's existing
+  Named Pipe support is the reference. All 11 UDS-affected primals
+  should depend on this instead of importing tokio::net::UnixStream directly.
+
+  Affected: bearDog, biomeOS, nestGate, rhizoCrypt, squirrel, sweetGrass,
+  loamSpine, skunkBat, coralReef, barraCuda, petalTongue
+
+P1 — SIGNAL-ABSTRACT (cellMembrane team):
+  Platform-agnostic shutdown signal as part of ProcessManager trait.
+  Affected: loamSpine, skunkBat, barraCuda
+
+P2 — FS-ABSTRACT (cellMembrane team):
+  Platform FS ops behind Platform-dispatched implementations.
+  Affected: nestGate (rustix::fs statfs), biomeOS (rustix::fs+system),
+  sourDough (PermissionsExt::mode)
+
+P2 — TOADSTOOL-CFGGATE (toadStool team):
+  Feature-gate hw-safe behind linux-hw flag. VFIO/mmap are kernel APIs.
+
+P3 — PETALTONGUE-ANDROID (petalTongue team):
+  Android target = cdylib library, not standalone binary.
+
+P3 — TOOLCHAIN-LINT (primalSpring team):
+  Enforce all ecosystem targets in workspace rust-toolchain.toml files.
+  Scenario or cascade-time lint.
+
+P3 — DEPOT-COVERAGE-SCENARIO (primalSpring team):
+  Update s_depot_binary_standard to track per-arch binary counts.
+
+PATTERN (from songBird — reference implementation):
+  #[cfg(unix)]
+  use tokio::net::UnixStream;
+  #[cfg(windows)]
+  use tokio::net::windows::named_pipe::NamedPipeClient;
+
+Each primal team should review their AAR failure category and file locations
+in the full AAR document.
+"""
+
+[meta]
+created = "2026-07-15T14:45:00-04:00"
+expires = "2026-07-22T00:00:00-04:00"
+ack_required = true

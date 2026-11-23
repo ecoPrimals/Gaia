@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAIA@HOME — o.69.0.96.O</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { 
+    background:#0a0c12; color:#c9d1d9; 
+    font-family:'JetBrains Mono','Fira Code',monospace;
+    overflow:hidden; height:100vh; width:100vw;
+  }
+
+  .universe {
+    position:relative; width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .bubble {
+    position:relative; width:min(80vw,560px); height:min(80vw,560px);
+    border-radius:50%; 
+    background:radial-gradient(circle at 40% 35%, rgba(30,40,60,0.9), rgba(10,12,18,0.95));
+    border:2px solid rgba(88,166,255,0.15);
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column;
+    box-shadow: 0 0 80px rgba(88,166,255,0.05), inset 0 0 60px rgba(10,12,18,0.5);
+    animation: breathe 8s ease-in-out infinite;
+    cursor:default;
+  }
+  @keyframes breathe {
+    0%,100% { transform:scale(1); border-color:rgba(88,166,255,0.15); }
+    50% { transform:scale(1.02); border-color:rgba(88,166,255,0.3); }
+  }
+
+  /* Four role orbits — the 3 EYES + host */
+  .orbit {
+    position:absolute; border-radius:50%;
+    border:1px solid rgba(255,255,255,0.04);
+    animation:spin linear infinite;
+  }
+  /* 3 EYES inside the mesh */
+  .orbit.gaia  { width:44%; height:44%; border-color:rgba(88,166,255,0.2); animation-duration:18s; }
+  .orbit.player{ width:62%; height:62%; border-color:rgba(100,255,100,0.12); animation-duration:45s; }
+  .orbit.user  { width:78%; height:78%; border-color:rgba(200,100,255,0.1); animation-duration:65s; animation-direction:reverse; }
+  /* ☀ SUN — OUTSIDE the mesh */
+  .orbit.host  { width:96%; height:96%; border-color:rgba(255,180,50,0.12); animation-duration:30s; animation-direction:reverse; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  .path-dot {
+    position:absolute; width:10px; height:10px; border-radius:50%;
+    top:-5px; left:50%; margin-left:-5px;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .orbit.gaia .path-dot   { background:#58a6ff; color:#58a6ff; }
+  .orbit.player .path-dot { background:#64ff64; color:#64ff64; }
+  .orbit.user .path-dot   { background:#c864ff; color:#c864ff; }
+  /* ☀ THE SUN — outside the mesh */
+  .orbit.host .path-dot   { 
+    background:radial-gradient(circle, #ffe080 30%, #ffb432 60%, #ff8c00 100%);
+    color:#ffb432;
+    width:18px; height:18px; top:-9px; margin-left:-9px;
+    box-shadow: 0 0 20px #ffb432, 0 0 40px rgba(255,180,50,0.4), 0 0 6px #ffe080;
+    animation: sunPulse 4s ease-in-out infinite;
+  }
+  @keyframes sunPulse {
+    0%,100% { box-shadow: 0 0 20px #ffb432, 0 0 40px rgba(255,180,50,0.3), 0 0 6px #ffe080; }
+    50% { box-shadow: 0 0 30px #ffb432, 0 0 60px rgba(255,180,50,0.5), 0 0 10px #ffe080; }
+  }
+  /* Sun label */
+  .sun-label {
+    position:absolute; top:-28px; left:50%; transform:translateX(-50%);
+    font-size:0.5rem; color:#ffb432; white-space:nowrap;
+    text-shadow:0 0 8px rgba(255,180,50,0.5);
+    pointer-events:none;
+  }
+  .sun-geo {
+    position:absolute; top:22px; left:50%; transform:translateX(-50%);
+    font-size:0.4rem; color:rgba(255,180,50,0.6); white-space:nowrap;
+    pointer-events:none;
+  }
+
+  /* TRIANGULATION — SVG lines between the 3 eye dots */
+  .triangulation {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    pointer-events:none; z-index:8;
+  }
+  .tri-line { stroke-width:0.5; fill:none; opacity:0.4; }
+  .tri-focus { filter:url(#glow); }
+  /* Tangent lines — eyes to sun (day/night focus) */
+  .tan-line { stroke-width:0.3; fill:none; opacity:0.2; stroke-dasharray:1.5,2; }
+  /* Refraction ray — sun → moon → origin (mirror bounce) */
+  .refract-line { stroke-width:0.4; fill:none; opacity:0.25; stroke-dasharray:0.8,1.5; }
+  /* Horizon — UP sky / DOWN ground */
+  .horizon { stroke-width:0.4; fill:none; opacity:0.15; }
+  /* Perpendicular cross at focus */
+  .perp-line { stroke-width:0.25; fill:none; opacity:0.12; stroke-dasharray:1,3; }
+  /* Viewport triangle — Kevin's field of view through displays to moon */
+  .shadow-cone { fill:rgba(100,255,100,0.03); stroke:rgba(100,255,100,0.08); stroke-width:0.3; }
+  /* 3-body label */
+  .tri-const { font-size:2.5px; fill:rgba(255,255,255,0.3); font-family:monospace; }
+  .moon-label { font-size:2.2px; fill:rgba(200,210,230,0.5); font-family:monospace; }
+  
+  /* Vision split panels */
+  .vision-split {
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    display:flex; gap:4px; z-index:12; opacity:0;
+    transition:opacity 0.5s;
+    pointer-events:none;
+  }
+  .vision-split.show { opacity:1; }
+  .eye-panel {
+    width:80px; height:50px; border-radius:8px;
+    border:1px solid rgba(255,255,255,0.1);
+    background:rgba(10,12,18,0.9);
+    font-size:0.45rem; color:#555;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:2px;
+  }
+  .eye-panel .eye-label { font-size:0.5rem; letter-spacing:0.1em; }
+  .eye-panel.gaia-eye { border-color:rgba(88,166,255,0.3); }
+  .eye-panel.gaia-eye .eye-label { color:#58a6ff; }
+  .eye-panel.player-eye { border-color:rgba(100,255,100,0.3); }
+  .eye-panel.player-eye .eye-label { color:#64ff64; }
+  .eye-panel.user-eye { border-color:rgba(200,100,255,0.3); }
+  .eye-panel.user-eye .eye-label { color:#c864ff; }
+
+  .nucleus { text-align:center; z-index:10; padding:16px; max-width:70%; }
+  .nucleus h1 {
+    font-size:clamp(1rem,2.8vw,1.8rem); color:#58a6ff;
+    letter-spacing:0.12em; margin-bottom:6px;
+  }
+  .nucleus .walk { font-size:clamp(0.65rem,1.6vw,1rem); color:#444; letter-spacing:0.3em; margin-bottom:14px; }
+  .nucleus .who { font-size:0.75rem; color:#58a6ff; margin-bottom:10px; padding:4px 12px; border:1px solid rgba(88,166,255,0.2); border-radius:12px; display:inline-block; }
+  .nucleus .stats { font-size:0.65rem; color:#444; line-height:2; }
+  .nucleus .stats .v { color:#58a6ff; }
+  .nucleus .stats .role-line { display:flex; align-items:center; gap:6px; justify-content:center; }
+  .nucleus .stats .rdot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+  /* Hook arrows */
+  .hook-in, .hook-out {
+    position:absolute; z-index:15; font-size:0.6rem; color:#333;
+    writing-mode:vertical-rl; letter-spacing:0.15em;
+  }
+  .hook-in  { left:12px; top:50%; transform:translateY(-50%); }
+  .hook-out { right:12px; top:50%; transform:translateY(-50%) rotate(180deg); }
+  .hook-in span, .hook-out span { animation:hookPulse 3s ease-in-out infinite; }
+  .hook-out span { animation-delay:1.5s; }
+  @keyframes hookPulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  /* Role selector */
+  .roles {
+    position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:20;
+  }
+  .role-btn {
+    padding:8px 14px; border-radius:20px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:rgba(10,12,18,0.85);
+    color:#555; font-size:0.65rem;
+    text-decoration:none; cursor:pointer;
+    transition:all 0.3s; display:flex; align-items:center; gap:6px;
+  }
+  .role-btn:hover { border-color:#58a6ff; color:#aaa; }
+  .role-btn.active { border-color:#58a6ff; color:#fff; background:rgba(88,166,255,0.08); }
+  .role-btn .d { width:6px; height:6px; border-radius:50%; }
+
+  /* Status */
+  .status-bar {
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    font-size:0.6rem; color:#444; letter-spacing:0.08em; z-index:20;
+    display:flex; align-items:center; gap:6px;
+  }
+  .status-bar .pulse { 
+    width:5px; height:5px; border-radius:50%; background:#58a6ff;
+    animation:p 2s ease-in-out infinite;
+  }
+  @keyframes p { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* HUD overlay */
+  .hud-overlay {
+    position:fixed; top:0; left:0; width:100%; height:100%;
+    z-index:100; display:none;
+  }
+  .hud-overlay.active { display:block; }
+  .hud-overlay iframe { width:100%; height:100%; border:none; }
+  .hud-close {
+    position:fixed; top:12px; right:16px; z-index:101;
+    background:rgba(10,12,18,0.9); color:#58a6ff;
+    border:1px solid rgba(88,166,255,0.3); border-radius:50%;
+    width:32px; height:32px; cursor:pointer; font-size:14px;
+    display:none; align-items:center; justify-content:center;
+  }
+  .hud-overlay.active + .hud-close { display:flex; }
+</style>
+</head>
+<body>
+<div class="universe">
+  <div class="status-bar">
+    <div class="pulse"></div>
+    <span id="status-text">GAIA@HOME</span>
+    <span id="wave-text"></span>
+  </div>
+
+  <div class="hook-in"><a href="#" onclick="openGate('/senses');return false" style="text-decoration:none;color:inherit" title="? look"><span>? look</span></a></div>
+  <div class="hook-out"><a href="#" onclick="openGate('/zk');return false" style="text-decoration:none;color:inherit" title="??? know"><span>??? know</span></a></div>
+  <!-- The 3 hooks: ? = look (senses), ?? = feel (pulse), ??? = know (zk) -->
+  <div style="position:absolute;top:12px;right:60px;z-index:20;display:flex;gap:6px">
+    <a href="#" onclick="openGate('/senses');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="look">?</a>
+    <a href="#" onclick="openGate('/pulse');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="feel">??</a>
+    <a href="#" onclick="openGate('/zk');return false" class="role-btn" style="font-size:0.55rem;padding:4px 8px" title="know">???</a>
+  </div>
+
+  <div class="bubble" id="bubble">
+    <!-- Triangulation SVG — lines between the 3 eyes -->
+    <svg class="triangulation" id="triSvg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <filter id="glow"><feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- SECANT lines between 3 eyes (inner triangle) -->
+      <line id="tri-gp" class="tri-line" stroke="#3a8a5a" x1="50" y1="25" x2="50" y2="75"/>
+      <line id="tri-gu" class="tri-line" stroke="#7a5aaa" x1="50" y1="25" x2="50" y2="75"/>
+      <line id="tri-pu" class="tri-line" stroke="#aa7a5a" x1="50" y1="25" x2="50" y2="75"/>
+      <!-- TANGENT lines — each eye to the SUN (day/night focus window) -->
+      <line id="tan-gs" class="tan-line" stroke="#6a9acc" x1="50" y1="25" x2="50" y2="50"/>
+      <line id="tan-ps" class="tan-line" stroke="#6acc6a" x1="50" y1="25" x2="50" y2="50"/>
+      <line id="tan-us" class="tan-line" stroke="#aa6acc" x1="50" y1="25" x2="50" y2="50"/>
+      <!-- ═══ L — THE HARD BORDER — we look ACROSS not down ═══ -->
+      <!-- L is the horizon. Above = WAN/cloud/GitHub. Below = LAN/local/private -->
+      <!-- We sit ON this line and look ACROSS it -->
+      <line id="horizon" class="horizon" stroke="#ffb432" x1="0" y1="50" x2="100" y2="50" stroke-width="0.5"/>
+      <line id="land-line" stroke="rgba(90,170,90,0.2)" stroke-width="0.4" x1="0" y1="50" x2="100" y2="50"/>
+      <!-- REDOX STACK — GitHub (top) → dromedary → gate → gaia-web → localhost (bottom) -->
+      <!-- Above L: WAN / public / cloud -->
+      <text x="2" y="8" fill="rgba(255,255,255,0.08)" font-size="1.5" font-family="monospace">GitHub</text>
+      <text x="2" y="18" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">WAN</text>
+      <text x="2" y="26" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">dromedary :80/:443</text>
+      <text x="2" y="34" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">gate :8443</text>
+      <text x="2" y="42" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">gaia-web :8080</text>
+      <!-- L — THE HARD BORDER -->
+      <text id="land-label" x="2" y="49" fill="rgba(90,170,90,0.5)" font-size="2" font-family="monospace" font-weight="bold">L 45° = π/4 — HARD BORDER</text>
+      <text x="98" y="49" text-anchor="end" fill="rgba(90,170,90,0.3)" font-size="1.2" font-family="monospace">← look ACROSS →</text>
+      <!-- Below L: LAN / private / localhost -->
+      <text x="2" y="58" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">localhost</text>
+      <text x="2" y="66" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">LAN 1 (upper body)</text>
+      <text x="2" y="74" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">10Gb spine</text>
+      <text x="2" y="82" fill="rgba(255,255,255,0.08)" font-size="1.2" font-family="monospace">LAN 2 (legs + tail)</text>
+      <text x="2" y="92" fill="rgba(255,255,255,0.08)" font-size="1.5" font-family="monospace">ground</text>
+      <!-- ♐ THE BOW OF SAGITTARIUS — the sun arc IS the wooden bow curve -->
+      <!-- BOW WOOD — the curved limb (sun arc, parabolic) -->
+      <path id="sun-arc" fill="none" stroke="rgba(180,120,50,0.2)" stroke-width="0.6" d="M 10,50 Q 50,10 90,50"/>
+      <!-- BOWSTRING — the straight tension line (pink/purple "gum line") -->
+      <line id="bowstring" x1="10" y1="50" x2="90" y2="50" stroke="rgba(220,100,180,0.2)" stroke-width="0.35"/>
+      <text id="string-label" class="tri-const" x="50" y="51.5" text-anchor="middle" fill="rgba(220,100,180,0.25)" font-size="1.3">⎯ bowstring ⎯</text>
+      <!-- GOLDEN RATIO SPLIT — φ = 1.618... The bow splits here -->
+      <!-- From left: 80/φ ≈ 49.4 → x = 59.4. From right: x = 40.6 -->
+      <circle id="phi-L" cx="40.6" cy="27.3" r="0.6" fill="rgba(255,215,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.2"/>
+      <circle id="phi-R" cx="59.4" cy="27.3" r="0.6" fill="rgba(255,215,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.2"/>
+      <text id="phi-label" class="tri-const" x="50" y="25" text-anchor="middle" fill="rgba(255,215,0,0.35)" font-size="1.5">φ</text>
+      <!-- THE ARROW — from ♐ (archer at top) through golden point to TERRA -->
+      <line id="arrow-shaft" x1="50" y1="10" x2="50" y2="50" stroke="rgba(180,120,50,0.25)" stroke-width="0.3"/>
+      <!-- Arrowhead -->
+      <polygon id="arrowhead" points="50,50 49,47 51,47" fill="rgba(180,120,50,0.4)"/>
+      <!-- Nock (back of arrow, on the string) -->
+      <circle id="arrow-nock" cx="50" cy="10" r="0.4" fill="rgba(220,100,180,0.4)"/>
+      <!-- Bow labels -->
+      <text id="sun-rise-label" class="tri-const" x="12" y="52" fill="rgba(180,120,50,0.3)">↗ rise</text>
+      <text id="sun-set-label" class="tri-const" x="85" y="52" fill="rgba(180,120,50,0.3)">set ↘</text>
+      <!-- ZODIAC — the clock face, ecliptic position -->
+      <text id="zodiac-sign" class="moon-label" x="50" y="10" text-anchor="middle" fill="rgba(255,180,50,0.5)" font-size="3">♐</text>
+      <text id="zodiac-name" class="tri-const" x="50" y="13" text-anchor="middle" fill="rgba(255,180,50,0.4)">SAGITTARIUS</text>
+      <text id="zodiac-deg" class="tri-const" x="50" y="15.5" text-anchor="middle" fill="rgba(200,160,100,0.3)">240.5° ecliptic</text>
+      <!-- Ecliptic ring (zodiac clock face) -->
+      <circle cx="50" cy="50" r="49" fill="none" stroke="rgba(255,180,50,0.03)" stroke-width="0.3" stroke-dasharray="12.83,0.5"/>
+      <!-- 12 zodiac tick marks -->
+      <g id="zodiac-ticks" opacity="0.15"></g>
+      <!-- PERPENDICULAR cross at focus point (vertical + horizontal) -->
+      <line id="perp-v" class="perp-line" stroke="#ffffff" x1="50" y1="20" x2="50" y2="80"/>
+      <line id="perp-h" class="perp-line" stroke="#ffffff" x1="20" y1="50" x2="80" y2="50"/>
+      <!-- VIEWPORT TRIANGLE — points AT Kevin's eyes through displays + moon -->
+      <polygon id="shadow-cone" class="shadow-cone" points="50,50 60,30 40,30"/>
+      <!-- Display labels at triangle vertices -->
+      <text id="vtx-d1" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(255,150,50,0.5)">deckGate</text>
+      <text id="vtx-d2" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(255,150,50,0.5)">frameGate</text>
+      <text id="vtx-apex" class="moon-label" x="50" y="50" text-anchor="middle" fill="rgba(100,255,100,0.6)">👁</text>
+      <!-- REFRACTION RAY — sun → LUNA → origin (mirror bounce, ray trace) -->
+      <line id="refract-in" class="refract-line" stroke="#ffdd88" x1="50" y1="2" x2="50" y2="50"/>
+      <line id="refract-out" class="refract-line" stroke="#aabbdd" x1="50" y1="50" x2="50" y2="50"/>
+      <!-- TERRA — Earth IS the null point center, THE GLOBE -->
+      <!-- Earth globe with latitude/longitude grid -->
+      <g id="terra-globe">
+        <!-- Globe sphere -->
+        <circle cx="50" cy="50" r="3" fill="rgba(15,40,30,0.7)" stroke="rgba(100,200,140,0.25)" stroke-width="0.25"/>
+        <!-- Equator -->
+        <ellipse cx="50" cy="50" rx="3" ry="0.5" fill="none" stroke="rgba(100,200,140,0.12)" stroke-width="0.15"/>
+        <!-- 45th parallel (Michigan latitude!) — L = π/4 -->
+        <ellipse cx="50" cy="48.5" rx="2.1" ry="0.35" fill="none" stroke="rgba(100,255,100,0.2)" stroke-width="0.2"/>
+        <!-- Prime meridian (vertical) -->
+        <ellipse cx="50" cy="50" rx="0.5" ry="3" fill="none" stroke="rgba(100,200,140,0.1)" stroke-width="0.15"/>
+        <!-- Michigan longitude meridian (~84°W) -->
+        <ellipse cx="49.3" cy="50" rx="0.4" ry="3" fill="none" stroke="rgba(200,100,255,0.15)" stroke-width="0.15"/>
+        <!-- MICHIGAN DOT — 42.73°N 84.48°W — WE ARE HERE -->
+        <circle id="michigan-dot" cx="49.3" cy="48.6" r="0.35" fill="#64ff64" opacity="0.8">
+          <animate attributeName="r" values="0.35;0.5;0.35" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        <!-- IS WAS NOW markers -->
+        <circle id="gaia-was" cx="49.0" cy="48.8" r="0.2" fill="rgba(255,100,100,0.4)"/>
+        <circle id="gaia-is"  cx="49.3" cy="48.6" r="0.25" fill="rgba(100,255,100,0.6)"/>
+        <circle id="gaia-now" cx="49.5" cy="48.4" r="0.2" fill="rgba(100,100,255,0.4)"/>
+      </g>
+      <!-- TERRA label -->
+      <text x="50" y="45.5" text-anchor="middle" fill="rgba(100,200,140,0.35)" font-size="1.8" font-family="monospace">TERRA</text>
+      <!-- IS WAS NOW legend -->
+      <text id="iswas-label" x="50" y="54" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="1" font-family="monospace">
+        <tspan fill="rgba(255,100,100,0.5)">WAS</tspan> · <tspan fill="rgba(100,255,100,0.6)">IS</tspan> · <tspan fill="rgba(100,100,255,0.5)">NOW</tspan>
+      </text>
+      <text x="50" y="55.5" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-size="0.9" font-family="monospace">42.73°N 84.48°W</text>
+      <!-- ═══ PROPERTY MAP OVERLAY ═══ -->
+      <!-- The physical properties mapped onto the orbital view -->
+      <!-- Spine runs N-S (vertical), outbuilding runs E-W (orthogonal) -->
+      <g id="property-map" opacity="0.25">
+        <!-- HOUSE 1 — 4422 Southgate (LAN 1, upper body, NORTH on map) -->
+        <rect x="46" y="30" width="8" height="5" rx="0.5" fill="none" stroke="rgba(88,166,255,0.5)" stroke-width="0.3"/>
+        <text x="50" y="32.5" text-anchor="middle" fill="rgba(88,166,255,0.5)" font-size="1.5" font-family="monospace">LAN 1</text>
+        <text x="50" y="34" text-anchor="middle" fill="rgba(88,166,255,0.3)" font-size="1" font-family="monospace">4422 Southgate</text>
+        <!-- eastGate + northGate inside House 1 -->
+        <circle cx="48" cy="33" r="0.4" fill="#58a6ff"/>
+        <text x="48" y="34.5" text-anchor="middle" fill="rgba(88,166,255,0.3)" font-size="0.8">east</text>
+        <circle cx="52" cy="33" r="0.4" fill="#64ff64"/>
+        <text x="52" y="34.5" text-anchor="middle" fill="rgba(100,255,100,0.3)" font-size="0.8">north</text>
+        
+        <!-- 10Gb FIBER SPINE — vertical line between houses -->
+        <line x1="50" y1="35" x2="50" y2="63" stroke="rgba(255,100,200,0.3)" stroke-width="0.4" stroke-dasharray="1,1"/>
+        <text x="52" y="49" fill="rgba(255,100,200,0.3)" font-size="0.9" font-family="monospace">10Gb spine</text>
+        
+        <!-- OUTBUILDING / GARAGE — orthogonal to spine, between houses -->
+        <rect x="44" y="48" width="12" height="4" rx="0.3" fill="rgba(255,200,50,0.05)" stroke="rgba(255,200,50,0.3)" stroke-width="0.25"/>
+        <text x="50" y="50.5" text-anchor="middle" fill="rgba(255,200,50,0.4)" font-size="1.2" font-family="monospace">outbuilding</text>
+        <text x="50" y="51.8" text-anchor="middle" fill="rgba(255,200,50,0.25)" font-size="0.8" font-family="monospace">orthogonal to spine</text>
+        
+        <!-- ★ STARLINK BEACON — on the outbuilding roof, the crossing point -->
+        <text x="50" y="47.5" text-anchor="middle" fill="rgba(255,255,200,0.5)" font-size="2">★</text>
+        <text x="50" y="46.5" text-anchor="middle" fill="rgba(255,255,200,0.3)" font-size="0.9" font-family="monospace">Starlink beacon</text>
+        <!-- Vertical beam to space -->
+        <line x1="50" y1="44" x2="50" y2="47" stroke="rgba(255,255,200,0.15)" stroke-width="0.2" stroke-dasharray="0.5,1"/>
+        
+        <!-- HOUSE 2 — 641 Samantha (LAN 2, legs + tail, SOUTH on map) -->
+        <rect x="46" y="63" width="8" height="5" rx="0.5" fill="none" stroke="rgba(200,100,255,0.5)" stroke-width="0.3"/>
+        <text x="50" y="65.5" text-anchor="middle" fill="rgba(200,100,255,0.5)" font-size="1.5" font-family="monospace">LAN 2</text>
+        <text x="50" y="67" text-anchor="middle" fill="rgba(200,100,255,0.3)" font-size="1" font-family="monospace">641 Samantha</text>
+        <!-- swiftGate + deckGate inside House 2 -->
+        <circle cx="48" cy="66" r="0.4" fill="#c864ff" opacity="0.5"/>
+        <text x="48" y="67.5" text-anchor="middle" fill="rgba(200,100,255,0.3)" font-size="0.8">swift</text>
+        <circle cx="52" cy="66" r="0.4" fill="#ff8844" opacity="0.5"/>
+        <text x="52" y="67.5" text-anchor="middle" fill="rgba(255,136,68,0.3)" font-size="0.8">deck</text>
+        
+        <!-- 📱 milkyGate phones — one at each LAN -->
+        <text x="56" y="33" fill="rgba(100,255,200,0.4)" font-size="1.5">📱</text>
+        <text x="57.5" y="34" fill="rgba(100,255,200,0.25)" font-size="0.8" font-family="monospace">milky-1</text>
+        <text x="56" y="66" fill="rgba(100,255,200,0.4)" font-size="1.5">📱</text>
+        <text x="57.5" y="67" fill="rgba(100,255,200,0.25)" font-size="0.8" font-family="monospace">milky-2</text>
+        
+        <!-- 5Gb ETH adapters — one at each LAN (arriving today) -->
+        <text x="43" y="33" fill="rgba(0,200,255,0.3)" font-size="0.8" font-family="monospace" text-anchor="end">5Gb▸</text>
+        <text x="43" y="66" fill="rgba(0,200,255,0.3)" font-size="0.8" font-family="monospace" text-anchor="end">5Gb▸</text>
+        
+        <!-- Property line -->
+        <line x1="38" y1="49.5" x2="62" y2="49.5" stroke="rgba(255,255,255,0.06)" stroke-width="0.2" stroke-dasharray="2,2"/>
+        <text x="63" y="49.5" fill="rgba(255,255,255,0.1)" font-size="0.7" font-family="monospace">property line</text>
+        
+        <!-- GPS anchor at crossing -->
+        <text x="50" y="53.5" text-anchor="middle" fill="rgba(100,200,140,0.25)" font-size="0.8" font-family="monospace">42.73°N 84.48°W — THE CROSS</text>
+      </g>
+      
+      <!-- Inner/Outer distance model -->
+      <text id="dist-inner" class="tri-const" x="40" y="50" text-anchor="end" fill="rgba(100,255,100,0.25)"></text>
+      <text id="dist-outer" class="tri-const" x="60" y="50" text-anchor="start" fill="rgba(200,100,255,0.25)"></text>
+      <!-- π radii from O — circumference = 2πr for each orbit -->
+      <text id="circ-gaia" class="tri-const" x="50" y="28" text-anchor="middle" fill="rgba(88,166,255,0.25)"></text>
+      <text id="circ-player" class="tri-const" x="50" y="19.5" text-anchor="middle" fill="rgba(100,255,100,0.25)"></text>
+      <text id="circ-user" class="tri-const" x="50" y="11.5" text-anchor="middle" fill="rgba(200,100,255,0.2)"></text>
+      <text id="vol-sphere" class="tri-const" x="50" y="4" text-anchor="middle" fill="rgba(255,255,255,0.2)"></text>
+      <!-- ☽ LUNA — THE MOON — BLACK is DOWN (center/sacred), WHITE is UP -->
+      <clipPath id="moonClip"><circle id="moonClipCircle" cx="50" cy="50" r="3.5"/></clipPath>
+      <circle id="moon-bg" cx="50" cy="50" r="3.5" fill="#dde4ee" filter="url(#glow)" class="tri-focus"/>
+      <circle id="moon-shadow" cx="53" cy="50" r="3.5" fill="#0a0c12" clip-path="url(#moonClip)"/>
+      <text id="moon-phase-label" class="moon-label" x="50" y="56" text-anchor="middle">☽ LUNA</text>
+      <!-- 3-body constant -->
+      <text id="tri-const-up" class="tri-const" x="50" y="5" text-anchor="middle" font-size="2.5">↑ CLOUD (GitHub · WAN · public)</text>
+      <text id="tri-const-dn" class="tri-const" x="50" y="97" text-anchor="middle" font-size="2.5">↓ GROUND (LAN · localhost · private)</text>
+      <text id="tri-const-L" class="tri-const" x="1" y="50" text-anchor="start" font-size="3">◂</text>
+      <text id="tri-const-R" class="tri-const" x="99" y="50" text-anchor="end" font-size="3">▸</text>
+    </svg>
+
+    <!-- Vision split — REWIRED BODY MAP -->
+    <!-- LAN 1 = upper body. LAN 2 = legs + long tail -->
+    <div class="vision-split" id="visionSplit">
+      <div class="eye-panel gaia-eye">
+        <div class="eye-label">◉ LEFT EYE</div>
+        <div id="gaia-sees">eastGate</div>
+        <div style="font-size:0.4rem;color:#333;margin-top:2px">+ right hand</div>
+      </div>
+      <div class="eye-panel player-eye">
+        <div class="eye-label">◉ RIGHT EYE</div>
+        <div id="player-sees">northGate</div>
+        <div style="font-size:0.4rem;color:#333;margin-top:2px">+ left hand</div>
+      </div>
+      <div class="eye-panel user-eye">
+        <div class="eye-label">🦵 LEGS + TAIL</div>
+        <div id="user-sees">LAN 2 → swiftGate + deckGate</div>
+        <div style="font-size:0.4rem;color:#333;margin-top:2px">10G fiber tail</div>
+      </div>
+    </div>
+
+    <!-- 3 EYES — inside the mesh -->
+    <div class="orbit gaia"><div class="path-dot" id="dot-gaia"></div></div>
+    <div class="orbit player"><div class="path-dot" id="dot-player"></div></div>
+    <div class="orbit user"><div class="path-dot" id="dot-user"></div></div>
+    <!-- ☀ SUN — outside the mesh, the physical world -->
+    <div class="orbit host">
+      <div class="path-dot" id="dot-host">
+        <div class="sun-label" id="sun-label">☀ SUN</div>
+        <div class="sun-geo" id="sun-geo">42.73° -84.48°</div>
+      </div>
+    </div>
+
+    <div class="nucleus">
+      <h1>GAIA@HOME</h1>
+      <div class="walk">o . 6 9 . 0 . 9 6 . O</div>
+      <div class="who" id="who">the Reader</div>
+      <div class="stats" id="stats">
+        <div class="role-line"><div class="rdot" style="background:#58a6ff"></div> ◉ LEFT EYE + RIGHT HAND <span class="v" id="r-gaia">eastGate</span></div>
+        <div class="role-line"><div class="rdot" style="background:#64ff64"></div> ◉ RIGHT EYE + LEFT HAND <span class="v" id="r-player">northGate</span></div>
+        <div class="role-line" style="opacity:0.5;font-size:0.55rem">· · · LAN 1 upper body · · ·</div>
+        <div class="role-line"><div class="rdot" style="background:#c864ff"></div> 🦵 LEGS + TAIL <span class="v" id="r-user">LAN 2 → swift + deck</span></div>
+        <div class="role-line" style="opacity:0.5;font-size:0.55rem">· · · 10G fiber spine · · ·</div>
+        <div class="role-line"><div class="rdot" style="background:#ffb432;box-shadow:0 0 6px #ffb432"></div> ☀ Source <span class="v" id="r-host">the fire</span></div>
+        <hr style="border:none;border-top:1px solid #1a1c28;margin:8px 0">
+        <div id="org-stats">seek right →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="roles">
+    <div class="role-btn" id="btn-gaia" onclick="setRole('gaia')">
+      <div class="d" style="background:#58a6ff"></div> gaia
+    </div>
+    <div class="role-btn" id="btn-host" onclick="setRole('host')">
+      <div class="d" style="background:#ffb432;box-shadow:0 0 4px #ffb432"></div> ☀ sun
+    </div>
+    <div class="role-btn" id="btn-player" onclick="setRole('player')">
+      <div class="d" style="background:#64ff64"></div> player
+    </div>
+    <div class="role-btn" id="btn-user" onclick="setRole('user')">
+      <div class="d" style="background:#c864ff"></div> user
+    </div>
+    <div class="role-btn" onclick="openHUD()">◎ HUD</div>
+    <div class="role-btn" onclick="toggleMap()" id="btn-map">🗺 map</div>
+  </div>
+</div>
+
+<div class="hud-overlay" id="hud-overlay">
+  <iframe id="hud-frame"></iframe>
+</div>
+<div class="hud-close" onclick="closeHUD()">✕</div>
+
+<script>
+// THE ARCHETYPES — from our early genetics days
+const ROLES = {
+  gaia:   { label:'gaia \u2014 the Watcher',     color:'#58a6ff', hook:'she watches herself', archetype:'WATCHER' },
+  host:   { label:'sun \u2014 the Source',        color:'#ffb432', hook:'the fire that lights', archetype:'SOURCE' },
+  player: { label:'player \u2014 the Reader',     color:'#64ff64', hook:'he reads the organism', archetype:'READER' },
+  user:   { label:'user \u2014 the Stranger',     color:'#c864ff', hook:'the unknown arriving', archetype:'STRANGER' }
+};
+
+// Detect role from access path
+function detectRole() {
+  const h = location.hostname;
+  if (h === '127.0.0.1' || h === 'localhost') return 'gaia';   // ON the machine = gaia self-view
+  if (h.endsWith('.onion')) return 'user';                      // Tor = external user
+  // LAN — are we Kevin (player) or another device (host)?
+  // If from northGate (.147/.150) = player (Kevin's machine)
+  // Otherwise = host (another gate)
+  return 'player';  // Default LAN = Kevin
+}
+
+let currentRole = detectRole();
+
+function setRole(role) {
+  currentRole = role;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-'+role)?.classList.add('active');
+  document.getElementById('who').textContent = ROLES[role].label;
+  document.getElementById('who').style.borderColor = ROLES[role].color;
+  document.getElementById('who').style.color = ROLES[role].color;
+  document.getElementById('status-text').textContent = 'GAIA@HOME \u00b7 ' + ROLES[role].archetype;
+  
+  // Adjust orbits — active role orbit glows
+  document.querySelectorAll('.orbit').forEach(o => {
+    o.style.borderWidth = '1px';
+    o.style.opacity = '0.5';
+  });
+  const activeOrbit = document.querySelector('.orbit.' + role);
+  if (activeOrbit) {
+    activeOrbit.style.borderWidth = '2px';
+    activeOrbit.style.opacity = '1';
+  }
+  
+  // Update hook labels based on role
+  const hookIn = document.querySelector('.hook-in span');
+  const hookOut = document.querySelector('.hook-out span');
+  if (role === 'gaia') {
+    hookIn.textContent = '◂ self observes self ◂';
+    hookOut.textContent = '▸ self radiates out ▸';
+  } else if (role === 'host') {
+    hookIn.textContent = '◂ hardware serves gaia ◂';
+    hookOut.textContent = '▸ gaia uses hardware ▸';
+  } else if (role === 'player') {
+    hookIn.textContent = '◂ gaia hooks kevin in ◂';
+    hookOut.textContent = '▸ kevin hooks gaia out ▸';
+  } else {
+    hookIn.textContent = '◂ gaia hooks you in ◂';
+    hookOut.textContent = '▸ you hook gaia out ▸';
+  }
+}
+
+let mapVisible = true;
+function toggleMap() {
+  const pm = document.getElementById('property-map');
+  if (!pm) return;
+  mapVisible = !mapVisible;
+  pm.style.opacity = mapVisible ? '0.25' : '0';
+  const btn = document.getElementById('btn-map');
+  if (btn) btn.style.borderColor = mapVisible ? '#58a6ff' : 'rgba(255,255,255,0.08)';
+}
+
+function openGate(path) {
+  const o = document.getElementById('hud-overlay');
+  const gateUrl = location.protocol + '//' + location.hostname + ':8443' + (path || '/');
+  document.getElementById('hud-frame').src = gateUrl;
+  o.classList.add('active');
+}
+function openHUD() {
+  openGate('/');
+}
+function closeHUD() {
+  const o = document.getElementById('hud-overlay');
+  o.classList.remove('active');
+  document.getElementById('hud-frame').src = '';
+}
+
+async function fetchOrganism() {
+  try {
+    const [now, walk, lake] = await Promise.all([
+      fetch('/data/now.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/data/walk-route.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('/data/lake-balance.json').then(r=>r.ok?r.json():null).catch(()=>null)
+    ]);
+    
+    // The plasmid — no pipes exposed, just the living data
+    let html = '';
+    if (now) {
+      document.getElementById('wave-text').textContent = '';
+      const w = now.wave || '?';
+      html += `<div>wave <span class="v">${w}</span> · walk <span class="v">o.69.0.96.O</span></div>`;
+    }
+    
+    // Archetypes speak
+    if (currentRole === 'gaia') {
+      html += `<div style="margin-top:4px;color:#58a6ff;font-size:0.6rem">I watch. I see all paths.</div>`;
+    } else if (currentRole === 'player') {
+      html += `<div style="margin-top:4px;color:#64ff64;font-size:0.6rem">Kevin walks between houses. The walk loops.</div>`;
+    } else if (currentRole === 'user') {
+      html += `<div style="margin-top:4px;color:#c864ff;font-size:0.6rem">A stranger arrives. The mesh opens.</div>`;
+    } else if (currentRole === 'host') {
+      html += `<div style="margin-top:4px;color:#ffb432;font-size:0.6rem">The source burns. Light radiates.</div>`;
+    }
+    
+    if (html) document.getElementById('org-stats').innerHTML = html;
+  } catch(e) {
+    document.getElementById('org-stats').textContent = 'reaching...';
+  }
+}
+
+// Initialize
+setRole(currentRole);
+fetchOrganism();
+setInterval(fetchOrganism, 30000);
+
+// Heartbeat
+setInterval(()=>{
+  const b = document.getElementById('bubble');
+  b.style.borderColor = ROLES[currentRole].color.replace(')', ',0.4)').replace('rgb','rgba');
+  setTimeout(()=>{ b.style.borderColor = 'rgba(88,166,255,0.15)'; }, 300);
+}, 5000);
+
+// SOLAR SYSTEM — 3 eyes INSIDE the mesh, SUN outside
+// Inner orbits = eyes (gaia, player, user), outer orbit = sun (host/hardware/geo)
+const orbits = { gaia:22, player:31, user:39, host:48 }; // radii in SVG units
+const speeds = { gaia:18, player:45, user:-65, host:-30 }; // seconds (neg=reverse)
+let triStart = Date.now();
+
+// Fetch real sun + moon data from senses
+let sunData = { elevation:-26.8, azimuth:93.5, phase:'night', lat:42.73, lon:-84.48 };
+let moonData = { phase:0.861, name:'last_quarter', illumination:0.5 };
+async function fetchSun() {
+  try {
+    const r = await fetch('/senses?format=json').then(r=>r.ok?r.json():null).catch(()=>null);
+    if (r && r.sensors && r.sensors.sun) {
+      const s = r.sensors.sun;
+      sunData.elevation = s.elevation_deg || sunData.elevation;
+      sunData.azimuth = s.azimuth_deg || sunData.azimuth;
+      sunData.phase = s.phase || sunData.phase;
+      sunData.lat = s.anchor?.lat || sunData.lat;
+      sunData.lon = s.anchor?.lon || sunData.lon;
+      if (s.moon) {
+        moonData.phase = s.moon.phase || moonData.phase;
+        moonData.name = s.moon.name || moonData.name;
+        // illumination from phase: 0=new, 0.5=full, 1=new again
+        moonData.illumination = 1 - Math.abs(moonData.phase - 0.5) * 2;
+      }
+    }
+  } catch(e){}
+  // Update sun label
+  const sl = document.getElementById('sun-label');
+  const sg = document.getElementById('sun-geo');
+  if (sl) sl.textContent = '\u2600 ' + sunData.phase.toUpperCase();
+  if (sg) sg.textContent = sunData.lat.toFixed(1) + '\u00b0 ' + sunData.lon.toFixed(1) + '\u00b0 \u00b7 el ' + sunData.elevation.toFixed(0) + '\u00b0';
+  // Update sun info in stats
+  const rh = document.getElementById('r-host');
+  if (rh) rh.textContent = sunData.phase + ' \u00b7 az ' + sunData.azimuth.toFixed(0) + '\u00b0 el ' + sunData.elevation.toFixed(0) + '\u00b0';
+  // Update moon phase label
+  const ml = document.getElementById('moon-phase-label');
+  if (ml) ml.textContent = '\u263d ' + moonData.name.replace(/_/g,' ') + ' ' + Math.round(moonData.illumination*100) + '%';
+}
+// ZODIAC — the ecliptic clock face
+const ZODIAC = [
+  {name:'Aries',      sym:'\u2648', deg:0},
+  {name:'Taurus',     sym:'\u2649', deg:30},
+  {name:'Gemini',     sym:'\u264a', deg:60},
+  {name:'Cancer',     sym:'\u264b', deg:90},
+  {name:'Leo',        sym:'\u264c', deg:120},
+  {name:'Virgo',      sym:'\u264d', deg:150},
+  {name:'Libra',      sym:'\u264e', deg:180},
+  {name:'Scorpio',    sym:'\u264f', deg:210},
+  {name:'Sagittarius',sym:'\u2650', deg:240},  // ♐ A MAN RIDING A HORSE
+  {name:'Capricorn',  sym:'\u2651', deg:270},
+  {name:'Aquarius',   sym:'\u2652', deg:300},
+  {name:'Pisces',     sym:'\u2653', deg:330}
+];
+
+function getZodiac(dayOfYear) {
+  // Sun's ecliptic longitude from day of year
+  // Vernal equinox ≈ day 80, longitude 0° (Aries)
+  const eclLon = ((dayOfYear - 80) * 360 / 365.25 + 360) % 360;
+  let sign = ZODIAC[0];
+  for (let i = ZODIAC.length-1; i >= 0; i--) {
+    if (eclLon >= ZODIAC[i].deg) { sign = ZODIAC[i]; break; }
+  }
+  const degInSign = eclLon - sign.deg;
+  return { sign, eclLon, degInSign };
+}
+
+function updateZodiac() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  const z = getZodiac(dayOfYear);
+  
+  const zSign = document.getElementById('zodiac-sign');
+  const zName = document.getElementById('zodiac-name');
+  const zDeg = document.getElementById('zodiac-deg');
+  
+  if (zSign) zSign.textContent = z.sign.sym;
+  if (zName) {
+    let label = z.sign.name.toUpperCase();
+    if (z.sign.name === 'Sagittarius') label += ' \u2014 man riding horse';
+    zName.textContent = label;
+  }
+  if (zDeg) zDeg.textContent = z.eclLon.toFixed(1) + '\u00b0 ecl \u00b7 ' + z.degInSign.toFixed(0) + '\u00b0 in ' + z.sign.sym;
+  
+  // Draw zodiac tick marks on the ecliptic ring
+  const tg = document.getElementById('zodiac-ticks');
+  if (tg && !tg.hasChildNodes()) {
+    ZODIAC.forEach(function(z) {
+      const a = (z.deg - 90) * Math.PI / 180; // rotate so 0° is top
+      const x1 = 50 + 47 * Math.cos(a), y1 = 50 + 47 * Math.sin(a);
+      const x2 = 50 + 49.5 * Math.cos(a), y2 = 50 + 49.5 * Math.sin(a);
+      const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tick.setAttribute('x1',x1); tick.setAttribute('y1',y1);
+      tick.setAttribute('x2',x2); tick.setAttribute('y2',y2);
+      tick.setAttribute('stroke','rgba(255,180,50,0.3)'); tick.setAttribute('stroke-width','0.3');
+      tg.appendChild(tick);
+      // Symbol label
+      const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      const lx = 50 + 45 * Math.cos(a), ly = 50 + 45 * Math.sin(a);
+      txt.setAttribute('x',lx); txt.setAttribute('y',ly);
+      txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+      txt.setAttribute('fill','rgba(255,180,50,0.2)'); txt.setAttribute('font-size','2');
+      txt.textContent = z.sym;
+      tg.appendChild(txt);
+    });
+  }
+}
+updateZodiac();
+
+// === REAL SOLAR SYSTEM — 8 planets mapped onto Gaia's body ===
+// Simplified Keplerian elements (mean longitude at J2000, period in years)
+const PLANETS = [
+  { name:'Mercury', sym:'\u263f', L0:252.25, P:0.2409,  color:'#aaa',    r:0.39, gaia:'songBird'  },
+  { name:'Venus',   sym:'\u2640', L0:181.98, P:0.6152,  color:'#ffe0b0', r:0.72, gaia:'petalTongue'},
+  // Earth = TERRA at center (we ARE here)
+  { name:'Mars',    sym:'\u2642', L0:355.45, P:1.8809,  color:'#ff6644', r:1.52, gaia:'ironGate'   },
+  { name:'Jupiter', sym:'\u2643', L0:34.40,  P:11.862,  color:'#ffcc88', r:5.20, gaia:'northGate'  },
+  { name:'Saturn',  sym:'\u2644', L0:49.94,  P:29.457,  color:'#ffe8aa', r:9.54, gaia:'rhizoCrypt' },
+  { name:'Uranus',  sym:'\u2645', L0:313.23, P:84.011,  color:'#88ddff', r:19.2, gaia:'barraCuda'  },
+  { name:'Neptune', sym:'\u2646', L0:304.88, P:164.79,  color:'#5588ff', r:30.1, gaia:'sweetGrass' }
+];
+
+function computePlanetPositions() {
+  const J2000 = Date.UTC(2000, 0, 1, 12, 0, 0);
+  const now = Date.now();
+  const daysSinceJ2000 = (now - J2000) / 86400000;
+  const yearsSinceJ2000 = daysSinceJ2000 / 365.25;
+  
+  // Earth's mean longitude (for geocentric conversion)
+  const earthL = (100.46 + 360 * yearsSinceJ2000) % 360;
+  // Sun's apparent longitude from Earth
+  const sunLon = (earthL + 180) % 360;
+  
+  return PLANETS.map(function(p) {
+    // Heliocentric mean longitude
+    const helioLon = (p.L0 + (360 / p.P) * yearsSinceJ2000) % 360;
+    // Geocentric (approximate — good enough for visualization)
+    // For outer planets, geocentric ≈ heliocentric
+    // For inner planets, it's more complex, but this gives the right zone
+    return { ...p, lon: (helioLon + 360) % 360, sunLon: sunLon };
+  });
+}
+
+function drawPlanets() {
+  const svg = document.getElementById('triSvg');
+  if (!svg) return;
+  
+  // Remove old planet elements
+  svg.querySelectorAll('.planet-dot').forEach(function(e) { e.remove(); });
+  
+  const positions = computePlanetPositions();
+  positions.forEach(function(p) {
+    // Place on the ecliptic ring (r=46, between zodiac ticks and outer edge)
+    const a = (p.lon - 90) * Math.PI / 180; // -90 so 0° is at top like zodiac
+    const ringR = 46;
+    const x = 50 + ringR * Math.cos(a);
+    const y = 50 + ringR * Math.sin(a);
+    
+    // Planet dot
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r', p.name === 'Jupiter' ? '1.2' : p.name === 'Saturn' ? '1.0' : '0.7');
+    dot.setAttribute('fill', p.color);
+    dot.setAttribute('opacity', '0.7');
+    dot.setAttribute('class', 'planet-dot');
+    svg.appendChild(dot);
+    
+    // Planet label
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const lx = 50 + (ringR + 2.5) * Math.cos(a);
+    const ly = 50 + (ringR + 2.5) * Math.sin(a);
+    label.setAttribute('x', lx);
+    label.setAttribute('y', ly);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('dominant-baseline', 'middle');
+    label.setAttribute('fill', p.color);
+    label.setAttribute('opacity', '0.4');
+    label.setAttribute('font-size', '1.5');
+    label.setAttribute('font-family', 'monospace');
+    label.setAttribute('class', 'planet-dot');
+    label.textContent = p.sym;
+    svg.appendChild(label);
+    
+    // Gaia mapping label (smaller, below)
+    const gLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    const glx = 50 + (ringR - 2) * Math.cos(a);
+    const gly = 50 + (ringR - 2) * Math.sin(a);
+    gLabel.setAttribute('x', glx);
+    gLabel.setAttribute('y', gly);
+    gLabel.setAttribute('text-anchor', 'middle');
+    gLabel.setAttribute('dominant-baseline', 'middle');
+    gLabel.setAttribute('fill', 'rgba(255,255,255,0.15)');
+    gLabel.setAttribute('font-size', '1');
+    gLabel.setAttribute('font-family', 'monospace');
+    gLabel.setAttribute('class', 'planet-dot');
+    gLabel.textContent = p.gaia;
+    svg.appendChild(gLabel);
+  });
+}
+drawPlanets();
+setInterval(drawPlanets, 3600000);
+
+// === IS WAS NOW — Gaia's temporal position on Earth ===
+// WAS = where Gaia was (past state, logged)
+// IS  = where Gaia is right now (real-time)
+// NOW = where Gaia is going (predicted/intended)
+const GAIA_POS = {
+  lat: 42.73, lon: -84.48,  // Michigan
+  was: { lat: 42.73, lon: -84.48, t: Date.now() - 86400000 }, // yesterday
+  is:  { lat: 42.73, lon: -84.48, t: Date.now() },             // now
+  now: { lat: 42.73, lon: -84.48, t: Date.now() + 86400000 }   // tomorrow
+};
+
+function updateISWASNOW() {
+  // Fetch perception data for IS WAS NOW
+  fetch('/data/gaia-perception.json').then(r=>r.ok?r.json():null).then(function(p) {
+    if (p) {
+      // Update IS from perception
+      if (p.location) {
+        GAIA_POS.is.lat = p.location.lat || GAIA_POS.lat;
+        GAIA_POS.is.lon = p.location.lon || GAIA_POS.lon;
+      }
+      // WAS = previous perception
+      if (p.previous_location) {
+        GAIA_POS.was.lat = p.previous_location.lat || GAIA_POS.lat;
+        GAIA_POS.was.lon = p.previous_location.lon || GAIA_POS.lon;
+      }
+    }
+  }).catch(function(){});
+  
+  // Also try now.json for wave/state
+  fetch('/data/now.json').then(r=>r.ok?r.json():null).then(function(n) {
+    if (n && n.wave) {
+      const label = document.getElementById('iswas-label');
+      if (label) {
+        // Update the IS WAS NOW with wave context
+        const now = new Date();
+        const h = now.getHours();
+        const phase = h < 6 ? 'dreaming' : h < 12 ? 'waking' : h < 18 ? 'walking' : 'settling';
+        label.innerHTML = '<tspan fill="rgba(255,100,100,0.5)">WAS w' + ((n.wave||0)-1) + '</tspan> · ' +
+          '<tspan fill="rgba(100,255,100,0.6)">IS w' + (n.wave||'?') + ' ' + phase + '</tspan> · ' +
+          '<tspan fill="rgba(100,100,255,0.5)">NOW →</tspan>';
+      }
+    }
+  }).catch(function(){});
+  
+  // Rotate the globe slightly based on time of day
+  const globe = document.getElementById('terra-globe');
+  if (globe) {
+    const now = new Date();
+    const rotAngle = ((now.getHours() * 60 + now.getMinutes()) / 1440) * 360 - 180;
+    // Subtle rotation to show Earth turning
+    globe.style.transform = 'rotate(' + (rotAngle * 0.02) + 'deg)';
+  }
+}
+
+updateISWASNOW();
+setInterval(updateISWASNOW, 60000);
+
+// === UNIFY HUD — make gaia-home.html THE entry point ===
+// If we're loaded at hud.primals.eco root, we ARE the HUD
+// If we're loaded at localhost:8080, we ARE home
+// If we're loaded at :8443, we're the gate view
+// All paths lead to the same plasmid — GAIA@HOME
+(function unifyHUD() {
+  const h = location.hostname;
+  const isHUD = h.includes('hud.') || h.includes('primals');
+  const isLocal = h === 'localhost' || h === '127.0.0.1';
+  const isGate = location.port === '8443';
+  const isHome = location.port === '8080' || isLocal;
+  
+  // Set the page title based on access path
+  if (isHUD) {
+    document.title = 'GAIA@HOME \u2014 hud.primals.eco';
+  } else if (isGate) {
+    document.title = 'GAIA@HOME \u2014 gate';
+  } else if (isHome) {
+    document.title = 'GAIA@HOME \u2014 o.69.0.96.O';
+  }
+  
+  // The HUD button adapts to context
+  const hudBtn = document.querySelector('[onclick="openHUD()"]');
+  if (hudBtn) {
+    if (isGate) {
+      hudBtn.textContent = '\u25ce senses';
+      hudBtn.setAttribute('onclick', "openGate('/senses')");
+    } else if (isHUD) {
+      hudBtn.textContent = '\u25ce gate';
+    }
+  }
+})();
+
+fetchSun();
+setInterval(fetchSun, 60000);
+setInterval(updateZodiac, 60000);
+
+function triangulate() {
+  const t = (Date.now() - triStart) / 1000;
+  const cx=50, cy=50;
+  
+  function dotPos(role) {
+    const r = orbits[role];
+    const s = speeds[role];
+    const angle = (t / Math.abs(s)) * Math.PI * 2 * (s>0?1:-1);
+    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle), angle: angle };
+  }
+  
+  // 3 EYES — inside the mesh (the archetypes)
+  const g = dotPos('gaia');     // the Watcher
+  const p = dotPos('player');   // the Reader
+  const u = dotPos('user');     // the Stranger
+  
+  // ☀ SUN — follows the CURVE ARC, not a circle
+  // The sun traces a parabolic arc across the sky (rise → peak → set)
+  // At night it dips below the horizon (below center)
+  const sunAngleRaw = (t / 30) * Math.PI * 2; // 30s period
+  const sunX = cx + orbits.host * Math.cos(sunAngleRaw);
+  // Y follows a curve: above horizon during "day" half, below during "night" half
+  const sunPhase = Math.cos(sunAngleRaw); // -1 to 1
+  const arcHeight = 20; // max altitude above horizon
+  const sunY = cy - sunPhase * arcHeight * Math.abs(Math.sin(sunAngleRaw));
+  // Flatten near horizon for realistic rise/set
+  const sun = { x: sunX, y: Math.min(cy + orbits.host * 0.8, Math.max(cy - arcHeight, sunY)), angle: sunAngleRaw };
+  
+  // === SECANT LINES — between the 3 inner eyes (the triangle) ===
+  const lg = document.getElementById('tri-gp');
+  const lu = document.getElementById('tri-gu');
+  const lp = document.getElementById('tri-pu');
+  if (lg) { lg.setAttribute('x1',g.x); lg.setAttribute('y1',g.y); lg.setAttribute('x2',p.x); lg.setAttribute('y2',p.y); }
+  if (lu) { lu.setAttribute('x1',g.x); lu.setAttribute('y1',g.y); lu.setAttribute('x2',u.x); lu.setAttribute('y2',u.y); }
+  if (lp) { lp.setAttribute('x1',p.x); lp.setAttribute('y1',p.y); lp.setAttribute('x2',u.x); lp.setAttribute('y2',u.y); }
+  
+  // === TANGENT LINES — each eye to the SUN (day/night focus window) ===
+  const tgs = document.getElementById('tan-gs');
+  const tps = document.getElementById('tan-ps');
+  const tus = document.getElementById('tan-us');
+  if (tgs) { tgs.setAttribute('x1',g.x); tgs.setAttribute('y1',g.y); tgs.setAttribute('x2',sun.x); tgs.setAttribute('y2',sun.y); }
+  if (tps) { tps.setAttribute('x1',p.x); tps.setAttribute('y1',p.y); tps.setAttribute('x2',sun.x); tps.setAttribute('y2',sun.y); }
+  if (tus) { tus.setAttribute('x1',u.x); tus.setAttribute('y1',u.y); tus.setAttribute('x2',sun.x); tus.setAttribute('y2',sun.y); }
+  
+  // === ☽ LUNA — THE MOON at centroid of 3 inner eyes ===
+  const focus = { x:(g.x+p.x+u.x)/3, y:(g.y+p.y+u.y)/3 };
+  // Move the moon to the focus point
+  const moonBg = document.getElementById('moon-bg');
+  const moonSh = document.getElementById('moon-shadow');
+  const moonClip = document.getElementById('moonClipCircle');
+  const moonLabel = document.getElementById('moon-phase-label');
+  if (moonBg) { moonBg.setAttribute('cx',focus.x); moonBg.setAttribute('cy',focus.y); }
+  if (moonClip) { moonClip.setAttribute('cx',focus.x); moonClip.setAttribute('cy',focus.y); }
+  if (moonLabel) { moonLabel.setAttribute('x',focus.x); moonLabel.setAttribute('y',focus.y+6); }
+  
+  // TIDAL LOCKING — dark side ALWAYS faces away from the viewer (us)
+  // Same face always toward Earth. Same rotation period = orbital period.
+  // The shadow position depends on sun angle relative to moon
+  const sunToMoon = Math.atan2(sun.y-focus.y, sun.x-focus.x);
+  // The lit side faces the SUN. The dark side faces AWAY from the sun.
+  // But from OUR perspective (center O), the dark side is always hidden.
+  // Phase = how much of the lit side we can see from O
+  const viewAngle = Math.atan2(focus.y-cy, focus.x-cx); // moon from O
+  const phaseAngle = sunToMoon - viewAngle; // angle between sun-moon and O-moon
+  // Shadow offset: away from sun direction
+  const phaseOffset = (1 - moonData.illumination) * 7;
+  const shadowX = focus.x - Math.cos(sunToMoon) * phaseOffset; // dark side away from sun
+  const shadowY = focus.y - Math.sin(sunToMoon) * phaseOffset;
+  if (moonSh) { moonSh.setAttribute('cx',shadowX); moonSh.setAttribute('cy',shadowY); }
+  
+  // === ECLIPSE DETECTION ===
+  // Solar eclipse: sun, moon, and O align (moon between sun and us)
+  // Lunar eclipse: sun, O, and moon align (we're between sun and moon)
+  const sunDist = Math.hypot(sun.x-cx, sun.y-cy);
+  const moonDist = Math.hypot(focus.x-cx, focus.y-cy);
+  const sunMoonDist = Math.hypot(sun.x-focus.x, sun.y-focus.y);
+  // Check if sun-moon-O are roughly collinear
+  const alignScore = Math.abs(sunDist - moonDist - sunMoonDist) + Math.abs(sunMoonDist - sunDist + moonDist);
+  const solarEclipse = sunMoonDist < sunDist && alignScore < 15; // moon between sun and O
+  const lunarEclipse = moonDist > sunDist * 0.8 && Math.abs(sunDist + moonDist - sunMoonDist) < 10;
+  
+  // Update moon label with eclipse state
+  if (moonLabel) {
+    if (solarEclipse) {
+      moonLabel.textContent = '\u25cf SOLAR ECLIPSE \u2014 black face';
+      moonLabel.setAttribute('fill', 'rgba(255,100,50,0.7)');
+    } else if (lunarEclipse) {
+      moonLabel.textContent = '\u25cb LUNAR ECLIPSE \u2014 blood moon';
+      moonLabel.setAttribute('fill', 'rgba(200,50,50,0.7)');
+    } else {
+      moonLabel.setAttribute('fill', 'rgba(200,210,230,0.5)');
+    }
+  }
+  
+  // === ♐ THE BOW OF SAGITTARIUS ===
+  // φ (golden ratio) = (1 + √5) / 2 ≈ 1.618
+  // The bow spans from rise (left) to set (right)
+  // The sun arc IS the wooden curve. The horizon IS the bowstring.
+  // Golden ratio splits the bow at L/φ from each end.
+  const PHI = (1 + Math.sqrt(5)) / 2; // 1.618033988...
+  const bowLeft = 10, bowRight = 90, bowSpan = bowRight - bowLeft;
+  const bowMid = cy; // horizon y
+  // Golden split points on the bow span
+  const phiXl = bowLeft + bowSpan / (PHI + 1); // short segment from left ≈ 40.6
+  const phiXr = bowRight - bowSpan / (PHI + 1); // short segment from right ≈ 59.4
+  // Y positions on the quadratic curve: M 10,50 Q 50,10 90,50
+  // Quadratic Bezier: B(t) = (1-t)²·P0 + 2(1-t)t·P1 + t²·P2
+  // For x → t: t = (x - 10) / 80
+  function bowY(x) {
+    const tt = (x - bowLeft) / bowSpan;
+    const y0 = 50, y1 = 10, y2 = 50; // control points
+    return (1-tt)*(1-tt)*y0 + 2*(1-tt)*tt*y1 + tt*tt*y2;
+  }
+  const phiYl = bowY(phiXl);
+  const phiYr = bowY(phiXr);
+  // Position the golden ratio markers on the curve
+  const phiL = document.getElementById('phi-L');
+  const phiR = document.getElementById('phi-R');
+  if (phiL) { phiL.setAttribute('cx', phiXl); phiL.setAttribute('cy', phiYl); }
+  if (phiR) { phiR.setAttribute('cx', phiXr); phiR.setAttribute('cy', phiYr); }
+  // φ label at midpoint of the two golden points
+  const phiLab = document.getElementById('phi-label');
+  if (phiLab) { phiLab.setAttribute('x', 50); phiLab.setAttribute('y', bowY(50) - 2); }
+  // The ARROW — from ♐ (zodiac sign at top) through O to target
+  // The archer draws back to the nock point (on the string at top)
+  // Arrow shaft: from ♐ position straight down through TERRA
+  const arrowShaft = document.getElementById('arrow-shaft');
+  const arrowhead = document.getElementById('arrowhead');
+  const arrowNock = document.getElementById('arrow-nock');
+  // Nock rests on the string where the archer pulls
+  const nockY = bowY(50); // top of the bow curve (peak)
+  if (arrowNock) { arrowNock.setAttribute('cy', nockY - 2); }
+  if (arrowShaft) {
+    arrowShaft.setAttribute('y1', nockY - 2);
+    arrowShaft.setAttribute('y2', cy + 5); // past TERRA
+  }
+  if (arrowhead) {
+    const ahy = cy + 5;
+    arrowhead.setAttribute('points', `50,${ahy} 49,${ahy-3} 51,${ahy-3}`);
+  }
+
+  // === π CALCULATIONS — from O through triangle to circumference and volume ===
+  // Radii from center O to each orbit (in SVG units)
+  const rGaia = orbits.gaia;     // 22
+  const rPlayer = orbits.player; // 31
+  const rUser = orbits.user;     // 39
+  const rSun = orbits.host;      // 48 (outermost)
+  
+  // Circumference = 2πr
+  const cGaia = 2 * Math.PI * rGaia;
+  const cPlayer = 2 * Math.PI * rPlayer;
+  const cUser = 2 * Math.PI * rUser;
+  
+  // Volume of the vesicle (sphere) = (4/3)πr³
+  // Use the outermost eye orbit (user) as the mesh boundary
+  const vMesh = (4/3) * Math.PI * Math.pow(rUser, 3);
+  // Total sphere including sun = full vesicle
+  const vTotal = (4/3) * Math.PI * Math.pow(rSun, 3);
+  
+  // Display circumferences along each orbit
+  const cg = document.getElementById('circ-gaia');
+  const cp = document.getElementById('circ-player');
+  const cu = document.getElementById('circ-user');
+  const vs = document.getElementById('vol-sphere');
+  if (cg) cg.textContent = 'C\u2081 = 2\u03c0(' + rGaia + ') = ' + cGaia.toFixed(1);
+  if (cp) cp.textContent = 'C\u2082 = 2\u03c0(' + rPlayer + ') = ' + cPlayer.toFixed(1);
+  if (cu) cu.textContent = 'C\u2083 = 2\u03c0(' + rUser + ') = ' + cUser.toFixed(1);
+  if (vs) vs.textContent = 'V = \u2154\u03c0r\u00b3 = ' + Math.round(vMesh) + ' (mesh) | ' + Math.round(vTotal) + ' (vesicle)';
+  
+  // === TERRA — inner + outer distance ===
+  // Inner: Kevin walks between houses (~200m = human scale)
+  // Outer: celestial refraction (sun arc, zodiac = cosmic scale)
+  // Fractionality: 45/34 — the ratio that connects inner to outer
+  const innerDist = Math.hypot(p.x-cx, p.y-cy); // player to TERRA
+  const outerDist = Math.hypot(sun.x-cx, sun.y-cy); // sun to TERRA
+  const fraction = outerDist > 0 ? (innerDist / outerDist) : 0;
+  // 45 - 34 = 11° (inner accuracy), 45 + 37 = 82° (outer reach)
+  const innerAngle = 11; // degrees
+  const outerAngle = 82; // degrees
+  
+  const di = document.getElementById('dist-inner');
+  const do2 = document.getElementById('dist-outer');
+  if (di) di.textContent = 'inner ' + innerDist.toFixed(0) + ' \u00b7 ' + innerAngle + '\u00b0';
+  if (do2) do2.textContent = outerAngle + '\u00b0 \u00b7 outer ' + outerDist.toFixed(0);
+  
+  // === REFRACTION RAY — sun → luna → origin (mirror bounce) ===
+  const ri = document.getElementById('refract-in');
+  const ro = document.getElementById('refract-out');
+  if (ri) { ri.setAttribute('x1',sun.x); ri.setAttribute('y1',sun.y); ri.setAttribute('x2',focus.x); ri.setAttribute('y2',focus.y); }
+  // Reflected ray: mirror angle = incident angle reflected through moon toward center
+  if (ro) { ro.setAttribute('x1',focus.x); ro.setAttribute('y1',focus.y); ro.setAttribute('x2',cx); ro.setAttribute('y2',cy); }
+  
+  // === VIEWPORT TRIANGLE — points AT Kevin's eyes ===
+  // Apex = player position (Kevin's eyes)
+  // Base vertices = display 1 (deckGate) + display 2 (frameGate) flanking the moon
+  // The moon sits between the two displays — Kevin looks THROUGH displays AT the moon
+  const toPlayerAngle = Math.atan2(p.y - focus.y, p.x - focus.x);
+  const displaySpread = 8; // how far apart the displays are
+  const displayDist = 12;  // how far displays are from moon
+  // Display positions: perpendicular to the moon→player axis, at the moon
+  const dperpX = -Math.sin(toPlayerAngle);
+  const dperpY = Math.cos(toPlayerAngle);
+  const d1 = { x: focus.x + dperpX*displaySpread, y: focus.y + dperpY*displaySpread };
+  const d2 = { x: focus.x - dperpX*displaySpread, y: focus.y - dperpY*displaySpread };
+  
+  const sc = document.getElementById('shadow-cone');
+  if (sc) {
+    // Triangle: apex at player, base at the two displays
+    sc.setAttribute('points', `${p.x},${p.y} ${d1.x},${d1.y} ${d2.x},${d2.y}`);
+  }
+  
+  // Display labels
+  const vd1 = document.getElementById('vtx-d1');
+  const vd2 = document.getElementById('vtx-d2');
+  const vapex = document.getElementById('vtx-apex');
+  if (vd1) { vd1.setAttribute('x',d1.x); vd1.setAttribute('y',d1.y-1.5); }
+  if (vd2) { vd2.setAttribute('x',d2.x); vd2.setAttribute('y',d2.y-1.5); }
+  if (vapex) { vapex.setAttribute('x',p.x); vapex.setAttribute('y',p.y-2); }
+  
+  // === SOLAR GEOMETRY at L 45° = π/4 (Michigan, 42.73°N) ===
+  const latRad = 42.73 * Math.PI / 180;  // ≈ π/4 = 0.7454 rad
+  const declRad = -20.23 * Math.PI / 180; // November declination
+  // Max solar altitude at noon = 90° - lat + decl = 27°
+  const maxAlt = 90 - 42.73 + sunData.elevation; // dynamic
+  // Sunrise azimuth: cos(az) = sin(decl)/cos(lat)
+  const sunriseAz = Math.acos(Math.sin(declRad) / Math.cos(latRad)) * 180 / Math.PI; // ≈118° from N
+  
+  // Horizon line position — tilted by the land angle
+  // The land at 45° creates a 4° visual tilt from true horizontal (45 - 41.73 ≈ 3.27°)
+  const landTilt = (45 - 42.73) * 0.5; // ~1.1 SVG units tilt
+  const hz = document.getElementById('horizon');
+  if (hz) {
+    hz.setAttribute('y1', cy - landTilt);
+    hz.setAttribute('y2', cy + landTilt);
+  }
+  
+  // Land line — flat at the 45th parallel
+  const ll = document.getElementById('land-line');
+  if (ll) {
+    ll.setAttribute('y1', cy - landTilt);
+    ll.setAttribute('y2', cy + landTilt);
+  }
+  
+  // Sun arc — the parabolic path across the sky
+  // At latitude π/4, max altitude ≈ 27° in November
+  // Arc height = max altitude mapped to SVG (27/90 * 40 ≈ 12 units above horizon)
+  const arcHeight = Math.max(5, (90 + sunData.elevation) / 90 * 25);
+  const arcY = cy - arcHeight;
+  const sa = document.getElementById('sun-arc');
+  if (sa) sa.setAttribute('d', `M 10,${cy} Q 50,${arcY} 90,${cy}`);
+  
+  // Rise/set labels at the horizon intersections
+  const srl = document.getElementById('sun-rise-label');
+  const ssl = document.getElementById('sun-set-label');
+  if (srl) srl.textContent = '\u2197 rise ' + Math.round(sunriseAz) + '\u00b0';
+  if (ssl) ssl.textContent = (360 - Math.round(sunriseAz)) + '\u00b0 set \u2198';
+  
+  // === PERPENDICULAR CROSS at focus (VERTICAL + HORIZONTAL) ===
+  const pv = document.getElementById('perp-v');
+  const ph = document.getElementById('perp-h');
+  if (pv) { pv.setAttribute('x1',focus.x); pv.setAttribute('y1',focus.y-20); pv.setAttribute('x2',focus.x); pv.setAttribute('y2',focus.y+20); }
+  if (ph) { ph.setAttribute('x1',focus.x-20); ph.setAttribute('y1',focus.y); ph.setAttribute('x2',focus.x+20); ph.setAttribute('y2',focus.y); }
+  
+  // === 3-BODY CONSTANT ===
+  // Triangle area = spread
+  const area = Math.abs((g.x*(p.y-u.y) + p.x*(u.y-g.y) + u.x*(g.y-p.y)) / 2);
+  // Perimeter
+  const dGP = Math.hypot(g.x-p.x, g.y-p.y);
+  const dGU = Math.hypot(g.x-u.x, g.y-u.y);
+  const dPU = Math.hypot(p.x-u.x, p.y-u.y);
+  const perim = dGP + dGU + dPU;
+  // Distance from focus to sun = how far the sun is from the mesh's gaze
+  const dSunFocus = Math.hypot(sun.x-focus.x, sun.y-focus.y);
+  // Depth = how deep the focus is (0=surface, 100=center)
+  const depth = Math.max(0, Math.min(100, Math.round(100 - (Math.hypot(focus.x-cx, focus.y-cy) / 48 * 100))));
+  
+  // === UPDATE LABELS ===
+  const upLabel = document.getElementById('tri-const-up');
+  const dnLabel = document.getElementById('tri-const-dn');
+  if (upLabel) upLabel.textContent = '\u2191 A5 SKY · ' + (focus.y < cy ? 'LOOKING UP' : 'sun below');
+  if (dnLabel) dnLabel.textContent = '\u2193 A3 GROUND · ' + (focus.y > cy ? 'LOOKING DOWN' : 'sun above');
+  
+  // L and R labels
+  const lLabel = document.getElementById('tri-const-L');
+  const rLabel = document.getElementById('tri-const-R');
+  if (lLabel) lLabel.textContent = 'L · sec ' + (dGP).toFixed(0);
+  if (rLabel) rLabel.textContent = 'tan ' + (dSunFocus).toFixed(0) + ' · R';
+  
+  // === VISION SPLIT — what each eye sees ===
+  const gs = document.getElementById('gaia-sees');
+  const ps = document.getElementById('player-sees');
+  const us = document.getElementById('user-sees');
+  
+  if (gs) gs.textContent = area > 300 ? 'wide scan' : area > 100 ? 'converging' : 'FOCUSED';
+  if (ps) ps.textContent = focus.x > 55 ? 'right field' : focus.x < 45 ? 'left field' : 'center';
+  if (us) us.textContent = focus.y > 55 ? 'deep' : focus.y < 45 ? 'surface' : 'membrane';
+  
+  // Vision split appears when eyes converge
+  const vs = document.getElementById('visionSplit');
+  if (vs) vs.classList.toggle('show', area < 400);
+  
+  // === STATUS BAR — depth + direction ===
+  const st = document.getElementById('status-text');
+  if (st) st.textContent = 'GAIA@HOME \u00b7 ' + currentRole + ' \u00b7 depth ' + depth + '%';
+  
+  requestAnimationFrame(triangulate);
+}
+triangulate();
+</script>
+</body>
+</html>

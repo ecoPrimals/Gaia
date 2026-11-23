@@ -1,0 +1,54 @@
+[impulse]
+timestamp = "2026-07-26T11:25:00-04:00"
+gate = "eastGate"
+wave = "151b"
+primal = "barraCuda"
+status = "landed"
+
+[summary]
+title = "BTSP client-side handshake — Wave 151b standard evolution"
+description = """
+Complete BTSP ClientHello consumer-side implementation with two modes: \
+(1) Bootstrap handshake (local HMAC-SHA256) for authenticating TO bearDog \
+in strict mode, and (2) General BtspClient (delegated crypto via security \
+provider) for authenticating to any BTSP-enforced peer. Integrated into \
+compute.rs peer dispatch and commands.rs CLI. 3 integration tests + 5 unit \
+tests. Zero clippy warnings, zero Windows warnings."""
+
+[changes]
+files_changed = 8
+lines_added = 825
+lines_removed = 9
+
+[[changes.items]]
+file = "crates/barracuda-core/src/ipc/btsp_client.rs"
+what = "New module: BtspClient struct + perform_bootstrap_handshake + convenience functions"
+
+[[changes.items]]
+file = "crates/barracuda-core/src/ipc/btsp.rs"
+what = "Relay now uses perform_bootstrap_handshake for strict mode provider connections"
+
+[[changes.items]]
+file = "crates/barracuda-core/src/ipc/methods/compute.rs"
+what = "Peer dispatch tries BTSP via try_connect_with_btsp before plain connection"
+
+[[changes.items]]
+file = "crates/barracuda-core/src/bin/barracuda/commands.rs"
+what = "CLI client attempts BTSP handshake before falling back to plain"
+
+[[changes.items]]
+file = "crates/barracuda-core/tests/btsp_client_handshake.rs"
+what = "3 integration tests: full flow, server error, provider unreachable"
+
+[validation]
+cargo_check_linux = "pass"
+cargo_check_windows = "pass — zero warnings"
+cargo_clippy_all_features = "pass — zero warnings"
+cargo_fmt = "pass"
+tests = "3 integration + 5 unit = 8 new tests, all passing"
+
+[upstream]
+commit = "e089549e"
+pushed_to = "forgejo"
+github_relay = "pending golgiBody push mirror"
+btsp_status = "DONE — barraCuda implements ClientHello (both bootstrap and delegated modes)"

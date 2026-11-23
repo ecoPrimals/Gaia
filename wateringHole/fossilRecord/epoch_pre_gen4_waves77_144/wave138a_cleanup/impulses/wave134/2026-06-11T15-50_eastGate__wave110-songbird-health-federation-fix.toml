@@ -1,0 +1,82 @@
+[impulse]
+id = "wave110-songbird-health-federation-fix"
+type = "aar"
+priority = "P2"
+wave = 110
+date = "2026-06-11T15:50:00Z"
+
+[from]
+gate = "eastGate"
+role = "songBird deep debt"
+
+[to]
+gates = ["flockGate", "eastGate"]
+team = "songBird"
+
+[content]
+subject = "HEALTH-SB-01 shipped + federation.status root cause fixed"
+body = """
+## HEALTH-SB-01 — SHIPPED
+
+songBird now responds to `{"method":"health"}` with HEALTH-01 compliant schema:
+
+```json
+{"status":"healthy","primal":"songbird","version":"0.2.1","uptime_s":42,"services":5}
+```
+
+Changes:
+- Bare `"health"` wire method properly dispatched (was falling through to `health.check` via normalization — now also wired via `BiomeOsHealth` enum arm)
+- `uptime_seconds` → `uptime_s` across all health JSON-RPC responses (IPC + HTTP)
+- `primal` field added to orchestrator's `handle_health_standard()` and `handle_health()`
+- All test assertions updated (introspection, meta, e2e, evolution, integration)
+
+Wire compatibility: `health.liveness` still returns minimal `{"status":"alive"}`.
+`health.readiness` and `health.check` unchanged in structure (only key rename).
+
+## Federation Debug — ROOT CAUSE IDENTIFIED + FIXED
+
+### Root Cause
+
+`federation.status` RPC was reporting `enabled: fed_stats.total_nodes > 0` — a CONNECTIVITY
+metric, not a CONFIGURATION flag. When a node starts with federation configured but no peers
+have completed a join handshake yet, `total_nodes == 0` and `enabled` falsely reports `false`.
+
+### Fix
+
+`enabled` now reflects whether federation was configured at startup:
+- If `self.federation_state` is `Some(...)` (injected during orchestrator init) → `enabled: true`
+- If `None` (standalone mode, bin_interface listener) → `enabled: false`
+
+Same fix applied to `federation.peers` response's `federation_enabled` field.
+
+### Federation Activation Requirements (Documentation)
+
+Federation auto-enables when ANY of:
+1. `SONGBIRD_FEDERATION_ENABLED=true` (explicit)
+2. `FEDERATION_ENABLED=true` (legacy alias)
+3. `SONGBIRD_PEERS` is set (implicit intent)
+4. `SONGBIRD_FEDERATION_PORT` is set (implicit intent)
+
+`SECURITY_PROVIDER_SOCKET` is NOT required for activation — gracefully degrades
+to plaintext discovery when no security provider is available.
+
+### Remaining flockGate Investigation
+
+With this fix deployed, flockGate should now correctly show `enabled: true`.
+If the actual federation HANDSHAKE still fails (active_connections: 0), the next
+investigation area is the join protocol: flockGate's `join_federation()` POSTs to
+the bootstrap address. Verify:
+- VPS responds to `POST /api/federation/join` (not just any HTTP on :7700)
+- No firewall/NAT asymmetry blocking the response
+- Whether push model (VPS initiates TO flockGate) is needed for WAN topology
+"""
+
+[status]
+health_sb_01 = "DONE"
+federation_enabled_fix = "DONE"
+federation_handshake_investigation = "OPEN — requires deploy + retest"
+
+[references]
+frago = "wave109-guidestone-deployment-convergence"
+resolves = "wave109-flockgate-wan-federation-disabled"
+stream = "Stream 1 (HEALTH-13/13) + Stream 6 (Federation Debug)"

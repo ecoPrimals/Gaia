@@ -9,7 +9,7 @@ print('Connected to eastGate!')
 # List all Forgejo repos
 print('\n=== FORGEJO REPOS ===')
 _, out, _ = c.exec_command(
-    'curl -s "http://localhost:3000/api/v1/repos/search?limit=50" -u gaia:GaiaForge2026!',
+    'curl -s "http://localhost:3000/api/v1/repos/search?limit=50" -u gaia:***',
     timeout=15
 )
 data = json.loads(out.read().decode())

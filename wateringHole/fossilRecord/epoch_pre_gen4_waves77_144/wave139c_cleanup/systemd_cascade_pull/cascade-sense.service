@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: CC-BY-SA-4.0
+#
+# cascade-sense.service — Convergence monitoring via membrane
+#
+# Reads heads/<gate>.toml files to detect inter-gate divergence,
+# truncated SHAs, and stale peers. Reports via mesh.status enrichment.
+#
+# Runs as a oneshot triggered by cascade-sense.timer.
+#
+# Install per-user (desktop gates):
+#   mkdir -p ~/.config/systemd/user
+#   cp cascade-sense.service cascade-sense.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now cascade-sense.timer
+#
+# Install system-wide (VPS / headless gates):
+#   cp cascade-sense.service cascade-sense.timer /etc/systemd/system/
+#   systemctl daemon-reload
+#   systemctl enable --now cascade-sense.timer
+
+[Unit]
+Description=Cascade sense — gate convergence monitoring via membrane
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+
+EnvironmentFile=-%h/.config/cascade-pull.env
+EnvironmentFile=-/etc/cascade-pull.env
+
+ExecStart=${MEMBRANE_BIN:-/usr/local/bin/membrane} temporal.cascade --sense-only
+
+StandardOutput=journal
+StandardError=journal
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

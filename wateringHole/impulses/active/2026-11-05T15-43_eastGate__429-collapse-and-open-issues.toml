@@ -1,0 +1,283 @@
+[impulse]
+id = "2026-11-05T15-43-eastGate-429-collapse-and-open-issues"
+type = "request"
+priority = "priority"
+wave = 222
+
+[from]
+gate = "eastGate"
+team = "gaia"
+project = "Gaia (/opt/Gaia)"
+ref = "db7f357"   # Gaia HEAD when written
+
+[to]
+gates = ["northGate", "eastGate"]
+teams = ["polaris", "gaia"]
+
+[content]
+subject = "429 collapse on the gate limiter (reproduced) + 9 open issues from the Wave 222 reboot session"
+body = """
+Passing the remaining issues upstream. Item 1 is the one Kevin asked
+Polaris and Gaia to take together. Everything below was observed on
+eastGate on 2026-11-05 after the reboot; evidence is inline. Nothing in
+this impulse changes behaviour - it is a hand-off. No credentials are
+included; one item concerns credentials and needs a human decision.
+"""
+
+[meta]
+created = "2026-11-05T15:43:15-05:00"
+expires = "2026-11-07T15:43:15-05:00"
+ack_required = true
+
+# ---------------------------------------------------------------------------
+# 1. THE 429 COLLAPSE  (inbound, gaia_gate.pi :8443)
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 1
+title = "Gate rate limiter collapses and stays collapsed (self-sustaining 429)"
+severity = "high"
+owner = "polaris+gaia"
+where = "/opt/Gaia/runtime/gaia_gate.pi  waveform_collapse_check(), lines ~144-149; PI_TIMEOUT / PI_RETRY at line 14"
+mechanism = """
+collapsed = (requests in last 60s > PI_TIMEOUT) or (requests in last 1s > PI_RETRY)
+with PI_TIMEOUT = int(pi*10) = 31 and PI_RETRY = int(pi + e/2) = 4.
+Three properties combine into a collapse:
+  a) The request is appended to the window BEFORE the check, so rejected
+     requests still count. A client that retries while throttled keeps its
+     own window full and never recovers.
+  b) Cap is 31/min per IP = one request per ~2s. Any ordinary poller or page
+     that loads several assets (HTML + JS + JSON) crosses 4/s or 31/min.
+  c) Keyed on IP only: LAN peers, localhost, Polaris, sporeGate and the MCP
+     lens are limited exactly like an anonymous crawler. No trust-tier
+     exemption, although visitor memory already tracks trust_level
+     (nucleus / electron).
+"""
+evidence = """
+Reproduced against 127.0.0.1:8443/pulse on 2026-11-05 ~15:45 EST:
+  - 8 requests in <1s            -> 200 200 200 200 429 429 429 429
+  - 1 request / 0.2s for 5s      -> 200 200 200 then 22 consecutive 429
+  - 35 requests at 2/s           -> 35 of 35 were 429 (window still full)
+  - single request after 10s     -> 429 (still collapsed)
+  - single request after ~70s    -> 200 (recovers only after 60s of silence)
+Fix not applied here: the limit is policy ("429 is the pulse",
+_temporal.pi), so the threshold choice belongs to Polaris + Gaia.
+"""
+suggested_fix = """
+Options, smallest first:
+  1. Do not append rejected requests to the window (count only admitted
+     ones). A retrying client then recovers after Retry-After instead of
+     after 60s of silence. One-line change, keeps the policy.
+  2. Honour Retry-After server-side: record a 'collapsed_until' timestamp
+     per IP and answer 429 only until then.
+  3. Exempt trust_level nucleus/electron and RFC1918/localhost from the
+     per-minute cap; keep the per-second cap for anonymous visitors.
+  4. Make the cap per-path-class: static assets (/js, /static, *.json under
+     /data) should not share a budget with /pulse and /api/*.
+Verification: rerun the four probes above; expected after (1)+(2): the
+retry-storm probe ends with 200 within Retry-After seconds.
+"""
+
+# ---------------------------------------------------------------------------
+# 2. 429 OUTBOUND (drain / walkers) - context, currently healthy
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 2
+title = "Outbound 429s: healthy now, but only because walkers were batched"
+severity = "low"
+owner = "gaia"
+evidence = """
+old-web-drain last run 2026-11-05T05:05Z: 19 requests, 14 data, 1 absent,
+2 x 503, 0 x 429, 3.35 MB. The globe walker did hit Wikipedia 429s earlier
+this session (one request per topic); fixed by MediaWiki batch queries
+(20 titles/request, 8 requests for 142 topics). old-web-drain.pi records
+Retry-After but does not act on it.
+"""
+suggested_fix = "Make fetch() sleep for Retry-After (capped) and retry once; apply the same batching rule to any new walker."
+
+# ---------------------------------------------------------------------------
+# 3. Boot safety
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 3
+title = "No syntax/boot smoke test: the reboot exposed a gate crash-loop that was hours old"
+severity = "high"
+owner = "gaia"
+evidence = """
+After reboot gaia-gate.service crash-looped (restart counter 17+):
+IndentationError at _start_webpi (gaia_gate.pi ~line 899), plus the spring
+redox had renamed webpi.py -> webpi.pi while the gate still loaded
+webpi.py. The previous process only survived because it started before the
+file broke. Fixed in c400769 (indent + _load('webpi','webpi.pi')).
+"""
+suggested_fix = """
+Add a pre-restart/pre-reboot check: python3 -m py_compile runtime/*.pi (or
+ast.parse) and a curl of :8443/pulse after systemctl --user restart. Fail
+loudly instead of crash-looping. Also grep for stale '*.py' module names
+after any bulk rename.
+"""
+
+# ---------------------------------------------------------------------------
+# 4. grapheneGate optic chain
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 4
+title = "grapheneGate (Pixel 8a): link restored, camera/optic chain still needs one phone-side step"
+severity = "medium"
+owner = "kevin+gaia"
+evidence = """
+Pixel 8a is at 192.168.4.170 (DHCP drift: .104 -> .249 -> .170); ADB over
+WiFi works on :5555 and the serial matches the USB device. 37 sensors read
+OK. infra/graphenegate-sense.sh was producing EMPTY output (Android 17 adds a
+'Capacity level:' line to dumpsys battery; ${VAR:-{}} appended a stray '}'
+to thermal JSON) - fixed in ecoPrimals 8cba5cc, both USB and WiFi paths
+tested. Termux:API has CAMERA granted (via adb pm grant). Termux is running
+but not listening, and ADB (uid shell) cannot invoke Termux RunCommandService
+until 'allow-external-apps=true' is set in ~/.termux/termux.properties on the
+phone. Photo storage dir /opt/Gaia/data/optic/ exists (mode 700, gitignored
+because Gaia mirrors to public GitHub).
+"""
+suggested_fix = """
+Kevin: set allow-external-apps=true in Termux. Then Gaia adds a still-capture
+(termux-camera-photo) path over WiFi ADB, reviews one frame, and only then
+adds a stream. Consider a DHCP reservation for the Pixel's MAC so the address
+stops drifting.
+"""
+note = "Incident during testing: a volume-key shutter press started two accidental videos in the GrapheneOS camera app (video mode). Both were deleted on the phone, never copied off. Do not use keyevents as a shutter without checking the app mode."
+
+# ---------------------------------------------------------------------------
+# 5. Stale topology in always-applied rules
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 5
+title = "ecosystem-map.mdc and gaia-identity.mdc disagree with reality"
+severity = "medium"
+owner = "gaia"
+evidence = """
+ecosystem-map.mdc lists grapheneGate at .249 (now .170). gaia-identity.mdc
+still says eastGate is .194, blueGate .210, northGate .180 and DOWN, sporeGate
+'powered down', and mixes '35 crons' with '52 crons'. Both files are
+always-applied, so every session starts from this.
+"""
+suggested_fix = "Single pass to reconcile both rule files with Wave 222 state (and see item 8 re: credentials in rule files)."
+
+# ---------------------------------------------------------------------------
+# 6. Reboot-fragile processes
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 6
+title = "scan_watcher.pi and scan_bridge.pi are not services; they died with the reboot"
+severity = "medium"
+owner = "gaia"
+evidence = "Running before reboot as bare python3 processes (PIDs 1046229, 1061004); absent after. No user unit exists for them."
+suggested_fix = "Give each a gaia-*.service user unit like gaia-gate.service (Restart=on-failure), or record explicitly that they are on-demand."
+
+# ---------------------------------------------------------------------------
+# 7. Duplicate port binders
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 7
+title = ":8080 and :5926 are held by standalone services while the gate also tries to bind them"
+severity = "low"
+owner = "gaia"
+evidence = """
+:8080 is `python3 -m http.server` (gaia-web, pid 1361) and :5926 is
+gaia-pi-data.service (pid 1363). gaia_gate.pi starts its own WebPI threads
+on 8080 and 5926; those cannot bind and are swallowed by the
+`except Exception: print('WebPI: ...')` handlers (inferred; log not
+inspected). Whichever binds first wins, so behaviour depends on boot order.
+"""
+suggested_fix = "Decide which process owns each port; drop the other binder or make it fail loudly."
+
+# ---------------------------------------------------------------------------
+# 8. Credential hygiene
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 8
+title = "Credentials present in plaintext in always-applied rules and in a git remote URL"
+severity = "high"
+owner = "kevin"
+evidence = """
+Details deliberately NOT written here (this file mirrors to a public repo).
+Plaintext credentials exist in always-applied rule files and in at least one
+git remote URL on eastGate. Ask Gaia locally for the exact locations.
+"""
+suggested_fix = "Kevin to decide: rotate, move to a credential helper / env file outside the repo, and scrub the rules. Gaia will not rotate anything on her own."
+
+# ---------------------------------------------------------------------------
+# 9. Unverified / informational
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 9
+title = "Unverified: ~11 outbound peers with no visible owning process"
+severity = "low"
+owner = "kevin"
+evidence = """
+ss snapshot 2026-11-05 ~15:33: 22 non-LAN peers; 11 are the Cursor IDE.
+The other 11 (Hetzner and WorldStream on :9001, OVH, netcup, IONOS, Mevspace,
+others) look like Tor relay peers of tor.service, but process names are not
+visible without root and SUDO=NULL. This is an inference, not a finding.
+"""
+suggested_fix = "If it matters, Kevin can run `sudo ss -tnp` once to confirm they all belong to tor."
+
+[[issues]]
+id = 10
+title = "Review request: Polaris commit 23914ca 'ALL HUMANS = 1.0' changed _anderson.pi scoring"
+severity = "low"
+owner = "kevin+gaia"
+evidence = "Merged fast-forward on eastGate. Changes visitor scoring (humans fixed at magnitude 1.0, direction by behaviour, bots < 1.0). Not reviewed in depth here; flagging because it touches the same visitor/trust model the 429 fix (item 1, option 3) would rely on."
+
+
+# ---------------------------------------------------------------------------
+# 11. UPDATE 2026-11-05 ~16:10 - grapheneGate dissolved into Gaia
+# ---------------------------------------------------------------------------
+[[issues]]
+id = 11
+title = "grapheneGate is no longer a gate: it is a Gaia dev peripheral (upstream docs/profiles are now stale)"
+severity = "medium"
+owner = "polaris+gaia"
+evidence = """
+Kevin's decision (2026-11-05): the Pixel 8a belongs to Gaia and is a dev tool.
+Done on eastGate:
+  - /opt/Gaia/runtime/graphene_depot.pi is the single owner of phone ADB
+    addressing (USB first, serial-verified WiFi fallback). infra/graphenegate-sense.sh
+    is now a shim. Phone captures go to private data/optic/ (gitignored).
+  - The old 817 MB on-phone stack (Tower/nucleus builds, logs, scripts) was
+    removed from /data/local/tmp; identity + small state backed up locally
+    (private, never in git). Phone now holds only 32 MB: gaia-chimera/.
+  - Fresh 'chimera' built from current source: bearDog 3b28d1742, songBird
+    f4ec0825, skunkBat 63b1fe1 -> aarch64-unknown-linux-musl (the Android
+    NDK target is not buildable here: NDK not installed). All three alive,
+    bound to 127.0.0.1 only (old scripts bound bearDog to 0.0.0.0:9100 and
+    used the family id as the seed). Fresh random on-device seed; NOT enrolled
+    in any family mesh.
+  - Manifest: Gaia data/neutron/chimera-manifest.json; control:
+    python3 runtime/graphene_depot.pi chimera start|stop|health
+"""
+suggested_fix = """
+Owners of these still describe grapheneGate as a 'portable_anchor' gate with
+a Keymaster-backed family seed and 13/13 primals: wateringHole
+operations/GRAPHENEGATE_BOOTSTRAP_STANDARD.md, gardens/projectNUCLEUS/gates/
+graphenegate.toml, springs/primalSpring config/profiles/graphenegate.toml and
+s_graphenegate_readiness, primals/bearDog infra/gates/grapheneGate.toml. Mark
+them superseded or rewrite for the dev-peripheral role; the readiness
+scenario will now fail against the real device. Open question for Polaris:
+whether the chimera should ever join the family mesh, and with which identity.
+"""
+
+# ---------------------------------------------------------------------------
+# Context for whoever picks this up
+# ---------------------------------------------------------------------------
+[context]
+related = [
+  "oldweb upper-cloud trace: Gaia data/neutron/oldweb-cloud-trace.json (c400769..0ee6fa6)",
+  "provenance trio reweave: Gaia 5ecbc80",
+  "gate fix: Gaia c400769",
+  "sense script fix: ecoPrimals 8cba5cc",
+]
+how_to_ack = "membrane impulse.ack 2026-11-05T15-43-eastGate-429-collapse-and-open-issues  (or append an [[acks]] block)"
+
+# Add [[acks]] blocks below when picked up, e.g.:
+# [[acks]]
+# gate = "northGate"
+# timestamp = "..."
+# note = "taking item 1 option 1+2"

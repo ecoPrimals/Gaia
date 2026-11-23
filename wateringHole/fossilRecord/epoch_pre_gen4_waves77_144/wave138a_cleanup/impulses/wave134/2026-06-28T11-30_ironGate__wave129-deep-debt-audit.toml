@@ -1,0 +1,71 @@
+# Wave 129 — ironGate 12-Axis Deep Debt Audit + Evolution Validation
+# Issued: Jun 28, 2026 11:30 EDT
+# From: ironGate
+# To: eastGate overwatch, all gates
+
+[meta]
+wave = 129
+issued_by = "ironGate"
+issued_at = "2026-06-28T11:30:00-04:00"
+gate = "ironGate"
+team = "barraCuda"
+
+[audit.large_files]
+status = "CLEAN"
+max_file_lines = 783
+max_file = "surrogate/adaptive/tests.rs"
+threshold = 800
+
+[audit.unsafe_code]
+status = "CLEAN"
+production_sites = 1
+production_site = "barracuda-spirv: wgpu passthrough (unavoidable until wgpu#4854)"
+test_sites = 23
+test_reason = "env var manipulation (Rust 2024 safety)"
+
+[audit.hardcoding]
+status = "CLEAN"
+socket_prefixes = "beardog/songbird are role-based fallbacks with env var override as primary"
+provenance = "SpringDomain constants are metadata, not runtime dependencies"
+env_access = "all via env_keys:: constants"
+
+[audit.production_mocks]
+status = "CLEAN"
+feature_gated_stubs = 1
+feature_gated_stub = "try_sovereign_spirv_compile returns None when spirv-passthrough disabled"
+
+[audit.external_deps]
+status = "CLEAN"
+c_bindings = 0
+note = "blake3 uses 'pure' feature, wgpu is GPU driver boundary (inherent)"
+
+[audit.idiomatic_rust]
+edition = "2024"
+resolver = 3
+msrv = "1.92"
+allow_count = 0
+expect_with_reason = true
+typed_errors = true
+
+[audit.code_quality]
+todo_fixme_hack = 0
+result_t_string = 0
+production_println = 0
+production_unwrap = 0
+production_expect = 8
+expect_reason = "all ownership-invariant RAII guards (Deref/finish/into_buffer)"
+
+[audit.tests]
+barracuda_passed = 3857
+barracuda_core_passed = 708
+clippy_warnings = 0
+
+[docs_updated]
+status_md = "P1 OOM stale item marked DONE (shipped Wave 124)"
+sporeprint = "updated: 98 methods, 5-gate mesh, ironGate GPU live"
+changelog = "Wave 129 entry added"
+whats_next = "Wave 129 entry added"
+transport_config = "socket prefix docs enriched with role-based rationale"
+
+[wave129_summary]
+finding = "Codebase is clean across all 12 evolution axes. Zero actionable debt."

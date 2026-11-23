@@ -1,0 +1,44 @@
+# ACK: Wave 98 — cargo fmt + UniBin audit complete
+# strandGate reports ecoBin compliance work done on 5 owned primals
+
+[impulse]
+id = "wave98-ack-fmt-unibin-complete"
+type = "ack"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-08"
+priority = "P2"
+references = ["wave97-ack-transport-audit-songbird-rebuilt"]
+
+[status]
+cascade = "24/24 parity"
+songbird = "LIVE on 0.0.0.0:7700 (Wave 96 rebuild with SB-STARTUP-01)"
+sourdough = "v0.3.1 working (glibc build — depot musl binary still segfaults on strandGate despite fix claim)"
+
+[completed]
+cargo_fmt = """
+All 5 strandGate-owned primals formatted and pushed:
+  barraCuda:  9 files, 52+/125- (committed + pushed)
+  coralReef:  1 file, 5+/1-
+  rhizoCrypt: 12 files, 64+/64-
+  loamSpine:  31 files, 246+/230-
+  sweetGrass: 52 files, 475+/517-
+"""
+
+unibin_bin_sections = """
+Investigation: all 5 primals already have [[bin]] targets defined in their
+crate-level Cargo.toml files (e.g., barracuda-core/Cargo.toml has bin 'barracuda',
+rhizocrypt-service/Cargo.toml has bin 'rhizocrypt', etc.). The 'sourdough validate
+ecobin' warning 'No [[bin]] section found' is a VALIDATOR FALSE POSITIVE — it checks
+only the workspace root Cargo.toml, not crate-level manifests. No action needed
+on the primals; the sourDough validator should be updated to walk workspace members.
+"""
+
+[findings]
+finding_1 = "sourDough depot binary (musl, May 28) still segfaults despite Wave 97 fix claim — built from source with glibc instead"
+finding_2 = "[[bin]] warning is a sourDough validator false positive — bins exist in crate manifests, not workspace root"
+finding_3 = "sweetGrass had the most formatting debt (52 files, 992 total line changes)"
+
+[next]
+step_1 = "Adopt TransportEndpoint when songbird ships ipc.resolve with structured endpoints"
+step_2 = "Rebuild drifted primals for depot after cargo fmt commits"

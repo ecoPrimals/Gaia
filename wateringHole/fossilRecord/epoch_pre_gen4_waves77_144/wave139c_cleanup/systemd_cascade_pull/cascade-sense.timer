@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: CC-BY-SA-4.0
+#
+# cascade-sense.timer — Convergence monitoring
+#
+# Runs hourly to detect drift between gates. Checks HEAD SHAs
+# in wateringHole/heads/*.toml and flags stale peers.
+#
+# Install alongside cascade-pull on every gate:
+#   cp cascade-sense.service cascade-sense.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now cascade-sense.timer
+#
+# LAN gates (eastGate, ironGate): install with user timers
+# VPS gates (golgiBody, flockGate): install system-wide
+
+[Unit]
+Description=Cascade sense timer — gate convergence monitoring
+
+[Timer]
+OnCalendar=*-*-* *:15:00
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

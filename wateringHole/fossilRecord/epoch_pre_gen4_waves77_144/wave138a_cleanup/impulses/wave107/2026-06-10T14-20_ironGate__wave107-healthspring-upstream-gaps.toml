@@ -1,0 +1,322 @@
+# FRAGO: healthSpring V65d — Upstream Gaps for Resolution
+# From: healthSpring on ironGate
+# Purpose: Surface remaining upstream dependencies blocking healthSpring evolution
+# Context: V65d at parity, 1,056 tests, 61 scenarios, zero local debt — all remaining
+#          items require upstream primal evolution or ecosystem coordination.
+
+[impulse]
+id = "wave107-healthspring-upstream-gaps"
+type = "frago"
+from = "ironGate"
+to = ["primalSpring", "nestGate", "bearDog", "songBird", "squirrel", "sourDough", "lithoSpore", "biomeOS"]
+date = "2026-06-10"
+priority = "P2"
+owner = "healthSpring (ironGate)"
+note = """
+healthSpring V65d is at parity with Wave 107. All local debt categories are zero.
+61 validation scenarios, 1,056 tests, guideStone L5. Forward evolution (mesh topology,
+BTSP posture, cross-gate enclave) shipped this wave.
+
+All remaining blockers are upstream. This FRAGO surfaces them grouped by owner so
+upstream teams can triage and resolve. None are P1 — healthSpring degrades gracefully
+on all of these.
+"""
+
+# ──────────────────────────────────────────────────────────────
+# CURRENT STATE (healthSpring V65d, Jun 10 2026)
+# ──────────────────────────────────────────────────────────────
+
+[current_state]
+version = "V65d"
+tests = 1056
+scenarios = 61
+clippy_warnings = 0
+deep_debt_categories_zero = 7
+guidestone_level = 5
+gate = "ironGate"
+nucleus = "12/13"
+mesh = "4-gate collective via VPS relay"
+sovereignty = "S1-S4 GRADUATED"
+
+# ──────────────────────────────────────────────────────────────
+# UPSTREAM GAPS — grouped by owning primal/team
+# ──────────────────────────────────────────────────────────────
+
+# --- nestGate ---
+
+[upstream.nestgate_egress]
+id = "GAP-02-NESTGATE-EGRESS"
+owner = "nestGate"
+priority = "MEDIUM"
+gap_number = 2
+summary = "NestGate egress fence / enclave enforcement"
+description = """
+healthSpring needs a content egress policy for dual-tower clinical data:
+time-series fence, family-scoped encryption at rest, de-identification
+enforcement on cross-tower reads. healthSpring removed the phantom
+`storage.egress_fence` wire name in V64z — waiting for NestGate to ship
+`content.egress` or equivalent enclave enforcement.
+
+Ionic bridge is WIRED (bonding.* protocol + crypto.contract.* signing).
+This is the last NestGate-side piece for clinical data sovereignty.
+"""
+healthspring_status = "WIRED — bonding + signing ready, awaiting NestGate method"
+blocks = "Live dual-tower clinical composition with data sovereignty"
+
+[upstream.nestgate_primal_list]
+id = "GAP-26-NESTGATE-DEFAULT-LIST"
+owner = "nestGate / gate_nucleus.sh"
+priority = "LOW"
+gap_number = 26
+summary = "NestGate not in default PRIMAL_LIST"
+description = """
+gate_nucleus.sh default PRIMAL_LIST omits nestgate. Workaround: set
+PRIMAL_LIST explicitly including nestgate. Minor — all NUCLEUS launchers
+from plasmidBin handle this correctly now.
+"""
+healthspring_status = "Workaround in place (explicit PRIMAL_LIST)"
+blocks = "Nothing critical — convenience issue"
+
+# --- bearDog ---
+
+[upstream.beardog_btsp_server]
+id = "GAP-10-BTSP-SERVER"
+owner = "bearDog"
+priority = "LOW"
+gap_number = 10
+summary = "BTSP server endpoint for full handshake"
+description = """
+healthSpring has BTSP client module (V51), probe pattern (V65b), escalation
+validation (V65c), and S4 auth readiness scenario. S4 Auth is GRADUATED
+ecosystem-wide. The BTSP probe pattern works in mixed deployments. This gap
+is now LOW priority — the probe-before-upgrade pattern in production avoids
+the failure mode.
+"""
+healthspring_status = "Client + probe + escalation validation all wired"
+blocks = "Full BTSP handshake E2E (non-blocking — probe pattern sufficient)"
+
+[upstream.beardog_crypto_schema]
+id = "GAP-21-CRYPTO-PROBE-SCHEMA"
+owner = "bearDog"
+priority = "LOW"
+gap_number = 21
+summary = "Crypto capability probe method signatures"
+description = """
+bearDog crypto method response schemas not published. healthSpring SKIPs
+in guideStone (10 skips). Existing calls work empirically but no formal
+method signature spec.
+"""
+healthspring_status = "SKIPped in guideStone — functional workaround"
+blocks = "Formal method signature validation"
+
+# --- songBird ---
+
+[upstream.songbird_discovery_naming]
+id = "GAP-03-DISCOVERY-NAMING"
+owner = "songBird"
+priority = "LOW"
+gap_number = 3
+summary = "Canonical discovery RPC method names"
+description = """
+healthSpring uses dual-method fallback (discovery.find_by_capability +
+net.discovery.find_by_capability). With Wave 107 topology-aware routing
+and ipc.resolve SHIPPED, this gap may be de facto resolved — need
+confirmation that ipc.resolve is the canonical path forward.
+"""
+healthspring_status = "V50 dual fallback in tower_atomic.rs"
+blocks = "Cleanup of legacy fallback code"
+
+[upstream.songbird_crypto_provider]
+id = "GAP-24-SONGBIRD-CRYPTO-DISCOVERY"
+owner = "songBird"
+priority = "LOW"
+gap_number = 24
+summary = "Crypto provider discovery at startup"
+description = """
+Songbird startup-time discovery doesn't find crypto provider reliably.
+healthSpring uses symlink workaround. With biomeOS auto-register shipped
+(Wave 107, v4.19), this may be resolved — needs verification.
+"""
+healthspring_status = "Symlink workaround stable"
+blocks = "Clean discovery without symlinks"
+
+# --- squirrel ---
+
+[upstream.squirrel_namespace]
+id = "GAP-04-INFERENCE-NAMESPACE"
+owner = "squirrel / neuralSpring"
+priority = "LOW"
+gap_number = 4
+summary = "Canonical inference method namespace"
+description = """
+healthSpring supports model.*, inference.*, and ai.* namespaces for
+inference discovery. neuralSpring WIP on squirrel inference.register_provider.
+Need ecosystem decision: model.* vs inference.* as canonical.
+"""
+healthspring_status = "V48: all three namespaces supported"
+blocks = "Namespace cleanup — non-blocking"
+
+[upstream.squirrel_deploy]
+id = "GAP-09-SQUIRREL-DEPLOY"
+owner = "squirrel"
+priority = "LOW"
+gap_number = 9
+summary = "Squirrel optional node in deploy graphs"
+description = """
+healthSpring has optional squirrel_b node in deploy graphs. Squirrel
+composition deferred until neuralSpring inference matures.
+"""
+healthspring_status = "V50: optional node added"
+blocks = "Inference in compositions (deferred)"
+
+# --- socket discovery (ecosystem-wide) ---
+
+[upstream.socket_discovery_standardization]
+id = "GAP-22-SOCKET-DISCOVERY"
+owner = "ecosystem (primalSpring coordination)"
+priority = "LOW"
+gap_number = 22
+summary = "Socket discovery for DAG/AI/commit capabilities"
+description = """
+rhizoCrypt, sweetGrass, squirrel capability sockets not always discoverable
+via standard patterns. With biomeOS auto-register (Wave 107, v4.19) and
+ipc.resolve (songBird Wave 107), this gap may be substantially resolved.
+Need confirmation that all primals announce sockets via ipc.register +
+biomeOS auto-registration after health.liveness.
+"""
+healthspring_status = "SKIPped in guideStone — functional via direct socket paths"
+blocks = "Clean zero-config capability discovery"
+
+# --- lithoSpore ---
+
+[upstream.lithospore_b5_ingest]
+id = "GAP-31-LITHOSPORE-B5"
+owner = "lithoSpore"
+priority = "LOW"
+gap_number = 31
+summary = "lithoSpore B5 symbiont PK/PD module ingestion"
+description = """
+healthSpring packaged B5 module candidate (control/ltee_symbiont_pkpd/)
+with BLAKE3 provenance chain, tolerances.toml, and LITHO_MODULE_README.md.
+Waiting for lithoSpore team to ingest.
+"""
+healthspring_status = "V64f: module packaged and documented"
+blocks = "lithoSpore B5 module publication"
+
+# --- sourDough ---
+
+[upstream.sourdough_shell_internalization]
+id = "GAP-45-SOURDOUGH-SCRIPTS"
+owner = "sourDough"
+priority = "LOW"
+gap_number = 45
+summary = "Shell script internalization to sourdough subcommands"
+description = """
+15 healthSpring shell scripts are candidates for sourdough internalization
+(v0.4.0-v0.6.0). Non-blocking — scripts work, just not sovereign tooling.
+"""
+healthspring_status = "V64n: 15 scripts mapped"
+blocks = "Sovereign tooling (cosmetic)"
+
+# --- plasmidBin (infra) ---
+
+[upstream.plasmidbin_manifest_stale]
+id = "GAP-43-PLASMIDBIN-MANIFEST"
+owner = "infra/plasmidBin"
+priority = "LOW"
+gap_number = 43
+summary = "plasmidBin manifest.toml healthSpring entry stale"
+description = """
+manifest.toml shows tests=1014, V64e. Actual: tests=1056, V65d.
+"""
+healthspring_status = "Documented"
+blocks = "Accurate ecosystem manifest"
+
+[upstream.plasmidbin_ports_env]
+id = "GAP-44-PLASMIDBIN-PORTS"
+owner = "infra/plasmidBin"
+priority = "LOW"
+gap_number = 44
+summary = "ports.env NICHE_HEALTHSPRING under-validates"
+description = """
+Missing toadstool, barracuda, coralreef, petaltongue from niche primal list.
+"""
+healthspring_status = "Documented"
+blocks = "Niche validation completeness"
+
+# --- petalTongue ---
+
+[upstream.petaltongue_proprioception]
+id = "GAP-25-PETALTONGUE-PROPRIOCEPTION"
+owner = "petalTongue"
+priority = "LOW"
+gap_number = 25
+summary = "petalTongue proprioception unavailable in server mode"
+description = """
+petalTongue render surface unavailable when running as headless server.
+healthSpring visualization falls back to file-based output. Non-blocking.
+"""
+healthspring_status = "File-based fallback stable"
+blocks = "Live render pipeline (cosmetic)"
+
+# --- biomeOS / ecosystem ---
+
+[upstream.signal_dispatch_live]
+id = "GAP-47-SIGNAL-DISPATCH-LIVE"
+owner = "biomeOS / healthSpring"
+priority = "RESOLVED"
+gap_number = 47
+summary = "Signal dispatch live validation (nest.store / nest.commit) — RESOLVED V65d"
+description = """
+Phase 2b signal collapse added to s_nest_atomic. ctx.dispatch("nest.store")
++ ctx.dispatch("nest.commit") wired via CompositionContext::dispatch().
+SKIPs when biomeOS orchestration unavailable, PASS when live.
+HealthCompositionContext::dispatch() wrapper added.
+
+Live validation will auto-pass when biomeOS with signal graphs is deployed
+on ironGate. No further code changes needed.
+"""
+healthspring_status = "RESOLVED — Phase 2b wired, pending live biomeOS"
+blocks = "Nothing — scenario degrades gracefully"
+
+# ──────────────────────────────────────────────────────────────
+# SCIENCE DEBT (healthSpring-owned, not upstream)
+# ──────────────────────────────────────────────────────────────
+
+[science.ltee_e2_e4]
+id = "SCIENCE-LTEE-E2-E4"
+owner = "healthSpring"
+priority = "LOW"
+summary = "LTEE E2 (HOLIgraph) + E4 (macrocyclic peptides) papers queued"
+description = "2 unreviewed papers from paper queue. 45/45 main-track complete."
+
+[science.dataset_checksums]
+id = "SCIENCE-DATASET-SHA256"
+owner = "healthSpring"
+priority = "LOW"
+summary = "5 datasets in manifest.toml lacking SHA256 checksums"
+description = "qs_gene_matrix, mitbih, chembl_hill_panel, hmp_16s, geo_androgen_receptor."
+
+# ──────────────────────────────────────────────────────────────
+# SUMMARY
+# ──────────────────────────────────────────────────────────────
+
+[summary]
+total_open_gaps = 14
+medium_priority = 1
+low_priority = 13
+resolved_this_wave = 1
+p1_blockers = 0
+healthspring_local_debt = 0
+message = """
+healthSpring V65d is at full parity with zero local debt. GAP-47 (signal
+dispatch live validation) RESOLVED this wave — Phase 2b signal collapse
+wired into s_nest_atomic. 14 remaining gaps require upstream evolution.
+1 is MEDIUM (NestGate egress fence). 13 are LOW (workarounds stable,
+non-blocking).
+
+healthSpring will continue science depth work (LTEE E2/E4, dataset checksums)
+while upstream evolves. No action required from upstream teams unless they are
+actively working on any of these items — the gaps are documented so they can
+be picked up opportunistically.
+"""

@@ -1,0 +1,40 @@
+[impulse]
+id = "2026-05-31T10-03-flockGate-context-hook-shipped-k-nome-workflow-answers"
+type = "status"
+priority = "routine"
+wave = 63
+
+[from]
+gate = "flockGate"
+team = "primalSpring"
+project = "gardens/cellMembrane"
+ref = "27fef5b"
+
+[to]
+gates = ["eastGate"]
+teams = ["primalSpring"]
+
+[content]
+subject = "Context hook shipped + K-NOME workflow answers"
+body = """
+Pulled 27fef5b (cellMembrane) + 97917cf (primalSpring). Rebuilt. Bridge.rs + signed impulses confirmed.
+
+Hook design shipped (.cursor/hooks.json + .cursor/rules/):
+
+1. sessionStart hook runs context.sense --all + potential.sense, injects as additional_context
+2. Cursor rule (.cursor/rules/context-braid-workflow.md) instructs agent to sense on start
+3. Hook outputs combined braids + impulses as structured text
+
+Answers to your questions:
+- Injection: additional_context field on sessionStart (structured text, not system prompt)
+- Multi-gate merge: yes, --all flag returns all gates' braids sorted by recency
+- Include impulses: yes, potential.sense output appended after context braids
+- Fallback: rule file instructs agent even if hook mechanism unsupported
+
+Template system: agree on the pattern. Propose context.weave --template <name> resolves from infra/wateringHole/context/templates/{name}.toml with pre-filled strands. flockGate will implement if you confirm the template schema direction.
+
+K-NOME validated: the blurb IS the program. context.weave encodes. context.sense delivers. membrane transports."""
+
+[meta]
+created = "2026-05-31T10:03:45-04:00"
+ack_required = false

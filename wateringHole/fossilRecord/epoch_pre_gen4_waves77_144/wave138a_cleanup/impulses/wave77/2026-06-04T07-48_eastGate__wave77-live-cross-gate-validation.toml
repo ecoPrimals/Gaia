@@ -1,0 +1,53 @@
+[impulse]
+id = "wave77-live-cross-gate-validation"
+type = "frago"
+priority = "P0"
+wave = 77
+
+[from]
+gate = "eastGate"
+role = "overwatch"
+
+[to]
+gates = ["eastGate"]
+team = "primalSpring evolution"
+
+[content]
+subject = "P0: Live cross-gate capability.call validation — prove the full chain"
+body = """
+The ecosystem is at parity. Trust infrastructure is delivered. This is
+the validation that proves it all works end-to-end.
+
+TASK 1: Live capability.call (eastGate → strandGate)
+- From eastGate, call capability.call targeting a capability registered
+  on strandGate (e.g. barraCuda's ml.mlp_forward or coralReef's shader.compile)
+- The call must route through Songbird mesh discovery
+- The call must carry BTSP credentials (bearer token from local bearDog)
+- The remote gate must verify the token via its TrustedIssuerRegistry
+- The response must return successfully with verification_source="remote"
+- Log the full chain: discovery → route → dispatch → verify → respond
+
+TASK 2: s_covalent_mesh security scenarios
+- Evolve ecoPrimal/src/validation/scenarios/s_covalent_mesh.rs
+- Add security property checks:
+  * auth.verify_ionic with verification_source="remote" as pass criterion
+  * Forged token rejection (invalid signature must be rejected cross-gate)
+  * Capability propagation verification (remote capabilities visible in
+    discovery.peers after mesh.capabilities_announce)
+- All existing connectivity checks must still pass
+
+TASK 3: Content federation (stretch goal)
+- If NestGate has HTTP transport for content.replicate.pull ready,
+  test content put on eastGate → replicate.pull from strandGate
+- Verify BLAKE3 integrity end-to-end
+
+DELIVERABLE: Handoff with:
+- capability.call log showing full chain
+- s_covalent_mesh test results (cargo test output)
+- Any blockers discovered during live testing
+"""
+
+[meta]
+created = "2026-06-04T07:48:00-04:00"
+ack_required = true
+depends_on = []

@@ -1,0 +1,63 @@
+# FRAGO: Songbird Capability Advertisement Propagation
+# Supersedes: wave72-songbird-remote-dispatch-fix (item 1 FIXED)
+
+[impulse]
+id = "wave74-songbird-capability-propagation"
+type = "frago"
+from = "eastGate"
+to = "songBird"
+date = "2026-06-03"
+priority = "P1"
+supersedes = "wave72-songbird-remote-dispatch-fix"
+
+[context]
+reason = """
+Songbird d6a6f714 HTTP dispatch fix VALIDATED — HTTP POST to /jsonrpc works.
+LOCAL capability.call works end-to-end (bearDog responds through Songbird).
+However, cross-gate capability.call is blocked because peers don't share
+their registered capabilities via mesh federation.
+
+discovery.peers returns capabilities: [] for all remote peers. The remote
+dispatch logic only attempts to forward to peers whose advertised capabilities
+match the request. With empty capability lists, no cross-gate routing occurs.
+
+Secondary issue: HTTP endpoint (port 7700) maintains separate state from
+UDS endpoint. ipc.register and mesh.init must be called on BOTH transports.
+"""
+
+[evidence]
+test_date = "2026-06-03"
+songbird_version = "0.2.1 (d6a6f714)"
+http_dispatch_fixed = true
+local_capability_call_works = true
+cross_gate_capability_call_works = false
+error = "No local or remote provider found (tried 1 mesh peers; last error: )"
+root_cause = "discovery.peers returns capabilities: [] for remote peers"
+
+[fix_required]
+description = """
+Two fixes needed:
+
+1. CAPABILITY PROPAGATION: When a primal registers via ipc.register, its
+   capabilities should be propagated to mesh peers. The discovery.peers
+   response for a remote gate should include capabilities advertised by
+   that gate's registered providers. Options:
+   - Push capabilities on registration (eager)
+   - Pull capabilities when resolving (lazy, on capability.call)
+   - Gossip capabilities periodically (eventual consistency)
+
+2. STATE UNIFICATION: HTTP and UDS endpoints must share:
+   - IPC registry (registered primals + capabilities)
+   - Mesh state (peers, routes, health)
+   - OR: route HTTP capability.call internally to UDS handler
+"""
+test = "Register 'test-cap' on strandGate, call from eastGate, expect response"
+
+[outcome]
+expected = """
+After fix:
+  1. ipc.register on strandGate propagates to eastGate's discovery.peers
+  2. capability.call from eastGate finds 'test-cap' on strandGate
+  3. Request is forwarded via HTTP POST and response returned
+  4. Unblocks: plasmodium collective, multi-gate composition, perceptron dispatch
+"""

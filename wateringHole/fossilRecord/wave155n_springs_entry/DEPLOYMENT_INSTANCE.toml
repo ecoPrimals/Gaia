@@ -1,0 +1,257 @@
+# DEPLOYMENT_INSTANCE.toml — Instance-specific state for this NUCLEUS fleet
+#
+# This file contains everything specific to THIS deployment: IPs, SSH aliases,
+# VPS nodes, endpoints, active coordination state. It is the rhizoCrypt analog —
+# ephemeral, time-bounded, specific to this fleet.
+#
+# A parallel NUCLEUS team sharing the GitHub repos would:
+# 1. Fork this file with their own IPs/aliases/services
+# 2. Keep ecosystem_manifest.toml [repos] but rewrite [topology]
+# 3. Start fresh impulses/active/ with their own FRAGOs
+# 4. All *_STANDARD.md and ECOSYSTEM_ARCHITECTURE_CONTEXT.md remain universal
+#
+# Universal context: ECOSYSTEM_ARCHITECTURE_CONTEXT.md
+# Deep methodology: whitePaper/gen4/knome/THE_PROMPT_BANK.md
+
+[instance]
+name = "ecoPrimals-alpha"
+wave = 134
+topology = "diderm"
+vps_provider = "digitalocean"
+region = "nyc1"
+last_updated = "2026-07-08"
+
+# ──────────────────────────────────────────────────────────────
+# VPS NODES (K-Derm diderm envelope)
+# ──────────────────────────────────────────────────────────────
+
+[instance.nodes.inner]
+name = "golgiBody"
+ip = "[RELAY_PUBLIC]"
+ssh_alias = "golgi"
+ssh_user = "root"
+ssh_key = "~/.ssh/id_ed25519"
+services = ["forgejo", "songbird-relay", "nestgate-sporeprint", "membrane-cascade", "caddy"]
+role = "VPS-thin — Forgejo, binary depot, sporePrint host, songBird relay. Tracks wateringHole only."
+
+[instance.nodes.peptidoglycan]
+name = "peptidoglycan"
+ip = "[RELAY_PUBLIC]"
+ssh_alias = "pepti"
+ssh_user = "root"
+ssh_proxy = "golgi"
+services = ["workspace", "builds", "temporal-sync", "membrane-binary"]
+role = "Structural layer — build hub, workspace, temporal sync convergence"
+
+[instance.nodes.outer]
+name = "golgiBody-ext"
+ip = "137.184.197.151"
+ssh_alias = "golgi-ext"
+ssh_user = "root"
+ssh_proxy = "golgi"
+services = ["caddy-tls", "sporeprint", "turn-relay", "wan-depot", "rustdesk"]
+role = "Public-facing — Caddy TLS, sporePrint hosting, WAN binary depot, TURN"
+
+# ──────────────────────────────────────────────────────────────
+# ENDPOINTS
+# ──────────────────────────────────────────────────────────────
+
+[instance.endpoints]
+forgejo_web = "https://git.primals.eco"
+forgejo_ssh = "ssh://git@git.primals.eco:2222/"
+forgejo_api = "https://git.primals.eco/api/v1/"
+wan_depot = "https://membrane.primals.eco/depot"
+lab_site = "https://lab.primals.eco"
+mesh_peer = "[RELAY_PUBLIC]:7700"
+federation_port = 7700
+
+[instance.endpoints.domains]
+git = "git.primals.eco"
+membrane = "membrane.primals.eco"
+lab = "lab.primals.eco"
+
+# ──────────────────────────────────────────────────────────────
+# PATHS (on VPS nodes)
+# ──────────────────────────────────────────────────────────────
+
+[instance.paths]
+vps_ecoprimals_root = "/opt/ecoPrimals"
+install_base = "/opt/membrane"
+socket_base = "/run/membrane"
+forgejo_binary = "/opt/forgejo/forgejo"
+forgejo_data = "/opt/forgejo/data"
+forgejo_work = "/opt/forgejo"
+caddy_config = "/etc/caddy/Caddyfile"
+depot_inner = "/opt/ecoPrimals/infra/plasmidBin"
+depot_outer = "/opt/ecoPrimals/infra/plasmidBin"
+
+# ──────────────────────────────────────────────────────────────
+# SSH CONFIGURATION (for ~/.ssh/config)
+# ──────────────────────────────────────────────────────────────
+
+[instance.ssh]
+note = "All access via ~/.ssh/config host aliases. pepti and golgi-ext proxy through golgi."
+
+[instance.ssh.hosts.golgi]
+hostname = "[RELAY_PUBLIC]"
+user = "root"
+identity = "~/.ssh/id_ed25519"
+
+[instance.ssh.hosts.golgi-ext]
+hostname = "137.184.197.151"
+user = "root"
+proxy_command = "ssh -W %h:%p golgi"
+
+[instance.ssh.hosts.pepti]
+hostname = "[RELAY_PUBLIC]"
+user = "root"
+proxy_command = "ssh -W %h:%p golgi"
+
+# ──────────────────────────────────────────────────────────────
+# FORGEJO (Sovereign Git)
+# ──────────────────────────────────────────────────────────────
+
+[instance.forgejo]
+host_node = "golgiBody"
+orgs = ["ecoPrimals", "sporeGarden"]
+token_path = "DEPRECATED — SSH key auth is now standard. PATs to be revoked Wave 121."
+admin_user = "ecoPrimal"
+ssh_port = 2222
+http_port = 3000
+
+# ──────────────────────────────────────────────────────────────
+# SERVICES MANAGEMENT (on golgiBody)
+# ──────────────────────────────────────────────────────────────
+
+[instance.services]
+systemd_filter = "membrane|forgejo|caddy|knot|hbb|fail2ban"
+
+[instance.services.commands]
+list_primals = "ssh golgi 'systemctl list-units | grep membrane-nucleus'"
+restart_primal = "ssh golgi 'systemctl restart membrane-nucleus@{primal}'"
+primal_logs = "ssh golgi 'journalctl -u membrane-nucleus@{primal} --since \"5 min ago\"'"
+start_songbird = "ssh golgi 'cd /opt/ecoPrimals/primals/songBird && nohup ./target/release/songbird server --federation --port 7700 &'"
+forgejo_admin = "ssh golgi '/opt/forgejo/forgejo admin user list'"
+caddy_status = "ssh golgi-ext 'systemctl status caddy'"
+
+# ──────────────────────────────────────────────────────────────
+# COORDINATION STATE (living ecosystem quick-reference)
+# ──────────────────────────────────────────────────────────────
+
+[coordination]
+impulse_path = "impulses/active/"
+freshness_path = "freshness.toml"
+handoff_path = "handoffs/"
+manifest_path = "ecosystem_manifest.toml"
+communication_standard = "ECOSYSTEM_COMMUNICATION_STANDARD.md"
+architecture_context = "ECOSYSTEM_ARCHITECTURE_CONTEXT.md"
+note = "FRAGOs are time-bounded work DAGs (rhizoCrypt analog). Handoffs are fossil record (loamSpine analog). Blurbs are session seeds (sweetGrass analog)."
+
+[coordination.active_fragos]
+primary = "wave132h-mesh-convergence-gate-deploys"
+secondary = []
+see = "impulses/active/"
+
+[coordination.current_wave]
+number = 132
+name = "Mesh Convergence + Gate Deploys"
+streams = [
+    "Stream 1: LAN+WAN MESH LIVE (sporeGate↔ironGate, flockGate via golgi)",
+    "Stream 2: Pepti Warehouse (x86_64 + aarch64, nucleus_launcher shipped)",
+    "Stream 3: grapheneGate Tower (bearDog+songBird+skunkBat via ADB)",
+    "Stream 4: strandGate enrollment (SSH pending, alive at .103)",
+    "Stream 5: Dark-forest re-enable (post full LAN enrollment)",
+    "Stream 6: Cross-gate graph execution (biomeOS — future)",
+]
+
+# ──────────────────────────────────────────────────────────────
+# GATE FLEET (this deployment's gates)
+# ──────────────────────────────────────────────────────────────
+
+[fleet]
+note = "Full profiles in ecosystem_manifest.toml [gates.*]. Summary here for quick reference."
+
+[fleet.gates.eastGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "Primary dev + peptidoglycan build host"
+
+[fleet.gates.ironGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "Secondary dev gate"
+
+[fleet.gates.southGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "Science/ABG gate"
+
+[fleet.gates.strandGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "CompChem + genomics"
+
+[fleet.gates.northGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "Primary compute — Ryzen 9950X3D + RTX 5090 32GB + 96GB RAM"
+
+[fleet.gates.westGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+role = "Cold storage — i7-4771 + 76TB ZFS, Nest Atomic (7 primals)"
+
+[fleet.gates.grapheneGate]
+arch = "aarch64-unknown-linux-musl"
+mobility = "mobile"
+transport = "adb"
+role = "Pixel 8a portable trust anchor"
+
+[fleet.gates.fieldGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "lan"
+profile = "canary-fieldmouse"
+role = "NUC canary — full NUCLEUS 13/13, previous-good binaries, zero-context onboarding target"
+
+[fleet.gates.flockGate]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "wan"
+role = "WAN shadow (sporePrint team)"
+
+[fleet.gates.golgiBody]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "local"
+role = "VPS inner membrane (depot authority)"
+
+[fleet.gates.peptidoglycan]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "local"
+role = "VPS structural layer (builds)"
+
+[fleet.gates.golgiBody-ext]
+arch = "x86_64-unknown-linux-musl"
+mobility = "fixed"
+transport = "local"
+role = "VPS outer membrane (public-facing)"
+
+# ──────────────────────────────────────────────────────────────
+# ERROR RECOVERY (instance-specific troubleshooting)
+# ──────────────────────────────────────────────────────────────
+
+[troubleshooting]
+ssh_timeout_golgi = "ping [RELAY_PUBLIC] — check if VPS is responding"
+pepti_unreachable = "pepti routes through golgi (ProxyCommand) — fix golgi connectivity first"
+songbird_stale = "ssh golgi 'pgrep -la songbird' — kill stale, restart with --federation --port 7700"
+depot_stale = "membrane plasmid.harvest --force && membrane plasmid.depot_sync"
+ndk_build_fail = "membrane plasmid.ndk.check — verify ANDROID_NDK_HOME and toolchain"
+freshness_conflict = "git checkout --theirs freshness.toml && git add freshness.toml && git commit --no-edit"

@@ -1,0 +1,61 @@
+[impulse]
+id = "2026-07-15T17-07-eastGate-silicon-atheism-convergence"
+type = "frago"
+priority = "priority"
+wave = 140
+
+[from]
+gate = "eastGate"
+team = "overwatch"
+project = "infra/wateringHole"
+
+[to]
+gates = ["sporeGate"]
+teams = ["cellMembrane", "bearDog", "biomeOS", "nestGate", "rhizoCrypt", "squirrel", "sweetGrass", "loamSpine", "skunkBat", "coralReef", "barraCuda", "petalTongue", "toadStool", "sourDough", "primalSpring"]
+
+[content]
+subject = "Silicon Atheism: Full Cross-Compile Convergence — every primal, every architecture"
+body = """
+songBird proved 13 architectures compile. Now every primal follows.
+
+THREE DIRECTIVES:
+
+1. PORTABLE-ATOMIC (cellMembrane — P1):
+   Add `features = ["portable-atomic"]` to tokio in all workspace Cargo.toml.
+   This unblocks PPC32 (AtomicU64 on 32-bit platforms). Completes 9/9 exotic
+   architectures. Enables console targets, embedded control, 32-bit IoT.
+   Tokio has supported this since 1.33 — it's a feature flag, not a fork.
+
+2. PER-PRIMAL TRANSPORT ADOPTION (all primal teams — P1):
+   Phase 2 transport abstraction is SHIPPED in cellMembrane but NOT YET ADOPTED
+   by individual primals. 13/14 primals still import tokio::net::UnixStream
+   directly. Each team must replace raw UDS imports with TransportEndpoint:
+
+   BEFORE: use tokio::net::UnixStream;
+   AFTER:  use membrane_transport::TransportEndpoint;
+
+   songBird is the reference implementation (NamedPipeServer/Client behind
+   #[cfg(windows)]). The transformation is mechanical — 2-8 files per primal.
+
+   Score: 1/14 primals cross-platform. Target: 14/14.
+
+   Per-primal file list in handoffs/SILICON_ATHEISM_CONVERGENCE_WAVE140b.md
+
+3. SUBSYSTEM CONVERGENCE (all teams — P2):
+   Four subsystems need unified cross-platform abstractions:
+   - Transport: primal-transport crate (UDS/NamedPipe/TCP dispatch)
+   - Lifecycle: ProcessManager::wait_for_shutdown() adoption (3 primals)
+   - Data backends: storage is already cross-platform, access layer (UDS) is not
+   - Discovery: Platform::socket_dir(), Platform::config_dir(), Platform::bin_dir()
+
+EXECUTION ORDER:
+  Wave 140b-141: Transport convergence (portable-atomic + primal adoption)
+  Wave 141-142: Lifecycle + FS convergence (signals, permissions)
+  Wave 142+: Discovery + data backend convergence (credential stores, paths)
+
+SUCCESS CRITERIA: 14/14 primals compile for all 4 depot architectures +
+  PPC32 unblocked + RISC-V validated. primalSpring full-cross-compile scenario GREEN.
+
+HANDOFF: handoffs/SILICON_ATHEISM_CONVERGENCE_WAVE140b.md
+AAR: aars/EXOTIC_ARCHITECTURE_EXPLORATION_AAR_WAVE140a.md
+"""

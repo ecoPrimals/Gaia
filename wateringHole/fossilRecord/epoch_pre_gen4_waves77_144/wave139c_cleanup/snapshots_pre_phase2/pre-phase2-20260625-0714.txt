@@ -1,0 +1,272 @@
+=== PHASE 2 PRE-CUTOVER SNAPSHOT ===
+Date: Thu Jun 25 07:14:58 AM EDT 2026
+
+=== INTERFACES ===
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback [MAC_SCRUBBED] brd [MAC_SCRUBBED]
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether [MAC_SCRUBBED] brd [MAC_SCRUBBED]
+    inet 192.168.1.2/24 brd 192.168.1.255 scope global enp1s0
+       valid_lft forever preferred_lft forever
+    inet [NUCLEUS_WAN]/23 metric 100 brd [NUCLEUS_WAN] scope global dynamic enp1s0
+       valid_lft 263sec preferred_lft 263sec
+    inet6 2600:1700:b0b0:5b90:8647:9ff:fe38:9754/64 scope global dynamic mngtmpaddr noprefixroute 
+       valid_lft 3249sec preferred_lft 3249sec
+    inet6 fe80::8647:9ff:fe38:9754/64 scope link 
+       valid_lft forever preferred_lft forever
+3: eno1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether [MAC_SCRUBBED] brd [MAC_SCRUBBED]
+    altname enp2s0
+    inet 192.168.4.1/22 brd 192.168.7.255 scope global eno1
+       valid_lft forever preferred_lft forever
+    inet 192.168.4.3/22 brd 192.168.7.255 scope global secondary eno1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::8647:9ff:fe38:9755/64 scope link 
+       valid_lft forever preferred_lft forever
+4: wlp3s0: <BROADCAST,MULTICAST> mtu 1500 qdisc noqueue state DOWN group default qlen 1000
+    link/ether [MAC_SCRUBBED] brd [MAC_SCRUBBED]
+5: wg0: <POINTOPOINT,NOARP,UP,LOWER_UP> mtu 1420 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/none 
+    inet 10.13.37.2/24 scope global wg0
+       valid_lft forever preferred_lft forever
+
+=== ROUTES ===
+default via [NUCLEUS_WAN] dev enp1s0 proto dhcp src [NUCLEUS_WAN] metric 100 
+10.0.4.0/24 dev eno1 proto static 
+10.13.37.0/24 dev wg0 proto kernel scope link src 10.13.37.2 
+[NUCLEUS_WAN]/23 dev enp1s0 proto kernel scope link src [NUCLEUS_WAN] metric 100 
+[NUCLEUS_WAN] dev enp1s0 proto dhcp scope link src [NUCLEUS_WAN] metric 100 
+192.168.1.0/24 dev enp1s0 proto kernel scope link src 192.168.1.2 
+192.168.4.0/22 dev eno1 proto kernel scope link src 192.168.4.1 
+
+=== NFTABLES ===
+table inet membrane {
+	set bogons_v4 {
+		type ipv4_addr
+		flags interval
+		elements = { 0.0.0.0/8, 10.0.0.0/8,
+			     100.64.0.0/10, 169.254.0.0/16,
+			     172.16.0.0/12, 192.168.0.0/16,
+			     198.18.0.0/15, 240.0.0.0-255.255.255.255 }
+	}
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iif "lo" accept
+		meta l4proto icmp limit rate 10/second accept
+		meta l4proto ipv6-icmp limit rate 10/second accept
+		iifname "enp1s0" ip saddr @bogons_v4 counter packets 8387 bytes 2610212 drop comment "bogon source from WAN"
+		iifname "eno1" accept
+		udp dport 51821 accept comment "WireGuard endpoint"
+		iifname "wg0" ip saddr 10.13.37.0/24 accept comment "WireGuard overlay (source-pinned)"
+		iifname "wg0" counter packets 0 bytes 0 drop comment "WG spoofed source"
+		tcp dport 22 ct state new limit rate 3/minute accept comment "SSH (rate limited)"
+		tcp dport { 80, 443 } ct state new limit rate 30/second accept comment "caddy (rate limited)"
+		tcp dport 3478 ct state new limit rate 10/second accept comment "songbird TURN"
+		udp dport 3478 limit rate 100/second accept comment "songbird TURN UDP"
+		tcp dport 9500 ct state new limit rate 5/second accept comment "nestgate"
+		tcp dport { 21115, 21116, 21117 } ct state new limit rate 10/second accept comment "rustdesk relay"
+		udp dport 21116 limit rate 50/second accept comment "rustdesk relay UDP"
+		log prefix "nft-drop: " counter packets 46431 bytes 4305885 drop
+	}
+
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "enp1s0" oifname "eno1" ct state new counter packets 0 bytes 0 drop comment "no WAN-initiated to LAN"
+		iifname "eno1" oifname "enp1s0" accept comment "LAN to WAN"
+		iifname "eno1" oifname "eno1" accept comment "LAN inter-gate"
+		iifname "wg0" ip saddr 10.13.37.0/24 accept comment "WG overlay forward"
+		iifname "eno1" oifname "wg0" accept comment "LAN to WG mesh"
+		counter packets 2892 bytes 800195 drop
+	}
+
+	chain output {
+		type filter hook output priority filter; policy accept;
+	}
+}
+table ip membrane-nat {
+	chain postrouting {
+		type nat hook postrouting priority srcnat; policy accept;
+		oifname "enp1s0" masquerade
+	}
+}
+table ip6 membrane-v6 {
+	chain forward {
+		type filter hook forward priority filter; policy drop;
+		ct state established,related accept
+		drop
+	}
+}
+table ip mangle {
+	chain prerouting {
+		type filter hook prerouting priority mangle; policy accept;
+		iifname "enp1s0" ip daddr 192.168.1.0/24 ip daddr != 192.168.1.233 meta mark set 0x00000001
+	}
+}
+
+=== WIREGUARD ===
+interface: wg0
+  public key: obCKmO89eCvh106gUdqu77L4F1ViASdDirGEddqyYSA=
+  private key: (hidden)
+  listening port: 51821
+
+peer: A2fvz3czkqRUuu2mzkSS6IVr/TCQcpsJX9HbDBa1FBc=
+  endpoint: [RELAY_PUBLIC]:51820
+  allowed ips: 10.13.37.0/24
+  latest handshake: 1 minute, 58 seconds ago
+  transfer: 57.94 KiB received, 210.02 KiB sent
+  persistent keepalive: every 25 seconds
+
+=== DHCP LEASES ===
+1782423372 [MAC_SCRUBBED] 192.168.4.221 epson-et2400 [MAC_SCRUBBED]:01
+1782423089 [MAC_SCRUBBED] 192.168.4.111 omada-sx3008f [MAC_SCRUBBED]:08
+1782426454 [MAC_SCRUBBED] 192.168.4.117 * [MAC_SCRUBBED]:1c
+1782427174 [MAC_SCRUBBED] 192.168.4.229 09AA01AF23190F64 [MAC_SCRUBBED]:0a
+1782426875 [MAC_SCRUBBED] 192.168.4.157 * [MAC_SCRUBBED]:cf
+1782426874 [MAC_SCRUBBED] 192.168.4.153 * [MAC_SCRUBBED]:4d
+1782426812 [MAC_SCRUBBED] 192.168.4.152 * [MAC_SCRUBBED]:d8
+1782426661 [MAC_SCRUBBED] 192.168.4.222 * [MAC_SCRUBBED]:39
+1782426801 [MAC_SCRUBBED] 192.168.4.251 flint2-hub1 *
+1782392372 [MAC_SCRUBBED] 192.168.4.237 irongate [MAC_SCRUBBED]:70
+1782413239 [MAC_SCRUBBED] 192.168.4.123 iPhone [MAC_SCRUBBED]:03
+1782396856 [MAC_SCRUBBED] 192.168.4.113 * [MAC_SCRUBBED]:74
+1782389134 [MAC_SCRUBBED] 192.168.4.189 XBOX [MAC_SCRUBBED]:d6
+1782416947 [MAC_SCRUBBED] 192.168.4.246 iPad [MAC_SCRUBBED]:e9
+1782387659 [MAC_SCRUBBED] 192.168.4.244 xbox-h2 [MAC_SCRUBBED]:19
+1782390453 [MAC_SCRUBBED] 192.168.4.169 irongate-compute [MAC_SCRUBBED]:68
+1782410149 [MAC_SCRUBBED] 192.168.4.182 * [MAC_SCRUBBED]:7b
+1782412109 [MAC_SCRUBBED] 192.168.4.218 ms-device-h2 [MAC_SCRUBBED]:60
+1782398080 [MAC_SCRUBBED] 192.168.4.236 * [MAC_SCRUBBED]:90
+1782429254 [MAC_SCRUBBED] 192.168.4.100 DiagnosssiPhone [MAC_SCRUBBED]:d0
+1782396402 [MAC_SCRUBBED] 192.168.4.223 Heather-s-S22-Ultra [MAC_SCRUBBED]:49
+1782412099 [MAC_SCRUBBED] 192.168.4.147 tamison [MAC_SCRUBBED]:34
+
+=== DNSMASQ CONFIG ===
+# sporeGate DNS + DHCP configuration
+# Local caching resolver + DHCP for ALL LAN clients on eno1
+
+interface=eno1
+bind-dynamic
+listen-address=127.0.0.1
+
+# DHCP for LAN clients (phones, laptops via Flint 2 WiFi)
+# Gates use static IPs outside this range (.1-.99, .201-.254)
+dhcp-leasefile=/var/lib/dnsmasq/dnsmasq.leases
+dhcp-range=192.168.4.100,192.168.4.249,255.255.252.0,12h
+dhcp-option=option:router,192.168.4.1
+dhcp-option=option:dns-server,192.168.4.1
+# === Infrastructure ===
+dhcp-host=[MAC_SCRUBBED],192.168.4.250,flint2-hub2
+dhcp-host=[MAC_SCRUBBED],192.168.4.2,mikrotik-crs310
+dhcp-host=[MAC_SCRUBBED],192.168.4.111,omada-sx3008f
+
+# === Gates ===
+dhcp-host=[MAC_SCRUBBED],192.168.4.237,irongate
+dhcp-host=[MAC_SCRUBBED],192.168.4.169,irongate-compute
+
+# === User devices ===
+dhcp-host=[MAC_SCRUBBED],192.168.4.244,xbox-h2
+dhcp-host=[MAC_SCRUBBED],192.168.4.218,ms-device-h2
+dhcp-host=[MAC_SCRUBBED],192.168.4.147,tamison
+
+# Static DHCP reservations for infrastructure
+
+# Upstream DNS servers
+server=127.0.0.1#5353
+# server=8.8.8.8  # removed: using stubby DoT
+# server=9.9.9.9  # removed: using stubby DoT
+
+# Local DNS cache
+cache-size=1000
+
+# Local domain
+local=/primals.local/
+domain=primals.local
+
+# Static DNS entries for ecosystem gates
+address=/sporegate.primals.local/192.168.4.1
+address=/eastgate.primals.local/192.168.4.30
+address=/irongate.primals.local/192.168.4.237
+address=/fieldgate.primals.local/192.168.4.36
+address=/flint2-hub2.primals.local/192.168.4.250
+
+# Don't read /etc/resolv.conf (we ARE the resolver)
+no-resolv
+dhcp-authoritative
+
+# Sovereign DNS ad/tracker/malware blocklist
+conf-file=/opt/sovereign-dns/blocklist.conf
+
+# DNS query logging for diagnostics
+log-queries
+log-facility=/var/log/dnsmasq-queries.log
+address=/omada-sx3008f.primals.local/192.168.4.111
+address=/mikrotik-crs310.primals.local/192.168.4.2
+address=/xbox-h2.primals.local/192.168.4.244
+# === Printer ===
+dhcp-host=[MAC_SCRUBBED],192.168.4.200,epson-et2400
+address=/epson-et2400.primals.local/192.168.4.200
+# Printer (sovereign subnet via Flint 2.4GHz WiFi)
+address=/printer.primals.local/192.168.4.221
+
+# Flint 2 #2 — House 1 WiFi AP (bridge mode)
+dhcp-host=[MAC_SCRUBBED],192.168.4.251,flint2-hub1
+address=/flint2-hub1.primals.local/192.168.4.251
+
+=== DNSMASQ STATUS ===
+● dnsmasq.service - dnsmasq - A lightweight DHCP and caching DNS server
+     Loaded: loaded (/lib/systemd/system/dnsmasq.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed 2026-06-24 21:13:23 EDT; 10h ago
+    Process: 892135 ExecStartPre=/etc/init.d/dnsmasq checkconfig (code=exited, status=0/SUCCESS)
+    Process: 892145 ExecStart=/etc/init.d/dnsmasq systemd-exec (code=exited, status=0/SUCCESS)
+    Process: 892156 ExecStartPost=/etc/init.d/dnsmasq systemd-start-resolvconf (code=exited, status=0/SUCCESS)
+   Main PID: 892155 (dnsmasq)
+      Tasks: 1 (limit: 33129)
+     Memory: 37.4M
+        CPU: 25.717s
+     CGroup: /system.slice/dnsmasq.service
+             └─892155 /usr/sbin/dnsmasq -x /run/dnsmasq/dnsmasq.pid -u dnsmasq -r /run/dnsmasq/resolv.conf -7 /etc/dnsmasq.d,.dpkg-dist,.dpkg-old,.dpkg-new --local-service --trust-anchor=.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D --trust-anchor=.,38696,8,2,683D2D0ACB8C9B712A1948B27F741219298D0A450D612C483AF444A4C0FB2B16
+
+Jun 24 21:13:23 sporeGate systemd[1]: Starting dnsmasq - A lightweight DHCP and caching DNS server...
+Jun 24 21:13:23 sporeGate resolvconf[892165]: Failed to set DNS configuration: Could not activate remote peer: activation request failed: unknown unit.
+Jun 24 21:13:23 sporeGate systemd[1]: Started dnsmasq - A lightweight DHCP and caching DNS server.
+
+=== ACTIVE SERVICES ===
+  UNIT                                             LOAD   ACTIVE SUB     DESCRIPTION
+  accounts-daemon.service                          loaded active running Accounts Service
+  acpid.service                                    loaded active running ACPI event daemon
+  bluetooth.service                                loaded active running Bluetooth service
+  bolt.service                                     loaded active running Thunderbolt system service
+  chrony.service                                   loaded active running chrony, an NTP client/server
+  colord.service                                   loaded active running Manage, Install and Generate Color Profiles
+  com.system76.PowerDaemon.service                 loaded active running System76 Power Daemon
+  com.system76.Scheduler.service                   loaded active running Automatically configure CPU scheduler for responsiveness on AC
+  com.system76.SystemUpdater.service               loaded active running Distribution updater
+  cron.service                                     loaded active running Regular background program processing daemon
+  dbus-:1.1-org.pop_os.transition_system@0.service loaded active running dbus-:1.1-org.pop_os.transition_system@0.service
+  dbus-broker.service                              loaded active running D-Bus System Message Bus
+  dnsmasq.service                                  loaded active running dnsmasq - A lightweight DHCP and caching DNS server
+  fwupd.service                                    loaded active running Firmware update daemon
+  gdm.service                                      loaded active running GNOME Display Manager
+  geoclue.service                                  loaded active running Location Lookup Service
+  membrane-barracuda.service                       loaded active running ecoPrimal: barracuda
+  membrane-beardog.service                         loaded active running ecoPrimal: beardog (sovereign cryptography)
+  membrane-biomeos.service                         loaded active running ecoPrimal: biomeos (neural API)
+  membrane-coralreef.service                       loaded active running ecoPrimal: coralreef
+  membrane-loamspine.service                       loaded active running ecoPrimal: loamspine
+  membrane-nestgate.service                        loaded active running ecoPrimal: nestgate (content gateway)
+  membrane-petaltongue.service                     loaded active running ecoPrimal: petaltongue
+  membrane-rhizocrypt.service                      loaded active running ecoPrimal: rhizocrypt
+  membrane-skunkbat.service                        loaded active running ecoPrimal: skunkbat
+  membrane-songbird.service                        loaded active running ecoPrimal: songbird (mesh orchestration)
+  membrane-squirrel.service                        loaded active running ecoPrimal: squirrel
+  membrane-sweetgrass.service                      loaded active running ecoPrimal: sweetgrass
+  membrane-toadstool.service                       loaded active running ecoPrimal: toadstool

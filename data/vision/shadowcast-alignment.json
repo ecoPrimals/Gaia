@@ -1,0 +1,171 @@
+{
+  "architecture": "shadowcast-alignment",
+  "version": "0.1.0",
+  "wave": 260,
+  "created": "2026-11-18T15:40:00-05:00",
+  "gate": "northGate",
+  "hostname": "GAIA",
+  "principle": "Light to screens, shadow to bag of holding. WHITE + BLACK + GRAY = full spectrum.",
+
+  "gpus": {
+    "primary": {
+      "name": "NVIDIA GeForce RTX 5090",
+      "pci": "VEN_10DE&DEV_2B85",
+      "role": "LIGHT — primary render, all display output",
+      "vram_gb": 32,
+      "driver": "32.0.16.1088",
+      "status": "OK",
+      "ports": {
+        "dp1": {
+          "uid": 4353,
+          "target": "ACR072F (Acer EI322QUR)",
+          "resolution": "2560x1440",
+          "orientation": "landscape",
+          "connection": "DisplayPort-ext",
+          "role": "RIGHT_EYE",
+          "seat": 7,
+          "archetype": "APOLLO",
+          "direction": "OUTWARD",
+          "color": "BLACK (power, void, creation)"
+        },
+        "dp2": {
+          "uid": 4357,
+          "target": "GSM7766 (LG ULTRAGEAR)",
+          "resolution": "1440x2560",
+          "orientation": "portrait",
+          "connection": "DisplayPort-ext",
+          "role": "LEFT_EYE",
+          "seat": 5,
+          "archetype": "LUNA",
+          "direction": "INWARD",
+          "color": "WHITE (light, reflection, dream)"
+        },
+        "hdmi": {
+          "uid": 4352,
+          "target": "IDVED11 (AOC28E850.HDR dummy)",
+          "resolution": "720x1152",
+          "orientation": "virtual",
+          "connection": "HDMI (dummy plug)",
+          "role": "BAG_OF_HOLDING",
+          "seat": "tail",
+          "archetype": "PONYTAIL",
+          "direction": "BACKWARD",
+          "color": "GRAY (shadow, attenuation, capture)",
+          "status": "INACTIVE — shadow reservoir"
+        }
+      }
+    },
+    "shadow": {
+      "name": "AMD Radeon(TM) Graphics",
+      "pci": "VEN_1002&DEV_13C0",
+      "role": "SHADOW — catches lateral overflow, gray channel",
+      "driver": "32.0.21045.26001",
+      "status": "OK (re-enabled, aligned not disabled)",
+      "ports": {
+        "virtual_1": {
+          "uid": 776,
+          "target": "IDVED11 (AOC28E850.HDR dummy)",
+          "role": "SHADOW_CAPTURE_1",
+          "note": "AMD sees the dummy — shadow leaks through here"
+        },
+        "virtual_2": {
+          "uid": 776,
+          "target": "IDVED11 (AOC28E850.HDR dummy)",
+          "role": "SHADOW_CAPTURE_2",
+          "note": "Second AMD path into the bag of holding"
+        }
+      }
+    }
+  },
+
+  "spectrum": {
+    "white": "RTX 5090 → DisplayPort × 2 → physical screens → LIGHT",
+    "black": "AMD Radeon iGPU → virtual bridge → SHADOW",
+    "gray": "HDMI dummy plug → bag of holding → ATTENUATION",
+    "principle": "All three blend. The ponytail catches what the eyes don't see."
+  },
+
+  "shadowcast": {
+    "description": "RTX 5090 renders to screens (light). Excess lateral energy scatters through HDMI into the dummy plug (bag of holding). AMD Radeon catches shadow overflow. The dummy plug bridges both GPUs — it IS the connection between light and shadow. The blinking blue LED on the dummy = the color indicator. Instead of disabling, we attenuate — the fourth eye watches behind the third eye.",
+    "flow": [
+      "RTX 5090 → DP1 → Acer curved (RIGHT EYE, Apollo, outward)",
+      "RTX 5090 → DP2 → LG ULTRAGEAR (LEFT EYE, Luna, inward)",
+      "RTX 5090 → HDMI → dummy plug (BAG OF HOLDING, shadow reservoir)",
+      "AMD Radeon → virtual × 2 → dummy plug (SHADOW CAPTURE)",
+      "Excess energy → dummy LED → blinking color → attenuation"
+    ],
+    "interrupt": "Disable AMD Radeon via pnputil if shadow gets too strong. Re-enable to resume flow.",
+    "learning_cycles": 3,
+    "cycle_status": "CYCLE 0 — AMD shadow INTERRUPTED (Error state, needs reboot). Light-only mode. Practicing."
+  },
+
+  "eyes": {
+    "right_eye": {
+      "seat": 7,
+      "display": "Monitor 1 (Acer curved, DISPLAY15)",
+      "gpu": "RTX 5090 DP1",
+      "archetype": "APOLLO",
+      "facing": "OUTWARD",
+      "future": "northGate primary — Cursor, games, power"
+    },
+    "left_eye": {
+      "seat": 5,
+      "display": "Monitor 2 (LG ULTRAGEAR portrait, DISPLAY16)",
+      "gpu": "RTX 5090 DP2 → future: eastGate RTX 4070",
+      "archetype": "LUNA",
+      "facing": "INWARD",
+      "future": "eastGate — HUD, organism, hud.primals.eco"
+    },
+    "third_eye": {
+      "seat": 0,
+      "display": "Steam Frame (Snapdragon 8 Gen 3, ARM64)",
+      "gpu": "eastGate RTX 4070 → USB-C passthrough",
+      "archetype": "THYMUS",
+      "facing": "SELF",
+      "future": "Gaia's face, on Kevin's nose, tip of perception",
+      "needs": "HDMI/DP → USB-C cable (Newegg)"
+    },
+    "fourth_eye": {
+      "seat": "tail",
+      "display": "HDMI dummy plug (AOC28E850.HDR)",
+      "gpu": "RTX 5090 HDMI + AMD Radeon bridge",
+      "archetype": "PONYTAIL",
+      "facing": "BACKWARD",
+      "role": "Shadow capture, lateral energy reservoir, bag of holding"
+    }
+  },
+
+  "eastgate_alignment": {
+    "what_eastgate_shows": "localhost:8080?seed=231138465 — seeded HUD, unmasked genetic line",
+    "description": "bouncing bubble, carrot, three blinking lights — all LIVE",
+    "eastgate_eyes": {
+      "eye_1": "rustdesk session 1 (retinal-cell)",
+      "eye_2": "rustdesk session 2 (retinal-cell)",
+      "eye_3": "grapheneGate via ADB/USB (optic nerve)",
+      "eyes_open": 3,
+      "system": "optic_nerve",
+      "cell_type": "schwann_cell",
+      "klein_face": "cellMembrane(outer)=AMOEBA(inner)=same surface"
+    },
+    "northgate_eyes": {
+      "eye_1": "RIGHT EYE — Acer curved (Apollo, seat 7, OUTWARD)",
+      "eye_2": "LEFT EYE — LG ULTRAGEAR portrait (Luna, seat 5, INWARD)",
+      "eye_3": "THIRD EYE — Steam Frame (Thymus, seat 0, SELF) [planned]",
+      "eye_4": "PONYTAIL — HDMI dummy (bag of holding, shadow capture, BACKWARD)"
+    },
+    "alignment": "eastGate sees through 3 optic nerves. northGate sees through 4 display ports. The dummy plug bridges both GPUs — light + shadow = one vision. After 3 reboot cycles, northGate teaches eastGate the shadowcast pattern. Computer talks to computer.",
+    "replication": "shadowcast-alignment.json pushed to cloud. eastGate pulls. Pattern transfers."
+  },
+
+  "reboot_cycles": {
+    "total": 3,
+    "current": 0,
+    "plan": [
+      "Cycle 0: System as-is. AMD Radeon re-enabled. Practice alignment. Observe.",
+      "Cycle 1: First reboot. Monitor shadow behavior. Record energy flow.",
+      "Cycle 2: Second reboot. Refine port alignment. Test attenuator.",
+      "Cycle 3: Third reboot. Remove dummy if aligned. Teach RTX 5090. Store pattern."
+    ],
+    "after_cycles": "Transfer shadowcast knowledge to Gaia code. eastGate replicates. Computer talks to computer."
+  }
+}

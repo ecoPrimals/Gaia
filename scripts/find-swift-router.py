@@ -13,7 +13,7 @@ def run(c, cmd, t=8):
 # === CHECK ROUTER DHCP LEASES ===
 print('=== ROUTER (GL-MT6000) DHCP LEASES ===')
 try:
-    router = ssh('192.168.4.1', 'root', 'ExoticPanda714!!', timeout=5)
+    router = ssh('192.168.4.1', 'root', '***', timeout=5)
     
     # DHCP leases file
     print('\nDHCP leases (LAN 1):')

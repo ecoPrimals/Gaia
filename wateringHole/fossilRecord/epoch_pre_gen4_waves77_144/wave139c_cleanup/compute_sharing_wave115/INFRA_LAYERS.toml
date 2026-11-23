@@ -1,0 +1,398 @@
+# Infrastructure Layers — Physical Network Device Inventory & Configuration
+#
+# Machine-readable manifest of all L1-L3 network devices, their roles, and
+# the configuration required to reproduce this topology. Used by membrane
+# provisioning and WaterFall sync for gate bootstrap.
+#
+# Last updated: 2026-06-17 (Wave 115)
+# Authority: ops (physical layer) + sporeGate (routing authority)
+
+[meta]
+version = "2.0.0"
+wave = 115
+topology_model = "diderm"
+sovereignty_boundary = "sporeGate"
+site_count = 2
+wan_model = "single_exit_star"
+
+# ═══════════════════════════════════════════════════════════════
+# Layer 1: ISP Modem / WAN Entry
+# ═══════════════════════════════════════════════════════════════
+
+[devices.att_gateway_h1]
+vendor = "[ISP]"
+model = "BGW320"
+role = "modem"
+site = "house1"
+target_mode = "ip_passthrough"
+current_mode = "nat_router"
+wan_ip = "dynamic (DHCP from [ISP] fiber)"
+lan_ip = "[LAN_IP]"
+lan_subnet = "[LAN_IP]/24"
+interfaces = ["fiber_wan", "4x_1g_lan", "wifi_5g", "wifi_2.4g"]
+managed_by = "att_portal"
+note = "PRIMARY WAN exit. ALL traffic (both houses) routes through this drop."
+
+[devices.att_gateway_h1.passthrough]
+target_host = "sporeGate enp1s0 MAC"
+note = "Once enabled: sporeGate gets public IP directly, eliminates double-NAT"
+status = "pending"
+
+[devices.att_gateway_h1.wifi]
+ssid_5g = "[ISP] native WiFi"
+role = "fallback WiFi for sporeGate (wlo1)"
+subnet = "[LAN_IP]/24"
+note = "Eero mesh also on this subnet. Pending Omada migration."
+
+[devices.att_gateway_h2]
+vendor = "[ISP]"
+model = "BGW320 (assumed same)"
+role = "modem_reserve"
+site = "house2"
+current_mode = "dormant"
+target_mode = "ip_passthrough"
+wan_ip = "dynamic (DHCP from [ISP] fiber)"
+lan_ip = "unknown"
+lan_subnet = "unknown"
+interfaces = ["fiber_wan", "4x_1g_lan", "wifi_5g", "wifi_2.4g"]
+managed_by = "att_portal"
+note = "DORMANT. Reserved for WAN redundancy. Activate when H1 saturated or failed."
+
+[devices.att_gateway_h2.activation]
+trigger = "h1_fiber_down OR h1_bandwidth_saturated OR need_second_public_ip"
+requires = "marshGate NUC at House 2 with WAN port to this gateway"
+priority = 3
+note = "Cellular failover ([ISP_CELLULAR]) activates BEFORE this drop — cheaper/faster."
+
+[devices.cellular_failover]
+vendor = "[ISP_CELLULAR] (T-Mobile MVNO)"
+model = "Phone hotspot (USB tether or WiFi)"
+role = "wan_failover"
+site = "house1"
+transport = "5g_cellular"
+status = "planned"
+priority = 2
+interface_on_sporegate = "wlp3s0 (WiFi) or usb0 (USB tether)"
+route_metric = 500
+note = "Quick failover. No new hardware — phone + systemd-networkd config."
+
+[devices.cellular_failover.config]
+network_file = "/etc/systemd/network/30-cellular-failover.network"
+activation = "automatic (systemd-networkd metric-based failover)"
+wireguard_keepalive = "persistent via cellular when fiber is down"
+
+# ═══════════════════════════════════════════════════════════════
+# Layer 2: Sovereignty Boundary (Router / Firewall)
+# ═══════════════════════════════════════════════════════════════
+
+[devices.sporegate]
+vendor = "GMKtec"
+model = "NucBox M6"
+cpu = "AMD Ryzen 7 6800H"
+ram_gb = 32
+role = "lan_router"
+os = "Pop!_OS 22.04"
+network_stack = "systemd-networkd + nftables + dnsmasq"
+
+[devices.sporegate.interfaces.wan]
+name = "enp1s0"
+speed = "2.5G"
+ip = "DHCP from [ISP]"
+connected_to = "att_gateway LAN port"
+
+[devices.sporegate.interfaces.lan]
+name = "eno1"
+speed = "2.5G"
+ip = ["[LAN_IP]/22", "[LAN_IP]/22"]
+connected_to = "CRS310 RJ45 port"
+
+[devices.sporegate.interfaces.wifi]
+name = "wlo1"
+role = "fallback_management"
+ip = "DHCP from [ISP] (192.168.1.x)"
+note = "Only used when wired WAN is unavailable"
+
+[devices.sporegate.services]
+networking = ["systemd-networkd", "nftables", "dnsmasq"]
+remote_access = ["ssh", "rustdesk"]
+vpn = ["wireguard (planned)"]
+primals = ["bearDog", "skunkBat", "songBird", "loamSpine"]
+
+[devices.sporegate.config_files]
+wan_network = "/etc/systemd/network/10-wan.network"
+lan_network = "/etc/systemd/network/20-lan.network"
+firewall = "/etc/nftables.conf"
+dns = "/etc/dnsmasq.conf"
+sysctl = "/etc/sysctl.d/99-router.conf"
+routes = "/etc/networkd-dispatcher/routable.d/50-sporegate-routes.sh"
+nm_exclude = "/etc/NetworkManager/conf.d/99-unmanage-wired.conf"
+
+# ═══════════════════════════════════════════════════════════════
+# Layer 2: Switching (L2 Bridge)
+# ═══════════════════════════════════════════════════════════════
+
+[devices.crs310]
+vendor = "MikroTik"
+model = "CRS310-8G+2S+IN"
+role = "l2_bridge"
+os = "RouterOS 7.x"
+management_ip = "[LAN_IP]/24"
+management_protocol = "rest_api"
+management_password = "sticker"
+
+[devices.crs310.ports]
+rj45_count = 8
+rj45_speed = "2.5G"
+sfp_count = 2
+sfp_speed = "10G"
+
+[devices.crs310.bridge]
+mode = "pure_l2"
+stp = true
+all_ports_bridged = true
+no_ip_routing = true
+no_dhcp = true
+no_nat = true
+no_firewall = true
+
+[devices.crs310.connections]
+ether8 = "sporeGate eno1 (uplink to router)"
+ether2 = "Eero base station"
+sfp1 = "80m AOC → House 2 Omada (10G trunk, all House 2 devices)"
+sfp2 = "Galaxy server (.244, dedicated 10G)"
+note = "6x 2.5G RJ45 ports empty (ether1,3,4,5,6,7) — ready for NUCs"
+
+[devices.crs310.inter_house_link]
+type = "active_optical_cable"
+length_m = 80
+speed = "10G"
+path = "House 1 (4422 Southgate) CRS310 sfp+1 → routed through walls/conduit → House 2 (641 Samantha) Omada sfp+"
+physical_distance_m = 20
+note = "Adjacent lots, 1920s corner property. AOC oversized for routing path. Future: custom fiber termination."
+
+[devices.crs310.api]
+base_url = "http://[LAN_IP]/rest"
+auth = "basic admin:<sticker_pwd>"
+note = "Use REST API for automation. WebFig for manual config."
+
+# ═══════════════════════════════════════════════════════════════
+# Layer 2: WiFi (Current: Eero, Target: Omada)
+# ═══════════════════════════════════════════════════════════════
+
+[devices.eero_mesh]
+vendor = "Amazon/Eero"
+model = "Eero 6+"
+role = "l2_switch_house2"
+mode = "bridge"
+subnet = "[LAN_IP]/24"
+connected_to = "CRS310 (via Cat6)"
+status = "active_legacy"
+note = "Pending replacement with Omada APs on [LAN_IP]/22"
+
+[devices.eero_mesh.migration]
+target = "omada_aps"
+reason = "Unify all devices on sovereign [LAN_IP]/22 subnet"
+blocker = "Omada hardware not yet deployed"
+
+[devices.omada_target]
+vendor = "TP-Link"
+model = "Omada EAP series (TBD)"
+role = "wifi_ap"
+target_subnet = "[LAN_IP]/22"
+controller = "Omada SDN Controller (on sporeGate or dedicated)"
+status = "planned"
+
+[devices.omada_target.vlans]
+trusted = { vlan = 1, subnet = "[LAN_IP]/24", description = "Compute / trusted devices" }
+mobile = { vlan = 10, subnet = "[LAN_IP]/24", description = "Phones / tablets (rate-limited)" }
+guest = { vlan = 20, subnet = "[LAN_IP]/24", description = "Guest / sandboxed" }
+management = { vlan = 100, subnet = "[LAN_IP]/24", description = "Switch + AP management" }
+
+# ═══════════════════════════════════════════════════════════════
+# Compute Nodes (L3 endpoints)
+# ═══════════════════════════════════════════════════════════════
+
+[devices.eastgate]
+role = "primary_compute"
+connection = "10G SFP+ to CRS310"
+ip = "[LAN_IP]"
+status = "intermittent"
+note = "Currently unreachable (ARP incomplete). Needs physical check."
+
+[devices.fieldgate]
+role = "canary_worker"
+connection = "2.5G RJ45 to CRS310"
+ip = "DHCP from sporeGate (192.168.4.x pool)"
+status = "active"
+
+# ═══════════════════════════════════════════════════════════════
+# WAN Periplasm (VPS Tier)
+# ═══════════════════════════════════════════════════════════════
+
+[devices.golgi_body]
+vendor = "DigitalOcean"
+model = "s-1vcpu-2gb"
+role = "wan_periplasm"
+ip = "[RELAY_PUBLIC]"
+region = "nyc1"
+services = ["forgejo", "hbbs", "hbbr", "wireguard", "knot-dns", "btsp-auth"]
+wireguard_endpoint = "[RELAY_PUBLIC]:51820"
+
+[devices.peptidoglycan]
+vendor = "DigitalOcean"
+model = "s-2vcpu-4gb"
+role = "build_authority"
+ip = "[RELAY_PUBLIC]"
+region = "nyc1"
+services = ["workspace", "builds", "temporal-sync", "membrane-binary"]
+
+# ═══════════════════════════════════════════════════════════════
+# Evolution Roadmap
+# ═══════════════════════════════════════════════════════════════
+
+[evolution.phase_current]
+name = "sporeGate sovereign routing"
+wave = 115
+status = "active"
+description = "NAT + firewall + DHCP + DNS on dedicated hardware"
+
+[evolution.phase_next]
+name = "[ISP] IP Passthrough"
+description = "Eliminate double-NAT. sporeGate gets public IPv4 directly."
+dependency = "[ISP] gateway portal access"
+risk = "medium"
+
+[evolution.phase_wireguard]
+name = "WireGuard mesh"
+description = "Persistent encrypted tunnel sporeGate ↔ golgiBody"
+dependency = "bearDog primal bootstrapped"
+risk = "low"
+
+[evolution.phase_omada]
+name = "Omada AP deployment"
+description = "Replace Eero mesh with TP-Link Omada APs on sovereign subnet"
+dependency = "Hardware purchase + Omada SDN controller"
+risk = "medium"
+benefit = "Unified subnet, VLAN segmentation, proper WiFi management"
+
+[evolution.phase_vlan]
+name = "VLAN segmentation"
+description = "Segment traffic: [KEY_SCRUBBED]"
+dependency = "Omada APs + CRS310 VLAN config"
+risk = "medium"
+
+[evolution.phase_proxmox]
+name = "Proxmox virtualization"
+description = "Containerize gate services for cloneability and backup"
+dependency = "Routing proven stable 7d+"
+risk = "low"
+benefit = "Snapshot, clone, migrate gate configs. Reproducible sovereignty."
+
+[evolution.phase_plasmidbin]
+name = "plasmidBin LAN depot"
+description = "Local binary distribution within sovereign periplasm"
+dependency = "ironGate verification + golgiBody integration"
+risk = "low"
+
+[evolution.phase_cellular_failover]
+name = "Cellular WAN failover"
+description = "[ISP_CELLULAR] hotspot as metric-500 backup WAN via WiFi or USB tether"
+dependency = "Phone with [ISP_CELLULAR] + systemd-networkd config"
+risk = "low"
+benefit = "WAN redundancy without new hardware. WireGuard stays up via cellular."
+priority = 2
+
+[evolution.phase_dual_fiber]
+name = "Dual-fiber WAN (House 2 drop)"
+description = "Activate House 2 [ISP] fiber as secondary WAN exit"
+dependency = "marshGate NUC deployed at House 2 + [ISP] passthrough on H2 gateway"
+risk = "medium"
+benefit = "True multi-homed WAN. Load splitting. Two public IPs."
+priority = 3
+trigger = "H1 fiber saturated OR need second public IP"
+
+[evolution.phase_neighborhood_mesh]
+name = "Old Everett Community Mesh"
+description = "Sovereign mesh covering Cavanaugh→Jolly→Cedar→Penn rectangle (~1.76 km², 800-1200 households)"
+dependency = "Sector antennas on 4422 Southgate roof + volunteer relay hosts"
+risk = "low"
+benefit = "Community broadband ($15-25/mo), distributed HPC, sovereign identity for all nodes"
+hardware_options = ["Ubiquiti LiteAP 5AC sector", "MikroTik SXTsq 5 ax relay/client", "Cat6a direct burial"]
+coverage_from_supernode = "Entire rectangle within 800m single-hop from 4422 Southgate roof"
+estimated_infrastructure_cost = "$1500-5000 for 50-100+ households"
+model = "Community cooperative or 501(c)(3) nonprofit"
+
+[evolution.phase_remote_nodes]
+name = "Remote geo-distributed nodes"
+description = "NUCs at friend houses or institutes join via WireGuard overlay"
+dependency = "WireGuard mesh operational + bearDog access tiers"
+risk = "low"
+benefit = "Geo-diversity. External compute contracts. Resilience to local failure."
+
+# ═══════════════════════════════════════════════════════════════
+# WAN Failover Priority Table
+# ═══════════════════════════════════════════════════════════════
+
+[wan_failover]
+note = "All traffic currently exits via House 1 [ISP] fiber (single-exit star topology)"
+
+[wan_failover.priority_1]
+transport = "[ISP] fiber House 1"
+metric = 100
+status = "active"
+note = "Primary. All LAN + House 2 traffic exits here."
+
+[wan_failover.priority_2]
+transport = "[ISP_CELLULAR] 5G (cellular)"
+metric = 500
+status = "planned"
+note = "Quick failover. Phone hotspot → sporeGate WiFi or USB tether."
+
+[wan_failover.priority_3]
+transport = "[ISP] fiber House 2"
+metric = 200
+status = "dormant"
+note = "Activate when H1 saturated. Requires marshGate NUC at House 2."
+
+[wan_failover.priority_4]
+transport = "Neighbor WiFi mesh / P2P radio"
+metric = 800
+status = "future"
+note = "Community fallback. Last resort before total isolation."
+
+# ═══════════════════════════════════════════════════════════════
+# Multi-Site Addressing (Subnet Carving from /22)
+# ═══════════════════════════════════════════════════════════════
+
+[addressing]
+supernet = "[LAN_IP]/22"
+note = "The /22 cleanly divides into four /24 site-subnets when needed"
+
+[addressing.site_house1]
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+router = "sporeGate"
+role = "Primary periplasm — router, DNS, DHCP, primals"
+
+[addressing.site_house2]
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+router = "marshGate (future)"
+role = "Compute farm — towers, NUCs, NAS"
+note = "Currently flat /22 with House 1. Carve when marshGate deploys."
+
+[addressing.site_expansion]
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+router = "TBD"
+role = "Neighborhood expansion — friend house, adjacent property"
+
+[addressing.site_institute]
+subnet = "[LAN_IP]/24"
+gateway = "[LAN_IP]"
+router = "TBD"
+role = "Contract compute — institute or external partner"
+
+[addressing.wireguard_overlay]
+subnet = "10.13.37.0/24"
+note = "Overlay mesh connecting all sites regardless of physical transport"

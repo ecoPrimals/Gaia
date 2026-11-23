@@ -1,0 +1,522 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# primalSpring capability registry — single source of truth.
+# Sync-tested against niche::CAPABILITIES in unit tests.
+# Pattern absorbed from neuralSpring V118.
+
+[meta]
+primal = "primalspring"
+domain = "coordination"
+version = "0.9.17"
+
+[[capabilities]]
+method = "coordination.validate_composition"
+description = "Validate an atomic composition by primal identity (legacy)"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.validate_composition_by_capability"
+description = "Validate an atomic composition by capability discovery (loose coupling)"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.probe_primal"
+description = "Probe a single primal by name for health and capabilities"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.probe_capability"
+description = "Discover and probe a provider by capability domain (loose coupling)"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.discovery_sweep"
+description = "Enumerate primals in a composition via discovery"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.deploy_atomic"
+description = "Deploy an atomic composition via biomeOS graph"
+domain = "coordination"
+
+[[capabilities]]
+method = "coordination.bonding_test"
+description = "Test multi-gate bonding between NUCLEUS instances"
+domain = "coordination"
+
+[[capabilities]]
+method = "composition.nucleus_health"
+description = "Aggregate health of all NUCLEUS primals"
+domain = "composition"
+
+[[capabilities]]
+method = "composition.tower_health"
+description = "Health status of Tower (BearDog + Songbird)"
+domain = "composition"
+
+[[capabilities]]
+method = "composition.node_health"
+description = "Health status of Node (Tower + ToadStool)"
+domain = "composition"
+
+[[capabilities]]
+method = "composition.nest_health"
+description = "Health status of Nest (Tower + NestGate)"
+domain = "composition"
+
+[[capabilities]]
+method = "nucleus.start"
+description = "Start a NUCLEUS composition"
+domain = "lifecycle"
+
+[[capabilities]]
+method = "nucleus.stop"
+description = "Stop a running NUCLEUS composition"
+domain = "lifecycle"
+
+[[capabilities]]
+method = "lifecycle.start"
+description = "Start a primal (biomeOS lifecycle management)"
+domain = "lifecycle"
+
+[[capabilities]]
+method = "lifecycle.stop"
+description = "Stop a primal (used by biomeOS rollback)"
+domain = "lifecycle"
+
+[[capabilities]]
+method = "lifecycle.status"
+description = "Primal status report"
+domain = "lifecycle"
+
+[[capabilities]]
+method = "health.check"
+description = "Self health status"
+domain = "health"
+
+[[capabilities]]
+method = "health.liveness"
+description = "Kubernetes-style liveness probe"
+domain = "health"
+
+[[capabilities]]
+method = "health.readiness"
+description = "Readiness probe (Neural API + discovered primals)"
+domain = "health"
+
+[[capabilities]]
+method = "capabilities.list"
+description = "Niche capabilities + semantic mappings + cost estimates"
+domain = "capability"
+
+[[capabilities]]
+method = "graph.validate"
+description = "Validate a specific deploy graph (structural or live)"
+domain = "graph"
+
+[[capabilities]]
+method = "graph.list"
+description = "Structurally validate all deploy graphs"
+domain = "graph"
+
+[[capabilities]]
+method = "graph.deploy"
+description = "Deploy a graph via biomeOS graph executor"
+domain = "graph"
+provider = "biomeos"
+
+[[capabilities]]
+method = "graph.status"
+description = "Query graph execution status"
+domain = "graph"
+provider = "biomeos"
+
+[[capabilities]]
+method = "graph.rollback"
+description = "Roll back a deployed graph (reverse topo lifecycle.stop)"
+domain = "graph"
+provider = "biomeos"
+
+[[capabilities]]
+method = "coordination.neural_api_status"
+description = "Neural API reachability status"
+domain = "coordination"
+
+[[capabilities]]
+method = "mcp.tools.list"
+description = "List MCP tool definitions for Squirrel AI discovery"
+domain = "mcp"
+
+[[capabilities]]
+method = "ai.query"
+description = "Route an AI inference query to Squirrel (Anthropic, OpenAI)"
+domain = "ai"
+provider = "squirrel"
+
+[[capabilities]]
+method = "ai.health"
+description = "Health check for AI provider connectivity"
+domain = "ai"
+provider = "squirrel"
+
+[[capabilities]]
+method = "composition.tower_squirrel_health"
+description = "Health status of Tower + Squirrel (beardog + songbird + squirrel)"
+domain = "composition"
+
+# ── Songbird subsystem capabilities ──
+
+[[capabilities]]
+method = "discovery.announce"
+description = "Announce a primal to the discovery mesh"
+domain = "discovery"
+provider = "songbird"
+
+[[capabilities]]
+method = "discovery.find_primals"
+description = "Find primals registered in the discovery mesh"
+domain = "discovery"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.stun"
+description = "STUN public address resolution"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.nat_type"
+description = "NAT type detection via STUN"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.birdsong.beacon"
+description = "Generate encrypted BirdSong beacon"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.birdsong.decrypt"
+description = "Decrypt a BirdSong beacon"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.onion.start"
+description = "Start sovereign onion service"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.onion.status"
+description = "Sovereign onion service status"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.tor.status"
+description = "Tor subsystem status"
+domain = "network"
+provider = "songbird"
+
+[[capabilities]]
+method = "network.federation.peers"
+description = "Cross-tower federation peer list"
+domain = "network"
+provider = "songbird"
+
+# ── Federation lifecycle (biomeOS v2.78+) ──
+
+[[capabilities]]
+method = "federation.configure"
+description = "Configure a gate for federation (per-gate setup)"
+domain = "federation"
+provider = "biomeos"
+
+[[capabilities]]
+method = "federation.join"
+description = "Join a gate to a federation"
+domain = "federation"
+provider = "biomeos"
+
+[[capabilities]]
+method = "federation.health_check"
+description = "Health check across all gates in a federation"
+domain = "federation"
+provider = "biomeos"
+
+# ── Topology queries ──
+
+[[capabilities]]
+method = "topology.get"
+description = "Get the current topology graph"
+domain = "topology"
+provider = "biomeos"
+
+[[capabilities]]
+method = "topology.proprioception"
+description = "Proprioceptive topology (self-aware network map)"
+domain = "topology"
+provider = "biomeos"
+
+# ── Graph analysis (local) ──
+
+[[capabilities]]
+method = "graph.waves"
+description = "Topological wave decomposition of a deploy graph"
+domain = "graph"
+
+[[capabilities]]
+method = "graph.capabilities"
+description = "Extract required capabilities from a deploy graph"
+domain = "graph"
+
+# ── Ionic bond negotiation (Track 4 — local) ──
+
+[[capabilities]]
+method = "bonding.propose"
+description = "Propose an ionic bond contract (validate + queue)"
+domain = "bonding"
+
+[[capabilities]]
+method = "bonding.status"
+description = "Query ionic bond contract status"
+domain = "bonding"
+
+# ── Visualization capabilities (petalTongue) ──
+
+[[capabilities]]
+method = "visualization.render"
+description = "Top-level render dispatch to petalTongue"
+domain = "visualization"
+provider = "petaltongue"
+
+[[capabilities]]
+method = "visualization.render.scene"
+description = "Push a game/domain scene for live rendering"
+domain = "visualization"
+provider = "petaltongue"
+
+[[capabilities]]
+method = "visualization.render.stream"
+description = "Push streaming metric updates for live display"
+domain = "visualization"
+provider = "petaltongue"
+
+[[capabilities]]
+method = "visualization.render.dashboard"
+description = "Render a Tower health dashboard via petalTongue"
+domain = "visualization"
+provider = "petaltongue"
+
+[[capabilities]]
+method = "visualization.render.grammar"
+description = "Render a Grammar-of-Graphics expression via petalTongue"
+domain = "visualization"
+provider = "petaltongue"
+
+# ── Interaction capabilities (petalTongue) ──
+
+[[capabilities]]
+method = "interaction.subscribe"
+description = "Subscribe to user interaction events from petalTongue"
+domain = "interaction"
+provider = "petaltongue"
+
+[[capabilities]]
+method = "interaction.poll"
+description = "Poll for pending user interaction events"
+domain = "interaction"
+provider = "petaltongue"
+
+# ── Provenance trio (rhizoCrypt + loamSpine + sweetGrass) ──
+# Routing via biomeOS capability.call:
+#   capability.call({ capability: "dag", operation: "session.create", args: {...} })
+#   → discovers rhizoCrypt (by_capability = "dag") → forwards "dag.session.create"
+#
+# IMPORTANT: operation names must match the method suffix after the domain dot.
+# E.g., method "dag.session.create" → capability="dag", operation="session.create"
+#       method "entry.append" → capability="entry", operation="append"
+#       method "braid.create" → capability="braid", operation="create"
+#
+# biomeOS discover_capability uses prefix matching: "dag" finds primals
+# with capabilities starting with "dag.".
+
+# rhizoCrypt — content-addressed DAG (by_capability = "dag")
+[[capabilities]]
+method = "dag.session.create"
+description = "Create a provenance DAG session"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.session.get"
+description = "Get session metadata"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.session.list"
+description = "List DAG sessions"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.event.append"
+description = "Append an event (with witnesses) to a DAG session"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.vertex.get"
+description = "Get a vertex from the DAG"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.frontier.get"
+description = "Get the frontier (leaf vertices) of a session"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.merkle.root"
+description = "Compute Merkle root of a session (dehydration)"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.merkle.proof"
+description = "Generate a Merkle inclusion proof"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.merkle.verify"
+description = "Verify a Merkle proof"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.slice.checkout"
+description = "Checkout a DAG slice (subset)"
+domain = "dag"
+provider = "rhizocrypt"
+
+[[capabilities]]
+method = "dag.dehydration.trigger"
+description = "Dehydrate a session — produces wire summary with Merkle root and witnesses"
+domain = "dag"
+provider = "rhizocrypt"
+
+# loamSpine — append-only ledger (by_capability = "ledger")
+[[capabilities]]
+method = "spine.create"
+description = "Create a new append-only spine"
+domain = "spine"
+provider = "loamspine"
+
+[[capabilities]]
+method = "spine.get"
+description = "Get spine metadata"
+domain = "spine"
+provider = "loamspine"
+
+[[capabilities]]
+method = "spine.seal"
+description = "Seal a spine (make immutable)"
+domain = "spine"
+provider = "loamspine"
+
+[[capabilities]]
+method = "entry.append"
+description = "Append an entry to a spine"
+domain = "entry"
+provider = "loamspine"
+
+[[capabilities]]
+method = "entry.get"
+description = "Get an entry by ID"
+domain = "entry"
+provider = "loamspine"
+
+[[capabilities]]
+method = "certificate.mint"
+description = "Mint a certificate for a committed session"
+domain = "certificate"
+provider = "loamspine"
+
+[[capabilities]]
+method = "session.commit"
+description = "Commit a dehydrated session to the ledger"
+domain = "session"
+provider = "loamspine"
+
+# sweetGrass — attribution braids (by_capability = "attribution")
+[[capabilities]]
+method = "braid.create"
+description = "Create an attribution braid"
+domain = "braid"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "braid.get"
+description = "Get braid metadata"
+domain = "braid"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "braid.commit"
+description = "Commit a braid to the graph"
+domain = "braid"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "anchoring.anchor"
+description = "Anchor a braid to external system"
+domain = "anchoring"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "anchoring.verify"
+description = "Verify an anchor"
+domain = "anchoring"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "provenance.graph"
+description = "Query the provenance graph"
+domain = "provenance"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "provenance.export_provo"
+description = "Export PROV-O representation of a braid"
+domain = "provenance"
+provider = "sweetgrass"
+
+[[capabilities]]
+method = "attribution.chain"
+description = "Get the attribution chain for a resource"
+domain = "attribution"
+provider = "sweetgrass"
+
+# ── Crypto capabilities (BearDog) — witness bridge mapping ──
+# BearDog response fields map to WireWitnessRef:
+#   signature (base64) → evidence
+#   "Ed25519"          → algorithm: "ed25519"
+#   (implied)          → encoding: "base64"
+#   (implied)          → tier: "local"
+
+[[capabilities]]
+method = "crypto.sign_ed25519"
+description = "Sign a message with Ed25519 — returns base64 signature for witness evidence"
+domain = "crypto"
+provider = "beardog"
+
+[[capabilities]]
+method = "crypto.verify_ed25519"
+description = "Verify an Ed25519 signature — caller decodes evidence per encoding field"
+domain = "crypto"
+provider = "beardog"

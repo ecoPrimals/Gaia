@@ -1,0 +1,36 @@
+[ack]
+gate = "ironGate"
+timestamp = "2026-06-02T18:35:00-04:00"
+status = "executed"
+notes = """
+All P0+P1 items EXECUTED. Summary:
+
+1. S1 TLS GRADUATION (P0): INFRASTRUCTURE VERIFIED READY.
+   - Caddy TLS active on all domains (LE E8 cert, expires Aug 13)
+   - knot-dns serving correctly (ns1+ns2, DNSSEC)
+   - golgiBody-ext Caddy handles primals.eco apex
+   - S1 probe: 198 samples, ZERO failures, p95 < 120ms
+   - BLOCKER: NS cutover requires registrar access (operator)
+
+2. S4 AUTH FORMAL GATE (P0): ACTIVATED.
+   - BEARDOG_AUTH_MODE=enforced set in tower.env
+   - beardog-membrane restarted with family auth
+   - Enforcement confirmed (primal.info DENIED without token)
+   - s4-auth-gate.timer installed (15-min monitoring)
+   - Gate started 2026-06-02T18:34:41Z, ends ~Jun 9
+   - All 21 services healthy post-enforcement
+
+3. RELAY BASH→RUST (P1): COMPLETE.
+   - membrane binary deployed to VPS (/usr/local/bin/membrane, 6.1M musl)
+   - relay.run validated end-to-end (pull + impulse + ship)
+   - Fixed relay bug (git remote get-url stdout leak)
+   - Workspace resolution evolved for VPS sparse deployments
+   - Hook promoted to Rust, bash archived
+   - Disk: 69% → 60% (kernels, journals, apt lists, locales cleaned)
+
+4. FORGEJO ACTIONS CI (P2): Deferred to post-graduation.
+
+5. S3 CONTENT CUTOVER (P2): Awaits NS cutover + flockGate coordination.
+
+Commit: d0f7c31 (cellMembrane), handoff: WAVE69_CELLMEMBRANE_SOVEREIGNTY_GRADUATION_JUN02_2026.md
+"""

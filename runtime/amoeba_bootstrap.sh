@@ -2,7 +2,7 @@
 # amoeba_bootstrap.sh — Install RustDesk client on any Linux gate
 # Run this ON the target gate (via SSH, physical access, or existing RustDesk session)
 #
-# Usage: curl -sSL http://192.168.4.244:8443/amoeba-bootstrap | bash
+# Usage: curl -sSL http://192.168.4.248:8443/amoeba-bootstrap | bash
 #    or: bash amoeba_bootstrap.sh
 #
 # This makes the gate a RustDesk peer in the AMOEBA sovereign relay.
@@ -10,7 +10,7 @@
 
 set -e
 
-RELAY="192.168.4.244"
+RELAY="192.168.4.248"   # eastGate, the hub - her pinned wire face (.244 is dead)
 RELAY_PORT="21116"
 RUSTDESK_VERSION="1.3.7"
 GATE_NAME=$(hostname)

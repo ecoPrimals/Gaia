@@ -1,0 +1,119 @@
+# FRAGO: Peptidoglycan Self-Awareness — VPS Detects Upstream Evolution
+# RESOLVED — Wave 83: Zero-touch pipeline deployed.
+
+[impulse]
+id = "wave80c-peptidoglycan-self-awareness"
+type = "frago"
+from = "eastGate"
+to = ["cellMembrane", "plasmidBin"]
+date = "2026-06-06"
+updated = "2026-06-06"
+priority = "P1"
+owner = "cellMembrane"
+status = "resolved"
+note = "Wave 83: fully resolved. plasmid.pipeline + systemd timer deployed to VPS."
+
+[context]
+reason = """
+Wave 80 incident: toadStool pushed --headless fix to their repo. Cascade synced
+it to Forgejo. But the peptidoglycan VPS layer (golgiBody) had no awareness that
+upstream primals had evolved. The VPS continued running rolled-back binaries.
+
+The divergence was discovered by accident ("toadStool said they pushed").
+golgiBody-ext should have detected the upstream evolution and either:
+  1. Auto-refreshed (if binaries available)
+  2. Notified the overwatch that stale primals were detected
+
+Root cause: the deployment pipeline stopped at "checksums committed to plasmidBin."
+No feedback loop existed from plasmidBin → VPS.
+"""
+
+[resolution.implemented]
+wave = "83"
+date = "2026-06-06"
+
+[resolution.implemented.plasmid_status]
+description = "membrane plasmid.status — depot freshness monitoring"
+behavior = """
+Reads provenance.toml, queries upstream HEAD for each primal via git ls-remote,
+reports current/drifted counts. Exit code 0 = all current, 1 = drift detected.
+Used by the timer to detect when work is needed.
+"""
+
+[resolution.implemented.plasmid_harvest]
+description = "membrane plasmid.harvest — build from source, checksum, stage"
+behavior = """
+1. Read sources.toml for repo URLs and build args
+2. Compare HEAD commit against provenance.toml recorded commit
+3. Shallow-clone changed repos, cargo build --release --target musl
+4. Compute BLAKE3 checksums, stage to depot
+5. Update checksums.toml + provenance.toml atomically
+"""
+
+[resolution.implemented.plasmid_refresh]
+description = "membrane plasmid.refresh — atomic push to VPS"
+behavior = """
+1. SCP binary as {name}.new to VPS
+2. chmod 755 + mv (atomic on same fs)
+3. systemctl restart {service}
+4. Report per-primal success/failure
+"""
+
+[resolution.implemented.plasmid_pipeline]
+description = "membrane plasmid.pipeline — end-to-end zero-touch cycle"
+behavior = """
+Orchestrates harvest → refresh. Detects upstream drift, rebuilds only changed
+primals, pushes to VPS, restarts services. Single command for full cycle.
+"""
+
+[resolution.implemented.systemd_timer]
+description = "plasmid-pipeline.timer on VPS (30-min cycle)"
+behavior = """
+Every 30 minutes (with 2-min jitter): run plasmid.pipeline. Only rebuilds if
+upstream drift detected. Replaces old membrane-self-refresh.timer (6-hour cycle,
+no auto-build capability). Old timer disabled.
+"""
+
+[resolution.implemented.depot_on_vps]
+description = "/opt/plasmidBin clone synced from sovereign Forgejo"
+behavior = """
+VPS maintains a git clone of plasmidBin from Forgejo. plasmid.pipeline pulls
+latest provenance/checksums before checking drift. No binary files in git —
+rebuilt on-demand from source.
+"""
+
+[resolution.wave80c_superseded]
+note = """
+Wave 80c implemented check_mode + self_refresh + b3sum but couldn't auto-fix
+because binaries weren't available on VPS. Wave 83 resolves this by building
+from source directly on the gate and pushing built binaries to VPS.
+
+Old: detect staleness → log warning → operator action
+New: detect drift → build from source → push → restart → verify
+"""
+
+[outcome]
+achieved = """
+The cascade-to-VPS sync gap is closed. When a primal team pushes code:
+1. plasmid-pipeline.timer fires every 30 minutes
+2. plasmid.status detects HEAD drift via git ls-remote
+3. plasmid.harvest rebuilds the drifted primal(s)
+4. plasmid.refresh pushes atomically to VPS and restarts
+5. VPS has the new binary within one refresh cycle (target: 30 minutes)
+
+No human intervention required. Zero-touch from primal push → VPS deployment.
+"""
+
+[deployment_validation]
+date = "2026-06-06"
+results = """
+- 13/13 primals ACTIVE on VPS
+- 12/13 respond to health.liveness on UDS
+- petaltongue requires BTSP auth (expected, socket active)
+- skunkBat on TCP :9140 (upstream --socket pending)
+- barracuda: force-rebuilt, now supports --unix flag
+- squirrel: force-rebuilt, now binds to --socket path correctly
+- coralreef: unit updated to --tarpc-bind unix:// transport
+- plasmid-pipeline.timer active, first trigger in 30 minutes
+- Old membrane-self-refresh.timer disabled
+"""

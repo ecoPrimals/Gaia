@@ -1,0 +1,89 @@
+{
+  "braid_verified": false,
+  "data_hash": "",
+  "description": "Cross-primal compositional pipeline: bearDog→nestGate→rhizoCrypt→bearDog→sweetGrass",
+  "experiment": "compose",
+  "pipeline": "hash → store → DAG → dehydrate → sign → braid → verify",
+  "pipeline_steps": [
+    {
+      "ok": false,
+      "operation": "crypto.blake3_hash",
+      "primal": "bearDog",
+      "result": {
+        "hash": ""
+      },
+      "step": 1
+    },
+    {
+      "ok": false,
+      "operation": "content.put",
+      "primal": "nestGate",
+      "result": {
+        "error": "failed"
+      },
+      "step": 2
+    },
+    {
+      "ok": true,
+      "operation": "dag.session.create",
+      "primal": "rhizoCrypt",
+      "result": {
+        "session_id": "01a00047-3e10-72e1-aadc-0469f930f571"
+      },
+      "step": 3
+    },
+    {
+      "ok": false,
+      "operation": "dag.event.append",
+      "primal": "rhizoCrypt",
+      "result": {
+        "error": "failed"
+      },
+      "step": 4
+    },
+    {
+      "ok": false,
+      "operation": "dag.dehydration.trigger",
+      "primal": "rhizoCrypt",
+      "result": {
+        "merkle_root": ""
+      },
+      "step": 5
+    },
+    {
+      "ok": false,
+      "operation": "crypto.sign",
+      "primal": "bearDog",
+      "result": {
+        "signature_prefix": ""
+      },
+      "step": 6
+    },
+    {
+      "ok": false,
+      "operation": "braid.create",
+      "primal": "sweetGrass",
+      "result": {
+        "error": "failed"
+      },
+      "step": 7
+    },
+    {
+      "ok": true,
+      "operation": "braid.verify",
+      "primal": "sweetGrass",
+      "result": {
+        "verified": false
+      },
+      "step": 8
+    }
+  ],
+  "primals_involved": [
+    "bearDog",
+    "nestGate",
+    "rhizoCrypt",
+    "sweetGrass"
+  ],
+  "steps_ok": 2,
+  "steps_total": 8
+}

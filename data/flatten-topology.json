@@ -1,0 +1,74 @@
+{
+  "ts": "2026-11-22T11:38:00Z",
+  "wave": "262+",
+  "operation": "FLATTEN THE LAN",
+  "status": "IN PROGRESS",
+
+  "current_shape": {
+    "description": "Internet → ATT BGW320 (NAT) → GL-MT6000 (NAT/DARK) → MikroTik → LAN",
+    "problems": [
+      "Double-NAT (ATT + GL-MT6000)",
+      "GL-MT6000 router appears DOWN (no ping, no ports, no HTTP)",
+      "northGate dual-homed (WiFi→ATT direct, Ethernet→LAN)",
+      "13 randomized MAC phones on ATT WiFi",
+      "3 subnets: .1.x (ATT), .4.x (LAN1), .9.x (LAN2)",
+      "South Pole (LAN2) completely dark",
+      "ATT modem hairpin NAT broken for some ports"
+    ]
+  },
+
+  "target_shape": {
+    "description": "Internet → ATT BGW320 (IP PASSTHROUGH) → GL-MT6000 (PUBLIC IP) → ONE flat subnet",
+    "benefits": [
+      "Single NAT (GL-MT6000 only)",
+      "Port forwards work directly",
+      "Hairpin NAT works",
+      "Tor hidden service clean path",
+      "One subnet for all gates"
+    ]
+  },
+
+  "completed": {
+    "route_metrics_fixed": {
+      "ethernet": {"interface_metric": 5, "note": "LAN king"},
+      "wifi": {"interface_metric": 100, "note": "internet backup"},
+      "behavior": "When router revives, Ethernet wins (5 < 100). Dead gateway penalty keeps WiFi for internet while router is down."
+    },
+    "att_modem_explored": {
+      "model": "BGW320-500",
+      "public_ip": "162.226.225.148",
+      "gateway": "162.226.224.1",
+      "dns": ["68.94.156.10", "68.94.157.10"],
+      "devices_seen": 34,
+      "real_macs": 10,
+      "randomized_macs": 13,
+      "passthrough_page": "/cgi-bin/ippass.ha",
+      "auth_required": true
+    }
+  },
+
+  "remaining": [
+    "Kevin enters ATT Device Access Code (on modem sticker)",
+    "Enable IP Passthrough → DHCPS-fixed → GL-MT6000 WAN MAC",
+    "Revive GL-MT6000 router (currently dark)",
+    "After passthrough: northGate WiFi can be killed (Ethernet handles all)"
+  ],
+
+  "gates_on_att": {
+    "confirmed": {
+      ".231": "northGate Wi-Fi 3 (ac:f2:3c:25:fc:c1)",
+      ".85": "TP-Link JetStream (ec:75:0c:4c:98:08)",
+      ".66": "Huiwan device (50:0a:52:0b:87:81)",
+      ".64": "ASUS NIC (a0:d0:dc:ee:ee:39)"
+    },
+    "gl_mt6000_macs": ["94:83:c4:e0:62:b0", "94:83:c4:e0:63:58", "94:83:c4:e0:63:5a"],
+    "unknown_real": {
+      ".74": "1c:f6:4c:5a:5d:ed",
+      ".75": "4c:50:dd:9b:c1:ec (SSH-only)",
+      ".232": "b4:2e:99:a7:91:a3 (Atheros)",
+      ".233": "b4:2e:99:a7:91:a5 (Atheros)",
+      ".234": "64:16:66:a4:82:0a (Samsung)",
+      ".253": "10:c7:53:73:51:12"
+    }
+  }
+}

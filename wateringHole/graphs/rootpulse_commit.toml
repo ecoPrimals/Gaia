@@ -1,0 +1,76 @@
+# rootpulse_commit.toml — Cascade provenance commit
+#
+# Records cascade HEADs and harvest provenance in the provenance trio:
+#   rhizoCrypt (dehydrate) → bearDog (sign) → nestGate (store)
+#   → loamSpine (commit) → sweetGrass (attribute)
+#
+# Triggered after each cascade sync and after harvest completes.
+# Provides the authority for drift detection: the provenance trio
+# is the canonical record of what was built, for which target,
+# from which commit. The flat provenance.toml is a cache.
+
+[graph]
+name = "rootpulse_commit"
+description = "Record cascade HEADs and harvest provenance in the rootPulse trio"
+version = "0.1.0"
+trigger = "rootpulse.commit"
+
+# ── Dehydrate: serialize cascade state ───────────────────────────────
+
+[[steps]]
+name = "dehydrate_state"
+primal = "rhizoCrypt"
+operation = "dehydrate"
+description = "Serialize cascade HEADs + harvest entries to content-addressed blob"
+inputs = ["SESSION_ID", "AGENT_DID", "FAMILY_ID"]
+outputs = ["dehydrated_blob", "content_hash"]
+fallback = "skip"
+
+# ── Sign: bearDog identity attestation ───────────────────────────────
+
+[[steps]]
+name = "sign_provenance"
+primal = "bearDog"
+operation = "auth.sign"
+description = "Sign the dehydrated provenance blob with gate identity"
+inputs = ["dehydrated_blob", "content_hash"]
+outputs = ["signed_provenance"]
+fallback = "skip"
+
+# ── Store: nestGate CAS persistence ──────────────────────────────────
+
+[[steps]]
+name = "store_provenance"
+primal = "nestGate"
+operation = "cas.put"
+description = "Store signed provenance in nestGate CAS (content-addressed)"
+inputs = ["signed_provenance", "content_hash"]
+outputs = ["cas_ref"]
+fallback = "skip"
+
+# ── Commit: loamSpine ledger append ──────────────────────────────────
+
+[[steps]]
+name = "ledger_commit"
+primal = "loamSpine"
+operation = "ledger.append"
+description = "Append provenance commit to the loamSpine ledger"
+inputs = ["cas_ref", "signed_provenance"]
+outputs = ["ledger_ref"]
+fallback = "skip"
+
+# ── Attribute: sweetGrass braid weave ────────────────────────────────
+
+[[steps]]
+name = "attribute_provenance"
+primal = "sweetGrass"
+operation = "braid.attribute"
+description = "Weave provenance attribution braid linking cascade → build → depot"
+inputs = ["ledger_ref", "cas_ref"]
+outputs = ["braid_ref"]
+fallback = "skip"
+
+[metadata]
+biological_analog = "DNA replication checkpoint — verify before proceeding"
+provenance_trio = { rhizoCrypt = "dehydrate", bearDog = "sign", nestGate = "store", loamSpine = "commit", sweetGrass = "attribute" }
+authority = "rootpulse_commit is the canonical build provenance record; provenance.toml is a local cache"

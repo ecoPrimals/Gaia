@@ -48,7 +48,7 @@ print(erun('cat /proc/net/arp 2>&1'))
 
 # 4. Router DHCP leases for unknown gates
 print('\n--- Router DHCP leases ---')
-router_leases = erun('sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 "cat /tmp/dhcp.leases 2>&1" 2>&1')
+router_leases = erun('sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 "cat /tmp/dhcp.leases 2>&1" 2>&1')
 print(router_leases)
 
 # 5. Find peer config on eastGate

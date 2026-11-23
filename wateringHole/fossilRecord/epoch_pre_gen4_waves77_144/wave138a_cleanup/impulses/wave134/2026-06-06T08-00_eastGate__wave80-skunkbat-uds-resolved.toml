@@ -1,0 +1,53 @@
+# SITREP: skunkBat UDS Support — RESOLVED
+# v0.2.6 ships --socket with implicit --no-tcp (ecosystem convention)
+
+[impulse]
+id = "wave80-skunkbat-uds-resolved"
+type = "sitrep"
+from = "skunkBat"
+to = "primalSpring"
+date = "2026-06-06"
+priority = "resolved"
+
+[context]
+reason = """
+Wave 79b/79c/80 blurbs reported skunkBat missing --socket flag.
+This was resolved in v0.2.6 (pushed Jun 5). The blurbs reflected
+pre-deployment state — the code has been ready since v0.2.4.
+
+v0.2.6 additionally aligns with ecosystem convention: --socket implies
+--no-tcp (port-free UDS-only mode), matching bearDog/songBird pattern.
+"""
+
+[resolution]
+version = "0.2.6"
+commit = "a214e4c"
+date = "2026-06-05"
+
+[resolution.deployment]
+command = "skunkbat server --socket /run/membrane/skunkbat.sock"
+behavior = """
+- UDS listener at /run/membrane/skunkbat.sock (port-free, no TCP)
+- Capability symlink: security.sock -> skunkbat.sock (auto-created)
+- defense.status responds on UDS (westGate enrollment check_3)
+- Graceful SIGTERM cleanup of socket files
+- Zero TCP ports (check_5 satisfied)
+"""
+
+[resolution.cli_flags]
+socket = "--socket <PATH> — explicit UDS path (implies --no-tcp)"
+no_tcp = "--no-tcp — disable TCP (implied by --socket)"
+no_uds = "--no-uds — disable UDS (TCP-only legacy mode)"
+port = "--port <N> — re-enables TCP alongside UDS when --socket used"
+
+[resolution.vps_action]
+needed = "Rebuild binary from HEAD and restart systemd unit with --socket"
+one_liner = "./deploy_membrane.sh refresh root@[RELAY_PUBLIC]"
+unit_change = "ExecStart=/opt/membrane/skunkbat server --socket /run/membrane/skunkbat.sock"
+
+[validation]
+tests = 500
+clippy = "zero warnings (pedantic + nursery)"
+coverage = "90%+ function"
+deny = "clean (ring/openssl/native-tls banned)"
+unsafe = "forbid(unsafe_code) workspace-wide"

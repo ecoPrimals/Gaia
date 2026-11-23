@@ -1,0 +1,51 @@
+# DataManifest: AlphaFold DB v6 — Full 214M Monomer Structures
+#
+# The largest single dataset in the westGate federation campaign.
+# Each structure is an individual CIF file fetched via HTTP from EBI.
+# Restart-safe via DAG session frontier tracking.
+#
+# Lifecycle:
+#   nest.declare_dataset → nest.acquire_file (×214M) → nest.complete_dataset
+#   Partial braids every 5000 files for progress visibility.
+
+[manifest]
+dataset = "alphafold_structures_v6"
+display_name = "AlphaFold DB v6 Monomer Structures"
+source = "https://alphafold.ebi.ac.uk/"
+version = "v6"
+license = "CC-BY-4.0"
+trust_tier = "T1"
+expected_total = 214_000_000
+expected_size_bytes = 16_492_674_416_640  # ~15 TB
+
+[manifest.acquisition]
+method = "http_bulk"
+concurrency = 20
+rate_limit_mbps = 400
+checkpoint_interval = 5000
+retry_max = 3
+retry_backoff_ms = 5000
+
+[manifest.entries_source]
+type = "csv"
+path = "/mnt/nestgate/cold/zfs/data/alphafold/accession_ids.csv"
+url_template = "https://alphafold.ebi.ac.uk/files/{af_id}-model_v{version}.cif"
+delimiter = ","
+header = true
+
+[manifest.entries_source.columns]
+uniprot_id = 0
+af_id = 3
+version = 4
+
+[manifest.storage]
+base_path = "/mnt/nestgate/cold/zfs/data"
+subdirectory = "alphafold/structures"
+layout = "sharded"
+shard_depth = 2
+
+[manifest.provenance]
+author = "westgate"
+description = "Full AlphaFold DB v6: 214M predicted monomer structures from EBI"
+tags = ["alphafold", "protein-structure", "ebi", "data-federation"]
+springs_served = ["neuralSpring", "tideGlass", "helixVision"]

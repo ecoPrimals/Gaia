@@ -1,0 +1,44 @@
+# SITREP: skunkBat Wave 82c — ALL items RESOLVED
+# capability_registry.toml exists since v0.2.3, UDS since v0.2.4
+
+[impulse]
+id = "wave82c-skunkbat-full-parity"
+type = "sitrep"
+from = "skunkBat"
+to = "primalSpring"
+date = "2026-06-06"
+priority = "resolved"
+
+[context]
+reason = """
+Wave 82c blurb lists two skunkBat items:
+1. capability_registry.toml — ALREADY EXISTS since v0.2.3
+2. VPS binary rebuild for UDS — code-complete since v0.2.6, awaits cellMembrane deploy
+
+The blurb's assertion that skunkBat only has CONSUMED_CAPABILITIES in
+dispatch.rs is stale. config/capability_registry.toml has been in the
+repo since Wave 78 (v0.2.3, Jun 5).
+"""
+
+[resolution]
+version = "0.2.6"
+date = "2026-06-06"
+
+[resolution.capability_registry]
+path = "config/capability_registry.toml"
+shipped_in = "v0.2.3"
+domains = ["health", "defense", "security", "lifecycle", "capabilities", "identity", "auth", "btsp"]
+consumed = ["btsp.server.verify", "lineage.verify", "lineage.list", "capabilities.list", "federation.broadcast", "discovery.find_by_capability"]
+
+[resolution.uds_support]
+shipped_in = "v0.2.6"
+flag = "--socket <PATH>"
+behavior = "--socket implies --no-tcp (port-free UDS mode, ecosystem convention)"
+deploy_command = "skunkbat server --socket /run/membrane/skunkbat.sock"
+vps_action = "cellMembrane rebuild + systemd unit update (deploy_membrane.sh refresh)"
+
+[validation]
+tests = 500
+clippy = "zero warnings (pedantic + nursery)"
+unsafe = "forbid(unsafe_code) workspace-wide"
+allow_attrs = "zero #[allow] in production"

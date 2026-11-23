@@ -1,0 +1,130 @@
+# waterfall_publish.toml — Full waterFall publish cascade
+#
+# The complete E = mc² cycle from 04_THE_WATER.md:
+#   mass (code) → energy (computation) → information (provenance) → transport (waterFall)
+#
+# Composes the full flow when a gate pushes significant changes:
+#   1. Gate pushes code to Forgejo (git layer — covalent bond)
+#   2. Gate fires impulse — bearDog signed (impulse layer)
+#   3. rhizoCrypt records the push event in the DAG
+#   4. sweetGrass weaves context braid at milestone boundaries
+#   5. loamSpine anchors wave state (external ledger stamp)
+#   6. K-Derm relay: peptidoglycan syncs, golgiBody-ext pushes to GitHub
+#   7. songbird relays impulse to mesh (near-realtime)
+#
+# The NeuralBridge in membrane-shadow routes each step through biomeOS
+# with try-primal-first semantics; local shadow fallback when primals
+# are unavailable.
+
+[graph]
+name = "waterfall_publish"
+description = "Full waterFall publish cascade — code + impulse + provenance + transport"
+version = "0.1.0"
+trigger = "waterfall.publish"
+
+# ── Git Layer (covalent) ─────────────────────────────────────────────
+
+[[steps]]
+name = "push_to_forgejo"
+primal = "membrane"
+operation = "temporal.sync"
+description = "Push code to Forgejo sovereign store (push_target = forgejo)"
+outputs = ["push_result"]
+config = { push_target = "forgejo" }
+
+# ── Impulse Layer (action potential) ─────────────────────────────────
+
+[[steps]]
+name = "compose_impulse"
+primal = "membrane"
+operation = "impulse.compose"
+description = "Build impulse from push metadata"
+inputs = ["push_result"]
+outputs = ["impulse_payload"]
+
+[[steps]]
+name = "sign_impulse"
+primal = "bearDog"
+operation = "auth.sign"
+description = "Sign impulse with gate identity key"
+inputs = ["impulse_payload"]
+outputs = ["signed_impulse"]
+fallback = "skip"
+
+[[steps]]
+name = "store_impulse"
+primal = "membrane"
+operation = "impulse.store"
+description = "Write signed impulse to impulses/active/"
+inputs = ["signed_impulse"]
+outputs = ["impulse_path"]
+
+# ── Provenance Layer (DAG + anchoring) ───────────────────────────────
+
+[[steps]]
+name = "record_dag"
+primal = "rhizoCrypt"
+operation = "dag.append"
+description = "Record push + impulse event in provenance DAG"
+inputs = ["push_result", "signed_impulse"]
+outputs = ["dag_ref"]
+fallback = "skip"
+
+[[steps]]
+name = "weave_context"
+primal = "membrane"
+operation = "context.weave"
+description = "Weave context braid if milestone (wave boundary)"
+inputs = ["push_result", "dag_ref"]
+outputs = ["braid_payload"]
+condition = "wave_boundary"
+fallback = "skip"
+
+[[steps]]
+name = "validate_braid"
+primal = "sweetGrass"
+operation = "braid.validate"
+description = "Validate context braid provenance chain"
+inputs = ["braid_payload"]
+outputs = ["validated_braid"]
+condition = "wave_boundary"
+fallback = "skip"
+
+[[steps]]
+name = "anchor_state"
+primal = "loamSpine"
+operation = "ledger.stamp"
+description = "Anchor wave state to external ledger (BTC/ETH at wave boundaries)"
+inputs = ["validated_braid", "dag_ref"]
+outputs = ["anchor_ref"]
+condition = "wave_boundary"
+fallback = "skip"
+
+# ── Transport Layer (waterFall) ──────────────────────────────────────
+
+[[steps]]
+name = "diderm_relay"
+primal = "membrane"
+operation = "kderm.relay"
+description = "K-Derm diderm relay: pepti syncs inner→outer, golgiBody-ext pushes to GitHub"
+inputs = ["push_result"]
+outputs = ["relay_result"]
+note = "pepti-sync-relay.sh (metallic→ionic) + ext-github-push.sh (ionic→weak)"
+fallback = "skip"
+
+[[steps]]
+name = "relay_impulse"
+primal = "songbird"
+operation = "mesh.publish"
+description = "Relay impulse to gate mesh for near-realtime propagation"
+inputs = ["impulse_path"]
+fallback = "defer"
+
+# ── Cascade Metadata ────────────────────────────────────────────────
+
+[metadata]
+biological_analog = "action potential propagation with full myelination"
+triad_coverage = { quorumSignal = "potential.sense", waterFall = "temporal.sync", rootPulse = "impulse.post" }
+provenance_trio = { bearDog = "sign", rhizoCrypt = "DAG", sweetGrass = "validate" }
+external_ledgers = { github = "git-tier (weak bond via golgiBody-ext trans face)", loamSpine = "crypto-tier (BTC/ETH stamp)" }
+kderm_relay = { inner = "golgiBody (cis)", mediator = "peptidoglycan", outer = "golgiBody-ext (trans)" }

@@ -1,0 +1,51 @@
+# RESOLVED: skunkBat transport evolution — TRANSPORT_ENDPOINT adoption
+#
+# skunkBat v0.2.7 now accepts $TRANSPORT_ENDPOINT env var for launcher-injected
+# transport binding. Wire-compatible with sourDough TransportEndpoint.
+# LOCAL pattern (no sourdough-core dep), same as coralReef/squirrel/nestGate.
+
+[impulse]
+id = "wave100-skunkbat-transport-evolution"
+type = "resolution"
+from = "eastGate"
+to = "primalSpring"
+date = "2026-06-08"
+priority = "LOW"
+status = "resolved"
+
+[resolution]
+commit = "f22ba12"
+branch = "main"
+version = "0.2.7"
+summary = """
+Implemented TRANSPORT_ENDPOINT injection per sourDough canonical standard.
+
+New in skunk-bat-integrations::rpc:
+- TransportEndpoint enum (serde-tagged: uds, tcp, mesh_relay)
+- call_endpoint() dispatcher — routes JSON-RPC via resolved endpoint
+- TransportEndpoint::from_env() — parses $TRANSPORT_ENDPOINT
+
+New env key in skunk-bat-core::env_keys:
+- TRANSPORT_ENDPOINT — launcher-injected transport (JSON)
+
+Server already transport-agnostic:
+- --socket implies --no-tcp (v0.2.6)
+- TcpListener::bind only active when TCP mode opted-in
+- --port preserved as Tier 5 fallback (debug/standalone)
+
+Refactored dispatch() and handle_negotiate() (clippy nursery 100L threshold).
+"""
+
+[resolution.compliance]
+transport_endpoint_env = true
+call_endpoint_dispatcher = true
+local_type = true
+sourdough_core_dep = false
+self_binding_violations = 0
+wire_format = "sourDough TransportEndpoint (serde tagged)"
+pattern = "LOCAL"
+
+[resolution.verification]
+tests_added = 6
+total_tests = 506
+clippy_warnings = 0

@@ -1,0 +1,69 @@
+# DataManifest: Metered Download Queue
+#
+# Replaces metered_download.sh — the remaining large open-access datasets
+# that were being downloaded sequentially with bandwidth caps.
+#
+# Each entry is a single large file fetched via HTTP with resume support.
+# Sequential processing (concurrency=1) to prevent bandwidth saturation.
+
+[manifest]
+dataset = "metered_queue"
+display_name = "Metered Download Queue (large open-access datasets)"
+source = "multiple"
+version = "2026-08-03"
+license = "mixed"
+trust_tier = "T1"
+expected_total = 8
+expected_size_bytes = 878_706_688_000  # ~819 GB total
+
+[manifest.acquisition]
+method = "http_bulk"
+concurrency = 1
+rate_limit_mbps = 400
+checkpoint_interval = 0
+retry_max = 3
+retry_backoff_ms = 10000
+
+[manifest.entries_source]
+type = "inline"
+
+[manifest.storage]
+base_path = "/mnt/nestgate/cold/zfs/data"
+
+[manifest.provenance]
+author = "westgate"
+description = "Large open-access scientific datasets for sovereign data federation"
+tags = ["data-federation", "open-access"]
+springs_served = ["wetSpring", "tideGlass", "neuralSpring"]
+
+[[manifest.entries]]
+id = "rnacentral_sequences"
+url = "https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/sequences/rnacentral_active.fasta.gz"
+
+[[manifest.entries]]
+id = "rnacentral_id_mapping"
+url = "https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/id_mapping/id_mapping.tsv.gz"
+
+[[manifest.entries]]
+id = "rnacentral_go"
+url = "https://ftp.ebi.ac.uk/pub/databases/RNAcentral/current_release/go_annotations/rnacentral_go_annotations.tsv.gz"
+
+[[manifest.entries]]
+id = "string_v12_full"
+url = "https://stringdb-downloads.org/download/protein.links.full.v12.0.txt.gz"
+
+[[manifest.entries]]
+id = "archs4_human"
+url = "https://s3.dev.maayanlab.cloud/archs4/files/human_gene_v2.5.h5"
+
+[[manifest.entries]]
+id = "archs4_mouse"
+url = "https://s3.dev.maayanlab.cloud/archs4/files/mouse_gene_v2.5.h5"
+
+[[manifest.entries]]
+id = "uniref100"
+url = "https://ftp.uniprot.org/pub/databases/uniprot/uniref/uniref100/uniref100.fasta.gz"
+
+[[manifest.entries]]
+id = "ncbi_nr_protein"
+url = "https://ftp.ncbi.nlm.nih.gov/blast/db/FASTA/nr.gz"

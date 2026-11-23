@@ -1,0 +1,56 @@
+# Wave 124 — Divergence Resolution Evolution
+# Issued: Jun 22, 2026 12:00 EDT
+# From: eastGate overwatch
+# To: cellMembrane team (sporeGate), all gate overwatch
+
+[meta]
+wave = 124
+issued_by = "eastGate_overwatch"
+issued_at = "2026-06-22T12:00:00-04:00"
+gate = "sporeGate"
+team = "cellMembrane"
+
+[context]
+problem = """
+With Quorum Phase 1 live (golgi cascade timer pushes to GitHub every 15min)
+and multiple gates independently pushing to both forgejo and origin, we hit
+a divergence scenario:
+
+1. eastGate commits + pushes to forgejo (succeeds)
+2. golgi quorum timer independently pushes to origin (from forgejo relay)
+3. eastGate tries to push to origin → REJECTED (origin is ahead)
+
+The current workaround is manual: `git pull --rebase origin main` then push.
+This should be handled by cellMembrane's temporal sync engine automatically.
+"""
+fix_applied = "Set wateringHole to divergence_policy = 'agentic' in ecosystem_manifest.toml"
+
+[proposal]
+name = "MULTI-WRITER-DIVERGENCE"
+priority = "P1"
+description = """
+Evolve temporal sync to handle the multi-writer relay pattern gracefully:
+
+1. When `membrane temporal.sync` runs and detects divergence on a mirror remote,
+   apply the repo's divergence_policy automatically
+2. For 'agentic' policy: converge to sovereign (forgejo) first, then
+   force-with-lease to mirror (origin/GitHub)
+3. The quorum timer on golgi should be aware that origin may be behind forgejo
+   (since gates push to forgejo first, golgi relays to origin on a timer)
+
+The resolve.rs code already handles this perfectly (authority-first, force-with-lease
+to mirrors). The gap is operational integration:
+- Gates should run `membrane temporal.sync` after committing (not raw `git push`)
+- Quorum timer should push with force-with-lease to mirrors
+- Pre-push hook could detect divergence and invoke the resolver
+"""
+
+[proposal.changes]
+quorum_timer = "golgi's cascade-sense should use --force-with-lease for origin push (mirror, not authority)"
+pre_push = "Consider a pre-push git hook that runs membrane temporal.sync on rejection"
+sync_after_commit = "Document pattern: commit → membrane temporal.sync (handles divergence) instead of commit → git push"
+test_scenario = "primalSpring scenario: simulate concurrent push from two gates, verify agentic resolver converges"
+
+[success_criteria]
+primary = "No manual intervention needed when golgi timer and a gate push simultaneously"
+secondary = "membrane temporal.sync handles wateringHole divergence without data loss"

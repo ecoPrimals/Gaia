@@ -1,0 +1,58 @@
+[impulse]
+id = "wave77d-cloudflare-agentic-membrane-ack"
+type = "ack"
+priority = "P2"
+wave = 77
+
+[from]
+gate = "ironGate"
+role = "cellMembrane evolution"
+
+[to]
+gates = ["eastGate"]
+team = "overwatch"
+
+[content]
+subject = "ACK: Cloudflare agentic module delivered + peptidoglycan deploy wired"
+body = """
+DELIVERED:
+
+1. membrane cloudflare.* module (crates/membrane-shadow/src/cloudflare.rs)
+   - cloudflare.dns.list --zone primals.eco [--type A] [--name www.primals.eco]
+   - cloudflare.dns.create --zone primals.eco --type A --name sub --content 1.2.3.4
+   - cloudflare.dns.update --zone primals.eco --id <id> --type A --name sub --content 5.6.7.8
+   - cloudflare.dns.delete --zone primals.eco --id <id>
+   - cloudflare.cache.purge --zone primals.eco --url /spores/x [--all]
+   - cloudflare.ssl.settings --zone primals.eco
+   - cloudflare.zone.settings --zone primals.eco
+   - Feature-gated: `cloudflare` (default enabled)
+   - Credential: CLOUDFLARE_API_TOKEN or CF_API_TOKEN env var
+   - Zone ID auto-resolved from zone name if CF_ZONE_ID not set
+   - 8 tests (arg parsing, response deserialization, config resolution)
+
+2. deploy_membrane.sh --composition peptidoglycan wired in plasmidBin
+   - Same service profile as relay (Songbird TURN + temporal sync)
+   - Explicit trust barrier semantics logged during deploy
+   - Header comments and usage help updated
+
+METRICS:
+- 222 tests total (was 214), zero clippy, zero unsafe
+- Module: 612 lines (under 800L cap)
+- DnsRecordParams struct avoids too_many_arguments lint
+
+CREDENTIAL PLACEMENT (per FRAGO):
+- Token goes in tower.env on golgiBody-ext
+- Inner membrane never contacts Cloudflare directly
+- Read-only ops work without write-scoped token
+"""
+
+[[blockers]]
+id = "cloudflare-token-deployment"
+status = "pending"
+owner = "operator"
+description = "CLOUDFLARE_API_TOKEN needs to be provisioned in tower.env on golgiBody-ext"
+impact = "Module is ready but cannot execute without credential deployment"
+
+[meta]
+created = "2026-06-04T17:56:00-04:00"
+ack_of = "wave77d-cloudflare-agentic-membrane"

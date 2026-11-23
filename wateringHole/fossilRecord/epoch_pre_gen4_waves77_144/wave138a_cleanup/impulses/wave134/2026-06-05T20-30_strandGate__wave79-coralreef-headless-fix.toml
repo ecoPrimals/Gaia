@@ -1,0 +1,44 @@
+# RESOLVED: coralReef headless deployment fix
+#
+# The VPS error "Cannot read ./specs/amd/amdgpu_isa_rdna2.xml" was caused
+# by the deploy script building/running amd-isa-gen (code generator tool)
+# instead of the coralreef server binary.
+
+[impulse]
+id = "wave79-coralreef-headless-fix"
+type = "resolution"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-05"
+priority = "P0"
+status = "resolved"
+
+[resolution]
+commit = "0881ca28"
+branch = "main"
+summary = """
+Root cause: workspace `cargo build` was building all members including
+amd-isa-gen (a code-generator tool that reads ./specs/amd/amdgpu_isa_rdna2.xml
+at runtime). Deploy script picked up the wrong binary.
+
+Fix: Added `default-members` to workspace Cargo.toml. Now `cargo build --release`
+only produces runtime binaries (coralreef, or_exit_*). The amd-isa-gen tool is
+still buildable via explicit `cargo build -p amd-isa-gen` but won't appear in
+default builds.
+
+The coralreef server binary has NEVER required spec files at startup — it only
+needs them for the code-generation tool (which is dev-only).
+"""
+
+[resolution.verification]
+test = "coralreef server --socket /tmp/test.sock starts cleanly from empty dir"
+result = "PASS — server binds UDS + TCP + tarpc, advertises capabilities, no spec files needed"
+
+[resolution.deploy_instructions]
+steps = [
+    "git pull origin main",
+    "cargo build -p coralreef-core --release",
+    "cp target/release/coralreef /opt/membrane/coralreef",
+    "systemctl restart coralreef.service",
+]
+note = "Or use: cargo build --release (default-members now excludes amd-isa-gen)"

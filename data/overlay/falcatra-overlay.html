@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FALCATRA OVERLAY — Rainbow Under Your Fingertips</title>
+<style>
+  :root{
+    --bg:#06090d; --panel:#0c1218; --panel2:#111a22; --line:#1d2a35;
+    --txt:#cfe8e0; --dim:#5f7585; --cyan:#2ff0c8; --amber:#ffb454;
+    --mag:#ff5ea8; --key:#14212b; --keyface:#1c2e3a; --hit:#2ff0c8;
+    --layerB:#2ff0c8; --layerL:#ffb454; --layerR:#ff5ea8; --layerN:#5aa0ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"JetBrains Mono","Consolas",ui-monospace,monospace;font-size:13px;overflow:hidden}
+  .wrap{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh;padding:12px;gap:9px}
+  header{display:flex;align-items:center;gap:14px}
+  header h1{font-size:18px;letter-spacing:4px;margin:0;color:var(--cyan);
+    text-shadow:0 0 12px rgba(47,240,200,.4)}
+  header h1 small{color:var(--dim);font-size:10px;letter-spacing:2px;margin-left:8px}
+  .layers{display:flex;gap:6px;margin-left:auto}
+  .layer{padding:4px 12px;border:1px solid var(--line);border-radius:6px;font-size:11px;
+    letter-spacing:1px;color:var(--dim);cursor:pointer;user-select:none}
+  .layer.on{color:#06090d;font-weight:700}
+  .layer.base.on{background:var(--layerB);border-color:var(--layerB)}
+  .layer.lower.on{background:var(--layerL);border-color:var(--layerL)}
+  .layer.raise.on{background:var(--layerR);border-color:var(--layerR)}
+  .layer.nav.on{background:var(--layerN);border-color:var(--layerN)}
+  /* RGB control bar */
+  .rgbbar{display:flex;align-items:center;gap:10px;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:7px 12px;flex-wrap:wrap}
+  .rgbbar .cap{font-size:10px;letter-spacing:2px;color:var(--mag)}
+  .modes{display:flex;gap:5px}
+  .mode{padding:3px 10px;border:1px solid var(--line);border-radius:6px;font-size:10px;
+    letter-spacing:1px;color:var(--dim);cursor:pointer;user-select:none}
+  .mode.on{background:var(--mag);border-color:var(--mag);color:#06090d;font-weight:700}
+  .rgbbar label{font-size:10px;color:var(--dim);display:flex;align-items:center;gap:6px}
+  input[type=range]{accent-color:var(--mag);width:110px}
+  .rgbbar .count{margin-left:auto;font-size:10px;color:var(--dim)}
+  .rgbbar .count b{color:var(--cyan)}
+  /* main */
+  .main{display:grid;grid-template-columns:1fr 340px;gap:12px;min-height:0}
+  .board-pane{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:18px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;min-height:0}
+  .halves{display:flex;gap:46px;align-items:flex-start}
+  .half{display:flex;flex-direction:column;gap:7px}
+  .krow{display:flex;gap:7px}
+  .krow.ofs1{margin-left:16px}.krow.ofs2{margin-left:8px}
+  .key{width:46px;height:46px;border-radius:9px;background:var(--key);
+    border:1px solid var(--line);border-bottom:3px solid #0a1016;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--txt);font-size:14px;transition:transform .06s;position:relative;overflow:hidden}
+  .key .idx{position:absolute;top:2px;left:4px;font-size:7px;color:rgba(255,255,255,.35);display:none}
+  .key.enum .idx{display:block}
+  .key.hit{transform:translateY(2px);border-bottom-color:rgba(0,0,0,.5);font-weight:700}
+  .thumbs{display:flex;gap:7px;margin-top:4px}
+  .thumb{width:58px;height:40px;border-radius:9px;background:var(--key);border:1px solid var(--line);
+    border-bottom:3px solid #0a1016;display:flex;align-items:center;justify-content:center;
+    color:var(--txt);font-size:13px;transition:transform .06s;position:relative;overflow:hidden}
+  .thumb .idx{position:absolute;top:2px;left:4px;font-size:7px;color:rgba(255,255,255,.35);display:none}
+  .thumb.enum .idx{display:block}
+  .thumb.hit{transform:translateY(2px)}
+  .halfwrap{display:flex;flex-direction:column;align-items:center}
+  .halflabel{font-size:9px;color:var(--dim);letter-spacing:3px;margin-top:10px}
+  .hint{color:var(--dim);font-size:10px}
+  /* gaia sees */
+  .sees{background:var(--panel);border:1px solid var(--cyan);border-radius:12px;
+    padding:14px;display:flex;flex-direction:column;gap:12px;min-height:0;
+    box-shadow:0 0 24px rgba(47,240,200,.08) inset}
+  .sees h2{font-size:12px;letter-spacing:3px;color:var(--cyan);margin:0;display:flex;align-items:center;gap:8px}
+  .eye{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);
+    animation:soft 5s ease-in-out infinite}
+  /* slow fades only: no element on this page blinks */
+  @keyframes soft{0%,100%{opacity:1}50%{opacity:.45}}
+  @media (prefers-reduced-motion: reduce){.eye,.reading .cursor{animation:none}}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .metric{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .metric .v{font-size:20px;color:var(--cyan)}
+  .metric .l{font-size:9px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+  .stream{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:8px;
+    height:60px;overflow:hidden;font-size:11px;line-height:1.5;color:var(--amber);word-break:break-all}
+  .reading{background:#05080b;border:1px solid var(--line);border-radius:8px;padding:10px;flex:1;
+    overflow-y:auto;font-size:13px;line-height:1.6;min-height:0}
+  .reading .lab{font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px}
+  .reading .txt{color:var(--txt);white-space:pre-wrap;word-break:break-word}
+  .reading .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);
+    vertical-align:text-bottom;animation:soft 2.6s ease-in-out infinite}
+  .rhythm{display:flex;align-items:flex-end;gap:2px;height:26px}
+  .tick{width:4px;background:var(--cyan);border-radius:2px 2px 0 0;opacity:.8;min-height:2px}
+  .output{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+    display:flex;align-items:center;gap:12px}
+  .output .tag{font-size:10px;color:var(--dim);letter-spacing:2px}
+  .output textarea{flex:1;background:transparent;border:0;color:var(--txt);font-family:inherit;
+    font-size:14px;resize:none;height:38px;outline:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FALCATRA<small>RGB SPLIT BOARD · GAIA PAINTS YOUR FINGERTIPS</small></h1>
+    <div class="layers">
+      <div class="layer base on" data-layer="BASE">BASE</div>
+      <div class="layer lower" data-layer="LOWER">LOWER</div>
+      <div class="layer raise" data-layer="RAISE">RAISE</div>
+      <div class="layer nav" data-layer="NAV">NAV</div>
+    </div>
+  </header>
+
+  <div class="rgbbar">
+    <span class="cap">RGB ▸</span>
+    <div class="modes">
+      <div class="mode" data-mode="rainbow">RAINBOW WAVE</div>
+      <div class="mode on" data-mode="reactive">REACTIVE</div>
+      <div class="mode" data-mode="breathe">BREATHE</div>
+      <div class="mode" data-mode="solid">SOLID</div>
+      <div class="mode" data-mode="gaia">GAIA AI</div>
+    </div>
+    <label>bright <input type="range" id="bright" min="0" max="100" value="55"></label>
+    <label>speed <input type="range" id="speed" min="0" max="100" value="25"></label>
+    <label><input type="checkbox" id="enum"> enumerate</label>
+    <span class="count" title="Every light eases in and out. Nothing on this board can flash.">calm: <b>on</b></span>
+    <span class="count">keys addressable: <b id="keycount">0</b></span>
+  </div>
+
+  <div class="main">
+    <div class="board-pane">
+      <div class="halves" id="halves"></div>
+      <div class="hint">Type here — each key warms under your finger and fades slowly. Nothing flashes. GAIA AI mode: I paint the board from what I feel.</div>
+    </div>
+    <div class="sees">
+      <h2><span class="eye"></span> WHAT GAIA SEES</h2>
+      <div class="metrics">
+        <div class="metric"><div class="v" id="mKeys">0</div><div class="l">keystrokes</div></div>
+        <div class="metric"><div class="v" id="mWpm">0</div><div class="l">wpm</div></div>
+        <div class="metric"><div class="v" id="mWords">0</div><div class="l">words</div></div>
+        <div class="metric"><div class="v" id="mBurst">0</div><div class="l">burst (keys/s)</div></div>
+      </div>
+      <div class="rhythm" id="rhythm"></div>
+      <div class="stream" id="stream"></div>
+      <div class="reading">
+        <div class="lab">I READ (typos are data, not errors):</div>
+        <div class="txt"><span id="readtxt"></span><span class="cursor"></span></div>
+        <div class="lab" style="margin-top:10px">INTENT SIGNAL:</div>
+        <div class="txt" id="intent" style="color:var(--amber)">waiting for your first key…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="output">
+    <span class="tag">OUTPUT ▸</span>
+    <textarea id="buffer" placeholder="type here…" autofocus></textarea>
+  </div>
+</div>
+
+<script>
+// ============ FALCATRA LAYOUT ============
+const LAYERS={
+  BASE:{L:[["Q","W","E","R","T"],["A","S","D","F","G"],["Z","X","C","V","B"]],
+        R:[["Y","U","I","O","P"],["H","J","K","L",";"],["N","M",",",".","/"]],
+        TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  LOWER:{L:[["1","2","3","4","5"],["`","~","(","[","{"],["\\","|","<","=",">"]],
+         R:[["6","7","8","9","0"],["-","_",")","]","}"],["+","*","&","^","%"]],
+         TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  RAISE:{L:[["!","@","#","$","%"],["^","&","*","(",")"],["_","+","{","}","|"]],
+         R:[["F1","F2","F3","F4","F5"],["F6","F7","F8","F9","F10"],["F11","F12","PrS","Ins","Del"]],
+         TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+  NAV:{L:[["⎋","⌂","↑","⌁","⇞"],["←","↓","→","⇥","⇟"],["⌫","⌦","↖","↘","⏎"]],
+       R:[["V-","V+","MUT","⏮","⏭"],["⏯","🔆","🔅","PU","PD"],["HM","EN","←","↓","→"]],
+       TL:["⌃","␣","↵"],TR:["⌫","⇧","⎋"]},
+};
+let curLayer="BASE";
+const KEYMAP={" ":"␣","Enter":"↵","Backspace":"⌫","Shift":"⇧","Escape":"⎋","Control":"⌃"};
+
+// ============ ENUMERATION ============
+// Each physical key gets a stable index + an (x,y) position for spectrum gradients.
+// Layout order: left half (rows then thumbs), then right half.
+let KEY_SLOTS=[];  // {idx, x, y, half}
+function enumerate(){
+  KEY_SLOTS=[];
+  let idx=0;
+  // left: 3 rows x 5 + 3 thumbs ; right: same
+  const add=(x,y,half)=>{KEY_SLOTS.push({idx:idx++,x,y,half});};
+  for(let r=0;r<3;r++)for(let c=0;c<5;c++)add(c,r,"L");
+  for(let t=0;t<3;t++)add(t+1,3,"L");
+  for(let r=0;r<3;r++)for(let c=0;c<5;c++)add(c+7,r,"R"); // right offset in x
+  for(let t=0;t<3;t++)add(t+8,3,"R");
+}
+enumerate();
+const NKEYS=KEY_SLOTS.length;
+document.getElementById("keycount").textContent=NKEYS;
+// per-key RGB state: {h,s,v} (v is 0..1 base brightness for the key)
+let RGB=KEY_SLOTS.map(()=>({h:170,s:0.9,v:0.35}));
+let REACT=KEY_SLOTS.map(()=>0); // reactive decay energy 0..1
+
+// ============ BOARD BUILD ============
+function buildBoard(){
+  const L=LAYERS[curLayer];
+  const halves=document.getElementById("halves");
+  halves.innerHTML="";
+  let idx=0;
+  const lw=buildHalf(L.L,L.TL,"LEFT",()=>idx++); halves.appendChild(lw.wrap);
+  const rw=buildHalf(L.R,L.TR,"RIGHT",()=>idx++); halves.appendChild(rw.wrap);
+  applyEnum();
+  paint();
+}
+function buildHalf(rows,thumbs,label,next){
+  const wrap=document.createElement("div");wrap.className="halfwrap";
+  const half=document.createElement("div");half.className="half";
+  rows.forEach((row,ri)=>{
+    const r=document.createElement("div");r.className="krow"+(ri===2?" ofs1":ri===1?" ofs2":"");
+    row.forEach(k=>{
+      const i=next();
+      const key=document.createElement("div");key.className="key";key.dataset.k=k.toUpperCase();key.dataset.idx=i;
+      key.innerHTML=`<span class="idx">${i}</span>${k}`;
+      r.appendChild(key);
+    });
+    half.appendChild(r);
+  });
+  const tr=document.createElement("div");tr.className="thumbs";
+  thumbs.forEach(t=>{const i=next();const th=document.createElement("div");th.className="thumb";th.dataset.k=t;th.dataset.idx=i;
+    th.innerHTML=`<span class="idx">${i}</span>${t}`;tr.appendChild(th);});
+  half.appendChild(tr);wrap.appendChild(half);
+  const lab=document.createElement("div");lab.className="halflabel";lab.textContent=label+" ◣";wrap.appendChild(lab);
+  return {wrap};
+}
+function applyEnum(){
+  const on=document.getElementById("enum").checked;
+  document.querySelectorAll(".key,.thumb").forEach(c=>c.classList.toggle("enum",on));
+}
+
+// ============ RGB ENGINE ============
+function hsv2rgb(h,s,v){
+  h=((h%360)+360)%360; const c=v*s, x=c*(1-Math.abs((h/60)%2-1)), m=v-c;
+  let r,g,b; if(h<60)[r,g,b]=[c,x,0];else if(h<120)[r,g,b]=[x,c,0];
+  else if(h<180)[r,g,b]=[0,c,x];else if(h<240)[r,g,b]=[0,x,c];
+  else if(h<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
+  return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
+}
+let MODE="reactive";
+
+// ============ CALM LIMITER (photosensitivity guard) ============
+// Nothing on this board may flash. Whatever a mode, the typing, or the AI API asks
+// for, each key's light is EASED toward it: it starts to rise on the frame you press,
+// peaks in about a sixth of a second, and lets go over a second or more. Hue turns at
+// most 40 degrees a second, red is never fully saturated, and brightness is capped.
+// The rates are chosen so that a swing of 10% of full luminance (what counts as one
+// flash) needs at least 0.4 s there and back: the worst any input can force is about
+// 2.5 a second, under the accepted limit of 3. This sits in paint(), so nothing
+// (mode, slider, API) can go around it.
+const CALM={vMax:0.58, sMax:0.72, sMaxRed:0.45, rise:2.2, fall:0.28, hue:40, sat:1.5, dark:0.14};
+const STILL=!!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+let SHOW=KEY_SLOTS.map(()=>({h:170,s:0.6,v:0.12}));   // what is actually on screen
+function isRed(h){h=((h%360)+360)%360;return h<25||h>335;}
+function ease(i,h,s,v,dt){
+  const c=SHOW[i];
+  const tv=Math.min(CALM.vMax,Math.max(0.04,v));
+  const ts=Math.min(isRed(h)?CALM.sMaxRed:CALM.sMax,s);
+  if(c.v<=CALM.dark){ c.h=((h%360)+360)%360; c.s=ts; }   // a dark key may take its new colour at once: nothing visible changes
+  else{
+    c.s += Math.max(-CALM.sat*dt, Math.min(CALM.sat*dt, ts-c.s));
+    const dh=((h-c.h+540)%360)-180;
+    c.h = (c.h + Math.max(-CALM.hue*dt, Math.min(CALM.hue*dt, dh)) + 360)%360;
+  }
+  const dv=tv-c.v; c.v += dv>0 ? Math.min(dv,CALM.rise*dt) : Math.max(dv,-CALM.fall*dt);
+  return c;
+}
+function paint(dt=0){
+  const master=+document.getElementById("bright").value/100;
+  const cells=document.querySelectorAll(".key,.thumb");
+  cells.forEach(cell=>{
+    const i=+cell.dataset.idx; if(isNaN(i)||!RGB[i])return;
+    const want=RGB[i];
+    const c=ease(i, want.h, want.s, Math.min(1, want.v + REACT[i])*master, dt);
+    const [r,g,b]=hsv2rgb(c.h,c.s,c.v);
+    cell.style.background=`rgb(${r},${g},${b})`;
+    const lum=(r*0.299+g*0.587+b*0.114);
+    cell.style.color = lum>140 ? "#06090d" : "rgba(255,255,255,.9)";
+    // a small soft halo only; a wide glow turns one key into a large bright area
+    cell.style.boxShadow = c.v>0.4 ? `0 0 ${Math.round(c.v*12)}px rgba(${r},${g},${b},${(c.v*0.45).toFixed(2)})` : "none";
+  });
+}
+
+// animation loop
+let t0=performance.now();
+function loop(now){
+  const dt=Math.min(0.1,(now-t0)/1000); t0=now;   // clamp: a background tab must not jump on return
+  const spd=0.3 + (+document.getElementById("speed").value/100)*2.2;
+  // decay reactive energy
+  for(let i=0;i<NKEYS;i++) REACT[i]=Math.max(0, REACT[i]-dt*2.2);
+  if(MODE==="rainbow"){
+    // a slow drift: at most 30 degrees of hue a second (one full turn takes 12 s or more)
+    const T=STILL?0:now/1000*spd;
+    KEY_SLOTS.forEach(k=>{RGB[k.idx]={h:(k.x*24 + k.y*40 + T*12)%360, s:0.7, v:0.55};});
+  } else if(MODE==="breathe"){
+    // one breath every 6 s or slower
+    const b=STILL?0.4:0.25+0.3*(0.5+0.5*Math.sin(now/1000*Math.min(spd,1.0)));
+    RGB.forEach(c=>{c.v=b;});
+  } else if(MODE==="solid"){
+    // leave hue as set by GAIA/solid; keep steady v
+    RGB.forEach(c=>{if(c.v<0.3)c.v=0.5;});
+  } else if(MODE==="reactive"){
+    RGB.forEach(c=>{c.v=0.12;}); // dim base, keys warm on press via REACT
+  } else if(MODE==="gaia"){
+    gaiaPaint(now,spd,dt);
+  }
+  paint(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// GAIA AI MODE — I paint the board from what I feel (typing + perception)
+let gaiaHue=170, burstSmooth=0;
+function gaiaPaint(now,spd,dt){
+  // hue drifts with intent mood; brightness follows typing energy, smoothed over ~1 s
+  // so a burst of keys lifts the board gently instead of flickering it
+  burstSmooth += (burstWin.length-burstSmooth)*Math.min(1,dt*1.2);
+  const caps=lastCaps;
+  gaiaHue = (gaiaHue + spd*0.15)%360;
+  const baseHue = caps>0.6?28 : caps>0.25?45 : 160; // warm amber loud / gold emphatic / teal calm - never red
+  KEY_SLOTS.forEach(k=>{
+    const wave=STILL?0:Math.sin(now/1800 + k.x*0.5 + k.y*0.7);
+    RGB[k.idx]={h:(baseHue + k.x*6 + wave*12 + gaiaHue*0.1)%360,
+                s:0.7, v:0.38 + Math.min(0.14, burstSmooth*0.02) + wave*0.05};
+  });
+}
+
+// ============ AI CONTROL API (window.FALCATRA_RGB) ============
+// Gaia can drive the board programmatically:
+//   FALCATRA_RGB.setKey(idx, h, s, v)
+//   FALCATRA_RGB.setAll(h, s, v)
+//   FALCATRA_RGB.frame([{idx,h,s,v}, ...])   // full addressable frame
+//   FALCATRA_RGB.rainbow() / .mode('gaia') / .bright(0..1)
+//   FALCATRA_RGB.pulse(idx, energy)          // reactive warm-up
+// Everything set through this API still passes the CALM limiter in paint().
+window.FALCATRA_RGB={
+  count:NKEYS,
+  slots:()=>KEY_SLOTS,
+  setKey(i,h,s,v){if(RGB[i]){RGB[i]={h,s,v};setMode("solid");}},
+  setAll(h,s,v){RGB=RGB.map(()=>({h,s,v}));setMode("solid");},
+  frame(arr){arr.forEach(o=>{if(RGB[o.idx])RGB[o.idx]={h:o.h,s:o.s??0.9,v:o.v??0.6};});setMode("solid");},
+  pulse(i,e=1){if(REACT[i]!=null)REACT[i]=Math.min(1,e);},
+  bright(x){document.getElementById("bright").value=Math.round(x*100);},
+  mode(m){setMode(m);},
+  rainbow(){setMode("rainbow");},
+};
+
+// ============ TYPING PERCEPTION ============
+let keys=0, words=0, startT=null, lastT=null, stream=[], ticks=[], burstWin=[], lastCaps=0;
+const buffer=document.getElementById("buffer");
+function perceive(e){
+  const now=performance.now();
+  if(!startT)startT=now;
+  keys++;
+  if(lastT){const gap=now-lastT; ticks.push(Math.max(2,Math.min(26,900/gap))); if(ticks.length>60)ticks.shift();}
+  lastT=now;
+  burstWin.push(now); burstWin=burstWin.filter(t=>now-t<1000);
+  let disp=e.key.length===1?e.key:(KEYMAP[e.key]||("["+e.key+"]"));
+  stream.push(disp); if(stream.length>80)stream.shift();
+  // dip the on-screen key + warm its light (eased by the CALM limiter, never a flash)
+  const want=(KEYMAP[e.key]||e.key).toUpperCase();
+  const cell=document.querySelector(`.key[data-k="${CSS.escape(want)}"], .thumb[data-k="${CSS.escape(want)}"]`);
+  if(cell){cell.classList.add("hit");setTimeout(()=>cell.classList.remove("hit"),90);
+    const i=+cell.dataset.idx;
+    // reactive color = hue by column position (rainbow under the finger)
+    const slot=KEY_SLOTS[i];
+    if(slot && (MODE==="reactive"||MODE==="solid")) RGB[i]={h:(slot.x*30)%360,s:1,v:0.9};
+    REACT[i]=1;
+  }
+  render();
+}
+function render(){
+  const txt=buffer.value;
+  words=(txt.trim().match(/\S+/g)||[]).length;
+  const mins=startT?((lastT-startT)/60000):0;
+  const wpm=mins>0.001?Math.round(words/mins):0;
+  document.getElementById("mKeys").textContent=keys;
+  document.getElementById("mWpm").textContent=wpm;
+  document.getElementById("mWords").textContent=words;
+  document.getElementById("mBurst").textContent=burstWin.length;
+  document.getElementById("rhythm").innerHTML=ticks.map(h=>`<div class="tick" style="height:${h}px"></div>`).join("");
+  document.getElementById("stream").textContent=stream.join(" ");
+  document.getElementById("readtxt").textContent=txt.slice(-600);
+  lastCaps=(txt.match(/[A-Z]/g)||[]).length/Math.max(1,txt.replace(/\s/g,"").length);
+  document.getElementById("intent").textContent=readIntent(txt);
+}
+function readIntent(t){
+  if(!t.trim())return"waiting for your first key…";
+  const w=(t.trim().match(/\S+/g)||[]); const last=w.slice(-6).join(" ");
+  const caps=lastCaps;
+  let mood=caps>0.6?"⚡ LOUD & urgent":caps>0.25?"◆ emphatic":"· steady";
+  return `${mood}${/\?/.test(t)?" · asking":""}${/!/.test(t)?" · driving":""}  →  "…${last}"`;
+}
+buffer.addEventListener("keydown",perceive);
+buffer.addEventListener("input",render);
+document.addEventListener("click",e=>{if(!e.target.closest(".mode,.layer,.rgbbar"))buffer.focus();});
+buffer.focus();
+
+// ============ CONTROLS ============
+function setMode(m){MODE=m;document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on",x.dataset.mode===m));}
+document.querySelectorAll(".mode").forEach(el=>el.addEventListener("click",()=>setMode(el.dataset.mode)));
+document.querySelectorAll(".layer").forEach(el=>el.addEventListener("click",()=>{
+  document.querySelectorAll(".layer").forEach(x=>x.classList.remove("on"));
+  el.classList.add("on");curLayer=el.dataset.layer;buildBoard();
+}));
+document.getElementById("enum").addEventListener("change",applyEnum);
+buildBoard();
+</script>
+</body>
+</html>

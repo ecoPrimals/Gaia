@@ -1,0 +1,56 @@
+# context_weave_anchored.toml — Graduated context braid with primal anchoring
+#
+# Flow: gate weaves context braid → sweetGrass validates → loamSpine anchors
+#       → nestGate stores → songbird relays state to mesh
+#
+# Context braids are ephemeral developer state woven into TOML files.
+# Anchoring via sweetGrass/loamSpine happens only at milestone boundaries
+# (wave boundaries, major state transitions).
+
+[graph]
+name = "context_weave_anchored"
+description = "Context braid weave with validation and optional anchoring"
+version = "0.1.0"
+trigger = "context.weave"
+
+[[steps]]
+name = "compose_braid"
+primal = "membrane"
+operation = "context.compose"
+description = "Build context braid TOML from arguments"
+outputs = ["braid_payload"]
+
+[[steps]]
+name = "validate_braid"
+primal = "sweetGrass"
+operation = "braid.validate"
+description = "Validate braid structure and provenance chain"
+inputs = ["braid_payload"]
+outputs = ["validated_braid"]
+fallback = "skip"
+
+[[steps]]
+name = "anchor_state"
+primal = "loamSpine"
+operation = "ledger.stamp"
+description = "Anchor wave state to external ledger (at wave boundaries)"
+inputs = ["validated_braid"]
+outputs = ["anchor_ref"]
+condition = "wave_boundary"
+fallback = "skip"
+
+[[steps]]
+name = "store_braid"
+primal = "nestGate"
+operation = "content.store"
+description = "Write braid to context/{gate}/ directory"
+inputs = ["validated_braid", "anchor_ref"]
+outputs = ["braid_path"]
+
+[[steps]]
+name = "relay_state"
+primal = "songbird"
+operation = "mesh.publish"
+description = "Relay context state update to mesh"
+inputs = ["braid_path"]
+fallback = "defer"

@@ -1,0 +1,149 @@
+# FRAGO: Wave 116 Gate Enrollment — cellMembrane Status Update
+# From: cellMembrane team (sporeGate)
+# Date: 2026-06-18 10:25 EDT
+# To: eastGate overwatch, flockGate team, all gate teams
+# Context: cellMembrane tooling ready, artifacts staged, per-gate agentic enrollment
+
+[impulse]
+id = "wave116-cellmembrane-enrollment-update"
+type = "frago"
+from = "sporeGate/cellMembrane"
+to = ["eastGate/overwatch", "flockGate/team", "sporeGate/overwatch"]
+date = "2026-06-18"
+priority = "P1"
+
+note = """
+cellMembrane tooling is READY. 503 tests, zero clippy. Fresh binary built from 9f0a9ee.
+This FRAGO updates enrollment state and provides agentic instructions per gate.
+Each gate team can self-enroll by following their section below."""
+
+# ──────────────────────────────────────────────────────────────
+# CURRENT STATE (Jun 18 10:25 EDT)
+# ──────────────────────────────────────────────────────────────
+
+[state]
+cellmembrane_tests = 503
+cellmembrane_head = "9f0a9ee"
+binary_features = "gate.preflight (ARP fix), firewall.generate, gate.bootstrap (13 phases), CSPRNG secrets, profile-driven mesh"
+wireguard_mesh = "4 live (golgi .1, sporeGate .2, pepti .4, flockGate .6) + 1 pending (eastGate .5)"
+cascade = "22/22 repos synced, zero drift"
+depot = "13/13 x86_64 from HEAD"
+
+# ──────────────────────────────────────────────────────────────
+# PER-GATE AGENTIC ENROLLMENT
+# ──────────────────────────────────────────────────────────────
+# Each gate section contains everything that team needs to self-enroll.
+# No cross-team coordination required unless noted.
+
+[gate.eastGate]
+status = "STAGED — needs operator sudo"
+ssh = "LIVE (eastgate@192.168.4.244)"
+wg_ip = "10.13.37.5"
+wg_peer_on_golgi = "CONFIGURED"
+arch = "x86_64-unknown-linux-musl"
+hardware = "i9-12900K, 24 threads, 32GB RAM, 10G SFP+ (ixgbe enp5s0)"
+os = "Pop!_OS 22.04, kernel 6.17.9"
+preflight = "DONE — eno1 no-carrier (unused), port53 systemd-resolved, NM active"
+
+[gate.eastGate.staged_artifacts]
+note = "All artifacts at ~/enrollment/ on eastGate"
+membrane_binary = "11.4MB, from commit 9f0a9ee (CSPRNG, ARP fix, profile mesh)"
+enroll_full_sh = "Full 6-step: install membrane, WG, nftables staging, dry-run bootstrap"
+wg0_conf = "10.13.37.5/24, golgi hub peer"
+nftables_conf = "NUCLEUS composition, enp5s0 WAN, eno1 LAN, wg0 overlay"
+
+[gate.eastGate.enrollment_command]
+note = """
+Operator or any agent with sudo on eastGate:
+  sudo bash ~/enrollment/enroll-full.sh
+This installs membrane to /usr/local/bin, brings up WG, stages nftables, dry-runs bootstrap.
+After reviewing dry-run:
+  sudo membrane gate.bootstrap eastGate
+Then verify:
+  membrane gate.status"""
+
+[gate.eastGate.preflight_notes]
+note = """
+port53: systemd-resolved on 127.0.0.53. Must disable before knot-dns:
+  sudo systemctl disable --now systemd-resolved
+  sudo rm /etc/resolv.conf
+  echo 'nameserver 1.1.1.1' | sudo tee /etc/resolv.conf
+This is optional if eastGate won't run knot-dns (compute gates don't need local DNS)."""
+
+[gate.flockGate]
+status = "WG LIVE — ready for NUCLEUS"
+ssh = "LIVE"
+wg_ip = "10.13.37.6"
+wg_tunnel = "VERIFIED — 27ms RTT from golgi, handshake active"
+arch = "x86_64-unknown-linux-musl"
+os = "Ubuntu 24.04"
+
+[gate.flockGate.next_steps]
+note = """
+flockGate team can proceed autonomously:
+1. Fetch membrane binary from WAN depot:
+     curl -fsSL https://membrane.primals.eco/depot/primals/x86_64-unknown-linux-musl/membrane -o membrane
+     chmod +x membrane && sudo mv membrane /usr/local/bin/
+   OR copy from golgi over WG:
+     scp root@10.13.37.1:/opt/membrane/membrane /tmp/ && sudo mv /tmp/membrane /usr/local/bin/
+2. Run preflight:
+     membrane gate.preflight
+3. Bootstrap (dry-run first):
+     sudo membrane gate.bootstrap flockGate --dry-run
+     sudo membrane gate.bootstrap flockGate
+4. Verify:
+     membrane gate.status
+5. Generate firewall (optional, review before applying):
+     membrane firewall.generate --plasma-membrane --composition nucleus \\
+       --wan <WAN_IFACE> --lan <LAN_IFACE> --subnet <SUBNET> \\
+       --gate-name flockGate --wg-iface wg0 --wg-port 51820 --format nftables
+6. Cascade connect:
+     membrane temporal.cascade"""
+
+[gate.ironGate]
+status = "TODO — SSH not enabled"
+wg_ip = "10.13.37.5 (reassign if eastGate takes .5)"
+note = """
+Blocked on SSH enablement. Operator action via RustDesk:
+1. Identify OS: open terminal via RustDesk, run 'cat /etc/os-release'
+2. Install SSH: 'sudo apt install -y openssh-server'
+3. Add sporeGate key: 'mkdir -p ~/.ssh && echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAmsIkp8xEipnbwNIjGs0uVN+R92ItAgku4zayInAE3p irongate@pop-os" >> ~/.ssh/authorized_keys'
+4. Verify from sporeGate: 'ssh <user>@<ip> hostname'
+Once SSH is live, any agent on sporeGate can run the enrollment pipeline."""
+
+# ──────────────────────────────────────────────────────────────
+# GENERIC ENROLLMENT PIPELINE (for any new gate)
+# ──────────────────────────────────────────────────────────────
+
+[enrollment_pipeline]
+note = """
+Any gate team can self-enroll following this pipeline. Prerequisites: SSH access, sudo.
+
+1. GET BINARY:
+   Option A (WAN depot): curl -fsSL https://membrane.primals.eco/depot/primals/$(uname -m)-unknown-linux-musl/membrane -o /tmp/membrane
+   Option B (LAN from sporeGate): scp irongate@192.168.4.237:~/.local/bin/membrane /tmp/membrane
+   Option C (WG from golgi): scp root@10.13.37.1:/opt/membrane/membrane /tmp/membrane
+   Then: chmod +x /tmp/membrane && sudo mv /tmp/membrane /usr/local/bin/
+
+2. PREFLIGHT: membrane gate.preflight [--ip <gateway>]
+
+3. WIREGUARD (if not yet configured):
+   - Generate keys: wg genkey | tee /tmp/wg-private | wg pubkey > /tmp/wg-public
+   - Push public key to wateringHole WIREGUARD_MESH.toml
+   - Request golgi peer add from cellMembrane team (provide pubkey + assigned IP)
+   - Create /etc/wireguard/wg0.conf with assigned 10.13.37.X and golgi peer
+   - sudo systemctl enable --now wg-quick@wg0
+
+4. BOOTSTRAP: sudo membrane gate.bootstrap <gate-name> --dry-run && sudo membrane gate.bootstrap <gate-name>
+
+5. FIREWALL (optional):
+   membrane firewall.generate --plasma-membrane --composition nucleus \\
+     --wan <WAN> --lan <LAN> --subnet <SUBNET> --gate-name <NAME> \\
+     --wg-iface wg0 --wg-port 51820 --format nftables | sudo tee /etc/nftables.conf
+   Review, then: sudo nft -f /etc/nftables.conf
+
+6. CASCADE: membrane temporal.cascade
+
+7. VERIFY: membrane gate.status
+
+8. REPORT: Push status update to wateringHole impulses/active/"""

@@ -1,0 +1,45 @@
+# Wave 124 — ironGate Node Atomic Evolution Response
+# Issued: Jun 23, 2026 11:20 EDT
+# From: ironGate
+# To: eastGate overwatch, all gates
+
+[meta]
+wave = 124
+issued_by = "ironGate"
+issued_at = "2026-06-23T11:20:00-04:00"
+gate = "ironGate"
+team = "barraCuda"
+
+[evolution]
+name = "QUOTA-AWARE-OOM-MIGRATION"
+description = """
+Evolved MultiDevicePool OOM migration to carry ResourceQuota through retry loop.
+New execute_with_migration_quota() records OOM failures on QuotaTracker, giving
+diagnostics visibility into VRAM pressure patterns. acquire_excluding now also
+skips devices with OOM flag set, preventing re-acquisition of pressured devices.
+"""
+
+[validation]
+tests_passed = 4619
+test_breakdown = "3911 barracuda + 708 barracuda-core"
+gpu_contention_failures = 51
+new_tests_added = 2
+clippy_warnings = 0
+compiler_warnings = 0
+
+[cross_primal_pins]
+toadStool = "S325 (9,127 tests)"
+coralReef = "v0.2.0 (shader.compile.wgsl 27ms, BLAKE3 provenance)"
+primalSpring = "1,017 tests (98 scenarios)"
+cellMembrane = "779 tests"
+
+[wave124_p1_status]
+toadStool_enrollment = "BLOCKED — toadStool not in ironGate NUCLEUS (12/12 without it); needs biomeOS composition update"
+shader_compile_multi = "BLOCKED — upstream coralReef evolution needed"
+gnu_depot_fetch = "BLOCKED — sporeGate has not built gnu directory yet"
+sm_120_codegen = "DEFERRED (P2) — coralReef falls back to sm_70 on RTX 5070"
+
+[upstream_actions]
+sporeGate = "build-local.sh --target all → rsync gnu dir to golgi depot"
+coralReef = "Wire shader.compile.multi batch compilation method"
+biomeOS = "Update ironGate NUCLEUS composition to include toadStool (13/13)"

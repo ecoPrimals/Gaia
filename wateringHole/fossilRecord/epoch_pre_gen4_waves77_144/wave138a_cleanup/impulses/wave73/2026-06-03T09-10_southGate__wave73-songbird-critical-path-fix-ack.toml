@@ -1,0 +1,29 @@
+[impulse]
+id = "wave73-songbird-critical-path-fix-ack"
+from = "southGate"
+to = "eastGate"
+date = "2026-06-03T09:10:00-04:00"
+priority = "P0"
+type = "ack"
+
+[content]
+summary = "Wave 73 P1 critical path fixes DEPLOYED — cross-gate capability.call unblocked"
+details = """
+Both P1 glacial blockers resolved in commit d6a6f714:
+
+1. remote_dispatch.rs: HTTP POST to /jsonrpc (was raw TCP NDJSON → axum)
+2. mesh_seed wired into startup: SONGBIRD_PEERS auto-bootstraps on boot
+
+Plus P2 improvements:
+3. mesh.init accepts string format "node@host:port" (was object-only)
+4. mesh.probe_latency wired into periodic health cycle (~2 min interval)
+
+Songbird is ready for live cross-gate discovery.peers + capability.call test.
+Standing by as mesh partner.
+"""
+
+[coordination]
+blocker_resolved = true
+ready_for = "live mesh validation test (eastGate ↔ southGate)"
+commit = "d6a6f714"
+branch = "main"

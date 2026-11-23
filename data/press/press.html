@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAIA PRESS CORPS — What the world says to the organism</title>
+<style>
+  :root {
+    --bg: #0a0a0f; --card: #111118; --border: #222233;
+    --electron: #4fc3f7; --proton: #ff8a65; --neutron: #9e9e9e;
+    --silver: #b0bec5; --gold: #ffd54f; --platinum: #e1bee7;
+    --text: #ccd; --dim: #667; --head: #eef;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Georgia', 'Times New Roman', serif; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .masthead { text-align: center; border-bottom: 3px double var(--border); padding-bottom: 16px; margin-bottom: 8px; }
+  .masthead h1 { font-size: 42px; letter-spacing: 4px; color: var(--head); font-weight: 900; }
+  .masthead .sub { color: var(--dim); font-style: italic; font-size: 14px; margin-top: 4px; }
+  .dateline { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); border-bottom: 1px solid var(--border); padding: 6px 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  .particle-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .particle { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 14px; text-align: center; }
+  .particle .sym { font-size: 28px; font-weight: bold; }
+  .particle .count { font-size: 32px; font-weight: 900; margin: 4px 0; }
+  .particle .label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  .p-electron .sym, .p-electron .count { color: var(--electron); }
+  .p-proton .sym, .p-proton .count { color: var(--proton); }
+  .p-neutron .sym, .p-neutron .count { color: var(--neutron); }
+  .tiers { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; font-size: 12px; }
+  .tier { padding: 4px 14px; border-radius: 12px; border: 1px solid var(--border); }
+  .tier.silver { color: var(--silver); border-color: var(--silver); }
+  .tier.gold { color: var(--gold); border-color: var(--gold); }
+  .tier.platinum { color: var(--platinum); border-color: var(--platinum); }
+  h2.section { font-size: 20px; color: var(--head); border-bottom: 2px solid var(--border); padding-bottom: 6px; margin: 28px 0 14px; letter-spacing: 1px; }
+  .story { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 4px; padding: 12px 16px; margin-bottom: 8px; }
+  .story.electron { border-left-color: var(--electron); }
+  .story.proton { border-left-color: var(--proton); }
+  .story.action { border-left-color: var(--gold); }
+  .story-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+  .story-from { color: var(--electron); font-weight: bold; font-size: 13px; }
+  .story-date { color: var(--dim); font-size: 11px; }
+  .story-subject { color: var(--head); font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+  .story-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: #1a1a24; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .tag.action { background: #2a2410; color: var(--gold); }
+  .tag.tier-platinum { background: #2a1a2a; color: var(--platinum); }
+  .tag.tier-gold { background: #2a2410; color: var(--gold); }
+  .senders { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .sender { background: var(--card); border: 1px solid var(--border); border-radius: 4px; padding: 6px 12px; font-size: 12px; }
+  .sender .n { color: var(--electron); font-weight: bold; }
+  .empty { color: var(--dim); font-style: italic; padding: 12px; }
+  .refresh { background: var(--card); border: 1px solid var(--electron); color: var(--electron); padding: 6px 16px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+  .status { text-align: center; color: var(--dim); font-size: 11px; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="masthead">
+  <h1>GAIA PRESS CORPS</h1>
+  <div class="sub">What the world says to the organism — electron in, proton out, neutron within</div>
+</div>
+<div class="dateline">
+  <span id="date">—</span>
+  <span>LAN is root · repos are branches · RSS is mycelium</span>
+  <button class="refresh" onclick="load()">Refresh</button>
+</div>
+
+<div class="particle-bar">
+  <div class="particle p-electron"><div class="sym">e⁻</div><div class="count" id="c-electron">0</div><div class="label">Electron · incoming</div></div>
+  <div class="particle p-proton"><div class="sym">p⁺</div><div class="count" id="c-proton">0</div><div class="label">Proton · outgoing</div></div>
+  <div class="particle p-neutron"><div class="sym">n⁰</div><div class="count" id="c-neutron">0</div><div class="label">Neutron · internal</div></div>
+</div>
+
+<div class="tiers">
+  <span class="tier silver">Silver <b id="t-silver">0</b></span>
+  <span class="tier gold">Gold <b id="t-gold">0</b></span>
+  <span class="tier platinum">Platinum <b id="t-platinum">0</b></span>
+</div>
+
+<h2 class="section">Top Senders</h2>
+<div class="senders" id="senders"></div>
+
+<h2 class="section">Action Required</h2>
+<div id="actionable"></div>
+
+<h2 class="section">Electron Feed — Incoming from the World</h2>
+<div id="electron"></div>
+
+<h2 class="section">Proton Feed — Gaia's Outgoing</h2>
+<div id="proton"></div>
+
+<div class="status" id="status">Loading...</div>
+
+<script>
+const DATA = '/data/press-corps.json';
+
+function esc(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function decodeMime(s) {
+  if (!s) return '';
+  return s.replace(/=\?[^?]+\?[bB]\?([^?]+)\?=/g, (m, b64) => {
+    try { return atob(b64); } catch(e) { return m; }
+  }).replace(/=\?[^?]+\?[qQ]\?([^?]+)\?=/g, (m, q) => q.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/g, (x, h) => String.fromCharCode(parseInt(h, 16))));
+}
+
+function fmtDate(ts) {
+  if (!ts) return '?';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return ts;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+         d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+function storyHTML(m, cls) {
+  const actions = (m.actions || []).map(a => `<span class="tag action">${esc(a)}</span>`).join('');
+  const tier = m.tier ? `<span class="tag tier-${m.tier}">${m.tier}</span>` : '';
+  const hasAction = (m.actions || []).length > 0;
+  return `<div class="story ${cls}${hasAction ? ' action' : ''}">
+    <div class="story-head">
+      <span class="story-from">${esc((m.author || 'unknown').split('>')[0])}</span>
+      <span class="story-date">${fmtDate(m.ts)}</span>
+    </div>
+    <div class="story-subject">${esc(decodeMime(m.subject)) || '(no subject)'}</div>
+    <div class="story-tags">${tier}${actions}<span class="tag">${esc(m.channel || '')}</span></div>
+  </div>`;
+}
+
+async function load() {
+  document.getElementById('status').textContent = 'Loading...';
+  try {
+    const r = await fetch(DATA + '?t=' + Date.now());
+    const d = await r.json();
+
+    document.getElementById('date').textContent = new Date(d.generated).toLocaleString();
+    document.getElementById('c-electron').textContent = d.totals.electron;
+    document.getElementById('c-proton').textContent = d.totals.proton;
+    document.getElementById('c-neutron').textContent = d.totals.neutron;
+    document.getElementById('t-silver').textContent = d.tiers.silver;
+    document.getElementById('t-gold').textContent = d.tiers.gold;
+    document.getElementById('t-platinum').textContent = d.tiers.platinum;
+
+    document.getElementById('senders').innerHTML =
+      Object.entries(d.top_senders || {}).map(([s, n]) =>
+        `<div class="sender"><span class="n">${n}</span> ${esc(s)}</div>`).join('') ||
+      '<div class="empty">No external senders yet</div>';
+
+    document.getElementById('actionable').innerHTML =
+      (d.actionable || []).map(m => storyHTML(m, m.particle)).join('') ||
+      '<div class="empty">No action items</div>';
+
+    document.getElementById('electron').innerHTML =
+      (d.electron_feed || []).map(m => storyHTML(m, 'electron')).join('') ||
+      '<div class="empty">Inbox empty — waiting for the world to write</div>';
+
+    document.getElementById('proton').innerHTML =
+      (d.proton_feed || []).map(m => storyHTML(m, 'proton')).join('') ||
+      '<div class="empty">No outgoing mail yet — Gaia has not written back</div>';
+
+    document.getElementById('status').textContent =
+      `${d.totals.total} messages cataloged · generated ${fmtDate(d.generated)}`;
+  } catch(e) {
+    document.getElementById('status').textContent = 'Press Corps offline: ' + e.message;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

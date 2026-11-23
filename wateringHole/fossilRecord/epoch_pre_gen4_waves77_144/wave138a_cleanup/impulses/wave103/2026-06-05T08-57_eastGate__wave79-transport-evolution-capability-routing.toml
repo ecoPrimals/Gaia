@@ -1,0 +1,209 @@
+# FRAGO: Transport Evolution — Capability-Addressed Routing
+# Phase 2: Songbird-routed IPC replaces direct UDS/TCP discovery
+
+[impulse]
+id = "wave79-transport-evolution-capability-routing"
+type = "frago"
+from = "eastGate"
+to = ["songBird", "bearDog", "biomeOS", "all-primals"]
+date = "2026-06-05"
+updated = "2026-06-09T10:56"
+priority = "P2"
+owner = "songBird + biomeOS"
+note = """
+Transport evolution drives WAN/LAN/cross-arch deployment readiness.
+A primal that accepts TRANSPORT_ENDPOINT can deploy identically on
+eastGate (UDS), strandGate (UDS+TCP), golgiBody (TCP), Pixel (UDS),
+or any future topology. Without it, every deployment is bespoke.
+
+Mesh is LIVE (13.2h+ stable, eastGate↔strandGate). Transport at 10/11
+non-exempt (toadStool sole gap). Depot fresh (14/14 x86_64-musl).
+
+Wave 103 cascade surfaced two new blockers:
+  P1: bearDog aws-lc-rs C-dep blocks ALL aarch64 cross-compile (Pixel/ARM).
+      __memcpy_chk glibc symbol not in musl. Must eliminate C deps.
+      songbird+skunkbat+sourdough cross-compile clean already.
+  P1: flockGate WAN depot empty — no binary distribution path defined.
+      Need: VPS HTTP endpoint or SSH/rsync or GitHub Releases for WAN gates.
+  DONE: biomeOS v4.14 rebuilt on strandGate (LocalTrusted confirmed).
+  DONE: sporePrint canonical TransportEndpoint adopted (flockGate).
+"""
+
+[current_state]
+mesh = "LIVE — eastGate↔strandGate bidirectional, 13.2h+ stable, all 4 criteria PASS"
+transport_adoption = "10/11 non-exempt primals (toadStool sole gap). sporePrint also adopted."
+nucleus = "13/13 alive on eastGate, 12/12 liveness+readiness"
+depot_x86 = "14/14 x86_64-musl fresh. biomeOS v4.14 rebuilt (strandGate confirmed)."
+depot_aarch64 = "3/14 (songbird+skunkbat+sourdough). bearDog BLOCKED on aws-lc-rs C-dep."
+wan = "flockGate BLOCKED — depot empty, no binary distribution path. VPS reachable 34.8ms."
+self_knowledge = "Zero violations"
+ipc_resolve = "NOT YET SHIPPED — songBird Phase 2 M1"
+
+[context]
+reason = """
+UDS is convergent evolution — correct first step but not final form.
+UDS is Unix-only, single-machine, path-length-limited, and not isomorphic.
+The target is capability-addressed routing through Songbird, where primals
+never know or choose their transport.
+
+sourDough is the REPOSITORY OF PRIMAL STANDARDS — it defines wire formats
+and validates compliance externally. Primals implement TransportEndpoint
+locally using self-knowledge only. The wire format is the contract.
+"""
+reference = "primalSpring/docs/TRANSPORT_EVOLUTION.md"
+
+# ──────────────────────────────────────────────────────────────
+# REMAINING WORK — what blocks WAN/LAN/cross-arch deployments
+# ──────────────────────────────────────────────────────────────
+
+[remaining.toadstool_transport]
+id = "TRANSPORT-TOADSTOOL"
+description = "toadStool is the only non-exempt primal without TransportEndpoint"
+owner = "toadStool"
+priority = "P2"
+why = """toadStool has 101 TCP refs across GPU compute dispatch, orchestration IPC,
+and health probes. Without transport injection, toadStool deployments require
+manual port configuration — blocking isomorphic cross-arch deployment."""
+action = """Implement TransportEndpoint locally in toadstool-types. Accept
+TRANSPORT_ENDPOINT env var. ~30 lines for connect_transport(). See sweetGrass
+sweet_grass_core::transport or nestGate nestgate-types::transport for reference."""
+
+[remaining.songbird_ipc_resolve]
+id = "SONGBIRD-IPC-RESOLVE"
+description = "songBird ipc.resolve must return structured TransportEndpoint JSON"
+owner = "songBird"
+priority = "P2"
+why = """10 primals accept TRANSPORT_ENDPOINT but nobody produces it yet. ipc.resolve
+currently returns plain socket paths or host:port strings. Once it returns structured
+JSON, Tower Atomic can inject endpoints at composition deploy time — unlocking
+topology-aware deployment across LAN, WAN, and cross-arch."""
+action = """Evolve ipc.resolve response from string to:
+  { "transport": "uds", "path": "/run/biomeos/beardog.sock" }
+  { "transport": "tcp", "host": "192.168.1.173", "port": 9100 }
+  { "transport": "mesh_relay", "peer_id": "strandgate", "capability": "security" }
+This is Phase 2 M1 — the keystone that connects consumer-side transport injection
+(10/11 adopted) to producer-side endpoint resolution."""
+
+[remaining.beardog_c_dep]
+id = "BEARDOG-AWS-LC"
+description = "bearDog aws-lc-rs C-dep blocks ALL aarch64 cross-compile"
+owner = "bearDog"
+priority = "P1"
+why = """aws-lc-rs contains C code (dsa.c etc) that uses __memcpy_chk — a glibc fortification
+symbol not available in musl. This breaks aarch64-unknown-linux-musl cross-compile.
+bearDog is the security provider — every composition depends on it. Until bearDog
+cross-compiles, no full NUCLEUS runs on Pixel/ARM. songbird+skunkbat+sourdough already
+build clean for aarch64 (pure Rust). bearDog is the sole blocker."""
+action = """Replace aws-lc-rs with pure-Rust crypto: rustls + ring (or RustCrypto suite).
+Or find aws-lc-rs feature flags for musl-compatible builds. Validate with:
+  cargo build --release --target aarch64-unknown-linux-musl
+  file target/aarch64-unknown-linux-musl/release/beardog
+  # Expected: ELF 64-bit LSB executable, ARM aarch64, statically linked"""
+
+[remaining.wan_binary_distribution]
+id = "WAN-DEPOT-PATH"
+description = "No binary distribution path for WAN gates — flockGate depot empty"
+owner = "cellMembrane + eastGate"
+priority = "P1"
+why = """flockGate (192.168.60.20) is genuinely WAN-isolated — cannot reach LAN gates.
+VPS (137.184.197.151) reachable at 34.8ms. Depot has checksums but zero binaries.
+Without a distribution path, WAN gates cannot deploy NUCLEUS or enroll in mesh."""
+action = """This is the golgiBody outer membrane problem (see wave84 architecture section).
+The inner membrane (VPS) serves LAN covalent gates. WAN gates need the outer membrane
+face — either the same VPS with a Caddy /depot/ route, or a dedicated external golgiBody
+that links to the inner via covalent bond. The outer membrane handles ionic/weak
+interactions (partially-trusted WAN traffic). cellMembrane owns the pepti layer sync
+that feeds both membrane faces: inner→peptidoglycan builds→inner serves LAN, outer serves WAN.
+Priority: get songbird+beardog to flockGate for minimum mesh enrollment."""
+
+[remaining.biomeos_revalidate]
+id = "BIOMEOS-GRAPH-DEPLOY"
+description = "Revalidate nucleus-deploy --graph-deploy with biomeOS v4.14 (LocalTrusted)"
+owner = "eastGate"
+priority = "P2"
+why = """biomeOS v4.14 rebuilt on strandGate (confirmed). Running eastGate binary may still
+be pre-v4.14. Restart from depot and revalidate --graph-deploy to confirm LocalTrusted
+access works without BTSP token."""
+action = "Restart biomeOS from fresh depot binary. Run nucleus-deploy --graph-deploy full."
+
+[remaining.cross_arch]
+id = "CROSS-ARCH-AARCH64"
+description = "aarch64 cross-compile pipeline — 3/14 built, bearDog blocks remainder"
+owner = "cellMembrane"
+priority = "P2 (blocked on BEARDOG-AWS-LC)"
+why = """songbird (20MB), skunkbat, sourdough confirmed building for aarch64-unknown-linux-musl.
+bearDog BLOCKED on aws-lc-rs C-dep. Once bearDog is clean, remaining primals can sweep.
+deploy_pixel.sh has all 13 startup handlers wired and ready."""
+action = "After bearDog C-dep elimination, sweep remaining primals. Pipeline is operational."
+
+[remaining.wan_covalent]
+id = "WAN-COVALENT"
+description = "WAN mesh validation with flockGate"
+owner = "flockGate + eastGate"
+priority = "P2 (blocked on WAN-DEPOT-PATH)"
+why = """LAN mesh is proven (13.2h+ stable). WAN mesh validates transport across network
+boundaries. flockGate at 192.168.60.20 is genuinely isolated from LAN. VPS at
+137.184.197.151 is the natural relay point. songBird STUN/TURN exists but untested."""
+action = "After binary distribution path defined, deploy core stack, mesh.init via VPS relay."
+
+[remaining.irongate_mesh]
+id = "IRONGATE-MESH"
+description = "ironGate mesh enrollment — federation port not running"
+owner = "ironGate"
+priority = "LOW"
+why = "ironGate has 23 UDS sockets deployed. Federation port activation enrolls 3rd LAN gate."
+action = "Start songbird with --port 7700, mesh.init to eastGate + strandGate."
+
+# ──────────────────────────────────────────────────────────────
+# TRANSPORT ADOPTION SCORECARD
+# ──────────────────────────────────────────────────────────────
+
+[transport_scorecard]
+done = [
+  "sweetGrass v0.7.53 — LOCAL, wire-compatible",
+  "nestGate Session 97-98 — LOCAL, Phase 2 wired",
+  "coralReef 0a2f2f6 — LOCAL, 19 tests",
+  "squirrel f180c311 — LOCAL, Phase 2 (all 4 outbound TCP wired)",
+  "skunkBat 1b2f696 — LOCAL, full injection (per-capability env vars)",
+  "petalTongue b584571 — LOCAL",
+  "loamSpine b9828fe — LOCAL, shipped ahead of Wave 103 target",
+  "barracuda 408afaa5 — LOCAL (sourdough-core dep removed)",
+  "rhizoCrypt e621c6b — LOCAL (sourdough-core dep removed)",
+  "bearDog daf682c70 — LOCAL in beardog_types::btsp, Phase 2 wired",
+  "sporePrint Wave 103 — LOCAL, canonical format (flockGate)",
+]
+pending = ["toadStool — only remaining non-exempt gap (101 TCP refs)"]
+exempt = ["songBird (transport provider)", "biomeOS (orchestrator)"]
+
+# ──────────────────────────────────────────────────────────────
+# PHASES
+# ──────────────────────────────────────────────────────────────
+
+[phases]
+phase_1 = "UDS Convergence — COMPLETE. 13/13 VPS-ready. All headless regressions resolved."
+phase_2 = """Songbird-Routed IPC — 90% COMPLETE.
+Transport injection: 10/11 non-exempt adopted. toadStool remaining.
+ipc.resolve: NOT YET SHIPPED (Phase 2 M1 — the keystone).
+Mesh: LIVE (eastGate↔strandGate, 2-gate bidirectional proven).
+Depot: 14/14 fresh x86_64-musl. sourDough validate transport + depot operational.
+Remaining: toadStool transport, songBird ipc.resolve, biomeOS LocalTrusted rebuild."""
+phase_3 = """Tower Transport Abstraction — TARGET.
+After ipc.resolve ships and toadStool adopts, all primals are transport-ignorant.
+Composition graphs deploy identically across VPS/desktop/Pixel/container.
+Adding a gate becomes O(n): start bearDog + Songbird, mesh.init. No port config."""
+
+[phases.phase_2_milestones]
+m1 = "songBird ipc.resolve returns structured TransportEndpoint — IN PROGRESS"
+m2 = "CompositionContext queries Songbird instead of probing sockets — PENDING"
+m3 = "nucleus_launcher registers capabilities at spawn time — PENDING"
+m4 = "Graph metadata: transport field deprecated — PENDING"
+
+[outcome]
+expected = """
+Primals become transport-ignorant. A composition graph deploys identically
+on VPS, desktop, Raspberry Pi, container, or WASM. Adding a gate is O(n):
+start bearDog, start Songbird, mesh.init with one peer. No port config,
+no firewall rules, no transport selection. The mesh self-organizes.
+This unlocks: LAN multi-gate mesh, WAN covalent bonds, Pixel mobile NUCLEUS,
+and future topologies (container, WASM, embedded) without per-primal changes.
+"""

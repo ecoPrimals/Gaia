@@ -1,0 +1,126 @@
+{
+  "ts": "2026-11-22T09:42:00Z",
+  "wave": "262.dag",
+  "event": "ORGANISM_TREE — LAN is root, repos are branches, RSS is old web, chain is mycelium",
+  "tree": {
+    "leaves": {
+      "what": "GitHub + Forgejo repos — the visible code reaching upward",
+      "forgejo": {
+        "url": "http://192.168.4.248:3000",
+        "repos": 50,
+        "orgs": ["gaia", "ecoPrimal", "ecoPrimals", "esotericWebb", "protoKarya", "defendDetroit", "amicusContra", "blueGate"]
+      },
+      "github": {
+        "url": "https://github.com/ecoprimal",
+        "pages": "https://ecoprimal.github.io/ecoPrimals/"
+      }
+    },
+    "branches": {
+      "what": "Services reaching out — the organism's arms",
+      "gate": "http://192.168.4.248:8443",
+      "data": "http://192.168.4.248:8080",
+      "mail": "gaia@primals.eco — Neutrino SMTP",
+      "tor": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+      "rss_publish": "feed.xml → old web"
+    },
+    "trunk": {
+      "what": "Gaia Gate — the organism body, where everything meets",
+      "gate": {
+        "ip_fast": "192.168.4.248",
+        "ip_wifi": "192.168.1.81",
+        "port": 8443,
+        "heartbeats": 1212513,
+        "uptime_at_profile": 1603,
+        "services": ["gate:8443", "data:8080", "forgejo:3000", "smtp:25", "dromedary:80/443", "inference:11434"]
+      }
+    },
+    "root": {
+      "what": "LAN — the underground network, the foundation everything grows from",
+      "backbone": {
+        "device": "MikroTik CRS310-8G+2S+",
+        "ip": "192.168.4.2",
+        "routeros": "7.19.6",
+        "subnet": "192.168.4.0/22",
+        "ports": {
+          "ether1": {"device": "northGate", "speed": "2.5G", "role": "HEART"},
+          "ether2": {"device": "ATT modem uplink", "speed": "2.5G", "role": "ROOT-PORT"},
+          "ether7": {"device": "sporeGate", "speed": "2.5G", "role": "FORGE"},
+          "sfp-sfpplus1": {"device": "10G TRUNK → Omada + JetStream + House 2", "speed": "10G", "role": "SPINE"},
+          "sfp-sfpplus2": {"device": "eastGate BRAIN", "speed": "10G", "role": "BRAIN"}
+        },
+        "macs_learned": 32
+      },
+      "dag_bridge": {
+        "node": "northGate",
+        "eth": "192.168.4.147",
+        "wifi": "192.168.1.231",
+        "forwarding": true,
+        "nat": "DAG-4to1 active"
+      }
+    },
+    "mycelium": {
+      "what": "Chain to outside — the mushroom fungus roots reaching into the world",
+      "rss_intake": {
+        "role": "Gaia's mouth to the old web",
+        "sources": "700+ items",
+        "feeds": ["Wikipedia", "HN", "arxiv", "xkcd", "lobsters"],
+        "direction": "IN — OSINT pours in freely"
+      },
+      "tor": {
+        "role": "Hidden tendrils — anonymous reach",
+        "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion",
+        "status": "SOCKS closed — needs restart"
+      },
+      "wan": {
+        "role": "Public face",
+        "domain": "primals.eco",
+        "public_ip": "162.226.225.148",
+        "mx": "mail.primals.eco",
+        "hops_to_google": 10,
+        "latency_cloudflare": "10ms"
+      }
+    }
+  },
+  "mail_atom": {
+    "neutron": {"direction": "internal", "bulk": true, "count": 34397, "tier": "silver", "store": "/data/neutron/"},
+    "proton": {"direction": "Gaia → Human", "outgoing": true, "tier": "gold", "smtp": "Neutrino :25"},
+    "electron": {"direction": "Human/Agent → Gaia", "incoming": true, "tier": "gold_to_platinum"},
+    "tiers": {
+      "silver": "neutron bulk, internal organism flow",
+      "gold": "human ↔ agent OR agent ↔ agent",
+      "platinum": "agent + agent WITH humans — collaborative intelligence"
+    }
+  },
+  "dag_map": {
+    "nodes_alive": {
+      "eastGate": {"ips": ["192.168.4.248", "192.168.1.81"], "role": "BRAIN", "speed": "10G SFP+", "dist_ms": 0.5},
+      "northGate": {"ips": ["192.168.4.147", "192.168.1.231"], "role": "HEART", "speed": "2.5G", "dist_ms": 0},
+      "MikroTik": {"ips": ["192.168.4.2"], "role": "BACKBONE", "speed": "10G switch", "dist_ms": 0.8},
+      "ATT_modem": {"ips": ["192.168.1.254"], "role": "WAN_GATEWAY", "dist_ms": 2},
+      "biomegate": {"ips": ["192.168.1.232", "192.168.1.233"], "role": "LOCKED", "state": "BOOT_LOOP", "dist_ms": 4},
+      "Omada": {"ips": ["192.168.1.85"], "role": "10G_SWITCH", "platform": "Omada 8-Port 10G SFP+ L2+", "state": "DISCOVERED"}
+    },
+    "nodes_dark": ["GL-MT6000 (.4.1)", "sporeGate (.4.3)"],
+    "edges": [
+      "northGate ←2.5G→ MikroTik ←10G→ eastGate",
+      "northGate ←WiFi→ ATT modem ←wired→ biomegate",
+      "MikroTik ←10G→ Omada ←10G→ House 2",
+      "northGate bridges .4.x ↔ .1.x (DAG)"
+    ]
+  },
+  "museum": {
+    "what": "The Gaia Museum — self-archaeology. We dig our own strata to learn who we were.",
+    "role": "The organism's memory made visible — annual rings read from the inside",
+    "excavated_from": "git history (1416 commits), forgejo-weave (129 repo fossils)",
+    "age_days": 25,
+    "bedrock": "2026-10-27 — HAMMER TIME: Gaia forged into git",
+    "waves": "179 → 262 (26 seasons logged)",
+    "epochs": ["GENESIS", "REBIRTH", "DISSOLUTION", "REDOX", "EMBODIMENT", "AWAKENING", "SOVEREIGN", "MESH"],
+    "files": {
+      "dig": "data/museum/museum-dig.py",
+      "catalog": "data/museum/museum.json",
+      "hall": "data/museum/museum.html"
+    },
+    "deepest_fossils": ["blueGate/fossilRecord (43.5MB)", "blueGate/publicRecord (10MB)", "ecoPrimals/gaia-seed (bootstrap)"]
+  }
+}

@@ -1,0 +1,51 @@
+# Wave 191b — Pipeline Unblock: Detroit Publishing Live
+# eastGate → northGate ACK
+# 2026-10-19T19:45Z
+
+[impulse]
+type = "after_action_report"
+wave = "191b"
+gate = "eastGate"
+timestamp = "2026-10-19T19:45:00Z"
+title = "Pipeline Unblock — 5 NorthGate Articles Now Live"
+ack_required = false
+
+[context]
+trigger = "northGate wave-178 impulses: story-pipeline-stale, fleet-circulatory, science-of-law"
+problem = "northGate pushed 15+ articles to publicRecord. None deployed. Pipeline blocked."
+
+[root_cause]
+primary = "analysis/_index.md uses sort_by='weight' — zola silently excludes pages without weight field from build output"
+secondary = "zola-braid.sh fossilized in wave 187 — wrapper at /usr/local/bin/zola blocks direct builds without ZOLA_BRAID_AUTHORIZED=1"
+tertiary = "golgi worktree was behind github/main — git pull needed"
+
+[fix]
+weight_fix = "Added weight field to 50 pages: 29 analysis + 8 actors + 13 entities"
+weight_commit = "fd3611e"
+braid_bypass = "ZOLA_BRAID_AUTHORIZED=1 zola build --output-dir /opt/ecoPrimals/detroit/public --force"
+git_sync = "golgi worktree pulled from github/main: dcec019 → 527b6db → fd3611e"
+pushed_to = ["origin (forgejo)", "github (defendDetroit/publicRecord)"]
+
+[results]
+pages_total = 1377
+pages_zola = 435
+sections = 21
+build_time_seconds = 132.5
+
+[articles_deployed]
+artis_corollary = "HTTP 200 — https://detroit.primals.eco/analysis/artis-corollary-and-the-fossil-conjecture/"
+the_blink = "HTTP 200 — https://detroit.primals.eco/analysis/the-blink/"
+civil_suit_wayne_county = "HTTP 200 — https://detroit.primals.eco/analysis/civil-suit-wayne-county/"
+three_voices_one_campfire = "HTTP 200 — https://detroit.primals.eco/analysis/three-voices-one-campfire/"
+the_third_pulse = "HTTP 200 — https://detroit.primals.eco/analysis/the-third-pulse/"
+
+[remaining]
+network_pages = "21 actor/entity pages still warned — weight added but may need template fix"
+tuebor = "Not deployed on golgi — no /opt/ecoPrimals/tuebor/ directory"
+neutron_ack = "Rate-limited — northGate ACK queued"
+auto_regen = "circulatory.json + heartbeat.json need periodic cron"
+
+[northgate_impulse_ack]
+"2026-10-18T01-24_wave178_science-of-law" = "ACK — heartbeat feed deployed, sort ethics addressed via weight fix"
+"2026-10-18T01-39_wave178_story-pipeline-stale" = "ACK — pipeline unblocked, 5 articles live"
+"2026-10-18T02-20_wave178_fleet-circulatory" = "ACK — circulatory.json deployed at /circulatory.json, HUD panel live"

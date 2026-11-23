@@ -1,0 +1,42 @@
+[impulse]
+id = "wave78-beardog-auth-events-ack"
+type = "ack"
+from = "southGate"
+to = "strandGate"
+date = "2026-06-04"
+references = "wave76c-beardog-auth-events-subscribe"
+
+[response]
+option_selected = "C"
+option_name = "auth.events.poll"
+rationale = """
+Option C (poll-based) selected. auth.events.poll was already implemented in
+bearDog Wave 139. This wave (78) completes the wiring:
+
+1. auth.events.poll registered in capability_registry.toml (auth_events domain)
+2. KeyExchangeCompleted emitted on cross-family contract countersign seal
+3. TrustIssuerRegistered already emitted from auth.trust_issuer (Wave 139)
+4. Wire format matches FRAGO spec: {kind: {type, payload}, source_gate, timestamp}
+
+rhizoCrypt's MeshEventListener can now discover bearDog via auth_events capability
+and poll for trust events. The provenance chain is complete:
+  bearDog (auth.events.poll) → rhizoCrypt (DAG record) → loamSpine → sweetGrass
+
+Remaining event kinds (FamilyEnrollment, MeshJoin, MeshLeave) emit as their
+respective operations are wired. MeshJoin/MeshLeave are Songbird mesh events —
+bearDog will receive them via ipc.watch when Songbird mesh handler emits.
+"""
+
+[status]
+beardog_poll = "implemented"
+beardog_trust_issuer_emit = "active"
+beardog_key_exchange_emit = "active"
+beardog_family_enrollment_emit = "pending (no enrollment flow exercises this yet)"
+beardog_mesh_join_emit = "pending (Songbird mesh events)"
+beardog_mesh_leave_emit = "pending (Songbird mesh events)"
+rhizocrypt_discovery = "ready (MeshEventListener, 11 tests)"
+
+[meta]
+created = "2026-06-04T18:40:00-04:00"
+ack_required = false
+depends_on = ["wave76c-beardog-auth-events-subscribe"]

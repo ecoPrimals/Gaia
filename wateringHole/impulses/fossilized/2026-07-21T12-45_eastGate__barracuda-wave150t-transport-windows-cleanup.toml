@@ -1,0 +1,48 @@
+[impulse]
+timestamp = "2026-07-21T12:45:00-04:00"
+gate = "eastGate"
+wave = "150t"
+primal = "barraCuda"
+status = "landed"
+
+[summary]
+title = "Phase 2 transport adoption + Windows dead-code cleanup"
+description = """
+run_server UDS path now uses TransportListener::bind_unix + serve_listener \
+directly (aligned with run_service_mode). btsp.rs relay-only helpers gated \
+with #[cfg(unix)]. HandshakeError annotated with #[cfg_attr(not(unix), \
+expect(dead_code))]. SHADER_CAPABILITY_SOCKET gated with #[cfg(any(unix, test))]. \
+discovery_socket_path non-unix stub documented (missing_docs fix). \
+Zero warnings on Linux + Windows cross-compile. Zero clippy --all-features warnings."""
+
+[changes]
+files_changed = 4
+lines_added = 27
+lines_removed = 1
+
+[[changes.items]]
+file = "crates/barracuda-core/src/bin/barracuda/main.rs"
+what = "run_server UDS: serve_unix → TransportListener::bind_unix + serve_listener"
+
+[[changes.items]]
+file = "crates/barracuda-core/src/ipc/btsp.rs"
+what = "#[cfg(unix)] on is_btsp_client_hello, CLIENT_HELLO_TIMEOUT, resolve_family_seed_raw; #[cfg_attr] on HandshakeError"
+
+[[changes.items]]
+file = "crates/barracuda-core/src/ipc/transport_config.rs"
+what = "doc comment for non-unix discovery_socket_path stub"
+
+[[changes.items]]
+file = "crates/barracuda/src/device/coral_compiler/discovery.rs"
+what = "#[cfg(any(unix, test))] on SHADER_CAPABILITY_SOCKET"
+
+[validation]
+cargo_check_linux = "pass"
+cargo_check_windows = "pass — zero warnings"
+cargo_clippy_all_features = "pass — zero warnings"
+cargo_fmt = "pass"
+
+[upstream]
+commit = "485a35f9"
+pushed_to = "forgejo"
+github_relay = "pending golgiBody push mirror"

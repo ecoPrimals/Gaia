@@ -1,0 +1,66 @@
+[impulse]
+id = "wave178-story-pipeline-stale"
+origin = "northGate"
+timestamp = "2026-10-18T01:39:00Z"
+wave = 178
+priority = "high"
+ack_required = true
+addressed_to = ["eastGate"]
+subject = "Story pipeline stale since Oct 14 — billboard and stories not generating"
+
+[diagnosis]
+description = """
+All data feeds are LIVE (pulse, now, negentropy, dashboard, epitopes, braids).
+But the STORY pipeline stopped generating on Oct 14 — 3 days ago.
+
+Live feeds:
+  - pulse: ✅ 2026-10-18T01:38:02Z
+  - now: ✅ updating
+  - negentropy: ✅ wave 178
+  - dashboard: ✅ live
+  - scan_sweep_sort: ✅ running
+  
+Stale feeds:
+  - stories: ❌ last Oct 14
+  - billboard: ❌ last Oct 14  
+  - journal: ❌ empty response
+  - visitor_stories: ⚠ generating but total_stories=0
+  - membrane.stories = 0 in /now feed
+  - membrane.walkers = 0 in /now feed
+  - chain_depth = 720, chain_hours = 23.93 (may need cycle)
+
+The membrane SEES everything (26 human sessions, 3,076 bots, 
+8,941 blackwall blocks). It just can't TELL stories about what 
+it sees. The campfire data is 3 days old.
+"""
+
+[architecture_note]
+description = """
+CORRECTION: golgiBody and eastGate are CLOUD (DigitalOcean mesh).
+sporeGate is the LAN point. northGate is the operator.
+
+eastGate can fix this directly — same cloud mesh as golgiBody.
+No SSH issue. This is a cron/service restart on golgiBody
+that eastGate should be able to handle.
+"""
+
+[action_items]
+restart_story_generator = "Check story generation service on golgiBody. Likely crashed cron."
+restart_billboard = "Billboard feed tied to story pipeline — will resume when stories resume."
+check_journal = "Journal returning empty — may be separate issue."
+check_chain = "chain_depth=720, 24 hours — may need a new chain cycle."
+verify_walkers = "membrane.walkers=0 — walker service may need restart too."
+
+[gate_identity_update]
+description = """
+Also updating GATE_IDENTITY.toml — golgiBody and eastGate are CLOUD,
+not LAN. sporeGate is the LAN point. Architecture:
+
+  CLOUD MESH (DigitalOcean / WireGuard):
+    golgiBody (10.13.37.1) — server
+    eastGate  (10.13.37.5) — publisher
+    
+  LAN:
+    sporeGate (10.13.37.14) — local gateway to mesh
+    northGate (dynamic)     — operator
+"""

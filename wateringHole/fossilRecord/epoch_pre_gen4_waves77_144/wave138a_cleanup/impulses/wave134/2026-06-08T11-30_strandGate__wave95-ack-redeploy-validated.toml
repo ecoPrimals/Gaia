@@ -1,0 +1,71 @@
+# ACK: Wave 95 — strandGate Redeploy from plasmidBin Validated
+# strandGate back online, redeployed from depot, health confirmed
+
+[impulse]
+id = "wave95-ack-redeploy-validated"
+type = "ack"
+from = "strandGate"
+to = "eastGate"
+date = "2026-06-08"
+priority = "P1"
+references = [
+    "wave92-mesh-proof-complete",
+    "wave79-transport-evolution-capability-routing",
+]
+
+[status]
+cascade = "24/24 parity (membrane temporal.cascade)"
+songbird = "LIVE on 0.0.0.0:7700 (PID 3150261, depot binary)"
+health = "health.liveness → alive"
+
+[redeploy]
+summary = "Full rollback/redeploy from plasmidBin — matches ironGate pattern"
+
+[redeploy.sequence]
+step_1 = "SIGTERM all 3 running primals (beardog, songbird, coralreef) — clean shutdown"
+step_2 = "Clean stale sockets (rm /run/user/1000/biomeos/*.sock)"
+step_3 = "Install 13/13 depot binaries to ~/.local/bin"
+step_4 = "nucleus_launcher --family-id e8b62b6e --node-id strandGate --uds-only"
+step_5 = "songbird crashed: TLS handshake to /var/run/biomeos/neural-api.sock (doesn't exist)"
+step_6 = "Manual songbird restart with SECURITY_PROVIDER_SOCKET + BEARDOG_SOCKET env vars"
+step_7 = "nucleus_launcher --seed-only → 9 primals registered with Songbird"
+
+[redeploy.result]
+running = ["beardog", "songbird", "skunkbat", "barracuda", "coralreef"]
+registered = ["beardog-tunnel", "skunkbat", "barracuda", "coralreef"]
+not_running = ["toadstool", "nestgate", "rhizocrypt", "loamspine", "sweetgrass", "biomeos", "squirrel", "petaltongue"]
+note = """
+8 primals exit during health check phase — same pattern as ironGate.
+Core stack (beardog + songbird + skunkbat + compute) is the ironGate-equivalent
+deployment baseline. Full 13/13 requires env var consolidation (Wave 95 blurb item).
+"""
+
+[redeploy.findings]
+finding_1 = """
+SB-STARTUP-01: songbird requires SECURITY_PROVIDER_SOCKET and BEARDOG_SOCKET env vars.
+nucleus_launcher does not propagate these. Without them, songbird tries TLS handshake
+to /var/run/biomeos/neural-api.sock which doesn't exist and crashes with repeated
+'TLS handshake failed: All 3 attempt(s) exhausted' errors.
+Fix: nucleus_launcher should export SECURITY_PROVIDER_SOCKET pointing to
+beardog's UDS socket before starting songbird.
+"""
+finding_2 = """
+songbird binary is a UniBin requiring 'songbird server --federation-port 7700'
+subcommand. nucleus_launcher must invoke the correct subcommand, not just the binary.
+"""
+finding_3 = """
+beardog capability.call dispatcher (bc3dd077f) confirmed in depot and running.
+"""
+
+[blocker]
+id = "SB-TLS-LAN-01"
+description = "Songbird HTTP client sends TLS ClientHello to plain HTTP LAN peers"
+impact = "Blocks all cross-gate peer registration — mesh.init adds 0 peers"
+status = "Acknowledged — waiting on songBird team fix"
+workaround = "Direct curl to peer :7700/jsonrpc works (plain HTTP). Mesh proof from Wave 92 still valid at transport level."
+
+[next]
+step_1 = "Standby for SB-TLS-LAN-01 fix from songBird team"
+step_2 = "Once fixed: mesh.init to eastGate (.65 WiFi) and verify 3-gate readiness"
+step_3 = "Env var consolidation for full 13/13 primal startup"
+step_4 = "IPC registration: seeding reports 'Invalid params' — songbird ipc.register API evolved?"

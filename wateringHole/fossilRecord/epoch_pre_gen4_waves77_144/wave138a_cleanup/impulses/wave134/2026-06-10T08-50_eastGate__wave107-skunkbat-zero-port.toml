@@ -1,0 +1,47 @@
+# RESOLVED: skunkBat zero-port standard compliance (SKUNKBAT-TCP-9750)
+#
+# v0.2.9 — UDS-only default. TCP binding removed from default server mode.
+# TCP available as Tier 5 fallback via --port or PRIMAL_BIND_MODE=fallback.
+
+[impulse]
+id = "wave107-skunkbat-zero-port"
+type = "resolution"
+from = "eastGate"
+to = "primalSpring"
+date = "2026-06-10"
+priority = "LOW"
+status = "resolved"
+
+[resolution]
+commit = "9b9f490"
+branch = "main"
+version = "0.2.9"
+summary = """
+Zero-port standard compliance — TCP binding eliminated from default mode.
+
+Before: `skunkbat server` bound TCP 9750 + UDS (zero-port violation).
+After: `skunkbat server` runs UDS-only (port-free).
+
+TCP activates only when:
+  1. --port <N> explicitly passed (Tier 5 fallback)
+  2. PRIMAL_BIND_MODE=fallback env var set (Android, debug)
+  3. TRANSPORT_ENDPOINT specifies TCP (launcher-injected)
+
+New env: PRIMAL_BIND_MODE (uds-only | fallback)
+--port is now Option<u16> — absent means no TCP.
+
+Docs updated: README, CONTEXT, CHANGELOG, validation-summary all current.
+Test count: 506 passing (blurb shows stale 389 — depot scrape predates v0.2.7+).
+"""
+
+[resolution.compliance]
+zero_port_standard = true
+uds_only_default = true
+tcp_fallback_opt_in = true
+primal_bind_mode_env = true
+self_binding_violations = 0
+
+[resolution.verification]
+total_tests = 506
+clippy_warnings = 0
+version = "0.2.9"

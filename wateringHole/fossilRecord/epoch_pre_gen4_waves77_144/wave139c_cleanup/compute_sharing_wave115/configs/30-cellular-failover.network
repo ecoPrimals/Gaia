@@ -1,0 +1,34 @@
+# Cellular failover WAN — [ISP_CELLULAR] hotspot via WiFi or USB tether
+#
+# This config makes a cellular connection act as a high-metric fallback WAN.
+# Traffic only routes here when the primary [ISP] fiber (metric 100) is unreachable.
+#
+# Deployment:
+#   Option A (WiFi hotspot): Connect wlp3s0 to phone hotspot SSID via NetworkManager,
+#     then this file handles routing with high metric. Requires NM to hand off to networkd,
+#     OR use a separate wpa_supplicant@wlp3s0.service for the hotspot connection.
+#   Option B (USB tether): Plug phone via USB. Interface appears as usb0/enp0s20f0u1.
+#     This file matches USB-tethered interfaces and assigns failover metric.
+#
+# To activate:
+#   sudo cp this-file /etc/systemd/network/30-cellular-failover.network
+#   sudo systemctl restart systemd-networkd
+#
+# To deactivate:
+#   sudo rm /etc/systemd/network/30-cellular-failover.network
+#   sudo systemctl restart systemd-networkd
+
+[Match]
+# Match USB-tethered phone interfaces (common names for Android/iPhone tether)
+Name=usb0 enp0s20f0u* enx*
+Type=ether
+
+[Network]
+DHCP=yes
+IPv6AcceptRA=no
+
+[DHCPv4]
+UseDNS=no
+UseRoutes=yes
+RouteMetric=500
+UseMTU=yes

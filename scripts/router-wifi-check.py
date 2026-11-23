@@ -3,7 +3,7 @@ import paramiko
 # SSH directly to router
 router = paramiko.SSHClient()
 router.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-router.connect('192.168.4.1', username='root', password='ExoticPanda714!!', timeout=5, allow_agent=False, look_for_keys=False)
+router.connect('192.168.4.1', username='root', password='***', timeout=5, allow_agent=False, look_for_keys=False)
 
 def run(cmd, t=8):
     _, out, _ = router.exec_command(cmd, timeout=t)

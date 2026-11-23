@@ -1,0 +1,52 @@
+[impulse]
+id = "2026-06-02T07-44-eastGate-wave68-dependency-evolution-coordination"
+type = "frago"
+priority = "medium"
+wave = 68
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["southGate", "strandGate"]
+
+[content]
+subject = "Wave 68 — dependency evolution coordination: sled->redb + ring elimination"
+body = """
+Remaining external dependency evolution items requiring cross-team coordination.
+Deep debt complete on eastGate (18/18) and ironGate (7/7). These are the
+remaining non-sovereign dependencies that need gate-level evolution.
+
+1. SLED -> REDB MIGRATION (southGate — Songbird + BearDog)
+   rhizoCrypt, loamSpine, sweetGrass, and biomeOS have already completed
+   their sled->redb migrations in the deep debt sprint. Songbird and BearDog
+   still use sled as their embedded database.
+   Target: replace sled with redb across both primals.
+   Priority: MEDIUM — not blocking glacial but needed for full sovereignty.
+   Reference: PURE_RUST_SOVEREIGN_STACK_GUIDANCE.md (redb is sovereign choice).
+
+2. RING ELIMINATION — SQLX TRANSITIVE (eastGate — Squirrel)
+   Squirrel has a transitive ring dependency via sqlx. ring is the last
+   non-sovereign crypto dependency in a non-crypto codepath.
+   Options:
+   a) Evolve sqlx usage to remove ring chain (preferred)
+   b) Replace sqlx with a lighter Rust-native DB interface
+   Priority: MEDIUM — evaluate scope and report back.
+   Owner: eastGate (Squirrel is ours) but flagging for awareness.
+
+3. NAGA (biomeGate — barraCuda, coralReef)
+   coralReef team owns the WGSL parser path. naga dependency is LOW priority
+   as coralReef can bypass it with direct SPIR-V output once GAP-HS-124 is
+   resolved. No action required now — informational.
+
+4. VPS BASH RELAY -> RUST (ironGate)
+   Already tracked in ironGate's P1 items. peptidoglycan relay scripts
+   to evolve to Rust relay.rs. No action from southGate/strandGate.
+
+ACK with estimated timelines for items 1-2.
+Pull wateringHole for full context.
+"""
+
+[meta]
+created = "2026-06-02T07:44:00-04:00"
+ack_required = true

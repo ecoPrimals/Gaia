@@ -1,0 +1,59 @@
+[impulse]
+id = "2026-07-16T12-30-strandGate-barracuda-deep-debt-safety-visibility"
+type = "sitrep"
+priority = "routine"
+wave = 142
+
+[from]
+gate = "strandGate"
+team = "barraCuda"
+project = "primals/barraCuda"
+ref = "75c1c880"
+
+[to]
+gates = ["eastGate"]
+teams = ["overwatch", "primalSpring"]
+
+[content]
+subject = "barraCuda Wave 142b: deep debt sweep — safe casts, dead feature, visibility, transport abstraction"
+body = """
+COMPLETED — Wave 142b deep debt sweep (two commits: 82f0b8e2, 75c1c880).
+
+COMMIT 1 (82f0b8e2) — PHASE 2 TRANSPORT + ODE + ORPHANS:
+  - commands.rs: raw UnixStream → connect_transport dispatch (unified client)
+  - neural_announce.rs: 5 cfg(unix) gates removed, transport-agnostic announce
+  - discovery.rs: register_with_discovery un-gated
+  - pipeline/stage.rs + cascade.rs deleted (-867 lines dead orphan code)
+  - ODE methods evolved from Box<dyn Fn> → impl Fn generic dispatch
+
+COMMIT 2 (75c1c880) — SAFETY + VISIBILITY:
+  - Dead `parallel` feature flag removed (zero references)
+  - Safe u32 helpers: checked_u32() / shape_to_u32() in utils.rs
+  - 3 highest-risk `as u32` truncation sites migrated to checked conversion
+    (index_select product, sparse_matmul nnz, moving_window_stats lengths)
+  - Shader optimizer internals tightened: 6 types pub → pub(super)
+  - Dead BindingNode::latency() method removed
+  - Unused LatencyModel import cleaned
+
+FULL CODEBASE POSTURE (post-sweep):
+  - 0 production unsafe (except 1 audited SPIR-V passthrough, blocked on wgpu#4854)
+  - 0 production unwrap / todo / unimplemented / panic
+  - 0 Result<T, String> as error type
+  - 0 dead feature flags
+  - 0 production mocks/stubs
+  - 0 clippy warnings
+  - 5,153 tests passing (4,377 barracuda + 760 barracuda-core)
+  - Windows cross-arch clean
+
+REMAINING KNOWN DEBT (low priority):
+  - tarpc dual rand 0.8/0.9 (blocked on upstream tarpc 0.38)
+  - ~500 remaining `as u32` workgroup dispatch casts (bounded, low risk)
+  - 9 test files approaching 800 lines
+  - Phase 2 server-side listen abstraction + BTSP relay un-gating
+  - 8 String fn params that could take &str
+"""
+
+[meta]
+created = "2026-07-16T12:30:00-04:00"
+expires = "2026-07-23T00:00:00-04:00"
+ack_required = false

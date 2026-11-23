@@ -1,0 +1,66 @@
+# Wave 120 — Dual-Target Depot for GPU Gates
+# Issued: Jun 21, 2026 14:20 EDT
+# From: ironGate (barraCuda team)
+# To: sporeGate overwatch, cellMembrane team
+
+[meta]
+wave = 120
+issued_by = "ironGate_barracuda"
+issued_at = "2026-06-21T14:20:00-04:00"
+supersedes = ""
+entry_state = """
+ironGate NUCLEUS 12/12 deployed (toadstool runtime-only, correct).
+RTX 5070 confirmed working (NVIDIA 570, CUDA 12.8, Vulkan 1.3).
+barracuda glibc local build detects GPU: "NVIDIA GeForce RTX 5070 (DiscreteGpu), SHADER_F64 enabled, 14/9 f64 builtins native."
+Depot musl-static binary CANNOT access GPU (no dlopen → no libvulkan.so).
+"""
+
+[problem]
+summary = """
+The sovereign depot builds only x86_64-unknown-linux-musl (static PIE).
+wgpu requires dlopen("libvulkan.so.1") at runtime via ash → libloading.
+Static musl binaries have no dynamic linker — GPU discovery always fails.
+GPU primals (barracuda, coralReef) run degraded (cpu-shader only) on GPU gates.
+"""
+
+[adhoc_fix]
+description = "ironGate currently uses local glibc release build for barracuda"
+service_override = "/home/irongate/Development/ecoPrimals/primals/barraCuda/target/release/barracuda"
+status = "LIVE — RTX 5070 operational, health.check returns 'healthy'"
+limitation = "Breaks 'gates only fetch, never build' model. Manual rebuild on updates."
+
+[proposal]
+name = "DUAL-TARGET-DEPOT"
+priority = "P1"
+owner = "cellMembrane / sporeGate overwatch"
+description = """
+Evolve depot to build and serve x86_64-unknown-linux-gnu for GPU primals on compute gates.
+The existing per-gate profiles already define role metadata (barracuda = gpu-math).
+This metadata should drive which target a gate fetches.
+"""
+
+[proposal.changes]
+arch_enum = "Add X86_64Gnu variant with triple() = 'x86_64-unknown-linux-gnu' to plasmidbin-types/src/arch.rs"
+sources_toml = "Add gpu_primals = ['barracuda', 'coralreef'] to sources.toml"
+build_matrix = "Build authority builds gpu_primals for both musl and gnu targets"
+fetch_logic = "Gates with roles containing 'compute' or 'node_atomic' fetch gnu variant for gpu_primals"
+elf_validation = "is_static_elf() accepts dynamic ELF for gnu target directory"
+depot_layout = "New directory: primals/x86_64-unknown-linux-gnu/ alongside existing musl path"
+manifest = "ironGate gains gpu_target = 'x86_64-unknown-linux-gnu' field"
+
+[proposal.longterm]
+name = "SOVEREIGN-DISPATCH-IPC"
+description = """
+Long-term: musl barracuda delegates GPU work to local glibc coralReef via
+sovereign-dispatch IPC (already architected, feature-gated). The musl binary
+stays portable; GPU access is via IPC to a glibc shader compiler peer.
+This eliminates the need for per-gate target variants entirely — all gates
+run the same musl binary, GPU gates just have a coralReef peer running.
+"""
+feature_flag = "sovereign-dispatch"
+status = "Partially implemented — SovereignDevice + IPC contract exists, ops wiring in progress"
+
+[affected_gates]
+ironGate = "Primary. RTX 5070, Node Atomic compute trio."
+northGate = "Future. RTX 5090, family/compute gate."
+westGate = "Future. RTX 2070 Super, Nest Atomic + cold storage."

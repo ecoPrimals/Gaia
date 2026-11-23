@@ -10,7 +10,7 @@ set -eo pipefail
 : "${HOME:=/home/eastgate}"
 
 ROUTER="192.168.4.1"
-ROUTER_PASS="ExoticPanda714!!"
+ROUTER_PASS="***"
 PIXEL="${PIXEL_IP:-192.168.4.166}:5555"
 GAIA_DATA="/opt/Gaia/data"
 MEMBRANE="$HOME/Development/ecoPrimals/membrane"

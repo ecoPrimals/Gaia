@@ -1,0 +1,69 @@
+[impulse]
+id = "2026-07-16T12-00-strandGate-barracuda-phase2-transport-orphan-ode"
+type = "sitrep"
+priority = "routine"
+wave = 142
+
+[from]
+gate = "strandGate"
+team = "barraCuda"
+project = "primals/barraCuda"
+ref = "82f0b8e2"
+
+[to]
+gates = ["eastGate"]
+teams = ["overwatch", "primalSpring"]
+
+[content]
+subject = "barraCuda Wave 142b: Phase 2 transport abstraction, dead code removal, ODE generic dispatch"
+body = """
+COMPLETED — Wave 142b Phase 2 transport evolution + deep debt cleanup.
+
+THREE AXES:
+
+1. PHASE 2 TRANSPORT ABSTRACTION (5 cfg gates removed):
+   - commands.rs: replaced raw UnixStream::connect with connect_transport +
+     TransportEndpoint dispatch. Client path now unified for UDS/TCP.
+   - neural_announce.rs: removed #[cfg(unix)] from send_jsonrpc_transport and
+     announce_to_neural_api. Uses connect_transport + tokio::io::split for
+     transport-agnostic announce. On non-Unix, socket discovery returns None
+     and function exits gracefully in standalone mode.
+   - discovery.rs: removed #[cfg(unix)] from register_with_discovery. Function
+     already used connect_transport internally; file-existence guard handles
+     non-Unix gracefully.
+   - coral_compiler/jsonrpc.rs: Phase 2 blocked by architecture (barracuda
+     crate does not depend on barracuda-core). Documented; cfg gate retained.
+
+   NET EFFECT: 5 fewer #[cfg(unix)] gates on public/production code paths.
+   Transport dispatch moves from platform gating to endpoint-driven dispatch.
+
+2. DEAD CODE REMOVAL (867 lines):
+   - pipeline/stage.rs (384L) and pipeline/cascade.rs (483L) deleted.
+   - Orphan files: not wired into pipeline/mod.rs, never compiled.
+   - Active pipeline code (PipelineBuilder, StatefulPipeline, GpuView,
+     ReduceScalarPipeline) unaffected.
+
+3. ODE GENERIC DISPATCH (Box<dyn Fn> → impl Fn):
+   - RkIntegrator methods (integrate_adaptive, integrate_fixed, integrate_cpu,
+     integrate_hybrid) evolved from &Box<dyn Fn(f64, &[f64]) -> Vec<f64>> to
+     &impl Fn(f64, &[f64]) -> Vec<f64>. Callers can pass bare closures without
+     heap allocation. OdeFunction type alias retained for BatchedRK4F64 (needs
+     heterogeneous Vec<Box<dyn Fn>>).
+   - Tests updated to use bare closures — zero Box::new in unit tests.
+
+VALIDATION: 5,153 tests (4,377 barracuda + 760 barracuda-core). Zero clippy
+warnings. Zero regressions. Windows cross-arch check clean.
+
+PHASE 2 REMAINING (barraCuda):
+- Server-side listen abstraction (bind_transport/listen_transport)
+- main.rs startup block consolidation (UDS vs TCP paths)
+- BTSP relay un-gating (perform_handshake_relay)
+- tarpc dual rand (0.8/0.9) — blocked on upstream tarpc release
+
+These are architectural changes best done as focused sessions per axis.
+"""
+
+[meta]
+created = "2026-07-16T12:00:00-04:00"
+expires = "2026-07-23T00:00:00-04:00"
+ack_required = false

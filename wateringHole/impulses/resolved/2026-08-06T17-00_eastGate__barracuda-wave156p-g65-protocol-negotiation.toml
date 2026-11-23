@@ -1,0 +1,61 @@
+[impulse]
+timestamp = "2026-08-06T17:00:00-04:00"
+gate = "eastGate"
+primal = "barraCuda"
+wave = "156p"
+type = "evolution"
+status = "complete"
+
+[summary]
+title = "G65 Protocol Negotiation — single-socket tarpc + JSON-RPC"
+description = """
+Implemented G65 standard per PROTOCOL_NEGOTIATION_SPEC.md. barraCuda now \
+supports single-socket protocol negotiation on all accept loops. Clients \
+send `PROTOCOLS: tarpc,jsonrpc\n`, server responds `PROTOCOL: tarpc\n`, \
+and the connection proceeds in the selected protocol. Legacy clients that \
+skip negotiation default to JSON-RPC — full backward compatibility.
+
+New modules: ipc_protocol.rs (IpcProtocol enum), protocol_negotiation.rs \
+(wire types + selection + negotiate_client). TransportStream gains peek() \
+for non-consuming first-byte detection (TCP native, Unix MSG_PEEK). \
+handle_tarpc_negotiated wraps the negotiated stream in serde_transport + \
+LengthDelimitedCodec for tarpc BaseChannel serving.
+
+protocols.list IPC method updated to advertise negotiation.g65: true. \
+C2 dual-socket (.tarpc.sock) retained for backward compatibility.
+
+forbid(unsafe_code) → deny(unsafe_code) in barracuda-core for single \
+targeted allow on unix_peek() (libc::recv MSG_PEEK). barracuda crate \
+retains forbid(unsafe_code).
+"""
+
+[metrics]
+head = "d92f571a"
+new_files = 3
+modified_files = 12
+lines_added = 809
+lines_removed = 15
+unit_tests_added = 17
+integration_tests_added = 4
+clippy_warnings = 0
+fmt_clean = true
+
+[changes]
+files = [
+    "crates/barracuda-core/src/ipc/ipc_protocol.rs (NEW — IpcProtocol enum)",
+    "crates/barracuda-core/src/ipc/protocol_negotiation.rs (NEW — G65 wire types + negotiation)",
+    "crates/barracuda-core/tests/g65_protocol_negotiation.rs (NEW — 4 E2E integration tests)",
+    "crates/barracuda-core/src/ipc/transport/server.rs (serve_listener G65 + handle_tarpc_negotiated)",
+    "crates/barracuda-core/src/ipc/transport_endpoint.rs (TransportStream::peek + unix_peek)",
+    "crates/barracuda-core/src/ipc/methods/primal.rs (protocols.list G65 negotiation advertisement)",
+    "crates/barracuda-core/src/ipc/mod.rs (register ipc_protocol + protocol_negotiation modules)",
+    "crates/barracuda-core/src/lib.rs (forbid→deny unsafe_code)",
+    "crates/barracuda-core/Cargo.toml (libc unix-only dependency)",
+    "Cargo.toml (libc workspace dep)",
+]
+
+[cephalization]
+g65_status = "SHIPPED"
+c2_status = "COMPLETE (retained for backward compat)"
+negotiation_protocols = ["tarpc", "jsonrpc"]
+backward_compatible = true

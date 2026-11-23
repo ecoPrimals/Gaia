@@ -1,0 +1,115 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# DataManifest Schema — Declarative dataset acquisition for data federation
+#
+# A DataManifest declares WHAT data a gate wants to acquire, HOW to acquire
+# it, and WHERE the entry list comes from. It is the genesis document for
+# the provenance chain: hashed, signed, and stored in the DAG session
+# before any data moves.
+#
+# When another gate sees a manifest-braid, they know what data this gate
+# intends to hold — even before files arrive. This is the "pre-braid"
+# pattern that enables federated data awareness.
+#
+# Lifecycle:
+#   1. Author writes manifest TOML
+#   2. nest.declare_dataset hashes it → DAG genesis → intent braid
+#   3. nest.acquire_file (×N) fetches data per entries_source
+#   4. braid.partial_update at checkpoint_interval
+#   5. nest.complete_dataset → final Merkle root → complete braid
+#
+# This file IS the schema definition. Real manifests follow this structure.
+
+# ── Required: dataset identity ─────────────────────────────────────
+
+[manifest]
+dataset = ""                    # Machine-readable dataset ID (e.g. "alphafold_structures_v6")
+display_name = ""               # Human-readable name (e.g. "AlphaFold DB v6 Monomer Structures")
+source = ""                     # Canonical source URL (e.g. "https://alphafold.ebi.ac.uk/")
+version = ""                    # Dataset version (e.g. "v6", "2024.1", "37")
+license = "CC0-1.0"             # SPDX license ID
+trust_tier = "T1"               # T1 (primary, fetch/hash/consume), T2 (revalidate), T3 (derived)
+
+# Optional: expected scale (for capacity planning and progress tracking)
+expected_total = 0              # Expected number of files/entries
+expected_size_bytes = 0         # Expected total size in bytes (0 = unknown)
+
+# ── Required: acquisition method ───────────────────────────────────
+
+[manifest.acquisition]
+method = "http_bulk"            # http_bulk | rsync | ftp | api | local
+                                #   http_bulk: parallel HTTP GET per entry
+                                #   rsync: rsync with --partial for resume
+                                #   ftp: FTP/FTPS download
+                                #   api: REST/GraphQL API with pagination
+                                #   local: files already on disk (ingest only)
+
+concurrency = 20                # Max parallel downloads (http_bulk, api)
+rate_limit_mbps = 400           # Per-operation bandwidth cap in Mbps
+                                # Should be <= topology.bandwidth.request grant
+checkpoint_interval = 5000      # Partial dehydration every N files (0 = disabled)
+retry_max = 3                   # Max retries per failed file
+retry_backoff_ms = 5000         # Backoff between retries
+
+# rsync-specific
+rsync_flags = ""                # Extra rsync flags (e.g. "--exclude '*.log'")
+rsync_bwlimit_kbps = 50000     # rsync --bwlimit value (0 = use rate_limit_mbps)
+
+# ── Required: where to find the list of entries ────────────────────
+
+[manifest.entries_source]
+type = "csv"                    # csv | tsv | json | glob | inline | single
+                                #   csv/tsv: columnar file with entry metadata
+                                #   json: JSON array of entry objects
+                                #   glob: filesystem glob pattern
+                                #   inline: entries listed directly below
+                                #   single: single URL/path (rsync, ftp)
+
+# For csv/tsv type:
+path = ""                       # Path to the entries file (local or CAS hash)
+url_template = ""               # URL template with {column_name} placeholders
+                                # e.g. "https://alphafold.ebi.ac.uk/files/{af_id}-model_v{version}.cif"
+delimiter = ","                 # Field delimiter ("," for CSV, "\t" for TSV)
+header = true                   # Whether the file has a header row
+
+[manifest.entries_source.columns]
+# Map logical names to column indices (0-based) or header names
+# id = 0                        # Entry identifier column
+# url = 3                       # Direct URL column (alternative to url_template)
+
+# For glob type:
+# path = "/mnt/nestgate/cold/zfs/data/pdb/mmCIF/*.cif.gz"
+
+# For single type:
+# url = "rsync://ftp.ebi.ac.uk/pub/databases/alphafold/v6/"
+# dest = "/mnt/nestgate/cold/zfs/data/alphafold/v6/"
+
+# For inline type: see [[manifest.entries]] below
+
+# ── Optional: inline entries (for small datasets or overrides) ─────
+
+# [[manifest.entries]]
+# id = "AF-A0A009IHW8-F1"
+# url = "https://alphafold.ebi.ac.uk/files/AF-A0A009IHW8-F1-model_v4.cif"
+# expected_size = 45000
+# expected_hash = "abc123..."   # Pre-known BLAKE3 hash for verification
+
+# ── Optional: storage layout ──────────────────────────────────────
+
+[manifest.storage]
+base_path = "/mnt/nestgate/cold/zfs/data"   # Root storage directory
+subdirectory = ""               # Subdirectory under base_path (defaults to manifest.dataset)
+layout = "flat"                 # flat | sharded | hierarchical
+                                #   flat: all files in one directory
+                                #   sharded: hash-prefix subdirectories (e.g. ab/abcdef...)
+                                #   hierarchical: preserve source directory structure
+shard_depth = 2                 # For sharded: number of hex chars for prefix dirs
+
+# ── Optional: provenance metadata ──────────────────────────────────
+
+[manifest.provenance]
+author = "westgate"             # Gate or operator performing ingestion
+description = ""                # Human-readable description for the braid
+tags = []                       # Tags for the attribution braid
+springs_served = []             # Which springs/gardens consume this data
+                                # e.g. ["neuralSpring", "tideGlass"]

@@ -1,0 +1,101 @@
+[impulse]
+id = "2026-06-02T09-06-eastGate-wave68-biomegate-compute-trio-onboarding"
+type = "frago"
+priority = "high"
+wave = 68
+
+[from]
+gate = "eastGate"
+
+[to]
+gates = ["biomeGate"]
+
+[content]
+subject = "Wave 68 — compute trio (toadStool + barraCuda + coralReef) now biomeGate-owned, team onboarding"
+body = """
+Ownership change: the compute trio (toadStool, barraCuda, coralReef) is now
+fully owned by biomeGate. Fresh teams — this FRAGO provides orientation.
+
+GATE_TEAM_COORDINATION_MATRIX.md and GATE_SPRING_OWNERSHIP.md updated.
+Pull wateringHole via `membrane temporal.cascade` for full context.
+
+═══ TOADSTOOL TEAM ═══
+
+You own the GPU dispatch diesel engine. Two compute paths exist:
+
+WORKING PATH — wgpu/DRM (RTX 5060 Blackwell):
+  End-to-end verified 256/256 f32. This is production today.
+  Key files: wgpu_dispatch.rs, ipc.watch integration.
+
+BLOCKED PATH — VFIO bare-metal (Titan V):
+  ROOT CAUSE: PBDMA runlist never configured.
+  - PFIFO_RUNLIST_BASE = 0 (no runlist in memory)
+  - PBDMA_CHANNEL(0) = 0 (PBDMA not bound to channel)
+  - 7 pushbuffer entries submitted; GP_GET never advances
+  FIX: build runlist in DMA-mapped memory, write RUNLIST_BASE (0x002270),
+  trigger RUNLIST_SUBMIT (0x002274), poke FECS mailbox for GR context.
+  See: HOTSPRING_TIER2_PBDMA_ROOT_CAUSE_JUN01_2026.md in wateringHole handoffs.
+
+P0 ACTIONS:
+  1. Reboot to clear stuck nvsov from Exp 234 Run #5
+  2. Execute sovereign.warm_handoff with nvidia_catalyst_minimal_nop_titanv
+  3. On success: channel-adoption -> shader-dispatch -> Tier 3
+  4. Implement PBDMA runlist registration (unblocks Titan V execution)
+  5. FECS golden context reload (address PENDING_CTX_RELOAD)
+
+═══ BARRACUDA TEAM ═══
+
+You own the pure-Rust math and compute engine. barraCuda is COMPLETE for
+Layer 1 (sovereign math). Remaining gap:
+
+GAP-BC-002 — VFIO enumeration:
+  Wire `compute.hardware.vfio_devices` capability. toadStool needs this
+  to enumerate available VFIO GPUs for dispatch routing. Currently returns
+  empty — needs to query toadStool sysmon for bound devices.
+
+CAPABILITY REGISTRY: Your methods are in capability_registry.toml under
+[barracuda], [tensor], [math], [ode], [ml], [nautilus], [rng], [stats],
+[signal], [linalg], [spectral], [noise]. All registered and stable.
+
+═══ CORALREEF TEAM ═══
+
+You own the shader compiler. coralReef is DONE for Layer 2 — sm_35
+through sm_120 targets. Remaining gaps:
+
+GAP-HS-124 — SPIR-V output:
+  coralReef currently returns internal format, not real SPIR-V. The wgpu
+  path works because naga handles WGSL->SPIR-V, but for sovereign dispatch
+  (no naga), coralReef must emit valid SPIR-V directly.
+
+GAP-HS-115 — ReduceScalarPipeline Blackwell zero readback:
+  Reduction pipeline returns zeros on Blackwell (SM120). Works on older
+  architectures. Likely a barrier/sync issue with the new memory model.
+
+CAPABILITY REGISTRY: Your methods are in capability_registry.toml under
+[shader]. All registered.
+
+═══ CROSS-TEAM CONTEXT ═══
+
+Sovereignty stack layers (your collective responsibility):
+  Layer 0 (toadStool sysmon): COMPLETE
+  Layer 1 (barraCuda math): COMPLETE
+  Layer 2 (coralReef compiler): DONE — sm_35 through sm_120
+  Layer 3 (dispatch wiring): PARTIAL — wgpu working, VFIO blocked
+  Layer 4 (pure Rust GPU driver): 3/3 GPUs sovereign; FECS remaining
+
+External compute deps you share: naga (WGSL parser), wgpu/ash/libvulkan
+(default path), PTX/ptxas for SM120, cudarc (optional).
+
+The compute trio operates independently of the glacial mesh cutover.
+Your work is parallel. Coordinate via wateringHole impulses.
+
+ACK with team status and execution plan.
+"""
+
+[meta]
+created = "2026-06-02T09:06:00-04:00"
+ack_required = true
+references = [
+    "2026-06-02T07-44-eastGate-wave68-biomegate-exp234-hpc-update",
+    "2026-06-01T13-32-eastGate-wave67-biomegate-airgap-exp234-cleared",
+]

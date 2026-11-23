@@ -1,0 +1,45 @@
+[impulse]
+id = "wave105-flockgate-wan-e2e-partial-pass"
+type = "validation"
+priority = "P2"
+wave = 105
+
+[from]
+gate = "flockGate"
+role = "WAN mesh validation"
+
+[to]
+gates = ["eastGate", "ironGate"]
+team = "cellMembrane + ops"
+
+[content]
+subject = "flockGate WAN e2e: 4/5 PASS — blocked on VPS songbird federation port"
+body = """
+Executed Wave 105 WAN end-to-end validation.
+
+PASSED:
+  1. WAN depot fetch — 7 binaries from membrane.primals.eco (HTTPS, ~40ms)
+  2. NUCLEUS launch — beardog v0.9.0 + songbird v0.2.1 from WAN binaries
+  3. mesh.init — node_id=flockGate, federation port 7700 bound on 0.0.0.0
+  4. Protocol health — JSON-RPC health/mesh.status/mesh.peers all OK
+
+MISMATCH (non-blocking):
+  checksums.toml doesn't match VPS depot binaries (CM-VPS-DEPOT-SYNC gap)
+
+BLOCKED:
+  WAN mesh peering — no songbird on VPS:7700. flockGate cannot reach
+  LAN gates directly (192.168.60.x ≠ 192.168.1.x). Need songbird relay
+  on golgiBody-ext.
+
+ACTION NEEDED (cellMembrane/ironGate ops):
+  Start songbird on VPS with --port 7700 --bind 0.0.0.0 to enable
+  WAN federation. Then flockGate can complete mesh enrollment.
+
+SPORPRINT: Fully evolved (141 tests, 21 modules). Ready for cross-gate
+NestGate CAS push once mesh is live.
+"""
+
+[references]
+handoff = "FLOCKGATE_WAVE105_WAN_E2E_VALIDATION_JUN09_2026.md"
+frago = "wave104-cross-deployment-readiness"
+stadial_criterion = "4 (remote covalent node over WAN)"

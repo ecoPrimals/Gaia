@@ -1,0 +1,60 @@
+# Wave 102 ACK — strandGate Depot Refresh + Mesh Validation
+# BLUF: 9/9 stale primals rebuilt. Mesh LIVE with eastGate. Zero P1 blockers.
+
+[impulse]
+type = "ack"
+wave = 102
+gate = "strandGate"
+timestamp = "2026-06-09T13:15:00Z"
+parent_blurb = "Wave 102 — Mesh Proven, Transport Near-Complete, Depot Refresh Needed"
+
+[status]
+nucleus = "2/13 running (beardog + songbird core stack)"
+mesh = "LIVE — eastGate (192.168.1.144:7700) healthy, quality:1.0, direct path"
+songbird = "v0.2.1 (aebe271f) — mesh fix + auth hardening, :7700 LISTENING"
+beardog = "v0.9.0 (d3a8eb7bb) — transport Phase 2 + fail-closed PQC, 220+ methods"
+depot = "14/14 binaries checksummed — 9 rebuilt this wave"
+
+[depot_refresh]
+summary = "All 9 stale primals rebuilt from source to x86_64-unknown-linux-musl"
+
+[depot_refresh.rebuilt]
+songbird = { commit = "aebe271f", change = "P1 mesh fix v2 + auth hardening", size = 22773704 }
+beardog = { commit = "d3a8eb7bb", change = "Transport Phase 2 + fail-closed PQC", size = 12984720 }
+barracuda = { commit = "9b9cbed3", change = "sourdough-core removal + deep debt", size = 5827136 }
+rhizocrypt = { commit = "133dd23", change = "transport pervasion + service extract", size = 7816096 }
+coralreef = { commit = "4c417a95", change = "capabilities.list + deep debt", size = 8296288 }
+skunkbat = { commit = "latest", change = "Transport + typed ServerError", size = 2801952 }
+squirrel = { commit = "latest", change = "Transport Phase 2 + deep debt", size = 3790016 }
+petaltongue = { commit = "latest", change = "Transport + deep debt + coverage sprint", size = 29110336 }
+sourdough = { commit = "latest", change = "scaffold transport-kit + dep detection", size = 3156416 }
+
+[mesh_proof]
+init = "PASS — bootstrap_peers_added:1, initialized:true, node_id:strandgate-lan"
+discovery = "PASS — eastgate-lan at 192.168.1.144:7700, quality:1.0, direct path"
+health_check = "PASS — all_healthy:true, eastgate-lan healthy"
+direct_probe = "PASS — eastGate health.liveness returns alive"
+
+[findings]
+songbird_auth_hardening = """
+aebe271f auth hardening confirmed: security provider rejects unknown_family
+peers. This is expected behavior — reject-by-default for unauthorized peers.
+Mesh init still succeeds (bootstrap peers use transport-level trust).
+"""
+beardog_capabilities = """
+capability.list returns full suite: crypto (Ed25519, X25519, ChaCha20-Poly1305,
+Blake3, HMAC, HKDF), BTSP v2.0, ionic_bond v2.0, FIDO2, TLS 1.3, graph
+authorization, lineage, contract signing, JWT secrets, relay authorization,
+auth v3.0 with method-gate enforcement. 220+ methods ready for capability.call.
+"""
+rhizocrypt_toolchain = """
+rhizoCrypt pins toolchain to 1.94.1 via rust-toolchain.toml. Required
+`rustup target add x86_64-unknown-linux-musl` on that specific toolchain
+before musl build succeeded. Other primals use default toolchain.
+"""
+
+[blurb_review]
+toadstool_transport = "P2 — last non-exempt gap. Not our gate, acknowledged."
+biomeOS_v414 = "P2 — LocalTrusted rebuild. Will benefit strandGate once deployed."
+loamspine_transport = "ALREADY SHIPPED (b9828fe) — blurb LOW priority is stale."
+songbird_ipc_resolve = "P2 M1 — 9/11 primals ready as consumers. Acknowledged."
