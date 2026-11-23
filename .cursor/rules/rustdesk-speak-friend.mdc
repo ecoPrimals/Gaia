@@ -6,14 +6,15 @@ Every gate's RustDesk permanent password IS its gate name in lowercase — same 
 | Gate | IP | RustDesk ID | Password | Status |
 |---|---|---|---|---|
 | northGate | .147 | 132831540 | `northgate` | ✅ SET |
-| eastGate | .244 | 19091278 | `eastgate` | ✅ SET |
-| sporeGate | .3 | 1871544996 | `sporegate` | ⚠️ SET (socket warning) |
+| eastGate | .248 wire / 192.168.1.103 Wi-Fi (was .244) | 19091278 | `eastgate` | ✅ SET — THE HUB |
+| sporeGate | .3 | 1871544996 | `sporegate` | ⚠️ SET, but no desktop to show: no monitor attached, login session dies on start (Nov 22) |
 | ironGate | .237 | (check) | `irongate` | ❌ SSH pubkey-only, no password auth |
 | graftGate | .107 | (check) | `graftgate` | ❓ unreachable this session |
 | blueGate | .100 | (check) | `bluegate` | ❓ DOWN |
 
 ## Config
-- Rendezvous + relay: eastGate (.244:21116)
+- Rendezvous + relay: eastGate, the hub — 192.168.4.248:21116 (her pinned wire face; .244 is dead)
+- Mesh state: `data/gut/rustdesk-mesh.json` (northGate is the foreman; last sweep Nov 22)
 - LAN discovery: ON
 - Direct access port: 21118
 - Verification: permanent password (not one-time)
@@ -27,8 +28,8 @@ Every gate's RustDesk permanent password IS its gate name in lowercase — same 
 
 ## When Adding a New Gate
 1. Install RustDesk
-2. Set rendezvous: 192.168.4.244
-3. Set relay: 192.168.4.244
+2. Set rendezvous: 192.168.4.248
+3. Set relay: 192.168.4.248
 4. Enable LAN discovery
 5. Set permanent password to gate name: `rustdesk --password <gatename>`
 6. Enable direct access on port 21118
