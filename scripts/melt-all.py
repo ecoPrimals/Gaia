@@ -54,7 +54,7 @@ east = ssh('192.168.4.244', 'eastgate', 'eastgate')
 print(f'\n  eastGate WiFi neighbors:')
 # Check router WiFi clients for Pixel
 result = run(east, 
-    'sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
+    'sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
     '"for iface in ra0 ra1 rax0 rax1; do iwinfo $iface assoclist 2>/dev/null; done" 2>&1', 10)
 print(f'  {result[:300]}')
 
@@ -117,14 +117,14 @@ print('='*40)
 
 # Get modem page title via router
 modem_page = run(east, 
-    'sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
+    'sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
     '"curl -sk --connect-timeout 5 https://192.168.1.254/ 2>&1 | grep -i title" 2>&1', 10)
 print(f'  Page: {modem_page[:200]}')
 
 # Check current WAN config
 print(f'\n  Current WAN:')
 wan = run(east, 
-    'sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
+    'sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
     '"ip addr show eth1 | grep inet; cat /etc/config/network | grep -A5 wan" 2>&1', 8)
 print(f'  {wan[:300]}')
 

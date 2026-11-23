@@ -55,7 +55,7 @@ get_vendor() {
 
 get_hostname() {
     local ip="$1"
-    local name=$(sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@192.168.4.1 \
+    local name=$(sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=2 root@192.168.4.1 \
         "grep '$ip' /tmp/dhcp.leases 2>/dev/null" 2>/dev/null | awk '{print $4}')
     [ "$name" = "*" ] && name=""
     echo "$name"

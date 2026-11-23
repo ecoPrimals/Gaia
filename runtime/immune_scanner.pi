@@ -63,7 +63,7 @@ def _adb_target():
     except Exception:
         return ADB_SERIAL
 ROUTER_IP = "192.168.4.1"
-ROUTER_PASS = "ExoticPanda714!!"
+ROUTER_PASS = os.environ.get("GAIA_ROUTER_PASS", "")  # never in the repo; set in the environment of the gate that runs this
 
 def blake2b_hash(data: str) -> str:
     return hashlib.blake2b(data.encode(), digest_size=32).hexdigest()

@@ -72,7 +72,7 @@ east = ssh('192.168.4.244', 'eastgate', 'eastgate')
 print('\nRouter guest/LAN2 config:')
 # SSH to router from eastGate
 router_cmd = (
-    'sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
+    'sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
     '"ip addr show br-guest 2>/dev/null; '
     'cat /etc/config/dhcp 2>/dev/null | grep -A5 guest; '
     'cat /tmp/dhcp.leases* 2>/dev/null; '

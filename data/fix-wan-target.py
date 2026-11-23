@@ -14,7 +14,7 @@ import paramiko
 # First: check if router can reach .213
 c = paramiko.SSHClient()
 c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-c.connect('192.168.4.1', username='root', password='ExoticPanda714!!', timeout=10)
+c.connect('192.168.4.1', username='root', password='***', timeout=10)
 
 def run(cmd):
     stdin, stdout, stderr = c.exec_command(cmd, timeout=10)

@@ -4,10 +4,10 @@
 # The Tor hidden service stays — only ingress, no interception of household traffic
 #
 # Usage: bash fix-hulu-dns.sh
-# Or from eastGate: sshpass -p 'ExoticPanda714!!' ssh root@192.168.4.1 < fix-hulu-dns.sh
+# Or from eastGate: sshpass -p '***' ssh root@192.168.4.1 < fix-hulu-dns.sh
 
 ROUTER="192.168.4.1"
-PASS="ExoticPanda714!!"
+PASS="***"
 
 echo "=== HULU/DNS FIX — Wave 260 ==="
 echo "$(date)"

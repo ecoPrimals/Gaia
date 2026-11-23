@@ -4,7 +4,7 @@
 # Wave 260 — Cut ALL torpedoes. Tor hidden service stays local on eastGate.
 
 ROUTER="192.168.4.1"
-PASS="ExoticPanda714!!"
+PASS="***"
 
 echo "=== DRAINING ALL ROUTER TORPEDOES ==="
 echo "$(date)"

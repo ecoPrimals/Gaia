@@ -205,7 +205,7 @@ curl -kI http://192.168.0.1 2>&1 | head -5  # some Omada default
 
 ```bash
 # Admin UI: http://192.168.1.254
-# Device Access Code: #283>#66<>
+# Device Access Code: ***
 # Goal: IP passthrough to sporeGate's enp1s0 MAC
 # This makes sporeGate the SOLE boundary (true plasma membrane)
 ```
@@ -252,7 +252,7 @@ sudo apt install -y openssh-server
 
 | Item | Blocker | Action |
 |------|---------|--------|
-| [ISP] IP passthrough | Operator browser session | http://192.168.1.254, code `#283>#66<>` — eliminates double-NAT |
+| [ISP] IP passthrough | Operator browser session | http://192.168.1.254, code `***` — eliminates double-NAT |
 | fieldGate | Dead CMOS, DDR3 NUC | Hardware repair when viable |
 | Verify Eero bridge | Eero reboot completes | WiFi clients should get 192.168.4.x DHCP |
 

@@ -9,7 +9,7 @@ EASTGATE_USER = "eastgate"
 EASTGATE_PASS = "eastgate"
 ROUTER_IP = "192.168.4.1"
 ROUTER_USER = "root"
-ROUTER_PASS = "ExoticPanda714!!"
+ROUTER_PASS = "***"
 
 def ssh_exec(client, cmd, timeout=10):
     stdin, stdout, stderr = client.exec_command(cmd, timeout=timeout)

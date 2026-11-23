@@ -53,8 +53,8 @@ self_image = {
                 "onion": "iqwvbmlgvoiilj2hr43anj2keseao2lptquad36je5p5p2etw5e3riid.onion"
             },
             "ssh_pattern": "gate name in lowercase = password. Speak friend and enter.",
-            "router_password": "ExoticPanda714!!",
-            "forgejo_creds": "gaia:GaiaForge2026!",
+            "router_password": "***",
+            "forgejo_creds": "gaia:***",
             "family_seed": "3034463630464339"
         },
 

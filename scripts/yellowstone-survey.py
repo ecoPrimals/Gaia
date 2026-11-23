@@ -79,7 +79,7 @@ for port, svc in [(8443, 'gate'), (8080, 'data'), (3000, 'forgejo')]:
     print(f'  .244:{port} ({svc}): {result}')
 
 print('\n--- LAYER 6: Router port forwards (what ATT BGW320 routes) ---')
-router_fwd = erun('sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 "uci show firewall 2>&1 | grep -i redirect | head -20" 2>&1')
+router_fwd = erun('sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 "uci show firewall 2>&1 | grep -i redirect | head -20" 2>&1')
 print(f'  {router_fwd[:600]}')
 
 print('\n--- LAYER 7: ATT BGW320 — the Yellowstone caldera ---')
@@ -87,7 +87,7 @@ att_reach = erun('curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 htt
 print(f'  BGW320 web UI: HTTP {att_reach}')
 # What does the BGW320 think our public IP is?
 print(f'  BGW320 is at: 192.168.1.254 (above our router)')
-print(f'  Router WAN interface: {erun("sshpass -p ExoticPanda714!! ssh -o StrictHostKeyChecking=no root@192.168.4.1 ip addr show eth1 2>&1 | grep inet | head -1")}')
+print(f'  Router WAN interface: {erun("sshpass -p *** ssh -o StrictHostKeyChecking=no root@192.168.4.1 ip addr show eth1 2>&1 | grep inet | head -1")}')
 
 # === 3. Cross-gate hairpin test ===
 print('\n--- LAYER 8: Cross-gate hairpin test ---')

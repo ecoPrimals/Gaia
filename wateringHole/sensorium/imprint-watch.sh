@@ -37,7 +37,7 @@ scan_lan() {
     local arp_data=$(arp -a 2>/dev/null)
     
     # Get DHCP leases from router
-    local leases=$(sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 root@192.168.4.1 "cat /tmp/dhcp.leases 2>/dev/null" 2>/dev/null)
+    local leases=$(sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=3 root@192.168.4.1 "cat /tmp/dhcp.leases 2>/dev/null" 2>/dev/null)
     
     # Parse all alive hosts
     local hosts_4=$(echo "$scan_4" | grep "Nmap scan report" | awk '{print $NF}' | tr -d '()')

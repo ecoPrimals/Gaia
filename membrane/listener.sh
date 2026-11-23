@@ -12,7 +12,7 @@ set -eo pipefail
 : "${HOME:=/home/eastgate}"
 
 ROUTER="192.168.4.1"
-ROUTER_PASS="ExoticPanda714!!"
+ROUTER_PASS="***"
 DNS_LOG="/tmp/dns-queries.log"
 OUT_DIR="${HOME}/Development/ecoPrimals/membrane/local-terminal/remote"
 OUT_FILE="${OUT_DIR}/listener-signal.json"

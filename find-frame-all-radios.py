@@ -31,10 +31,10 @@ else:
     print("  ❌ Not in ARP cache")
 
 # Check DHCP leases on router for Frame
-out, _ = run("sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'cat /tmp/dhcp.leases 2>/dev/null' 2>&1 | grep -i -E 'steam|frame|14:13:33'")
+out, _ = run("sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'cat /tmp/dhcp.leases 2>/dev/null' 2>&1 | grep -i -E 'steam|frame|14:13:33'")
 print(f"  Router DHCP (LAN1): {out}")
 
-out, _ = run("sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.9.1 'cat /tmp/dhcp.leases 2>/dev/null' 2>&1 | grep -i -E 'steam|frame|14:13:33'")
+out, _ = run("sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.9.1 'cat /tmp/dhcp.leases 2>/dev/null' 2>&1 | grep -i -E 'steam|frame|14:13:33'")
 print(f"  Router DHCP (LAN2): {out}")
 
 # nmap ping sweep for new devices
@@ -68,11 +68,11 @@ print(f"  Last modified: {out}")
 
 # 5. Check all connected WiFi clients on router
 print("\n--- RADIO 5: All WiFi clients ---")
-out, _ = run("sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'iwinfo wlan0 assoclist 2>/dev/null; iwinfo wlan1 assoclist 2>/dev/null; iwinfo wlan2 assoclist 2>/dev/null; iwinfo wlan3 assoclist 2>/dev/null' 2>&1 | head -20")
+out, _ = run("sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'iwinfo wlan0 assoclist 2>/dev/null; iwinfo wlan1 assoclist 2>/dev/null; iwinfo wlan2 assoclist 2>/dev/null; iwinfo wlan3 assoclist 2>/dev/null' 2>&1 | head -20")
 print(f"  WiFi clients:\n  {out}")
 
 # Check guest network too
-out, _ = run("sshpass -p 'ExoticPanda714!!' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'cat /tmp/dhcp.leases' 2>&1")
+out, _ = run("sshpass -p '***' ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@192.168.4.1 'cat /tmp/dhcp.leases' 2>&1")
 print(f"\n  All DHCP leases:\n  {out}")
 
 print("\n=== ANCHOR PLAN ===")

@@ -49,7 +49,7 @@ try:
     
     # Router can reach modem
     _, out, _ = east.exec_command(
-        'sshpass -p "ExoticPanda714!!" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
+        'sshpass -p "***" ssh -o StrictHostKeyChecking=no root@192.168.4.1 '
         '"ping -c1 -W1 192.168.1.254 2>/dev/null && echo MODEM-ALIVE; '
         'curl -sk --connect-timeout 3 https://192.168.1.254/ 2>&1 | head -5" 2>&1',
         timeout=10

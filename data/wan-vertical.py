@@ -17,7 +17,7 @@ import paramiko
 
 ROUTER_IP = '192.168.4.1'
 ROUTER_USER = 'root'
-ROUTER_PASS = 'ExoticPanda714!!'
+ROUTER_PASS = '***'
 EASTGATE_IP = '192.168.4.244'
 
 c = paramiko.SSHClient()
