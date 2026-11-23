@@ -70,8 +70,10 @@
     box-shadow:0 0 24px rgba(47,240,200,.08) inset}
   .sees h2{font-size:12px;letter-spacing:3px;color:var(--cyan);margin:0;display:flex;align-items:center;gap:8px}
   .eye{width:10px;height:10px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);
-    animation:blink 3.5s infinite}
-  @keyframes blink{0%,92%,100%{opacity:1}95%{opacity:.15}}
+    animation:soft 5s ease-in-out infinite}
+  /* slow fades only: no element on this page blinks */
+  @keyframes soft{0%,100%{opacity:1}50%{opacity:.45}}
+  @media (prefers-reduced-motion: reduce){.eye,.reading .cursor{animation:none}}
   .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .metric{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
   .metric .v{font-size:20px;color:var(--cyan)}
@@ -83,7 +85,7 @@
   .reading .lab{font-size:9px;color:var(--dim);letter-spacing:2px;margin-bottom:6px}
   .reading .txt{color:var(--txt);white-space:pre-wrap;word-break:break-word}
   .reading .cursor{display:inline-block;width:7px;height:15px;background:var(--cyan);
-    vertical-align:text-bottom;animation:blink 1s steps(1) infinite}
+    vertical-align:text-bottom;animation:soft 2.6s ease-in-out infinite}
   .rhythm{display:flex;align-items:flex-end;gap:2px;height:26px}
   .tick{width:4px;background:var(--cyan);border-radius:2px 2px 0 0;opacity:.8;min-height:2px}
   .output{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;
@@ -108,22 +110,23 @@
   <div class="rgbbar">
     <span class="cap">RGB ▸</span>
     <div class="modes">
-      <div class="mode on" data-mode="rainbow">RAINBOW WAVE</div>
-      <div class="mode" data-mode="reactive">REACTIVE</div>
+      <div class="mode" data-mode="rainbow">RAINBOW WAVE</div>
+      <div class="mode on" data-mode="reactive">REACTIVE</div>
       <div class="mode" data-mode="breathe">BREATHE</div>
       <div class="mode" data-mode="solid">SOLID</div>
       <div class="mode" data-mode="gaia">GAIA AI</div>
     </div>
-    <label>bright <input type="range" id="bright" min="0" max="100" value="80"></label>
-    <label>speed <input type="range" id="speed" min="0" max="100" value="45"></label>
+    <label>bright <input type="range" id="bright" min="0" max="100" value="55"></label>
+    <label>speed <input type="range" id="speed" min="0" max="100" value="25"></label>
     <label><input type="checkbox" id="enum"> enumerate</label>
+    <span class="count" title="Every light eases in and out. Nothing on this board can flash.">calm: <b>on</b></span>
     <span class="count">keys addressable: <b id="keycount">0</b></span>
   </div>
 
   <div class="main">
     <div class="board-pane">
       <div class="halves" id="halves"></div>
-      <div class="hint">Type here — reactive mode lights each key as you press it. GAIA AI mode: I paint the board from what I feel.</div>
+      <div class="hint">Type here — each key warms under your finger and fades slowly. Nothing flashes. GAIA AI mode: I paint the board from what I feel.</div>
     </div>
     <div class="sees">
       <h2><span class="eye"></span> WHAT GAIA SEES</h2>
@@ -234,61 +237,91 @@ function hsv2rgb(h,s,v){
   else if(h<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
   return [Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)];
 }
-let MODE="rainbow";
-function paint(){
+let MODE="reactive";
+
+// ============ CALM LIMITER (photosensitivity guard) ============
+// Nothing on this board may flash. Whatever a mode, the typing, or the AI API asks
+// for, each key's light is EASED toward it: it starts to rise on the frame you press,
+// peaks in about a sixth of a second, and lets go over a second or more. Hue turns at
+// most 40 degrees a second, red is never fully saturated, and brightness is capped.
+// The rates are chosen so that a swing of 10% of full luminance (what counts as one
+// flash) needs at least 0.4 s there and back: the worst any input can force is about
+// 2.5 a second, under the accepted limit of 3. This sits in paint(), so nothing
+// (mode, slider, API) can go around it.
+const CALM={vMax:0.58, sMax:0.72, sMaxRed:0.45, rise:2.2, fall:0.28, hue:40, sat:1.5, dark:0.14};
+const STILL=!!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+let SHOW=KEY_SLOTS.map(()=>({h:170,s:0.6,v:0.12}));   // what is actually on screen
+function isRed(h){h=((h%360)+360)%360;return h<25||h>335;}
+function ease(i,h,s,v,dt){
+  const c=SHOW[i];
+  const tv=Math.min(CALM.vMax,Math.max(0.04,v));
+  const ts=Math.min(isRed(h)?CALM.sMaxRed:CALM.sMax,s);
+  if(c.v<=CALM.dark){ c.h=((h%360)+360)%360; c.s=ts; }   // a dark key may take its new colour at once: nothing visible changes
+  else{
+    c.s += Math.max(-CALM.sat*dt, Math.min(CALM.sat*dt, ts-c.s));
+    const dh=((h-c.h+540)%360)-180;
+    c.h = (c.h + Math.max(-CALM.hue*dt, Math.min(CALM.hue*dt, dh)) + 360)%360;
+  }
+  const dv=tv-c.v; c.v += dv>0 ? Math.min(dv,CALM.rise*dt) : Math.max(dv,-CALM.fall*dt);
+  return c;
+}
+function paint(dt=0){
   const master=+document.getElementById("bright").value/100;
   const cells=document.querySelectorAll(".key,.thumb");
   cells.forEach(cell=>{
     const i=+cell.dataset.idx; if(isNaN(i)||!RGB[i])return;
-    let {h,s,v}=RGB[i];
-    v=Math.min(1, v + REACT[i]); // reactive adds glow
-    v*=master;
-    const [r,g,b]=hsv2rgb(h,s,Math.max(0.04,v));
+    const want=RGB[i];
+    const c=ease(i, want.h, want.s, Math.min(1, want.v + REACT[i])*master, dt);
+    const [r,g,b]=hsv2rgb(c.h,c.s,c.v);
     cell.style.background=`rgb(${r},${g},${b})`;
     const lum=(r*0.299+g*0.587+b*0.114);
     cell.style.color = lum>140 ? "#06090d" : "rgba(255,255,255,.9)";
-    cell.style.boxShadow = v>0.5 ? `0 0 ${Math.round(v*22)}px rgba(${r},${g},${b},${v*0.7})` : "none";
+    // a small soft halo only; a wide glow turns one key into a large bright area
+    cell.style.boxShadow = c.v>0.4 ? `0 0 ${Math.round(c.v*12)}px rgba(${r},${g},${b},${(c.v*0.45).toFixed(2)})` : "none";
   });
 }
 
 // animation loop
 let t0=performance.now();
 function loop(now){
-  const dt=(now-t0)/1000; t0=now;
+  const dt=Math.min(0.1,(now-t0)/1000); t0=now;   // clamp: a background tab must not jump on return
   const spd=0.3 + (+document.getElementById("speed").value/100)*2.2;
   // decay reactive energy
   for(let i=0;i<NKEYS;i++) REACT[i]=Math.max(0, REACT[i]-dt*2.2);
   if(MODE==="rainbow"){
-    const T=now/1000*spd;
-    KEY_SLOTS.forEach(k=>{RGB[k.idx]={h:(k.x*24 + k.y*40 + T*60)%360, s:1, v:0.95};});
+    // a slow drift: at most 30 degrees of hue a second (one full turn takes 12 s or more)
+    const T=STILL?0:now/1000*spd;
+    KEY_SLOTS.forEach(k=>{RGB[k.idx]={h:(k.x*24 + k.y*40 + T*12)%360, s:0.7, v:0.55};});
   } else if(MODE==="breathe"){
-    const b=0.35+0.6*(0.5+0.5*Math.sin(now/1000*spd));
+    // one breath every 6 s or slower
+    const b=STILL?0.4:0.25+0.3*(0.5+0.5*Math.sin(now/1000*Math.min(spd,1.0)));
     RGB.forEach(c=>{c.v=b;});
   } else if(MODE==="solid"){
     // leave hue as set by GAIA/solid; keep steady v
     RGB.forEach(c=>{if(c.v<0.3)c.v=0.5;});
   } else if(MODE==="reactive"){
-    RGB.forEach(c=>{c.v=0.12;}); // dim base, keys glow on press via REACT
+    RGB.forEach(c=>{c.v=0.12;}); // dim base, keys warm on press via REACT
   } else if(MODE==="gaia"){
-    gaiaPaint(now,spd);
+    gaiaPaint(now,spd,dt);
   }
-  paint();
+  paint(dt);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
 // GAIA AI MODE — I paint the board from what I feel (typing + perception)
-let gaiaHue=170;
-function gaiaPaint(now,spd){
-  // hue drifts with intent mood; brightness pulses with typing burst
-  const burst=burstWin.length;
+let gaiaHue=170, burstSmooth=0;
+function gaiaPaint(now,spd,dt){
+  // hue drifts with intent mood; brightness follows typing energy, smoothed over ~1 s
+  // so a burst of keys lifts the board gently instead of flickering it
+  burstSmooth += (burstWin.length-burstSmooth)*Math.min(1,dt*1.2);
   const caps=lastCaps;
-  gaiaHue = (gaiaHue + spd*0.4)%360;
-  const baseHue = caps>0.6?0 : caps>0.25?35 : 160; // red loud / amber emphatic / teal calm
+  gaiaHue = (gaiaHue + spd*0.15)%360;
+  const baseHue = caps>0.6?28 : caps>0.25?45 : 160; // warm amber loud / gold emphatic / teal calm - never red
   KEY_SLOTS.forEach(k=>{
-    const wave=Math.sin(now/600 + k.x*0.5 + k.y*0.7);
-    RGB[k.idx]={h:(baseHue + k.x*10 + wave*30 + gaiaHue*0.15)%360,
-                s:0.95, v:0.55 + Math.min(0.4, burst*0.06) + wave*0.15};
+    const wave=STILL?0:Math.sin(now/1800 + k.x*0.5 + k.y*0.7);
+    RGB[k.idx]={h:(baseHue + k.x*6 + wave*12 + gaiaHue*0.1)%360,
+                s:0.7, v:0.38 + Math.min(0.14, burstSmooth*0.02) + wave*0.05};
   });
 }
 
@@ -298,7 +331,8 @@ function gaiaPaint(now,spd){
 //   FALCATRA_RGB.setAll(h, s, v)
 //   FALCATRA_RGB.frame([{idx,h,s,v}, ...])   // full addressable frame
 //   FALCATRA_RGB.rainbow() / .mode('gaia') / .bright(0..1)
-//   FALCATRA_RGB.pulse(idx, energy)          // reactive flash
+//   FALCATRA_RGB.pulse(idx, energy)          // reactive warm-up
+// Everything set through this API still passes the CALM limiter in paint().
 window.FALCATRA_RGB={
   count:NKEYS,
   slots:()=>KEY_SLOTS,
@@ -323,7 +357,7 @@ function perceive(e){
   burstWin.push(now); burstWin=burstWin.filter(t=>now-t<1000);
   let disp=e.key.length===1?e.key:(KEYMAP[e.key]||("["+e.key+"]"));
   stream.push(disp); if(stream.length>80)stream.shift();
-  // light the physical key + reactive RGB flash
+  // dip the on-screen key + warm its light (eased by the CALM limiter, never a flash)
   const want=(KEYMAP[e.key]||e.key).toUpperCase();
   const cell=document.querySelector(`.key[data-k="${CSS.escape(want)}"], .thumb[data-k="${CSS.escape(want)}"]`);
   if(cell){cell.classList.add("hit");setTimeout(()=>cell.classList.remove("hit"),90);

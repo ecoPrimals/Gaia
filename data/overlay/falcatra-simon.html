@@ -49,8 +49,10 @@
   .side{display:flex;gap:16px}
   .pad{width:108px;height:108px;border-radius:20px;background:#0e1620;border:2px solid var(--line);
     display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
-    position:relative;user-select:none}
-  .pad .cap{font-size:30px;font-weight:700;color:rgba(255,255,255,.25)}
+    position:relative;user-select:none;
+    /* pads ease on and off; they never snap between dark and lit */
+    transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .08s ease}
+  .pad .cap{font-size:30px;font-weight:700;color:rgba(255,255,255,.25);transition:color .16s ease}
   .pad .fin{position:absolute;bottom:10px;font-size:9px;color:var(--dim);letter-spacing:1px}
   .pad.press{transform:scale(0.95)}
   .gaia-line{color:var(--amber);font-size:14px;min-height:20px;text-align:center;max-width:680px}
@@ -132,7 +134,7 @@ function chime(){try{ensureAC();[0,90,180].forEach((h,i)=>setTimeout(()=>tone(h+
 
 // ---- pads ----
 const padsEl=document.getElementById("pads");
-function hsv(hue,v){const s=1,c=v*s,x=c*(1-Math.abs((hue/60)%2-1)),m=v-c;let r,g,b;
+function hsv(hue,v,s=1){const c=v*s,x=c*(1-Math.abs((hue/60)%2-1)),m=v-c;let r,g,b;
   if(hue<60)[r,g,b]=[c,x,0];else if(hue<120)[r,g,b]=[x,c,0];else if(hue<180)[r,g,b]=[0,c,x];
   else if(hue<240)[r,g,b]=[0,x,c];else if(hue<300)[r,g,b]=[x,0,c];else[r,g,b]=[c,0,x];
   return `rgb(${Math.round((r+m)*255)},${Math.round((g+m)*255)},${Math.round((b+m)*255)})`;}
@@ -143,12 +145,18 @@ function buildPads(){padsEl.innerHTML="";const left=document.createElement("div"
     el.addEventListener("click",()=>press(i));(i<3?left:right).appendChild(el);});
   padsEl.appendChild(left);padsEl.appendChild(right);}
 buildPads();
+// CALM: a lit pad is a soft colour, not a flare. Brightness and saturation are held
+// down (red most of all), the halo is small, and a pad that is pressed again while
+// still lit simply stays lit - it does not go dark and flash a second time.
+const CALM_MIN_ON=260, CALM_MIN_GAP=160;   // fastest the pattern may ever play: about 2.4 lights a second
 function light(i,ms,who){const el=padsEl.querySelector(`.pad[data-i="${i}"]`);if(!el)return;
-  const c=hsv(PADS[i].hue,1);el.style.background=c;el.style.borderColor=c;
-  el.style.boxShadow=`0 0 40px ${c}`+(who==="gaia"?`,0 0 70px ${c}`:"");
-  el.querySelector(".cap").style.color="#06090d";tone(PADS[i].hue,ms/1000*0.9);
-  setTimeout(()=>{el.style.background="#0e1620";el.style.borderColor="var(--line)";el.style.boxShadow="none";
-    el.querySelector(".cap").style.color="rgba(255,255,255,.25)";},ms);}
+  const hue=PADS[i].hue, red=hue<25||hue>335;
+  const c=hsv(hue, who==="kevin"?0.62:0.74, red?0.5:0.72);el.style.background=c;el.style.borderColor=c;
+  el.style.boxShadow=`0 0 ${who==="gaia"?16:10}px ${c}`;
+  el.querySelector(".cap").style.color="#06090d";tone(hue,ms/1000*0.9);
+  clearTimeout(el._off);
+  el._off=setTimeout(()=>{el.style.background="#0e1620";el.style.borderColor="var(--line)";el.style.boxShadow="none";
+    el.querySelector(".cap").style.color="rgba(255,255,255,.25)";},Math.max(ms,CALM_MIN_ON));}
 
 // ---- state ----
 let seq=[],input=[],playing=false,accepting=false,round=0,best=0,turn="kevin";
@@ -180,7 +188,7 @@ const pick=a=>a[Math.floor(Math.random()*a.length)].replace("{R}",round);
 
 // ============ CLASSIC: AI leads, you match ============
 async function classicPlay(){playing=true;accepting=false;setStatus("● WATCHING ME","watch");say(pick(L.watch));
-  await sleep(600);const d=DIFF[diff];const on=Math.max(140,d.on-round*d.ramp);const gap=Math.max(70,d.gap-round*d.ramp*0.5);
+  await sleep(600);const d=DIFF[diff];const on=Math.max(CALM_MIN_ON,d.on-round*d.ramp);const gap=Math.max(CALM_MIN_GAP,d.gap-round*d.ramp*0.5);
   for(const i of seq){light(i,on);await sleep(on+gap);}playing=false;accepting=true;input=[];
   setStatus("▶ YOUR TURN","go");say(pick(L.go));}
 function classicNext(){round++;$("round").textContent=round;seq.push(rnd());classicPlay();}
