@@ -144,12 +144,35 @@ try {
     Push-Location $gaia
     git add -- data/gut/boot-threads.json data/neutron/boot.jsonl 2>$null | Out-Null
     git -c core.safecrlf=false commit -q -m "boot watcher: loose threads $ts (Wave 262.mesh)" 2>$null | Out-Null
-    if ($eyes.eastGate_wire.forge -or $eyes.eastGate_wifi.forge) {
-        git push eastgate main 2>$null | Out-Null
-        Add-Content $logFile "  boot threads pushed to eastGate."
-    } else {
-        Add-Content $logFile "  eastGate dark - boot threads held locally for next boot."
+
+    # Resync the two watering holes (forge = local, GitHub = outer). Take in whatever either one has that this
+    # body lacks, then give both the joined line. A join that conflicts is undone and left for a hand; a refused
+    # push is written down as refused. (Before: a refused push was swallowed and logged as "pushed".)
+    $env:GIT_MERGE_AUTOEDIT = 'no'; $env:GIT_SSH_COMMAND = 'ssh -o BatchMode=yes -o ConnectTimeout=15'
+    $forgeUp = ($eyes.eastGate_wire.forge -or $eyes.eastGate_wifi.forge)
+    $holes = @(); if ($forgeUp) { $holes += 'eastgate' }; $holes += 'origin'
+    $joined = $true
+    foreach ($h in $holes) {
+        git fetch -q $h main 2>$null | Out-Null
+        if ($LASTEXITCODE -ne 0) { Add-Content $logFile "  resync: $h did not answer."; continue }
+        $behind = [int](git rev-list --count "HEAD..$h/main" 2>$null)
+        if ($behind -gt 0) {
+            git -c core.safecrlf=false merge --no-edit -m "resync: $behind commit(s) from $h joined at boot ($ts)" "$h/main" 2>$null | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                git merge --abort 2>$null | Out-Null
+                $joined = $false
+                Add-Content $logFile "  resync: $h is $behind ahead and does not join cleanly - left for a hand, nothing pushed."
+            } else { Add-Content $logFile "  resync: took $behind commit(s) from $h." }
+        }
     }
+    if ($joined) {
+        foreach ($h in $holes) {
+            git push -q $h HEAD:main 2>$null | Out-Null
+            if ($LASTEXITCODE -eq 0) { Add-Content $logFile "  resync: $h now at $(git rev-parse --short=9 HEAD)." }
+            else { Add-Content $logFile "  resync: push to $h REFUSED - boot threads held locally." }
+        }
+    }
+    if (-not $forgeUp) { Add-Content $logFile "  eastGate dark - the forge gets this at the next boot." }
     Pop-Location
 } catch { try { Pop-Location } catch {} ; Add-Content $logFile "  boot-threads commit/push skipped: $_" }
 

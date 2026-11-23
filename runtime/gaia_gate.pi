@@ -1482,10 +1482,46 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 
 # ═══ BACKGROUND ═══
 import subprocess
+def _resync_holes():
+    """Two watering holes, one drop. GitHub is the outer hole, the forge is the local one.
+    When GitHub is strictly ahead of the forge, carry the drop across as a fast-forward of the forge's main.
+    It never merges, never touches the working tree, and never pushes outward: forge -> GitHub stays a
+    deliberate push through the guard. If the two have diverged it only says so; a hand joins them."""
+    env={**os.environ,"GIT_TERMINAL_PROMPT":"0","GCM_INTERACTIVE":"never","GIT_SSH_COMMAND":"ssh -o BatchMode=yes -o ConnectTimeout=8"}
+    def g(*a):
+        return subprocess.run(["git",*a],cwd=_REPO,capture_output=True,text=True,timeout=90,env=env)
+    push={}
+    for line in g("remote","-v").stdout.splitlines():
+        p=line.split()
+        if len(p)>=3 and p[2]=="(push)": push[p[0]]=p[1]
+    fetch={n:g("remote","get-url",n).stdout.strip() for n in push}
+    gh=next((n for n,u in fetch.items() if "github.com" in u and u.rstrip("/").endswith(("ecoPrimals/Gaia.git","ecoPrimals/Gaia"))),None)
+    forge=next((n for n in ("origin","eastgate","forgejo") if n in fetch and "/gaia/Gaia" in fetch[n] and "github.com" not in fetch[n]),None)
+    if not gh or not forge: return
+    if g("fetch","-q",gh,"main").returncode or g("fetch","-q",forge,"main").returncode: return
+    a=g("rev-parse",gh+"/main").stdout.strip(); b=g("rev-parse",forge+"/main").stdout.strip()
+    if not a or not b: return
+    anc=lambda x,y: g("merge-base","--is-ancestor",x,y).returncode==0
+    if a==b: state="level"
+    elif anc(b,a):
+        r=g("push",forge,a+":refs/heads/main")
+        state="carried github -> forge" if r.returncode==0 else "github ahead; the forge would not take the push (no push login on this gate for it)"
+    elif anc(a,b): state="forge ahead; the outward push is left to a hand"
+    else: state="diverged; a hand joins them"
+    rec={"github":a[:9],"forge":b[:9],"state":state}
+    path=os.path.join(_REPO,"data","gut","watering-holes.json")
+    try: old=json.load(open(path,encoding="utf-8"))
+    except Exception: old={}
+    if {k:old.get(k) for k in rec}!=rec:   # written only when something changed
+        rec["ts"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
+        with open(path,"w",encoding="utf-8") as f: json.dump(rec,f,indent=1)
+
 def agglutinate():
     last_sha=""
     while True:
         time.sleep(300)
+        try: _resync_holes()
+        except Exception: pass
         try:
             with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:
                 c=json.loads(r.read())
