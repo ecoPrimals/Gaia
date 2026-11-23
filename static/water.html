@@ -90,6 +90,7 @@ section h2 { margin-bottom:var(--gap); font-size:1.4rem; }
   <section class="hero">
     <h1>Water Lock</h1>
     <p class="sub"><span class="pulse-dot"></span>OSINT pours IN freely &mdash; nothing seeps OUT</p>
+    <p style="margin-top:18px"><a id="enter-hud" href="https://hud.primals.eco" style="display:inline-block;padding:9px 22px;border:1px solid var(--cyan-dim);border-radius:999px;font-family:var(--font-mono);font-size:.95rem">this is the entrance &middot; step through to the HUD &rarr;</a></p>
     <div class="stats" id="stats">
       <div class="stat"><div class="v" id="s-rss">1684</div><div class="l">RSS Items</div></div>
       <div class="stat"><div class="v" id="s-plasmids">431</div><div class="l">Plasmids</div></div>
@@ -447,6 +448,17 @@ section h2 { margin-bottom:var(--gap); font-size:1.4rem; }
 </footer>
 
 <script>
+// The entrance works from any door. On a public name the links stay as written (hud.primals.eco, primals.eco).
+// Reached by a bare gate address (LAN, no names), the same links stay on this gate: /hud and /.
+(function () {
+  var h = location.hostname;
+  if (/(^|\.)primals\.eco$|(^|\.)nestgate\.io$|(^|\.)primal\.eco$/.test(h)) return;
+  document.querySelectorAll('a[href]').forEach(function (a) {
+    var u = a.getAttribute('href');
+    if (/^https?:\/\/hud\.primals\.eco\/?$/.test(u)) a.setAttribute('href', '/hud');
+    else if (/^https?:\/\/primals\.eco\/?$/.test(u)) a.setAttribute('href', '/');
+  });
+})();
 fetch('/pulse').then(r=>r.json()).then(d=>{}).catch(()=>{});
 </script>
 </body>
