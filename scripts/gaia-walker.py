@@ -22,6 +22,12 @@ Run by hand - it is not a cron and starts nothing that stays running:
   python scripts/gaia-walker.py                                   # this gate, links + static render check
   python scripts/gaia-walker.py --render                          # plus real browser renders and screenshots
   python scripts/gaia-walker.py --base http://192.168.4.248:8443  # another gate on the LAN
+  python scripts/gaia-walker.py --faces --dom                     # the front page of each name, at home and hoisted
+
+  FACES        the front page a name shows (hud, nestgate, primals.eco on this gate; hud and nestgate on GitHub
+               Pages), one link deep: each link is dead, fine, or brings the same page back again, and each
+               asset the page pulls in loads or does not. --dom adds the links a script writes. The short form
+               goes to runtime/membrane/dead-links.json, which the gate's /thymus and /klein carry.
 
 Only the gate named by --base is requested. External links are counted, never fetched
 (water lock). Forms are never submitted and links that look like actions are not followed.
@@ -30,7 +36,9 @@ ignores itself in git. Standard library only; Pillow is used for thumbnails if p
 """
 import argparse
 import concurrent.futures as cf
+import hashlib
 import html
+import socket
 import json
 import os
 import re
@@ -57,9 +65,12 @@ BAD_CONSOLE = re.compile(r"(?i)uncaught|failed to load resource|is not defined|s
 
 
 # ───────────────────────── fetching ─────────────────────────
-def fetch(url, timeout, limit=1_500_000):
+def fetch(url, timeout, limit=1_500_000, host=None, accept="*/*"):
     t0 = time.time()
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+    headers = {"User-Agent": UA, "Accept": accept}
+    if host:
+        headers["Host"] = host
+    req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             body = r.read(limit)
@@ -428,9 +439,213 @@ td{border-bottom:1px solid #23272e;padding:4px 14px 4px 0;vertical-align:top}td:
         f.write(doc)
 
 
+# ───────────────────────── the faces ─────────────────────────
+# One front page per name, at home and where it is hoisted. For each: every link and asset the front page
+# carries is requested once, the way a browser would ask for it, and sorted into what a visitor would meet.
+FACES_SUMMARY = os.path.join(REPO, "runtime", "membrane", "dead-links.json")
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None
+
+
+_PLAIN = urllib.request.build_opener(_NoRedirect)
+
+
+def plain_status(url, host=None, accept="text/html,*/*", timeout=6):
+    """Status of one request with no redirect followed (a redirect is not the page)."""
+    headers = {"User-Agent": UA, "Accept": accept}
+    if host:
+        headers["Host"] = host
+    try:
+        with _PLAIN.open(urllib.request.Request(url, headers=headers), timeout=timeout) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except Exception:
+        return 0
+
+
+def default_faces(gate):
+    # where a path that is dead on Pages may still be alive: this gate under the WAN name, and the data servers
+    # (the old HUD site lives on eastGate's). A door that says yes to a path that cannot exist is not asked.
+    home = [(gate, "primals.eco")]
+    for d in dict.fromkeys(["http://%s:8080" % urllib.parse.urlsplit(gate).hostname, "http://192.168.4.248:8080"]):
+        if plain_status(d + "/gaia-walker-no-such-path-%d.none" % os.getpid(), timeout=4) == 404:
+            home.append((d, None))
+    return [
+        {"name": "hud at home", "url": gate + "/", "host": "hud.primals.eco"},
+        {"name": "nestgate at home", "url": gate + "/", "host": "nestgate.io"},
+        {"name": "primals.eco at home", "url": gate + "/", "host": "primals.eco"},
+        {"name": "hud on Pages", "url": "https://ecoprimals.github.io/hud/", "home_doors": home},
+        {"name": "nestgate on Pages", "url": "https://ecoprimals.github.io/nestgate.io/", "home_doors": home},
+    ]
+
+
+def dom_after_scripts(browser, face, budget_ms, timeout):
+    """The front page as it stands once its scripts have run (links a script writes are only here)."""
+    u = urllib.parse.urlsplit(face["url"])
+    args = [browser, "--headless=new", "--disable-gpu", "--mute-audio", "--no-first-run", "--no-default-browser-check",
+            "--disable-extensions", "--virtual-time-budget=%d" % budget_ms, "--dump-dom"]
+    url = face["url"]
+    if face.get("host"):   # ask the gate by the face's own name without touching this body's name table
+        args.append("--host-resolver-rules=MAP %s %s" % (face["host"], u.hostname))
+        url = urllib.parse.urlunsplit((u.scheme, "%s:%d" % (face["host"], u.port or 80), u.path, u.query, ""))
+    profile = tempfile.mkdtemp(prefix="gaia-walker-dom-")
+    try:
+        r = subprocess.run(args + ["--user-data-dir=" + profile, url], capture_output=True, timeout=timeout)
+        text = r.stdout.decode("utf-8", "replace")
+        return (text, url) if "<" in text else (None, url)
+    except Exception:
+        return None, url
+    finally:
+        shutil.rmtree(profile, ignore_errors=True)
+
+
+def walk_face(face, timeout, workers, browser, budget_ms):
+    u = urllib.parse.urlsplit(face["url"])
+    door = "%s://%s" % (u.scheme, u.netloc)                    # where requests really go
+    names = {u.hostname, face.get("host")} - {None}            # hosts that count as this face
+    scope = u.path[:u.path.rfind("/") + 1] or "/"              # the folder the face lives in
+    front = fetch(face["url"], timeout, host=face.get("host"), accept="text/html,*/*")
+    out = {"name": face["name"], "url": face["url"], "host": face.get("host", ""), "status": front["status"]}
+    if front["status"] != 200:
+        out.update(error=front.get("error", ""), links=0, ok=0, dead=[], folds=[], home_only=[], left=[], assets=0,
+                   assets_dead=[], after_scripts=False)
+        return out
+    front_sha, front_len = hashlib.sha1(front["body"]).hexdigest(), len(front["body"])
+    page = Page()
+    page.feed(front["body"].decode("utf-8", "replace"))
+    found, seen_dom, page_url = [(k, raw, False) for k, raw in page.links], False, face["url"]
+    if browser:
+        dom, dom_url = dom_after_scripts(browser, face, budget_ms, timeout=max(60, budget_ms // 1000 + 45))
+        if dom:
+            seen_dom = True
+            live = Page()
+            try:
+                live.feed(dom)
+            except Exception:
+                pass
+            have = set(found_raw for _k, found_raw, _d in found)
+            found += [(k, raw, True) for k, raw in live.links if raw not in have]
+    targets = {}
+    external = {}
+    for kind, raw, by_script in found:
+        raw = raw.strip()
+        if not raw or raw.lower().startswith(SKIP_SCHEMES):
+            continue
+        t = urllib.parse.urlsplit(urllib.parse.urljoin(page_url, raw))
+        if t.scheme not in ("http", "https"):
+            continue
+        if t.hostname not in names:
+            external[t.hostname or "?"] = external.get(t.hostname or "?", 0) + 1
+            continue
+        path = t.path or "/"
+        if kind == "href" and ACTS.search(path):
+            continue
+        if kind == "href" and path in (u.path, u.path + "index.html"):
+            continue                                           # the front page itself (a view of it, or its top)
+        key = path + ("?" + t.query if t.query else "")
+        e = targets.setdefault(key, {"path": key, "kind": "link" if kind == "href" else "asset", "as_written": raw[:120],
+                                     "by_script": by_script})
+        if kind == "href":
+            e["kind"] = "link"
+
+    def ask(e):
+        r = fetch(door + e["path"], timeout, host=face.get("host"),
+                  accept="text/html,*/*" if e["kind"] == "link" else "*/*")
+        body = r.pop("body", b"")
+        same = bool(body) and (hashlib.sha1(body).hexdigest() == front_sha or
+                               (r["ctype"].startswith(PAGE_TYPES) and abs(len(body) - front_len) <= 64))
+        return r["status"], r.get("error", ""), same
+
+    items = sorted(targets.values(), key=lambda e: e["path"])
+    with cf.ThreadPoolExecutor(max_workers=workers) as pool:
+        for e, (status, err, same) in zip(items, pool.map(ask, items)):
+            e["status"] = status or err
+            e["outside"] = not e["path"].startswith(scope)
+            e["state"] = "dead" if status != 200 else "same page again" if (same and e["kind"] == "link") else "ok"
+        if face.get("home_doors"):                             # dead where it is hoisted: is it alive at home?
+            def at_home(e):
+                p = "/" + e["path"][len(scope):] if e["path"].startswith(scope) else e["path"]
+                return any(plain_status(base + p, host, "text/html,*/*" if e["kind"] == "link" else "*/*") == 200
+                           for base, host in face["home_doors"])
+            gone = [e for e in items if e["state"] == "dead"]
+            for e, yes in zip(gone, pool.map(at_home, gone)):
+                if yes:
+                    e["state"] = "at home only"
+    links = [e for e in items if e["kind"] == "link"]
+    assets = [e for e in items if e["kind"] == "asset"]
+    brief = lambda e: {"path": e["path"], "status": e["status"], "as_written": e["as_written"],
+                       "by_script": e["by_script"], "outside_the_site": e["outside"]}
+    out.update(
+        links=len(links), ok=sum(1 for e in links if e["state"] == "ok"),
+        dead=[brief(e) for e in links if e["state"] == "dead"],
+        folds=[e["path"] for e in links if e["state"] == "same page again"],
+        home_only=[brief(e) for e in items if e["state"] == "at home only"],
+        left=[e["path"] for e in links if e["outside"] and e["state"] == "ok"],
+        assets=len(assets), assets_dead=[brief(e) for e in assets if e["state"] == "dead"],
+        external_hosts=dict(sorted(external.items(), key=lambda kv: -kv[1])), after_scripts=seen_dom)
+    return out
+
+
+def faces_pass(a, log):
+    gate = a.base.rstrip("/")
+    browser = find_browser() if a.dom else None
+    log("GAIA WALKER  faces  (gate %s%s)" % (gate, ", links written by scripts included" if browser else ", static links only"))
+    t0 = time.time()
+    faces = [walk_face(f, a.timeout, a.workers, browser, a.settle_ms) for f in default_faces(gate)]
+    log("")
+    log("  %-22s %6s %5s %5s %10s %10s %7s %12s" % ("face", "links", "ok", "dead", "same page", "home only", "assets", "assets dead"))
+    for f in faces:
+        if f["status"] != 200:
+            log("  %-22s front page did not answer (%s)" % (f["name"], f["status"] or f.get("error")))
+            continue
+        log("  %-22s %6d %5d %5d %10d %10d %7d %12d%s" % (
+            f["name"], f["links"], f["ok"], len(f["dead"]), len(f["folds"]), len(f.get("home_only", [])),
+            f["assets"], len(f["assets_dead"]), "" if f["after_scripts"] or not browser else "   (browser pass failed)"))
+    for f in faces:
+        for word, key in (("dead", "dead"), ("home only", "home_only")):
+            for d in f.get(key, [])[:a.lines]:
+                log("     %-20s %-9s %-44s %s%s%s" % (f["name"], word, d["path"][:44], d["status"],
+                                                      "  written by a script" if d["by_script"] else "",
+                                                      "  leaves the site's folder" if d["outside_the_site"] else ""))
+    report = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "by": socket.gethostname().split(".")[0].lower(),
+              "gate": gate, "seconds": round(time.time() - t0, 1), "faces": faces}
+    top = os.path.join(REPO, "data", "gut", "walker")
+    os.makedirs(top, exist_ok=True)
+    gi = os.path.join(top, ".gitignore")
+    if not os.path.exists(gi):
+        with open(gi, "w", encoding="ascii") as f:
+            f.write("# walker output is regenerated on every run\n*\n")
+    with open(os.path.join(top, "faces.json"), "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=1, ensure_ascii=False)
+    # the short form the thymus reads: counts per face and the first dead paths of each
+    short = {"ts": report["ts"], "by": report["by"], "after_scripts": bool(browser),
+             "dead": sum(len(f.get("dead", [])) for f in faces), "same_page_again": sum(len(f.get("folds", [])) for f in faces),
+             "assets_dead": sum(len(f.get("assets_dead", [])) for f in faces),
+             "at_home_only": sum(len(f.get("home_only", [])) for f in faces),
+             "faces": [{"face": f["name"], "answers": f["status"] == 200, "links": f.get("links", 0), "ok": f.get("ok", 0),
+                        "dead": len(f.get("dead", [])), "same_page_again": len(f.get("folds", [])),
+                        "at_home_only": len(f.get("home_only", [])),
+                        "assets": f.get("assets", 0), "assets_dead": len(f.get("assets_dead", [])),
+                        "dead_paths": [d["path"] for d in f.get("dead", [])[:12]],
+                        "at_home_only_paths": [d["path"] for d in f.get("home_only", [])[:12]]} for f in faces]}
+    os.makedirs(os.path.dirname(FACES_SUMMARY), exist_ok=True)
+    with open(FACES_SUMMARY, "w", encoding="utf-8") as f:
+        json.dump(short, f, indent=1, ensure_ascii=False)
+    log("  %.0f s   detail: %s   short form: %s" % (report["seconds"], os.path.join(top, "faces.json"), FACES_SUMMARY))
+    return 1 if short["dead"] or short["assets_dead"] else 0
+
+
 # ───────────────────────── main ─────────────────────────
 def main():
     ap = argparse.ArgumentParser(description="Walk a Gaia gate: link paths and renders.")
+    ap.add_argument("--faces", action="store_true",
+                    help="walk the front page of each name, at home and where it is hoisted, one link deep")
+    ap.add_argument("--dom", action="store_true",
+                    help="with --faces: also load each front page in a headless browser, so links written by scripts are seen")
     ap.add_argument("--base", default="http://127.0.0.1:8443", help="gate to walk (default: this machine's gate)")
     ap.add_argument("--start", nargs="*", default=["/", "/hub"], help="paths to start from")
     ap.add_argument("--static-dir", default=os.path.join(REPO, "static"),
@@ -451,6 +666,8 @@ def main():
         if not a.quiet:
             print(s, flush=True)
 
+    if a.faces:
+        return faces_pass(a, log)
     base = a.base.rstrip("/")
     gate = re.sub(r"[^A-Za-z0-9.-]+", "_", urllib.parse.urlsplit(base).netloc)
     top = os.path.join(REPO, "data", "gut", "walker")

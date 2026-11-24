@@ -37,7 +37,9 @@ PAGES_A = {"185.199.108.153", "185.199.109.153", "185.199.110.153", "185.199.111
 
 SITES = {
     "hud": {"repo": "ecoPrimals/hud", "branch": "gh-pages", "domain": "hud.primals.eco",
-            "root": "senses.html", "also_as": ["senses.html"], "keep_old_root_as": "pane.html"},
+            "root": "senses.html", "also_as": ["senses.html"], "keep_old_root_as": "pane.html",
+            # a route the face reaches from a script rather than an anchor (the far eye: GATE + '/canvas')
+            "gate_links": ["/canvas"]},
     "nestgate": {"repo": "ecoPrimals/nestgate.io", "branch": "main", "domain": "nestgate.io",
                  "root": "nestgate.html", "also_as": [], "nojekyll": True,
                  "lists": [("/data/paintings/%s.jpg", r"const paintings\s*=\s*\[(.*?)\]")],
@@ -52,6 +54,9 @@ GUARD = [("github token", re.compile(r"gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-
          ("credential field", re.compile(r"\"(?:token|zk|ssh_pass|password|passwd|private_key|api_key)\"\s*:\s*\"")),
          ("gate token", re.compile(r"GAIA:[0-9A-Za-z]{4,}[:\-][^\s\"']{6,}"))]
 MAC_RX, MAX_MACS = re.compile(r"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b"), 5
+# pages the face links to that Pages does not have yet come up with it, read from the gate the way a visitor would
+LINK_RX = re.compile(r"""<a\b[^>]*?\bhref\s*=\s*["']?(/[^\s"'>#?]*)""", re.I)
+PAGE_HOST, MAX_LINKED = "primals.eco", 16
 
 TEXT_EXT = (".js", ".css", ".mjs")
 ASSET_EXT = r"(?:js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|json|jsonl|xml|txt|md|csv|mp3|ogg|wav|webmanifest)"
@@ -93,8 +98,18 @@ def rank(name):
     return BODIES.index(name) if name in BODIES else len(BODIES)
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *a, **k):
+        return None                                        # "go and look somewhere else" is not an answer for this path
+
+
+OPEN = urllib.request.build_opener(_NoRedirect)
+
+
 def sources():
-    """Every door that can answer for the organism, the highest-ranked body first; only the ones that are open."""
+    """Every door that can answer for the organism, the highest-ranked body first; only the ones that are open
+    and that say no to a path that does not exist. A door that answers 200 to anything (a proxy with a friendly
+    fallback) cannot tell me whether a file is there, so it is not asked."""
     me = body_name()
     names = sorted(set(BODIES) | {me}, key=rank)
     out = []
@@ -103,15 +118,16 @@ def sources():
         if not ip:
             continue
         for port in (8443, 8080):
-            s = socket.socket()
-            s.settimeout(1.5)
+            base = "http://%s:%d" % (ip, port)
             try:
-                s.connect((ip, port))
-                out.append(("http://%s:%d" % (ip, port), n))
+                with OPEN.open(urllib.request.Request(base + "/gaia-hoist-no-such-path-%d.none" % os.getpid(),
+                                                      headers={"Accept": "*/*"}), timeout=4):
+                    pass                                   # it said yes to nonsense
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    out.append((base, n))
             except Exception:
                 pass
-            finally:
-                s.close()
     return out
 
 
@@ -121,7 +137,7 @@ def read(path, host, bases, want_json=False):
     for base, name in bases:
         req = urllib.request.Request(base + path, headers={"Host": host, "Accept": "application/json" if want_json else "*/*"})
         try:
-            with urllib.request.urlopen(req, timeout=15) as r:
+            with OPEN.open(req, timeout=15) as r:
                 data = r.read(MAX_FILE + 1)
         except urllib.error.HTTPError as e:
             why = "http %s" % e.code
@@ -177,11 +193,70 @@ def shape_amoeba(d):
 SHAPERS = {"/amoeba": shape_amoeba}
 
 
-def guard(data):
+def live_tokens(bases):
+    """The token each open gate is handing out right now, so a file carrying one can be held back by exact
+    value and not only by shape. Kept in memory for the length of the build; never written or printed."""
+    out = set()
+    for base, _name in bases:
+        if not base.endswith(":8443"):
+            continue
+        try:
+            with urllib.request.urlopen(urllib.request.Request(base + "/pulse", headers={"Accept": "application/json"}), timeout=8) as r:
+                t = (r.headers.get("X-Gaia-Token") or "").strip()
+        except Exception:
+            continue
+        if len(t) >= 8:
+            out.add(t)
+    return out
+
+
+def title_of(text):
+    m = re.search(r"<title[^>]*>([^<]*)", text[:200000], re.I)
+    return " ".join(m.group(1).split()) if m else ""
+
+
+def read_page(path, bases, not_this):
+    """A page the way a visitor's browser gets it from home (the WAN name, Accept: text/html). The HUD's own
+    name folds every path back to the HUD, so that answer (not_this) does not count as a page."""
+    why = "no door open"
+    for base, name in bases:
+        req = urllib.request.Request(base + path, headers={"Host": PAGE_HOST, "Accept": "text/html,*/*"})
+        try:
+            with OPEN.open(req, timeout=15) as r:
+                ctype = (r.headers.get("Content-Type") or "").lower()
+                data = r.read(MAX_FILE + 1)
+        except urllib.error.HTTPError as e:
+            why = "http %s" % e.code
+            continue
+        except Exception as e:
+            why = type(e).__name__
+            continue
+        if not ctype.startswith("text/html"):
+            why = "not a page (%s)" % (ctype.split(";")[0] or "no type")
+            continue
+        if len(data) > MAX_FILE:
+            why = "larger than %d MB" % (MAX_FILE >> 20)
+            continue
+        try:
+            text = data.decode("utf-8").replace("\r\n", "\n")
+        except UnicodeDecodeError:
+            why = "not UTF-8"
+            continue
+        if title_of(text) == title_of(not_this):
+            why = "the same page again"
+            continue
+        return text, name
+    return None, why
+
+
+def guard(data, tokens=()):
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
         return None
+    for t in tokens:
+        if t in text:
+            return "gate token"
     for label, rx in GUARD:
         if rx.search(text):
             return label
@@ -227,7 +302,7 @@ def dns_a(name, server="1.1.1.1"):
 
 
 SHIM = """<script data-gaia-hoist>/* this page is a copy hoisted to GitHub Pages: live routes read snapshots */
-(function(){var M=__MAP__,B=location.pathname.replace(/[^\\/]*$/,""),f=window.fetch,O=[location.origin].concat(__HOMES__);
+(function(){var M=__MAP__,B=location.pathname.replace(/[^\\/]*$/,""),f=window.fetch,O=[location.origin].concat(__HOMES__),SITES=__SITES__;
 for(var u=0;u<__UP__;u++)B=B.replace(/[^\\/]+\\/$/,"");
 function R(p){if(typeof p!=="string"||p.charAt(0)!=="/"||p.charAt(1)==="/")return p;if(B!=="/"&&p.indexOf(B)===0)return p;return B+p.slice(1)}
 function S(u){for(var i=0;i<O.length;i++)if(u.indexOf(O[i]+"/")===0){u=u.slice(O[i].length);break}
@@ -236,12 +311,21 @@ window.fetch=function(u,o){try{if(typeof u==="string")return f.call(window,S(u),
 try{var xo=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){if(typeof u==="string")arguments[1]=S(u);return xo.apply(this,arguments)}}catch(e){}
 function P(c,k){try{var p=c.prototype,d=Object.getOwnPropertyDescriptor(p,k);if(d&&d.set)Object.defineProperty(p,k,{get:d.get,set:function(v){d.set.call(this,R(v))},configurable:true,enumerable:d.enumerable})}catch(e){}}
 P(HTMLScriptElement,"src");P(HTMLImageElement,"src");P(HTMLLinkElement,"href");P(HTMLIFrameElement,"src");P(HTMLMediaElement,"src");P(HTMLSourceElement,"src");
-try{var sa=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){if((k==="src"||k==="href"||k==="poster")&&this.tagName!=="A")v=R(v);return sa.call(this,k,v)}}catch(e){}
-document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest('a[href^="/"]'):null;
-if(a){var h=a.getAttribute("href");if(h.charAt(1)!=="/")a.setAttribute("href",R(h))}},true);
-try{new MutationObserver(function(ms){for(var i=0;i<ms.length;i++)for(var j=0;j<ms[i].addedNodes.length;j++){var n=ms[i].addedNodes[j];if(n.nodeType!==1)continue;
+var sa=Element.prototype.setAttribute;
+try{Element.prototype.setAttribute=function(k,v){if((k==="src"||k==="href"||k==="poster")&&this.tagName!=="A")v=R(v);return sa.call(this,k,v)}}catch(e){}
+/* a link stays inside this site whether it is written from the root or with this origin in full (a page that
+   builds its links from location.host would otherwise land beside the site); a link to a live route opens its snapshot */
+function A(a){try{var h=a.getAttribute("href");if(!h)return;var o=location.origin,p=null;
+if(h.charAt(0)==="/"&&h.charAt(1)!=="/")p=h;else if(h.indexOf(o+"/")===0)p=h.slice(o.length);else if(h===o)p="/";
+if(p===null)return;if(p+"/"===B)p=B;for(var i=0;i<SITES.length;i++)if(SITES[i]!==B&&p.indexOf(SITES[i])===0)return;
+var q=p.search(/[?#]/),k=q<0?p:p.slice(0,q),n=M[k]?B+M[k]:R(p);if(n!==h)sa.call(a,"href",n)}catch(e){}}
+function AA(n){if(!n||n.nodeType!==1)return;if(n.tagName==="A")A(n);if(n.querySelectorAll){var l=n.querySelectorAll("a[href]");for(var i=0;i<l.length;i++)A(l[i])}}
+document.addEventListener("click",function(e){var a=e.target&&e.target.closest?e.target.closest("a[href]"):null;if(a)A(a)},true);
+document.addEventListener("DOMContentLoaded",function(){AA(document.documentElement)});
+try{new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){if(ms[i].type==="attributes"){if(ms[i].target.tagName==="A")A(ms[i].target);continue}
+for(var j=0;j<ms[i].addedNodes.length;j++){var n=ms[i].addedNodes[j];if(n.nodeType!==1)continue;AA(n);
 var l=n.matches&&n.matches('img[src^="/"]')?[n]:[];if(n.querySelectorAll)l=l.concat([].slice.call(n.querySelectorAll('img[src^="/"]')));
-for(var k=0;k<l.length;k++){var s=l[k].getAttribute("src");if(s.charAt(1)!=="/"&&R(s)!==s)l[k].src=s}}}).observe(document.documentElement,{childList:true,subtree:true})}catch(e){}
+for(var k=0;k<l.length;k++){var s=l[k].getAttribute("src");if(s.charAt(1)!=="/"&&R(s)!==s)l[k].src=s}}}}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["href"]})}catch(e){}
 if(__HAS_SNAP__)document.addEventListener("DOMContentLoaded",function(){f.call(window,B+"snap/meta.json?t="+Date.now()).then(function(r){return r.json()}).then(function(m){
 var d=document.createElement("div");d.textContent="snapshot \\u00b7 "+m.by+" \\u00b7 "+m.ts.replace("T"," ").slice(0,16)+" UTC \\u00b7 the live gate is at home";
 d.style.cssText="position:fixed;right:8px;bottom:6px;z-index:99999;font:11px monospace;color:#ccc;background:rgba(0,0,0,.55);padding:2px 7px;border-radius:3px;pointer-events:none";
@@ -267,7 +351,44 @@ def build(site):
     files, snap_map, misses, held, read_from = {}, {}, {}, {}, {}
     total = 0
     seen = set()
-    level = [(html, 0)] + [(t, 0) for t in subs.values()]
+    tokens = live_tokens(bases)
+    # pages the face links to that the Pages branch does not have (or that an earlier hoist put there): the gate's
+    # own answer for that path comes up too, at the same path, so the link lands on Pages where it lands at home
+    linked = {}
+    wanted = []
+    cands = sorted(set(LINK_RX.findall(html)) | set(cfg.get("gate_links", [])))
+    if cands:
+        try:
+            there = set(remote_tree(cfg))
+            mine = set((remote_meta(cfg) or {}).get("carried", []))
+        except Gh:
+            there, mine = None, set()
+        taken = {"index.html"} | set(cfg.get("also_as", [])) | set("static/" + n for n in subs)
+        for p in cands if there is not None else []:
+            ext = os.path.splitext(p)[1].lower()
+            if p in ("/", "") or ".." in p or ext not in ("", ".html", ".htm"):
+                continue
+            rel = p.lstrip("/")
+            if p.endswith("/"):
+                dest, forms = rel + "index.html", [rel + "index.html", rel.rstrip("/"), rel.rstrip("/") + ".html"]
+            elif ext:
+                dest, forms = rel, [rel]
+            else:
+                dest, forms = rel + ".html", [rel, rel + ".html", rel + "/index.html"]
+            if dest in taken or any(f in there and f not in mine for f in forms):
+                continue                                   # Pages already has its own page there
+            wanted.append((p, dest))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            pages = list(pool.map(lambda w: read_page(w[0], bases, html), wanted))
+        for (p, dest), (text, who) in zip(wanted, pages):
+            if text is None:
+                misses[p] = who
+            elif len(linked) >= MAX_LINKED:
+                misses[p] = "over the linked-page budget"
+            else:
+                linked[dest] = text
+                read_from[who] = read_from.get(who, 0) + 1
+    level = [(html, 0)] + [(t, 0) for t in subs.values()] + [(t, 0) for t in linked.values()]
     # lists of names a page fills into a path at run time (the paintings the face rotates through)
     for pattern, rx in cfg.get("lists", []):
         m = re.search(rx, html, re.S)
@@ -305,7 +426,7 @@ def build(site):
                 if p in SHAPERS:
                     obj = SHAPERS[p](obj)
                 data = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-            bad = guard(data)
+            bad = guard(data, tokens)
             if bad:
                 held[p] = bad
                 continue
@@ -335,14 +456,15 @@ def build(site):
             page = again
         page = re.sub(r"(url\(\s*[\"']?)/(?!/)", lambda m: m.group(1) + rel, page)
         shim = (SHIM.replace("__MAP__", json.dumps(snap_map)).replace("__HAS_SNAP__", "true" if snap_map and not up else "false")
-                .replace("__HOMES__", json.dumps(HOME_ORIGINS)).replace("__UP__", str(up)))
+                .replace("__HOMES__", json.dumps(HOME_ORIGINS)).replace("__UP__", str(up))
+                .replace("__SITES__", json.dumps(sorted("/%s/" % c["repo"].split("/")[1] for c in SITES.values()))))
         page, n = re.subn(r"(<head[^>]*>)", lambda m: m.group(1) + "\n" + shim, page, count=1, flags=re.I)
         if not n:
             page = shim + "\n" + page
         return page.encode("utf-8")
 
     page = hoisted(html, 0)
-    bad = guard(page)
+    bad = guard(page, tokens)
     if bad:
         raise RuntimeError("the page itself looks like it carries a %s" % bad)
     files["index.html"] = page
@@ -350,20 +472,31 @@ def build(site):
         files[extra] = page
     for name, text in subs.items():
         sub = hoisted(text, 1)
-        bad = guard(sub)
+        bad = guard(sub, tokens)
         if bad:
             held["static/" + name] = bad
         else:
             files["static/" + name] = sub
+    carried = []
+    for dest, text in sorted(linked.items()):
+        sub = hoisted(text, dest.count("/"))
+        bad = guard(sub, tokens)
+        if bad:
+            held[dest] = bad
+        else:
+            files[dest] = sub
+            carried.append(dest)
     if cfg.get("nojekyll"):
         files[".nojekyll"] = b""
     tip = subprocess.run(["git", "rev-parse", "--short=9", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
     files["snap/meta.json"] = json.dumps({                 # every site carries it: it is how bodies know whose turn it is
         "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "by": body_name(), "tip": tip,
         "read_from": read_from, "files": len(files) + 1, "routes": len(snap_map),
-        "not_read": len(misses), "held_back": len(held)}, indent=1).encode("utf-8")
+        "not_read": len(misses), "held_back": len(held),
+        "carried": carried}, indent=1).encode("utf-8")     # linked pages this hoist put on the branch (and keeps fresh)
     report = {"files": len(files), "bytes": sum(len(v) for v in files.values()), "routes": sorted(snap_map),
-              "read_from": read_from, "not_read": misses, "held_back": held, "has_snap": bool(snap_map)}
+              "read_from": read_from, "not_read": misses, "held_back": held, "has_snap": bool(snap_map),
+              "linked_pages": carried}
     return files, report
 
 
@@ -409,7 +542,7 @@ def summary(report):
     nr, hb = report["not_read"], report["held_back"]
     return {"files": report["files"], "mb": round(report["bytes"] / 1e6, 1), "live_routes": len(report["routes"]),
             "read_from": report["read_from"], "not_read": len(nr), "not_read_sample": sorted(nr)[:8],
-            "held_back": hb}
+            "held_back": hb, "linked_pages": report.get("linked_pages", [])}
 
 
 def publish(site, loop=False, create=False):

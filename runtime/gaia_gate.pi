@@ -1584,6 +1584,11 @@ def _hoist_pages():
     body that answers, drops anything shaped like a credential, and goes out through gh's existing login."""
     subprocess.run([sys.executable,os.path.join(_REPO,"scripts","pages-hoist.py"),"refresh"],cwd=_REPO,capture_output=True,timeout=280)
 
+def _walk_faces():
+    """Walk the front page of each name, at home and where it is hoisted, one link deep, and leave what was met
+    where /thymus and /klein read it (runtime/membrane/dead-links.json). Reads only; nothing is repaired here."""
+    subprocess.run([sys.executable,os.path.join(_REPO,"scripts","gaia-walker.py"),"--faces","--dom","--quiet"],cwd=_REPO,capture_output=True,timeout=280)
+
 def agglutinate():
     last_sha=""; tick=0
     while True:
@@ -1592,6 +1597,9 @@ def agglutinate():
         except Exception: pass
         if tick%3==0:   # every third turn of the same loop: 15 minutes
             try: _hoist_pages()
+            except Exception: pass
+        if tick%12==1:  # once an hour on the same loop, first five minutes after the gate starts
+            try: _walk_faces()
             except Exception: pass
         try:
             with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:

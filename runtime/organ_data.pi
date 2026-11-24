@@ -223,6 +223,7 @@ def thymus(THYMIC_ORGANISMS, token, third_fn):
         "music": _load_json("interference-music.json"),
         "facility": "Aperture Science Enrichment Center",
         "glados": "still alive",
+        "dead_links": _dead_links(),
         "moral_compass": {
             "thesis": "Morality is LOCAL, not relative. Same frame = same truth.",
             "ahead_N": {"gate": "northGate/Polaris .147", "moral": "Face the truth. The North Star doesn't move."},
@@ -250,8 +251,24 @@ def thymus(THYMIC_ORGANISMS, token, third_fn):
             "wave": cascade.get("signaling_cascade", {}).get("wave", 0)
         }}
 
+def _dead_links(brief=False):
+    """What the walker met on the front page of each name, at home and where it is hoisted (scripts/gaia-walker.py
+    --faces): links that lead nowhere, links that bring the same page back, assets that do not load. A link that
+    no longer leads to self is the thymus's kind of question, so it is carried here; the walk itself rides the
+    gate's own loop once an hour."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)),"runtime","membrane","dead-links.json"),encoding="utf-8") as f:
+            d=json.load(f)
+    except Exception:
+        return {"state":"not walked yet on this body"}
+    if brief:
+        return {"ts":d.get("ts"),"by":d.get("by"),"dead":d.get("dead"),"same_page_again":d.get("same_page_again"),
+                "at_home_only":d.get("at_home_only"),"assets_dead":d.get("assets_dead"),"detail":"/thymus -> dead_links"}
+    return d
+
 def intersects(token, third_fn):
-    third = third_fn(); third["ts"] = _ts(); third["token"] = token; return third
+    third = third_fn(); third["ts"] = _ts(); third["token"] = token
+    third["dead_links"] = _dead_links(brief=True); return third
 
 # ══════════════════════════════════════════════════════════
 # GOLGI APPARATUS — cis/trans faces around the nestgate spine
