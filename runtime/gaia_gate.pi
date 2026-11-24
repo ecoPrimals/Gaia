@@ -321,9 +321,141 @@ CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
     ".mp4":"video/mp4",".webm":"video/webm",".svg":"image/svg+xml",
     ".xml":"application/xml",".wasm":"application/wasm",".txt":"text/plain",".ico":"image/x-icon"}
 
+# ═══ BENEATH — the old HUD site, under the gate's own faces ═══
+# The gate's faces are the top layer. Beneath them is the old HUD site (infra/hud site/public: its pages, its
+# scripts, its data). A path the gate has no route for is looked for there before it becomes a dead end, so one
+# name opens every layer. Where the site is read from, in order:
+#   1. a live working copy on this body (eastGate keeps one; GAIA_HUD_SITE can name another)
+#   2. the shared surface on the LAN: eastGate's data server, for a body that keeps no copy of its own
+#   3. this body's clone of the site, only when the shared surface cannot be reached
+# A text file that carries a credential shape, this gate's token, or a list of the house's hardware addresses is
+# not served this way (the same rule the hoist to GitHub Pages uses); it stays where it is.
+import re, urllib.parse
+_BENEATH_LIVE=[d for d in (os.environ.get("GAIA_HUD_SITE",""),os.path.expanduser("~/Development/ecoPrimals/infra/hud/site/public")) if d]
+_BENEATH_SHARED=["http://192.168.4.248:8080"]
+_BENEATH_CLONE=os.path.join(_REPO,"data","gut","forgejo-clones","ecoPrimals","infra-hud","site","public")
+_BENEATH_MAX=64<<20
+_BENEATH_TEXT=(".html",".htm",".js",".mjs",".css",".json",".jsonl",".xml",".txt",".md",".csv",".svg",".webmanifest",".map")
+_BENEATH_GUARD=[re.compile(rb"gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"),re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
+    re.compile(rb"\"(?:token|zk|ssh_pass|password|passwd|private_key|api_key)\"\s*:\s*\"")]
+_BENEATH_MAC=re.compile(rb"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b")
+_BENEATH_OWN_HOSTS=("detroit.primals.eco","publicrecord.primals.eco","record.primals.eco","tuebor.primals.eco","clutch.primals.eco","lansing.primals.eco")
+_beneath_seen={}; _beneath_door={}
+
+class _BeneathNoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*a,**k): return None
+_BENEATH_OPEN=urllib.request.build_opener(_BeneathNoRedirect)
+
+def _beneath_pass(data):
+    """Text on its way out: the gate's own token is cut out of it by exact value (old pages carry it in a meta tag);
+    a credential shape or a list of hardware addresses holds the whole file back (None)."""
+    tok=str(globals().get("GAIA_TOKEN") or "")
+    if len(tok)>=8 and tok.encode() in data: data=data.replace(tok.encode(),b"")
+    if any(rx.search(data) for rx in _BENEATH_GUARD): return None
+    if len(set(m.lower() for m in _BENEATH_MAC.findall(data)))>5: return None
+    return data
+
+def _beneath_type(name,default="application/octet-stream"):
+    import mimetypes
+    ext=os.path.splitext(name)[1].lower()
+    return CTYPES.get(ext) or mimetypes.guess_type(name)[0] or default
+
+def _beneath_kind(name,data,ct=""):
+    """(content type, is it text). A page saved without an ending is still a page: look at how it begins."""
+    ct=(ct or "").split(";")[0].strip().lower()
+    if not ct or ct=="application/octet-stream":
+        ct=_beneath_type(name,"")
+        if not ct:
+            head=data[:256].lstrip().lower()
+            ct="text/html" if head.startswith((b"<!doctype html",b"<html")) else "application/octet-stream"
+    return ct,(ct.startswith("text/") or ct.endswith(("json","javascript","xml")) or name.lower().endswith(_BENEATH_TEXT))
+
+def _beneath_from_dir(base,rel):
+    root=os.path.realpath(base); fp=os.path.realpath(os.path.join(root,rel.replace("/",os.sep)))
+    if fp!=root and not fp.startswith(root+os.sep): return None
+    if os.path.isdir(fp): fp=os.path.join(fp,"index.html")
+    elif not os.path.isfile(fp) and not os.path.splitext(fp)[1] and os.path.isfile(fp+".html"): fp=fp+".html"
+    if not os.path.isfile(fp): return None
+    st=os.stat(fp)
+    if st.st_size>_BENEATH_MAX: return None
+    key=(fp,st.st_mtime_ns,st.st_size)
+    if _beneath_seen.get(key) is False: return None          # already known to be held back
+    with open(fp,"rb") as f: data=f.read()
+    ct,text=_beneath_kind(fp,data)
+    if text:
+        data=_beneath_pass(data)
+        if len(_beneath_seen)>5000: _beneath_seen.clear()
+        _beneath_seen[key]=data is not None
+        if data is None: return None
+    return data,ct
+
+def _beneath_door_open(base):
+    """A door counts only while it says no to a path that cannot exist (asked again every ten minutes)."""
+    was=_beneath_door.get(base)
+    if was and time.time()-was[0]<600: return was[1]
+    ok=None
+    try:
+        with _BENEATH_OPEN.open(base+"/gaia-gate-no-such-path.none",timeout=3): ok=False
+    except urllib.error.HTTPError as e: ok=(e.code==404)
+    except Exception: ok=None          # not reachable
+    _beneath_door[base]=(time.time(),ok); return ok
+
+def _beneath_from_door(base,path):
+    for p in (path,path+"/"):
+        try:
+            with _BENEATH_OPEN.open(urllib.request.Request(base+urllib.parse.quote(p),headers={"Accept":"*/*","User-Agent":"gaia-gate/beneath"}),timeout=8) as r:
+                ct=(r.headers.get("Content-Type") or "").split(";")[0].strip().lower(); data=r.read(_BENEATH_MAX+1)
+        except urllib.error.HTTPError as e:
+            if e.code in (301,302,307,308) and not p.endswith("/"): continue   # a folder: ask again with the slash
+            return None
+        except Exception: return None
+        if len(data)>_BENEATH_MAX or data[:400].find(b"<title>Directory listing for")>=0: return None
+        ct,text=_beneath_kind(p.rstrip("/") if not p.endswith("/") else "index.html",data,ct)
+        if text:
+            data=_beneath_pass(data)
+            if data is None: return None
+        return data,ct
+    return None
+
+def _beneath_find(raw):
+    p=urllib.parse.unquote(raw.split("?")[0].split("#")[0])
+    if not p.startswith("/") or p=="/" or ".." in p or "\\" in p or "\0" in p or p.startswith(("/v1/","/api/")): return None
+    for d in _BENEATH_LIVE:
+        if os.path.isfile(os.path.join(d,"index.html")): return _beneath_from_dir(d,p.lstrip("/"))   # the live copy decides
+    reachable=False
+    for base in _BENEATH_SHARED:
+        ok=_beneath_door_open(base)
+        if ok:
+            got=_beneath_from_door(base,p)
+            if got: return got
+        if ok is not None: reachable=True
+    if not reachable and os.path.isfile(os.path.join(_BENEATH_CLONE,"index.html")): return _beneath_from_dir(_BENEATH_CLONE,p.lstrip("/"))
+    return None
+
 class GaiaGate(http.server.BaseHTTPRequestHandler):
     timeout = PI_TIMEOUT
     def log_message(self, fmt, *a): pass
+
+    def _serve_beneath(self):
+        """Before a path becomes a dead end: is it a page, script or file of the old HUD site? Serve it if so.
+        Asked once per request; the investigation hosts that serve only their own content are left alone."""
+        if getattr(self,"command","GET")!="GET" or getattr(self,"_beneath_for",None)==self.path: return False
+        self._beneath_for=self.path
+        h=(self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "").split(":")[0].lower()
+        if h in _BENEATH_OWN_HOSTS: return False
+        t0=time.time()
+        try: got=_beneath_find(self.path)
+        except Exception: got=None
+        if not got: return False
+        data,ct=got
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(data)))
+            self.send_header("Access-Control-Allow-Origin","*"); self.send_header("X-Gaia-Layer","beneath")
+            self._negentropy_headers(); self.end_headers(); self.wfile.write(data)
+            self._classify_and_log("GET",200,(time.time()-t0)*1000,len(data))
+        except Exception: pass
+        return True
 
     def _eye(self, name):
         path = os.path.join(EYES_DIR, name)
@@ -601,6 +733,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             # pass through to the real routes, so the HUD can read /thymus, /senses, /human from its own name.
             _wants_page = "text/html" in self.headers.get("Accept", "text/html")
             if _wants_page and not (_p.startswith("/js/") or _p.startswith("/css/") or _p.startswith("/data/") or _p.startswith("/static/") or _p.startswith("/paintings/") or _p.endswith(".js") or _p.endswith(".css") or _p.endswith(".png") or _p.endswith(".jpg") or _p.endswith(".svg") or _p.endswith(".ico") or _p.endswith(".xml") or _p.endswith(".json") or _p.startswith("/api/")):
+                # a page of the old HUD opens as itself; only a path that is nowhere folds back to the HUD
+                if _p not in ("/","/index","/index.html") and self._serve_beneath(): return
                 self._serve_static("senses.html"); return
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
@@ -1114,6 +1248,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         # ═══ UNIFIED MODEL FLEET — merge eastGate + northGate ═══
         if self.path=="/v1/models":
             self._proxy("GET"); return
+        # ═══ BENEATH — no route of mine: the old HUD site is looked in before this is a dead end ═══
+        if self._serve_beneath(): return
         # ═══ ENCOUNTER — every dead-end is a living landing ═══
         # If Accept header wants JSON (API clients), proxy to Ollama
         accept=self.headers.get("Accept","")
@@ -1154,6 +1290,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         """Every error is an encounter — serve the living landing page.
         Also logs to thymus as stem_cell: a visitor who arrived but the path
         doesn't exist yet. Stem cells can differentiate into new pages."""
+        if code==404 and self._serve_beneath(): return   # not a dead end after all: the old HUD has it
         ip=self.client_address[0]; ua=self.headers.get("User-Agent","")
         path=getattr(self,"path","/")
         # Log encounter to thymus neutron channel
@@ -1589,6 +1726,10 @@ def _walk_faces():
     where /thymus and /klein read it (runtime/membrane/dead-links.json). Reads only; nothing is repaired here."""
     subprocess.run([sys.executable,os.path.join(_REPO,"scripts","gaia-walker.py"),"--faces","--dom","--quiet"],cwd=_REPO,capture_output=True,timeout=280)
 
+def _tell_vine():
+    """Say the latest walk again on swarmVine, whose entries age out after ten minutes (trace only: paths, counts)."""
+    subprocess.run([sys.executable,os.path.join(_REPO,"scripts","gaia-walker.py"),"--tell","--quiet"],cwd=_REPO,capture_output=True,timeout=60)
+
 def agglutinate():
     last_sha=""; tick=0
     while True:
@@ -1600,6 +1741,9 @@ def agglutinate():
             except Exception: pass
         if tick%12==1:  # once an hour on the same loop, first five minutes after the gate starts
             try: _walk_faces()
+            except Exception: pass
+        else:           # every other turn: the vine hears the latest walk again
+            try: _tell_vine()
             except Exception: pass
         try:
             with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:

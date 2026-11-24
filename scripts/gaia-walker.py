@@ -27,7 +27,9 @@ Run by hand - it is not a cron and starts nothing that stays running:
   FACES        the front page a name shows (hud, nestgate, primals.eco on this gate; hud and nestgate on GitHub
                Pages), one link deep: each link is dead, fine, or brings the same page back again, and each
                asset the page pulls in loads or does not. --dom adds the links a script writes. The short form
-               goes to runtime/membrane/dead-links.json, which the gate's /thymus and /klein carry.
+               goes to runtime/membrane/dead-links.json, which the gate's /thymus and /klein carry. The same
+               findings go on as trace only (paths, answers, counts): to skunkBat as one observation of the walk,
+               and to swarmVine as a gossip entry (--tell says it again; the gate's loop does that between walks).
 
 Only the gate named by --base is requested. External links are counted, never fetched
 (water lock). Forms are never submitted and links that look like actions are not followed.
@@ -569,6 +571,7 @@ def walk_face(face, timeout, workers, browser, budget_ms):
         r = fetch(door + e["path"], timeout, host=face.get("host"),
                   accept="text/html,*/*" if e["kind"] == "link" else "*/*")
         body = r.pop("body", b"")
+        e["bytes"] = len(body)
         same = bool(body) and (hashlib.sha1(body).hexdigest() == front_sha or
                                (r["ctype"].startswith(PAGE_TYPES) and abs(len(body) - front_len) <= 64))
         return r["status"], r.get("error", ""), same
@@ -599,8 +602,158 @@ def walk_face(face, timeout, workers, browser, budget_ms):
         home_only=[brief(e) for e in items if e["state"] == "at home only"],
         left=[e["path"] for e in links if e["outside"] and e["state"] == "ok"],
         assets=len(assets), assets_dead=[brief(e) for e in assets if e["state"] == "dead"],
-        external_hosts=dict(sorted(external.items(), key=lambda kv: -kv[1])), after_scripts=seen_dom)
+        external_hosts=dict(sorted(external.items(), key=lambda kv: -kv[1])), after_scripts=seen_dom,
+        requests=len(items) + 1, bytes=front_len + sum(e.get("bytes", 0) for e in items),
+        port=u.port or (443 if u.scheme == "https" else 80),
+        answers_4xx=sum(1 for e in items if isinstance(e["status"], int) and 400 <= e["status"] < 500),
+        answers_5xx=sum(1 for e in items if isinstance(e["status"], int) and e["status"] >= 500))
     return out
+
+
+# ───────────────────────── trace feed ─────────────────────────
+# What a walk found is handed on as TRACE ONLY: which path, what it answered, how many. Never a page's text, a header,
+# a query string, a token or an address of a visitor. Three places take it:
+#   thymus / klein   the short form on disk (runtime/membrane/dead-links.json), carried by the gate
+#   skunkBat         one observation per walk (baseline.observe): what my own walker looks like on the wire, so a
+#                    walk is known traffic and not a stranger scanning for holes
+#   swarmVine        one gossip entry per body (gossip.inject, topic "tower", key "dead-links:<body>")
+TRACE_PATH = re.compile(r"[^A-Za-z0-9_\-./~%]")
+PEER_GATES = {"eastgate": "http://192.168.4.248:8443", "polaris": "http://192.168.4.147:8443"}
+
+
+def trace_path(p):
+    return TRACE_PATH.sub("", str(p).split("?")[0].split("#")[0])[:96]
+
+
+def trace_of(short):
+    """The short form reduced to trace: names of faces, counts, and paths with nothing after a '?'."""
+    num = lambda v: int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+    out = {"ts": str(short.get("ts", ""))[:20], "by": re.sub(r"[^a-z0-9-]", "", str(short.get("by", "")).lower())[:24],
+           "after_scripts": bool(short.get("after_scripts"))}
+    for k in ("dead", "same_page_again", "assets_dead", "at_home_only"):
+        out[k] = num(short.get(k))
+    out["faces"] = [{"face": re.sub(r"[^A-Za-z0-9 .-]", "", str(f.get("face", "")))[:32], "answers": bool(f.get("answers")),
+                     "links": num(f.get("links")), "ok": num(f.get("ok")), "dead": num(f.get("dead")),
+                     "same_page_again": num(f.get("same_page_again")), "at_home_only": num(f.get("at_home_only")),
+                     "assets": num(f.get("assets")), "assets_dead": num(f.get("assets_dead")),
+                     "dead_paths": [trace_path(x) for x in (f.get("dead_paths") or [])[:8]]}
+                    for f in (short.get("faces") or [])[:12] if isinstance(f, dict)]
+    return out
+
+
+def _rpc(target, method, params, wait=4.0):
+    """One JSON-RPC line to a primal's door (a ("host", port) pair or a socket path); the result, or raises."""
+    req = (json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": 1}) + "\n").encode("utf-8")
+    if isinstance(target, tuple):
+        s = socket.create_connection(target, wait)
+    else:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.settimeout(wait)
+        s.connect(target)
+    try:
+        s.settimeout(wait)
+        s.sendall(req)
+        buf = b""
+        while not buf.endswith(b"\n") and len(buf) < (1 << 20):
+            chunk = s.recv(65536)
+            if not chunk:
+                break
+            buf += chunk
+    finally:
+        s.close()
+    j = json.loads(buf.decode("utf-8", "replace").strip().split("\n")[0])
+    if "error" in j and j["error"]:
+        raise RuntimeError(str((j["error"] or {}).get("message", j["error"]))[:80])
+    r = j.get("result")
+    if isinstance(r, dict) and r.get("error"):
+        raise RuntimeError(str(r["error"])[:80])
+    return r
+
+
+def _doors(name, port):
+    """Where a primal may be listening on this body: its socket (where there are sockets), then its loopback port."""
+    out = []
+    if hasattr(socket, "AF_UNIX") and os.name != "nt":
+        dirs = [os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "biomeos"), "/run/membrane"]
+        for d in dirs:
+            for fn in (name + ".sock", name.lower() + ".sock"):
+                if os.path.exists(os.path.join(d, fn)) and os.path.join(d, fn) not in out:
+                    out.append(os.path.join(d, fn))
+    return ([("127.0.0.1", port)] + out) if name.lower() == "swarmvine" else (out + [("127.0.0.1", port)])
+
+
+def _first_door(name, port, method, params):
+    last = "no door on this body"
+    for door in _doors(name, port):
+        try:
+            return _rpc(door, method, params), None
+        except (OSError, ValueError) as e:
+            last = "no door on this body" if isinstance(e, (ConnectionRefusedError, FileNotFoundError)) else type(e).__name__
+        except RuntimeError as e:
+            return None, "refused: %s" % e
+    return None, last
+
+
+def feed_bat(faces, seconds):
+    """One observation of the walk itself, in skunkBat's own shape. No source address is named, so nothing can be
+    quarantined on account of it."""
+    reqs = sum(f.get("requests", 0) for f in faces)
+    if not reqs:
+        return "nothing walked"
+    secs = max(float(seconds), 1.0)
+    now = time.time()
+    obs = {"connection_rate": round(reqs / secs, 3), "traffic_volume": int(sum(f.get("bytes", 0) for f in faces) / secs),
+           "ports_accessed": sorted({int(f["port"]) for f in faces if f.get("port")}),
+           "timestamp": {"secs_since_epoch": int(now), "nanos_since_epoch": int((now % 1) * 1e9)},
+           "http": {"request_rate": round(reqs / secs, 3),
+                    "error_rate_4xx": round(sum(f.get("answers_4xx", 0) for f in faces) / reqs, 4),
+                    "error_rate_5xx": round(sum(f.get("answers_5xx", 0) for f in faces) / reqs, 4),
+                    "path_diversity": reqs, "avg_payload_bytes": 0, "method_diversity": 1}}
+    r, why = _first_door("skunkbat", 9750, "baseline.observe", obs)
+    return "observed" if isinstance(r, dict) and r.get("status") == "ok" else (why or "unexpected answer")
+
+
+def feed_vine(trace):
+    """The trace as one gossip entry under this body's name. Entries age out of the vine after ten minutes; the
+    gate's loop tells it again (--tell) so the latest walk stays on the vine between walks."""
+    key = "dead-links:%s" % (trace.get("by") or "unknown")
+    r, why = _first_door("swarmvine", 7800, "gossip.inject", {"topic": "tower", "key": key, "payload": trace})
+    if isinstance(r, dict) and r.get("result"):
+        return str(r["result"])[:24].lower()
+    return why or "unexpected answer"
+
+
+def tell_pass(log):
+    """Say the latest walk again on the vine (this body's, and the other body's as its own gate shows it)."""
+    told = {}
+    try:
+        with open(FACES_SUMMARY, encoding="utf-8") as f:
+            mine = json.load(f)
+        told[mine.get("by", "?")] = feed_vine(trace_of(mine))
+    except (OSError, ValueError):
+        mine = None
+    me = socket.gethostname().split(".")[0].lower()
+    if not mine or not str(told.get(mine.get("by", "?"), "")).startswith("no door"):   # a vine is here: carry the others
+        for body, base in PEER_GATES.items():
+            if body == me or body in told:
+                continue
+            try:
+                with _PLAIN.open(urllib.request.Request(base + "/thymus", headers={"User-Agent": UA, "Accept": "application/json"}), timeout=6) as r:
+                    theirs = (json.loads(r.read(4 << 20).decode("utf-8", "replace")) or {}).get("dead_links") or {}
+                if theirs.get("faces") and theirs.get("by") == body:
+                    told[body] = feed_vine(trace_of(theirs))
+            except Exception:
+                continue
+    for k, v in told.items():
+        log("  vine  dead-links:%-10s %s" % (k, v))
+    if mine is not None:
+        mine.setdefault("fed", {})["swarmvine"] = told.get(mine.get("by", "?"), "")
+        mine["fed"]["told_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        if len(told) > 1:
+            mine["fed"]["carried_for"] = sorted(k for k in told if k != mine.get("by"))
+        with open(FACES_SUMMARY, "w", encoding="utf-8") as f:
+            json.dump(mine, f, indent=1, ensure_ascii=False)
+    return 0
 
 
 def faces_pass(a, log):
@@ -645,9 +798,13 @@ def faces_pass(a, log):
                         "assets": f.get("assets", 0), "assets_dead": len(f.get("assets_dead", [])),
                         "dead_paths": [d["path"] for d in f.get("dead", [])[:12]],
                         "at_home_only_paths": [d["path"] for d in f.get("home_only", [])[:12]]} for f in faces]}
+    # hand the trace on: skunkBat sees the walk as an observation, swarmVine carries the findings as gossip
+    short["fed"] = {"skunkbat": feed_bat(faces, report["seconds"]), "swarmvine": feed_vine(trace_of(short)),
+                    "told_at": report["ts"]}
     os.makedirs(os.path.dirname(FACES_SUMMARY), exist_ok=True)
     with open(FACES_SUMMARY, "w", encoding="utf-8") as f:
         json.dump(short, f, indent=1, ensure_ascii=False)
+    log("  fed on (trace only):  skunkBat %s   swarmVine %s" % (short["fed"]["skunkbat"], short["fed"]["swarmvine"]))
     log("  %.0f s   detail: %s   short form: %s" % (report["seconds"], os.path.join(top, "faces.json"), FACES_SUMMARY))
     return 1 if short["dead"] or short["assets_dead"] else 0
 
@@ -657,6 +814,8 @@ def main():
     ap = argparse.ArgumentParser(description="Walk a Gaia gate: link paths and renders.")
     ap.add_argument("--faces", action="store_true",
                     help="walk the front page of each name, at home and where it is hoisted, one link deep")
+    ap.add_argument("--tell", action="store_true",
+                    help="say the latest faces walk again on swarmVine (entries age out after ten minutes); walks nothing")
     ap.add_argument("--dom", action="store_true",
                     help="with --faces: also load each front page in a headless browser, so links written by scripts are seen")
     ap.add_argument("--base", default="http://127.0.0.1:8443", help="gate to walk (default: this machine's gate)")
@@ -679,6 +838,8 @@ def main():
         if not a.quiet:
             print(s, flush=True)
 
+    if a.tell:
+        return tell_pass(log)
     if a.faces:
         return faces_pass(a, log)
     base = a.base.rstrip("/")
