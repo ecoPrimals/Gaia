@@ -328,8 +328,12 @@ CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
 #   1. a live working copy on this body (eastGate keeps one; GAIA_HUD_SITE can name another)
 #   2. the shared surface on the LAN: eastGate's data server, for a body that keeps no copy of its own
 #   3. this body's clone of the site, only when the shared surface cannot be reached
-# A text file that carries a credential shape, this gate's token, or a list of the house's hardware addresses is
-# not served this way (the same rule the hoist to GitHub Pages uses); it stays where it is.
+# A text file that carries a credential shape or a list of the house's hardware addresses is not served this way
+# (the same rule the hoist to GitHub Pages uses); it stays where it is. The gate's token is cut out by exact value.
+# The live data store is NOT part of this layer. On eastGate the site's data/ folder and some loose .json files are
+# links that lead out of the site into ~/.local/share/gaia/data (1.6 GB of live state, with credentials in some
+# files). A link that leaves the site is not followed, and through the shared surface data/ is not asked for; that
+# store stays on the LAN surface it is already on until its contents are sorted.
 import re, urllib.parse
 _BENEATH_LIVE=[d for d in (os.environ.get("GAIA_HUD_SITE",""),os.path.expanduser("~/Development/ecoPrimals/infra/hud/site/public")) if d]
 _BENEATH_SHARED=["http://192.168.4.248:8080"]
@@ -400,7 +404,17 @@ def _beneath_door_open(base):
     except Exception: ok=None          # not reachable
     _beneath_door[base]=(time.time(),ok); return ok
 
+def _beneath_in_site(path):
+    """Through the shared surface a link cannot be told from a file, so the live store is kept out by name:
+    nothing under data/, and a loose data file only if the site itself (this body's clone of it) has that file."""
+    low=path.lower()
+    if low.startswith("/data/") or low=="/data": return False
+    if low.endswith((".json",".jsonl",".sqlite",".db",".log",".sh",".plist")) and os.path.isdir(_BENEATH_CLONE):
+        return os.path.isfile(os.path.join(_BENEATH_CLONE,path.lstrip("/").replace("/",os.sep)))
+    return True
+
 def _beneath_from_door(base,path):
+    if not _beneath_in_site(path): return None
     for p in (path,path+"/"):
         try:
             with _BENEATH_OPEN.open(urllib.request.Request(base+urllib.parse.quote(p),headers={"Accept":"*/*","User-Agent":"gaia-gate/beneath"}),timeout=8) as r:
@@ -733,8 +747,9 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             # pass through to the real routes, so the HUD can read /thymus, /senses, /human from its own name.
             _wants_page = "text/html" in self.headers.get("Accept", "text/html")
             if _wants_page and not (_p.startswith("/js/") or _p.startswith("/css/") or _p.startswith("/data/") or _p.startswith("/static/") or _p.startswith("/paintings/") or _p.endswith(".js") or _p.endswith(".css") or _p.endswith(".png") or _p.endswith(".jpg") or _p.endswith(".svg") or _p.endswith(".ico") or _p.endswith(".xml") or _p.endswith(".json") or _p.startswith("/api/")):
-                # a page of the old HUD opens as itself; only a path that is nowhere folds back to the HUD
-                if _p not in ("/","/index","/index.html") and self._serve_beneath(): return
+                # a page of the old HUD opens as itself (a named file or a folder); a bare word stays the gate's own
+                # to answer, so a route of mine is never shadowed by an old page of the same name
+                if (_p.endswith("/") or "." in _p.rsplit("/",1)[-1]) and _p not in ("/","/index.html") and self._serve_beneath(): return
                 self._serve_static("senses.html"); return
         # ROOT — host-based prism
         if self.path in ("/","/index","/index.html"):
