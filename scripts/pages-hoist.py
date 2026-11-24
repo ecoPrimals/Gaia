@@ -30,7 +30,8 @@ STATE = os.path.join(STATE_DIR, "pages-hoist.json")
 BODIES = ["eastgate", "polaris"]          # who publishes first, and whose view is read first
 WIRE = {"eastgate": "192.168.4.248", "polaris": "192.168.4.147"}
 FRESH = 25 * 60                           # a higher-ranked body's snapshot younger than this means: stand down
-MIN_GAP = 14 * 60                         # never publish more often than this from the loop (Pages build limit)
+MIN_GAP = 10 * 60                         # never publish more often than this from the loop (Pages build limit);
+                                          # shorter than the loop's 15 minutes less a build, or every other turn is skipped
 MAX_FILE, MAX_TOTAL, MAX_FILES, MAX_DEPTH = 4 << 20, 96 << 20, 2000, 3
 PAGES_A = {"185.199.108.153", "185.199.109.153", "185.199.110.153", "185.199.111.153"}
 
