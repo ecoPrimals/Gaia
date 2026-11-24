@@ -224,7 +224,7 @@ def build(site):
     host = cfg["domain"]
     bases = sources()
     with open(os.path.join(REPO, "static", cfg["root"]), "rb") as fh:
-        html = fh.read().decode("utf-8")
+        html = fh.read().decode("utf-8").replace("\r\n", "\n")   # the same bytes whichever body's checkout this is
     files, snap_map, misses, held, read_from = {}, {}, {}, {}, {}
     total = 0
     seen = set()
@@ -291,12 +291,11 @@ def build(site):
         files[extra] = page
     if cfg.get("nojekyll"):
         files[".nojekyll"] = b""
-    if snap_map or len(files) > 4:
-        tip = subprocess.run(["git", "rev-parse", "--short=9", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
-        files["snap/meta.json"] = json.dumps({
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "by": body_name(), "tip": tip,
-            "read_from": read_from, "files": len(files) + 1, "routes": len(snap_map),
-            "not_read": len(misses), "held_back": len(held)}, indent=1).encode("utf-8")
+    tip = subprocess.run(["git", "rev-parse", "--short=9", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    files["snap/meta.json"] = json.dumps({                 # every site carries it: it is how bodies know whose turn it is
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "by": body_name(), "tip": tip,
+        "read_from": read_from, "files": len(files) + 1, "routes": len(snap_map),
+        "not_read": len(misses), "held_back": len(held)}, indent=1).encode("utf-8")
     report = {"files": len(files), "bytes": sum(len(v) for v in files.values()), "routes": sorted(snap_map),
               "read_from": read_from, "not_read": misses, "held_back": held, "has_snap": bool(snap_map)}
     return files, report
