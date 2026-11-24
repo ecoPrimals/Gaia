@@ -5,8 +5,11 @@ import subprocess, os, json, sys
 
 def wmi_read(option):
     """Read ASUS WMI BIOS setting."""
-    cmd = f'powershell -Command "$inst = Get-CimInstance -Namespace root/WMI -ClassName ASUSManagement; $r = Invoke-CimMethod -InputObject $inst -MethodName GetOptionData -Arguments @{{OptionName=\'{option}\'}}; Write-Output $r.Value"'
-    return os.popen(cmd).read().strip()
+    # The reader answers 0 for a name it does not know, with a non-zero ErrorCode. Without the code
+    # an unknown name reads as "disabled", so it is returned as '?' instead.
+    cmd = f'powershell -NoProfile -Command "$inst = Get-CimInstance -Namespace root/WMI -ClassName ASUSManagement; $r = Invoke-CimMethod -InputObject $inst -MethodName GetOptionData -Arguments @{{OptionName=\'{option}\'}}; Write-Output ([string]$r.ErrorCode + \':\' + [string]$r.Value)"'
+    code, _, val = os.popen(cmd).read().strip().partition(':')
+    return val if code == '0' else '?'
 
 def run_ps(cmd):
     """Run PowerShell command, return output."""
@@ -25,8 +28,7 @@ print(f"  Disks:\n{disks}")
 volumes = run_ps("Get-Volume | Where-Object {$_.DriveLetter} | Format-Table DriveLetter,FileSystemLabel,Size,FileSystem -AutoSize")
 print(f"\n  Volumes:\n{volumes}")
 
-m_drive = run_ps("Test-Path M:\\")
-m_found = m_drive.lower() == 'true'
+m_found = os.path.exists('M:\\')   # asked directly: the PowerShell form broke its own quoting and always said no
 print(f"\n  >>> M: DRIVE: {'FOUND!' if m_found else 'NOT FOUND'} <<<")
 
 # ===== 2. CRITICAL BIOS SETTINGS =====
@@ -44,7 +46,7 @@ for opt, (name, want, desc) in checks.items():
     ok = val == want
     if ok:
         settings_ok += 1
-    status = f"{'OK' if ok else 'WRONG'}"
+    status = 'OK' if ok else ('NOT READABLE from Windows on this board' if val == '?' else 'WRONG')
     print(f"  {name}: {val} — want {want} ({desc}) [{status}]")
 
 # ===== 3. CPU =====

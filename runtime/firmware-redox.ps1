@@ -13,7 +13,10 @@ $Snaps = "$env:LOCALAPPDATA\Gaia\firmware"
 $Journal = "$G\data\spine\firmware.jsonl"
 $GrubEntry = "{dce17415-e64e-11f0-bdea-10f60a5457d0}"   # GAIA EFI Key (modGRUBShell)
 $Vars = @(
-    @{ name = "AMD_PBS_SETUP"; guid = "{A339D746-F678-49B3-9FC7-54CE0F9DF226}" }
+    @{ name = "AMD_PBS_SETUP"; guid = "{A339D746-F678-49B3-9FC7-54CE0F9DF226}" },
+    # The main setup block. AMD_PBS_SETUP alone stayed "unchanged" through a UEFI unlock (Nov 24),
+    # so the sense was blind to it. This one is readable from Windows too.
+    @{ name = "Setup"; guid = "{EC87D643-EBA4-4BB5-A1E5-3F3E36B20DA9}" }
 )
 
 Add-Type @"

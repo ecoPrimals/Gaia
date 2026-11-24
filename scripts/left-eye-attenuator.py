@@ -1,7 +1,7 @@
 """LEFT EYE ATTENUATOR — Pulse the iGPU display awake after boot.
 Inverse of right eye: RTX wakes naturally, iGPU needs a kick.
 Runs on login, detects new display, extends desktop, wakes RustDesk."""
-import subprocess, time, os, json, ctypes
+import subprocess, time, os, json, ctypes, sys
 
 print("=" * 60)
 print("LEFT EYE ATTENUATOR — Wake pulse for Display 2")
@@ -129,7 +129,9 @@ else:
 # ─── SCHEDULE FOR AUTO-RUN ───
 print("\n[6] Scheduling attenuator for next login...")
 script_path = os.path.abspath(__file__)
-cmd_sched = f'schtasks /Create /TN "GaiaLeftEyeWake" /TR "python \\"{script_path}\\"" /SC ONLOGON /RL HIGHEST /F'
+# The task has no PATH to find a bare "python" (it failed with file-not-found at every logon after this
+# line re-registered it), so it is registered with the interpreter that is running this script.
+cmd_sched = f'schtasks /Create /TN "GaiaLeftEyeWake" /TR "\\"{sys.executable}\\" \\"{script_path}\\"" /SC ONLOGON /RL HIGHEST /F'
 r_sched = subprocess.run(cmd_sched, shell=True, capture_output=True, text=True, timeout=10)
 if 'SUCCESS' in r_sched.stdout.upper():
     print("  Scheduled: GaiaLeftEyeWake runs on every login")

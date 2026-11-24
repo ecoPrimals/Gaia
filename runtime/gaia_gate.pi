@@ -1504,9 +1504,14 @@ def _pid_alive(pid):
 def _mesh_self():
     import socket
     ip=""
-    try:
-        s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.connect(("192.168.4.1",9)); ip=s.getsockname()[0]; s.close()   # no packet is sent
-    except Exception: pass
+    for a in _MESH_BODIES:   # which mesh address is mine: only an address this body holds can be bound
+        try:
+            s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.bind((a,0)); s.close(); ip=a; break
+        except OSError: pass
+    if not ip:   # not a known body: fall back to the address that faces the wire (no packet is sent)
+        try:
+            s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM); s.connect(("192.168.4.1",9)); ip=s.getsockname()[0]; s.close()
+        except Exception: pass
     def g(*a):
         try: return subprocess.run(["git",*a],cwd=_REPO,capture_output=True,text=True,timeout=10).stdout.strip()
         except Exception: return ""
