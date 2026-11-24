@@ -572,6 +572,7 @@ def walk_face(face, timeout, workers, browser, budget_ms):
                   accept="text/html,*/*" if e["kind"] == "link" else "*/*")
         body = r.pop("body", b"")
         e["bytes"] = len(body)
+        e["sent"] = 150 + len(e["path"]) + len(face.get("host") or u.netloc)    # about what one GET puts on the wire
         same = bool(body) and (hashlib.sha1(body).hexdigest() == front_sha or
                                (r["ctype"].startswith(PAGE_TYPES) and abs(len(body) - front_len) <= 64))
         return r["status"], r.get("error", ""), same
@@ -604,6 +605,7 @@ def walk_face(face, timeout, workers, browser, budget_ms):
         assets=len(assets), assets_dead=[brief(e) for e in assets if e["state"] == "dead"],
         external_hosts=dict(sorted(external.items(), key=lambda kv: -kv[1])), after_scripts=seen_dom,
         requests=len(items) + 1, bytes=front_len + sum(e.get("bytes", 0) for e in items),
+        sent=150 + len(u.path) + len(face.get("host") or u.netloc) + sum(e.get("sent", 0) for e in items),
         port=u.port or (443 if u.scheme == "https" else 80),
         answers_4xx=sum(1 for e in items if isinstance(e["status"], int) and 400 <= e["status"] < 500),
         answers_5xx=sum(1 for e in items if isinstance(e["status"], int) and e["status"] >= 500))
@@ -696,13 +698,15 @@ def _first_door(name, port, method, params):
 
 def feed_bat(faces, seconds):
     """One observation of the walk itself, in skunkBat's own shape. No source address is named, so nothing can be
-    quarantined on account of it."""
+    quarantined on account of it. traffic_volume is what this body SENT (the requests), not what it read back:
+    skunkBat reads volume per connection as data leaving, and the first two walks, reported with the bytes they
+    downloaded, were filed by it as a possible bulk transfer out."""
     reqs = sum(f.get("requests", 0) for f in faces)
     if not reqs:
         return "nothing walked"
     secs = max(float(seconds), 1.0)
     now = time.time()
-    obs = {"connection_rate": round(reqs / secs, 3), "traffic_volume": int(sum(f.get("bytes", 0) for f in faces) / secs),
+    obs = {"connection_rate": round(reqs / secs, 3), "traffic_volume": int(sum(f.get("sent", 0) for f in faces) / secs),
            "ports_accessed": sorted({int(f["port"]) for f in faces if f.get("port")}),
            "timestamp": {"secs_since_epoch": int(now), "nanos_since_epoch": int((now % 1) * 1e9)},
            "http": {"request_rate": round(reqs / secs, 3),
