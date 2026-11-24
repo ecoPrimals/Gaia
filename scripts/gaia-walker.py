@@ -474,10 +474,23 @@ def default_faces(gate):
     for d in dict.fromkeys(["http://%s:8080" % urllib.parse.urlsplit(gate).hostname, "http://192.168.4.248:8080"]):
         if plain_status(d + "/gaia-walker-no-such-path-%d.none" % os.getpid(), timeout=4) == 404:
             home.append((d, None))
+    # the door a name really opens at home is port 80 (where the WAN forward lands), not the gate's own port:
+    # this body's if it has one, else eastGate's. What sits there may hand the gate a different host name than
+    # the visitor typed, so asking the gate directly would describe a page no visitor gets.
+    def front(name):
+        try:                                   # where this body's own name table sends the name (a browser here goes there)
+            ip = socket.gethostbyname(name)
+        except Exception:
+            ip = ""
+        tried = ["http://" + ip] if re.match(r"^(192\.168\.|10\.|127\.)", ip) else []
+        for d in dict.fromkeys(tried + ["http://%s" % urllib.parse.urlsplit(gate).hostname, "http://192.168.4.248"]):
+            if plain_status(d + "/gaia-walker-no-such-path-%d.none" % os.getpid(), host=name, accept="*/*", timeout=4) == 404:
+                return d
+        return gate
     return [
-        {"name": "hud at home", "url": gate + "/", "host": "hud.primals.eco"},
-        {"name": "nestgate at home", "url": gate + "/", "host": "nestgate.io"},
-        {"name": "primals.eco at home", "url": gate + "/", "host": "primals.eco"},
+        {"name": "hud at home", "url": front("hud.primals.eco") + "/", "host": "hud.primals.eco"},
+        {"name": "nestgate at home", "url": front("nestgate.io") + "/", "host": "nestgate.io"},
+        {"name": "primals.eco at home", "url": front("primals.eco") + "/", "host": "primals.eco"},
         {"name": "hud on Pages", "url": "https://ecoprimals.github.io/hud/", "home_doors": home},
         {"name": "nestgate on Pages", "url": "https://ecoprimals.github.io/nestgate.io/", "home_doors": home},
     ]
