@@ -1578,12 +1578,21 @@ def _resync_holes():
         rec["ts"]=time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())
         with open(path,"w",encoding="utf-8") as f: json.dump(rec,f,indent=1)
 
+def _hoist_pages():
+    """Keep the hoisted faces on GitHub Pages fresh. The script decides whose turn it is: a body stands
+    down while a higher-ranked body's snapshot is fresh and takes over when it goes stale. It reads from every
+    body that answers, drops anything shaped like a credential, and goes out through gh's existing login."""
+    subprocess.run([sys.executable,os.path.join(_REPO,"scripts","pages-hoist.py"),"refresh"],cwd=_REPO,capture_output=True,timeout=280)
+
 def agglutinate():
-    last_sha=""
+    last_sha=""; tick=0
     while True:
-        time.sleep(300)
+        time.sleep(300); tick+=1
         try: _resync_holes()
         except Exception: pass
+        if tick%3==0:   # every third turn of the same loop: 15 minutes
+            try: _hoist_pages()
+            except Exception: pass
         try:
             with urllib.request.urlopen("http://localhost:3000/api/v1/repos/gaia/Gaia/commits?limit=1",timeout=10) as r:
                 c=json.loads(r.read())
