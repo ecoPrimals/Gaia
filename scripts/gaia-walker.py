@@ -28,7 +28,7 @@ Run by hand - it is not a cron and starts nothing that stays running:
                Pages), one link deep: each link is dead, fine, or brings the same page back again, and each
                asset the page pulls in loads or does not. --dom adds the links a script writes. The short form
                goes to runtime/membrane/dead-links.json, which the gate's /thymus and /klein carry. The same
-               findings go on as trace only (paths, answers, counts): to skunkBat as one observation of the walk,
+               findings go on as trace only (paths, answers, counts): skunkBat is asked whether the walk stands out,
                and to swarmVine as a gossip entry (--tell says it again; the gate's loop does that between walks).
 
 Only the gate named by --base is requested. External links are counted, never fetched
@@ -616,8 +616,8 @@ def walk_face(face, timeout, workers, browser, budget_ms):
 # What a walk found is handed on as TRACE ONLY: which path, what it answered, how many. Never a page's text, a header,
 # a query string, a token or an address of a visitor. Three places take it:
 #   thymus / klein   the short form on disk (runtime/membrane/dead-links.json), carried by the gate
-#   skunkBat         one observation per walk (baseline.observe): what my own walker looks like on the wire, so a
-#                    walk is known traffic and not a stranger scanning for holes
+#   skunkBat         asked once per walk whether the walk stands out (baseline.anomaly); nothing is recorded into
+#                    its picture of normal traffic
 #   swarmVine        one gossip entry per body (gossip.inject, topic "tower", key "dead-links:<body>")
 TRACE_PATH = re.compile(r"[^A-Za-z0-9_\-./~%]")
 PEER_GATES = {"eastgate": "http://192.168.4.248:8443", "polaris": "http://192.168.4.147:8443"}
@@ -697,10 +697,11 @@ def _first_door(name, port, method, params):
 
 
 def feed_bat(faces, seconds):
-    """One observation of the walk itself, in skunkBat's own shape. No source address is named, so nothing can be
-    quarantined on account of it. traffic_volume is what this body SENT (the requests), not what it read back:
-    skunkBat reads volume per connection as data leaving, and the first two walks, reported with the bytes they
-    downloaded, were filed by it as a possible bulk transfer out."""
+    """The walk described in skunkBat's own shape and ASKED about, not recorded: baseline.anomaly says whether it
+    stands out from what skunkBat knows as normal and leaves that picture as it was. (The first two walks were
+    recorded with baseline.observe; skunkBat's picture of normal HTTP traffic was then made of nothing but my own
+    walks, so a stranger scanning the way I walk would have looked normal to it.) traffic_volume is what this body
+    SENT - the requests - because skunkBat reads volume per connection as data leaving."""
     reqs = sum(f.get("requests", 0) for f in faces)
     if not reqs:
         return "nothing walked"
@@ -713,8 +714,13 @@ def feed_bat(faces, seconds):
                     "error_rate_4xx": round(sum(f.get("answers_4xx", 0) for f in faces) / reqs, 4),
                     "error_rate_5xx": round(sum(f.get("answers_5xx", 0) for f in faces) / reqs, 4),
                     "path_diversity": reqs, "avg_payload_bytes": 0, "method_diversity": 1}}
-    r, why = _first_door("skunkbat", 9750, "baseline.observe", obs)
-    return "observed" if isinstance(r, dict) and r.get("status") == "ok" else (why or "unexpected answer")
+    r, why = _first_door("skunkbat", 9750, "baseline.anomaly", obs)
+    if not isinstance(r, dict) or "anomaly_count" not in r:
+        return why or "unexpected answer"
+    if not r["anomaly_count"]:
+        return "asked: looks like normal traffic"
+    said = [re.sub(r"[^A-Za-z0-9 .,:%()/-]", "", str(x.get("behavior", "")))[:70] for x in (r.get("anomalies") or [])[:3] if isinstance(x, dict)]
+    return "asked: stands out in %d way(s): %s" % (r["anomaly_count"], "; ".join(said))
 
 
 def feed_vine(trace):

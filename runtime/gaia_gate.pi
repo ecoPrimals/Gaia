@@ -330,10 +330,13 @@ CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
 #   3. this body's clone of the site, only when the shared surface cannot be reached
 # A text file that carries a credential shape or a list of the house's hardware addresses is not served this way
 # (the same rule the hoist to GitHub Pages uses); it stays where it is. The gate's token is cut out by exact value.
-# The live data store is NOT part of this layer. On eastGate the site's data/ folder and some loose .json files are
-# links that lead out of the site into ~/.local/share/gaia/data (1.6 GB of live state, with credentials in some
-# files). A link that leaves the site is not followed, and through the shared surface data/ is not asked for; that
-# store stays on the LAN surface it is already on until its contents are sorted.
+# The live data store belongs to the mesh, not to the world. On eastGate the site's data/ folder and some loose
+# .json files are links that lead out of the site into ~/.local/share/gaia/data (live state, 1.6 GB). A visitor
+# inside the house (192.168.4.x, 192.168.9.x, or this body itself) is given those files by name, the same files the
+# LAN data server already gives them. A visitor from outside is given the site only. Three things stay shut even
+# inside the house: a file on the hold list (runtime/membrane/beneath-held.json - paths found to carry a stored
+# credential; no list on a body means the store stays shut there), a file with a credential shape in it, and a
+# list of the house's hardware addresses.
 import re, urllib.parse
 _BENEATH_LIVE=[d for d in (os.environ.get("GAIA_HUD_SITE",""),os.path.expanduser("~/Development/ecoPrimals/infra/hud/site/public")) if d]
 _BENEATH_SHARED=["http://192.168.4.248:8080"]
@@ -343,6 +346,31 @@ _BENEATH_TEXT=(".html",".htm",".js",".mjs",".css",".json",".jsonl",".xml",".txt"
 _BENEATH_GUARD=[re.compile(rb"gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"),re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     re.compile(rb"\"(?:token|zk|ssh_pass|password|passwd|private_key|api_key)\"\s*:\s*\"")]
 _BENEATH_MAC=re.compile(rb"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b")
+# the live store is written by many hands; three more shapes are looked for in its files (not in the site's own)
+_BENEATH_STORE_GUARD=[re.compile(rb"sshpass\s+-p"),re.compile(rb"://[^/\s:@\"'<>]{1,40}:[^/\s:@\"'<>]{3,}@"),
+    re.compile(rb"(?i)[\"']?[a-z0-9_\-]*(?:pass(?:word|wd|phrase)?|secret|psk|credential|creds|api[_\-]?key|access[_\-]?code|ssh[_\-]?key|seed)[a-z0-9_\-]*[\"']?\s*[:=]\s*[\"'][^\"'\s]{6,}[\"']")]
+_BENEATH_STORE=os.path.realpath(os.path.expanduser("~/.local/share/gaia/data"))
+_BENEATH_HELD_FILE=os.path.join(_REPO,"runtime","membrane","beneath-held.json")
+_BENEATH_MESH=("192.168.4.","192.168.9.")
+_beneath_held=[0,frozenset()]
+
+def _beneath_held_paths():
+    """Paths known to carry a stored credential (paths only; the sorting is done from the body that keeps the
+    credentials). None when this body has no list: then the live store is not opened at all."""
+    try: m=os.stat(_BENEATH_HELD_FILE).st_mtime_ns
+    except OSError: return None
+    if m!=_beneath_held[0]:
+        try:
+            with open(_BENEATH_HELD_FILE,encoding="utf-8") as f: _beneath_held[1]=frozenset(json.load(f).get("held") or [])
+            _beneath_held[0]=m
+        except Exception: return None
+    return _beneath_held[1]
+
+def _beneath_store_ok(path):
+    """May this path of the live store be given to a visitor inside the house? path is the name it has under /"""
+    import posixpath
+    held=_beneath_held_paths()
+    return held is not None and posixpath.normpath(path) not in held
 _BENEATH_OWN_HOSTS=("detroit.primals.eco","publicrecord.primals.eco","record.primals.eco","tuebor.primals.eco","clutch.primals.eco","lansing.primals.eco")
 _beneath_seen={}; _beneath_door={}
 
@@ -350,12 +378,13 @@ class _BeneathNoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*a,**k): return None
 _BENEATH_OPEN=urllib.request.build_opener(_BeneathNoRedirect)
 
-def _beneath_pass(data):
+def _beneath_pass(data,store=False):
     """Text on its way out: the gate's own token is cut out of it by exact value (old pages carry it in a meta tag);
     a credential shape or a list of hardware addresses holds the whole file back (None)."""
     tok=str(globals().get("GAIA_TOKEN") or "")
     if len(tok)>=8 and tok.encode() in data: data=data.replace(tok.encode(),b"")
     if any(rx.search(data) for rx in _BENEATH_GUARD): return None
+    if store and any(rx.search(data) for rx in _BENEATH_STORE_GUARD): return None
     if len(set(m.lower() for m in _BENEATH_MAC.findall(data)))>5: return None
     return data
 
@@ -374,12 +403,21 @@ def _beneath_kind(name,data,ct=""):
             ct="text/html" if head.startswith((b"<!doctype html",b"<html")) else "application/octet-stream"
     return ct,(ct.startswith("text/") or ct.endswith(("json","javascript","xml")) or name.lower().endswith(_BENEATH_TEXT))
 
-def _beneath_from_dir(base,rel):
+def _beneath_from_dir(base,rel,home=False):
     root=os.path.realpath(base); fp=os.path.realpath(os.path.join(root,rel.replace("/",os.sep)))
-    if fp!=root and not fp.startswith(root+os.sep): return None
+    store=False
+    if fp!=root and not fp.startswith(root+os.sep):
+        # a link that leaves the site: followed only into the live store, only for a visitor inside the house
+        if not (home and (fp==_BENEATH_STORE or fp.startswith(_BENEATH_STORE+os.sep))): return None
+        store=True
     if os.path.isdir(fp): fp=os.path.join(fp,"index.html")
     elif not os.path.isfile(fp) and not os.path.splitext(fp)[1] and os.path.isfile(fp+".html"): fp=fp+".html"
     if not os.path.isfile(fp): return None
+    if store:
+        fp=os.path.realpath(fp)
+        if not fp.startswith(_BENEATH_STORE+os.sep): return None
+        # the list names a file as the data server shows it: under /data/, and under the loose name if it has one
+        if not (_beneath_store_ok("/data/"+os.path.relpath(fp,_BENEATH_STORE).replace(os.sep,"/")) and _beneath_store_ok("/"+rel)): return None
     st=os.stat(fp)
     if st.st_size>_BENEATH_MAX: return None
     key=(fp,st.st_mtime_ns,st.st_size)
@@ -387,7 +425,7 @@ def _beneath_from_dir(base,rel):
     with open(fp,"rb") as f: data=f.read()
     ct,text=_beneath_kind(fp,data)
     if text:
-        data=_beneath_pass(data)
+        data=_beneath_pass(data,store)
         if len(_beneath_seen)>5000: _beneath_seen.clear()
         _beneath_seen[key]=data is not None
         if data is None: return None
@@ -410,11 +448,17 @@ def _beneath_in_site(path):
     low=path.lower()
     if low.startswith("/data/") or low=="/data": return False
     if low.endswith((".json",".jsonl",".sqlite",".db",".log",".sh",".plist")) and os.path.isdir(_BENEATH_CLONE):
-        return os.path.isfile(os.path.join(_BENEATH_CLONE,path.lstrip("/").replace("/",os.sep)))
+        fp=os.path.join(_BENEATH_CLONE,path.lstrip("/").replace("/",os.sep))
+        if os.path.islink(fp) or not os.path.isfile(fp): return False
+        if os.path.getsize(fp)<400:        # where links cannot be made, a clone holds a link as a one-line file naming its target
+            with open(fp,"rb") as f: head=f.read(400)
+            if head.startswith((b"/",b"../",b"./")) and b"\n" not in head.strip(): return False
+        return True
     return True
 
-def _beneath_from_door(base,path):
-    if not _beneath_in_site(path): return None
+def _beneath_from_door(base,path,home=False):
+    store=not _beneath_in_site(path)
+    if store and not (home and _beneath_store_ok(path)): return None
     for p in (path,path+"/"):
         try:
             with _BENEATH_OPEN.open(urllib.request.Request(base+urllib.parse.quote(p),headers={"Accept":"*/*","User-Agent":"gaia-gate/beneath"}),timeout=8) as r:
@@ -426,21 +470,21 @@ def _beneath_from_door(base,path):
         if len(data)>_BENEATH_MAX or data[:400].find(b"<title>Directory listing for")>=0: return None
         ct,text=_beneath_kind(p.rstrip("/") if not p.endswith("/") else "index.html",data,ct)
         if text:
-            data=_beneath_pass(data)
+            data=_beneath_pass(data,store)
             if data is None: return None
         return data,ct
     return None
 
-def _beneath_find(raw):
+def _beneath_find(raw,home=False):
     p=urllib.parse.unquote(raw.split("?")[0].split("#")[0])
     if not p.startswith("/") or p=="/" or ".." in p or "\\" in p or "\0" in p or p.startswith(("/v1/","/api/")): return None
     for d in _BENEATH_LIVE:
-        if os.path.isfile(os.path.join(d,"index.html")): return _beneath_from_dir(d,p.lstrip("/"))   # the live copy decides
+        if os.path.isfile(os.path.join(d,"index.html")): return _beneath_from_dir(d,p.lstrip("/"),home)   # the live copy decides
     reachable=False
     for base in _BENEATH_SHARED:
         ok=_beneath_door_open(base)
         if ok:
-            got=_beneath_from_door(base,p)
+            got=_beneath_from_door(base,p,home)
             if got: return got
         if ok is not None: reachable=True
     if not reachable and os.path.isfile(os.path.join(_BENEATH_CLONE,"index.html")): return _beneath_from_dir(_BENEATH_CLONE,p.lstrip("/"))
@@ -450,6 +494,15 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
     timeout = PI_TIMEOUT
     def log_message(self, fmt, *a): pass
 
+    def _beneath_home(self):
+        """Is the visitor inside the house? The front door names the visitor to me (X-Forwarded-For, trusted only
+        from loopback); a loopback caller that names nobody is this body itself."""
+        peer=self.client_address[0]; ip=peer
+        if peer in ("127.0.0.1","::1"):
+            named=(self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+            if named: ip=named
+        return ip in ("127.0.0.1","::1") or ip.startswith(_BENEATH_MESH)
+
     def _serve_beneath(self):
         """Before a path becomes a dead end: is it a page, script or file of the old HUD site? Serve it if so.
         Asked once per request; the investigation hosts that serve only their own content are left alone."""
@@ -458,7 +511,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         h=(self.headers.get("X-Forwarded-Host") or self.headers.get("Host") or "").split(":")[0].lower()
         if h in _BENEATH_OWN_HOSTS: return False
         t0=time.time()
-        try: got=_beneath_find(self.path)
+        try: got=_beneath_find(self.path,self._beneath_home())
         except Exception: got=None
         if not got: return False
         data,ct=got
@@ -466,6 +519,7 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(data)))
             self.send_header("Access-Control-Allow-Origin","*"); self.send_header("X-Gaia-Layer","beneath")
+            self.send_header("Cache-Control","no-store")   # what a visitor is given depends on where they stand
             self._negentropy_headers(); self.end_headers(); self.wfile.write(data)
             self._classify_and_log("GET",200,(time.time()-t0)*1000,len(data))
         except Exception: pass
