@@ -346,8 +346,10 @@ _BENEATH_TEXT=(".html",".htm",".js",".mjs",".css",".json",".jsonl",".xml",".txt"
 _BENEATH_GUARD=[re.compile(rb"gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"),re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     re.compile(rb"\"(?:token|zk|ssh_pass|password|passwd|private_key|api_key)\"\s*:\s*\"")]
 _BENEATH_MAC=re.compile(rb"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b")
-# the live store is written by many hands; three more shapes are looked for in its files (not in the site's own)
+# the live store is written by many hands; four more shapes are looked for in its files (not in the site's own)
 _BENEATH_STORE_GUARD=[re.compile(rb"sshpass\s+-p"),re.compile(rb"://[^/\s:@\"'<>]{1,40}:[^/\s:@\"'<>]{3,}@"),
+    re.compile(rb"passwd/[a-z\-]*password[a-z\-]*\s+password\s+\S"),          # an installer answer file
+
     re.compile(rb"(?i)[\"']?[a-z0-9_\-]*(?:pass(?:word|wd|phrase)?|secret|psk|credential|creds|api[_\-]?key|access[_\-]?code|ssh[_\-]?key|seed)[a-z0-9_\-]*[\"']?\s*[:=]\s*[\"'][^\"'\s]{6,}[\"']")]
 _BENEATH_STORE=os.path.realpath(os.path.expanduser("~/.local/share/gaia/data"))
 _BENEATH_HELD_FILE=os.path.join(_REPO,"runtime","membrane","beneath-held.json")
@@ -401,7 +403,24 @@ def _beneath_kind(name,data,ct=""):
         if not ct:
             head=data[:256].lstrip().lower()
             ct="text/html" if head.startswith((b"<!doctype html",b"<html")) else "application/octet-stream"
-    return ct,(ct.startswith("text/") or ct.endswith(("json","javascript","xml")) or name.lower().endswith(_BENEATH_TEXT))
+    # text by its kind, by its ending, or because it simply is text (a .cfg, a .sh, a .env carries no ending I list)
+    return ct,(ct.startswith("text/") or ct.endswith(("json","javascript","xml")) or name.lower().endswith(_BENEATH_TEXT) or b"\0" not in data[:4096])
+
+def _data_rule(fp,home):
+    """A file under this checkout's data/ on its way out by name through the gate's own /data/ route.
+    None = given as it is; True = given only if its text passes the live-store guard; False = not given.
+    The hold list counts here too. A link that leads out of the checkout is no longer the checkout's own file:
+    into the live store it follows the store's rule (inside the house, not on the list), and wherever it leads
+    its text has to pass the guard."""
+    root=os.path.normpath(_REPO)
+    if not fp.startswith(os.path.join(root,"data")+os.sep): return None
+    held=_beneath_held_paths()
+    if held and "/"+os.path.relpath(fp,root).replace(os.sep,"/") in held: return False
+    real=os.path.realpath(fp); rroot=os.path.realpath(root)
+    if real==rroot or real.startswith(rroot+os.sep): return None
+    if real==_BENEATH_STORE or real.startswith(_BENEATH_STORE+os.sep):
+        if not (home and _beneath_store_ok("/data/"+os.path.relpath(real,_BENEATH_STORE).replace(os.sep,"/"))): return False
+    return True
 
 def _beneath_from_dir(base,rel,home=False):
     root=os.path.realpath(base); fp=os.path.realpath(os.path.join(root,rel.replace("/",os.sep)))
@@ -662,11 +681,19 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 
     def _serve_file(self, relpath, base=None):
         t0=time.time(); base=base or _REPO
-        fp=os.path.join(base,relpath.replace("/",os.sep))
+        # a name stays inside the folder it is asked from: no climbing out with .. in any spelling, no absolute
+        # path or drive letter taking the place of the folder, no NUL
+        nb=os.path.normpath(base); fp=os.path.normpath(os.path.join(nb,relpath.replace("/",os.sep)))
+        if "\0" in relpath or ".." in re.split(r"[/\\]",relpath) or not (fp==nb or fp.startswith(nb.rstrip(os.sep)+os.sep)): self._encounter(404); return
         if os.path.isdir(fp): fp=os.path.join(fp,"index.html")
         if not os.path.isfile(fp): self._encounter(404); return
+        rule=_data_rule(fp,self._beneath_home())
+        if rule is False: self._encounter(404); return
         ct=CTYPES.get(os.path.splitext(fp)[1].lower(),"application/octet-stream")
         with open(fp,"rb") as f: data = f.read()
+        if rule and b"\0" not in data[:4096]:
+            data=_beneath_pass(data,True)
+            if data is None: self._encounter(404); return
         # Inject synapse.js into HTML pages — the interaction layer
         if ct == "text/html" and b"</body>" in data:
             data = data.replace(b"</body>", self._SYNAPSE_TAG + b"\n</body>")
@@ -878,8 +905,8 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path=="/manifest.json": self._serve_static("manifest.json"); return
         if self.path in ("/biomes","/gardens","/surface"): self._serve_static("spacedock.html"); return
         if self.path.startswith("/gardens/"):
-            fpath=os.path.join(_REPO,self.path.lstrip("/"))
-            if os.path.isfile(fpath):
+            fpath=os.path.normpath(os.path.join(_REPO,self.path.lstrip("/")))
+            if ".." not in re.split(r"[/\\]",self.path) and fpath.startswith(os.path.join(os.path.normpath(_REPO),"gardens")+os.sep) and os.path.isfile(fpath):
                 self._serve_file(os.path.basename(fpath),os.path.dirname(fpath))
             else: self._json({"error":"not found","path":self.path},code=404)
             return
@@ -1420,7 +1447,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
 
     def _feed(self, name):
         p=os.path.join(_REPO,"data","reedit",f"{name}.jsonl")
-        if not os.path.isfile(p): return {"error":f"'{name}' not found"}
+        if not re.fullmatch(r"[\w.\-]+",name) or ".." in name or not os.path.isfile(p): return {"error":"not found"}   # a feed is one file of data/reedit, by its plain name
         items=[]; [items.append(json.loads(l)) for l in open(p,encoding="utf-8") if l.strip()]
         return {"feed":name,"count":len(items),"items":items}
 
