@@ -305,13 +305,12 @@ async function loadAll() {
   try {
     const r = await fetch(GATE + '/amoeba');
     const d = await r.json();
-    renderPulse(d.pulse);
-    renderReedit(d.reedit);
-    renderNeurons(d.neutron);
-    renderModels(d.models);
-    renderSensors(d.sensors);
-    renderTemporal(d.temporal, d.sun);
-    renderEarth(d.sensors);
+    // each cell on its own: one cell that cannot read its part no longer leaves the cells after it on "loading..."
+    for (const cell of [() => renderPulse(d.pulse), () => renderReedit(d.reedit), () => renderNeurons(d.neutron),
+                        () => renderModels(d.models), () => renderSensors(d.sensors),
+                        () => renderTemporal(d.temporal, d.sun), () => renderEarth(d.sensors)]) {
+      try { cell(); } catch (e) {}
+    }
   } catch(e) {
     document.getElementById('stats').textContent = 'gate: reconnecting...';
   }
@@ -369,6 +368,7 @@ function renderNeurons(d) {
 function renderModels(d) {
   if (!d || !d.data) return;
   const el = document.getElementById('model-grid');
+  if (!d.data.length) { el.innerHTML = '<span class="model-tag">none listed by this gate</span>'; return; }
   el.innerHTML = d.data.map(m => {
     const name = m.id || '?';
     const isGaia = name.toLowerCase().includes('gaia') || name.includes('Primal');
@@ -383,6 +383,13 @@ function renderSensors(d) {
   let html = `<div class="item" style="color:#2ecc71">${d.alive||0}/${d.total_sensors||0} alive — ${(bytes/1024/1024).toFixed(1)}MB</div>`;
   const icons = {earth:'🌍',space:'🔭',knowledge:'🧠',old_web:'📜',live_eyes:'👁️',ocean:'🌊'};
   for (const [bank, sensors] of Object.entries(d.banks)) {
+    if (!Array.isArray(sensors)) {            // a bank can be one reading (sun, heart, gates) instead of a list of sensors
+      const b = sensors || {};
+      const say = b.total != null ? `${b.alive || 0}/${b.total}` : b.bpm != null ? `${Number(b.bpm).toFixed(0)} bpm`
+                : b.phase ? `${b.phase} ${b.elevation_deg != null ? b.elevation_deg + '\u00b0' : ''}` : `${Object.keys(b).length} readings`;
+      html += `<div class="item">${icons[bank]||'📡'} ${bank}: ${say}</div>`;
+      continue;
+    }
     const alive = sensors.filter(s => s.code === 200).length;
     html += `<div class="item">${icons[bank]||'📡'} ${bank}: ${alive}/${sensors.length}</div>`;
     for (const s of sensors.slice(0,1)) {
@@ -406,14 +413,14 @@ function renderTemporal(t, sun) {
     <div>cron rings: <span class="val">[${rings.join(',')}]</span></div>
     <div>φ phase: <span class="val">${t.golden_phase}</span></div>
     <div>sidereal: <span class="val">${t.sidereal_deg}°</span></div>
-    <div>sun: <span class="val">${sun.phase||'?'} ${sun.elevation||0}° ${sun.chord||''}</span></div>
+    <div>sun: <span class="val">${sun.phase||'?'} ${sun.elevation_deg ?? sun.elevation ?? 0}° ${sun.chord||''}</span></div>
     <div style="color:#576574;font-size:9px">φ=${(t.phi||0).toFixed(8)}</div>
   `;
 }
 
 function renderEarth(d) {
-  if (!d || !d.banks || !d.banks.earth) return;
   const el = document.getElementById('earth-data');
+  if (!d || !d.banks || !Array.isArray(d.banks.earth)) { el.innerHTML = '<div class="item">no earth bank from this gate yet</div>'; return; }
   let html = '';
   for (const s of d.banks.earth) {
     if (s.sense === 'seismic' && s.latest) {
@@ -442,5 +449,110 @@ setInterval(rotatePainting, 20000);
 </script>
 </main>
 <footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
+
+<!-- HUD-OVERLAY:BEGIN
+     Every HUD as a layer over this face. A chip turns: off -> see (laid over the face, clicks pass through to
+     the face) -> touch (in front, takes the mouse) -> off. Esc drops touch back to see. The address carries the
+     state (#huds=senses,polaris!) so a view can be linked; nothing is stored. Layers fade in slowly and never
+     flash; with reduced motion they just appear. A layer is only loaded when it is turned on. -->
+<style>
+.hud-layer{position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:900;background:transparent;opacity:0;pointer-events:none;mix-blend-mode:screen;transition:opacity .9s ease}
+.hud-layer.see{opacity:var(--hud-see,.55)}
+.hud-layer.touch{opacity:.97;mix-blend-mode:normal;pointer-events:auto;z-index:901}
+#hud-rack{position:fixed;left:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:5px 8px;background:rgba(8,9,11,.86);border:1px solid #1a3a2a;border-radius:8px;font:11px 'Courier New',monospace;color:#8a857e}
+#hud-rack button{font:inherit;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 9px;cursor:pointer}
+#hud-rack button:hover,#hud-rack button:focus-visible{border-color:#2ecc71;outline:none}
+#hud-rack button.see{color:#2ecc71;border-color:#2ecc71}
+#hud-rack button.touch{color:#0a0a0a;background:#2ecc71;border-color:#2ecc71}
+#hud-rack #hud-fold{color:#2ecc71;border-color:#1a3a2a;letter-spacing:1px}
+#hud-rack label{display:inline-flex;align-items:center;gap:4px;margin-left:4px}
+#hud-rack input[type=range]{width:72px;accent-color:#2ecc71}
+#hud-rack.folded > :not(#hud-fold){display:none}
+@media (prefers-reduced-motion: reduce){.hud-layer{transition:none}}
+</style>
+<div id="hud-rack" class="folded" role="toolbar" aria-label="HUD layers over this face">
+  <button id="hud-fold" type="button" aria-expanded="false" title="HUD layers over this face">huds</button>
+</div>
+<script>
+(function(){
+  // On GitHub Pages the gate's pages are copies; the all-senses HUD and the older pane live on the hud site there.
+  var away = !!document.querySelector('script[data-gaia-hoist]');
+  var HUDS = [ // id, label, at home, on Pages when it differs (null = not there)
+    ['senses',  'all senses',    'hud',                       'https://ecoprimals.github.io/hud/'],
+    ['pane',    'sovereign pane', null,                       'https://ecoprimals.github.io/hud/pane.html'],
+    ['polaris', 'north star',    'static/polaris.html'],
+    ['signal',  'signal',        'static/signal.html'],
+    ['deck',    'space deck',    'static/deck.html'],
+    ['hub',     'cis\u25c9trans', 'static/hub.html'],
+    ['outer',   'outer face',    'static/outer-face.html'],
+    ['room',    'room face',     'static/tv-face.html'],
+    ['klein',   'klein',         'static/klein.html'],
+    ['dock',    'space dock',    'static/spacedock.html'],
+    ['windows', 'windows',       'static/spacedeck.html'],
+    ['ghost',   'ghost',         'static/ghost-overlay.html']
+  ].map(function(h){ return {id:h[0], label:h[1], url: away && h.length > 3 ? h[3] : h[2], state:0, frame:null, chip:null}; })
+   .filter(function(h){ return !!h.url; });
+  var rack = document.getElementById('hud-rack'), fold = document.getElementById('hud-fold'), see = 55;
+
+  function paint(){
+    var on = HUDS.filter(function(h){ return h.state > 0; }).length;
+    // several layers at once share the light, so the face underneath stays readable
+    document.documentElement.style.setProperty('--hud-see', String(Math.min(.9, see / 100 / Math.sqrt(Math.max(1, on)))));
+    HUDS.forEach(function(h){
+      h.chip.className = h.state === 2 ? 'touch' : h.state === 1 ? 'see' : '';
+      h.chip.setAttribute('aria-pressed', h.state ? 'true' : 'false');
+      h.chip.title = h.label + (h.state === 2 ? ' - in front, takes the mouse' : h.state === 1 ? ' - laid over the face' : ' - off');
+      if (h.state && !h.frame) {
+        var f = document.createElement('iframe');
+        f.className = 'hud-layer'; f.title = h.label + ' HUD'; f.src = h.url;
+        // Esc from inside a layer too, where the layer is one of our own pages
+        f.addEventListener('load', function(){ try { f.contentWindow.addEventListener('keydown', esc); } catch (e) {} });
+        document.body.insertBefore(f, rack); h.frame = f;
+        void f.offsetWidth;                        // let it start from clear so it fades in instead of popping
+      }
+      if (h.frame) {
+        h.frame.className = 'hud-layer' + (h.state === 2 ? ' touch' : h.state === 1 ? ' see' : '');
+        if (!h.state) { (function(f){ setTimeout(function(){ if (f.parentNode && f.className === 'hud-layer') f.parentNode.removeChild(f); }, 1000); })(h.frame); h.frame = null; }
+      }
+    });
+    var tag = HUDS.filter(function(h){ return h.state; }).map(function(h){ return h.id + (h.state === 2 ? '!' : ''); }).join(',');
+    var want = tag ? '#huds=' + tag : '';
+    if (location.hash !== want && (want || /^#huds=/.test(location.hash))) history.replaceState(null, '', location.pathname + location.search + want);
+    fold.textContent = on ? 'huds \u00b7 ' + on : 'huds';
+  }
+  function set(h, s){
+    if (s === 2) HUDS.forEach(function(o){ if (o !== h && o.state === 2) o.state = 1; });   // one layer in front at a time
+    h.state = s; paint();
+  }
+  function esc(e){ if (e.key === 'Escape') { HUDS.forEach(function(h){ if (h.state === 2) h.state = 1; }); paint(); } }
+  function fromHash(){
+    var m = /^#huds=(.*)$/.exec(location.hash); if (!m) return;
+    var names = decodeURIComponent(m[1]).split(',');
+    HUDS.forEach(function(h){
+      h.state = names.indexOf('all') >= 0 || names.indexOf(h.id) >= 0 ? 1 : names.indexOf(h.id + '!') >= 0 ? 2 : 0;
+    });
+    rack.classList.remove('folded'); fold.setAttribute('aria-expanded', 'true'); paint();
+  }
+
+  HUDS.forEach(function(h){
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = h.label; h.chip = b;
+    b.addEventListener('click', function(){ set(h, (h.state + 1) % 3); });
+    rack.appendChild(b);
+  });
+  var all = document.createElement('button'); all.type = 'button'; all.textContent = 'all'; all.title = 'lay every HUD over the face';
+  all.addEventListener('click', function(){ HUDS.forEach(function(h){ if (!h.state) h.state = 1; }); paint(); });
+  var none = document.createElement('button'); none.type = 'button'; none.textContent = 'clear'; none.title = 'take every layer off';
+  none.addEventListener('click', function(){ HUDS.forEach(function(h){ h.state = 0; }); paint(); });
+  var lab = document.createElement('label'); lab.textContent = 'light ';
+  var rng = document.createElement('input'); rng.type = 'range'; rng.min = 15; rng.max = 90; rng.value = see; rng.setAttribute('aria-label', 'how strongly the layers show');
+  rng.addEventListener('input', function(){ see = +rng.value; paint(); });
+  lab.appendChild(rng); rack.appendChild(all); rack.appendChild(none); rack.appendChild(lab);
+  fold.addEventListener('click', function(){ var f = rack.classList.toggle('folded'); fold.setAttribute('aria-expanded', f ? 'false' : 'true'); });
+  document.addEventListener('keydown', esc);
+  window.addEventListener('hashchange', fromHash);
+  if (/^#huds=/.test(location.hash)) fromHash(); else paint();
+})();
+</script>
+<!-- HUD-OVERLAY:END -->
 </body>
 </html>

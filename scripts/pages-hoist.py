@@ -22,7 +22,7 @@ Nothing here holds a credential: every call to GitHub goes through `gh`, with th
 What never goes up: any key named like a credential (token, zk, secret, seed, ...), and any file that trips
 the guard below (credential shapes, or a list of the house's hardware addresses). The published page carries a small label saying it is a snapshot, from which body, and when.
 """
-import base64, calendar, hashlib, json, os, re, socket, struct, subprocess, sys, time, urllib.request, urllib.error
+import base64, calendar, concurrent.futures, hashlib, json, os, re, socket, struct, subprocess, sys, time, urllib.request, urllib.error
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATE_DIR = os.path.join(REPO, "runtime", "membrane")
@@ -40,6 +40,7 @@ SITES = {
             "root": "senses.html", "also_as": ["senses.html"], "keep_old_root_as": "pane.html"},
     "nestgate": {"repo": "ecoPrimals/nestgate.io", "branch": "main", "domain": "nestgate.io",
                  "root": "nestgate.html", "also_as": [], "nojekyll": True,
+                 "lists": [("/data/paintings/%s.jpg", r"const paintings\s*=\s*\[(.*?)\]")],
                  "about": "nestgate.io - the face Gaia's gate serves for this name, hoisted to GitHub Pages"},
 }
 
@@ -54,7 +55,11 @@ MAC_RX, MAX_MACS = re.compile(r"\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b"), 5
 
 TEXT_EXT = (".js", ".css", ".mjs")
 ASSET_EXT = r"(?:js|mjs|css|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|json|jsonl|xml|txt|md|csv|mp3|ogg|wav|webmanifest)"
-FETCH_RX = re.compile(r"""fetch\(\s*['"`](/[^'"`?#\s$<>]*)""")
+# a page may name its own home in front of a route: fetch(GATE + '/amoeba'), fetch('https://primals.eco/pulse')
+HOME_ORIGINS = ["https://primals.eco", "http://primals.eco", "//primals.eco", "https://www.primals.eco",
+                "https://nestgate.io", "https://hud.primals.eco"]
+FETCH_RX = re.compile(r"""fetch\(\s*(?:[A-Za-z_$][\w$.]*\s*\+\s*)?['"`](?:(?:https?:)?//(?:www\.)?(?:primals\.eco|nestgate\.io|hud\.primals\.eco))?(/[^'"`?#\s$<>]*)""")
+SUB_RX = re.compile(r"""['"]static/([A-Za-z0-9_\-]+\.html)['"]""")     # pages the face lays over itself
 TAG_RX = re.compile(r"""<(?:script|img|source|audio|video|iframe|link)\b[^>]*?\b(?:src|href|poster)\s*=\s*["']?(/[^\s"'>?#]+)""", re.I)
 PATH_RX = re.compile(r"""['"`(=\s](/[A-Za-z0-9_\-./]+\.""" + ASSET_EXT + r""")(?=['"`)?#\s>])""", re.I)
 
@@ -141,13 +146,35 @@ def blob_sha(data):
     return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
 
 
+IP_KEY = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
+
+
 def scrub(o):
     if isinstance(o, dict):
-        return {k: scrub(v) for k, v in o.items()
-                if str(k).lower() not in DROP_KEYS and not (isinstance(v, str) and TOKENISH.match(v))}
+        out = {}
+        for k, v in o.items():
+            if str(k).lower() in DROP_KEYS or (isinstance(v, str) and TOKENISH.match(v)):
+                continue
+            if isinstance(v, dict) and v and all(IP_KEY.match(str(x)) for x in v):
+                continue                                   # a table keyed by address (who visited) stays home
+            out[k] = scrub(v)
+        return out
     if isinstance(o, list):
         return [scrub(v) for v in o if not (isinstance(v, str) and TOKENISH.match(v))]
     return o
+
+
+def shape_amoeba(d):
+    """The nestgate face shows the last three messages of each channel, 55 characters of each. The snapshot
+    carries exactly that much of them and no more."""
+    for info in (d.get("neutron") or {}).values():
+        if isinstance(info, dict) and isinstance(info.get("messages"), list):
+            info["messages"] = [{"author": m.get("author"), "body": str(m.get("body") or "")[:55]}
+                                for m in info["messages"][-3:] if isinstance(m, dict)]
+    return d
+
+
+SHAPERS = {"/amoeba": shape_amoeba}
 
 
 def guard(data):
@@ -200,9 +227,11 @@ def dns_a(name, server="1.1.1.1"):
 
 
 SHIM = """<script data-gaia-hoist>/* this page is a copy hoisted to GitHub Pages: live routes read snapshots */
-(function(){var M=__MAP__,B=location.pathname.replace(/[^\\/]*$/,""),f=window.fetch;
+(function(){var M=__MAP__,B=location.pathname.replace(/[^\\/]*$/,""),f=window.fetch,O=[location.origin].concat(__HOMES__);
+for(var u=0;u<__UP__;u++)B=B.replace(/[^\\/]+\\/$/,"");
 function R(p){if(typeof p!=="string"||p.charAt(0)!=="/"||p.charAt(1)==="/")return p;if(B!=="/"&&p.indexOf(B)===0)return p;return B+p.slice(1)}
-function S(u){var q=u.indexOf("?"),p=q<0?u:u.slice(0,q);return M[p]?B+M[p]+"?t="+Date.now():R(u)}
+function S(u){for(var i=0;i<O.length;i++)if(u.indexOf(O[i]+"/")===0){u=u.slice(O[i].length);break}
+var q=u.indexOf("?"),p=q<0?u:u.slice(0,q);return M[p]?B+M[p]+"?t="+Date.now():R(u)}
 window.fetch=function(u,o){try{if(typeof u==="string")return f.call(window,S(u),o)}catch(e){}return f.call(window,u,o)};
 try{var xo=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(m,u){if(typeof u==="string")arguments[1]=S(u);return xo.apply(this,arguments)}}catch(e){}
 function P(c,k){try{var p=c.prototype,d=Object.getOwnPropertyDescriptor(p,k);if(d&&d.set)Object.defineProperty(p,k,{get:d.get,set:function(v){d.set.call(this,R(v))},configurable:true,enumerable:d.enumerable})}catch(e){}}
@@ -224,36 +253,58 @@ def build(site):
     cfg = SITES[site]
     host = cfg["domain"]
     bases = sources()
-    with open(os.path.join(REPO, "static", cfg["root"]), "rb") as fh:
-        html = fh.read().decode("utf-8").replace("\r\n", "\n")   # the same bytes whichever body's checkout this is
+
+    def page_text(name):
+        with open(os.path.join(REPO, "static", name), "rb") as fh:
+            return fh.read().decode("utf-8").replace("\r\n", "\n")   # the same bytes whichever body's checkout this is
+
+    html = page_text(cfg["root"])
+    # the pages this face lays over itself ('static/<name>.html' in its own source) come up with it
+    subs = {}
+    for name in sorted(set(SUB_RX.findall(html))):
+        if os.path.isfile(os.path.join(REPO, "static", name)):
+            subs[name] = page_text(name)
     files, snap_map, misses, held, read_from = {}, {}, {}, {}, {}
     total = 0
     seen = set()
-    queue = [(html, 0)]
-    while queue:
-        text, depth = queue.pop(0)
-        found = set(TAG_RX.findall(text)) | set(PATH_RX.findall(text))
-        routes = set(FETCH_RX.findall(text))
-        for p in sorted(found | routes):
-            if p in seen or p in ("/", "") or ".." in p:
-                continue
-            seen.add(p)
+    level = [(html, 0)] + [(t, 0) for t in subs.values()]
+    # lists of names a page fills into a path at run time (the paintings the face rotates through)
+    for pattern, rx in cfg.get("lists", []):
+        m = re.search(rx, html, re.S)
+        if m:
+            level.append(("\n".join("'%s'" % (pattern % n) for n in re.findall(r"['\"]([^'\"]+)['\"]", m.group(1))), MAX_DEPTH))
+    while level:
+        routes, cands = set(), []
+        for text, depth in level:
+            routes |= set(FETCH_RX.findall(text))
+        for text, depth in level:
+            for p in sorted(set(TAG_RX.findall(text)) | set(PATH_RX.findall(text)) | set(FETCH_RX.findall(text))):
+                if p in seen or p in ("/", "") or ".." in p:
+                    continue
+                seen.add(p)
+                ext = os.path.splitext(p)[1].lower()
+                is_route = ext == "" or p.endswith("/")
+                if is_route and p not in routes:
+                    continue                               # a link to another page, not something this page reads
+                if ext in (".html", ".htm"):
+                    continue
+                cands.append((p, ext, is_route, is_route or ext == ".json", depth))
+        # a few at a time: the gate is one small server and says so itself
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+            got = list(pool.map(lambda c: read(c[0], host, bases, want_json=c[3]), cands))
+        level = []
+        for (p, ext, is_route, is_json, depth), (data, who) in zip(cands, got):
             if len(files) >= MAX_FILES or total >= MAX_TOTAL:
                 misses[p] = "over the size budget"
                 continue
-            ext = os.path.splitext(p)[1].lower()
-            is_route = ext == "" or p.endswith("/")
-            if is_route and p not in routes:
-                continue                                   # a link to another page, not something this page reads
-            if ext in (".html", ".htm"):
-                continue
-            is_json = is_route or ext == ".json"
-            data, who = read(p, host, bases, want_json=is_json)
             if data is None:
                 misses[p] = who
                 continue
             if is_json:
-                data = json.dumps(scrub(json.loads(data.decode("utf-8"))), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+                obj = scrub(json.loads(data.decode("utf-8")))
+                if p in SHAPERS:
+                    obj = SHAPERS[p](obj)
+                data = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
             bad = guard(data)
             if bad:
                 held[p] = bad
@@ -268,28 +319,42 @@ def build(site):
             read_from[who] = read_from.get(who, 0) + 1
             if ext in TEXT_EXT and depth < MAX_DEPTH:
                 try:
-                    queue.append((data.decode("utf-8"), depth + 1))
+                    level.append((data.decode("utf-8"), depth + 1))
                 except UnicodeDecodeError:
                     pass
 
-    page = re.sub(r"(<[a-zA-Z][^>]*?\b(?:src|href|action|poster)\s*=\s*[\"']?)/(?!/)", r"\1./", html)
-    while True:                                            # a tag can carry more than one root-absolute attribute
-        again = re.sub(r"(<[a-zA-Z][^>]*?\b(?:src|href|action|poster)\s*=\s*[\"']?)/(?!/)", r"\1./", page)
-        if again == page:
-            break
-        page = again
-    page = re.sub(r"(url\(\s*[\"']?)/(?!/)", r"\1./", page)
-    shim = SHIM.replace("__MAP__", json.dumps(snap_map)).replace("__HAS_SNAP__", "true" if snap_map else "false")
-    page, n = re.subn(r"(<head[^>]*>)", lambda m: m.group(1) + "\n" + shim, page, count=1, flags=re.I)
-    if not n:
-        page = shim + "\n" + page
-    page = page.encode("utf-8")
+    def hoisted(text, up):
+        """The page as Pages will serve it: root-absolute tags made relative to the site root, the shim in front."""
+        rel = "../" * up or "./"
+        attr = re.compile(r"(<[a-zA-Z][^>]*?\b(?:src|href|action|poster)\s*=\s*[\"']?)/(?!/)")
+        page = text
+        while True:                                        # a tag can carry more than one root-absolute attribute
+            again = attr.sub(lambda m: m.group(1) + rel, page)
+            if again == page:
+                break
+            page = again
+        page = re.sub(r"(url\(\s*[\"']?)/(?!/)", lambda m: m.group(1) + rel, page)
+        shim = (SHIM.replace("__MAP__", json.dumps(snap_map)).replace("__HAS_SNAP__", "true" if snap_map and not up else "false")
+                .replace("__HOMES__", json.dumps(HOME_ORIGINS)).replace("__UP__", str(up)))
+        page, n = re.subn(r"(<head[^>]*>)", lambda m: m.group(1) + "\n" + shim, page, count=1, flags=re.I)
+        if not n:
+            page = shim + "\n" + page
+        return page.encode("utf-8")
+
+    page = hoisted(html, 0)
     bad = guard(page)
     if bad:
         raise RuntimeError("the page itself looks like it carries a %s" % bad)
     files["index.html"] = page
     for extra in cfg.get("also_as", []):
         files[extra] = page
+    for name, text in subs.items():
+        sub = hoisted(text, 1)
+        bad = guard(sub)
+        if bad:
+            held["static/" + name] = bad
+        else:
+            files["static/" + name] = sub
     if cfg.get("nojekyll"):
         files[".nojekyll"] = b""
     tip = subprocess.run(["git", "rev-parse", "--short=9", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
