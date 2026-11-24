@@ -1,0 +1,229 @@
+"""core_profile.pi - profile this body's cores, caches, memory and GPU, so two states can be compared.
+
+    python core_profile.pi run <label>          measure now, save data/gut/core-profile/<label>-<time>.json
+    python core_profile.pi compare <a> <b>      the contrast between two saved profiles (label or file)
+    python core_profile.pi list
+
+Why: the firmware can run this CPU as 8 big-cache cores with SMT off ("turbo"), or as all 16 cores.
+Each cache group (the processors that share one L3) is measured on its own, and named by its L3 size,
+so the big-cache set lines up between a locked run and an unlocked run.
+
+Reduction only: it reads and measures. It loads local ollama models to time them and unloads them after.
+Run by hand. No cron, nothing outside this machine.
+"""
+import json, os, subprocess, sys, time, threading, urllib.request
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(REPO, "data", "gut", "core-profile")
+SRC = os.path.join(REPO, "runtime", "core_bench.rs")
+EXE = os.path.join(os.environ.get("LOCALAPPDATA", REPO), "Gaia", "core_bench.exe")
+OLLAMA = "http://127.0.0.1:11434"
+NOWIN = 0x08000000
+CHASE_MB = [1, 4, 16, 32, 48, 64, 80, 96, 128, 256, 512]
+SMALL, BIG = "gaia-tissue-general:latest", "gaia-tissue-cortex:latest"
+PROMPT = "Explain in plain words how a tide forms. Write exactly ten sentences."
+
+
+def say(s):
+    print(s, flush=True)
+
+
+def bench(*args, timeout=600):
+    r = subprocess.run([EXE, *map(str, args)], capture_output=True, text=True, timeout=timeout, creationflags=NOWIN)
+    return json.loads(r.stdout.strip().splitlines()[-1])
+
+
+def build():
+    os.makedirs(os.path.dirname(EXE), exist_ok=True)
+    if os.path.exists(EXE) and os.path.getmtime(EXE) >= os.path.getmtime(SRC):
+        return
+    say("  building the measuring hand (rustc -O) ...")
+    r = subprocess.run(["rustc", "--edition", "2021", "-O", "-o", EXE, SRC], capture_output=True, text=True, cwd=os.path.dirname(EXE))
+    if r.returncode:
+        sys.exit("rustc failed:\n" + r.stderr[-1500:])
+
+
+def ps_json(cmd):
+    r = subprocess.run(["powershell", "-NoProfile", "-Command", cmd + " | ConvertTo-Json -Compress"], capture_output=True, text=True, creationflags=NOWIN)
+    try:
+        return json.loads(r.stdout)
+    except Exception:
+        return {}
+
+
+def bits(mask):
+    return [i for i in range(64) if mask >> i & 1]
+
+
+def watch_clock(seconds, box):
+    """Per-core '% Processor Performance' once a second (100 = nominal clock). Fills box with the busiest core and the mean."""
+    r = subprocess.run(["typeperf", r"\Processor Information(*)\% Processor Performance", "-si", "1", "-sc", str(seconds)],
+                       capture_output=True, text=True, creationflags=NOWIN)
+    rows = [l.split('","') for l in r.stdout.splitlines() if l.startswith('"')]
+    if len(rows) < 2:
+        return
+    keep = [i for i, h in enumerate(rows[0]) if i and "_Total" not in h]
+    peaks, means = [], []
+    for row in rows[1:]:
+        try:
+            v = [float(row[i].strip('"')) for i in keep]
+        except (ValueError, IndexError):
+            continue
+        peaks.append(max(v)); means.append(sum(v) / len(v))
+    if peaks:
+        box.update(peak_pct=round(sorted(peaks)[len(peaks) // 2], 1), mean_pct=round(sorted(means)[len(means) // 2], 1))
+
+
+def with_clock(seconds, work):
+    box = {}
+    t = threading.Thread(target=watch_clock, args=(seconds, box)); t.start()
+    time.sleep(1.5)
+    out = work()
+    t.join()
+    return out, box
+
+
+def ollama(path, body=None, timeout=600):
+    req = urllib.request.Request(OLLAMA + path, data=json.dumps(body).encode() if body is not None else None,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read())
+
+
+def tokens_per_s(model, cpu_only):
+    opts = {"seed": 7, "temperature": 0, "num_predict": 200}
+    if cpu_only:
+        opts["num_gpu"] = 0
+    best = None
+    for _ in range(2):   # first pass pays the load; the second is the steady rate
+        r = ollama("/api/generate", {"model": model, "prompt": PROMPT, "stream": False, "options": opts})
+        rate = r["eval_count"] / (r["eval_duration"] / 1e9)
+        best = {"tokens_per_s": round(rate, 1), "tokens": r["eval_count"], "load_s": round(r.get("load_duration", 0) / 1e9, 2),
+                "prompt_tokens_per_s": round(r.get("prompt_eval_count", 0) / max(r.get("prompt_eval_duration", 1) / 1e9, 1e-9), 1)}
+    try:
+        ps = [m for m in ollama("/api/ps").get("models", []) if m.get("name") == model]
+        if ps:
+            best["in_vram_gb"] = round(ps[0].get("size_vram", 0) / 1e9, 2); best["size_gb"] = round(ps[0].get("size", 0) / 1e9, 2)
+    except Exception:
+        pass
+    ollama("/api/generate", {"model": model, "keep_alive": 0})   # leave nothing loaded
+    return best
+
+
+def run(label):
+    build()
+    m, raw = {}, {}
+    say(f"== profile '{label}' on {os.environ.get('COMPUTERNAME', '?')}")
+    cpu = ps_json("Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors,NumberOfEnabledCore,ThreadCount,MaxClockSpeed,L2CacheSize,L3CacheSize")
+    ram = ps_json("Get-CimInstance Win32_PhysicalMemory | Select-Object Capacity,ConfiguredClockSpeed,PartNumber")
+    ram = ram if isinstance(ram, list) else [ram]
+    bios = ps_json("Get-CimInstance Win32_BIOS | Select-Object SMBIOSBIOSVersion")
+    raw["system"] = {"cpu": cpu, "ram": ram, "bios": bios.get("SMBIOSBIOSVersion")}
+    nominal = cpu.get("MaxClockSpeed") or 0
+    m["cores"] = cpu.get("NumberOfCores"); m["logical_processors"] = cpu.get("NumberOfLogicalProcessors")
+    m["firmware_threads_possible"] = cpu.get("ThreadCount"); m["l3_total_mb"] = (cpu.get("L3CacheSize") or 0) // 1024
+    m["ram_gb"] = round(sum(int(r.get("Capacity") or 0) for r in ram) / 2**30); m["ram_mhz"] = ram[0].get("ConfiguredClockSpeed") if ram else None
+    say(f"  {cpu.get('Name', '').strip()}: {m['cores']} cores / {m['logical_processors']} logical (firmware allows {m['firmware_threads_possible']} threads), L3 {m['l3_total_mb']} MB, RAM {m['ram_gb']} GB @ {m['ram_mhz']} MHz")
+
+    topo = bench("topo"); raw["topology"] = topo
+    cores = [bits(c["mask"]) for c in topo["cores"]]
+    groups, seen = [], {}
+    for c in sorted((c for c in topo["caches"] if c["level"] == 3), key=lambda c: c["mask"]):
+        mb = c["kb"] // 1024
+        seen[mb] = seen.get(mb, 0) + 1
+        name = f"L3-{mb}MB" + (f"#{seen[mb]}" if seen[mb] > 1 else "")
+        mine = [c2 for c2 in cores if c2 and (c["mask"] >> c2[0]) & 1]
+        groups.append({"name": name, "l3_mb": mb, "cores": mine, "primary": [c2[0] for c2 in mine], "all": sorted(x for c2 in mine for x in c2)})
+    raw["groups"] = groups
+    for g in groups:
+        say(f"  cache group {g['name']}: {len(g['cores'])} cores, logical processors {g['all'][0]}-{g['all'][-1]}, {'SMT on' if len(g['all']) > len(g['cores']) else 'SMT off'}")
+
+    for g in groups:
+        n, first = g["name"], g["primary"][0]
+        say(f"-- {n}: reach of the cache (ns per random access, one core)")
+        for mb in CHASE_MB:
+            # median of three fresh working sets: one sample swings with where its pages happen to land
+            m[f"{n}.access_ns.{mb}MB"] = sorted(bench("chase", first, mb, 800)["ns_per_access"] for _ in range(3))[1]
+        say("   " + "  ".join(f"{mb}MB {m[f'{n}.access_ns.{mb}MB']:.1f}" for mb in CHASE_MB))
+        m[f"{n}.copy_gb_per_s"] = bench("bw", first, 512)["copy_gb_per_s"]
+        (one, clock) = with_clock(7, lambda: bench("scale", first, 5000, 0))
+        m[f"{n}.one_core_mops"] = one["total_mops"]
+        if clock:
+            m[f"{n}.one_core_clock_mhz"] = round(clock["peak_pct"] * nominal / 100)
+        cs = ",".join(map(str, g["primary"]))
+        (allc, clock) = with_clock(7, lambda: bench("scale", cs, 5000, 0))
+        m[f"{n}.all_cores_mops"] = allc["total_mops"]; m[f"{n}.all_cores_slowest_mops"] = allc["slowest_mops"]
+        if clock:
+            m[f"{n}.all_cores_clock_mhz"] = round(clock["peak_pct"] * nominal / 100)
+        mem = bench("scale", cs, 4000, 8)
+        m[f"{n}.all_cores_8MB_each_maccess"] = mem["total_mops"]
+        mem = bench("scale", cs, 4000, 64)
+        m[f"{n}.all_cores_64MB_each_maccess"] = mem["total_mops"]
+        say(f"   copy {m[f'{n}.copy_gb_per_s']} GB/s | one core {m[f'{n}.one_core_mops']:.0f} Mops at ~{m.get(f'{n}.one_core_clock_mhz', '?')} MHz | "
+            f"all {len(g['primary'])} cores {m[f'{n}.all_cores_mops']:.0f} Mops at ~{m.get(f'{n}.all_cores_clock_mhz', '?')} MHz")
+        say(f"   all cores chasing memory: 8 MB each {m[f'{n}.all_cores_8MB_each_maccess']:.0f} M/s | 64 MB each {m[f'{n}.all_cores_64MB_each_maccess']:.0f} M/s")
+
+    everyone = sorted(x for g in groups for x in g["all"])
+    m["whole.all_logical_mops"] = bench("scale", ",".join(map(str, everyone)), 5000, 0)["total_mops"]
+    say(f"-- whole chip: every logical processor ({len(everyone)}) {m['whole.all_logical_mops']:.0f} Mops")
+
+    say("-- GPU")
+    try:
+        q = "name,memory.total,memory.used,driver_version,pcie.link.gen.current,pcie.link.gen.max,pcie.link.width.current,temperature.gpu,power.draw"
+        g = [x.strip() for x in subprocess.run(["nvidia-smi", f"--query-gpu={q}", "--format=csv,noheader,nounits"], capture_output=True, text=True, creationflags=NOWIN).stdout.strip().split(",")]
+        raw["gpu"] = dict(zip(q.split(","), g))
+        m["gpu.vram_gb"] = round(float(g[1]) / 1024, 1); m["gpu.pcie_gen"] = int(g[4]); m["gpu.pcie_width"] = int(g[6])
+        say(f"   {g[0]}: {m['gpu.vram_gb']} GB, PCIe gen {g[4]} (max {g[5]}) x{g[6]}, {g[7]} C, {g[8]} W idle")
+    except Exception as e:
+        say(f"   unreadable: {e}")
+
+    say("-- thinking speed (local models, tokens per second)")
+    for key, model, cpu_only in (("think.small_on_gpu", SMALL, False), ("think.big_on_gpu", BIG, False), ("think.small_on_cpu", SMALL, True)):
+        try:
+            r = tokens_per_s(model, cpu_only); raw[key] = dict(r, model=model)
+            m[f"{key}.tokens_per_s"] = r["tokens_per_s"]
+            where = "CPU only" if cpu_only else f"{r.get('in_vram_gb', '?')} of {r.get('size_gb', '?')} GB in VRAM"
+            say(f"   {model:<28} {where:<28} {r['tokens_per_s']} tok/s")
+        except Exception as e:
+            say(f"   {model}: {type(e).__name__} {e}")
+
+    os.makedirs(OUT, exist_ok=True)
+    path = os.path.join(OUT, f"{label}-{time.strftime('%Y%m%d-%H%M%S')}.json")
+    json.dump({"label": label, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "host": os.environ.get("COMPUTERNAME"),
+               "not_measured": "CPU temperature, core voltage, fan speed: this board gives Windows no reading",
+               "metrics": m, "raw": raw}, open(path, "w", encoding="utf-8"), indent=1)
+    say(f"== saved {os.path.relpath(path, REPO)}")
+
+
+def find(name):
+    if os.path.exists(name):
+        return name
+    hits = sorted(f for f in os.listdir(OUT) if f.startswith(name + "-")) if os.path.isdir(OUT) else []
+    if not hits:
+        sys.exit(f"no profile named {name}")
+    return os.path.join(OUT, hits[-1])
+
+
+def compare(a, b):
+    A, B = (json.load(open(find(x), encoding="utf-8")) for x in (a, b))
+    say(f"{'':<42}{A['label'][:16]:>16}{B['label'][:16]:>16}   change")
+    keys = list(A["metrics"]) + [k for k in B["metrics"] if k not in A["metrics"]]
+    for k in keys:
+        x, y = A["metrics"].get(k), B["metrics"].get(k)
+        ch = ""
+        if isinstance(x, (int, float)) and isinstance(y, (int, float)) and x:
+            ch = f"{(y - x) / x * 100:+.1f}%" + ("  (lower is faster)" if ".access_ns." in k else "")
+        say(f"{k:<42}{str(x if x is not None else '-'):>16}{str(y if y is not None else '-'):>16}   {ch}")
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:]
+    if len(a) == 2 and a[0] == "run":
+        run(a[1])
+    elif len(a) == 3 and a[0] == "compare":
+        compare(a[1], a[2])
+    elif a[:1] == ["list"]:
+        for f in sorted(os.listdir(OUT)) if os.path.isdir(OUT) else []:
+            say("  " + f)
+    else:
+        say(__doc__)
