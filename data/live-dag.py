@@ -37,7 +37,7 @@ def ping_one(ip):
 print("\n--- SWEEP: .1.x (ATT subnet) + .4.x (LAN backbone) ---")
 targets_1 = [f"192.168.1.{i}" for i in range(1, 255)]
 targets_4 = [f"192.168.4.{i}" for i in range(1, 255)]
-wan_targets = [("8.8.8.8", "Google"), ("1.1.1.1", "Cloudflare"), ("162.226.225.148", "primals.eco")]
+wan_targets = [("8.8.8.8", "Google"), ("1.1.1.1", "Cloudflare"), ("mail.primals.eco", "primals.eco")]
 
 with ThreadPoolExecutor(80) as ex:
     results_1 = {r[0]: r for r in ex.map(ping_one, targets_1) if r[1] is not None}

@@ -118,7 +118,7 @@ PrivateKey = $priv
 [Peer]
 PublicKey = $FLINT_PUB
 PresharedKey = $psk
-Endpoint = 162.226.225.148:51820
+Endpoint = mail.primals.eco:51820
 AllowedIPs = 10.13.37.0/24, 192.168.4.0/24
 PersistentKeepalive = 25
 EATEOF

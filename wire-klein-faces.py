@@ -6,7 +6,7 @@ Wire in.nestgate.io and out.nestgate.io — Klein bottle's two faces.
   in.nestgate.io  = CELL looking OUT from inside = CIS = near eye = senses.html
   nestgate.io     = Klein Face = where they CROSS = //\\
   
-DNS: ALREADY RESOLVES (wildcard *.nestgate.io → 162.226.225.148)
+DNS: ALREADY RESOLVES (wildcard *.nestgate.io → [home IP])
 Dromedary: ALREADY CATCHES (*.nestgate.io → proxy :8443)
 Need: Gate routing in gaia_gate.pi + cert hostnames in dromedary.toml
 """
@@ -223,9 +223,9 @@ klein_face = {
     },
     "crossing_point": "/now.json — CIS and TRANS cross here",
     "dns": {
-        "in.nestgate.io": "162.226.225.148 (wildcard *.nestgate.io at Porkbun)",
-        "out.nestgate.io": "162.226.225.148",
-        "nestgate.io": "162.226.225.148"
+        "in.nestgate.io": "[home IP] (wildcard *.nestgate.io at Porkbun)",
+        "out.nestgate.io": "[home IP]",
+        "nestgate.io": "[home IP]"
     },
     "cert_status": "*.nestgate.io wildcard in dromedary — ACME will issue",
     "hub_lens_mapping": {
@@ -263,7 +263,7 @@ print(f"""
   in.nestgate.io  → senses.html      (CELL looking OUT) 🔬→🌞
   nestgate.io     → nestgate.html    (FOLD — //\\\\)      ∅
   
-  DNS:    ✓ wildcard *.nestgate.io → 162.226.225.148
+  DNS:    ✓ wildcard *.nestgate.io → [home IP]
   Proxy:  ✓ dromedary *.nestgate.io → :8443
   Route:  ✓ gaia_gate.pi host routing patched
   Cert:   dromedary ACME will issue on first request

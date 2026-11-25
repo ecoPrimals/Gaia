@@ -145,7 +145,7 @@ print(f"""
   FLAT TARGET:
     Internet → ATT BGW320 (IP PASSTHROUGH) → GL-MT6000 (PUBLIC IP) → ONE subnet
     - ATT modem becomes dumb bridge (passes public IP to router)
-    - GL-MT6000 gets 162.226.225.148 directly on WAN
+    - GL-MT6000 gets [home IP] directly on WAN
     - ONE subnet: 192.168.4.0/24 for everything
     - 192.168.9.x (LAN2) stays as guest VLAN for House 2 WiFi
     - Port forwards work DIRECTLY (no double-NAT)
@@ -159,12 +159,12 @@ print(f"""
     4. Set Passthrough Mode: DHCPS-fixed
     5. Select the GL-MT6000 MAC (94:83:c4:e0:62:xx) as passthrough device
     6. Save → ATT modem passes public IP to GL-MT6000
-    7. GL-MT6000 WAN interface now gets 162.226.225.148 directly
+    7. GL-MT6000 WAN interface now gets [home IP] directly
     8. All port forwards go through ONE NAT layer
     9. Flint drops out of the path — ATT becomes transparent
 
   RESULT:
-    Internet → [ATT bridge] → GL-MT6000 (162.226.225.148) → 192.168.4.x (all gates)
+    Internet → [ATT bridge] → GL-MT6000 ([home IP]) → 192.168.4.x (all gates)
     ONE hop. ONE NAT. FLAT.
 """)
 

@@ -44,7 +44,7 @@ self_image = {
             "ip_ranges": {
                 "lan1": "192.168.4.0/24 (DHCP .100-.249)",
                 "lan2": "192.168.9.0/24 (Gaia WiFi)",
-                "wan": "162.226.225.148"
+                "wan": "[home IP]"
             },
             "domains": {
                 "outer_trans": ["primals.eco", "*.primals.eco"],

@@ -96,6 +96,6 @@ except Exception as e:
 
 print("\n═══ INTERNET ACCESS ═══")
 print("  Router port forwards: :80/:443 → .194 (eastGate)")
-print("  primals.eco A record: 162.226.225.148 → router → eastGate")
+print("  primals.eco A record: [home IP] → router → eastGate")
 print("  eastGate needs: git pull + gate restart for /reedit etc.")
 print("  blueGate local: http://gaia/ or http://primals.eco/ (hosts file)")

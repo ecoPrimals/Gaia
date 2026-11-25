@@ -70,7 +70,7 @@ targets = {
     "sporeGate.1":  "192.168.1.75",
     "Google DNS":   "8.8.8.8",
     "Cloudflare":   "1.1.1.1",
-    "primals.eco":  "162.226.225.148",
+    "primals.eco":  "mail.primals.eco",
 }
 
 def measure(name_ip):

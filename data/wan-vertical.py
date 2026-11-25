@@ -5,9 +5,9 @@ The vertical team (northGate/Cursor) gets LOW to HIGH in the WAN clouds.
 eastGate is the lateral team (LAN).
 
 DNS already resolves:
-  nestgate.io    → 162.226.225.148
-  primals.eco    → 162.226.225.148
-  hud.primals.eco → 162.226.225.148
+  nestgate.io    → [home IP]
+  primals.eco    → [home IP]
+  hud.primals.eco → [home IP]
 
 We need: router port 80+443 → eastGate .244 (dromedary)
 That's 2 forwards, not 10 torpedoes.

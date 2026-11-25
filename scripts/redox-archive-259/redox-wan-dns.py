@@ -56,7 +56,7 @@ redox = {
     "TIMESTAMP": datetime.datetime.now(datetime.UTC).isoformat() + "Z",
     
     "WAN_STATUS": {
-        "public_ip": "162.226.225.148",
+        "public_ip": "[home IP]",
         "provider": "ATT Fiber 2.5Gbps, Lansing MI",
         "tls": "Let's Encrypt, auto-renewed Nov 17 → Feb 15 2027",
         "tor": "LIVE — .onion serving",
@@ -75,10 +75,10 @@ redox = {
             "when": "2026-11-17T12:00:00-05:00 — noon, Kevin's lunch",
             "where": "porkbun.com dashboard",
             "records": [
-                {"type": "A", "name": "primals.eco", "value": "162.226.225.148"},
-                {"type": "A", "name": "*.primals.eco", "value": "162.226.225.148"},
-                {"type": "A", "name": "nestgate.io", "value": "162.226.225.148"},
-                {"type": "A", "name": "*.nestgate.io", "value": "162.226.225.148"}
+                {"type": "A", "name": "primals.eco", "value": "[home IP]"},
+                {"type": "A", "name": "*.primals.eco", "value": "[home IP]"},
+                {"type": "A", "name": "nestgate.io", "value": "[home IP]"},
+                {"type": "A", "name": "*.nestgate.io", "value": "[home IP]"}
             ],
             "also": "Regenerate API keys → update certbot/dromedary ACME creds"
         }

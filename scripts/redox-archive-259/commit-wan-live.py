@@ -48,9 +48,9 @@ bone = {
     },
 
     "DNS": {
-        "primals_eco": "11 records, all → 162.226.225.148",
+        "primals_eco": "11 records, all → [home IP]",
         "primal_eco": "2 records, redirect → primals.eco",
-        "nestgate_io": "7 records, all → 162.226.225.148",
+        "nestgate_io": "7 records, all → [home IP]",
         "nameservers": "Porkbun (Cloudflare-backed)"
     },
 

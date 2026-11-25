@@ -56,7 +56,7 @@ body_map = {
     "router": {
         "br_guest": "DISABLED",
         "all_wifi_on_br_lan": True,
-        "wan_ip": "162.226.225.148"
+        "wan_ip": "[home IP]"
     }
 }
 

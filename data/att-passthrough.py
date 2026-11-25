@@ -113,5 +113,5 @@ To enable IP Passthrough on ATT BGW320:
 5. Save & reboot
 
 The GL-MT6000's WAN MAC is on the sticker on the router.
-After this, GL-MT6000 gets 162.226.225.148 directly.
+After this, GL-MT6000 gets [home IP] directly.
 """)
