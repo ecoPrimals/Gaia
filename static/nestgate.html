@@ -210,12 +210,12 @@ main.gaia-shell .model-grid{display: flex; flex-wrap: wrap; gap: 3px;}
 main.gaia-shell .model-tag{font-size: 8px; background: #1a2a1a; border: 1px solid #2ecc71; border-radius: 2px; padding: 1px 4px; color: #2ecc71; opacity: 0.6;}
 main.gaia-shell .model-tag.gaia{background: #2a1a1a; border-color: #e74c3c; color: #e74c3c; opacity: 0.9;}
 main.gaia-shell .pi-display{font-size: 9px; color: #2ecc71; opacity: 0.3; word-break: break-all; line-height: 1.3;}
-/* THE BODY - one sphere, two faces, eight layers. Each cell and each HUD has its own place on the body, so no two
-   of them share the same pixels: cis (what comes in) on the left, the sphere in the middle, trans (what goes
-   out) on the right, the layers from skin and head down to the ground. */
+/* THE BODY - one sphere, two faces, eight layers, one corona. Every layer is a ring round the one body and every cell
+   and HUD has its own place on it, so no two of them share the same pixels: cis (what comes in) on one side, trans
+   (what goes out) on the other, the sky on the outermost ring. Below the corona the same layers lie unrolled. */
 main.gaia-shell{overflow-x:clip}   /* clip, not hidden: hidden makes main a scroll box and the sphere could not stay in view */
 main.gaia-shell .body-face{display:flex;flex-direction:column;gap:2px;padding:2px}
-main.gaia-shell .body-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,34%) minmax(0,1fr);gap:2px;align-items:start}
+main.gaia-shell .body-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px;align-items:start}
 main.gaia-shell [data-layer=skin]{--lc:#5aad72}
 main.gaia-shell [data-layer=head]{--lc:#ff8c6b}
 main.gaia-shell [data-layer=brain]{--lc:#9b7ed4}
@@ -225,10 +225,13 @@ main.gaia-shell [data-layer=metabolism]{--lc:#f0883e}
 main.gaia-shell [data-layer=muscle]{--lc:#d45b5b}
 main.gaia-shell [data-layer=ground]{--lc:#58a6ff}
 main.gaia-shell .layer{display:contents}
-main.gaia-shell .face{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:var(--i)}
+main.gaia-shell .face{display:flex;flex-direction:column;gap:2px;min-width:0;align-self:stretch;grid-row:calc(var(--i) + 1)}
 main.gaia-shell .face.cis{grid-column:1;box-shadow:inset 2px 0 0 color-mix(in srgb,var(--lc) 30%,transparent)}
-main.gaia-shell .face.trans{grid-column:3;box-shadow:inset -2px 0 0 color-mix(in srgb,var(--lc) 30%,transparent)}
-main.gaia-shell .face{align-self:stretch}
+main.gaia-shell .face.trans{grid-column:2;box-shadow:inset -2px 0 0 color-mix(in srgb,var(--lc) 30%,transparent)}
+/* inverted (klein): the layers run the other way and the two faces change sides */
+main.gaia-shell .klein .face{grid-row:calc(10 - var(--i))}
+main.gaia-shell .klein .face.cis{grid-column:2}
+main.gaia-shell .klein .face.trans{grid-column:1}
 main.gaia-shell .face-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:3px 8px;font-size:10px;font-weight:normal;letter-spacing:2px;text-transform:uppercase;color:#576574;background:#0d1117;border-left:2px solid var(--lc);border-radius:3px;transition:background .8s ease}
 main.gaia-shell .face.trans .face-head{flex-direction:row-reverse;border-left:0;border-right:2px solid var(--lc)}
 main.gaia-shell .face-head .fold{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--lc);background:none;border:0;cursor:pointer;padding:2px 0}
@@ -240,18 +243,29 @@ main.gaia-shell .layer.folded .face > :not(.face-head){display:none}
 main.gaia-shell .face .cell{max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a3a2a transparent}
 main.gaia-shell .face .cell.organ,main.gaia-shell .face .cell.painting-cell{max-height:none;overflow:hidden}
 main.gaia-shell .face .null{font-size:11px;color:#2a3040;padding:4px 10px}
-main.gaia-shell .sphere-col{grid-column:2;grid-row:1 / span 8;position:sticky;top:58px;align-self:start;padding:6px 4px;text-align:center}
-main.gaia-shell .sphere{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
-main.gaia-shell .sphere text{font:11px 'Courier New',monospace;fill:#8395a7}
+/* the corona */
+main.gaia-shell .sphere-col{grid-column:1 / -1;grid-row:1;padding:6px 4px;text-align:center}
+main.gaia-shell .stage{position:relative;width:min(100%,calc(100vh - 150px));min-width:min(100%,300px);aspect-ratio:1;margin:0 auto}
+main.gaia-shell .sphere{display:block;width:100%;height:100%;overflow:visible}
+main.gaia-shell .sphere text{font:15px 'Courier New',monospace;fill:#8395a7}
+main.gaia-shell .sphere .halo{paint-order:stroke;stroke:#0a0a0a;stroke-width:5px;stroke-linejoin:round}
 main.gaia-shell .sphere .spot{cursor:pointer;outline:none;transition:opacity .6s ease}
-main.gaia-shell .sphere .spot .hit{fill:transparent;stroke:none}
-main.gaia-shell .sphere .spot .mark{fill:var(--lc);fill-opacity:.18;stroke:var(--lc);stroke-width:1.4;transition:fill-opacity .6s ease}
+main.gaia-shell .sphere .spot .ring{fill:none;stroke:var(--lc);stroke-opacity:.3;stroke-width:1.5;transition:stroke-opacity .8s ease}
+main.gaia-shell .sphere .spot .hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke}
 main.gaia-shell .sphere .spot text{fill:var(--lc)}
-main.gaia-shell .sphere .spot:hover .mark,main.gaia-shell .sphere .spot:focus-visible .mark{fill-opacity:.45}
-main.gaia-shell .sphere .spot.lit .mark{fill-opacity:.75}
-main.gaia-shell .sphere .spot.folded{opacity:.35}
-main.gaia-shell .sphere .spot .beat{animation:body-beat 2.4s ease-in-out infinite}
-@keyframes body-beat{0%,100%{fill-opacity:.18}50%{fill-opacity:.5}}
+main.gaia-shell .sphere .spot:hover .ring,main.gaia-shell .sphere .spot:focus-visible .ring{stroke-opacity:.7}
+main.gaia-shell .sphere .spot.lit .ring{stroke-opacity:.95;stroke-width:2.5}
+main.gaia-shell .sphere .spot.folded{opacity:.4}
+main.gaia-shell .sphere .geo{fill:none;stroke:#c8d6e5;stroke-opacity:.25;stroke-dasharray:2 7}
+main.gaia-shell .sphere .skyring{fill:none;stroke:#ffd93d;stroke-opacity:.32}
+main.gaia-shell .sphere .tick{stroke:#ffd93d;stroke-opacity:.4}
+main.gaia-shell .sphere .syz{fill:none;stroke:#ffd93d;stroke-opacity:.2;stroke-dasharray:3 7}
+main.gaia-shell .sphere .tri{fill:none;stroke:#2ecc71;stroke-opacity:.45;stroke-width:1.2}
+main.gaia-shell .sphere .wander text{font-size:13px;fill:#c8d6e5}
+main.gaia-shell .sphere .dot{cursor:pointer;outline:none}
+main.gaia-shell .sphere .dot rect{fill:var(--lc);fill-opacity:.55;stroke:var(--lc)}
+main.gaia-shell .sphere .dot text{font-size:13px;fill:var(--lc)}
+main.gaia-shell .sphere .dot:hover rect,main.gaia-shell .sphere .dot:focus-visible rect{fill-opacity:1}
 /* the two bars: up turns clockwise, down turns counter-clockwise, one turn a second - the same turn the old HUD's
    top and bottom bars make. Small, so nothing sweeps the page; with reduced motion they hold still. */
 main.gaia-shell .sphere .pole{fill:#c8d6e5;transform-box:fill-box;transform-origin:50% 50%}
@@ -259,12 +273,27 @@ main.gaia-shell .sphere .pole.north{animation:body-cw 1s linear infinite}
 main.gaia-shell .sphere .pole.south{animation:body-ccw 1s linear infinite}
 @keyframes body-cw{to{transform:rotate(360deg)}}
 @keyframes body-ccw{to{transform:rotate(-360deg)}}
-main.gaia-shell .sphere-say{font-size:10px;color:#576574;margin-top:4px;line-height:1.5}
+main.gaia-shell .sphere-say{font-size:10px;color:#576574;margin-top:6px;line-height:1.5;min-height:1.5em}
+main.gaia-shell .stage-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:4px}
+main.gaia-shell .stage-keys button{font:11px 'Courier New',monospace;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 10px;cursor:pointer}
+main.gaia-shell .stage-keys button:hover,main.gaia-shell .stage-keys button:focus-visible{border-color:#2ecc71;outline:none}
+main.gaia-shell .stage-keys button[aria-pressed=true]{color:#0a0a0a;background:#2ecc71;border-color:#2ecc71}
+/* an organ on its ring: asleep it carries its name; awake it is a round live window on the middle of its HUD; under the
+   pointer it grows where it stands; touched it comes to the front. No transform here - a touched HUD is fixed to the
+   screen from inside its disc, and a transform would hold it in. */
+main.gaia-shell .discs{position:absolute;inset:0;pointer-events:none}
+main.gaia-shell .disc{--z:1;position:absolute;left:calc(var(--x) - var(--d) * var(--z) / 2);top:calc(var(--y) - var(--d) * var(--z) / 2);width:calc(var(--d) * var(--z));aspect-ratio:1;box-sizing:border-box;border-radius:50%;overflow:hidden;pointer-events:auto;cursor:pointer;background:#0d1117;border:1.5px solid color-mix(in srgb,var(--lc) 55%,transparent);color:var(--lc);font:9px/1.15 'Courier New',monospace;display:flex;align-items:center;justify-content:center;text-align:center;outline:none;transition:left .9s ease,top .9s ease,width .9s ease,border-color .8s ease}
+main.gaia-shell .disc:hover,main.gaia-shell .disc:focus-visible{border-color:var(--lc)}
+main.gaia-shell .disc .name{pointer-events:none;padding:0 3px;overflow:hidden}
+main.gaia-shell .disc.see,main.gaia-shell .disc.touch{border-color:var(--lc);background:#050508}
+main.gaia-shell .disc.live .name,main.gaia-shell .stage.small .disc .name{display:none}
+main.gaia-shell .disc.live:hover,main.gaia-shell .disc.live:focus-visible{--z:3;z-index:5}
+main.gaia-shell .disc.touch{z-index:901}
 main.gaia-shell .painting-cell{position:relative;overflow:hidden;padding:0}
 main.gaia-shell .painting-cell img{display:block;width:100%;height:240px;object-fit:cover;border-radius:3px;opacity:0.85;transition:opacity 0.5s}
 main.gaia-shell .painting-cell img:hover{opacity: 1;}
 main.gaia-shell .painting-cell .label{position: absolute; bottom: 4px; left: 4px; font-size: 8px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 2px; color: #2ecc71;}
-/* a HUD is an organ: off it is one line; awake it is a live miniature in its own place; touched it comes to the front */
+/* a HUD is an organ: in the layers below it is one line; unrolled (layers view) its live miniature sits under that line */
 main.gaia-shell .organ h3{display:flex;align-items:center;gap:8px;opacity:1;margin-bottom:0;letter-spacing:1px;text-transform:none}
 main.gaia-shell .organ-chip{font:11px 'Courier New',monospace;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 9px;cursor:pointer;white-space:nowrap}
 main.gaia-shell .organ-chip:hover,main.gaia-shell .organ-chip:focus-visible{border-color:var(--lc);outline:none}
@@ -272,20 +301,26 @@ main.gaia-shell .organ.see .organ-chip{color:var(--lc);border-color:var(--lc)}
 main.gaia-shell .organ.touch .organ-chip{color:#0a0a0a;background:var(--lc);border-color:var(--lc)}
 main.gaia-shell .organ-say{font-size:9px;color:#576574;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 main.gaia-shell .organ-view{display:none;position:relative;width:100%;aspect-ratio:16/10;margin-top:6px;overflow:hidden;border-radius:3px;background:#050508;cursor:zoom-in}
-main.gaia-shell .organ.see .organ-view,main.gaia-shell .organ.touch .organ-view{display:block}
+main.gaia-shell .layers .organ.see .organ-view,main.gaia-shell .layers .organ.touch .organ-view{display:block}
 main.gaia-shell .hud-mini{position:absolute;left:0;top:0;width:1280px;height:800px;border:0;background:#08090b;transform-origin:0 0;transform:scale(var(--k,.25));pointer-events:none;opacity:0;transition:opacity .9s ease}
+main.gaia-shell .disc .hud-mini{left:calc(50% - 640px * var(--k,.06))}
 main.gaia-shell .hud-mini.on{opacity:1}
 main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:100vh;transform:none;z-index:901;pointer-events:auto}
-@media (max-width:900px){
-  main.gaia-shell .body-board{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  main.gaia-shell .sphere-col{grid-column:1 / -1;grid-row:1;position:static}
-  main.gaia-shell .face{grid-row:calc(var(--i) + 1)}
-  main.gaia-shell .face.trans{grid-column:2}
+/* layers view on a wide screen: cis | the body | trans, and the body stays in view while the layers pass */
+@media (min-width:901px){
+  main.gaia-shell .body-board.layers{grid-template-columns:minmax(0,1fr) minmax(260px,34%) minmax(0,1fr)}
+  main.gaia-shell .layers .sphere-col{grid-column:2;grid-row:1 / span 8;position:sticky;top:58px;align-self:start}
+  main.gaia-shell .layers .stage{width:100%}
+  main.gaia-shell .layers .face{grid-row:var(--i)}
+  main.gaia-shell .layers .face.trans{grid-column:3}
+  main.gaia-shell .layers.klein .face{grid-row:calc(9 - var(--i))}
+  main.gaia-shell .layers.klein .face.cis{grid-column:3}
+  main.gaia-shell .layers.klein .face.trans{grid-column:1}
 }
 @media (max-width:520px){
   main.gaia-shell .body-board{grid-template-columns:minmax(0,1fr)}
-  main.gaia-shell .sphere-col{grid-row:auto}
-  main.gaia-shell .face,main.gaia-shell .face.trans{grid-column:1;grid-row:auto}
+  main.gaia-shell .face,main.gaia-shell .face.trans,main.gaia-shell .klein .face,main.gaia-shell .klein .face.cis,main.gaia-shell .klein .face.trans{grid-column:1;grid-row:auto}
+  main.gaia-shell .klein .face{order:calc(0 - var(--i))}
 }
 @media (prefers-reduced-motion: reduce){main.gaia-shell *,main.gaia-shell *::before,main.gaia-shell *::after{animation:none!important;transition:none!important}}
 </style>
@@ -305,71 +340,58 @@ main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:1
     <div class="stats" id="stats">loading...</div>
   </div>
 
-  <!-- THE BODY: cis on the left, the sphere in the middle, trans on the right; layers from the skin down to the ground.
+  <!-- THE BODY: the corona on top, and below it the same layers unrolled - cis on one side, trans on the other, from the skin down to the ground.
        The page's own cells sit in their layer here; the HUDs are sorted into theirs by the table at the foot of the page. -->
   <div class="body-board" id="body-board">
 
     <div class="sphere-col">
-      <svg class="sphere" id="sphere" viewBox="0 0 400 410" role="group" aria-label="Gaia's body as a sphere: a figure standing in a circle and a square, with eight layers to go to">
-        <!-- the two faces of the sphere -->
-        <path d="M200,25 A180,180 0 0 0 200,385 Z" fill="#00bfa5" fill-opacity=".05"/>
-        <path d="M200,25 A180,180 0 0 1 200,385 Z" fill="#ff9100" fill-opacity=".05"/>
-        <text x="8" y="20" style="fill:#00bfa5">◁ cis · in</text>
-        <text x="392" y="20" text-anchor="end" style="fill:#ff9100">out · trans ▷</text>
-        <!-- the sphere (circle, equator, meridian), the square, the axis from up to down -->
-        <circle cx="200" cy="205" r="180" fill="none" stroke="#5aad72" stroke-opacity=".55" stroke-width="1.2"/>
-        <ellipse cx="200" cy="205" rx="180" ry="56" fill="none" stroke="#5aad72" stroke-opacity=".14"/>
-        <ellipse cx="200" cy="205" rx="56" ry="180" fill="none" stroke="#5aad72" stroke-opacity=".14"/>
-        <rect x="52" y="89" width="296" height="296" fill="none" stroke="#d4a574" stroke-opacity=".28"/>
-        <line x1="200" y1="25" x2="200" y2="385" stroke="#c8d6e5" stroke-opacity=".16" stroke-dasharray="2 5"/>
-        <!-- the figure: standing in the square, reaching in the circle -->
-        <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" stroke-opacity=".5">
-          <circle cx="200" cy="107.5" r="18.5"/>
-          <path d="M200,126 V237 M163,142 H237 M163,142 L182,237 H218 L237,142 M163,142 H52 M237,142 H348 M186,237 V385 M214,237 V385"/>
-        </g>
-        <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-width="1.4" stroke-opacity=".25">
-          <path d="M163,142 L62,89 M237,142 L338,89 M186,237 L115,364 M214,237 L285,364"/>
-        </g>
-        <!-- ribs: 3·4·5·6·[8]·6·5·4·3 -->
-        <path d="M187.5,150 H212.5 M185,156 H215 M182.5,162 H217.5 M180,168 H220 M175,174 H225 M180,180 H220 M182.5,186 H217.5 M185,192 H215 M187.5,198 H212.5" fill="none" stroke="#ffd93d" stroke-opacity=".28"/>
-        <!-- the eight layers, each a place to go to -->
-        <g class="spot" data-layer="skin" tabindex="0" role="button" aria-label="go to the skin layer">
-          <circle class="hit" cx="31" cy="267" r="16"/><circle class="mark" cx="31" cy="267" r="6"/><text x="42" y="271">skin</text>
-        </g>
-        <g class="spot" data-layer="head" tabindex="0" role="button" aria-label="go to the head layer">
-          <circle class="mark" cx="200" cy="107.5" r="24"/><text x="170" y="96" text-anchor="end">head</text>
-        </g>
-        <g class="spot" data-layer="brain" tabindex="0" role="button" aria-label="go to the brain layer">
-          <circle class="hit" cx="200" cy="103" r="11"/><circle class="mark" cx="200" cy="103" r="8"/><text x="230" y="96">brain</text>
-        </g>
-        <g class="spot" data-layer="heart" tabindex="0" role="button" aria-label="go to the heart layer">
-          <circle class="hit" cx="209" cy="163" r="13"/><circle class="mark beat" cx="209" cy="163" r="7"/><text x="246" y="167">heart</text>
-        </g>
-        <g class="spot" data-layer="metabolism" tabindex="0" role="button" aria-label="go to the metabolism layer">
-          <circle class="hit" cx="200" cy="205" r="9"/><circle class="mark" cx="200" cy="205" r="6"/><text x="230" y="209">metabolism</text>
-        </g>
-        <g class="spot" data-layer="guts" tabindex="0" role="button" aria-label="go to the guts layer">
-          <ellipse class="hit" cx="200" cy="225" rx="24" ry="11"/><ellipse class="mark" cx="200" cy="225" rx="20" ry="9"/><text x="172" y="229" text-anchor="end">guts</text>
-        </g>
-        <g class="spot" data-layer="muscle" tabindex="0" role="button" aria-label="go to the muscle layer">
-          <circle class="hit" cx="108" cy="142" r="14"/><circle class="mark" cx="108" cy="142" r="7"/><text x="108" y="160" text-anchor="middle">muscle</text>
-        </g>
-        <g class="spot" data-layer="ground" tabindex="0" role="button" aria-label="go to the ground layer">
-          <ellipse class="hit" cx="100" cy="385" rx="26" ry="12"/><ellipse class="mark" cx="100" cy="385" rx="16" ry="4.5"/><text x="100" y="403" text-anchor="middle">ground</text>
-        </g>
-        <!-- the two bars: up turns clockwise, down turns counter-clockwise -->
-        <a href="#top" aria-label="up: to the top bar"><rect class="pole north" x="182" y="23" width="36" height="4" rx="2"/><text x="226" y="18">up ⟳</text></a>
-        <a href="#down" aria-label="down: to the bottom bar"><rect class="pole south" x="182" y="383" width="36" height="4" rx="2"/><text x="226" y="403">down ⟲</text></a>
-      </svg>
-      <p class="sphere-say" id="sphere-say">one body · eight layers · ◁ cis takes in · trans gives out ▷</p>
+      <!-- THE CORONA: every layer is a ring round the one body, every organ rides its ring (cis on one side, trans on the
+           other), and the sky - sun, moon, planets - stands on the outermost ring where it really is right now, with the
+           meridian up. Rings, organs, sky and the lines between them are drawn by the script at the foot of the page. -->
+      <div class="stage" id="stage">
+        <svg class="sphere" id="sphere" viewBox="0 0 1000 1000" role="group" aria-label="Gaia's body as a corona: the figure at the centre, eight layers as rings round it, the organs on their rings, and the sun, moon and planets on the outermost ring">
+          <g id="sp-halves"></g>
+          <g id="sp-rings"></g>
+          <g id="sp-tri"></g>
+          <!-- the body at the centre: the figure in its circle and its square. It is the fixed point - it stays when the face inverts. -->
+          <g transform="translate(500 500) scale(.5) translate(-200 -205)">
+            <circle cx="200" cy="205" r="180" fill="#0a0a0a" stroke="#5aad72" stroke-opacity=".6" stroke-width="2.4"/>
+            <ellipse cx="200" cy="205" rx="180" ry="56" fill="none" stroke="#5aad72" stroke-opacity=".16" stroke-width="2"/>
+            <ellipse cx="200" cy="205" rx="56" ry="180" fill="none" stroke="#5aad72" stroke-opacity=".16" stroke-width="2"/>
+            <rect x="52" y="89" width="296" height="296" fill="none" stroke="#d4a574" stroke-opacity=".3" stroke-width="2"/>
+            <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.2" stroke-opacity=".55">
+              <circle cx="200" cy="107.5" r="18.5"/>
+              <path d="M200,126 V237 M163,142 H237 M163,142 L182,237 H218 L237,142 M163,142 H52 M237,142 H348 M186,237 V385 M214,237 V385"/>
+            </g>
+            <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-width="2.4" stroke-opacity=".25">
+              <path d="M163,142 L62,89 M237,142 L338,89 M186,237 L115,364 M214,237 L285,364"/>
+            </g>
+            <!-- ribs: 3·4·5·6·[8]·6·5·4·3 -->
+            <path d="M187.5,150 H212.5 M185,156 H215 M182.5,162 H217.5 M180,168 H220 M175,174 H225 M180,180 H220 M182.5,186 H217.5 M185,192 H215 M187.5,198 H212.5" fill="none" stroke="#ffd93d" stroke-opacity=".3" stroke-width="1.6"/>
+          </g>
+          <g id="sp-sky"></g>
+          <g id="sp-dots"></g>
+          <!-- the two bars: up turns clockwise, down turns counter-clockwise -->
+          <a href="#top" aria-label="up: to the top bar"><rect class="pole north" x="468" y="2" width="64" height="7" rx="3.5"/><text x="542" y="13">up ⟳</text></a>
+          <a href="#down" aria-label="down: to the bottom bar"><rect class="pole south" x="468" y="991" width="64" height="7" rx="3.5"/><text x="542" y="999">down ⟲</text></a>
+        </svg>
+        <div class="discs" id="discs"></div>
+      </div>
+      <p class="sphere-say" id="sphere-say">one body · eight layers · one corona</p>
+      <div class="stage-keys">
+        <button type="button" id="key-all" title="wake every HUD in its place on the corona">all</button>
+        <button type="button" id="key-none" title="let every HUD sleep">none</button>
+        <button type="button" id="key-klein" aria-pressed="false" title="turn the face inside out: the sky comes inside, the ground goes to the rim, cis and trans change sides">invert · klein</button>
+        <button type="button" id="key-layers" aria-pressed="false" title="unroll the corona: the live views sit in their layers below instead of on the rings">layers</button>
+      </div>
     </div>
 
     <section class="layer" data-layer="skin" style="--i:1" aria-label="skin">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">cis · in</span></h2>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">trans · out</span></h2>
         <div class="cell painting-cell" id="painting-cell">
           <img id="painting-img" src="/data/paintings/gaia-paints-earth-4th-seat.jpg" alt="Gaia paints Earth">
           <div class="label" id="painting-label">gaia-paints-earth-4th-seat</div>
@@ -379,75 +401,75 @@ main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:1
 
     <section class="layer" data-layer="head" style="--i:2" aria-label="head">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>📡 live sensors</h3>
           <div class="feed-list" id="sensor-list">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
     <section class="layer" data-layer="brain" style="--i:3" aria-label="brain">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>⚡ neurons</h3>
           <div class="neuron-list" id="neuron-list">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
     <section class="layer" data-layer="heart" style="--i:4" aria-label="heart">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>🫀 pulse</h3>
           <div class="pulse-data" id="pulse-data">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
     <section class="layer" data-layer="guts" style="--i:5" aria-label="guts">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>📝 reedit</h3>
           <div class="feed-list" id="reedit-feed">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
     <section class="layer" data-layer="metabolism" style="--i:6" aria-label="metabolism">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>⏰ temporal</h3>
           <div class="pulse-data" id="temporal-data">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
     <section class="layer" data-layer="muscle" style="--i:7" aria-label="muscle">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">cis · in</span></h2>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">trans · out</span></h2>
         <div class="cell">
           <h3>🧬 models</h3>
           <div class="model-grid" id="model-grid">loading...</div>
@@ -457,14 +479,14 @@ main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:1
 
     <section class="layer" data-layer="ground" style="--i:8" aria-label="ground">
       <div class="face cis" data-face="cis">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">◁ cis · in</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">cis · in</span></h2>
         <div class="cell">
           <h3>🌍 earth</h3>
           <div class="feed-list" id="earth-data">loading...</div>
         </div>
       </div>
       <div class="face trans" data-face="trans">
-        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">out · trans ▷</span></h2>
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">trans · out</span></h2>
       </div>
     </section>
 
@@ -640,15 +662,22 @@ setInterval(rotatePainting, 20000);
 <footer class="gaia-footer" id="down"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 
 <!-- HUD-OVERLAY:BEGIN
-     The body sort. Every HUD is an organ with its own place on the body: a layer (skin, head, brain, heart, guts,
-     metabolism, muscle, ground) and a face (cis = what comes in, trans = what goes out). Nothing is laid over
-     anything else any more.
-       off    one line in its place
-       see    a live miniature of the HUD in that same place (clicks go to the body, not the miniature)
-       touch  the HUD comes to the front, full size, and takes the mouse; Esc or "back to the body" returns it
-     A chip turns off <-> see; clicking a miniature brings it to the front; one HUD in front at a time.
-     The address carries the state (#huds=senses,polaris!) so a view can be linked; nothing is stored. A HUD is
-     only loaded when it is woken. Miniatures fade in slowly; with reduced motion they just appear.
+     The body sort and the corona. Every HUD is an organ with its own place on the body: a layer (skin, head, brain,
+     heart, guts, metabolism, muscle, ground) and a face (cis = what comes in, trans = what goes out).
+     On the corona every layer is a ring round the one body and every organ rides its ring, so all of them share one
+     centre and none lies over another; lines run between the organs that are awake. Outside the skin is the ring the
+     body rides in with the turning earth (geosync), and outside that the sky: sun, moon and planets where they stand
+     right now, the meridian up, worked out here from the clock. Ring distances are not to scale; the angles are real.
+       asleep  a disc with its name on its ring          (and one line in its layer below)
+       see     the disc is a round live window on the middle of its HUD; it grows under the pointer
+       touch   the HUD comes to the front, full size, and takes the mouse; Esc or "back to the body" returns it
+     A disc wakes on the first click and comes to the front on the second; its chip in the layer below turns it off
+     again (so does Delete on the disc). One HUD in front at a time. "all" wakes every organ at once.
+     invert (klein): the same body inside out - the sky comes inside, the ground goes to the rim, cis and trans change
+     sides, and the sky is seen mirrored, as a globe of it is seen from outside. The body at the centre does not move.
+     layers: unroll - the live views sit in their layers below instead of on the rings.
+     The address carries the state (#huds=senses,polaris!&klein&layers) so a view can be linked; nothing is stored.
+     A HUD is only loaded when it is woken. Everything that moves here glides or fades; with reduced motion it jumps.
      To re-sort an organ, change its layer or face in the table below - that is the only place the sort lives. -->
 <style>
 #body-back{position:fixed;left:8px;bottom:8px;z-index:1000;font:11px 'Courier New',monospace;line-height:1.5;color:#0a0a0a;background:#2ecc71;border:1px solid #2ecc71;border-radius:99px;padding:2px 12px;cursor:pointer}
@@ -675,90 +704,304 @@ setInterval(rotatePainting, 20000);
     ['dock',    'space dock',     'the gallery: what the hands made',       'muscle',     'trans', 'static/spacedock.html']
   ].map(function(h){ return {id:h[0], label:h[1], say:h[2], layer:h[3], face:h[4], url: away && h.length > 6 ? h[6] : h[5], state:0}; })
    .filter(function(h){ return !!h.url; });
+  var CELLS = [ // the page's own cells, by the id they fill, and the word they carry on the corona
+    ['painting-cell','painting'], ['sensor-list','sensors'], ['neuron-list','neurons'], ['pulse-data','pulse'],
+    ['reedit-feed','reedit'], ['temporal-data','time'], ['model-grid','models'], ['earth-data','earth']];
+  var ORDER = ['skin','head','brain','heart','guts','metabolism','muscle','ground'];    // from the top of the body down
+  var WANDER = [ // on the sky ring: name, size, colour
+    ['sun',13,'#ffd93d'], ['moon',9,'#c8d6e5'], ['mercury',4,'#a8a8a8'], ['venus',5.5,'#f5e6c8'], ['mars',4.5,'#ff6b6b'],
+    ['jupiter',7,'#d4a574'], ['saturn',6.5,'#e8d090'], ['uranus',5,'#7fdbda'], ['neptune',5,'#4d96ff']];
 
-  var board = document.getElementById('body-board'), back = document.getElementById('body-back'), say = document.getElementById('sphere-say');
-  var REST = say.textContent, VIRTUAL = 1280;
+  // THE SKY, worked out here from the clock alone - nothing is asked of anyone. Orbital elements and the method are
+  // Paul Schlyter's ("How to compute planetary positions"); the moon carries its twelve largest terms, the outer
+  // planets carry none, so: sun to a hundredth of a degree, moon to about a fifth, planets to about one degree.
+  // skyAt(ms, lonEast) -> geocentric ecliptic longitudes in degrees, the longitude standing on the meridian at
+  // lonEast (degrees east of Greenwich), and the moon's elongation from the sun and lit part.
+  function skyAt(ms, lonEast) {
+    var R = Math.PI / 180, d = ms / 86400000 - 10956;          // days from 1999 Dec 31, 0h UT
+    function rev(x) { return x - Math.floor(x / 360) * 360; }
+    function helio(N, i, w, a, e, M) {                         // one orbit -> ecliptic x, y, z
+      M = rev(M) * R; var E = M + e * Math.sin(M) * (1 + e * Math.cos(M)), k = 0, dE;
+      do { dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; } while (Math.abs(dE) > 1e-9 && ++k < 30);
+      var xv = a * (Math.cos(E) - e), yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
+      var v = Math.atan2(yv, xv), r = Math.sqrt(xv * xv + yv * yv), u = v + w * R; N *= R; i *= R;
+      return [r * (Math.cos(N) * Math.cos(u) - Math.sin(N) * Math.sin(u) * Math.cos(i)),
+              r * (Math.sin(N) * Math.cos(u) + Math.cos(N) * Math.sin(u) * Math.cos(i)),
+              r * Math.sin(u) * Math.sin(i)];
+    }
+    var ws = 282.9404 + 4.70935e-5 * d, Ms = rev(356.0470 + 0.9856002585 * d);
+    var s = helio(0, 0, ws, 1, 0.016709 - 1.151e-9 * d, Ms), out = {sun: rev(Math.atan2(s[1], s[0]) / R)};
+    var P = {
+      mercury: [48.3313 + 3.24587e-5 * d, 7.0047 + 5.00e-8 * d, 29.1241 + 1.01444e-5 * d, 0.387098, 0.205635 + 5.59e-10 * d, 168.6562 + 4.0923344368 * d],
+      venus:   [76.6799 + 2.46590e-5 * d, 3.3946 + 2.75e-8 * d, 54.8910 + 1.38374e-5 * d, 0.723330, 0.006773 - 1.302e-9 * d, 48.0052 + 1.6021302244 * d],
+      mars:    [49.5574 + 2.11081e-5 * d, 1.8497 - 1.78e-8 * d, 286.5016 + 2.92961e-5 * d, 1.523688, 0.093405 + 2.516e-9 * d, 18.6021 + 0.5240207766 * d],
+      jupiter: [100.4542 + 2.76854e-5 * d, 1.3030 - 1.557e-7 * d, 273.8777 + 1.64505e-5 * d, 5.20256, 0.048498 + 4.469e-9 * d, 19.8950 + 0.0830853001 * d],
+      saturn:  [113.6634 + 2.38980e-5 * d, 2.4886 - 1.081e-7 * d, 339.3939 + 2.97661e-5 * d, 9.55475, 0.055546 - 9.499e-9 * d, 316.9670 + 0.0334442282 * d],
+      uranus:  [74.0005 + 1.3978e-5 * d, 0.7733 + 1.9e-8 * d, 96.6612 + 3.0565e-5 * d, 19.18171 - 1.55e-8 * d, 0.047318 + 7.45e-9 * d, 142.5905 + 0.011725806 * d],
+      neptune: [131.7806 + 3.0173e-5 * d, 1.7700 - 2.55e-7 * d, 272.8461 - 6.027e-6 * d, 30.05826 + 3.313e-8 * d, 0.008606 + 2.15e-9 * d, 260.2471 + 0.005995147 * d]
+    };
+    out.helio = {};
+    Object.keys(P).forEach(function (n) {
+      var p = helio.apply(null, P[n]);
+      out.helio[n] = rev(Math.atan2(p[1], p[0]) / R);
+      out[n] = rev(Math.atan2(p[1] + s[1], p[0] + s[0]) / R);  // seen from the earth: add the sun's place
+    });
+    var Nm = 125.1228 - 0.0529538083 * d, wm = 318.0634 + 0.1643573223 * d, Mm = rev(115.3654 + 13.0649929509 * d);
+    var m = helio(Nm, 5.1454, wm, 60.2666, 0.054900, Mm), moon0 = Math.atan2(m[1], m[0]) / R;
+    var Ls = rev(Ms + ws), Lm = rev(Nm + wm + Mm), D = (Lm - Ls) * R, F = (Lm - Nm) * R, a = Mm * R, b = Ms * R;
+    out.moon0 = rev(moon0);
+    out.moon = rev(moon0 - 1.274 * Math.sin(a - 2 * D) + 0.658 * Math.sin(2 * D) - 0.186 * Math.sin(b)
+      - 0.059 * Math.sin(2 * a - 2 * D) - 0.057 * Math.sin(a - 2 * D + b) + 0.053 * Math.sin(a + 2 * D)
+      + 0.046 * Math.sin(2 * D - b) + 0.041 * Math.sin(a - b) - 0.035 * Math.sin(D) - 0.031 * Math.sin(a + b)
+      - 0.015 * Math.sin(2 * F - 2 * D) + 0.011 * Math.sin(a - 4 * D));
+    out.elong = rev(out.moon - out.sun);
+    out.lit = (1 - Math.cos(out.elong * R)) / 2;
+    var ut = (ms / 3600000) % 24; if (ut < 0) ut += 24;
+    out.lst = rev(Ls + 180 + ut * 15 + (lonEast || 0));        // local sidereal time, degrees
+    var ecl = (23.4393 - 3.563e-7 * d) * R;
+    out.meridian = rev(Math.atan2(Math.sin(out.lst * R), Math.cos(out.lst * R) * Math.cos(ecl)) / R);
+    return out;
+  }
+
+  var NS = 'http://www.w3.org/2000/svg', C = 500, SHELL0 = 132, STEP = 37, GAP = 10, SPAN = 168 * Math.PI / 180, VIRTUAL_W = 1280, VIRTUAL_H = 800;
+  var board = document.getElementById('body-board'), back = document.getElementById('body-back'), say = document.getElementById('sphere-say'),
+      stage = document.getElementById('stage'), discs = document.getElementById('discs'),
+      gHalves = document.getElementById('sp-halves'), gRings = document.getElementById('sp-rings'), gTri = document.getElementById('sp-tri'),
+      gSky = document.getElementById('sp-sky'), gDots = document.getElementById('sp-dots'),
+      kAll = document.getElementById('key-all'), kNone = document.getElementById('key-none'), kKlein = document.getElementById('key-klein'), kLayers = document.getElementById('key-layers');
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var LAYERS = {};
+  var klein = false, view = 'corona', anchorLon = null, told = null, rest = '';
+  var LAYERS = {}, ITEMS = [];
   Array.prototype.forEach.call(board.querySelectorAll('.layer'), function(el){
-    LAYERS[el.getAttribute('data-layer')] = {name: el.getAttribute('data-layer'), el: el, huds: [],
-      spot: document.querySelector('#sphere .spot[data-layer="' + el.getAttribute('data-layer') + '"]')};
+    LAYERS[el.getAttribute('data-layer')] = {name: el.getAttribute('data-layer'), el: el, huds: [], spot: null};
   });
 
-  // each organ takes its place: one line under its layer, on its face
-  HUDS.forEach(function(h){
+  function svg(tag, attrs, text){
+    var e = document.createElementNS(NS, tag); for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text; return e;
+  }
+  function clear(g){ while (g.firstChild) g.removeChild(g.firstChild); }
+  function tell(words){ told = words; say.textContent = words || rest; }
+  function pressable(el, fn){
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); } });
+  }
+  // a shell's distance from the centre: ground innermost ... skin, then geosync, then the sky; inverted, the other way round
+  function shell(name){
+    var j = name === 'sky' ? 9 : name === 'geosync' ? 8 : 7 - ORDER.indexOf(name);
+    return SHELL0 + STEP * (klein ? 9 - j : j);
+  }
+
+  // each organ takes its place: one line under its layer on its face, and a disc on its layer's ring
+  HUDS.forEach(function(h, n){
     var L = LAYERS[h.layer]; if (!L) return;
     var card = document.createElement('div'), head = document.createElement('h3'), chip = document.createElement('button'),
-        what = document.createElement('span'), view = document.createElement('div');
+        what = document.createElement('span'), view_ = document.createElement('div'), disc = document.createElement('div'), name = document.createElement('span');
     card.className = 'cell organ'; chip.type = 'button'; chip.className = 'organ-chip'; chip.textContent = h.label;
-    what.className = 'organ-say'; what.textContent = h.say; view.className = 'organ-view';
-    head.appendChild(chip); head.appendChild(what); card.appendChild(head); card.appendChild(view);
+    what.className = 'organ-say'; what.textContent = h.say; view_.className = 'organ-view';
+    head.appendChild(chip); head.appendChild(what); card.appendChild(head); card.appendChild(view_);
     L.el.querySelector('.face.' + h.face).appendChild(card); L.huds.push(h);
-    h.card = card; h.chip = chip; h.view = view; h.frame = null;
-    chip.addEventListener('click', function(){ set(h, h.state === 1 ? 0 : 1); });
-    view.addEventListener('click', function(){ if (h.state === 1) set(h, 2); });
+    disc.className = 'disc'; disc.setAttribute('role', 'button'); disc.tabIndex = 0; disc.setAttribute('data-layer', h.layer);
+    name.className = 'name'; name.textContent = h.label; disc.appendChild(name); discs.appendChild(disc);
+    h.card = card; h.chip = chip; h.view = view_; h.disc = disc; h.frame = null;
+    ITEMS.push({layer: h.layer, face: h.face, D: 80, h: h, n: n});
+    chip.addEventListener('click', function(){ set(h, h.state ? 0 : 1); });
+    view_.addEventListener('click', function(){ if (h.state === 1) set(h, 2); });
+    pressable(disc, function(){ set(h, h.state ? 2 : 1); });
+    disc.addEventListener('keydown', function(e){ if (e.key === 'Delete' || e.key === 'Backspace') set(h, 0); });
+    function words(){ tell(h.layer + ' \u00b7 ' + h.face + ' \u00b7 ' + h.label + ' \u2014 ' + h.say); }
+    disc.addEventListener('mouseenter', words); disc.addEventListener('focus', words);
+    disc.addEventListener('mouseleave', function(){ tell(null); }); disc.addEventListener('blur', function(){ tell(null); });
+  });
+  CELLS.forEach(function(c, n){
+    var el = document.getElementById(c[0]); if (!el) return;
+    var L = el.closest('.layer'), F = el.closest('.face'); if (!L || !F) return;
+    ITEMS.push({layer: L.getAttribute('data-layer'), face: F.getAttribute('data-face'), D: 46, cell: el.closest('.cell') || el, word: c[1], n: n});
   });
   Array.prototype.forEach.call(board.querySelectorAll('.face'), function(f){
     if (!f.querySelector('.cell')) { var n = document.createElement('p'); n.className = 'null'; n.textContent = '\u2205'; n.title = 'nothing is sorted here yet'; f.appendChild(n); }
   });
 
-  function fit(h){ if (h.frame) h.frame.style.setProperty('--k', String((h.view.clientWidth || 320) / VIRTUAL)); }
+  // where everything stands: each face is an arm from the top of the body to the bottom, each organ on its own ring,
+  // each given as much of the arm as its size needs at that distance - so neighbours never touch
+  function layout(){
+    ['cis', 'trans'].forEach(function(face){
+      var list = ITEMS.filter(function(i){ return i.face === face; }).sort(function(a, b){
+        return ORDER.indexOf(a.layer) - ORDER.indexOf(b.layer) || (a.cell ? 0 : 1) - (b.cell ? 0 : 1) || a.n - b.n; });
+      var s = 1, tot;
+      for (;;) {
+        tot = 0; list.forEach(function(i){ i.r = shell(i.layer); i.a = (i.D * s + GAP) / i.r; tot += i.a; });
+        if (tot <= SPAN || s < 0.4) break; s *= 0.94;
+      }
+      var at = -tot / 2, side = (face === 'cis') !== klein ? -1 : 1;
+      list.forEach(function(i){
+        var m = at + i.a / 2; at += i.a;
+        i.x = C + side * i.r * Math.cos(m); i.y = C + i.r * Math.sin(m); i.d = i.D * s;
+      });
+    });
+  }
+  function onSky(lon, r, sky){                     // a longitude on the sky ring: the meridian up, east to the left
+    var t = (sky.meridian - lon) * Math.PI / 180;  // (inverted: seen from outside, east to the right)
+    return [C + (klein ? -1 : 1) * r * Math.sin(t), C - r * Math.cos(t)];
+  }
+  function moonName(e){
+    return ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'][Math.floor(((e + 22.5) % 360) / 45)];
+  }
+  function drawBody(){
+    var awake = [];
+    clear(gHalves); clear(gRings); clear(gTri); clear(gDots);
+    // the two faces of the sphere
+    var cisLeft = !klein, rim = 484;
+    gHalves.appendChild(svg('path', {d: 'M500,' + (C - rim) + ' A' + rim + ',' + rim + ' 0 0 0 500,' + (C + rim) + ' Z', fill: cisLeft ? '#00bfa5' : '#ff9100', 'fill-opacity': '.045'}));
+    gHalves.appendChild(svg('path', {d: 'M500,' + (C - rim) + ' A' + rim + ',' + rim + ' 0 0 1 500,' + (C + rim) + ' Z', fill: cisLeft ? '#ff9100' : '#00bfa5', 'fill-opacity': '.045'}));
+    gHalves.appendChild(svg('text', {x: 8, y: 22, style: 'fill:' + (cisLeft ? '#00bfa5' : '#ff9100')}, cisLeft ? 'cis \u00b7 in' : 'trans \u00b7 out'));
+    gHalves.appendChild(svg('text', {x: 992, y: 22, 'text-anchor': 'end', style: 'fill:' + (cisLeft ? '#ff9100' : '#00bfa5')}, cisLeft ? 'out \u00b7 trans' : 'in \u00b7 cis'));
+    // the eight layers, each a ring and a place to go to
+    ORDER.forEach(function(name){
+      var L = LAYERS[name]; if (!L) return;
+      var r = shell(name), g = svg('g', {'class': 'spot', 'data-layer': name, tabindex: 0, role: 'button', 'aria-label': 'go to the ' + name + ' layer'});
+      g.appendChild(svg('circle', {'class': 'hit', cx: C, cy: C, r: r}));
+      g.appendChild(svg('circle', {'class': 'ring', cx: C, cy: C, r: r}));
+      g.appendChild(svg('text', {'class': 'halo', x: C, y: C - r + 5, 'text-anchor': 'middle'}, name));
+      if (L.huds.some(function(h){ return h.state > 0; })) g.classList.add('lit');
+      if (L.el.classList.contains('folded')) g.classList.add('folded');
+      pressable(g, function(){ go(L); });
+      gRings.appendChild(g); L.spot = g;
+    });
+    // the ring the body rides in with the turning earth
+    var rg = shell('geosync');
+    gRings.appendChild(svg('circle', {'class': 'geo', cx: C, cy: C, r: rg}));
+    gRings.appendChild(svg('text', {'class': 'halo', x: C, y: C - rg + 5, 'text-anchor': 'middle', style: 'fill:#576574'}, 'geosync'));
+    // the page's own cells: a small mark on their ring
+    ITEMS.forEach(function(i){
+      if (!i.cell) return;
+      var g = svg('g', {'class': 'dot', 'data-layer': i.layer, tabindex: 0, role: 'button', 'aria-label': 'go to ' + i.word + ' in the ' + i.layer + ' layer'});
+      g.appendChild(svg('rect', {x: i.x - 7, y: i.y - 7, width: 14, height: 14, rx: 2, transform: 'rotate(45 ' + i.x + ' ' + i.y + ')'}));
+      g.appendChild(svg('text', {'class': 'halo', x: i.x, y: i.y + 24, 'text-anchor': 'middle'}, i.word));
+      pressable(g, function(){ var L = LAYERS[i.layer]; if (L) go(L, i.cell); });
+      gDots.appendChild(g);
+    });
+    // lines between the organs that are awake: round the corona from one to the next, and each one to the centre
+    ITEMS.forEach(function(i){ if (i.h && i.h.state > 0) awake.push(i); });
+    awake.sort(function(a, b){ return Math.atan2(a.y - C, a.x - C) - Math.atan2(b.y - C, b.x - C); });
+    awake.forEach(function(i, n){
+      gTri.appendChild(svg('line', {'class': 'tri', x1: i.x, y1: i.y, x2: C, y2: C}));
+      var o = awake[(n + 1) % awake.length];
+      if (awake.length > 1 && (awake.length > 2 || n === 0)) gTri.appendChild(svg('line', {'class': 'tri', x1: i.x, y1: i.y, x2: o.x, y2: o.y}));
+    });
+  }
+  function drawSky(){                             // the sky ring: where sun, moon and planets stand this minute
+    var sky = skyAt(Date.now(), anchorLon || 0), rs = shell('sky');
+    var awake = HUDS.filter(function(h){ return h.state > 0; });
+    clear(gSky);
+    gSky.appendChild(svg('circle', {'class': 'skyring', cx: C, cy: C, r: rs}));
+    for (var t = 0; t < 360; t += 30) {
+      var p = onSky(t, rs - 5, sky), q = onSky(t, rs + 5, sky);
+      gSky.appendChild(svg('line', {'class': 'tick', x1: p[0], y1: p[1], x2: q[0], y2: q[1]}));
+    }
+    var S = onSky(sky.sun, rs, sky), M = onSky(sky.moon, rs, sky);
+    gSky.appendChild(svg('path', {'class': 'syz', d: 'M' + C + ',' + C + ' L' + S[0] + ',' + S[1] + ' L' + M[0] + ',' + M[1] + ' Z'}));
+    var last = null, stack = 0;
+    WANDER.map(function(w){ return {name: w[0], size: w[1], colour: w[2], lon: sky[w[0]]}; })
+      .sort(function(a, b){ return a.lon - b.lon; })
+      .forEach(function(w){
+        var p = onSky(w.lon, rs, sky), g = svg('g', {'class': 'wander'});
+        stack = last != null && w.lon - last < 9 ? stack + 1 : 0; last = w.lon;   // close together: the names step down
+        var toward = p[0] < C ? 1 : -1;                                           // the name stands beside its mark, on the side towards the middle
+        g.appendChild(svg('circle', {cx: p[0], cy: p[1], r: w.size, fill: w.colour, 'fill-opacity': w.name === 'moon' ? (0.3 + 0.7 * sky.lit).toFixed(2) : '.95'}));
+        g.appendChild(svg('text', {'class': 'halo', x: p[0] + toward * (w.size + 6), y: p[1] + 4 + stack * 14, 'text-anchor': toward > 0 ? 'start' : 'end'}, w.name));
+        g.appendChild(svg('title', {}, w.name + ' \u00b7 ecliptic longitude ' + w.lon.toFixed(1) + '\u00b0' +
+          (w.name === 'moon' ? ' \u00b7 ' + moonName(sky.elong) + ', ' + Math.round(sky.lit * 100) + '% lit' : '')));
+        gSky.appendChild(g);
+      });
+    rest = (awake.length ? awake.length + ' awake \u00b7 ' : 'one body \u00b7 eight layers \u00b7 ') +
+      'sun ' + Math.round(sky.sun) + '\u00b0 \u00b7 moon ' + moonName(sky.elong) + ' ' + Math.round(sky.lit * 100) + '% \u00b7 ' +
+      (anchorLon == null ? 'Greenwich meridian up' : 'the meridian over the anchor up') + (klein ? ' \u00b7 inverted' : '') + ' \u00b7 rings not to scale';
+    if (!told) say.textContent = rest;
+  }
+  function draw(){ drawBody(); drawSky(); }
+
+  function home(h){ return view === 'layers' ? h.view : h.disc; }
+  function fit(h){
+    if (!h.frame) return;
+    var inDisc = h.frame.parentNode === h.disc;
+    h.frame.style.setProperty('--k', String(inDisc ? (h.disc.clientHeight || 56) / VIRTUAL_H : (h.view.clientWidth || 320) / VIRTUAL_W));
+  }
   function paint(){
     var front = null, awake = [];
+    board.classList.toggle('klein', klein); board.classList.toggle('layers', view === 'layers');
+    kKlein.setAttribute('aria-pressed', klein ? 'true' : 'false'); kLayers.setAttribute('aria-pressed', view === 'layers' ? 'true' : 'false');
+    stage.classList.toggle('small', stage.clientWidth < 520);
+    layout();
     HUDS.forEach(function(h){
       if (!h.card) return;
-      h.card.className = 'cell organ' + (h.state === 2 ? ' touch' : h.state === 1 ? ' see' : '');
+      var st = h.state === 2 ? ' touch' : h.state === 1 ? ' see' : '';
+      h.card.className = 'cell organ' + st;
       h.chip.setAttribute('aria-pressed', h.state ? 'true' : 'false');
-      h.chip.title = h.label + (h.state === 2 ? ' - in front, takes the mouse' : h.state === 1 ? ' - awake in its place; click the miniature to bring it to the front' : ' - asleep');
+      h.chip.title = h.label + (h.state === 2 ? ' - in front, takes the mouse' : h.state === 1 ? ' - awake; click to let it sleep' : ' - asleep');
       if (h.state && !h.frame) {
         var f = document.createElement('iframe');
         f.className = 'hud-mini'; f.title = h.label + ' HUD'; f.src = h.url;
         // Esc from inside a HUD too, where the HUD is one of our own pages
         f.addEventListener('load', function(){ try { f.contentWindow.addEventListener('keydown', esc); } catch (e) {} });
-        h.view.appendChild(f); h.frame = f; fit(h);
+        home(h).appendChild(f); h.frame = f;
         void f.offsetWidth;                        // let it start from clear so it fades in instead of popping
       }
-      if (h.frame && !h.state) { h.view.removeChild(h.frame); h.frame = null; }
+      if (h.frame && !h.state) { h.frame.parentNode.removeChild(h.frame); h.frame = null; }
+      if (h.frame && h.frame.parentNode !== home(h)) home(h).appendChild(h.frame);   // unrolled or rolled back: the view moves house
       if (h.frame) h.frame.className = 'hud-mini on' + (h.state === 2 ? ' touch' : '');
+      h.disc.className = 'disc' + st + (h.frame && h.frame.parentNode === h.disc ? ' live' : '');
+      h.disc.setAttribute('aria-pressed', h.state ? 'true' : 'false');
+      h.disc.setAttribute('aria-label', h.label + ', ' + h.layer + ' layer, ' + h.face + (h.state === 2 ? ', in front' : h.state === 1 ? ', awake - press to bring it to the front' : ', asleep - press to wake'));
+      h.disc.title = h.label + ' \u2014 ' + h.say;
+      fit(h);
       if (h.state) awake.push(h);
       if (h.state === 2) front = h;
     });
+    ITEMS.forEach(function(i){
+      if (!i.h) return;
+      var s = i.h.disc.style; s.setProperty('--x', (i.x / 10).toFixed(3) + '%'); s.setProperty('--y', (i.y / 10).toFixed(3) + '%'); s.setProperty('--d', (i.d / 10).toFixed(3) + '%');
+    });
+    draw();
     Object.keys(LAYERS).forEach(function(k){
       var L = LAYERS[k], folded = L.el.classList.contains('folded');
-      if (L.spot) {
-        L.spot.classList.toggle('lit', L.huds.some(function(h){ return h.state > 0; }));
-        L.spot.classList.toggle('folded', folded);
-      }
       Array.prototype.forEach.call(L.el.querySelectorAll('.fold'), function(b){ b.setAttribute('aria-expanded', folded ? 'false' : 'true'); });
     });
     back.hidden = !front;
     if (front) back.textContent = '\u25c9 back to the body \u2014 ' + front.label + ' (Esc)';
     document.documentElement.style.overflow = front ? 'hidden' : '';
-    say.textContent = awake.length ? awake.length + ' awake \u00b7 ' + awake.map(function(h){ return h.layer + ': ' + h.label; }).join(' \u00b7 ') : REST;
-    var tag = awake.map(function(h){ return h.id + (h.state === 2 ? '!' : ''); }).join(',');
-    var want = tag ? '#huds=' + tag : '';
-    if (location.hash !== want && (want || /^#huds=/.test(location.hash))) history.replaceState(null, '', location.pathname + location.search + want);
+    var parts = [], tag = awake.map(function(h){ return h.id + (h.state === 2 ? '!' : ''); }).join(',');
+    if (tag) parts.push('huds=' + tag); if (klein) parts.push('klein'); if (view === 'layers') parts.push('layers');
+    var want = parts.length ? '#' + parts.join('&') : '';
+    if (location.hash !== want && (want || /^#(huds=|klein|layers)/.test(location.hash))) history.replaceState(null, '', location.pathname + location.search + want);
   }
   function set(h, s){
     if (s === 2) HUDS.forEach(function(o){ if (o !== h && o.state === 2) o.state = 1; });   // one HUD in front at a time
     h.state = s; paint();
   }
   function esc(e){ if (e.key === 'Escape') { HUDS.forEach(function(h){ if (h.state === 2) h.state = 1; }); paint(); } }
-  function go(L){                                  // a place on the sphere: open that layer and go to it
+  function go(L, at){                              // a ring or a mark on the corona: open that layer below and go to it
     L.el.classList.remove('folded'); paint();
-    var at = L.el.querySelector('.face-head');
+    at = at || L.el.querySelector('.face-head');
     if (at && at.scrollIntoView) at.scrollIntoView({behavior: calm ? 'auto' : 'smooth', block: 'center'});
     L.el.classList.add('here'); setTimeout(function(){ L.el.classList.remove('here'); }, 2400);
   }
   function fromHash(){
-    var m = /^#huds=(.*)$/.exec(location.hash); if (!m) return;
-    var names = decodeURIComponent(m[1]).split(','), fronted = false;
+    var names = null, k = false, v = 'corona', ours = false;
+    location.hash.slice(1).split('&').forEach(function(t){
+      if (/^huds=/.test(t)) { names = decodeURIComponent(t.slice(5)).split(','); ours = true; }
+      else if (t === 'klein') { k = true; ours = true; }
+      else if (t === 'layers') { v = 'layers'; ours = true; }
+    });
+    if (!ours) return false;                       // #top, #down and the like are not ours
+    klein = k; view = v; names = names || [];
+    var fronted = false;
     HUDS.forEach(function(h){
       h.state = names.indexOf('all') >= 0 || names.indexOf(h.id) >= 0 ? 1 : names.indexOf(h.id + '!') >= 0 && !fronted ? 2 : 0;
       if (h.state === 2) fronted = true;
       if (h.state && LAYERS[h.layer]) LAYERS[h.layer].el.classList.remove('folded');
     });
-    paint();
+    paint(); return true;
   }
 
   Object.keys(LAYERS).forEach(function(k){
@@ -767,17 +1010,26 @@ setInterval(rotatePainting, 20000);
       b.title = 'fold or open the ' + k + ' layer';
       b.addEventListener('click', function(){ L.el.classList.toggle('folded'); paint(); });
     });
-    if (L.spot) {
-      L.spot.addEventListener('click', function(){ go(L); });
-      L.spot.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(L); } });
-    }
   });
+  kAll.addEventListener('click', function(){ HUDS.forEach(function(h){ if (!h.state) h.state = 1; }); paint(); });
+  kNone.addEventListener('click', function(){ HUDS.forEach(function(h){ h.state = 0; }); paint(); });
+  kKlein.addEventListener('click', function(){ klein = !klein; paint(); });
+  kLayers.addEventListener('click', function(){ view = view === 'layers' ? 'corona' : 'layers'; paint(); });
   back.addEventListener('click', function(){ esc({key: 'Escape'}); });
   document.addEventListener('keydown', esc);
   window.addEventListener('hashchange', fromHash);
-  if (window.ResizeObserver) new ResizeObserver(function(){ HUDS.forEach(fit); }).observe(board);
-  else window.addEventListener('resize', function(){ HUDS.forEach(fit); });
-  if (/^#huds=/.test(location.hash)) fromHash(); else paint();
+  // the gate tells where its anchor stands on the earth each time the page fills; that turns the sky to the right meridian
+  var fill = window.renderTemporal;
+  if (typeof fill === 'function') window.renderTemporal = function(t, sun){
+    try { var lon = sun && sun.anchor && sun.anchor.lon; if (typeof lon === 'number' && lon !== anchorLon) { anchorLon = lon; drawSky(); } } catch (e) {}
+    return fill.apply(this, arguments);
+  };
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(function(){ stage.classList.toggle('small', stage.clientWidth < 520); HUDS.forEach(fit); });
+    ro.observe(board); ro.observe(stage); HUDS.forEach(function(h){ if (h.disc) ro.observe(h.disc); });
+  } else window.addEventListener('resize', function(){ HUDS.forEach(fit); });
+  setInterval(drawSky, 60000);                        // the sky moves a quarter of a degree a minute
+  if (!fromHash()) paint();
 })();
 </script>
 <!-- HUD-OVERLAY:END -->
