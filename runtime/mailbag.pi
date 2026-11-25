@@ -63,14 +63,29 @@ def name_of(raw):
 
 
 def subject_of(raw):
+    """The Subject of a message, read tolerantly.
+
+    Mail stored by earlier versions of the receiver is damaged in two ways a strict parser gives up on:
+    doubled carriage returns (\\r\\r\\n, written by a Windows gate) and folded header lines that lost
+    their leading whitespace. So the header block is scanned by hand; the stored bytes stay as they are.
+    """
     import email.header
-    import email.parser
-    msg = email.parser.BytesHeaderParser().parsebytes(raw[:65536])
-    subject = msg.get("Subject", "") or ""
-    try:
-        return str(email.header.make_header(email.header.decode_header(subject)))
-    except Exception:
-        return str(subject)
+    head = re.sub(rb"\r+\n", b"\n", raw[:65536]).split(b"\n\n", 1)[0].decode("utf-8", "replace")
+    lines = head.split("\n")
+    for i, line in enumerate(lines):
+        if line[:8].lower() != "subject:":
+            continue
+        parts = [line[8:]]
+        for more in lines[i + 1:]:
+            if re.match(r"[A-Za-z0-9-]+:(\s|$)", more):
+                break
+            parts.append(more)
+        subject = " ".join(p.strip() for p in parts)
+        try:
+            return str(email.header.make_header(email.header.decode_header(subject)))
+        except Exception:
+            return subject
+    return ""
 
 
 def shelf_for(rcpt, raw=b""):
