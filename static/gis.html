@@ -221,6 +221,9 @@ main.gaia-shell .fog-overlay .reveal-pct{color:#0f8;font-size:16px;font-weight:b
 main.gaia-shell .fog-overlay .reveal-label{color:#666;font-size:8px}
 @media (prefers-reduced-motion: reduce){main.gaia-shell *,main.gaia-shell *::before,main.gaia-shell *::after{animation:none!important;transition:none!important}}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/bingocube.js"></script>
 </head>
 <body>
 <nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
@@ -228,7 +231,7 @@ main.gaia-shell .fog-overlay .reveal-label{color:#666;font-size:8px}
 <header>
   <h1>&#x1F30D; GAIA footPrint</h1>
   <span class="tag live">GIS LIVE</span>
-  <span class="coords" id="hoverCoords">42.7325°N, 84.4855°W</span>
+  <span class="coords" id="hoverCoords">42.7°N, 84.5°W</span>
 </header>
 
 <div id="map"></div>
@@ -247,11 +250,8 @@ main.gaia-shell .fog-overlay .reveal-label{color:#666;font-size:8px}
 
 <div class="layer-control" id="layerCtrl">
   <h3>LAYERS</h3>
-  <label class="layer-toggle"><input type="checkbox" checked data-layer="parcels"><span class="swatch" style="background:#FFD700"></span> Parcels</label>
   <label class="layer-toggle"><input type="checkbox" checked data-layer="gates"><span class="swatch" style="background:#FF4444"></span> Gates</label>
-  <label class="layer-toggle"><input type="checkbox" checked data-layer="infra"><span class="swatch" style="background:#00FF88"></span> Infrastructure</label>
   <label class="layer-toggle"><input type="checkbox" data-layer="shadows"><span class="swatch" style="background:#8844FF"></span> Shadowcast</label>
-  <label class="layer-toggle"><input type="checkbox" data-layer="family"><span class="swatch" style="background:#FF88CC"></span> Family</label>
   <label class="layer-toggle"><input type="checkbox" data-layer="investigation"><span class="swatch" style="background:#FF1744"></span> Investigation (625)</label>
   <label class="layer-toggle"><input type="checkbox" data-layer="falseFaces"><span class="swatch" style="background:#FF0000"></span> False Faces (19)</label>
   <label class="layer-toggle"><input type="checkbox" checked data-layer="satellite"><span class="swatch" style="background:#888"></span> Satellite</label>
@@ -264,7 +264,7 @@ main.gaia-shell .fog-overlay .reveal-label{color:#666;font-size:8px}
 
 <div class="shell-rings">
   <h3>SHADOWCAST</h3>
-  <div class="shell-row" onclick="flyToShell(0)"><span class="num">0</span> Nest — 100m</div>
+  <div class="shell-row" onclick="flyToShell(0)"><span class="num">0</span> Nest — the town</div>
   <div class="shell-row" onclick="flyToShell(1)"><span class="num">1</span> City — 15km</div>
   <div class="shell-row" onclick="flyToShell(2)"><span class="num">2</span> State — 500km</div>
   <div class="shell-row" onclick="flyToShell(3)"><span class="num">3</span> Nation — 5000km</div>
@@ -284,20 +284,23 @@ main.gaia-shell .fog-overlay .reveal-label{color:#666;font-size:8px}
 </footer>
 
 <script>
-const ORIGIN = [42.7325, -84.4855];
+// TOWN LEVEL. Gaia's home is shown as the Lansing area and no finer: one point, good to about ten kilometres.
+// No parcels, no positions of single machines, no people. Do not put finer positions back on this page.
+const ORIGIN = [42.7, -84.5];
+const TOWN_ZOOM = 11;
 const SHELLS = [
-  {name:'THE NEST',     radius:100,     zoom:18},
+  {name:'THE NEST',     radius:15000,   zoom:11},
   {name:'THE CITY',     radius:15000,   zoom:12},
   {name:'THE STATE',    radius:500000,  zoom:7},
   {name:'THE NATION',   radius:5000000, zoom:4},
   {name:'THE WORLD',    radius:20000000,zoom:2},
   {name:'THE ORBITS',   radius:36000000,zoom:1},
   {name:'THE COSMOS',   radius:0,       zoom:1},
-  {name:'THE FOLD',     radius:100,     zoom:18}
+  {name:'THE FOLD',     radius:15000,   zoom:11}
 ];
 
 const map = L.map('map',{
-  center: ORIGIN, zoom: 17,
+  center: ORIGIN, zoom: TOWN_ZOOM,
   zoomControl: false,
   attributionControl: false
 });
@@ -314,18 +317,6 @@ const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/servi
 
 const layers = {};
 
-// PARCELS
-const parcelStyle = {color:'#FFD700',weight:2,fillColor:'#FFD700',fillOpacity:0.08};
-// PARCELS — only visible at high zoom (fog of war protects home location)
-layers.parcels = L.layerGroup([
-  L.polygon([
-    [42.7328,-84.4860],[42.7328,-84.4854],[42.7322,-84.4854],[42.7322,-84.4860]
-  ], {...parcelStyle}).bindPopup('<b>Node Alpha</b><br>LAN 1 / Brain Side'),
-  L.polygon([
-    [42.7328,-84.4854],[42.7328,-84.4848],[42.7322,-84.4848],[42.7322,-84.4854]
-  ], {...parcelStyle,fillColor:'#FF9100',color:'#FF9100'}).bindPopup('<b>Node Beta</b><br>LAN 2 / Extension')
-]);
-
 // GATES
 function gateIcon(color,label) {
   return L.divIcon({
@@ -334,50 +325,32 @@ function gateIcon(color,label) {
   });
 }
 
-// GATES — fog of war: IPs hidden, only role+bingo shown publicly
+// GATES — which machines there are and what each does; where they stand is the town, nothing finer
 const gateData = [
-  {name:'eastGate',  zk:'cef3f844', role:'BRAIN',          lat:42.7326, lon:-84.4858, color:'#0f8'},
-  {name:'northGate', zk:'8197ed06', role:'HEART',           lat:42.7327, lon:-84.4857, color:'#ff4444'},
-  {name:'sporeGate', zk:'5bfa4f77', role:'FORGE',           lat:42.7325, lon:-84.4859, color:'#ff9100'},
-  {name:'ironGate',  zk:'0a6bb165', role:'FORGE 2',         lat:42.7324, lon:-84.4856, color:'#e040fb'},
-  {name:'graftGate', zk:'9064652c', role:'GRAFT',           lat:42.7327, lon:-84.4859, color:'#448aff'},
-  {name:'deckGate',  zk:'deck0000', role:'DISPLAY',         lat:42.7325, lon:-84.4857, color:'#666'},
-  {name:'blueGate',  zk:'4ad345b8', role:'IDE',             lat:42.7326, lon:-84.4851, color:'#448aff'},
-  {name:'swiftGate', zk:'swift000', role:'ASLEEP',          lat:42.7325, lon:-84.4850, color:'#333'},
-  {name:'frameGate', zk:'bfcdaced', role:'FACE',            lat:42.7324, lon:-84.4852, color:'#00bcd4'},
+  {name:'eastGate',  zk:'cef3f844', role:'BRAIN'},
+  {name:'northGate', zk:'8197ed06', role:'HEART'},
+  {name:'sporeGate', zk:'5bfa4f77', role:'FORGE'},
+  {name:'ironGate',  zk:'0a6bb165', role:'FORGE 2'},
+  {name:'graftGate', zk:'9064652c', role:'GRAFT'},
+  {name:'deckGate',  zk:'deck0000', role:'DISPLAY'},
+  {name:'blueGate',  zk:'4ad345b8', role:'IDE'},
+  {name:'swiftGate', zk:'swift000', role:'ASLEEP'},
+  {name:'frameGate', zk:'bfcdaced', role:'FACE'},
 ];
-layers.gates = L.layerGroup(gateData.map(g =>
-  L.marker([g.lat,g.lon],{icon:gateIcon(g.color,g.name)})
-    .bindPopup('<b>'+g.name+'</b><br>zk:'+g.zk+'<br>'+g.role)
-    .bindTooltip(g.name,{permanent:false,direction:'top',offset:[0,-8],className:''})
-));
-
-// INFRASTRUCTURE — topology visible, no personal attribution
-layers.infra = L.layerGroup([
-  L.polyline([[42.7325,-84.4857],[42.7325,-84.4851]],{color:'#00FF88',weight:3,dashArray:'6,4'})
-    .bindPopup('<b>10G Fiber Backbone</b><br>Latency: 0.87ms<br>Node Alpha ↔ Node Beta'),
-  L.polyline([[42.7323,-84.4858],[42.7322,-84.4855],[42.7323,-84.4852],[42.7324,-84.4850]],{color:'#FFD700',weight:1,dashArray:'3,6',opacity:0.5})
-    .bindPopup('Transit Path')
+layers.gates = L.layerGroup([
+  L.marker(ORIGIN,{icon:gateIcon('#0f8','Gaia')})
+    .bindPopup('<b>Gaia — the Lansing area</b><br>' + gateData.length + ' gates<br>' + gateData.map(g => g.name+' · '+g.role).join('<br>'))
+    .bindTooltip('Gaia · Lansing area',{permanent:false,direction:'top',offset:[0,-8],className:''})
 ]);
 
 // SHADOWCAST RINGS
 const shellColors = ['#d4af37','#ff9100','#448aff','#e040fb','#00bcd4','#76ff03','#ff1744','#d4af37'];
 layers.shadows = L.layerGroup();
-[100, 500, 2000, 5000].forEach((r,i) => {
+[15000, 500000, 5000000].forEach((r,i) => {
   L.circle(ORIGIN,{radius:r,color:shellColors[i],weight:1,fillOpacity:0.02,dashArray:'4,8'})
-    .bindPopup('Shell '+i+': '+SHELLS[i].name+' ('+r+'m)')
+    .bindPopup('Shell '+(i+1)+': '+SHELLS[i+1].name+' ('+(r/1000)+' km)')
     .addTo(layers.shadows);
 });
-
-// FAMILY — ZK protected. No names in DOM. Bingo identity only.
-layers.family = L.layerGroup([
-  L.marker([42.7326,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
-    .bindPopup('<b>♥ Resident Alpha</b><br>zk:kev1n_m0k'),
-  L.marker([42.7325,-84.4857],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
-    .bindPopup('<b>♥ Resident Beta</b><br>zk:h34th3r_h'),
-  L.marker([42.7325,-84.4851],{icon:L.divIcon({html:'<div style="color:#FF88CC;font-size:14px">♥</div>',iconSize:[14,14],className:''})})
-    .bindPopup('<b>♥ Resident Gamma</b><br>zk:d4s34n_m'),
-]);
 
 // INVESTIGATION PINS
 const investigationPins = [
@@ -575,7 +548,7 @@ const INVESTIGATION_BINGO_PINS = [
   {id:'false_face_blankenship', lat:37.7782, lon:-81.1882, type:'false_face', label:'FALSE FACE: Don Blankenship'},
   {id:'false_face_roland_martin', lat:42.35, lon:-83.06, type:'false_face', label:'FALSE FACE: Roland Martin — The Organ Grinder'},
   {id:'false_face_coristine', lat:38.9072, lon:-77.0365, type:'false_face', label:'FALSE FACE: Edward Coristine'},
-  {id:'true_face_kevin', lat:42.7325, lon:-84.4857, type:'true_face', label:'TRUE FACE: Kevin Mok — Father. Builder.'},
+  {id:'true_face_kevin', lat:42.7, lon:-84.5, type:'true_face', label:'TRUE FACE: Kevin Mok — Father. Builder.'},
   {id:'true_face_cross', lat:29.2097, lon:-99.7862, type:'true_face', label:'TRUE FACE: Brett Cross — Uvalde parent.'},
   {id:'true_face_burnam', lat:32.7555, lon:-97.3308, type:'true_face', label:'TRUE FACE: Lon Burnam — Spoke truth to power.'},
   {id:'addr-dykema-lansing', lat:42.7335, lon:-84.5553, type:'institution', label:'Dykema Gossett — 201 Townsend St, Lansing'},
@@ -628,25 +601,9 @@ function rebuildBingoLayer() {
   document.getElementById('fogEntities').textContent = visible;
 }
 
-// PRIVACY FOG — show/hide sensitive layers based on zoom
+// The home is one town-level marker; there is nothing finer on this page to hide or show.
 function updatePrivacyLayers() {
-  let z = map.getZoom();
-  
-  // Parcels: only at zoom >= 16 (you have to be very close)
-  if (z >= 16) { if (!map.hasLayer(layers.parcels)) map.addLayer(layers.parcels); }
-  else { map.removeLayer(layers.parcels); }
-  
-  // Gates: only at zoom >= 14
-  if (z >= 14) { if (!map.hasLayer(layers.gates)) map.addLayer(layers.gates); }
-  else { map.removeLayer(layers.gates); }
-  
-  // Family: only at zoom >= 17 (deepest fog)
-  if (z >= 17) { if (!map.hasLayer(layers.family)) map.addLayer(layers.family); }
-  else { map.removeLayer(layers.family); }
-  
-  // Infra: only at zoom >= 15
-  if (z >= 15) { if (!map.hasLayer(layers.infra)) map.addLayer(layers.infra); }
-  else { map.removeLayer(layers.infra); }
+  if (!map.hasLayer(layers.gates)) map.addLayer(layers.gates);
 }
 
 map.on('zoomend', function() {
