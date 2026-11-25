@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""wordgrid.pi — Gaia's own place words. A place on Earth as three or four words from OUR list.
+
+    kevin's address    who#where@realm       Tamison.ecoPrimal.attsi#word.word.word@HOME
+    the part after #   three words = a block (about 76 m north-south), four words = a doorstep (about 1.2 m)
+
+How it works. The list (data/wordgrid/words-v0.txt) holds 4,096 words. A word's line number is its
+place on a 64 x 64 street grid: row = number // 64 (south to north), column = number % 64 (west to
+east). The first word cuts the whole Earth into 64 x 64 squares, the second cuts that square into
+64 x 64, and so on. So:
+
+  - two places that share their first words are near each other, like a shared city and street;
+  - neighbouring squares have neighbouring words (the list is alphabetical), so a small slip lands
+    next door, not on another continent;
+  - distance needs no service and no licence: turn both addresses back into grid numbers and subtract.
+    grid_distance2() is that squared distance on the grid; metres() is the real distance on the globe.
+
+Nothing here calls out. The list is ours: it is drawn from the words of the library - sporePrint first,
+then the investigation sites (see `make-words`).
+It is version 0, a draft. Changing the list changes every address, so it must be frozen before use.
+
+Usage:
+    python runtime/wordgrid.pi encode <lat> <lon> [3|4]
+    python runtime/wordgrid.pi decode <word.word.word[.word]>
+    python runtime/wordgrid.pi distance <words> <words>
+    python runtime/wordgrid.pi address <who#where@realm>
+    python runtime/wordgrid.pi make-words <dir of .md files> [<dir> ...]    build the list from our own writing
+"""
+import json
+import math
+import re
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+WORDS_FILE = REPO / "data" / "wordgrid" / "words-v0.txt"
+SIDE = 64            # the grid one word spans, per side
+COUNT = SIDE * SIDE  # 4,096 words
+_WORDS = None
+
+
+class GridError(ValueError):
+    pass
+
+
+def words():
+    global _WORDS
+    if _WORDS is None:
+        got = [w.strip() for w in WORDS_FILE.read_text(encoding="utf-8").splitlines() if w.strip() and not w.startswith("#")]
+        if len(got) != COUNT or len(set(got)) != COUNT:
+            raise GridError("%s must hold exactly %d different words, it holds %d" % (WORDS_FILE.name, COUNT, len(set(got))))
+        _WORDS = got
+    return _WORDS
+
+
+def _index():
+    return {w: i for i, w in enumerate(words())}
+
+
+def to_grid(lat, lon, n=3):
+    """(x, y) on the grid of n words: x counts east from 180 W, y counts north from the south pole."""
+    if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lon <= 180.0):
+        raise GridError("latitude must be -90..90 and longitude -180..180")
+    size = SIDE ** n
+    return min(int((lon + 180.0) / 360.0 * size), size - 1), min(int((lat + 90.0) / 180.0 * size), size - 1)
+
+
+def encode(lat, lon, n=3):
+    """The n words of the square that holds (lat, lon)."""
+    x, y = to_grid(lat, lon, n)
+    w = words()
+    out = []
+    for level in range(n):
+        shift = 6 * (n - 1 - level)
+        out.append(w[((y >> shift) & 63) * SIDE + ((x >> shift) & 63)])
+    return ".".join(out)
+
+
+def grid_of(place):
+    """(x, y, n) for a place written in words."""
+    idx = _index()
+    parts = [p for p in re.split(r"[.\s]+", place.strip().lower()) if p]
+    if not 1 <= len(parts) <= 5:
+        raise GridError("a place is one to five words")
+    x = y = 0
+    for p in parts:
+        if p not in idx:
+            raise GridError("'%s' is not one of our words" % p)
+        x, y = (x << 6) | (idx[p] % SIDE), (y << 6) | (idx[p] // SIDE)
+    return x, y, len(parts)
+
+
+def decode(place):
+    """The square a place names: its centre, and its size in degrees and in metres."""
+    x, y, n = grid_of(place)
+    size = SIDE ** n
+    dlat, dlon = 180.0 / size, 360.0 / size
+    lat, lon = -90.0 + (y + 0.5) * dlat, -180.0 + (x + 0.5) * dlon
+    return {"lat": round(lat, 7), "lon": round(lon, 7), "words": n, "height_m": round(dlat * 111320.0, 2),
+            "width_m": round(dlon * 111320.0 * math.cos(math.radians(lat)), 2)}
+
+
+def grid_distance2(a, b):
+    """Squared distance between two places, counted in squares of the finer of the two grids.
+    Exact arithmetic on whole numbers; east-west wraps around the globe."""
+    ax, ay, an = grid_of(a)
+    bx, by, bn = grid_of(b)
+    n = max(an, bn)
+    ax, ay = ax << 6 * (n - an), ay << 6 * (n - an)
+    bx, by = bx << 6 * (n - bn), by << 6 * (n - bn)
+    dx = abs(ax - bx)
+    dx = min(dx, SIDE ** n - dx)
+    return dx * dx + (ay - by) ** 2
+
+
+def metres(a, b):
+    """Distance over the globe between the centres of two places."""
+    p, q = decode(a), decode(b)
+    la1, lo1, la2, lo2 = map(math.radians, (p["lat"], p["lon"], q["lat"], q["lon"]))
+    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371008.8 * math.asin(math.sqrt(h))
+
+
+def parse_address(address):
+    """who#where@realm -> {"names": [...], "where": str, "realm": str, "place": square or None}.
+    The part after # is a place in our words, or a name such as GAIA."""
+    m = re.fullmatch(r"\s*([^#@\s]+)(?:#([^@\s]+))?(?:@(\S+))?\s*", address)
+    if not m:
+        raise GridError("an address reads who#where@realm")
+    who, where, realm = m.group(1), m.group(2) or "", m.group(3) or ""
+    place = None
+    if where:
+        try:
+            place = decode(where)
+        except GridError:
+            place = None
+    return {"names": who.split("."), "where": where, "realm": realm, "place": place}
+
+
+# ---------------------------------------------------------------- building the list from our own writing
+
+STOP = set("""about above after again against also although always among another around because been before being below between both cannot could
+does doing done down during each either else even ever every from further have having here hers herself himself however into itself just
+least less many might more most much must myself neither never none nothing often once only onto other others ours ourselves over rather
+same shall should since some such than that their theirs them then there these they this those through thus together under until upon
+very were what when where whether which while whom whose will with within without would your yours yourself been were does goes went
+none that's can't don't isn't aren't wasn't""".split())
+BLOCK = re.compile(r"(fuck|shit|cunt|nigg|rape|bitch|dick|cock|piss|slut|whore|nazi|kill|dead|death|murder|suicid|abus|porn|sex)")
+
+
+def _deletes(word):
+    return {word[:i] + word[i + 1:] for i in range(len(word))} | {word}
+
+
+def _stem(word):
+    for end in ("ingly", "ations", "ation", "ments", "ment", "ness", "ings", "ing", "edly", "ies", "ied", "ers", "est", "ed", "es", "ly", "er", "s"):
+        if word.endswith(end) and len(word) - len(end) >= 4:
+            return word[:-len(end)]
+    return word
+
+
+def make_words(sources, out=None):
+    """Draw 4,096 words from the .md files under the source directories: common in our own writing,
+    4-9 letters, speakable, no two a single slip apart (one letter dropped, added, changed or swapped),
+    one word per stem. Only words written in lower case count, which leaves out people's names."""
+    counts = {}
+    paths = [p for s in ([sources] if isinstance(sources, (str, Path)) else sources) for p in sorted(Path(s).rglob("*.md"))]
+    for path in paths:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        text = re.sub(r"(?s)\A\s*(\+\+\+.*?\+\+\+|---\n.*?\n---)", " ", text)       # front matter
+        text = re.sub(r"(?s)```.*?```|`[^`\n]*`|<[^>\n]+>|\{[{%].*?[%}]\}", " ", text)  # code, tags, templates
+        text = re.sub(r"\S*(://|www\.|@)\S*|\S+\.(md|rs|toml|json|html|py|sh|eco|com|org|io)\b", " ", text)
+        for w in re.findall(r"(?<![A-Za-z0-9_'-])[a-z]{4,9}(?![A-Za-z0-9_'-])", text):
+            counts[w] = counts.get(w, 0) + 1
+    picked, taken, stems = [], set(), set()
+    for w, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])):
+        if n < 2:
+            break
+        if w in STOP or BLOCK.search(w) or not re.search(r"[aeiouy]", w) or re.search(r"[^aeiouy]{4}|(.)\1\1", w):
+            continue
+        st, d = _stem(w), _deletes(w)
+        if st in stems or d & taken:
+            continue
+        picked.append(w)
+        stems.add(st)
+        taken |= d
+        if len(picked) == COUNT:
+            break
+    if len(picked) < COUNT:
+        raise GridError("only %d usable words found, %d are needed" % (len(picked), COUNT))
+    picked.sort()
+    out = Path(out) if out else WORDS_FILE
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text("\n".join(picked) + "\n", encoding="utf-8", newline="\n")
+    return {"words": len(picked), "pages_read": len(paths), "from_distinct": len(counts), "rarest_count": counts[min(picked, key=lambda w: counts[w])], "file": str(out)}
+
+
+def main(argv):
+    try:
+        if len(argv) >= 3 and argv[0] == "encode":
+            n = int(argv[3]) if len(argv) > 3 else 3
+            place = encode(float(argv[1]), float(argv[2]), n)
+            print(json.dumps({"place": place, **decode(place)}))
+        elif len(argv) == 2 and argv[0] == "decode":
+            print(json.dumps(decode(argv[1])))
+        elif len(argv) == 3 and argv[0] == "distance":
+            print(json.dumps({"grid_distance2": grid_distance2(argv[1], argv[2]), "metres": round(metres(argv[1], argv[2]), 1)}))
+        elif len(argv) == 2 and argv[0] == "address":
+            print(json.dumps(parse_address(argv[1])))
+        elif len(argv) >= 2 and argv[0] == "make-words":
+            print(json.dumps(make_words(argv[1:])))
+        else:
+            print(__doc__)
+            return 2
+    except GridError as e:
+        print("wordgrid: %s" % e, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -152,8 +152,12 @@ def _stamp(when=None):
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(when if when is not None else time.time()))
 
 
-def put(raw, rcpt="", mail_from="", tls=False, shelf=None, when=None, how="smtp"):
-    """Drop one message into the bag. Returns (name, shelf, new). Putting the same message twice changes nothing."""
+def put(raw, rcpt="", mail_from="", tls=False, shelf=None, when=None, how="smtp", log=True, extra=None):
+    """Drop one message into the bag. Returns (name, shelf, new). Putting the same message twice changes nothing.
+
+    log=False leaves no line in this gate's log, which the public repo carries: used when a whole private
+    mailbox is brought in, so that not even the count, sizes and dates of that mail are published.
+    extra is kept inside the sealed envelope only (for example the folders the message was in)."""
     if isinstance(raw, str):
         raw = raw.encode("utf-8", "replace")
     name = name_of(raw)
@@ -166,9 +170,12 @@ def put(raw, rcpt="", mail_from="", tls=False, shelf=None, when=None, how="smtp"
         _write(_path("public", name), raw)
         line.update({"to": rcpt, "from": mail_from, "tls": bool(tls)})
     else:
-        envelope = {"to": rcpt, "from": mail_from, "tls": bool(tls), "ts": line["ts"], "node": NODE}
+        envelope = {"to": rcpt, "from": mail_from, "tls": bool(tls), "ts": line["ts"], "node": NODE, "how": how}
+        if extra:
+            envelope.update(extra)
         _write(_path("sealed", name), seal(json.dumps(envelope).encode("utf-8") + b"\n" + raw))
-    _log(line)
+    if log:
+        _log(line)
     return name, shelf, True
 
 
