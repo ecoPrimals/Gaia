@@ -329,7 +329,9 @@ for(var k=0;k<l.length;k++){var s=l[k].getAttribute("src");if(s.charAt(1)!=="/"&
 if(__HAS_SNAP__)document.addEventListener("DOMContentLoaded",function(){f.call(window,B+"snap/meta.json?t="+Date.now()).then(function(r){return r.json()}).then(function(m){
 var d=document.createElement("div");d.textContent="snapshot \\u00b7 "+m.by+" \\u00b7 "+m.ts.replace("T"," ").slice(0,16)+" UTC \\u00b7 the live gate is at home";
 d.style.cssText="position:fixed;right:8px;bottom:6px;z-index:99999;font:11px monospace;color:#ccc;background:rgba(0,0,0,.55);padding:2px 7px;border-radius:3px;pointer-events:none";
-document.body.appendChild(d)}).catch(function(){})})})();</script>"""
+document.body.appendChild(d)}).catch(function(){})});
+/* the old HUD's pages beside this face ask from the root; the worker places those asks (pages-bounce/sw.js, set by pages-bounce.py) */
+if(B==="/hud/"&&"serviceWorker" in navigator)try{navigator.serviceWorker.register("/hud/sw.js",{scope:"/hud/"}).catch(function(){})}catch(e){}})();</script>"""
 
 
 def build(site):
