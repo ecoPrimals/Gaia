@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atlas — the stories, pinned above the places they are about</title>
+<meta name="description" content="A globe of the public record: every story pinned above the building, the city or the state it is about. Lansing, Detroit, Michigan, and the Library above the Library of Congress. Sun and moon stand where they really are.">
+<!--
+  THE ATLAS. One globe, drawn here on a canvas from outlines kept in this repo - nothing is fetched from anyone else,
+  no map tiles, no trackers. Two files feed it, both made by tools/atlas_build.py:
+    /static/atlas-earth.json   coastlines, lakes, borders
+    /static/atlas-pins.json    the pins: public buildings and offices, and the library's four shelves-by-place.
+                               What a pin says is the published page's own description. No homes are pinned.
+  Each pin floats above its place. Pins that stand too close to tell apart are drawn as one mark with a count;
+  pressing it goes closer until they come apart.
+
+  THE SKY is worked out here from the clock alone (Paul Schlyter's method; sun to a hundredth of a degree, moon to
+  about a third): the place the sun stands straight over, the place the moon stands straight over, and the night.
+
+  THE CORE. Three plumb lines - straight down from where you stand, straight down from under the sun, straight down
+  from under the moon - meet in one point: the centre of the earth. The length of any one of them is the unit this
+  page measures in: 1.00 = one earth radius = 6,371 km. The green line is yours, split where it crosses the outer
+  core (0.55) and the inner core (0.19). The axis runs pole to pole through the same point.
+
+  WHERE YOU STAND is yours. It is asked of your own device only when you press the key, it is used on this page
+  only, and it is not sent, logged or stored anywhere. You can also just point at the globe.
+
+  The address carries the pin (#pin=dykema) so a place can be linked.
+-->
+<style>
+:root{--ink:#c8d6e5;--dim:#8395a7;--low:#576574;--bg:#06080b;--line:#1c242d;--green:#2ecc71;--gold:#d4af37}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:13px/1.5 'Courier New',monospace;overflow:hidden}
+#globe{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab;outline:none}
+#globe.drag{cursor:grabbing}
+#globe.point{cursor:crosshair}
+#globe:focus-visible{outline:1px solid var(--low);outline-offset:-3px}
+a{color:#7fdbda}
+button{font:inherit;color:var(--ink);background:rgba(10,14,18,.86);border:1px solid var(--line);border-radius:99px;padding:3px 11px;cursor:pointer}
+button:hover,button:focus-visible{border-color:var(--dim);outline:none}
+button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var(--green)}
+#top{position:fixed;left:10px;top:8px;right:10px;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;pointer-events:none}
+#top>*{pointer-events:auto}
+#top h1{font:bold 13px 'Courier New',monospace;letter-spacing:.14em;margin:0 4px 0 0;color:var(--ink)}
+#top .what{color:var(--low);font-size:11px;margin-right:6px}
+#top .gap{flex:1 1 20px;pointer-events:none}
+.framed #top h1,.framed #top .what,.framed #home{display:none}
+#panel{position:fixed;right:10px;top:44px;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 96px);overflow:auto;background:rgba(8,11,15,.93);border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px}
+#panel h2{font:bold 13px 'Courier New',monospace;margin:0 0 2px;color:#f5f6fa;line-height:1.35}
+#panel .where{color:var(--dim);font-size:11px;margin:0 0 6px}
+#panel .say{margin:0 0 8px;font-size:12px}
+#panel .count{color:var(--low);font-size:11px;margin:0 0 6px}
+#panel ul{list-style:none;margin:0 0 6px;padding:0}
+#panel li{margin:0;padding:3px 0;border-top:1px solid var(--line);font-size:12px}
+#panel li a{text-decoration:none}
+#panel li a:hover,#panel li a:focus-visible{text-decoration:underline;outline:none}
+#panel li .tag{color:var(--low);font-size:10px;margin-left:6px}
+#panel .pin+.pin{margin-top:14px;padding-top:10px;border-top:2px solid var(--line)}
+#panel .row{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+#panel .idx button{display:flex;width:100%;gap:8px;align-items:baseline;text-align:left;border-radius:6px;border-color:transparent;background:none;padding:2px 4px}
+#panel .idx button:hover,#panel .idx button:focus-visible{background:rgba(255,255,255,.05)}
+#panel .idx .dot{flex:0 0 8px;height:8px;border-radius:50%;align-self:center}
+#panel .idx .n{margin-left:auto;color:var(--low);font-size:11px}
+#panel .lead{color:var(--dim);font-size:12px;margin:0 0 8px}
+#panel .note{color:var(--low);font-size:10.5px;margin:8px 0 0}
+#sky{position:fixed;left:10px;bottom:8px;right:10px;margin:0;color:var(--dim);font-size:11px;pointer-events:none;text-shadow:0 0 4px #000,0 0 2px #000}
+#sky b{color:var(--ink);font-weight:normal}
+#sky .g{color:var(--green)}
+@media (max-width:720px){
+  #panel{left:10px;right:10px;top:auto;bottom:62px;width:auto;max-height:42vh}
+  #top .what{display:none}
+  #sky{bottom:4px;max-height:52px;overflow:hidden;font-size:10px;line-height:1.3;background:rgba(6,8,11,.9);border-radius:6px;padding:2px 6px;left:6px;right:6px}
+}
+</style>
+</head>
+<body>
+<canvas id="globe" tabindex="0" role="application" aria-label="A globe. Drag to turn it, scroll or pinch to come closer, arrow keys and plus and minus work too. The stories are listed in the panel."></canvas>
+<div id="top">
+  <a id="home" href="/" style="text-decoration:none;color:#5aad72">gaia</a>
+  <h1>ATLAS</h1><span class="what">the stories, pinned above the places they are about</span>
+  <button type="button" data-go="world">world</button>
+  <button type="button" data-go="michigan">Michigan</button>
+  <button type="button" data-go="lansing">Lansing</button>
+  <button type="button" data-go="detroit">Detroit</button>
+  <button type="button" data-go="library">the Library</button>
+  <span class="gap"></span>
+  <button type="button" id="k-core" aria-pressed="false" title="see through to the core: the three plumb lines, the axis, and the one unit">core</button>
+  <button type="button" id="k-day" aria-pressed="false" title="let a day pass in a minute, to watch the night go round">a day a minute</button>
+</div>
+<aside id="panel" aria-live="polite"></aside>
+<p id="sky"></p>
+<script>
+(function () {
+  'use strict';
+  var DEG = Math.PI / 180, KM = 6371;
+  var KIND = {law: '#ff5c6c', state: '#ffd93d', court: '#ff9f43', school: '#f78fb3', money: '#2ecc71', media: '#c56cf0', library: '#f5f6fa', place: '#48dbfb'};
+  var KIND_SAY = {law: 'law', state: 'state office', court: 'court', school: 'school', money: 'money', media: 'media', library: 'the library', place: 'a shelf of the library'};
+  var GO = {world: [38, -88, 1], michigan: [44.2, -85.4, 6.5], lansing: [42.7325, -84.5585, 2600], detroit: [42.375, -83.07, 420], library: [38.8887, -77.0047, 60]};
+  var CORE_OUT = 3480 / KM, CORE_IN = 1221 / KM;      // where the outer and the inner core begin, in earth radii
+  var TOWNS = [['Lansing', 42.7325, -84.5555], ['Detroit', 42.3314, -83.0458], ['Grand Rapids', 42.9634, -85.6681], ['Ann Arbor', 42.2808, -83.7430],
+    ['Flint', 43.0125, -83.6875], ['Kalamazoo', 42.2917, -85.5872], ['Saginaw', 43.4195, -83.9508], ['Traverse City', 44.7631, -85.6206],
+    ['Marquette', 46.5436, -87.3954], ['Mount Pleasant', 43.5978, -84.7675], ['Midland', 43.6156, -84.2472], ['East Lansing', 42.7370, -84.4839],
+    ['Southfield', 42.4734, -83.2219], ['Troy', 42.6064, -83.1498], ['Dearborn', 42.3223, -83.1763], ['Pontiac', 42.6389, -83.2910], ['Warren', 42.5145, -83.0147],
+    ['Windsor', 42.3149, -83.0364], ['Toledo', 41.6528, -83.5379], ['Chicago', 41.8781, -87.6298], ['Milwaukee', 43.0389, -87.9065], ['Cleveland', 41.4993, -81.6944],
+    ['Toronto', 43.6532, -79.3832], ['Washington', 38.9072, -77.0369], ['New York', 40.7128, -74.0060], ['Bentonville', 36.3729, -94.2088], ['Menlo Park', 37.4530, -122.1817]];
+  var cv = document.getElementById('globe'), ctx = cv.getContext('2d'), panel = document.getElementById('panel'), skyEl = document.getElementById('sky'),
+      kCore = document.getElementById('k-core'), kDay = document.getElementById('k-day');
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, cx = 0, cy = 0, R = 1, base = 1;
+  var view = {lat: GO.world[0], lon: GO.world[1], k: GO.world[2]}, fly = null;
+  var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true;
+  if (window.top !== window) document.documentElement.classList.add('framed');
+
+  // ---------------------------------------------------------------- the sky, from the clock
+  function sky(ms) {
+    var d = ms / 86400000 - 10956;                                    // days from 1999 Dec 31, 0h UT
+    function rev(x) { return x - Math.floor(x / 360) * 360; }
+    function kepler(M, e) { var E = M + e * Math.sin(M) * (1 + e * Math.cos(M)), k = 0, dE; do { dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; } while (Math.abs(dE) > 1e-9 && ++k < 30); return E; }
+    var ws = 282.9404 + 4.70935e-5 * d, es = 0.016709 - 1.151e-9 * d, Ms = rev(356.0470 + 0.9856002585 * d), ecl = (23.4393 - 3.563e-7 * d) * DEG;
+    var E = kepler(Ms * DEG, es), lonS = Math.atan2(Math.sqrt(1 - es * es) * Math.sin(E), Math.cos(E) - es) + ws * DEG;
+    var Ls = rev(Ms + ws), ut = ((ms / 3600000) % 24 + 24) % 24, gmst = rev(Ls + 180 + ut * 15);
+    function over(lon, lat) {                                         // ecliptic place in the sky -> the place on earth it stands straight over
+      var x = Math.cos(lat) * Math.cos(lon), y = Math.cos(lat) * Math.sin(lon), z = Math.sin(lat);
+      var ye = y * Math.cos(ecl) - z * Math.sin(ecl), ze = y * Math.sin(ecl) + z * Math.cos(ecl);
+      return {lat: Math.asin(ze) / DEG, lon: rev(Math.atan2(ye, x) / DEG - gmst + 180) - 180};
+    }
+    var Nm = (125.1228 - 0.0529538083 * d) * DEG, im = 5.1454 * DEG, wm = (318.0634 + 0.1643573223 * d), Mm = rev(115.3654 + 13.0649929509 * d), em = 0.0549;
+    var Em = kepler(Mm * DEG, em), xv = 60.2666 * (Math.cos(Em) - em), yv = 60.2666 * Math.sqrt(1 - em * em) * Math.sin(Em);
+    var r = Math.sqrt(xv * xv + yv * yv), u = Math.atan2(yv, xv) + wm * DEG;
+    var xh = r * (Math.cos(Nm) * Math.cos(u) - Math.sin(Nm) * Math.sin(u) * Math.cos(im)),
+        yh = r * (Math.sin(Nm) * Math.cos(u) + Math.cos(Nm) * Math.sin(u) * Math.cos(im)), zh = r * Math.sin(u) * Math.sin(im);
+    var lonM = Math.atan2(yh, xh) / DEG, latM = Math.atan2(zh, Math.sqrt(xh * xh + yh * yh)) / DEG;
+    var Lm = rev(Nm / DEG + wm + Mm), D = (Lm - Ls) * DEG, F = (Lm - Nm / DEG) * DEG, a = Mm * DEG, b = Ms * DEG;
+    lonM += -1.274 * Math.sin(a - 2 * D) + 0.658 * Math.sin(2 * D) - 0.186 * Math.sin(b) - 0.059 * Math.sin(2 * a - 2 * D)
+      - 0.057 * Math.sin(a - 2 * D + b) + 0.053 * Math.sin(a + 2 * D) + 0.046 * Math.sin(2 * D - b) + 0.041 * Math.sin(a - b)
+      - 0.035 * Math.sin(D) - 0.031 * Math.sin(a + b) - 0.015 * Math.sin(2 * F - 2 * D) + 0.011 * Math.sin(a - 4 * D);
+    latM += -0.173 * Math.sin(F - 2 * D) - 0.055 * Math.sin(a - F - 2 * D) - 0.046 * Math.sin(a + F - 2 * D) + 0.033 * Math.sin(F + 2 * D) + 0.017 * Math.sin(2 * a + F);
+    r += -0.58 * Math.cos(a - 2 * D) - 0.46 * Math.cos(2 * D);
+    var elong = rev(lonM - lonS / DEG);
+    return {sun: over(lonS, 0), moon: over(lonM * DEG, latM * DEG), far: r, elong: elong, lit: (1 - Math.cos(elong * DEG)) / 2};
+  }
+  window.atlasSky = sky;                                              // so the numbers can be checked from outside
+  function moonName(e) { return ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'][Math.floor(((e + 22.5) % 360) / 45)]; }
+  function apart(p, q) {                                              // degrees between two places, measured at the core
+    var c = Math.sin(p.lat * DEG) * Math.sin(q.lat * DEG) + Math.cos(p.lat * DEG) * Math.cos(q.lat * DEG) * Math.cos((p.lon - q.lon) * DEG);
+    return Math.acos(Math.max(-1, Math.min(1, c))) / DEG;
+  }
+  function place(p) { return Math.abs(p.lat).toFixed(1) + '°' + (p.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(p.lon).toFixed(1) + '°' + (p.lon < 0 ? 'W' : 'E'); }
+  function now() { return Date.now() + ahead; }
+
+  // ---------------------------------------------------------------- the globe
+  var s0 = 0, c0 = 1;
+  function proj(lat, lon) {
+    var p = lat * DEG, l = (lon - view.lon) * DEG, cp = Math.cos(p), sp = Math.sin(p), cl = Math.cos(l);
+    return {x: cx + R * cp * Math.sin(l), y: cy - R * (c0 * sp - s0 * cp * cl), z: s0 * sp + c0 * cp * cl};
+  }
+  function unproj(px, py) {
+    var x = (px - cx) / R, y = -(py - cy) / R, r2 = x * x + y * y; if (r2 > 1) return null;
+    var z = Math.sqrt(1 - r2), lon = view.lon + Math.atan2(x, z * c0 - y * s0) / DEG;
+    return {lat: Math.asin(Math.max(-1, Math.min(1, y * c0 + z * s0))) / DEG, lon: lon - Math.floor((lon + 180) / 360) * 360};
+  }
+  function size() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var wide = W > 720; base = Math.min(wide ? W - 400 : W, H - (wide ? 110 : 150)) * 0.46; if (base < 90) base = 90;
+    cx = wide ? (W - 380) / 2 : W / 2; cy = wide ? H / 2 + 8 : (H - H * 0.44) / 2 + 34;
+    if (document.documentElement.classList.contains('framed') && !wide) cy = H * 0.3 + 20;
+    dirty = true;
+  }
+  function lines(set, colour, width) {
+    if (!set) return;
+    ctx.beginPath();
+    for (var i = 0; i < set.length; i++) {
+      var a = set[i], pen = false;
+      for (var j = 0; j < a.length; j += 3) {
+        var cp = a[j + 1], sp = a[j], l = a[j + 2] - view.lon * DEG, cl = Math.cos(l), z = s0 * sp + c0 * cp * cl;
+        if (z < 0) { pen = false; continue; }
+        var x = cx + R * cp * Math.sin(l), y = cy - R * (c0 * sp - s0 * cp * cl);
+        if (pen) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+        pen = true;
+      }
+    }
+    ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.stroke();
+  }
+  function grid() {
+    var k = view.k, step = k < 3 ? 30 : k < 14 ? 10 : k < 70 ? 2 : k < 350 ? 0.5 : k < 1700 ? 0.1 : 0.02;
+    var span = k < 3 ? 180 : Math.min(180, 140 / k), n = 28;
+    var la0 = Math.max(-90, Math.floor((view.lat - span) / step) * step), la1 = Math.min(90, view.lat + span);
+    var lo0 = Math.floor((view.lon - span * 1.6) / step) * step, lo1 = view.lon + span * 1.6;
+    ctx.beginPath();
+    var la, lo, i, p, pen;
+    for (la = la0; la <= la1 + 1e-9; la += step) {
+      if (Math.abs(la) > 89.99) continue; pen = false;
+      for (i = 0; i <= n * 2; i++) { p = proj(la, lo0 + (lo1 - lo0) * i / (n * 2)); if (p.z < 0) { pen = false; continue; } if (pen) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); pen = true; }
+    }
+    for (lo = lo0; lo <= lo1 + 1e-9; lo += step) {
+      pen = false;
+      for (i = 0; i <= n; i++) { p = proj(la0 + (la1 - la0) * i / n, lo); if (p.z < 0) { pen = false; continue; } if (pen) ctx.lineTo(p.x, p.y); else ctx.moveTo(p.x, p.y); pen = true; }
+    }
+    ctx.strokeStyle = 'rgba(131,149,167,.11)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  function night(sun) {
+    var a = proj(-sun.lat, sun.lon + 180), ux = a.x - cx, uy = a.y - cy, len = Math.sqrt(ux * ux + uy * uy);
+    ctx.save(); ctx.fillStyle = core ? 'rgba(0,0,0,.22)' : 'rgba(0,0,0,.46)';
+    ctx.beginPath();
+    if (len < R * 1e-4) { if (a.z > 0) ctx.arc(cx, cy, R, 0, 7); }
+    else {
+      ctx.translate(cx, cy); ctx.rotate(Math.atan2(uy, ux));
+      ctx.arc(0, 0, R, -Math.PI / 2, Math.PI / 2);
+      ctx.ellipse(0, 0, R * Math.abs(a.z), R, 0, Math.PI / 2, a.z > 0 ? 1.5 * Math.PI : -Math.PI / 2, a.z <= 0);
+    }
+    ctx.fill(); ctx.restore();
+  }
+  function word(text, x, y, colour, align, px) {
+    ctx.font = (px || 11) + "px 'Courier New',monospace"; ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(6,8,11,.92)'; ctx.strokeText(text, x, y);
+    ctx.fillStyle = colour; ctx.fillText(text, x, y);
+  }
+  function plumb(p, colour, split) {                                 // from a place on the ground straight down to the core
+    var q = proj(p.lat, p.lon), cuts = split ? [0, CORE_IN, CORE_OUT, 1] : [0, 1], gap = split ? 3 / Math.max(8, Math.hypot(q.x - cx, q.y - cy)) : 0;
+    ctx.save(); ctx.strokeStyle = colour; ctx.lineWidth = split ? 2.6 : 1.3; if (q.z < 0) ctx.setLineDash([4, 5]);
+    for (var i = 0; i + 1 < cuts.length; i++) {
+      var a = cuts[i] + (i ? gap : 0), b = cuts[i + 1] - (i + 2 < cuts.length ? gap : 0);
+      ctx.beginPath(); ctx.moveTo(cx + (q.x - cx) * a, cy + (q.y - cy) * a); ctx.lineTo(cx + (q.x - cx) * b, cy + (q.y - cy) * b); ctx.stroke();
+    }
+    ctx.restore(); return q;
+  }
+  function drawCore(s, anchor) {
+    var n = proj(90, 0), so = proj(-90, 0), f = 1.1;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(212,175,55,.75)'; ctx.lineWidth = 1.4; ctx.fillStyle = 'rgba(212,175,55,.07)';
+    ctx.beginPath(); ctx.arc(cx, cy, R * CORE_OUT, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(212,175,55,.16)'; ctx.beginPath(); ctx.arc(cx, cy, R * CORE_IN, 0, 7); ctx.fill(); ctx.stroke();
+    // the axis: one line through both poles and the core. The far half is dashed.
+    [[n, 'north pole · the top that spins'], [so, 'south pole · the still foot']].forEach(function (e) {
+      var p = e[0];
+      ctx.beginPath(); ctx.strokeStyle = 'rgba(200,214,229,.7)'; ctx.lineWidth = 1.2; ctx.setLineDash(p.z < 0 ? [3, 5] : []);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx + (p.x - cx) * f, cy + (p.y - cy) * f); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 7); ctx.fillStyle = p === n ? '#c8d6e5' : '#06080b'; ctx.fill(); ctx.stroke();
+      if (R * Math.hypot(p.x - cx, p.y - cy) > 1) word(e[1], p.x + 8, p.y + (p === n ? -9 : 11), '#c8d6e5', 'left', 10);
+    });
+    ctx.restore();
+    plumb(s.sun, '#ffd93d'); plumb(s.moon, '#c8d6e5');
+    var q = plumb(anchor, '#2ecc71', true), dx = q.x - cx, dy = q.y - cy, len = Math.hypot(dx, dy);
+    if (len > 60) {
+      var ox = -dy / len * 11, oy = dx / len * 11;
+      word('1.00', cx + dx * 0.8 + ox * 1.3, cy + dy * 0.8 + oy * 1.3, '#2ecc71', 'center', 13);
+      word('.55', cx + dx * CORE_OUT + ox, cy + dy * CORE_OUT + oy, '#d4af37', 'center', 10);
+      word('.19', cx + dx * CORE_IN + ox, cy + dy * CORE_IN + oy, '#d4af37', 'center', 10);
+    }
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 7); ctx.fillStyle = '#2ecc71'; ctx.fill();
+  }
+  function body(p, what, s) {                                        // the sun or the moon, at the place it stands over
+    var q = proj(p.lat, p.lon); if (q.z < 0 && !core) return;
+    ctx.save(); if (q.z < 0) ctx.globalAlpha = 0.45;
+    if (what === 'sun') {
+      ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 1.2; ctx.beginPath();
+      for (var i = 0; i < 8; i++) { var t = i * Math.PI / 4; ctx.moveTo(q.x + 9 * Math.cos(t), q.y + 9 * Math.sin(t)); ctx.lineTo(q.x + 13 * Math.cos(t), q.y + 13 * Math.sin(t)); }
+      ctx.stroke(); ctx.beginPath(); ctx.arc(q.x, q.y, 6, 0, 7); ctx.fillStyle = '#ffd93d'; ctx.fill();
+      word('sun overhead', q.x + 17, q.y, '#ffd93d', 'left', 10);
+    } else {
+      ctx.beginPath(); ctx.arc(q.x, q.y, 6, 0, 7); ctx.fillStyle = 'rgba(200,214,229,' + (0.25 + 0.75 * s.lit).toFixed(2) + ')'; ctx.fill();
+      ctx.strokeStyle = '#c8d6e5'; ctx.lineWidth = 1; ctx.stroke();
+      word('moon overhead', q.x + 12, q.y, '#c8d6e5', 'left', 10);
+    }
+    ctx.restore();
+  }
+  function scale() {
+    var kmPerPx = KM / R, want = 110 * kmPerPx, pow = Math.pow(10, Math.floor(Math.log(want) / Math.LN10)), nice = [1, 2, 5, 10].filter(function (m) { return m * pow <= want; }).pop() * pow;
+    var w = nice / kmPerPx, x = cx - R > 30 ? cx - Math.min(R, cx - 14) : 14, y = H - 34;
+    if (W <= 720) y = Math.min(H * 0.56 - 16, cy + R + 18);
+    ctx.strokeStyle = 'rgba(131,149,167,.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y - 4); ctx.stroke();
+    word(nice >= 1 ? nice.toLocaleString() + ' km' : Math.round(nice * 1000) + ' m', x + w + 6, y - 2, '#8395a7', 'left', 10);
+  }
+  function gather() {                                                // pins that stand too close on the screen share one mark
+    marks = [];
+    pins.slice().sort(function (a, b) { return (b.kind === 'place' || b.kind === 'library' ? 1e6 : 0) + b.n - (a.kind === 'place' || a.kind === 'library' ? 1e6 : 0) - a.n; }).forEach(function (p) {
+      var q = proj(p.lat, p.lon); if (q.z < 0.02) return;
+      for (var i = 0; i < marks.length; i++) if (Math.abs(marks[i].x - q.x) < 22 && Math.abs(marks[i].y - q.y) < 22) { marks[i].pins.push(p); return; }
+      marks.push({x: q.x, y: q.y, pins: [p]});
+    });
+  }
+  function drawPins() {
+    var taken = [], lift = 17;
+    marks.forEach(function (m) {
+      var p = m.pins[0], colour = KIND[p.kind] || '#c8d6e5', on = m.pins.some(function (q) { return chosen.indexOf(q) >= 0; }), many = m.pins.length > 1;
+      var r = many ? 8 : p.kind === 'library' || p.kind === 'place' ? 6.5 : 5;
+      ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x, m.y - lift + r); ctx.stroke();
+      ctx.beginPath(); ctx.arc(m.x, m.y, 1.6, 0, 7); ctx.fillStyle = colour; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(m.x, m.y - lift, r, 0, 7); ctx.fillStyle = many ? '#06080b' : colour; ctx.fill(); ctx.lineWidth = many ? 1.8 : 1; ctx.stroke();
+      if (on) { ctx.beginPath(); ctx.arc(m.x, m.y - lift, r + 4, 0, 7); ctx.strokeStyle = '#f5f6fa'; ctx.lineWidth = 1.4; ctx.stroke(); }
+      if (many) { ctx.font = "bold 10px 'Courier New',monospace"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = colour; ctx.fillText(String(m.pins.length), m.x, m.y - lift + 0.5); }
+      m.hx = m.x; m.hy = m.y - lift; m.r = r;
+    });
+    marks.slice().sort(function (a, b) { return picked(b) - picked(a); }).forEach(function (m) {
+      var p = m.pins.filter(function (q) { return chosen.indexOf(q) >= 0; })[0] || m.pins[0], text = short(p.name) + (m.pins.length > 1 ? '  +' + (m.pins.length - 1) : '');
+      ctx.font = "11px 'Courier New',monospace"; var w = ctx.measureText(text).width;
+      var left = m.hx + m.r + 5, box = [left - 2, m.hy - 8, left + w + 2, m.hy + 8];
+      if (box[2] > W - (W > 720 ? 385 : 4)) { left = m.hx - m.r - 5 - w; box = [left - 2, m.hy - 8, left + w + 2, m.hy + 8]; }
+      for (var i = 0; i < taken.length; i++) { var t = taken[i]; if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) return; }
+      taken.push(box); word(text, left, m.hy, KIND[p.kind] || '#c8d6e5', 'left', 11);
+    });
+    if (view.k < 4) return;                                          // towns, for bearings: only from the state's distance in, and only where no pin's name stands
+    TOWNS.forEach(function (t) {
+      var q = proj(t[1], t[2]); if (q.z < 0.05 || q.x < 0 || q.x > W || q.y < 30 || q.y > H - 30) return;
+      ctx.font = "10px 'Courier New',monospace"; var w = ctx.measureText(t[0]).width, box = [q.x - 4, q.y - 7, q.x + 8 + w, q.y + 7];
+      for (var i = 0; i < taken.length; i++) { var o = taken[i]; if (box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1]) return; }
+      for (i = 0; i < marks.length; i++) if (Math.abs(marks[i].x - q.x) < 14 && Math.abs(marks[i].y - 8 - q.y) < 18) return;
+      taken.push(box); ctx.beginPath(); ctx.arc(q.x, q.y, 1.5, 0, 7); ctx.fillStyle = '#576574'; ctx.fill(); word(t[0], q.x + 6, q.y, '#576574', 'left', 10);
+    });
+  }
+  function picked(m) { return m.pins.some(function (q) { return chosen.indexOf(q) >= 0; }) ? 1 : 0; }
+  function short(name) { var i = name.indexOf(' — '); return i > 0 ? name.slice(0, i) : name; }
+  function draw() {
+    s0 = Math.sin(view.lat * DEG); c0 = Math.cos(view.lat * DEG); R = base * view.k;
+    var s = sky(now());
+    ctx.clearRect(0, 0, W, H);
+    var g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.1, cx, cy, R);
+    g.addColorStop(0, core ? 'rgba(18,32,44,.5)' : '#12202c'); g.addColorStop(1, core ? 'rgba(8,14,20,.5)' : '#080e14');
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.clip();
+    grid();
+    if (earth) {
+      lines(earth.borders, 'rgba(87,101,116,.5)', 0.7); lines(earth.states, 'rgba(87,101,116,.55)', 0.7);
+      lines(earth.land, '#5aad72', 1.1); lines(earth.lakes, '#4d96ff', 1);
+    }
+    night(s.sun);
+    ctx.restore();
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.strokeStyle = 'rgba(90,173,114,.55)'; ctx.lineWidth = 1.2; ctx.stroke();
+    var anchor = you || chosen[0] || pins.filter(function (p) { return p.id === 'shelf-lansing'; })[0] || {lat: 42.7336, lon: -84.5555};
+    if (core) drawCore(s, anchor);
+    body(s.sun, 'sun', s); body(s.moon, 'moon', s);
+    gather(); drawPins();
+    if (you) { var q = proj(you.lat, you.lon); if (q.z > 0 || core) { ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, 7); ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.stroke(); word('you', q.x + 9, q.y, '#2ecc71', 'left', 11); } }
+    scale();
+    var t = new Date(now()), parts = ['<b>' + t.toISOString().slice(0, 16).replace('T', ' ') + ' UT</b>' + (fast ? ' (running fast)' : ''),
+      'sun overhead at <b>' + place(s.sun) + '</b>', 'moon overhead at <b>' + place(s.moon) + '</b>, ' + moonName(s.elong) + ' ' + Math.round(s.lit * 100) + '%, ' + s.far.toFixed(1) + ' radii off'];
+    if (you) parts.push('<span class="g">you</span>: sun ' + Math.round(90 - apart(you, s.sun)) + '° ' + (apart(you, s.sun) < 90 ? 'up' : 'down') + ', moon ' + Math.round(90 - apart(you, s.moon)) + '°');
+    if (core) parts.push('at the core: ' + (you ? 'you' : short(anchor.name || 'the anchor')) + '–sun ' + Math.round(apart(anchor, s.sun)) + '°, –moon ' + Math.round(apart(anchor, s.moon)) + '°, sun–moon ' + Math.round(apart(s.sun, s.moon)) + '° · <span class="g">1.00</span> = ' + KM.toLocaleString() + ' km');
+    skyEl.innerHTML = parts.join(' · ');
+  }
+
+  // ---------------------------------------------------------------- moving
+  function goTo(lat, lon, k) {
+    if (calm) { view.lat = lat; view.lon = lon; view.k = k; fly = null; dirty = true; return; }
+    var dl = lon - view.lon; dl -= Math.round(dl / 360) * 360;
+    fly = {t0: performance.now(), ms: 1100, a: {lat: view.lat, lon: view.lon, k: view.k}, b: {lat: lat, lon: view.lon + dl, k: k}};
+  }
+  function step(t) {
+    if (fly) {
+      var u = Math.min(1, (t - fly.t0) / fly.ms), e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2;
+      view.lat = fly.a.lat + (fly.b.lat - fly.a.lat) * e; view.lon = fly.a.lon + (fly.b.lon - fly.a.lon) * e;
+      view.k = Math.exp(Math.log(fly.a.k) + (Math.log(fly.b.k) - Math.log(fly.a.k)) * e);
+      if (u >= 1) fly = null; dirty = true;
+    }
+    if (fast) { ahead += (t - (step.last || t)) * 1439; dirty = true; }
+    step.last = t;
+    if (dirty) { dirty = false; draw(); }
+    requestAnimationFrame(step);
+  }
+  function zoom(f) { view.k = Math.max(0.6, Math.min(5000, view.k * f)); fly = null; dirty = true; }
+  function turn(dx, dy) { view.lon -= dx / R / DEG; view.lat = Math.max(-89.5, Math.min(89.5, view.lat + dy / R / DEG)); fly = null; dirty = true; }
+
+  var touch = {}, moved = 0, pinch = 0;
+  cv.addEventListener('pointerdown', function (e) { cv.setPointerCapture(e.pointerId); touch[e.pointerId] = {x: e.clientX, y: e.clientY}; moved = 0; pinch = 0; cv.classList.add('drag'); });
+  cv.addEventListener('pointermove', function (e) {
+    var t = touch[e.pointerId]; if (!t) { hover(e); return; }
+    var ids = Object.keys(touch);
+    if (ids.length === 2) {
+      var o = touch[ids[0] == e.pointerId ? ids[1] : ids[0]], d = Math.hypot(e.clientX - o.x, e.clientY - o.y);
+      if (pinch) zoom(d / pinch); pinch = d; moved = 99;
+    } else { turn(e.clientX - t.x, e.clientY - t.y); moved += Math.abs(e.clientX - t.x) + Math.abs(e.clientY - t.y); }
+    t.x = e.clientX; t.y = e.clientY;
+  });
+  function up(e) {
+    if (!touch[e.pointerId]) return; delete touch[e.pointerId]; pinch = 0;
+    if (!Object.keys(touch).length) cv.classList.remove('drag');
+    if (e.type === 'pointerup' && moved < 6) press(e.clientX, e.clientY);
+  }
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', function (e) { e.preventDefault(); zoom(Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0016))); }, {passive: false});
+  cv.addEventListener('keydown', function (e) {
+    var s = 40;
+    if (e.key === 'ArrowLeft') turn(s, 0); else if (e.key === 'ArrowRight') turn(-s, 0); else if (e.key === 'ArrowUp') turn(0, s); else if (e.key === 'ArrowDown') turn(0, -s);
+    else if (e.key === '+' || e.key === '=') zoom(1.4); else if (e.key === '-' || e.key === '_') zoom(1 / 1.4); else if (e.key === 'Escape') choose([]); else return;
+    e.preventDefault();
+  });
+  function markAt(x, y) { var best = null, bd = 16; marks.forEach(function (m) { var d = Math.min(Math.hypot(m.hx - x, m.hy - y), Math.hypot(m.x - x, m.y - y) + 4); if (d < bd) { bd = d; best = m; } }); return best; }
+  function hover(e) { if (!pointing) cv.style.cursor = markAt(e.clientX, e.clientY) ? 'pointer' : ''; }
+  function press(x, y) {
+    if (pointing) { var p = unproj(x, y); if (p) { you = p; pointing = false; cv.classList.remove('point'); fill(); dirty = true; } return; }
+    var m = markAt(x, y); if (!m) return;
+    choose(m.pins);
+    if (m.pins.length > 1) {                                         // go closer until they come apart
+      var far = 0, la = 0, lo = 0;
+      m.pins.forEach(function (a) { la += a.lat; lo += a.lon; m.pins.forEach(function (b) { far = Math.max(far, apart(a, b)); }); });
+      goTo(la / m.pins.length, lo / m.pins.length, Math.min(5000, Math.max(view.k * 1.8, 0.75 / Math.max(far * DEG, 1e-5))));
+    }
+  }
+
+  // ---------------------------------------------------------------- the panel
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function choose(list) {
+    chosen = list.slice(); fill(); dirty = true;
+    var want = chosen.length === 1 ? '#pin=' + chosen[0].id : '';
+    if (location.hash !== want) try { history.replaceState(null, '', location.pathname + location.search + want); } catch (e) {}
+  }
+  function fill() {
+    panel.textContent = '';
+    if (!chosen.length) {
+      panel.appendChild(el('p', 'lead', 'Every story is pinned above the place it is about. Press a pin, or pick one here.'));
+      var row = el('div', 'row'), b1 = el('button', null, you ? 'you: ' + place(you) : 'where I stand'), b2 = el('button', null, pointing ? 'now tap the globe…' : 'I’ll point');
+      b1.type = b2.type = 'button'; b1.title = 'ask this device where it is. It stays on this page: not sent, not stored.';
+      b2.title = 'tap the globe where you stand'; b2.setAttribute('aria-pressed', pointing ? 'true' : 'false');
+      b1.addEventListener('click', function () {
+        if (!navigator.geolocation) { b1.textContent = 'this device cannot say'; return; }
+        b1.textContent = 'asking this device…';
+        navigator.geolocation.getCurrentPosition(function (g) { you = {lat: g.coords.latitude, lon: g.coords.longitude}; fill(); dirty = true; },
+          function () { b1.textContent = 'not given — point instead'; }, {maximumAge: 600000, timeout: 15000});
+      });
+      b2.addEventListener('click', function () { pointing = !pointing; cv.classList.toggle('point', pointing); fill(); });
+      row.appendChild(b1); row.appendChild(b2);
+      if (you) { var b3 = el('button', null, 'forget'); b3.type = 'button'; b3.addEventListener('click', function () { you = null; fill(); dirty = true; }); row.appendChild(b3); }
+      panel.appendChild(row);
+      var idx = el('div', 'idx');
+      pins.slice().sort(function (a, b) { return b.n - a.n; }).forEach(function (p) {
+        var b = el('button'), d = el('span', 'dot'); b.type = 'button'; d.style.background = KIND[p.kind] || '#c8d6e5';
+        b.appendChild(d); b.appendChild(el('span', null, short(p.name))); b.appendChild(el('span', 'n', String(p.n)));
+        b.title = p.name + ' — ' + p.where; b.addEventListener('click', function () { show(p); }); idx.appendChild(b);
+      });
+      panel.appendChild(idx);
+      panel.appendChild(el('p', 'note', (meta.works || 0).toLocaleString() + ' works in the library' + (meta.unplaced ? ' · ' + meta.unplaced + ' not yet placed' : '') +
+        ' · the number is how many published pages name the place · public buildings only, placed to about a kilometre, no homes · where you stand never leaves this page'));
+      return;
+    }
+    var back = el('button', null, '← all places'); back.type = 'button'; back.addEventListener('click', function () { choose([]); });
+    var row2 = el('div', 'row'); row2.appendChild(back); panel.appendChild(row2);
+    chosen.forEach(function (p) {
+      var box = el('div', 'pin'), h = el('h2', null, p.name); h.style.color = KIND[p.kind] || '#f5f6fa';
+      box.appendChild(h); box.appendChild(el('p', 'where', (KIND_SAY[p.kind] || p.kind) + ' · ' + p.where));
+      if (p.say) box.appendChild(el('p', 'say', p.say));
+      box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : 'named on ' + p.n + ' published pages — start with these'));
+      var ul = el('ul');
+      p.links.forEach(function (l) {
+        var li = el('li'), a = el('a', null, l[0]); a.href = l[1]; a.target = '_blank'; a.rel = 'noopener';
+        li.appendChild(a); if (l[2] === 'card' || l[2] === 'soul' || l[2] === 'heart') li.appendChild(el('span', 'tag', l[2] === 'card' ? 'its own page' : l[2]));
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      if (chosen.length > 1) { var only = el('button', null, 'only this one'); only.type = 'button'; only.addEventListener('click', function () { show(p); }); box.appendChild(only); }
+      panel.appendChild(box);
+    });
+    panel.scrollTop = 0;
+  }
+  function show(p) {
+    choose([p]);
+    var near = pins.reduce(function (m, q) { return q === p ? m : Math.min(m, apart(p, q)); }, 180);
+    goTo(p.lat, p.lon, Math.min(5000, Math.max(3, 0.28 / Math.max(near * DEG, 1e-5))));
+  }
+  function fromHash() {
+    var m = /^#pin=([\w-]+)/.exec(location.hash), p = m && pins.filter(function (q) { return q.id === m[1]; })[0];
+    if (p) show(p); return !!p;
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) {
+    b.addEventListener('click', function () { var g = GO[b.getAttribute('data-go')]; goTo(g[0], g[1], g[2]); });
+  });
+  kCore.addEventListener('click', function () {
+    core = !core; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true;
+    if (core) {                                                       // step back and to one side, so the plumb line is seen along its length and not end-on
+      var a = you || chosen[0] || {lat: 42.7336, lon: -84.5555};
+      goTo(a.lat * 0.35, a.lon + 52, 1);
+    }
+  });
+  kDay.addEventListener('click', function () { fast = !fast; if (!fast) ahead = 0; kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; });
+  window.addEventListener('resize', size); window.addEventListener('hashchange', fromHash);
+  setInterval(function () { dirty = true; }, 20000);                  // the sun moves a quarter of a degree a minute
+
+  function ready(set) { return set.map(function (flat) { var a = new Float32Array(flat.length / 2 * 3); for (var i = 0, j = 0; i < flat.length; i += 2, j += 3) { var la = flat[i + 1] / 100 * DEG; a[j] = Math.sin(la); a[j + 1] = Math.cos(la); a[j + 2] = flat[i] / 100 * DEG; } return a; }); }
+  function get(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error(url + ' ' + r.status); return r.json(); }); }
+  size(); fill(); requestAnimationFrame(step);
+  get('/static/atlas-earth.json').then(function (e) { earth = {land: ready(e.land), lakes: ready(e.lakes), states: ready(e.states), borders: ready(e.borders)}; dirty = true; })
+    .catch(function () { skyEl.textContent = 'the outlines did not load — the pins still work'; });
+  get('/static/atlas-pins.json').then(function (d) { pins = d.pins; meta = d; fill(); dirty = true; if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700); })
+    .catch(function () { panel.textContent = 'The pins did not load.'; });
+  window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { ahead = ms - Date.now(); dirty = true; }};
+})();
+</script>
+</body>
+</html>

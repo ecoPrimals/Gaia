@@ -261,6 +261,12 @@ main.gaia-shell .sphere .skyring{fill:none;stroke:#ffd93d;stroke-opacity:.32}
 main.gaia-shell .sphere .tick{stroke:#ffd93d;stroke-opacity:.4}
 main.gaia-shell .sphere .syz{fill:none;stroke:#ffd93d;stroke-opacity:.2;stroke-dasharray:3 7}
 main.gaia-shell .sphere .tri{fill:none;stroke:#2ecc71;stroke-opacity:.45;stroke-width:1.2}
+main.gaia-shell .sphere .core circle{fill:#d4af37;fill-opacity:.05;stroke:#d4af37;stroke-opacity:.75;stroke-width:2.4}
+main.gaia-shell .sphere .core .unit{fill:none;stroke:#2ecc71;stroke-width:5;stroke-linecap:round}
+main.gaia-shell .sphere .core .axis{fill:#2ecc71;fill-opacity:1;stroke:#0a0a0a;stroke-opacity:1;stroke-width:2}
+main.gaia-shell .sphere .core text{font-size:24px;fill:#d4af37}
+main.gaia-shell .sphere .core text.one{fill:#2ecc71;font-weight:bold}
+main.gaia-shell .sphere .unit-out{fill:none;stroke:#2ecc71;stroke-opacity:.6;stroke-width:1.8;stroke-linecap:round;pointer-events:none}
 main.gaia-shell .sphere .wander text{font-size:13px;fill:#c8d6e5}
 main.gaia-shell .sphere .dot{cursor:pointer;outline:none}
 main.gaia-shell .sphere .dot rect{fill:var(--lc);fill-opacity:.55;stroke:var(--lc)}
@@ -383,6 +389,22 @@ main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:1
             </g>
             <!-- ribs: 3·4·5·6·[8]·6·5·4·3 -->
             <path d="M187.5,150 H212.5 M185,156 H215 M182.5,162 H217.5 M180,168 H220 M175,174 H225 M180,180 H220 M182.5,186 H217.5 M185,192 H215 M187.5,198 H212.5" fill="none" stroke="#ffd93d" stroke-opacity=".3" stroke-width="1.6"/>
+            <!-- THE CORE (2026-11-25). The figure's circle is the ground it stands on, and its radius is the one unit
+                 everything is measured in: 1.00 = one earth radius = 6,371 km. Inside it, to scale, the two gold
+                 rings are where the outer core (0.55) and the inner core (0.19) begin. The green line is that one
+                 radius, from the centre up to where the body stands, split where it crosses each gold ring; the
+                 script carries it on outward through the eight rings, split again at each. Seen from this side the
+                 axis is end-on: the dot in the middle is the north pole, with the south pole straight behind it,
+                 and the whole face turns about that one line. -->
+            <g class="core">
+              <circle cx="200" cy="205" r="98.3"><title>outer core — begins at 0.55 of the radius (3,480 km from the centre)</title></circle>
+              <circle cx="200" cy="205" r="34.5"><title>inner core — begins at 0.19 of the radius (1,221 km from the centre)</title></circle>
+              <path class="unit" d="M200,205 V175 M200,166 V111.2 M200,102.2 V25"><title>1.00 — one earth radius, 6,371 km: the one unit. Split at the two core rings.</title></path>
+              <circle class="axis" cx="200" cy="205" r="6"><title>the axis, seen end-on: the north pole towards you, the south pole straight behind it</title></circle>
+              <text class="one" x="211" y="52">1.00</text>
+              <text x="226" y="97">.55</text>
+              <text x="240" y="178">.19</text>
+            </g>
           </g>
           <g id="sp-sky"></g>
           <g id="sp-dots"></g>
@@ -892,6 +914,14 @@ setInterval(rotatePainting, 20000);
       if (L.el.classList.contains('folded')) g.classList.add('folded');
       pressable(g, function(){ go(L); });
       gRings.appendChild(g); L.spot = g;
+    });
+    // the green line carried on: from the ground the body stands on, straight up through every ring to the ring the
+    // body rides in, split at each ring it crosses - each ring's name stands in its gap. (Inside the ground the line
+    // is to scale; out here the rings are not, as everywhere on this face.)
+    var cuts = ORDER.map(shell).concat([shell('geosync')]).sort(function(a, b){ return a - b; }), from = 96;
+    cuts.forEach(function(r){
+      if (r - 11 > from) gTri.appendChild(svg('line', {'class': 'unit-out', x1: C, y1: C - from, x2: C, y2: C - (r - 11)}));
+      from = r + 11;
     });
     // the ring the body rides in with the turning earth
     var rg = shell('geosync');

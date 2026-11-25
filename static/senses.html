@@ -2856,7 +2856,7 @@ main.gaia-shell.internal-mode #neutron-label{display: block;}
   <script defer src=/js/klein-window.js></script>
   <script defer src=/js/null-shadow.js></script>
   <script defer src=/js/iron-peak.js></script>
-  <script defer src=/js/helix-twist.js?v=2></script>
+  <script defer src=/js/helix-twist.js?v=3></script>
   <script defer src=/js/pendulum-eyes.js></script>
   <script defer src=/js/null-kaleidoscope.js></script>
   <script defer src=/js/impact.js></script>
@@ -3082,13 +3082,21 @@ body { padding-bottom: 76px !important; }
   #hud-sky .star-words { position: absolute; left: 7%; bottom: 10%; color: #c9d1d9; max-width: 60%; }
   #hud-sky .horizon { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 14px; color: #484f58; font-size: 11px; text-align: center; }
 
-  /* the centre (2026-11-25): the orbit map is pinned to the middle of the display behind every view, the globe sits
-     on top of it, and the middle itself is the black spot - the water. In the centre view they come to the front. */
-  :root { --hud-globe: min(34vmin, 330px); }   /* the spot stays inside the map's gate ring (0.19 vmin out), so the gates show around it */
-  #w259.hud-pinned, #w259-ghost { display: block !important; z-index: -3 !important; opacity: .35; }
-  #w259.hud-filling { visibility: hidden; }
-  #w259.hud-pinned #w259-pip, #w259-ghost #w259-pip, #w259.hud-pinned > [title="PIP Bubble"], #w259-ghost > [title="PIP Bubble"] { display: none !important; }
-  body:not([data-hud-view="centre"]) #w259 .panel, body:not([data-hud-view="centre"]) #w259-ghost .panel { display: none; }
+  /* the centre (2026-11-25): the ring drawing with the star in its middle (the membrane's focal drawing) is pinned
+     to the middle of the display behind every view, the globe sits on top of it, and the middle itself is the black
+     spot - the water. In the centre view they come to the front.
+     The drawing used to hang from a card inside the gut view; a card that turns carried the drawing off to one side
+     with it. Here it hangs from the display itself, so its star stays on the middle whatever turns. */
+  :root { --hud-globe: min(34vmin, 330px); }
+  #hud-focal { position: fixed; inset: 0; z-index: -3; pointer-events: none; opacity: .55; transition: opacity .5s; overflow: hidden; }
+  #hud-focal > #membrane-focal-svg { position: absolute !important; inset: 0 !important; rotate: none !important; translate: none !important; transform: none !important; }
+  #hud-focal > #membrane-focal-svg > svg { transform-origin: 50% 50% !important; }
+  body[data-hud-view="centre"] #hud-focal { opacity: 1; }
+  body[data-hud-view="atlas"] #hud-focal, body[data-hud-view="orrery"] #hud-focal { opacity: .25; }
+  /* atlas and orrery: two whole pages, each in its own frame, loaded only when its view is first opened */
+  #hud-stage > .hud-frame iframe { display: block; width: 100%; height: min(80vh, 920px); border: 1px solid var(--border, #21262d); border-radius: 14px; background: #06080b; }
+  #hud-stage > .hud-frame p { margin: 6px 4px 0; color: #6e7681; font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #hud-stage > .hud-frame p a { color: #8b949e; }
   #hud-centre { position: fixed; left: 50%; top: 50%; width: 0; height: 0; z-index: -2; opacity: .3; transition: opacity .5s; pointer-events: none; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   #hud-centre .spot {
     position: absolute; left: calc(var(--hud-globe) * -.43); top: calc(var(--hud-globe) * -.43);
@@ -3107,11 +3115,15 @@ body { padding-bottom: 76px !important; }
   }
   #desk-globe-wrap.hud-pinned > canvas { clip-path: circle(41%); }
   #desk-globe-wrap.hud-pinned > button { display: none !important; }
-  body[data-hud-view="centre"] #w259.hud-pinned, body[data-hud-view="centre"] #w259-ghost { opacity: 1; }
   body[data-hud-view="centre"] #hud-centre { z-index: 1; opacity: 1; pointer-events: auto; }
   body[data-hud-view="centre"] #desk-globe-wrap.hud-pinned { z-index: 2 !important; opacity: 1; }
   body[data-hud-view="centre"] #desk-globe-wrap.hud-pinned > canvas { pointer-events: auto; }
   body[data-hud-view="centre"] #hud-stage { min-height: 70vh; }
+
+  /* the top bar turns once a second with its words held straight (the cross-rotation). Its dark backing turned with
+     it and swept across the page as a black band, hiding whatever it crossed. The backing is let go: the line of
+     the bar still turns, the words stay, and nothing is covered. */
+  nav.gaia-nav[data-helix-own] { background: transparent !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 
   /* one frame also means one scroll direction: no sideways bars */
   html, body { overflow-x: hidden; }
@@ -3141,6 +3153,15 @@ body { padding-bottom: 76px !important; }
   <a class="spot" href="/water" title="the black spot is the water - step through" aria-label="water, the entrance"></a>
   <a class="words" href="/water" title="the black spot is the water - everything on this display is cast out from it">≈ water</a>
 </div>
+<div id="hud-focal" aria-hidden="true"></div>
+<section id="hud-atlas" class="hud-frame hud-masked" aria-label="atlas">
+  <iframe title="Atlas: the stories, pinned above the places they are about" data-src="/static/atlas.html" loading="lazy"></iframe>
+  <p>public buildings only, no homes · where you stand is asked of your own device and never leaves the page · <a data-path="/static/atlas.html" href="/static/atlas.html" target="_blank" rel="noopener">open the atlas on its own</a></p>
+</section>
+<section id="hud-orrery" class="hud-frame hud-masked" aria-label="orrery, the trans face">
+  <iframe title="Orrery: one body, eight rings, the sky where it stands now" data-src="/nestgate" loading="lazy"></iframe>
+  <p>the trans face is two things: this orrery and <a data-path="/canvas" href="/canvas">the canvas</a> · <a data-path="/nestgate" href="/nestgate" target="_blank" rel="noopener">open the orrery on its own</a></p>
+</section>
 <section id="hud-mesh" class="hud-masked" aria-label="mesh">
   <div class="pair" id="hud-mesh-pair"><div class="body"><h3>this body</h3><dl><dt>state</dt><dd class="gray">asking the gate</dd></dl></div></div>
   <div class="seam" id="hud-mesh-seam"></div>
@@ -3183,6 +3204,8 @@ body { padding-bottom: 76px !important; }
 
   var VIEWS = [
     { key: 'centre', label: 'centre', hint: 'the black spot is the water · everything here is cast out from it · the globe sits on top (drag · F flips)', always: true },
+    { key: 'atlas', label: 'atlas', hint: 'the stories, pinned above the places they are about · the sun and the moon where they stand · \u201ccore\u201d shows the three plumb lines and the one unit', take: [D.getElementById('hud-atlas')] },
+    { key: 'orrery', label: 'orrery \u00b7 trans', hint: 'the trans face: one body, eight rings, the sky where it stands now · the green 1.00 is one earth radius, split at its two gold core rings', take: [D.getElementById('hud-orrery')] },
     { key: 'surfaces', label: 'surfaces', hint: 'every surface on one map - where we can go', take: [one('#nav-ring')] },
     { key: 'eyes', label: 'eyes', hint: 'gaia · player · user - three eyes, one focus', take: [one('#triInfo')], show: [one('#triOverlay')] },
     { key: 'body', label: 'body', hint: 'head · torso · arms · legs · faces - the gate\u2019s paths by region', take: [one('#gate-endpoints')], show: [one('#axial-indicator')] },
@@ -3193,7 +3216,18 @@ body { padding-bottom: 76px !important; }
     { key: 'sky', label: 'night sky', hint: 'the moon is the white paper · the stars are the spore print', take: [sky] }
   ];
   var more = { key: 'more', label: 'more', hint: 'layers that arrived on their own - held here instead of on top of everything', els: [] };
-  var known = [bar, stage, centre];
+  var focal = D.getElementById('hud-focal');
+  var known = [bar, stage, centre, focal];
+  // the two framed pages. On the HUD's own names every page path folds back to the HUD, so the orrery is asked of the other face there.
+  all('.hud-frame').forEach(function (sec) {
+    var f = sec.querySelector('iframe'), src = f.getAttribute('data-src');
+    if (folded && src.indexOf('/static/') !== 0) f.setAttribute('data-src', '//primals.eco' + src);
+    all('a[data-path]', sec).forEach(function (a) { var p = a.getAttribute('data-path'); a.href = folded && p.indexOf('/static/') !== 0 ? '//primals.eco' + p : p; });
+  });
+  D.addEventListener('hud-one-view', function (e) {                 // a frame fills the first time its view is opened, not before
+    var sec = D.getElementById('hud-' + e.detail), f = sec && sec.classList.contains('hud-frame') && sec.querySelector('iframe');
+    if (f && !f.getAttribute('src')) f.setAttribute('src', f.getAttribute('data-src'));
+  });
   VIEWS.forEach(function (v) {
     (v.take || []).forEach(function (el) { if (el) stage.appendChild(el); });
     v.els = (v.take || []).concat(v.show || []).filter(Boolean);
@@ -3256,33 +3290,32 @@ body { padding-bottom: 76px !important; }
     if (!quiet) { try { history.replaceState(null, '', '#' + key); localStorage.setItem('hud_view_c', key); } catch (e) {} }
   }
 
-  // the centre: two layers are pinned instead of filed under "more" - the orbit map (w259) and the globe on top of it.
-  var PINNED = /^(w259|w259-ghost|desk-globe-wrap)$/;
+  // the centre: the globe is pinned instead of filed under "more", on top of the ring drawing.
+  var PINNED = /^desk-globe-wrap$/;
   function pin(el) {
     if (el.classList.contains('hud-pinned')) return;
     el.classList.remove('hud-masked'); el.classList.add('hud-pinned');
     if (el.id === 'desk-globe-wrap' && el.style.display === 'none') {   // her own switch starts the drawing; the size is ours
       var sw = D.getElementById('desk-globe-toggle'); if (sw) sw.click();
     }
-    if (el.id === 'w259' && D.getElementById('w259-ghost')) {           // a held drawing is showing: swap once this one has filled in
-      el.classList.add('hud-filling');
-      setTimeout(function () {
-        var g = D.getElementById('w259-ghost'); if (g) g.remove();
-        el.classList.remove('hud-filling');
-      }, 1500);
-    }
   }
-  // the orbit map rebuilds itself from nothing every 30 s; hold the old drawing until the new one has filled in, so the centre never blinks
-  function hold(old) {
-    var prev = D.getElementById('w259-ghost'); if (prev) prev.remove();
-    old.id = 'w259-ghost'; D.body.appendChild(old);
+  // the ring drawing: the membrane's scripts look for its holder by name and draw into the first one they find. The
+  // holder is moved here, to the front of the page, so that is the one they find - and it hangs from the display, not
+  // from a card. If a card is drawn again with a fresh holder that already has a drawing in it, that drawing is taken.
+  function adopt() {
+    if (!focal) return;
+    if (focal.parentNode !== D.body || D.body.firstElementChild !== focal) D.body.insertBefore(focal, D.body.firstChild);
+    var mine = focal.querySelector('#membrane-focal-svg');
+    all('#membrane-focal-svg').forEach(function (h) {
+      if (h.parentNode === focal) return;
+      if (!mine) { focal.appendChild(h); mine = h; }
+      else if (h.querySelector('svg')) { focal.replaceChild(h, mine); mine = h; }
+    });
   }
+  adopt(); setInterval(adopt, 2000);
 
   // the mask: a layer dropped onto the body later becomes part of "more", not a new pile
-  function sweep(records) {
-    (records || []).forEach(function (r) {
-      Array.prototype.forEach.call(r.removedNodes, function (el) { if (el.id === 'w259' && !el.parentNode) hold(el); });
-    });
+  function sweep() {
     Array.prototype.forEach.call(D.body.children, function (el) {
       if (/^(SCRIPT|STYLE|LINK|NAV|MAIN|FOOTER|NOSCRIPT|TEMPLATE)$/.test(el.tagName)) return;
       if (PINNED.test(el.id)) { pin(el); return; }
