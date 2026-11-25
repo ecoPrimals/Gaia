@@ -318,6 +318,33 @@ def waveform_collapse_check(ip):
         window.pop()
     return collapsed, {"observer": ip, "waves_per_minute": pm, "collapsed": collapsed}
 
+# ═══ HANDS — the routes that move something in the house ═══
+# The printer, the scanner, the camera, the builder, the phone's drop. They are open to the world, to people
+# and to agents alike: we start with trust. What is limited is throughput. Each hand has an hourly allowance
+# for all outside callers together and a smaller one for any single caller, and outside callers use a hand one
+# job at a time. The house itself is not counted. A caller over the allowance is told when to come back (429).
+_HANDS = {"print": (12, 3), "scan": (20, 6), "photo": (20, 6), "build": (4, 2), "drop": (60, 20)}   # per hour: (everyone outside, one caller)
+_HAND_JOB_SECS = 300                      # a job that never reported back stops holding its hand after this
+_hand_log = defaultdict(list); _hand_busy = {}; _hand_lock = threading.Lock()
+
+def _hand_take(kind, who):
+    """-> (True, 0): the hand is held until _hand_free(kind, who). Or (False, seconds until it is worth asking again)."""
+    world, one = _HANDS[kind]; now = time.time()
+    with _hand_lock:
+        log = _hand_log[kind]; log[:] = [(t, w) for t, w in log if now - t < 3600]
+        held = _hand_busy.get(kind)
+        if held and now - held[1] < _HAND_JOB_SECS: return False, 30
+        mine = [t for t, w in log if w == who]
+        if len(mine) >= one: return False, int(3600 - (now - mine[0])) + 1
+        if len(log) >= world: return False, int(3600 - (now - log[0][0])) + 1
+        log.append((now, who)); _hand_busy[kind] = (who, now)
+        return True, 0
+
+def _hand_free(kind, who):
+    with _hand_lock:
+        held = _hand_busy.get(kind)
+        if held and held[0] == who: del _hand_busy[kind]
+
 # ═══ CONTENT TYPES ═══
 CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
     ".json":"application/json",".png":"image/png",".jpg":"image/jpeg",
@@ -524,6 +551,27 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
             named=(self.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
             if named: ip=named
         return ip in ("127.0.0.1","::1") or ip.startswith(_BENEATH_MESH)
+
+    def _hand(self, kind):
+        """Before a route moves something in the house (see HANDS). True: go ahead, and call _hand_done() when the
+        job is over. False: the caller has been told to wait, the route just returns.
+        The house is not counted: a device on the home network talking to the gate directly, or one the front door
+        names (the last name in X-Forwarded-For is the one our own proxy wrote; a caller cannot choose it).
+        Tor, hairpin and anything unnamed on loopback are outside callers here: welcome, and counted."""
+        self._hand_held=None
+        peer=self.client_address[0]; named=""
+        if peer in ("127.0.0.1","::1"): named=(self.headers.get("X-Forwarded-For") or "").split(",")[-1].strip()
+        if _proximate(self) or (named.startswith(("192.168.4.","192.168.9.")) and named not in _OWN_ADDRS): return True
+        who=named or peer
+        ok,wait=_hand_take(kind,who)
+        if ok: self._hand_held=(kind,who); return True
+        self._json({"error":"this hand is busy, or has done its share for this hour","hand":kind,"retry_after_secs":wait,
+                    "allowance_per_hour":{"everyone":_HANDS[kind][0],"one_caller":_HANDS[kind][1]}},429)
+        return False
+
+    def _hand_done(self):
+        held=getattr(self,"_hand_held",None)
+        if held: _hand_free(*held); self._hand_held=None
 
     def _serve_beneath(self):
         """Before a path becomes a dead end: is it a page, script or file of the old HUD site? Serve it if so.
@@ -1235,11 +1283,13 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             return
         # GRAPHENEGATE PHOTO (GET)
         if self.path=="/api/graphene/photo":
+            if not self._hand("photo"): return
             try:
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"graphene_depot.pi"),"photo"],
                     capture_output=True,text=True,timeout=20,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # EPSON IO STATUS (GET)
         if self.path in ("/api/io","/api/epson","/api/scanner"):
@@ -1251,6 +1301,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             return
         # EPSON SCAN (GET /api/scan — trigger a scan)
         if self.path.startswith("/api/scan"):
+            if not self._hand("scan"): return
             try:
                 import urllib.parse
                 qs=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -1260,6 +1311,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=120,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # EPITOPE PATTERNS (GET /api/epitope)
         if self.path.startswith("/api/epitope"):
@@ -1271,6 +1323,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"generate"],
                         capture_output=True,text=True,timeout=30,cwd=_REPO)
                 elif action=="print":
+                    if not self._hand("print"): return
                     name=qs.get("name",["cmyk-strips"])[0]
                     r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"color_epitope.pi"),"print",name],
                         capture_output=True,text=True,timeout=30,cwd=_REPO)
@@ -1279,6 +1332,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                         capture_output=True,text=True,timeout=10,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # SCAN WATCHER STATE (GET /api/watcher)
         if self.path=="/api/watcher":
@@ -1598,6 +1652,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             return
         # PHYSICAL MAIL — PRINT (POST)
         if self.path in ("/api/mail/print","/api/print"):
+            if not self._hand("print"): return
             try:
                 j=json.loads(body) if body else {}
                 text=j.get("text",j.get("body","Hello from Gaia."))
@@ -1606,6 +1661,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # ═══ GAIA TALK — simple ollama chat proxy ═══
         if self.path in ("/api/talk","/api/gaia/talk","/api/ai"):
@@ -1634,15 +1690,18 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             return
         # iPHONE DATA INGEST (POST /api/iphone/ingest)
         if self.path=="/api/iphone/ingest":
+            if not self._hand("drop"): return
             try:
                 j=json.loads(body) if body else {}
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"iphone_depot.pi"),"ingest",json.dumps(j)],
                     capture_output=True,text=True,timeout=10,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # iPHONE PHOTO UPLOAD (POST /api/iphone/photo)
         if self.path=="/api/iphone/photo":
+            if not self._hand("drop"): return
             try:
                 import cgi
                 ct=self.headers.get("Content-Type","")
@@ -1666,9 +1725,11 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 else:
                     self._json({"error":"expected multipart/form-data"})
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # EPSON PRINT IMAGE (POST /api/io/print)
         if self.path in ("/api/io/print","/api/epson/print"):
+            if not self._hand("print"): return
             try:
                 j=json.loads(body) if body else {}
                 image_path=j.get("image","")
@@ -1678,9 +1739,11 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     capture_output=True,text=True,timeout=30,cwd=_REPO)
                 self._json(json.loads(r.stdout))
             except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
             return
         # EPSON FEEDBACK LOOP (POST /api/io/loop)
         if self.path in ("/api/io/loop","/api/epson/loop"):
+            if not self._hand("print"): return
             try:
                 j=json.loads(body) if body else {}
                 image_path=j.get("image","")
@@ -1689,10 +1752,13 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 r=subprocess.run(["python3",os.path.join(os.path.dirname(__file__),"epson_io.pi"),"loop",image_path],
                     capture_output=True,text=True,timeout=180,cwd=_REPO)
                 self._json(json.loads(r.stdout))
-            except Exception as e: self._json({"error":str(e)}); return
+            except Exception as e: self._json({"error":str(e)})
+            finally: self._hand_done()
+            return
         # ═══ REVERSE TRANSCRIPTASE — build trigger ═══
         if self.path in ("/api/compiler/build","/api/plasmid/build"):
             if COMPILER_ACTIVE:
+                if not self._hand("build"): return
                 try:
                     j=json.loads(body) if body else {}
                     primal=j.get("primal","")
@@ -1700,6 +1766,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     result=_compiler_build(PRIMALS_DIR,primal)
                     self._json(result)
                 except Exception as e: self._json({"error":str(e)})
+                finally: self._hand_done()
             else: self._json({"error":"compiler organ not loaded"})
             return
         # NEUTRON
