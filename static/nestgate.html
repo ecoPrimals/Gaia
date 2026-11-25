@@ -184,7 +184,6 @@ pre { background: var(--bg-raised); border: 1px solid var(--border); border-radi
 body{background:#0a0a0a}
 main.gaia-shell *{margin: 0; padding: 0; box-sizing: border-box;}
 main.gaia-shell{background: #0a0a0a; color: #c8d6e5; font-family: 'Courier New', monospace; overflow-x: hidden;}
-main.gaia-shell .amoeba-panel{display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: auto 1fr 1fr 1fr auto; gap: 2px; height: 100vh; padding: 2px;}
 main.gaia-shell .cell{background: #111; border: 1px solid #1a3a2a; border-radius: 4px; padding: 8px; overflow: hidden; position: relative;}
 main.gaia-shell .cell:hover{border-color: #2ecc71;}
 main.gaia-shell .cell h3{color: #2ecc71; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px; opacity: 0.7;}
@@ -195,10 +194,6 @@ main.gaia-shell .header .heartbeat{width: 10px; height: 10px; background: #e74c3
 @keyframes pulse{0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); }}
 main.gaia-shell .header .stats{font-size: 10px; color: #576574;}
 main.gaia-shell .footer{grid-column: 1 / -1; background: #0d1117; border-color: #1a3a2a; font-size: 9px; color: #576574; display: flex; justify-content: space-between; align-items: center; padding: 4px 12px;}
-main.gaia-shell .painting-cell{grid-row: span 2; position: relative; overflow: hidden;}
-main.gaia-shell .painting-cell img{width: 100%; height: 100%; object-fit: cover; border-radius: 3px; opacity: 0.85; transition: opacity 0.5s;}
-main.gaia-shell .painting-cell img:hover{opacity: 1;}
-main.gaia-shell .painting-cell .label{position: absolute; bottom: 4px; left: 4px; font-size: 8px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 2px; color: #2ecc71;}
 main.gaia-shell .feed-list{font-size: 10px; line-height: 1.6;}
 main.gaia-shell .feed-list .item{padding: 3px 0; border-bottom: 1px solid #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
 main.gaia-shell .feed-list .item .cat{display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px;}
@@ -215,13 +210,90 @@ main.gaia-shell .model-grid{display: flex; flex-wrap: wrap; gap: 3px;}
 main.gaia-shell .model-tag{font-size: 8px; background: #1a2a1a; border: 1px solid #2ecc71; border-radius: 2px; padding: 1px 4px; color: #2ecc71; opacity: 0.6;}
 main.gaia-shell .model-tag.gaia{background: #2a1a1a; border-color: #e74c3c; color: #e74c3c; opacity: 0.9;}
 main.gaia-shell .pi-display{font-size: 9px; color: #2ecc71; opacity: 0.3; word-break: break-all; line-height: 1.3;}
+/* THE BODY - one sphere, two faces, eight layers. Each cell and each HUD has its own place on the body, so no two
+   of them share the same pixels: cis (what comes in) on the left, the sphere in the middle, trans (what goes
+   out) on the right, the layers from skin and head down to the ground. */
+main.gaia-shell{overflow-x:clip}   /* clip, not hidden: hidden makes main a scroll box and the sphere could not stay in view */
+main.gaia-shell .body-face{display:flex;flex-direction:column;gap:2px;padding:2px}
+main.gaia-shell .body-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,34%) minmax(0,1fr);gap:2px;align-items:start}
+main.gaia-shell [data-layer=skin]{--lc:#5aad72}
+main.gaia-shell [data-layer=head]{--lc:#ff8c6b}
+main.gaia-shell [data-layer=brain]{--lc:#9b7ed4}
+main.gaia-shell [data-layer=heart]{--lc:#e056fd}
+main.gaia-shell [data-layer=guts]{--lc:#ffd93d}
+main.gaia-shell [data-layer=metabolism]{--lc:#f0883e}
+main.gaia-shell [data-layer=muscle]{--lc:#d45b5b}
+main.gaia-shell [data-layer=ground]{--lc:#58a6ff}
+main.gaia-shell .layer{display:contents}
+main.gaia-shell .face{display:flex;flex-direction:column;gap:2px;min-width:0;grid-row:var(--i)}
+main.gaia-shell .face.cis{grid-column:1;box-shadow:inset 2px 0 0 color-mix(in srgb,var(--lc) 30%,transparent)}
+main.gaia-shell .face.trans{grid-column:3;box-shadow:inset -2px 0 0 color-mix(in srgb,var(--lc) 30%,transparent)}
+main.gaia-shell .face{align-self:stretch}
+main.gaia-shell .face-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:3px 8px;font-size:10px;font-weight:normal;letter-spacing:2px;text-transform:uppercase;color:#576574;background:#0d1117;border-left:2px solid var(--lc);border-radius:3px;transition:background .8s ease}
+main.gaia-shell .face.trans .face-head{flex-direction:row-reverse;border-left:0;border-right:2px solid var(--lc)}
+main.gaia-shell .face-head .fold{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--lc);background:none;border:0;cursor:pointer;padding:2px 0}
+main.gaia-shell .face-head .fold:hover,main.gaia-shell .face-head .fold:focus-visible{text-decoration:underline;outline:none}
+main.gaia-shell .face.cis .side{color:#00bfa5}
+main.gaia-shell .face.trans .side{color:#ff9100}
+main.gaia-shell .layer.here .face-head{background:#1a2733}
+main.gaia-shell .layer.folded .face > :not(.face-head){display:none}
+main.gaia-shell .face .cell{max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#1a3a2a transparent}
+main.gaia-shell .face .cell.organ,main.gaia-shell .face .cell.painting-cell{max-height:none;overflow:hidden}
+main.gaia-shell .face .null{font-size:11px;color:#2a3040;padding:4px 10px}
+main.gaia-shell .sphere-col{grid-column:2;grid-row:1 / span 8;position:sticky;top:58px;align-self:start;padding:6px 4px;text-align:center}
+main.gaia-shell .sphere{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
+main.gaia-shell .sphere text{font:11px 'Courier New',monospace;fill:#8395a7}
+main.gaia-shell .sphere .spot{cursor:pointer;outline:none;transition:opacity .6s ease}
+main.gaia-shell .sphere .spot .hit{fill:transparent;stroke:none}
+main.gaia-shell .sphere .spot .mark{fill:var(--lc);fill-opacity:.18;stroke:var(--lc);stroke-width:1.4;transition:fill-opacity .6s ease}
+main.gaia-shell .sphere .spot text{fill:var(--lc)}
+main.gaia-shell .sphere .spot:hover .mark,main.gaia-shell .sphere .spot:focus-visible .mark{fill-opacity:.45}
+main.gaia-shell .sphere .spot.lit .mark{fill-opacity:.75}
+main.gaia-shell .sphere .spot.folded{opacity:.35}
+main.gaia-shell .sphere .spot .beat{animation:body-beat 2.4s ease-in-out infinite}
+@keyframes body-beat{0%,100%{fill-opacity:.18}50%{fill-opacity:.5}}
+/* the two bars: up turns clockwise, down turns counter-clockwise, one turn a second - the same turn the old HUD's
+   top and bottom bars make. Small, so nothing sweeps the page; with reduced motion they hold still. */
+main.gaia-shell .sphere .pole{fill:#c8d6e5;transform-box:fill-box;transform-origin:50% 50%}
+main.gaia-shell .sphere .pole.north{animation:body-cw 1s linear infinite}
+main.gaia-shell .sphere .pole.south{animation:body-ccw 1s linear infinite}
+@keyframes body-cw{to{transform:rotate(360deg)}}
+@keyframes body-ccw{to{transform:rotate(-360deg)}}
+main.gaia-shell .sphere-say{font-size:10px;color:#576574;margin-top:4px;line-height:1.5}
+main.gaia-shell .painting-cell{position:relative;overflow:hidden;padding:0}
+main.gaia-shell .painting-cell img{display:block;width:100%;height:240px;object-fit:cover;border-radius:3px;opacity:0.85;transition:opacity 0.5s}
+main.gaia-shell .painting-cell img:hover{opacity: 1;}
+main.gaia-shell .painting-cell .label{position: absolute; bottom: 4px; left: 4px; font-size: 8px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 2px; color: #2ecc71;}
+/* a HUD is an organ: off it is one line; awake it is a live miniature in its own place; touched it comes to the front */
+main.gaia-shell .organ h3{display:flex;align-items:center;gap:8px;opacity:1;margin-bottom:0;letter-spacing:1px;text-transform:none}
+main.gaia-shell .organ-chip{font:11px 'Courier New',monospace;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 9px;cursor:pointer;white-space:nowrap}
+main.gaia-shell .organ-chip:hover,main.gaia-shell .organ-chip:focus-visible{border-color:var(--lc);outline:none}
+main.gaia-shell .organ.see .organ-chip{color:var(--lc);border-color:var(--lc)}
+main.gaia-shell .organ.touch .organ-chip{color:#0a0a0a;background:var(--lc);border-color:var(--lc)}
+main.gaia-shell .organ-say{font-size:9px;color:#576574;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main.gaia-shell .organ-view{display:none;position:relative;width:100%;aspect-ratio:16/10;margin-top:6px;overflow:hidden;border-radius:3px;background:#050508;cursor:zoom-in}
+main.gaia-shell .organ.see .organ-view,main.gaia-shell .organ.touch .organ-view{display:block}
+main.gaia-shell .hud-mini{position:absolute;left:0;top:0;width:1280px;height:800px;border:0;background:#08090b;transform-origin:0 0;transform:scale(var(--k,.25));pointer-events:none;opacity:0;transition:opacity .9s ease}
+main.gaia-shell .hud-mini.on{opacity:1}
+main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:100vh;transform:none;z-index:901;pointer-events:auto}
+@media (max-width:900px){
+  main.gaia-shell .body-board{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  main.gaia-shell .sphere-col{grid-column:1 / -1;grid-row:1;position:static}
+  main.gaia-shell .face{grid-row:calc(var(--i) + 1)}
+  main.gaia-shell .face.trans{grid-column:2}
+}
+@media (max-width:520px){
+  main.gaia-shell .body-board{grid-template-columns:minmax(0,1fr)}
+  main.gaia-shell .sphere-col{grid-row:auto}
+  main.gaia-shell .face,main.gaia-shell .face.trans{grid-column:1;grid-row:auto}
+}
 @media (prefers-reduced-motion: reduce){main.gaia-shell *,main.gaia-shell *::before,main.gaia-shell *::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <nav class="gaia-nav"><div class="gaia-nav-inner"><a href="/" class="gaia-nav-brand">gaia</a><a href="/#organism">Organism</a><a href="/#investigation">Investigation</a><a href="/#knowledge">Knowledge</a><a href="/#infrastructure">Infrastructure</a><a href="https://nestgate.io">NestGate</a></div></nav>
 <main class="gaia-shell" style="padding-top:24px;padding-bottom:48px">
-<div class="amoeba-panel">
+<div class="body-face">
   <!-- HEADER -->
   <div class="cell header">
     <div class="title">
@@ -233,52 +305,169 @@ main.gaia-shell .pi-display{font-size: 9px; color: #2ecc71; opacity: 0.3; word-b
     <div class="stats" id="stats">loading...</div>
   </div>
 
-  <!-- PAINTING (left, spans 2 rows) -->
-  <div class="cell painting-cell" id="painting-cell">
-    <img id="painting-img" src="/data/paintings/gaia-paints-earth-4th-seat.jpg" alt="Gaia paints Earth">
-    <div class="label" id="painting-label">gaia-paints-earth-4th-seat</div>
-  </div>
+  <!-- THE BODY: cis on the left, the sphere in the middle, trans on the right; layers from the skin down to the ground.
+       The page's own cells sit in their layer here; the HUDs are sorted into theirs by the table at the foot of the page. -->
+  <div class="body-board" id="body-board">
 
-  <!-- REEDIT FEED (center top) -->
-  <div class="cell">
-    <h3>📝 reedit</h3>
-    <div class="feed-list" id="reedit-feed">loading...</div>
-  </div>
+    <div class="sphere-col">
+      <svg class="sphere" id="sphere" viewBox="0 0 400 410" role="group" aria-label="Gaia's body as a sphere: a figure standing in a circle and a square, with eight layers to go to">
+        <!-- the two faces of the sphere -->
+        <path d="M200,25 A180,180 0 0 0 200,385 Z" fill="#00bfa5" fill-opacity=".05"/>
+        <path d="M200,25 A180,180 0 0 1 200,385 Z" fill="#ff9100" fill-opacity=".05"/>
+        <text x="8" y="20" style="fill:#00bfa5">◁ cis · in</text>
+        <text x="392" y="20" text-anchor="end" style="fill:#ff9100">out · trans ▷</text>
+        <!-- the sphere (circle, equator, meridian), the square, the axis from up to down -->
+        <circle cx="200" cy="205" r="180" fill="none" stroke="#5aad72" stroke-opacity=".55" stroke-width="1.2"/>
+        <ellipse cx="200" cy="205" rx="180" ry="56" fill="none" stroke="#5aad72" stroke-opacity=".14"/>
+        <ellipse cx="200" cy="205" rx="56" ry="180" fill="none" stroke="#5aad72" stroke-opacity=".14"/>
+        <rect x="52" y="89" width="296" height="296" fill="none" stroke="#d4a574" stroke-opacity=".28"/>
+        <line x1="200" y1="25" x2="200" y2="385" stroke="#c8d6e5" stroke-opacity=".16" stroke-dasharray="2 5"/>
+        <!-- the figure: standing in the square, reaching in the circle -->
+        <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" stroke-opacity=".5">
+          <circle cx="200" cy="107.5" r="18.5"/>
+          <path d="M200,126 V237 M163,142 H237 M163,142 L182,237 H218 L237,142 M163,142 H52 M237,142 H348 M186,237 V385 M214,237 V385"/>
+        </g>
+        <g fill="none" stroke="#c8d6e5" stroke-linecap="round" stroke-width="1.4" stroke-opacity=".25">
+          <path d="M163,142 L62,89 M237,142 L338,89 M186,237 L115,364 M214,237 L285,364"/>
+        </g>
+        <!-- ribs: 3·4·5·6·[8]·6·5·4·3 -->
+        <path d="M187.5,150 H212.5 M185,156 H215 M182.5,162 H217.5 M180,168 H220 M175,174 H225 M180,180 H220 M182.5,186 H217.5 M185,192 H215 M187.5,198 H212.5" fill="none" stroke="#ffd93d" stroke-opacity=".28"/>
+        <!-- the eight layers, each a place to go to -->
+        <g class="spot" data-layer="skin" tabindex="0" role="button" aria-label="go to the skin layer">
+          <circle class="hit" cx="31" cy="267" r="16"/><circle class="mark" cx="31" cy="267" r="6"/><text x="42" y="271">skin</text>
+        </g>
+        <g class="spot" data-layer="head" tabindex="0" role="button" aria-label="go to the head layer">
+          <circle class="mark" cx="200" cy="107.5" r="24"/><text x="170" y="96" text-anchor="end">head</text>
+        </g>
+        <g class="spot" data-layer="brain" tabindex="0" role="button" aria-label="go to the brain layer">
+          <circle class="hit" cx="200" cy="103" r="11"/><circle class="mark" cx="200" cy="103" r="8"/><text x="230" y="96">brain</text>
+        </g>
+        <g class="spot" data-layer="heart" tabindex="0" role="button" aria-label="go to the heart layer">
+          <circle class="hit" cx="209" cy="163" r="13"/><circle class="mark beat" cx="209" cy="163" r="7"/><text x="246" y="167">heart</text>
+        </g>
+        <g class="spot" data-layer="metabolism" tabindex="0" role="button" aria-label="go to the metabolism layer">
+          <circle class="hit" cx="200" cy="205" r="9"/><circle class="mark" cx="200" cy="205" r="6"/><text x="230" y="209">metabolism</text>
+        </g>
+        <g class="spot" data-layer="guts" tabindex="0" role="button" aria-label="go to the guts layer">
+          <ellipse class="hit" cx="200" cy="225" rx="24" ry="11"/><ellipse class="mark" cx="200" cy="225" rx="20" ry="9"/><text x="172" y="229" text-anchor="end">guts</text>
+        </g>
+        <g class="spot" data-layer="muscle" tabindex="0" role="button" aria-label="go to the muscle layer">
+          <circle class="hit" cx="108" cy="142" r="14"/><circle class="mark" cx="108" cy="142" r="7"/><text x="108" y="160" text-anchor="middle">muscle</text>
+        </g>
+        <g class="spot" data-layer="ground" tabindex="0" role="button" aria-label="go to the ground layer">
+          <ellipse class="hit" cx="100" cy="385" rx="26" ry="12"/><ellipse class="mark" cx="100" cy="385" rx="16" ry="4.5"/><text x="100" y="403" text-anchor="middle">ground</text>
+        </g>
+        <!-- the two bars: up turns clockwise, down turns counter-clockwise -->
+        <a href="#top" aria-label="up: to the top bar"><rect class="pole north" x="182" y="23" width="36" height="4" rx="2"/><text x="226" y="18">up ⟳</text></a>
+        <a href="#down" aria-label="down: to the bottom bar"><rect class="pole south" x="182" y="383" width="36" height="4" rx="2"/><text x="226" y="403">down ⟲</text></a>
+      </svg>
+      <p class="sphere-say" id="sphere-say">one body · eight layers · ◁ cis takes in · trans gives out ▷</p>
+    </div>
 
-  <!-- PULSE (right top) -->
-  <div class="cell">
-    <h3>🫀 pulse</h3>
-    <div class="pulse-data" id="pulse-data">loading...</div>
-  </div>
+    <section class="layer" data-layer="skin" style="--i:1" aria-label="skin">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">◁ cis · in</span></h2>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">skin</button><span class="side">out · trans ▷</span></h2>
+        <div class="cell painting-cell" id="painting-cell">
+          <img id="painting-img" src="/data/paintings/gaia-paints-earth-4th-seat.jpg" alt="Gaia paints Earth">
+          <div class="label" id="painting-label">gaia-paints-earth-4th-seat</div>
+        </div>
+      </div>
+    </section>
 
-  <!-- NEURONS (center bottom) -->
-  <div class="cell">
-    <h3>⚡ neurons</h3>
-    <div class="neuron-list" id="neuron-list">loading...</div>
-  </div>
+    <section class="layer" data-layer="head" style="--i:2" aria-label="head">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>📡 live sensors</h3>
+          <div class="feed-list" id="sensor-list">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">head</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
 
-  <!-- MODELS (right bottom) -->
-  <div class="cell">
-    <h3>🧬 models</h3>
-    <div class="model-grid" id="model-grid">loading...</div>
-  </div>
+    <section class="layer" data-layer="brain" style="--i:3" aria-label="brain">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>⚡ neurons</h3>
+          <div class="neuron-list" id="neuron-list">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">brain</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
 
-  <!-- SENSORS (left bottom) -->
-  <div class="cell">
-    <h3>📡 live sensors</h3>
-    <div class="feed-list" id="sensor-list">loading...</div>
-  </div>
+    <section class="layer" data-layer="heart" style="--i:4" aria-label="heart">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>🫀 pulse</h3>
+          <div class="pulse-data" id="pulse-data">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">heart</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
 
-  <!-- TEMPORAL (center bottom) -->
-  <div class="cell">
-    <h3>⏰ temporal</h3>
-    <div class="pulse-data" id="temporal-data">loading...</div>
-  </div>
+    <section class="layer" data-layer="guts" style="--i:5" aria-label="guts">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>📝 reedit</h3>
+          <div class="feed-list" id="reedit-feed">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">guts</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
 
-  <!-- EARTH (right bottom) -->
-  <div class="cell">
-    <h3>🌍 earth</h3>
-    <div class="feed-list" id="earth-data">loading...</div>
+    <section class="layer" data-layer="metabolism" style="--i:6" aria-label="metabolism">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>⏰ temporal</h3>
+          <div class="pulse-data" id="temporal-data">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">metabolism</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
+
+    <section class="layer" data-layer="muscle" style="--i:7" aria-label="muscle">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">◁ cis · in</span></h2>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">muscle</button><span class="side">out · trans ▷</span></h2>
+        <div class="cell">
+          <h3>🧬 models</h3>
+          <div class="model-grid" id="model-grid">loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="layer" data-layer="ground" style="--i:8" aria-label="ground">
+      <div class="face cis" data-face="cis">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">◁ cis · in</span></h2>
+        <div class="cell">
+          <h3>🌍 earth</h3>
+          <div class="feed-list" id="earth-data">loading...</div>
+        </div>
+      </div>
+      <div class="face trans" data-face="trans">
+        <h2 class="face-head"><button type="button" class="fold" aria-expanded="true">ground</button><span class="side">out · trans ▷</span></h2>
+      </div>
+    </section>
+
   </div>
 
   <!-- FOOTER -->
@@ -448,108 +637,146 @@ setInterval(loadAll, 15000);
 setInterval(rotatePainting, 20000);
 </script>
 </main>
-<footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
+<footer class="gaia-footer" id="down"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
 
 <!-- HUD-OVERLAY:BEGIN
-     Every HUD as a layer over this face. A chip turns: off -> see (laid over the face, clicks pass through to
-     the face) -> touch (in front, takes the mouse) -> off. Esc drops touch back to see. The address carries the
-     state (#huds=senses,polaris!) so a view can be linked; nothing is stored. Layers fade in slowly and never
-     flash; with reduced motion they just appear. A layer is only loaded when it is turned on. -->
+     The body sort. Every HUD is an organ with its own place on the body: a layer (skin, head, brain, heart, guts,
+     metabolism, muscle, ground) and a face (cis = what comes in, trans = what goes out). Nothing is laid over
+     anything else any more.
+       off    one line in its place
+       see    a live miniature of the HUD in that same place (clicks go to the body, not the miniature)
+       touch  the HUD comes to the front, full size, and takes the mouse; Esc or "back to the body" returns it
+     A chip turns off <-> see; clicking a miniature brings it to the front; one HUD in front at a time.
+     The address carries the state (#huds=senses,polaris!) so a view can be linked; nothing is stored. A HUD is
+     only loaded when it is woken. Miniatures fade in slowly; with reduced motion they just appear.
+     To re-sort an organ, change its layer or face in the table below - that is the only place the sort lives. -->
 <style>
-.hud-layer{position:fixed;inset:0;width:100vw;height:100vh;border:0;z-index:900;background:transparent;opacity:0;pointer-events:none;mix-blend-mode:screen;transition:opacity .9s ease}
-.hud-layer.see{opacity:var(--hud-see,.55)}
-.hud-layer.touch{opacity:.97;mix-blend-mode:normal;pointer-events:auto;z-index:901}
-#hud-rack{position:fixed;left:8px;bottom:8px;z-index:1000;max-width:calc(100vw - 16px);display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:5px 8px;background:rgba(8,9,11,.86);border:1px solid #1a3a2a;border-radius:8px;font:11px 'Courier New',monospace;color:#8a857e}
-#hud-rack button{font:inherit;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 9px;cursor:pointer}
-#hud-rack button:hover,#hud-rack button:focus-visible{border-color:#2ecc71;outline:none}
-#hud-rack button.see{color:#2ecc71;border-color:#2ecc71}
-#hud-rack button.touch{color:#0a0a0a;background:#2ecc71;border-color:#2ecc71}
-#hud-rack #hud-fold{color:#2ecc71;border-color:#1a3a2a;letter-spacing:1px}
-#hud-rack label{display:inline-flex;align-items:center;gap:4px;margin-left:4px}
-#hud-rack input[type=range]{width:72px;accent-color:#2ecc71}
-#hud-rack.folded > :not(#hud-fold){display:none}
-@media (prefers-reduced-motion: reduce){.hud-layer{transition:none}}
+#body-back{position:fixed;left:8px;bottom:8px;z-index:1000;font:11px 'Courier New',monospace;line-height:1.5;color:#0a0a0a;background:#2ecc71;border:1px solid #2ecc71;border-radius:99px;padding:2px 12px;cursor:pointer}
+#body-back[hidden]{display:none}
+#body-back:focus-visible{outline:2px solid #e0dcd6;outline-offset:2px}
 </style>
-<div id="hud-rack" class="folded" role="toolbar" aria-label="HUD layers over this face">
-  <button id="hud-fold" type="button" aria-expanded="false" title="HUD layers over this face">huds</button>
-</div>
+<button id="body-back" type="button" hidden>◉ back to the body</button>
 <script>
 (function(){
   // On GitHub Pages the gate's pages are copies; the all-senses HUD and the older pane live on the hud site there.
   var away = !!document.querySelector('script[data-gaia-hoist]');
-  var HUDS = [ // id, label, at home, on Pages when it differs (null = not there)
-    ['senses',  'all senses',    'hud',                       'https://ecoprimals.github.io/hud/'],
-    ['pane',    'sovereign pane', null,                       'https://ecoprimals.github.io/hud/pane.html'],
-    ['polaris', 'north star',    'static/polaris.html'],
-    ['signal',  'signal',        'static/signal.html'],
-    ['deck',    'space deck',    'static/deck.html'],
-    ['hub',     'cis\u25c9trans', 'static/hub.html'],
-    ['outer',   'outer face',    'static/outer-face.html'],
-    ['room',    'room face',     'static/tv-face.html'],
-    ['klein',   'klein',         'static/klein.html'],
-    ['dock',    'space dock',    'static/spacedock.html'],
-    ['windows', 'windows',       'static/spacedeck.html'],
-    ['ghost',   'ghost',         'static/ghost-overlay.html']
-  ].map(function(h){ return {id:h[0], label:h[1], url: away && h.length > 3 ? h[3] : h[2], state:0, frame:null, chip:null}; })
+  var HUDS = [ // id, label, what it is, layer, face, at home, on Pages when it differs (null = not there)
+    ['signal',  'signal',         'observatory: what touches the membrane', 'skin',       'cis',   'static/signal.html'],
+    ['outer',   'outer face',     'the face the houses show',               'skin',       'trans', 'static/outer-face.html'],
+    ['ghost',   'ghost',          'the thin veil over any face',            'skin',       'trans', 'static/ghost-overlay.html'],
+    ['senses',  'all senses',     'every sense at once',                    'head',       'cis',   'hud',                    'https://ecoprimals.github.io/hud/'],
+    ['windows', 'windows',        'observation windows: the eyes',          'head',       'cis',   'static/spacedeck.html'],
+    ['room',    'room face',      'the ear in the room',                    'head',       'cis',   'static/tv-face.html'],
+    ['deck',    'space deck',     'the mouth',                              'head',       'trans', 'static/deck.html'],
+    ['klein',   'klein',          'sensation: the klein triad',             'brain',      'trans', 'static/klein.html'],
+    ['pane',    'sovereign pane', 'the older pane',                         'brain',      'trans', null,                     'https://ecoprimals.github.io/hud/pane.html'],
+    ['polaris', 'north star',     'heartbeat, compute, tissues',            'heart',      'trans', 'static/polaris.html'],
+    ['hub',     'cis\u25c9trans', 'the tract: what came in, where it goes', 'guts',       'trans', 'static/hub.html'],
+    ['dock',    'space dock',     'the gallery: what the hands made',       'muscle',     'trans', 'static/spacedock.html']
+  ].map(function(h){ return {id:h[0], label:h[1], say:h[2], layer:h[3], face:h[4], url: away && h.length > 6 ? h[6] : h[5], state:0}; })
    .filter(function(h){ return !!h.url; });
-  var rack = document.getElementById('hud-rack'), fold = document.getElementById('hud-fold'), see = 55;
 
+  var board = document.getElementById('body-board'), back = document.getElementById('body-back'), say = document.getElementById('sphere-say');
+  var REST = say.textContent, VIRTUAL = 1280;
+  var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var LAYERS = {};
+  Array.prototype.forEach.call(board.querySelectorAll('.layer'), function(el){
+    LAYERS[el.getAttribute('data-layer')] = {name: el.getAttribute('data-layer'), el: el, huds: [],
+      spot: document.querySelector('#sphere .spot[data-layer="' + el.getAttribute('data-layer') + '"]')};
+  });
+
+  // each organ takes its place: one line under its layer, on its face
+  HUDS.forEach(function(h){
+    var L = LAYERS[h.layer]; if (!L) return;
+    var card = document.createElement('div'), head = document.createElement('h3'), chip = document.createElement('button'),
+        what = document.createElement('span'), view = document.createElement('div');
+    card.className = 'cell organ'; chip.type = 'button'; chip.className = 'organ-chip'; chip.textContent = h.label;
+    what.className = 'organ-say'; what.textContent = h.say; view.className = 'organ-view';
+    head.appendChild(chip); head.appendChild(what); card.appendChild(head); card.appendChild(view);
+    L.el.querySelector('.face.' + h.face).appendChild(card); L.huds.push(h);
+    h.card = card; h.chip = chip; h.view = view; h.frame = null;
+    chip.addEventListener('click', function(){ set(h, h.state === 1 ? 0 : 1); });
+    view.addEventListener('click', function(){ if (h.state === 1) set(h, 2); });
+  });
+  Array.prototype.forEach.call(board.querySelectorAll('.face'), function(f){
+    if (!f.querySelector('.cell')) { var n = document.createElement('p'); n.className = 'null'; n.textContent = '\u2205'; n.title = 'nothing is sorted here yet'; f.appendChild(n); }
+  });
+
+  function fit(h){ if (h.frame) h.frame.style.setProperty('--k', String((h.view.clientWidth || 320) / VIRTUAL)); }
   function paint(){
-    var on = HUDS.filter(function(h){ return h.state > 0; }).length;
-    // several layers at once share the light, so the face underneath stays readable
-    document.documentElement.style.setProperty('--hud-see', String(Math.min(.9, see / 100 / Math.sqrt(Math.max(1, on)))));
+    var front = null, awake = [];
     HUDS.forEach(function(h){
-      h.chip.className = h.state === 2 ? 'touch' : h.state === 1 ? 'see' : '';
+      if (!h.card) return;
+      h.card.className = 'cell organ' + (h.state === 2 ? ' touch' : h.state === 1 ? ' see' : '');
       h.chip.setAttribute('aria-pressed', h.state ? 'true' : 'false');
-      h.chip.title = h.label + (h.state === 2 ? ' - in front, takes the mouse' : h.state === 1 ? ' - laid over the face' : ' - off');
+      h.chip.title = h.label + (h.state === 2 ? ' - in front, takes the mouse' : h.state === 1 ? ' - awake in its place; click the miniature to bring it to the front' : ' - asleep');
       if (h.state && !h.frame) {
         var f = document.createElement('iframe');
-        f.className = 'hud-layer'; f.title = h.label + ' HUD'; f.src = h.url;
-        // Esc from inside a layer too, where the layer is one of our own pages
+        f.className = 'hud-mini'; f.title = h.label + ' HUD'; f.src = h.url;
+        // Esc from inside a HUD too, where the HUD is one of our own pages
         f.addEventListener('load', function(){ try { f.contentWindow.addEventListener('keydown', esc); } catch (e) {} });
-        document.body.insertBefore(f, rack); h.frame = f;
+        h.view.appendChild(f); h.frame = f; fit(h);
         void f.offsetWidth;                        // let it start from clear so it fades in instead of popping
       }
-      if (h.frame) {
-        h.frame.className = 'hud-layer' + (h.state === 2 ? ' touch' : h.state === 1 ? ' see' : '');
-        if (!h.state) { (function(f){ setTimeout(function(){ if (f.parentNode && f.className === 'hud-layer') f.parentNode.removeChild(f); }, 1000); })(h.frame); h.frame = null; }
-      }
+      if (h.frame && !h.state) { h.view.removeChild(h.frame); h.frame = null; }
+      if (h.frame) h.frame.className = 'hud-mini on' + (h.state === 2 ? ' touch' : '');
+      if (h.state) awake.push(h);
+      if (h.state === 2) front = h;
     });
-    var tag = HUDS.filter(function(h){ return h.state; }).map(function(h){ return h.id + (h.state === 2 ? '!' : ''); }).join(',');
+    Object.keys(LAYERS).forEach(function(k){
+      var L = LAYERS[k], folded = L.el.classList.contains('folded');
+      if (L.spot) {
+        L.spot.classList.toggle('lit', L.huds.some(function(h){ return h.state > 0; }));
+        L.spot.classList.toggle('folded', folded);
+      }
+      Array.prototype.forEach.call(L.el.querySelectorAll('.fold'), function(b){ b.setAttribute('aria-expanded', folded ? 'false' : 'true'); });
+    });
+    back.hidden = !front;
+    if (front) back.textContent = '\u25c9 back to the body \u2014 ' + front.label + ' (Esc)';
+    document.documentElement.style.overflow = front ? 'hidden' : '';
+    say.textContent = awake.length ? awake.length + ' awake \u00b7 ' + awake.map(function(h){ return h.layer + ': ' + h.label; }).join(' \u00b7 ') : REST;
+    var tag = awake.map(function(h){ return h.id + (h.state === 2 ? '!' : ''); }).join(',');
     var want = tag ? '#huds=' + tag : '';
     if (location.hash !== want && (want || /^#huds=/.test(location.hash))) history.replaceState(null, '', location.pathname + location.search + want);
-    fold.textContent = on ? 'huds \u00b7 ' + on : 'huds';
   }
   function set(h, s){
-    if (s === 2) HUDS.forEach(function(o){ if (o !== h && o.state === 2) o.state = 1; });   // one layer in front at a time
+    if (s === 2) HUDS.forEach(function(o){ if (o !== h && o.state === 2) o.state = 1; });   // one HUD in front at a time
     h.state = s; paint();
   }
   function esc(e){ if (e.key === 'Escape') { HUDS.forEach(function(h){ if (h.state === 2) h.state = 1; }); paint(); } }
+  function go(L){                                  // a place on the sphere: open that layer and go to it
+    L.el.classList.remove('folded'); paint();
+    var at = L.el.querySelector('.face-head');
+    if (at && at.scrollIntoView) at.scrollIntoView({behavior: calm ? 'auto' : 'smooth', block: 'center'});
+    L.el.classList.add('here'); setTimeout(function(){ L.el.classList.remove('here'); }, 2400);
+  }
   function fromHash(){
     var m = /^#huds=(.*)$/.exec(location.hash); if (!m) return;
-    var names = decodeURIComponent(m[1]).split(',');
+    var names = decodeURIComponent(m[1]).split(','), fronted = false;
     HUDS.forEach(function(h){
-      h.state = names.indexOf('all') >= 0 || names.indexOf(h.id) >= 0 ? 1 : names.indexOf(h.id + '!') >= 0 ? 2 : 0;
+      h.state = names.indexOf('all') >= 0 || names.indexOf(h.id) >= 0 ? 1 : names.indexOf(h.id + '!') >= 0 && !fronted ? 2 : 0;
+      if (h.state === 2) fronted = true;
+      if (h.state && LAYERS[h.layer]) LAYERS[h.layer].el.classList.remove('folded');
     });
-    rack.classList.remove('folded'); fold.setAttribute('aria-expanded', 'true'); paint();
+    paint();
   }
 
-  HUDS.forEach(function(h){
-    var b = document.createElement('button'); b.type = 'button'; b.textContent = h.label; h.chip = b;
-    b.addEventListener('click', function(){ set(h, (h.state + 1) % 3); });
-    rack.appendChild(b);
+  Object.keys(LAYERS).forEach(function(k){
+    var L = LAYERS[k];
+    Array.prototype.forEach.call(L.el.querySelectorAll('.fold'), function(b){
+      b.title = 'fold or open the ' + k + ' layer';
+      b.addEventListener('click', function(){ L.el.classList.toggle('folded'); paint(); });
+    });
+    if (L.spot) {
+      L.spot.addEventListener('click', function(){ go(L); });
+      L.spot.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(L); } });
+    }
   });
-  var all = document.createElement('button'); all.type = 'button'; all.textContent = 'all'; all.title = 'lay every HUD over the face';
-  all.addEventListener('click', function(){ HUDS.forEach(function(h){ if (!h.state) h.state = 1; }); paint(); });
-  var none = document.createElement('button'); none.type = 'button'; none.textContent = 'clear'; none.title = 'take every layer off';
-  none.addEventListener('click', function(){ HUDS.forEach(function(h){ h.state = 0; }); paint(); });
-  var lab = document.createElement('label'); lab.textContent = 'light ';
-  var rng = document.createElement('input'); rng.type = 'range'; rng.min = 15; rng.max = 90; rng.value = see; rng.setAttribute('aria-label', 'how strongly the layers show');
-  rng.addEventListener('input', function(){ see = +rng.value; paint(); });
-  lab.appendChild(rng); rack.appendChild(all); rack.appendChild(none); rack.appendChild(lab);
-  fold.addEventListener('click', function(){ var f = rack.classList.toggle('folded'); fold.setAttribute('aria-expanded', f ? 'false' : 'true'); });
+  back.addEventListener('click', function(){ esc({key: 'Escape'}); });
   document.addEventListener('keydown', esc);
   window.addEventListener('hashchange', fromHash);
+  if (window.ResizeObserver) new ResizeObserver(function(){ HUDS.forEach(fit); }).observe(board);
+  else window.addEventListener('resize', function(){ HUDS.forEach(fit); });
   if (/^#huds=/.test(location.hash)) fromHash(); else paint();
 })();
 </script>
