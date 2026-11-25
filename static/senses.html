@@ -3082,6 +3082,37 @@ body { padding-bottom: 76px !important; }
   #hud-sky .star-words { position: absolute; left: 7%; bottom: 10%; color: #c9d1d9; max-width: 60%; }
   #hud-sky .horizon { position: absolute; left: 0; right: 0; bottom: 0; padding: 8px 14px; color: #484f58; font-size: 11px; text-align: center; }
 
+  /* the centre (2026-11-25): the orbit map is pinned to the middle of the display behind every view, the globe sits
+     on top of it, and the middle itself is the black spot - the water. In the centre view they come to the front. */
+  :root { --hud-globe: min(34vmin, 330px); }   /* the spot stays inside the map's gate ring (0.19 vmin out), so the gates show around it */
+  #w259.hud-pinned, #w259-ghost { display: block !important; z-index: -3 !important; opacity: .35; }
+  #w259.hud-filling { visibility: hidden; }
+  #w259.hud-pinned #w259-pip, #w259-ghost #w259-pip, #w259.hud-pinned > [title="PIP Bubble"], #w259-ghost > [title="PIP Bubble"] { display: none !important; }
+  body:not([data-hud-view="centre"]) #w259 .panel, body:not([data-hud-view="centre"]) #w259-ghost .panel { display: none; }
+  #hud-centre { position: fixed; left: 50%; top: 50%; width: 0; height: 0; z-index: -2; opacity: .3; transition: opacity .5s; pointer-events: none; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  #hud-centre .spot {
+    position: absolute; left: calc(var(--hud-globe) * -.43); top: calc(var(--hud-globe) * -.43);
+    width: calc(var(--hud-globe) * .86); height: calc(var(--hud-globe) * .86); border-radius: 50%; background: #000;
+    box-shadow: 0 0 0 1px rgba(240, 136, 62, .40), 0 0 34px 4px rgba(240, 136, 62, .16), 0 0 90px 12px rgba(240, 230, 140, .05);
+  }
+  #hud-centre .words {
+    position: absolute; left: 0; top: calc(var(--hud-globe) * .43 - 10px); transform: translateX(-50%); z-index: 3; white-space: nowrap;
+    padding: 1px 10px; border-radius: 999px; border: 1px solid rgba(86, 182, 194, .35); background: rgba(5, 8, 13, .92);
+    color: #56b6c2; font-size: 11px; text-decoration: none;
+  }
+  #hud-centre .words:hover { border-color: rgba(86, 182, 194, .8); }
+  #desk-globe-wrap.hud-pinned {
+    display: block !important; left: 50% !important; top: 50% !important; width: var(--hud-globe) !important; height: var(--hud-globe) !important;
+    transform: translate(-50%, -50%); background: transparent !important; z-index: -1 !important; opacity: .3; transition: opacity .5s; pointer-events: none;
+  }
+  #desk-globe-wrap.hud-pinned > canvas { clip-path: circle(41%); }
+  #desk-globe-wrap.hud-pinned > button { display: none !important; }
+  body[data-hud-view="centre"] #w259.hud-pinned, body[data-hud-view="centre"] #w259-ghost { opacity: 1; }
+  body[data-hud-view="centre"] #hud-centre { z-index: 1; opacity: 1; pointer-events: auto; }
+  body[data-hud-view="centre"] #desk-globe-wrap.hud-pinned { z-index: 2 !important; opacity: 1; }
+  body[data-hud-view="centre"] #desk-globe-wrap.hud-pinned > canvas { pointer-events: auto; }
+  body[data-hud-view="centre"] #hud-stage { min-height: 70vh; }
+
   /* one frame also means one scroll direction: no sideways bars */
   html, body { overflow-x: hidden; }
   .gaia-nav-inner { scrollbar-width: none; }
@@ -3106,6 +3137,10 @@ body { padding-bottom: 76px !important; }
   <div id="hud-hint" aria-live="polite"></div>
 </div>
 <div id="hud-stage"></div>
+<div id="hud-centre" aria-label="the centre: the black spot is the water">
+  <a class="spot" href="/water" title="the black spot is the water - step through" aria-label="water, the entrance"></a>
+  <a class="words" href="/water" title="the black spot is the water - everything on this display is cast out from it">≈ water</a>
+</div>
 <section id="hud-mesh" class="hud-masked" aria-label="mesh">
   <div class="pair" id="hud-mesh-pair"><div class="body"><h3>this body</h3><dl><dt>state</dt><dd class="gray">asking the gate</dd></dl></div></div>
   <div class="seam" id="hud-mesh-seam"></div>
@@ -3134,6 +3169,8 @@ body { padding-bottom: 76px !important; }
   var folded = /^hud\./.test(host) || host === 'in.nestgate.io';
   function out(path) { return folded ? '//primals.eco' + path : path; }
   D.getElementById('hud-entrance').href = folded ? '//water.primals.eco/' : '/water';
+  var centre = D.getElementById('hud-centre');
+  if (centre) all('a', centre).forEach(function (a) { a.href = folded ? '//water.primals.eco/' : '/water'; });
 
   // the old HUD body: sort its pieces into viewpoints
   var gut = [], membrane = [], tube = null, hm = one('.hud-main');
@@ -3145,6 +3182,7 @@ body { padding-bottom: 76px !important; }
   });
 
   var VIEWS = [
+    { key: 'centre', label: 'centre', hint: 'the black spot is the water · everything here is cast out from it · the globe sits on top (drag · F flips)', always: true },
     { key: 'surfaces', label: 'surfaces', hint: 'every surface on one map - where we can go', take: [one('#nav-ring')] },
     { key: 'eyes', label: 'eyes', hint: 'gaia · player · user - three eyes, one focus', take: [one('#triInfo')], show: [one('#triOverlay')] },
     { key: 'body', label: 'body', hint: 'head · torso · arms · legs · faces - the gate\u2019s paths by region', take: [one('#gate-endpoints')], show: [one('#axial-indicator')] },
@@ -3155,13 +3193,13 @@ body { padding-bottom: 76px !important; }
     { key: 'sky', label: 'night sky', hint: 'the moon is the white paper · the stars are the spore print', take: [sky] }
   ];
   var more = { key: 'more', label: 'more', hint: 'layers that arrived on their own - held here instead of on top of everything', els: [] };
-  var known = [bar, stage];
+  var known = [bar, stage, centre];
   VIEWS.forEach(function (v) {
     (v.take || []).forEach(function (el) { if (el) stage.appendChild(el); });
     v.els = (v.take || []).concat(v.show || []).filter(Boolean);
     known = known.concat(v.els);
   });
-  VIEWS = VIEWS.filter(function (v) { return v.els.length; });
+  VIEWS = VIEWS.filter(function (v) { return v.els.length || v.always; });
 
   // replaced by this bar: the unstyled header list and the two loose links above it
   all('.hud-header').concat(all('main.gaia-shell > a')).forEach(function (el) { el.classList.add('hud-masked'); known.push(el); });
@@ -3206,7 +3244,7 @@ body { padding-bottom: 76px !important; }
   VIEWS.forEach(tabFor); tabFor(more); more.tab.hidden = true;
 
   function show(key, quiet) {
-    if (!byKey[key] || !byKey[key].els.length) key = VIEWS[0].key;
+    if (!byKey[key] || !(byKey[key].els.length || byKey[key].always)) key = VIEWS[0].key;
     current = key;
     VIEWS.concat([more]).forEach(function (v) {
       v.els.forEach(function (el) { el.classList.toggle('hud-masked', v.key !== key); });
@@ -3215,13 +3253,39 @@ body { padding-bottom: 76px !important; }
     hint.textContent = byKey[key].hint;
     D.body.setAttribute('data-hud-view', key);
     try { D.dispatchEvent(new CustomEvent('hud-one-view', { detail: key })); } catch (e) {}
-    if (!quiet) { try { history.replaceState(null, '', '#' + key); localStorage.setItem('hud_view', key); } catch (e) {} }
+    if (!quiet) { try { history.replaceState(null, '', '#' + key); localStorage.setItem('hud_view_c', key); } catch (e) {} }
+  }
+
+  // the centre: two layers are pinned instead of filed under "more" - the orbit map (w259) and the globe on top of it.
+  var PINNED = /^(w259|w259-ghost|desk-globe-wrap)$/;
+  function pin(el) {
+    if (el.classList.contains('hud-pinned')) return;
+    el.classList.remove('hud-masked'); el.classList.add('hud-pinned');
+    if (el.id === 'desk-globe-wrap' && el.style.display === 'none') {   // her own switch starts the drawing; the size is ours
+      var sw = D.getElementById('desk-globe-toggle'); if (sw) sw.click();
+    }
+    if (el.id === 'w259' && D.getElementById('w259-ghost')) {           // a held drawing is showing: swap once this one has filled in
+      el.classList.add('hud-filling');
+      setTimeout(function () {
+        var g = D.getElementById('w259-ghost'); if (g) g.remove();
+        el.classList.remove('hud-filling');
+      }, 1500);
+    }
+  }
+  // the orbit map rebuilds itself from nothing every 30 s; hold the old drawing until the new one has filled in, so the centre never blinks
+  function hold(old) {
+    var prev = D.getElementById('w259-ghost'); if (prev) prev.remove();
+    old.id = 'w259-ghost'; D.body.appendChild(old);
   }
 
   // the mask: a layer dropped onto the body later becomes part of "more", not a new pile
-  function sweep() {
+  function sweep(records) {
+    (records || []).forEach(function (r) {
+      Array.prototype.forEach.call(r.removedNodes, function (el) { if (el.id === 'w259' && !el.parentNode) hold(el); });
+    });
     Array.prototype.forEach.call(D.body.children, function (el) {
       if (/^(SCRIPT|STYLE|LINK|NAV|MAIN|FOOTER|NOSCRIPT|TEMPLATE)$/.test(el.tagName)) return;
+      if (PINNED.test(el.id)) { pin(el); return; }
       if (el.id === 'optic-chiasm' || known.indexOf(el) >= 0 || more.els.indexOf(el) >= 0) return;
       more.els.push(el);
       el.classList.toggle('hud-masked', current !== 'more');
@@ -3231,9 +3295,29 @@ body { padding-bottom: 76px !important; }
   sweep();
   if (window.MutationObserver) new MutationObserver(sweep).observe(D.body, { childList: true });
 
+  // shadowcast: the black spot is where the display is cast out from. Every piece on the stage gets a warm edge on the
+  // side that faces the spot and a shadow on the far side, longer the farther out it sits. Set when the view changes,
+  // the window changes, or the page scrolls - it does not move by itself.
+  var castWait = false;
+  function cast() {
+    castWait = false;
+    var mx = innerWidth / 2, my = innerHeight / 2;
+    [bar].concat(all('#hud-stage > *:not(.hud-masked)'), all('#hud-stage > *:not(.hud-masked) > a')).forEach(function (el) {
+      var r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+      var dx = r.left + r.width / 2 - mx, dy = r.top + r.height / 2 - my, d = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / d, uy = dy / d, len = Math.min(16, 3 + d / 70);
+      el.style.boxShadow = (ux * len).toFixed(1) + 'px ' + (uy * len).toFixed(1) + 'px ' + (len * 1.5).toFixed(1) + 'px rgba(0,0,0,.6), inset ' +
+        (ux * 1.2).toFixed(1) + 'px ' + (uy * 1.2).toFixed(1) + 'px 0 rgba(240,136,62,.30)';
+    });
+  }
+  function castSoon() { if (!castWait) { castWait = true; (window.requestAnimationFrame || setTimeout)(cast); } }
+  D.addEventListener('hud-one-view', castSoon);
+  window.addEventListener('resize', castSoon);
+  window.addEventListener('scroll', castSoon, { passive: true });
+
   var first = (location.hash || '').replace('#', '');
-  if (!byKey[first]) { try { first = localStorage.getItem('hud_view'); } catch (e) { first = null; } }
-  show(byKey[first] ? first : 'surfaces', true);
+  if (!byKey[first]) { try { first = localStorage.getItem('hud_view_c'); } catch (e) { first = null; } }
+  show(byKey[first] ? first : 'centre', true);
   window.addEventListener('hashchange', function () { var k = (location.hash || '').replace('#', ''); if (byKey[k] && k !== current) show(k, true); });
   /* mesh view: this body and the other, the same rows in the same order. Asked only while the view is open. */
   (function () {
