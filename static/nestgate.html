@@ -266,13 +266,28 @@ main.gaia-shell .sphere .dot{cursor:pointer;outline:none}
 main.gaia-shell .sphere .dot rect{fill:var(--lc);fill-opacity:.55;stroke:var(--lc)}
 main.gaia-shell .sphere .dot text{font-size:13px;fill:var(--lc)}
 main.gaia-shell .sphere .dot:hover rect,main.gaia-shell .sphere .dot:focus-visible rect{fill-opacity:1}
-/* the two bars: up turns clockwise, down turns counter-clockwise, one turn a second - the same turn the old HUD's
-   top and bottom bars make. Small, so nothing sweeps the page; with reduced motion they hold still. */
-main.gaia-shell .sphere .pole{fill:#c8d6e5;transform-box:fill-box;transform-origin:50% 50%}
-main.gaia-shell .sphere .pole.north{animation:body-cw 1s linear infinite}
-main.gaia-shell .sphere .pole.south{animation:body-ccw 1s linear infinite}
-@keyframes body-cw{to{transform:rotate(360deg)}}
-@keyframes body-ccw{to{transform:rotate(-360deg)}}
+/* one bar seen from four places, one turn a second (the turn the old HUD's top and bottom bars make), one end bright.
+   Along its axis it turns: up clockwise, down counter-clockwise (the same turn seen from underneath, so it starts
+   half a turn round). Across its axis it swings: its length follows the cosine of the same turn - near as it is,
+   far mirrored. The dot in the middle is the bar end-on. Small, so nothing sweeps the page; with reduced motion
+   all four hold still, each as it would be seen from its place. */
+main.gaia-shell .sphere .pole{transform-box:fill-box;transform-origin:50% 50%}
+main.gaia-shell .sphere .pole rect{fill:#576574}
+main.gaia-shell .sphere .pole rect.lit{fill:#c8d6e5}
+main.gaia-shell .sphere .hub{fill:#8395a7}
+main.gaia-shell .sphere .pole.north{animation:bar-up 1s linear infinite}
+main.gaia-shell .sphere .pole.south{transform:rotate(180deg);animation:bar-down 1s linear infinite}
+main.gaia-shell .sphere .pole.near{animation:bar-near 1s cubic-bezier(.37,0,.63,1) infinite}
+main.gaia-shell .sphere .pole.far{transform:scaleX(-1);animation:bar-far 1s cubic-bezier(.37,0,.63,1) infinite}
+@keyframes bar-up{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes bar-down{from{transform:rotate(180deg)}to{transform:rotate(-180deg)}}
+@keyframes bar-near{0%,100%{transform:scaleX(1)}50%{transform:scaleX(-1)}}
+@keyframes bar-far{0%,100%{transform:scaleX(-1)}50%{transform:scaleX(1)}}
+main.gaia-shell .sphere .bar{outline:none}
+main.gaia-shell .sphere .bar .hit{fill:transparent}
+main.gaia-shell .sphere .bar.side{cursor:pointer;opacity:.5;transition:opacity .6s ease}
+main.gaia-shell .sphere .bar.side[aria-pressed=true],main.gaia-shell .sphere .bar.side:hover,main.gaia-shell .sphere .bar.side:focus-visible{opacity:1}
+main.gaia-shell .sphere .bar.side[aria-pressed=true] text,main.gaia-shell .sphere .bar:focus-visible text{fill:#c8d6e5}
 main.gaia-shell .sphere-say{font-size:10px;color:#576574;margin-top:6px;line-height:1.5;min-height:1.5em}
 main.gaia-shell .stage-keys{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:4px}
 main.gaia-shell .stage-keys button{font:11px 'Courier New',monospace;line-height:1.5;color:#8a857e;background:#111;border:1px solid #1e2228;border-radius:99px;padding:1px 10px;cursor:pointer}
@@ -371,9 +386,16 @@ main.gaia-shell .hud-mini.touch{position:fixed;left:0;top:0;width:100vw;height:1
           </g>
           <g id="sp-sky"></g>
           <g id="sp-dots"></g>
-          <!-- the two bars: up turns clockwise, down turns counter-clockwise -->
-          <a href="#top" aria-label="up: to the top bar"><rect class="pole north" x="468" y="2" width="64" height="7" rx="3.5"/><text x="542" y="13">up ⟳</text></a>
-          <a href="#down" aria-label="down: to the bottom bar"><rect class="pole south" x="468" y="991" width="64" height="7" rx="3.5"/><text x="542" y="999">down ⟲</text></a>
+          <!-- ONE bar, four places to see it from. It turns once a second about the line that runs up and down through
+               the body; one end of it is bright. Along that line - from up it turns clockwise, from down the same turn
+               is counter-clockwise. Across that line - from near it swings: full, a point, full, the bright end
+               changing sides; from far, the same swing mirrored. All four keep the one phase.
+               up and down go to the top and bottom bars of the page. near and far are the two sides the whole face
+               is seen from: near as it stands, far inverted (klein - the sky mirrored, as from outside). -->
+          <a class="bar" href="#top" aria-label="up: to the top bar" data-say="up · the bar seen from above: it turns clockwise"><g class="pole north"><rect x="468" y="2" width="64" height="7" rx="3.5"/><rect class="lit" x="500" y="2" width="32" height="7" rx="3.5"/></g><circle class="hub" cx="500" cy="5.5" r="3.5"/><text x="542" y="13">up ⟳</text></a>
+          <a class="bar" href="#down" aria-label="down: to the bottom bar" data-say="down · the same bar seen from below: the same turn, counter-clockwise"><g class="pole south"><rect x="468" y="991" width="64" height="7" rx="3.5"/><rect class="lit" x="500" y="991" width="32" height="7" rx="3.5"/></g><circle class="hub" cx="500" cy="994.5" r="3.5"/><text x="542" y="999">down ⟲</text></a>
+          <g class="bar side" id="bar-near" tabindex="0" role="button" aria-pressed="true" aria-label="near: see the face from this side, as it stands" data-say="near · the same bar seen from this side: it swings. The face as it stands."><rect class="hit" x="0" y="950" width="100" height="50"/><g class="pole near"><rect x="8" y="982" width="64" height="7" rx="3.5"/><rect class="lit" x="40" y="982" width="32" height="7" rx="3.5"/></g><circle class="hub" cx="40" cy="985.5" r="3.5"/><text x="8" y="972">near ⇄</text></g>
+          <g class="bar side" id="bar-far" tabindex="0" role="button" aria-pressed="false" aria-label="far: see the face from the other side, inverted" data-say="far · the same bar seen from the other side: the swing mirrored. The face inverted."><rect class="hit" x="900" y="950" width="100" height="50"/><g class="pole far"><rect x="928" y="982" width="64" height="7" rx="3.5"/><rect class="lit" x="960" y="982" width="32" height="7" rx="3.5"/></g><circle class="hub" cx="960" cy="985.5" r="3.5"/><text x="992" y="972" text-anchor="end">⇆ far</text></g>
         </svg>
         <div class="discs" id="discs"></div>
       </div>
@@ -676,6 +698,8 @@ setInterval(rotatePainting, 20000);
      invert (klein): the same body inside out - the sky comes inside, the ground goes to the rim, cis and trans change
      sides, and the sky is seen mirrored, as a globe of it is seen from outside. The body at the centre does not move.
      layers: unroll - the live views sit in their layers below instead of on the rings.
+     The four bars are one bar seen from four places: up and down (it turns, clockwise and counter-clockwise) go to
+     the top and bottom of the page; near and far (it swings, and mirrored) are the upright and the inverted face.
      The address carries the state (#huds=senses,polaris!&klein&layers) so a view can be linked; nothing is stored.
      A HUD is only loaded when it is woken. Everything that moves here glides or fades; with reduced motion it jumps.
      To re-sort an organ, change its layer or face in the table below - that is the only place the sort lives. -->
@@ -768,7 +792,8 @@ setInterval(rotatePainting, 20000);
       stage = document.getElementById('stage'), discs = document.getElementById('discs'),
       gHalves = document.getElementById('sp-halves'), gRings = document.getElementById('sp-rings'), gTri = document.getElementById('sp-tri'),
       gSky = document.getElementById('sp-sky'), gDots = document.getElementById('sp-dots'),
-      kAll = document.getElementById('key-all'), kNone = document.getElementById('key-none'), kKlein = document.getElementById('key-klein'), kLayers = document.getElementById('key-layers');
+      kAll = document.getElementById('key-all'), kNone = document.getElementById('key-none'), kKlein = document.getElementById('key-klein'), kLayers = document.getElementById('key-layers'),
+      bNear = document.getElementById('bar-near'), bFar = document.getElementById('bar-far');
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var klein = false, view = 'corona', anchorLon = null, told = null, rest = '';
   var LAYERS = {}, ITEMS = [];
@@ -931,6 +956,7 @@ setInterval(rotatePainting, 20000);
     var front = null, awake = [];
     board.classList.toggle('klein', klein); board.classList.toggle('layers', view === 'layers');
     kKlein.setAttribute('aria-pressed', klein ? 'true' : 'false'); kLayers.setAttribute('aria-pressed', view === 'layers' ? 'true' : 'false');
+    bNear.setAttribute('aria-pressed', klein ? 'false' : 'true'); bFar.setAttribute('aria-pressed', klein ? 'true' : 'false');
     stage.classList.toggle('small', stage.clientWidth < 520);
     layout();
     HUDS.forEach(function(h){
@@ -1015,6 +1041,17 @@ setInterval(rotatePainting, 20000);
   kNone.addEventListener('click', function(){ HUDS.forEach(function(h){ h.state = 0; }); paint(); });
   kKlein.addEventListener('click', function(){ klein = !klein; paint(); });
   kLayers.addEventListener('click', function(){ view = view === 'layers' ? 'corona' : 'layers'; paint(); });
+  // near and far: the two sides the face is seen from. far is the inverted face - the same thing the invert key does
+  pressable(bNear, function(){ if (klein) { klein = false; paint(); } });
+  pressable(bFar, function(){ if (!klein) { klein = true; paint(); } });
+  Array.prototype.forEach.call(stage.querySelectorAll('.bar[data-say]'), function(b){
+    function words(){ tell(b.getAttribute('data-say')); }
+    b.addEventListener('mouseenter', words); b.addEventListener('focus', words);
+    b.addEventListener('mouseleave', function(){ tell(null); }); b.addEventListener('blur', function(){ tell(null); });
+  });
+  // the four bars are one bar: give their turns the same start, so up, down, near and far never drift apart
+  try { Array.prototype.forEach.call(stage.querySelectorAll('.pole'), function(p){
+    (p.getAnimations ? p.getAnimations() : []).forEach(function(a){ a.startTime = 0; }); }); } catch (e) {}
   back.addEventListener('click', function(){ esc({key: 'Escape'}); });
   document.addEventListener('keydown', esc);
   window.addEventListener('hashchange', fromHash);
