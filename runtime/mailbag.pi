@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""mailbag.pi — Gaia's mail bag. It floats: no gate is its home.
+
+Every message is a file named by the SHA-256 of its own bytes. The name points at nothing and no one:
+the same message has the same name on every gate, so two bags join by taking the union and can never
+disagree. Any gate that runs the neutrino (neutrino_smtp.pi) drops what it receives into its copy.
+
+    data/neutron/mailbag/
+        bag.json                    the settings (below)
+        public/<aa>/<sha256>.eml    open mail - the file IS the message, its name is its hash
+        sealed/<aa>/<sha256>.seal   private mail, sealed to the key in bag.json; named by the hash of
+                                    the message inside. Not carried by the public repo (.gitignore).
+        log/<gate>.jsonl            one line per arrival. A gate writes only its own file, so joins never clash.
+
+Settings (bag.json):
+    public        addresses whose mail is open. Everything else follows "default".
+    default       "sealed" or "public" for addresses not listed.
+    hold_subject  a pattern. Mail to an open address whose subject matches it is sealed anyway
+                  (sign-in codes and password resets must not be readable by the world).
+    seal_to       the public half of the sealing key (hex). The half that opens is NOT kept in this repo.
+
+A gate that receives private mail holds only seal_to: it can close an envelope and cannot open one.
+If a message cannot be sealed it is held outside the repo, never written here in the clear.
+
+Usage:
+    python runtime/mailbag.pi status              what the bag holds on this gate
+    python runtime/mailbag.pi verify              every open message still matches its name
+    python runtime/mailbag.pi ingest [maildir]    bring an existing Maildir tree into the bag (default: mail/)
+    python runtime/mailbag.pi merge <other bag>   take everything another copy of the bag has that this one lacks
+"""
+import hashlib
+import json
+import os
+import re
+import socket
+import sys
+import time
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+BAG = Path(os.environ.get("GAIA_MAILBAG") or REPO / "data" / "neutron" / "mailbag")
+HELD = Path(os.environ.get("GAIA_MAILBAG_HELD") or Path.home() / ".local" / "share" / "gaia" / "mailbag-held")
+NODE = re.sub(r"[^a-z0-9_-]", "-", (os.environ.get("GAIA_NODE") or socket.gethostname()).lower()) or "gate"
+DEFAULTS = {"public": [], "default": "sealed", "hold_subject": "", "seal_to": ""}
+EXT = {"public": ".eml", "sealed": ".seal"}
+
+
+class SealError(Exception):
+    """The message could not be sealed (no key in bag.json, or PyNaCl is not installed)."""
+
+
+def settings():
+    s = dict(DEFAULTS)
+    try:
+        s.update(json.loads((BAG / "bag.json").read_text(encoding="utf-8")))
+    except FileNotFoundError:
+        pass
+    return s
+
+
+def name_of(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def subject_of(raw):
+    import email.header
+    import email.parser
+    msg = email.parser.BytesHeaderParser().parsebytes(raw[:65536])
+    subject = msg.get("Subject", "") or ""
+    try:
+        return str(email.header.make_header(email.header.decode_header(subject)))
+    except Exception:
+        return str(subject)
+
+
+def shelf_for(rcpt, raw=b""):
+    """'public' or 'sealed'. Anything unclear - unknown address, unreadable settings - is sealed."""
+    try:
+        s = settings()
+        if rcpt.strip().lower() not in [a.lower() for a in s.get("public", [])]:
+            return "public" if s.get("default") == "public" else "sealed"
+        pattern = s.get("hold_subject")
+        if pattern and re.search(pattern, subject_of(raw)):
+            return "sealed"
+        return "public"
+    except Exception:
+        return "sealed"
+
+
+def seal(plain):
+    key = settings().get("seal_to") or ""
+    if not re.fullmatch(r"[0-9a-f]{64}", key):
+        raise SealError("bag.json has no seal_to key")
+    try:
+        from nacl.public import PublicKey, SealedBox
+    except ImportError:
+        raise SealError("PyNaCl is not installed")
+    return SealedBox(PublicKey(bytes.fromhex(key))).encrypt(plain)
+
+
+def open_sealed(blob, secret):
+    """(envelope, message bytes) from a sealed file. secret: the 32 bytes that open the bag."""
+    from nacl.public import PrivateKey, SealedBox
+    plain = SealedBox(PrivateKey(secret)).decrypt(blob)
+    head, _, raw = plain.partition(b"\n")
+    return json.loads(head.decode("utf-8")), raw
+
+
+def _path(shelf, name):
+    return BAG / shelf / name[:2] / (name + EXT[shelf])
+
+
+def where(name):
+    """The shelf a message is on in this copy of the bag, or None."""
+    for shelf in EXT:
+        if _path(shelf, name).exists():
+            return shelf
+    return None
+
+
+def _write(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".%d.tmp" % os.getpid())
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
+
+
+def _log(line):
+    path = BAG / "log" / (NODE + ".jsonl")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "ab") as f:
+        f.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
+
+
+def _stamp(when=None):
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(when if when is not None else time.time()))
+
+
+def put(raw, rcpt="", mail_from="", tls=False, shelf=None, when=None, how="smtp"):
+    """Drop one message into the bag. Returns (name, shelf, new). Putting the same message twice changes nothing."""
+    if isinstance(raw, str):
+        raw = raw.encode("utf-8", "replace")
+    name = name_of(raw)
+    have = where(name)
+    if have:
+        return name, have, False
+    shelf = shelf or shelf_for(rcpt, raw)
+    line = {"ts": _stamp(when), "node": NODE, "sha256": name, "shelf": shelf, "size": len(raw), "how": how}
+    if shelf == "public":
+        _write(_path("public", name), raw)
+        line.update({"to": rcpt, "from": mail_from, "tls": bool(tls)})
+    else:
+        envelope = {"to": rcpt, "from": mail_from, "tls": bool(tls), "ts": line["ts"], "node": NODE}
+        _write(_path("sealed", name), seal(json.dumps(envelope).encode("utf-8") + b"\n" + raw))
+    _log(line)
+    return name, shelf, True
+
+
+def hold(raw, rcpt="", mail_from="", tls=False):
+    """Private mail that could not be sealed: kept in the clear OUTSIDE the repo, for this gate's owner only."""
+    if isinstance(raw, str):
+        raw = raw.encode("utf-8", "replace")
+    name = name_of(raw)
+    HELD.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(HELD, 0o700)
+    except OSError:
+        pass
+    for suffix, data in ((".eml", raw), (".json", json.dumps({"to": rcpt, "from": mail_from, "tls": bool(tls), "ts": _stamp(), "node": NODE}).encode("utf-8"))):
+        path = HELD / (name + suffix)
+        path.write_bytes(data)
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    _log({"ts": _stamp(), "node": NODE, "sha256": name, "shelf": "held", "size": len(raw), "how": "smtp"})
+    return name
+
+
+def names(shelf, root=None):
+    base = (root or BAG) / shelf
+    return sorted(p.name[:-len(EXT[shelf])] for p in base.glob("*/*" + EXT[shelf])) if base.is_dir() else []
+
+
+def verify():
+    """Open messages whose bytes no longer match their name."""
+    return [n for n in names("public") if name_of(_path("public", n).read_bytes()) != n]
+
+
+def merge(other):
+    """Union with another copy of the bag. Returns how many messages and log lines were new here."""
+    other = Path(other)
+    got = {"public": 0, "sealed": 0, "log_lines": 0, "refused": 0}
+    for shelf in EXT:
+        for name in names(shelf, other):
+            if where(name):
+                continue
+            data = (other / shelf / name[:2] / (name + EXT[shelf])).read_bytes()
+            if shelf == "public" and name_of(data) != name:
+                got["refused"] += 1          # not what its name says it is
+                continue
+            _write(_path(shelf, name), data)
+            got[shelf] += 1
+    for theirs in sorted((other / "log").glob("*.jsonl")) if (other / "log").is_dir() else []:
+        mine = BAG / "log" / theirs.name
+        seen = set(mine.read_bytes().splitlines()) if mine.exists() else set()
+        fresh = [l for l in theirs.read_bytes().splitlines() if l.strip() and l not in seen]
+        if fresh:
+            mine.parent.mkdir(parents=True, exist_ok=True)
+            with open(mine, "ab") as f:
+                f.write(b"\n".join(fresh) + b"\n")
+            got["log_lines"] += len(fresh)
+    return got
+
+
+def ingest(maildir=None):
+    """Bring a Maildir tree (<name>_at_<domain>/{new,cur}/*) into the bag, sorted by the settings."""
+    root = Path(maildir) if maildir else REPO / "mail"
+    got = {"public": 0, "sealed": 0, "already": 0}
+    for box in sorted(p for p in root.iterdir() if p.is_dir() and "_at_" in p.name) if root.is_dir() else []:
+        rcpt = box.name.replace("_at_", "@")
+        for sub in ("new", "cur"):
+            for f in sorted((box / sub).glob("*")) if (box / sub).is_dir() else []:
+                if not f.is_file():
+                    continue
+                name, shelf, new = put(f.read_bytes(), rcpt, when=f.stat().st_mtime, how="ingest")
+                got[shelf if new else "already"] += 1
+    return got
+
+
+def status():
+    s = settings()
+    logs = {}
+    for f in sorted((BAG / "log").glob("*.jsonl")) if (BAG / "log").is_dir() else []:
+        logs[f.stem] = sum(1 for l in f.read_bytes().splitlines() if l.strip())
+    held = len(list(HELD.glob("*.eml"))) if HELD.is_dir() else 0
+    return {"gate": NODE, "bag": str(BAG), "public": len(names("public")), "sealed": len(names("sealed")), "held_outside_repo": held,
+            "arrivals_logged_by_gate": logs, "open_addresses": s.get("public", []), "everything_else": s.get("default"),
+            "can_seal": bool(re.fullmatch(r"[0-9a-f]{64}", s.get("seal_to") or "")), "hold_subject_rule": bool(s.get("hold_subject"))}
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "status"
+    if cmd == "status":
+        print(json.dumps(status(), indent=2))
+    elif cmd == "verify":
+        bad = verify()
+        print("open messages: %d, not matching their name: %d" % (len(names("public")), len(bad)))
+        for n in bad:
+            print("   " + n)
+        return 1 if bad else 0
+    elif cmd == "ingest":
+        print(json.dumps(ingest(argv[2] if len(argv) > 2 else None)))
+    elif cmd == "merge" and len(argv) > 2:
+        print(json.dumps(merge(argv[2])))
+    else:
+        print(__doc__)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

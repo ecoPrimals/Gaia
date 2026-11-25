@@ -118,18 +118,28 @@ class NeutrinoSMTP:
                 tls_tag = " (TLS)" if self.tls_active else " (plaintext)"
 
                 for rcpt in self.rcpt_to:
+                    received = f"Received: from {self.addr[0]} by {HOSTNAME}{tls_tag}; {email.utils.formatdate()}"
+                    full_msg = received + "\r\n" + full_body
+                    raw = full_msg.encode("utf-8", "replace")
+
+                    # Private mail never touches the open Maildir or the pony log: sealed into the bag, or held.
+                    if _bag_shelf(rcpt, raw) == "sealed":
+                        _bag_private(self.mail_from, rcpt, raw, self.tls_active)
+                        continue
+
                     maildir = MAIL_ROOT / rcpt.replace("@", "_at_")
                     for sub in ("new", "cur", "tmp"):
                         (maildir / sub).mkdir(parents=True, exist_ok=True)
                     ts = int(time.time())
                     fname = f"{ts}.{id(self):x}@{HOSTNAME}"
-                    received = f"Received: from {self.addr[0]} by {HOSTNAME}{tls_tag}; {email.utils.formatdate()}"
-                    full_msg = received + "\r\n" + full_body
                     tmp_path = maildir / "tmp" / fname
                     new_path = maildir / "new" / fname
-                    tmp_path.write_text(full_msg, encoding="utf-8")
+                    tmp_path.write_bytes(raw)
                     tmp_path.rename(new_path)
                     print(f"  📧 NEUTRINO: {self.mail_from} → {rcpt}{tls_tag} ({len(full_msg)} bytes)")
+
+                    # The mail bag — the same bytes, named by their hash, bound to no gate
+                    _bag_open(self.mail_from, rcpt, raw, self.tls_active)
 
                     # Pony Express — log to neutron for inter-gate relay
                     _pony_log(self.mail_from, rcpt, full_msg, self.tls_active)
@@ -151,6 +161,58 @@ class NeutrinoSMTP:
                 self.send("500 Command not recognized")
 
         self.conn.close()
+
+
+_BAG = None
+
+
+def _bag():
+    """mailbag.pi, loaded on first use (the gate loads .pi files by exec, so a plain import cannot find it)."""
+    global _BAG
+    if _BAG is None:
+        import types
+        path = Path(__file__).parent / "mailbag.pi"
+        mod = types.ModuleType("mailbag")
+        mod.__file__ = str(path)
+        exec(compile(path.read_text(encoding="utf-8"), str(path), "exec"), mod.__dict__)
+        _BAG = mod
+    return _BAG
+
+
+def _bag_shelf(rcpt, raw):
+    """'public' or 'sealed'. If the bag cannot be loaded at all, mail flows as it did before the bag existed."""
+    try:
+        return _bag().shelf_for(rcpt, raw)
+    except Exception as e:
+        print(f"  ⚠️ MAIL BAG unavailable ({type(e).__name__}: {e}) — open Maildir only")
+        return "public"
+
+
+def _bag_open(mail_from, rcpt, raw, tls):
+    try:
+        name, _, _ = _bag().put(raw, rcpt, mail_from, tls, shelf="public")
+        print(f"  👜 MAIL BAG: open {name[:12]}")
+    except Exception as e:
+        print(f"  ⚠️ MAIL BAG: open copy not written ({type(e).__name__}: {e})")
+
+
+def _bag_private(mail_from, rcpt, raw, tls):
+    """Sealed into the bag; if it cannot be sealed, held in the clear outside the repo. No address or subject is logged."""
+    bag = _bag()
+    try:
+        name, _, _ = bag.put(raw, rcpt, mail_from, tls, shelf="sealed")
+        print(f"  👜 MAIL BAG: sealed {name[:12]} ({len(raw)} bytes)")
+    except Exception as e:
+        name = bag.hold(raw, rcpt, mail_from, tls)
+        print(f"  ⚠️ MAIL BAG: could not seal ({type(e).__name__}: {e}) — held outside the repo {name[:12]}")
+    try:
+        PONY_ROOT.mkdir(parents=True, exist_ok=True)
+        entry = {"ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "type": "mail-delivery",
+                 "sealed": True, "tls": tls, "size": len(raw), "sha256": name}
+        with open(PONY_ROOT / "mail-log.jsonl", "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception as e:
+        print(f"  ⚠️ Pony log error: {e}")
 
 
 def _pony_log(mail_from, rcpt_to, body, tls):
