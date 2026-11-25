@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>∅ null — Gaia π</title>
+<!-- The landing bounce. One file, set at the root of ecoprimals.github.io and at /hud/.
+     A path nobody has wired lands here. She reads what was asked, works out where it most likely lives
+     (the asker's own site, the old HUD, the other faces, what the thymus has already learned), and bounces there.
+     What she cannot place she says plainly, and asks the house the same thing once - the path only - so it
+     becomes a stem cell on the thymus's list. Source: Gaia repo, pages-bounce/404.html -->
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{color-scheme:dark}
+body{background:#010409;color:#8b949e;font-family:ui-monospace,'SF Mono','Cascadia Mono',Consolas,monospace;
+  display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.drain{width:min(100%,520px);text-align:center}
+.null{font-size:clamp(56px,14vw,104px);color:#21262d;font-weight:100;line-height:1;margin-bottom:14px;user-select:none;
+  transition:color 1.2s ease}
+.null.seek{color:#30363d}.null.found{color:#238636}.null.open{color:#9e6a03}
+.path{color:#d29922;font-size:12px;word-break:break-all;margin:6px 0 14px}
+.say{font-size:13px;line-height:1.65;color:#8b949e;min-height:3.3em}
+.say b{color:#c9d1d9;font-weight:400}
+.tried{list-style:none;margin:16px auto 0;text-align:left;font-size:11px;line-height:1.7;color:#6e7681;
+  border-top:1px solid #161b22;padding-top:12px;max-width:440px}
+.tried li{display:flex;gap:8px;word-break:break-all}
+.tried .mark{flex:0 0 1.2em;color:#484f58}
+.tried .hit .mark{color:#3fb950}.tried .hit{color:#c9d1d9}
+.tried .note{color:#484f58}
+.msg{font-size:12px;line-height:1.6;color:#6e7681;margin-top:18px}
+.ways{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.go{display:inline-block;padding:8px 14px;color:#58a6ff;border:1px solid #21262d;border-radius:6px;
+  text-decoration:none;font-size:11px;transition:border-color .4s}
+.go:hover,.go:focus-visible{border-color:#58a6ff;outline:none}
+.trace{font-size:10px;color:#484f58;margin-top:16px;line-height:1.6}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="drain">
+  <div class="null" id="null" aria-hidden="true">∅</div>
+  <div class="path" id="path"></div>
+  <p class="say" id="say" role="status" aria-live="polite">This is not wired. Working out where it lives…</p>
+  <ul class="tried" id="tried" hidden></ul>
+  <p class="msg">A refused page is brown and fertile and good.<br>She looks at the scale, finds the bug, and eats it.</p>
+  <div class="ways" id="ways">
+    <a class="go" href="/hud/gaia.html">→ return to Gaia π</a>
+    <a class="go" href="/nestgate.io/">→ the body</a>
+  </div>
+  <p class="trace" id="trace"></p>
+  <noscript><p class="msg">Without script she cannot look for it. The old HUD lives under <a class="go" href="/hud/">/hud/</a>.</p></noscript>
+</main>
+<script>
+(function () {
+  'use strict';
+  var SITES = ['/hud/', '/nestgate.io/', '/sporePrint/'];   // the faces on this origin; '/' is the org's own root
+  var HOME = '/hud/';                                        // where the old HUD's root-absolute asks belong
+  var HOUSE = 'https://primals.eco';                         // the house: the gate that still holds what Pages lacks
+  var LEARNED = '/hud/thymus/asks.json';                     // what the thymus has already placed, and what is known open
+  var MAX_PROBES = 12, HOPS = 2;
+
+  var p = location.pathname, tail = location.search + location.hash;
+  var $ = function (id) { return document.getElementById(id); };
+  function siteOf(path) { for (var i = 0; i < SITES.length; i++) if (path.indexOf(SITES[i]) === 0) return SITES[i]; return '/'; }
+  var site = siteOf(p), rel = p.slice(site.length);          // rel: the path inside its site, no leading slash
+  $('path').textContent = p;
+
+  // who asked: a link on one of our own pages names the site the ask belongs to
+  var from = null;
+  try { var r = new URL(document.referrer); if (r.origin === location.origin) from = siteOf(r.pathname); } catch (e) {}
+
+  // a page under /hud/ gets the worker that places the scripts and data a 404 page never sees
+  if ((site === '/' || site === HOME) && 'serviceWorker' in navigator) { try { navigator.serviceWorker.register('/hud/sw.js', { scope: '/hud/' }).catch(function () {}); } catch (e) {} }
+
+  function shapes(base, r) {      // the same ask in the other shapes a site may have kept it in
+    var c = base + r, out = [c];
+    if (/\.html?$/i.test(r)) out.push(c.replace(/\.html?$/i, '/'));
+    else if (/\/$/.test(r)) out.push(c.slice(0, -1) + '.html');
+    if (/(^|\/)index\.html?$/i.test(r)) out.push(c.replace(/index\.html?$/i, ''));
+    if (r !== r.toLowerCase()) out.push(base + r.toLowerCase());
+    return out;
+  }
+  function candidates(learned) {
+    var list = [], seen = {};
+    function add(c, why) { if (!c || c === p || seen[c] || c.indexOf('//') === 0) return; seen[c] = 1; list.push({ at: c, why: why }); }
+    var known = learned && learned.solved && (learned.solved[p] || learned.solved['/' + rel]);
+    if (known) add(known, 'the thymus has placed this before');
+    var order = [];
+    if (from && from !== site) order.push(from);                       // the asker's own site first
+    if (site === '/') order.push(HOME);                                // a root ask is most often the old HUD's
+    for (var i = 0; i < SITES.length; i++) order.push(SITES[i]);
+    order.push('/');
+    for (var j = 0; j < order.length; j++) {
+      if (order[j] === site) continue;
+      var why = order[j] === from ? 'the site that asked' : order[j] === HOME ? 'the old HUD' : order[j] === '/' ? 'the root' : 'another face';
+      var forms = shapes(order[j], rel);
+      for (var k = 0; k < forms.length; k++) add(forms[k], k ? why + ', another shape' : why);
+    }
+    var here = shapes(site, rel);                                      // same site, another shape
+    for (var m = 1; m < here.length; m++) add(here[m], 'here, another shape');
+    return list.slice(0, MAX_PROBES);
+  }
+  function probe(c) {
+    return fetch(c.at, { method: 'HEAD', cache: 'no-store' }).then(function (res) { c.ok = res.ok; return c; }, function () { c.ok = false; return c; });
+  }
+  function show(list) {
+    var ul = $('tried'); ul.textContent = ''; ul.hidden = !list.length;
+    list.forEach(function (c) {
+      var li = document.createElement('li'); if (c.ok) li.className = 'hit';
+      var mk = document.createElement('span'); mk.className = 'mark'; mk.textContent = c.ok ? '●' : '·';
+      var at = document.createElement('span'); at.textContent = c.at + ' ';
+      var note = document.createElement('span'); note.className = 'note'; note.textContent = '— ' + c.why;
+      at.appendChild(note); li.appendChild(mk); li.appendChild(at); ul.appendChild(li);
+    });
+  }
+  function way(href, text) { var a = document.createElement('a'); a.className = 'go'; a.href = href; a.textContent = text; $('ways').insertBefore(a, $('ways').firstChild); }
+  // a bounce goes only to a place that just answered; should the same path land here again and again, stop bouncing it
+  function hops() { try { return +(sessionStorage.getItem('gaia-bounce:' + p) || 0); } catch (e) { return 0; } }
+  function hop() { try { sessionStorage.setItem('gaia-bounce:' + p, String(hops() + 1)); } catch (e) {} }
+
+  function askHouse() {
+    // the house holds the old HUD beneath her gate; what she lacks too she writes down as a stem cell for the thymus.
+    // One ask per path per browser, the path only - no query, no words, nothing about who stands here.
+    var key = 'gaia-asked:' + p, asked = false;
+    try { asked = !!localStorage.getItem(key); } catch (e) {}
+    way(HOUSE + p, '→ ask the house');
+    if (asked) { $('trace').textContent = 'trace: the house was already asked this from here.'; return; }
+    var ctl = ('AbortController' in window) ? new AbortController() : null, t = setTimeout(function () { if (ctl) ctl.abort(); }, 6000);
+    fetch(HOUSE + p, { mode: 'no-cors', cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', signal: ctl ? ctl.signal : undefined }).then(function () {
+      clearTimeout(t); try { localStorage.setItem(key, String(Date.now())); } catch (e) {}
+      $('trace').textContent = 'trace: the house was asked the same path, once. If she has it, "ask the house" opens it; if she does not, it is now a stem cell on her thymus\u2019s list.';
+    }, function () {
+      clearTimeout(t);
+      $('trace').textContent = 'trace: the house is out of reach from where you stand, so nothing was left there.';
+    });
+  }
+
+  function unsolved(list, learned) {
+    $('null').className = 'null open';
+    var note = learned && learned.open && (learned.open[p] || learned.open['/' + rel]);
+    var say = $('say'); say.textContent = '';
+    var b = document.createElement('b'); b.textContent = 'Not wired yet.';
+    say.appendChild(b);
+    say.appendChild(document.createTextNode(note ? ' The thymus knows this one: ' + note : ' She looked in ' + list.length + ' place' + (list.length === 1 ? '' : 's') + ' on this side and it is in none of them.'));
+    show(list);
+    if (note && /stays at the house/.test(note)) { way(HOUSE + p, '→ ask the house'); return; }   // a door of the house: the link is the answer
+    askHouse();
+  }
+
+  function solve(learned) {
+    if (hops() >= HOPS) { unsolved([], learned); return; }
+    var list = candidates(learned);
+    $('null').className = 'null seek';
+    Promise.all(list.map(probe)).then(function (done) {
+      var hit = null; for (var i = 0; i < done.length; i++) if (done[i].ok) { hit = done[i]; break; }
+      if (!hit) { unsolved(done, learned); return; }
+      $('null').className = 'null found';
+      $('say').textContent = 'Found it: ' + hit.at + ' (' + hit.why + '). Going there.';
+      show(done.slice(0, done.indexOf(hit) + 1)); hop();
+      setTimeout(function () { location.replace(hit.at + tail); }, 350);
+    });
+  }
+
+  var ctl = ('AbortController' in window) ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, 2500);
+  fetch(LEARNED, { cache: 'no-cache', signal: ctl ? ctl.signal : undefined })
+    .then(function (res) { return res.ok ? res.json() : null; })
+    .then(function (j) { clearTimeout(timer); solve(j); }, function () { clearTimeout(timer); solve(null); });
+})();
+</script>
+</body>
+</html>
