@@ -14,9 +14,11 @@ Two rules for the table:
     is tied to in the pages (the school, the court, the hall), never at a residence.
   - places are good to about a kilometre. They were set from the street address or the town, not surveyed.
 
-Run (the three inputs are checkouts that already exist on this gate):
+Run (the inputs are checkouts that already exist on this gate):
   python tools/atlas_build.py --earth <folder of Natural Earth geojson> --tuebor <tuebor>/site/content
-                              --catalog gardens/alexandria/catalog.json [--check]
+                              --catalog gardens/alexandria/catalog.json [--sporeprint <hud>/site/public/sporeprint] [--check]
+  python tools/atlas_build.py --sporeprint <hud>/site/public/sporeprint [--check]
+      on its own: only sporePrint's pins (SPORE_PLACES) are made again; every other pin in the file stays as it is.
   --check asks the live site for every link once and reports the ones that do not answer.
 
 Natural Earth is public domain (naturalearthdata.com). Only the outlines are kept, thinned to what a globe needs.
@@ -97,6 +99,36 @@ PLACES = [
      r'walton', ['network/entities/walton-family-foundation', 'evidence/the-money-flows-through-nulls']),
     ('meta', 'Meta — Facebook', 'Menlo Park, California', 37.4848, -122.1484, 'media',
      r'meta platforms|facebook|zuckerberg', ['analysis/meta-two-faces', 'analysis/bad-meta', 'analysis/meta-in-the-open']),
+]
+
+# The same again for sporePrint: the offices and campuses its pages are written to, or build on.
+# Same two rules. A person is never pinned: an invitation to somebody is pinned at the public office of the
+# company or the school they are known for, and where the pages name nobody's office there is no pin.
+SPORE_LIVE = 'https://primals.eco/sporeprint'
+SPORE_PLACES = [
+    ('valve', 'Valve — the invitations to GabeN and to Steam', 'Lincoln Square, 10400 NE 4th St, Bellevue, Washington', 47.6158, -122.2010, 'maker',
+     r'\bValve\b|\bGabeN\b|Gabe Newell|Steam Deck|SteamOS',
+     ['outreach/hadr-invitation', 'outreach/octopus-invitation', 'outreach/steam-invitation', 'outreach/gaming-invitation']),
+    ('nvidia', 'NVIDIA', '2788 San Tomas Expressway, Santa Clara, California', 37.3708, -121.9668, 'maker',
+     r'\bNVIDIA\b', ['outreach/gpu-invitation', 'science/14-sovereign-compute-hardware']),
+    ('amd', 'AMD', '2485 Augustine Dr, Santa Clara, California', 37.3826, -121.9705, 'maker',
+     r'\bAMD\b', ['outreach/gpu-invitation']),
+    ('intel', 'Intel', '2200 Mission College Blvd, Santa Clara, California', 37.3876, -121.9636, 'maker',
+     r'\bIntel\b', ['outreach/gpu-invitation']),
+    ('brainchip', 'BrainChip — the Akida neuromorphic chip', '23041 Avenida de la Carlota, Laguna Hills, California', 33.6117, -117.7087, 'maker',
+     r'BrainChip|\bAkida\b|AKD1000', ['outreach/neuromorphic-invitation', 'technical/neuromorphic-benchmark', 'science/26-neuromorphic-sovereign-driver']),
+    ('99pi', '99% Invisible', 'uptown Oakland, California', 37.8107, -122.2660, 'media',
+     r'99% Invisible|\b99pi\b|Roman Mars', ['outreach/99pi-radiolab-invitation']),
+    ('radiolab', 'Radiolab — WNYC Studios', '160 Varick St, New York', 40.7262, -74.0057, 'media',
+     r'\bRadiolab\b|\bWNYC\b', ['outreach/99pi-radiolab-invitation']),
+    ('msu', 'Michigan State University — the science the springs reproduce', 'Engineering Building, 428 S Shaw Ln, East Lansing', 42.7247, -84.4812, 'school',
+     r'\bMSU\b|Michigan State University', ['audience/faculty-spring-profiles', 'architecture/spring-catalog', 'technical/msu-asset-acceleration']),
+    ('sandia', 'Sandia National Laboratories', 'Albuquerque, New Mexico', 35.0586, -106.5340, 'lab',
+     r'\bSandia\b', ['lab/notebooks/cahill-smallwood-algae']),
+    ('carleton', 'Carleton College', 'Northfield, Minnesota', 44.4613, -93.1540, 'school',
+     r'\bCarleton\b', []),
+    ('glerl', 'NOAA Great Lakes Environmental Research Laboratory', '4840 S State Rd, Ann Arbor', 42.2225, -83.7405, 'lab',
+     r'\bGLERL\b|Lake Erie|Great Lakes HAB', ['science/09-field-genomics']),
 ]
 
 # the four places the library's own catalog sorts works into; the count and the works come from the catalog
@@ -254,6 +286,48 @@ def build_pins(content, catalog_path):
             'works': len(cards), 'unplaced': unplaced, 'pins': pins}, missing
 
 
+def read_built(folder):
+    """sporePrint as it is served: one folder per page with an index.html. -> {path: title, say, body}"""
+    import html
+    pages = {}
+    for root, _, files in os.walk(folder):
+        if 'index.html' not in files: continue
+        key = os.path.relpath(root, folder).replace(os.sep, '/')
+        if key == '.': continue
+        with open(os.path.join(root, 'index.html'), encoding='utf-8', errors='replace') as f:
+            text = f.read()
+        t = re.search(r'<title>(.*?)</title>', text, re.S)
+        d = (re.search(r'<meta[^>]*\bname="?description"?[^>]*\bcontent="([^"]*)"', text)
+             or re.search(r'<meta[^>]*\bcontent="([^"]*)"[^>]*\bname="?description', text))
+        body = re.sub(r'<(script|style|nav|header|footer)\b[^>]*>.*?</\1>', ' ', text, flags=re.S | re.I)
+        body = ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', body)).split())
+        pages[key] = {'title': ' '.join(html.unescape(t.group(1)).split(' | ')[0].split()) if t else key,
+                      'say': html.unescape(d.group(1)).strip() if d else '', 'body': body,
+                      'index': key.count('/') == 0}                   # a section's own front page lists the others
+    return pages
+
+
+def build_spore_pins(folder):
+    pages = read_built(folder)
+    pins, missing = [], []
+    for pid, name, where, lat, lon, kind, words, own in SPORE_PLACES:
+        rx = re.compile(words)
+        hits = sorted(((len(rx.findall(p['title'] + '\n' + p['body'])), key) for key, p in pages.items()
+                       if rx.search(p['title'] + '\n' + p['body'])), key=lambda h: (-h[0], h[1]))
+        links, seen, say = [], set(), ''
+        for key in own:
+            if key not in pages: missing.append((pid, key)); continue
+            if not say and len(pages[key]['say']) >= 30 and rx.search(pages[key]['say']): say = pages[key]['say']
+            links.append([pages[key]['title'], '%s/%s/' % (SPORE_LIVE, key), 'card']); seen.add(key)
+        for n, key in hits:
+            if len(links) >= len(seen & set(own)) + 8: break
+            if key in seen or pages[key]['index'] or key == 'site-index': continue
+            links.append([pages[key]['title'], '%s/%s/' % (SPORE_LIVE, key), 'page']); seen.add(key)
+        pins.append({'id': pid, 'name': name, 'where': where, 'lat': lat, 'lon': lon, 'kind': kind,
+                     'say': say, 'n': len(hits), 'links': links, 'from': 'sporePrint'})
+    return pins, missing
+
+
 def check(pins):
     urls = sorted({l[1] for p in pins['pins'] for l in p['links']})
 
@@ -273,10 +347,24 @@ def check(pins):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--earth'); ap.add_argument('--tuebor'); ap.add_argument('--catalog')
+    ap.add_argument('--earth'); ap.add_argument('--tuebor'); ap.add_argument('--catalog'); ap.add_argument('--sporeprint')
     ap.add_argument('--check', action='store_true')
     a = ap.parse_args()
     out = os.path.join(REPO, 'static')
+    if a.sporeprint and not (a.tuebor and a.catalog):
+        # sporePrint's pins on their own: the pins file as it stands keeps every other pin, these are replaced
+        path = os.path.join(out, 'atlas-pins.json')
+        with open(path, encoding='utf-8') as f: pins = json.load(f)
+        new, missing = build_spore_pins(a.sporeprint)
+        pins['pins'] = [p for p in pins['pins'] if p.get('from') != 'sporePrint'] + new
+        pins['made'] = datetime.date.today().isoformat()
+        with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
+        print('sporePrint pins: %d   links: %d   all pins now: %d   %d KB' % (
+            len(new), sum(len(p['links']) for p in new), len(pins['pins']), os.path.getsize(path) // 1024))
+        for pid, key in missing: print('   no such page for %s: %s' % (pid, key))
+        for p in new: print('   %-10s named on %3d pages, %2d links   %s' % (p['id'], p['n'], len(p['links']), p['name'][:60]))
+        if a.check and check({'pins': new}): sys.exit(1)
+        return
     if a.earth:
         earth = build_earth(a.earth)
         path = os.path.join(out, 'atlas-earth.json')
@@ -285,6 +373,9 @@ def main():
             len(earth['land']), len(earth['lakes']), len(earth['states']), len(earth['borders']), os.path.getsize(path) // 1024))
     if a.tuebor and a.catalog:
         pins, missing = build_pins(a.tuebor, a.catalog)
+        if a.sporeprint:
+            more, gone = build_spore_pins(a.sporeprint)
+            pins['pins'] += more; missing += gone
         path = os.path.join(out, 'atlas-pins.json')
         with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
         kinds = collections.Counter(p['kind'] for p in pins['pins'])

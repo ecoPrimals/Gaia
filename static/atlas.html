@@ -11,6 +11,8 @@
     /static/atlas-earth.json   coastlines, lakes, borders
     /static/atlas-pins.json    the pins: public buildings and offices, and the library's four shelves-by-place.
                                What a pin says is the published page's own description. No homes are pinned.
+                               The pins marked from: sporePrint are the offices and campuses the sporePrint pages
+                               are written to or build on (Valve in Bellevue, the chip makers, the labs, the schools).
   Each pin floats above its place. Pins that stand too close to tell apart are drawn as one mark with a count;
   pressing it goes closer until they come apart.
 
@@ -71,6 +73,14 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   #top .what{display:none}
   #sky{bottom:4px;max-height:52px;overflow:hidden;font-size:10px;line-height:1.3;background:rgba(6,8,11,.9);border-radius:6px;padding:2px 6px;left:6px;right:6px}
 }
+/* a watch face (the same line the HUD draws: narrower than 280): the globe alone in the middle. The keys and the
+   sky line are put away; the panel stays away until a pin is pressed, then it rises over the lower half. */
+@media (max-width:279px){
+  #top,#sky{display:none}
+  #panel{display:none;left:9%;right:9%;bottom:9%;top:auto;width:auto;max-height:52vh;padding:6px 8px;font-size:10px}
+  .picked #panel{display:block}
+  #panel h2{font-size:11px} #panel li,#panel .say{font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -93,8 +103,8 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 (function () {
   'use strict';
   var DEG = Math.PI / 180, KM = 6371;
-  var KIND = {law: '#ff5c6c', state: '#ffd93d', court: '#ff9f43', school: '#f78fb3', money: '#2ecc71', media: '#c56cf0', library: '#f5f6fa', place: '#48dbfb'};
-  var KIND_SAY = {law: 'law', state: 'state office', court: 'court', school: 'school', money: 'money', media: 'media', library: 'the library', place: 'a shelf of the library'};
+  var KIND = {law: '#ff5c6c', state: '#ffd93d', court: '#ff9f43', school: '#f78fb3', money: '#2ecc71', media: '#c56cf0', library: '#f5f6fa', place: '#48dbfb', maker: '#badc58', lab: '#54a0ff'};
+  var KIND_SAY = {law: 'law', state: 'state office', court: 'court', school: 'school', money: 'money', media: 'media', library: 'the library', place: 'a shelf of the library', maker: 'maker', lab: 'laboratory'};
   var GO = {world: [38, -88, 1], michigan: [44.2, -85.4, 6.5], lansing: [42.7325, -84.5585, 2600], detroit: [42.375, -83.07, 420], library: [38.8887, -77.0047, 60]};
   var CORE_OUT = 3480 / KM, CORE_IN = 1221 / KM;      // where the outer and the inner core begin, in earth radii
   var TOWNS = [['Lansing', 42.7325, -84.5555], ['Detroit', 42.3314, -83.0458], ['Grand Rapids', 42.9634, -85.6681], ['Ann Arbor', 42.2808, -83.7430],
@@ -166,6 +176,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     var wide = W > 720; base = Math.min(wide ? W - 400 : W, H - (wide ? 110 : 150)) * 0.46; if (base < 90) base = 90;
     cx = wide ? (W - 380) / 2 : W / 2; cy = wide ? H / 2 + 8 : (H - H * 0.44) / 2 + 34;
     if (document.documentElement.classList.contains('framed') && !wide) cy = H * 0.3 + 20;
+    if (W < 280) { base = Math.min(W, H) * 0.42; cx = W / 2; cy = H / 2; }     // a watch face: the globe alone, in the middle
     dirty = true;
   }
   function lines(set, colour, width) {
@@ -267,6 +278,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     ctx.restore();
   }
   function scale() {
+    if (W < 280) return;                                             // no room for a ruler on a watch face
     var kmPerPx = KM / R, want = 110 * kmPerPx, pow = Math.pow(10, Math.floor(Math.log(want) / Math.LN10)), nice = [1, 2, 5, 10].filter(function (m) { return m * pow <= want; }).pop() * pow;
     var w = nice / kmPerPx, x = cx - R > 30 ? cx - Math.min(R, cx - 14) : 14, y = H - 34;
     if (W <= 720) y = Math.min(H * 0.56 - 16, cy + R + 18);
@@ -409,6 +421,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   }
   function fill() {
     panel.textContent = '';
+    document.documentElement.classList.toggle('picked', chosen.length > 0);
     if (!chosen.length) {
       panel.appendChild(el('p', 'lead', 'Every story is pinned above the place it is about. Press a pin, or pick one here.'));
       var row = el('div', 'row'), b1 = el('button', null, you ? 'you: ' + place(you) : 'where I stand'), b2 = el('button', null, pointing ? 'now tap the globe…' : 'I’ll point');

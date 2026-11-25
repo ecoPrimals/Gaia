@@ -3140,10 +3140,49 @@ body { padding-bottom: 76px !important; }
     #hud-sky .moon-words { right: 4%; top: calc(12% + 94px); width: 110px; }
   }
   @media (prefers-reduced-motion: reduce) { #hud-stage > * { animation: none !important; } #hud-tabs button { transition: none !important; } }
+
+  /* THE REGIME (2026-11-25). /static/regime.js reads the display the way the tuebor desk does - by its width and the
+     slope of its diagonal - and names it on <html>: watch, single, square, compact or split. The desk is the flat-plane
+     anchor; this is what each of its regimes means on a display that has a centre.
+     The centre never moves: the black spot stays on the middle of the display and the page scrolls up and down over
+     it, in that one direction only. What changes is how much of the width the stage is given round that centre. */
+  #hud-regime { color: #6e7681; font-size: 11px; white-space: nowrap; cursor: default; }
+  /* split - a wide display: the stage takes the golden share of the width, 61.8%, centred on the spot, instead of
+     stopping at 1100 px however wide the display is */
+  html[data-regime="split"] main.gaia-shell { max-width: max(1200px, calc(var(--regime-main) + 2 * var(--gap, 16px))); }
+  html[data-regime="split"] #hud-one, html[data-regime="split"] #hud-stage { max-width: max(1100px, var(--regime-main)); }
+  /* square - nearly as tall as it is wide: a framed page (the globe, the orrery) is round, so it gets a square */
+  html[data-regime="square"] #hud-stage > .hud-frame iframe { height: min(84vh, 100vw); }
+  /* single - a phone held upright: one column, the keys drawn smaller so they stay on the first screen */
+  html[data-regime="single"] #hud-one { padding: 8px 10px; gap: 6px 8px; }
+  html[data-regime="single"] #hud-one .hud-name small { display: none; }
+  html[data-regime="single"] #hud-tabs { gap: 5px; }
+  html[data-regime="single"] #hud-tabs button { padding: 3px 9px; font-size: 11px; }
+  html[data-regime="single"] #hud-stage > .hud-frame iframe { height: min(74vh, 130vw); }
+  /* watch - a face narrower than 280: only the middle. The view comes first and the keys follow it, one scroll
+     down; the bars that live on the edges of a big display are put away, and the sides are kept clear of a round bezel */
+  html[data-regime="watch"] main.gaia-shell { display: flex; flex-direction: column; }
+  html[data-regime="watch"] main.gaia-shell > * { order: 3; }
+  html[data-regime="watch"] #hud-stage { order: 1; }
+  html[data-regime="watch"] #hud-one { order: 2; margin-top: 10px; }
+  html[data-regime="watch"] nav.gaia-nav, html[data-regime="watch"] #optic-chiasm,
+  html[data-regime="watch"] #hud-one .hud-name small, html[data-regime="watch"] #hud-entrance,
+  html[data-regime="watch"] #hud-hint, html[data-regime="watch"] #hud-regime,
+  html[data-regime="watch"] #hud-stage > .hud-frame p { display: none !important; }
+  html[data-regime="watch"] body { padding-bottom: 12px !important; }
+  html[data-regime="watch"] main.gaia-shell { padding: 0 9% 24px !important; }
+  html[data-regime="watch"] #hud-one { padding: 6px 4px; gap: 4px; justify-content: center; border-color: transparent; background: none; }
+  html[data-regime="watch"] #hud-tabs { margin: 0; gap: 3px; justify-content: center; }
+  html[data-regime="watch"] #hud-tabs button { padding: 1px 6px; font-size: 10px; }
+  html[data-regime="watch"] #hud-stage > .hud-frame iframe { height: 100vw; }
+  html[data-regime="watch"] #hud-mesh { padding: 8px; font-size: 10px; }
+  html[data-regime="watch"] #hud-mesh dl { grid-template-columns: 1fr; gap: 0 6px; }
+  html[data-regime="watch"] #hud-mesh dd { margin-bottom: 4px; }
 </style>
 
 <div id="hud-one" role="navigation" aria-label="HUD viewpoints">
   <span class="hud-name">HUD<small>one display · many viewpoints</small></span>
+  <span id="hud-regime" data-regime-say title="how this display is read: its shape (width over height), the slope of its diagonal, the layout that follows from them, and its size. The same reading the tuebor desk makes."></span>
   <a id="hud-entrance" href="/water" title="the watering hole is the entrance - the HUD is where it leads">≈ water · the entrance</a>
   <div id="hud-tabs" role="tablist"></div>
   <div id="hud-hint" aria-live="polite"></div>
@@ -3173,6 +3212,7 @@ body { padding-bottom: 76px !important; }
   <div class="horizon">the bottom of the internet is a night sky · <a data-path="/rss" href="/rss" style="color:inherit">rss</a> carries it to the old web</div>
 </section>
 
+<script src="/static/regime.js"></script>
 <script id="hud-one-js">
 (function () {
   var D = document, main = D.querySelector('main.gaia-shell') || D.body;
