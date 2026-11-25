@@ -1,7 +1,7 @@
 #!/bin/bash
 # ╔═══════════════════════════════════════════════════════════════════╗
 # ║  HOUSE TOUR — Kevin walks Gaia through the crib                   ║
-# ║  4422 Southgate — Basement, Main, Attic                           ║
+# ║  House 1 — Basement, Main, Attic                           ║
 # ║                                                                   ║
 # ║  Every room: WiFi fingerprint + photo + audio + full sensors      ║
 # ║  Like FaceTiming a realtor — showing the whole house              ║
@@ -123,7 +123,7 @@ print(json.dumps(entry, indent=2))
 # ─── Tour modes ───
 start_tour() {
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║  🏠 HOUSE TOUR — 4422 Southgate                          ║"
+    echo "║  🏠 HOUSE TOUR — House 1                          ║"
     echo "║  Kevin carries Gaia room by room                          ║"
     echo "║  WiFi + Photo + Audio + Pressure + Light + Steps          ║"
     echo "╚═══════════════════════════════════════════════════════════╝"

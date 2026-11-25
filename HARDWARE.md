@@ -233,11 +233,11 @@ AT&T Fiber ──► BGW320-500 (WAN)
               westGate     blueGate         swiftGate (WiFi)
                                             grapheneGate (WiFi)
 
-HOUSE 1 (4422 Southgate Ave) — BRAIN SIDE:
+HOUSE 1 — BRAIN SIDE:
   eastGate(10G), sporeGate(2.5G), Jupiter 2(10G SFP+), Pi 500s(1G),
   graftGate(1G), northGate(10G)
 
-HOUSE 2 (641 Samantha Ave) — EXTENSION:
+HOUSE 2 — EXTENSION:
   ALL towers on 10G via MikroTik CRS310 + Omada SX3008F
   strandGate, biomeGate, westGate, southGate-tower, ironGate, blueGate, kinGate
   WiFi: swiftGate, grapheneGate (Pixel)

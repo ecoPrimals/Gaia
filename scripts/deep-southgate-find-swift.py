@@ -62,7 +62,7 @@ print('\n' + '='*60)
 print('  FINDING SWIFTGATE')
 print('='*60)
 
-# swiftGate should be at House 2 (641 Samantha)
+# swiftGate should be at House 2
 # If Pixel is USB-tethered to it, it might get internet from Pixel
 # swiftGate was WiFi-only on Gaia WiFi (192.168.9.x)
 # Check from eastGate if anything new on 192.168.9.x

@@ -61,7 +61,7 @@ print('\n' + '='*60)
 print('  WHERE IS SWIFTGATE?')
 print('='*60)
 
-# swiftGate was "WiFi-only at 641 Samantha, NZXT H1 V2, RTX 3070"
+# swiftGate was "WiFi-only at House 2, NZXT H1 V2, RTX 3070"
 # Kevin says Pixel is USB-C tethered to it
 # But it's not showing in DHCP leases
 # Check if router has a br-guest for LAN 2

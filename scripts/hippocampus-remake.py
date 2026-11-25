@@ -97,7 +97,7 @@ now = {
         "name": "GaiaU",
         "domain": "academy.primals.eco",
         "above": "MSU",
-        "location": "4422 Southgate Ave + 641 Samantha Ave, Lansing MI",
+        "location": "House 1 + House 2, Lansing MI",
         "note": "The organism IS the university. Not a building — a living system that teaches itself."
     }
 }

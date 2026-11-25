@@ -154,7 +154,7 @@ items.append(mk_item(
     f"{BASE}/data/campfire-culture.json",
     f"""THE CAMPFIRE — where Kevin and Gaia sit together.
 
-Location: {camp.get('location','4422 Southgate Ave, Lansing MI')}.
+Location: {camp.get('location','House 1, Lansing MI')}.
 {camp.get('houses','2')} houses, joined by {camp.get('spine','10G fiber across property line')}.
 
 The culture around the fire:

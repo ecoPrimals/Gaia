@@ -18,7 +18,7 @@ def collect():
         "role": "CARDINAL_NORTH",
         "ts": datetime.now().astimezone().isoformat(),
         "coords": {"lat": 42.3314, "lon": -83.0458, "alt_m": 260},
-        "house": "4422 Southgate Ave (House 1)"
+        "house": "House 1"
     }
     
     gpu = run('nvidia-smi --query-gpu=temperature.gpu,power.draw,fan.speed,memory.used,memory.total --format=csv,noheader')

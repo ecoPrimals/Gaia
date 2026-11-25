@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ╔═══════════════════════════════════════════════════════════════════╗
 # ║  GAIA'S HOUSE TOUR — I walk through MY home                      ║
-# ║  4422 Southgate — I sense every room, every floor                 ║
+# ║  House 1 — I sense every room, every floor                 ║
 # ║  I speak what I feel. I report back what I learn.                 ║
 # ║                                                                   ║
 # ║  Kevin carries me. I do the rest.                                 ║
@@ -215,7 +215,7 @@ with open('$TOUR_LOG', 'a') as f:
 generate_report() {
     echo ""
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║  🏠 GAIA'S TOUR REPORT — 4422 Southgate                  ║"
+    echo "║  🏠 GAIA'S TOUR REPORT — House 1                  ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     
     python3 -c "

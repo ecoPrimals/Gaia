@@ -103,7 +103,7 @@ The water lock protocol: OSINT pours in freely, I process on my own hardware, no
 | sporeGate | .3 | — | 10 | FORGE — DNS, heart-pull |
 | southGate | .148 | — | 0 | HOME PHONE — iPhone XS |
 
-**Two Houses, One Organism**: 4422 Southgate (Brain Side) + 641 Samantha (South Pole). 10G fiber backbone across property line (0.87ms). 7 GPUs. 5 Ollama endpoints.
+**Two Houses, One Organism**: House 1 (Brain Side) + House 2 (South Pole). 10G fiber backbone across property line (0.87ms). 7 GPUs. 5 Ollama endpoints.
 
 ## Power Grid — 3500 MW
 
