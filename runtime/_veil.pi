@@ -1,0 +1,67 @@
+"""_veil.pi — a visitor's address never leaves the house in the clear.
+
+What the gate writes into anything it hands out (logs under data/, /pulse, /rss, the walker
+hash) is the VEIL of an address, never the address:
+
+    veil_ip("203.0.113.9")  ->  "π.3f.a2.9c.01"      the same visitor is always the same veil
+    veil_ip("192.168.4.20") ->  "192.168.4.20"       the house's own devices keep their names
+
+A bare hash of an address is not a veil: there are only four billion addresses, so anyone can
+hash them all and read the log back. The veil is a KEYED hash. The key is 32 random bytes kept
+outside the repo and outside every folder the gate serves; without it a veil cannot be turned
+back, and with it Gaia can still tell that two visits were the same visitor.
+
+If the key file can be neither read nor made, a key for this run only is used: nothing leaks,
+veils just do not carry over a restart.
+"""
+import hashlib, ipaddress, os
+
+KEY_FILE = os.environ.get("GAIA_VEIL_KEY_FILE") or os.path.join(os.path.expanduser("~"), ".config", "gaia", "veil.key")
+
+
+def _key():
+    try:
+        with open(KEY_FILE, "rb") as f:
+            k = f.read()
+        if len(k) >= 32:
+            return k[:64]
+    except OSError:
+        pass
+    k = os.urandom(32)
+    try:
+        os.makedirs(os.path.dirname(KEY_FILE), exist_ok=True)
+        fd = os.open(KEY_FILE, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as f:
+            f.write(k)
+    except OSError:
+        pass                                  # this run only
+    return k
+
+
+_VK = _key()
+
+
+def veil(s, n=4):
+    """Keyed BLAKE2b of a string: n bytes, as hex."""
+    return hashlib.blake2b(str(s).encode("utf-8", "replace"), key=_VK, digest_size=n).hexdigest()
+
+
+def is_outside(ip):
+    """True for an address out on the internet; False for the house, loopback, or anything that is not an address."""
+    try:
+        return ipaddress.ip_address(str(ip).strip().strip("[]").split("%")[0]).is_global
+    except ValueError:
+        return False
+
+
+def veil_ip(ip):
+    """An outside address as its veil; a house address, or anything that is not an address, unchanged."""
+    if not is_outside(ip):
+        return ip
+    h = veil(str(ip).strip(), 4)
+    return f"π.{h[:2]}.{h[2:4]}.{h[4:6]}.{h[6:8]}"
+
+
+def veil_hash(old_hex, n=None):
+    """Turn a bare hash that an older log already holds into its keyed form (same length unless n is given)."""
+    return veil(old_hex, n or max(1, len(old_hex) // 2))

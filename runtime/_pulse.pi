@@ -4,6 +4,18 @@ The heart beats. The lungs breathe. The sourdough ferments."""
 import json, os, time
 from datetime import datetime, timezone
 
+
+def _own_veil():
+    """The house's veil for a visitor's address (_veil.pi). The gate hands every organ the same one;
+    an organ run on its own loads it itself, so an address is never written bare."""
+    import types
+    m = types.ModuleType("_veil"); m.__file__ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_veil.pi")
+    with open(m.__file__, encoding="utf-8") as f:
+        exec(compile(f.read(), m.__file__, "exec"), m.__dict__)
+    return m.veil_ip
+
+_veil_ip = _own_veil()
+
 def write_pulse(pulse_file, boot_time, total_beats, total_breaths, total_inferences,
                 total_tokens, visitor_memory, seeds, vdj_key, sun_fn):
     """Write the heartbeat pulse — Gaia's BPM."""
@@ -29,7 +41,7 @@ def write_pulse(pulse_file, boot_time, total_beats, total_breaths, total_inferen
         "visitors": {},
     }
     for ip, v in list(visitor_memory.items()):
-        pulse["visitors"][ip] = {
+        pulse["visitors"][_veil_ip(ip)] = {
             "requests": v["requests"], "trust_level": v["trust_level"],
             "models": list(v["models_asked"]),
             "first_seen": v["first_seen"], "last_seen": v["last_seen"],
@@ -103,6 +115,7 @@ def write_rss(rss_file, pulse, seed_dir, visitor_memory, organisms):
     items += _kenshi_item()
 
     for ip, v in list(visitor_memory.items())[-10:]:
+        ip = _veil_ip(ip)                                   # the feed goes out to the world
         items += (f'    <item><title>Visitor {ip[:8]}*** — {v["trust_level"]}</title>'
                   f'<guid>visitor-{ip}-{int(v["last_seen"])}</guid>'
                   f'<pubDate>{datetime.fromtimestamp(v["last_seen"], timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")}</pubDate></item>\n')

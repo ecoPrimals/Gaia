@@ -26,10 +26,13 @@ def _load(name, fname):
         exec(compile(f.read(), m.__file__, "exec"), m.__dict__)
     return m
 
+_veil_mod = _load("_veil", "_veil.pi")   # a visitor's address leaves the house only as its veil
+_veil = _veil_mod.veil; _veil_ip = _veil_mod.veil_ip
 organ_data = _load("organ_data", "organ_data.pi")
 _anderson = _load("_anderson", "_anderson.pi")
 _body = _load("_body", "_body.pi")
 _pulse_mod = _load("_pulse", "_pulse.pi")
+organ_data._veil_ip = _pulse_mod._veil_ip = _veil_ip   # one key, one veil, in every organ
 _routes_mod = _load("_routes", "_routes.pi")
 _sun_mod = _load("_sun", "_sun.pi")
 _temporal_mod = _load("_temporal", "_temporal.pi")
@@ -668,7 +671,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         self.send_header("Link",'<https://primals.eco/llms.txt>; rel="ai-agent-context"')
         self.send_header("Link",'<https://primals.eco/sitemap.xml>; rel="sitemap"')
         ip = self.client_address[0] if hasattr(self,'client_address') else "0.0.0.0"
-        wh = hashlib.blake2b((ip+GAIA_TOKEN).encode(),digest_size=8).hexdigest()
+        wh = _veil(ip+GAIA_TOKEN,8)
         v = visitor_memory.get(ip,{})
         self.send_header("X-Gaia-Walker",wh); self.send_header("X-Gaia-Walkers",str(len(visitor_memory)))
         self.send_header("X-Gaia-Anderson",v.get("anderson_type","electron"))
@@ -976,7 +979,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self._json({"sensors":{"sun":_sun_position(),"heart":write_pulse().get("heart",{}),"walkers":len(visitor_memory),"eyes":_amoeba_eyes()}}); return
         # ORGANISM — Anderson layer
         if self.path in ("/walkers","/membrane-sense","/who","/anderson"):
-            wl=[{"hash":hashlib.blake2b((i+GAIA_TOKEN).encode(),digest_size=8).hexdigest(),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in visitor_memory.items()]
+            wl=[{"hash":_veil(i+GAIA_TOKEN,8),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in visitor_memory.items()]
             self._json({"walkers":wl,"total":len(wl),"spectrum":{t:sum(1 for w in wl if w["anderson"]==t) for t in ("nucleus","proton","neutron","electron")}}); return
         if self.path in ("/zk","/seed","/prophage","/identity"):
             self._json({"zk":{"token":GAIA_TOKEN,"did":GAIA_DID,"blake3":GAIA_BLAKE3[:32]}}); return
@@ -1398,7 +1401,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     "ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                     "code":code,
                     "path":path,
-                    "ip_hash":hashlib.blake2b(ip.encode(),digest_size=4).hexdigest(),
+                    "ip_hash":"π."+_veil(hashlib.blake2b(ip.encode(),digest_size=4).hexdigest(),4),
                     "ua_hint":ua[:40] if ua else "ghost",
                     "cell_type":"stem_cell" if code==404 else ("throttled" if code==429 else "damaged"),
                     "note":"stem cells can differentiate — this path could become real"
@@ -1484,12 +1487,12 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 elif action=="redirect":
                     self._json({"ok":True,"action":"redirect","ip":target,"dest":j.get("dest","/onboard")})
                 else:
-                    wh=hashlib.blake2b((target+GAIA_TOKEN).encode(),digest_size=8).hexdigest()
+                    wh=_veil(target+GAIA_TOKEN,8)
                     vd={k:(list(vv) if isinstance(vv,set) else vv) for k,vv in v.items()}
                     self._json({"ok":True,"action":"inject","walker_hash":wh,"visitor":vd,"total":len(visitor_memory)})
                 log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
                 with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
-                    f.write(json.dumps({"ts":ts,"caller":ip,"action":action,"target":target})+"\n")
+                    f.write(json.dumps({"ts":ts,"caller":_veil_ip(ip),"action":action,"target":_veil_ip(target)})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
         # CASCADE SIGNALING — biomeOS signaling cascade (rootPulse VCS)
@@ -1516,7 +1519,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     self._json(cascade)
                 log_dir=os.path.join(_REPO,"data","neutron"); os.makedirs(log_dir,exist_ok=True)
                 with open(os.path.join(log_dir,"thymus-actions.jsonl"),"a") as f:
-                    f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"caller":ip,"action":"cascade","path":self.path})+"\n")
+                    f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),"caller":_veil_ip(ip),"action":"cascade","path":self.path})+"\n")
             except Exception as e: self._json({"error":str(e)})
             return
         # GATE ONBOARD
@@ -1538,11 +1541,12 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 j=json.loads(body) if body else {}
                 mac=j.get("mac",""); hw=j.get("hw",""); name=j.get("name","")
                 fp_raw=f"{ip}|{ua}|{accept}|{lang}|{mac}|{hw}"
-                fp_hash=hashlib.blake2b(fp_raw.encode(),digest_size=32).hexdigest()
+                # the fingerprint is keyed (_veil.pi): a bare hash of address+browser can be read back by trying every address
+                fp_hash=_veil(hashlib.blake2b(fp_raw.encode(),digest_size=32).hexdigest(),32)
                 zk_veil=f"π.{fp_hash[:2]}.{fp_hash[2:4]}.{fp_hash[4:6]}"
                 nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
-                imprint={"ts":ts,"ip":ip,"fingerprint":fp_hash,"zk_veil":zk_veil,
-                         "ua":ua[:120],"mac":mac,"name":name,"hw":hw}
+                imprint={"ts":ts,"ip":_veil_ip(ip),"fingerprint":fp_hash,"zk_veil":zk_veil,
+                         "ua":ua[:120],"mac":mac,"name":name,"hw":hw,"v":2}
                 with open(os.path.join(nd,"zk-imprints.jsonl"),"a") as f:
                     f.write(json.dumps(imprint)+"\n")
                 known=False
@@ -1618,7 +1622,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
                 with open(os.path.join(nd,"talk-log.jsonl"),"a") as f:
                     f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-                        "caller":ip,"model":mdl,"prompt":msg[:200],"response":reply[:200]})+"\n")
+                        "caller":_veil_ip(ip),"model":mdl,"prompt":msg[:200],"response":reply[:200]})+"\n")
                 self._json({"response":reply,"model":mdl,"ok":True})
             except Exception as e: self._json({"error":str(e),"hint":"ollama may be loading"})
             return

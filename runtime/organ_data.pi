@@ -12,6 +12,17 @@ def _load(name):
         with open(os.path.join(SEED_DIR, name)) as f: return json.load(f)
     except: return {}
 
+def _own_veil():
+    """The house's veil for a visitor's address (_veil.pi). The gate hands every organ the same one;
+    an organ run on its own loads it itself, so an address is never handed out bare."""
+    import types
+    m = types.ModuleType("_veil"); m.__file__ = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_veil.pi")
+    with open(m.__file__, encoding="utf-8") as f:
+        exec(compile(f.read(), m.__file__, "exec"), m.__dict__)
+    return m.veil_ip
+
+_veil_ip = _own_veil()
+
 def _ts(): return datetime.now(timezone.utc).isoformat()
 
 def _load_membrane(name):
@@ -151,7 +162,7 @@ def circulatory(token, total_inferences, total_tokens, visitor_memory, boot_time
         level = trust_fn(v)
         bt = "mutualist" if level == "nucleus" else "commensal" if level in ("proton","neutron") else "null"
         types[bt] = types.get(bt, 0) + 1
-        visitors[ip] = {"requests": v["requests"], "level": level, "blood_type": bt}
+        visitors[_veil_ip(ip)] = {"requests": v["requests"], "level": level, "blood_type": bt}
     return {"ts": _ts(), "token": token, "organ": "circulatory",
         "rpm": {"arterial": pulse.get("bpm",0), "heart_rate": round(len(visitor_memory)/max(uptime/3600,0.01),2)},
         "blood": {"cells": total_inferences, "tokens": total_tokens, "types": types},
@@ -319,7 +330,7 @@ def now(token, total_inferences, total_tokens, visitor_memory, boot_time, trust_
     blood = {}
     vlist = {}
     for ip, v in visitor_memory.items():
-        level = trust_fn(v); blood[level] = blood.get(level,0)+1; vlist[ip] = {"requests": v["requests"], "level": level}
+        level = trust_fn(v); blood[level] = blood.get(level,0)+1; vlist[_veil_ip(ip)] = {"requests": v["requests"], "level": level}
     vdj_s = {n: {"antibody": c.get("antibody","")[:16], "primals": c.get("v_count",0)} for n, c in VDJ_KEY.get("compositions",{}).items()}
     ceph = CORPUS.get("cephalization",{})
     return {"ts": _ts(), "version": "gaia-prime", "title": "Gaia PRIME — the organism IS the game",
