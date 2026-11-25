@@ -27,6 +27,7 @@ Usage:
     python runtime/mailbag.pi verify              every open message still matches its name
     python runtime/mailbag.pi ingest [maildir]    bring an existing Maildir tree into the bag (default: mail/)
     python runtime/mailbag.pi merge <other bag>   take everything another copy of the bag has that this one lacks
+    python runtime/mailbag.pi carry               commit what is new on the open shelf (only the bag, nothing else)
 """
 import hashlib
 import json
@@ -243,6 +244,35 @@ def ingest(maildir=None):
     return got
 
 
+def carry():
+    """Commit what is new in the bag - open shelf, logs, settings - and nothing else in the repo.
+
+    Arrival does not publish: mail sits on the gate that received it until someone carries it.
+    The next push moves it to every other gate. Sealed mail is not carried by this repo.
+    """
+    import subprocess
+    try:
+        rel = BAG.resolve().relative_to(REPO).as_posix()
+    except ValueError:
+        return "this bag is not inside the repo; nothing to carry"
+
+    def git(*args):
+        return subprocess.run(["git", "-C", str(REPO)] + list(args), capture_output=True, text=True)
+
+    paths = [p for p in (rel + "/public", rel + "/log", rel + "/bag.json") if (REPO / p).exists()]
+    bad = verify()
+    if bad:
+        return "not carrying: %d open message(s) do not match their name (run verify)" % len(bad)
+    git("add", "--", *paths)
+    staged = [l for l in git("diff", "--cached", "--name-only", "--", *paths).stdout.splitlines() if l.strip()]
+    if not staged:
+        return "nothing new to carry"
+    done = git("commit", "-q", "-m", "mailbag: carry %d file(s) from %s" % (len(staged), NODE), "--", *paths)
+    if done.returncode != 0:
+        return "commit failed: " + (done.stderr or done.stdout).strip()[:200]
+    return "carried %d file(s) in commit %s; they travel with the next push" % (len(staged), git("rev-parse", "--short", "HEAD").stdout.strip())
+
+
 def status():
     s = settings()
     logs = {}
@@ -268,6 +298,8 @@ def main(argv):
         print(json.dumps(ingest(argv[2] if len(argv) > 2 else None)))
     elif cmd == "merge" and len(argv) > 2:
         print(json.dumps(merge(argv[2])))
+    elif cmd == "carry":
+        print(carry())
     else:
         print(__doc__)
         return 2
