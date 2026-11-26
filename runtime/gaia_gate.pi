@@ -561,6 +561,30 @@ def _beneath_find(raw,home=False):
     if not reachable and os.path.isfile(os.path.join(_BENEATH_CLONE,"index.html")): return _beneath_from_dir(_BENEATH_CLONE,p.lstrip("/"))
     return None
 
+# sporePrint under its own name. Its /sitemap.xml used to be the gate's general one, which names primals.eco
+# addresses, so a search engine asking sporeprint.primals.eco for its pages was told about none of them.
+_SPORE_HOSTS=("sporeprint.primals.eco","www.sporeprint.primals.eco")
+_SPORE_MAP={"at":0.0,"body":b""}
+def _spore_sitemap():
+    """The pages of the built sporePrint site that this gate answers under the sporePrint name: the front
+    page and every folder with an index.html under one of SPORE_PREFIXES, each dated by its file. The folder
+    is read at most once in ten minutes. Empty when this gate holds no built sporePrint."""
+    now=time.time()
+    if _SPORE_MAP["body"] and now-_SPORE_MAP["at"]<600: return _SPORE_MAP["body"]
+    root=os.path.realpath(os.path.join(_REPO,"sporePrint","public")); rows=[]
+    if not os.path.isfile(os.path.join(root,"index.html")): return b""
+    for folder,dirs,files in os.walk(root):
+        dirs.sort()
+        if "index.html" not in files: continue
+        rel=os.path.relpath(folder,root).replace(os.sep,"/")
+        path="/" if rel=="." else "/"+rel+"/"
+        if path!="/" and (not path.startswith(SPORE_PREFIXES) or path.startswith("/data/")): continue   # /data/ is the gate's own store, not the site's
+        day=time.strftime("%Y-%m-%d",time.gmtime(os.path.getmtime(os.path.join(folder,"index.html"))))
+        rows.append("<url><loc>https://sporeprint.primals.eco%s</loc><lastmod>%s</lastmod></url>"%(urllib.parse.quote(path,safe="/"),day))
+    body=('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+"\n".join(rows)+"\n</urlset>\n").encode()
+    _SPORE_MAP["at"],_SPORE_MAP["body"]=now,body
+    return body
+
 class GaiaGate(http.server.BaseHTTPRequestHandler):
     timeout = PI_TIMEOUT
     def log_message(self, fmt, *a): pass
@@ -1132,9 +1156,14 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             body=txt.encode(); self.send_response(200)
             self.send_header("Content-Type",ct); self.send_header("Content-Length",str(len(body)))
             self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
+        if self.path=="/sitemap.xml" and host in _SPORE_HOSTS:
+            body=_spore_sitemap()
+            if body:
+                self.send_response(200); self.send_header("Content-Type","application/xml"); self.send_header("Content-Length",str(len(body)))
+                self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
         if self.path=="/sitemap.xml":
             now=time.strftime("%Y-%m-%d")
-            urls="".join(f"<url><loc>https://primals.eco{p}</loc><lastmod>{now}</lastmod><changefreq>hourly</changefreq></url>" for p in sorted(set(list(DESK_PAGES)+list(GUT_DATA))))
+            urls="".join(f"<url><loc>https://primals.eco{p}</loc><lastmod>{now}</lastmod><changefreq>hourly</changefreq></url>" for p in sorted(set(list(DESK_PAGES)+list(GUT_DATA)+["/library","/atlas"])))   # the card catalog and the atlas: the two doors to every work
             body=f'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>'.encode()
             self.send_response(200); self.send_header("Content-Type","application/xml"); self.send_header("Content-Length",str(len(body)))
             self._negentropy_headers(); self.end_headers(); self.wfile.write(body); return
