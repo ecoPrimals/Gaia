@@ -1035,7 +1035,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             fpath=os.path.normpath(os.path.join(_REPO,self.path.lstrip("/")))
             if ".." not in re.split(r"[/\\]",self.path) and fpath.startswith(os.path.join(os.path.normpath(_REPO),"gardens")+os.sep) and os.path.isfile(fpath):
                 self._serve_file(os.path.basename(fpath),os.path.dirname(fpath))
-            else: self._json({"error":"not found","path":self.path},code=404)
+            else: self._json({"error":"not found","path":self.path},404)
             return
         if self.path=="/pulse": self._json(write_pulse()); return
         if self.path in ("/temporal","/clock","/cron","/time","/rings"):
