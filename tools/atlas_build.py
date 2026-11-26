@@ -18,6 +18,7 @@ Run (the inputs are checkouts that already exist on this gate):
   python tools/atlas_build.py --earth <folder of Natural Earth geojson: 110m land, lakes, borders, state lines; 50m land, lakes>
                               --tuebor <tuebor>/site/content
                               --catalog gardens/alexandria/catalog.json [--sporeprint <hud>/site/public/sporeprint] [--check]
+      with --tuebor and --catalog but without --sporeprint or --detroit, those sites' pins stay as they are in the file.
   python tools/atlas_build.py --sporeprint <hud>/site/public/sporeprint [--check]
       on its own: only sporePrint's pins (SPORE_PLACES) are made again; every other pin in the file stays as it is.
   python tools/atlas_build.py --detroit <publicRecord>/site/public [--check]
@@ -476,15 +477,21 @@ def main():
         return
     if a.tuebor and a.catalog:
         pins, missing = build_pins(a.tuebor, a.catalog)
-        if a.sporeprint:
-            more, gone = build_spore_pins(a.sporeprint)
-            pins['pins'] += more; missing += gone
-        if a.detroit:
-            more, gone = build_detroit_pins(a.detroit)
-            pins['pins'] += more; missing += gone
+        path = os.path.join(out, 'atlas-pins.json')
+        standing = []
+        if os.path.exists(path):
+            with open(path, encoding='utf-8') as f: standing = json.load(f).get('pins', [])
+        for label, folder, build in (('sporePrint', a.sporeprint, build_spore_pins), ('detroit', a.detroit, build_detroit_pins)):
+            if folder:
+                more, gone = build(folder)
+                missing += gone
+            else:
+                # a site whose folder is not given keeps the pins it already has in the file
+                more = [p for p in standing if p.get('from') == label]
+                if more: print('%s pins: %d kept as they stand' % (label, len(more)))
+            pins['pins'] += more
         tri = triangle(pins['pins'])
         if tri: pins['triangle'] = tri
-        path = os.path.join(out, 'atlas-pins.json')
         with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
         kinds = collections.Counter(p['kind'] for p in pins['pins'])
         print('pins: %d   links: %d   %s   %d KB' % (len(pins['pins']), sum(len(p['links']) for p in pins['pins']),
