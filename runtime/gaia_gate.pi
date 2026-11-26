@@ -565,6 +565,16 @@ def _beneath_find(raw,home=False):
 # addresses, so a search engine asking sporeprint.primals.eco for its pages was told about none of them.
 _SPORE_HOSTS=("sporeprint.primals.eco","www.sporeprint.primals.eco")
 _SPORE_MAP={"at":0.0,"body":b""}
+def _spore_data_page(path):
+    """sporePrint has pages of its own under /data/ (its data braids), and /data/ is also the gate's store. Under
+    the sporePrint name such a path is the site's page only when it is a page (a folder's index.html) that really
+    lies inside the built folder, and the gate's own store has nothing by that name. Never a file, never a link out."""
+    if not path.startswith("/data/") or "\0" in path or ".." in re.split(r"[/\\]",path): return False
+    if os.path.exists(os.path.join(_REPO,path[1:].replace("/",os.sep))): return False
+    root=os.path.realpath(os.path.join(_REPO,"sporePrint","public"))
+    fp=os.path.realpath(os.path.join(root,path[1:].replace("/",os.sep),"index.html"))
+    return fp.startswith(root+os.sep) and os.path.isfile(fp)
+
 def _spore_sitemap():
     """The pages of the built sporePrint site that this gate answers under the sporePrint name: the front
     page and every folder with an index.html under one of SPORE_PREFIXES, each dated by its file. The folder
@@ -578,7 +588,7 @@ def _spore_sitemap():
         if "index.html" not in files: continue
         rel=os.path.relpath(folder,root).replace(os.sep,"/")
         path="/" if rel=="." else "/"+rel+"/"
-        if path!="/" and (not path.startswith(SPORE_PREFIXES) or path.startswith("/data/")): continue   # /data/ is the gate's own store, not the site's
+        if path!="/" and (not path.startswith(SPORE_PREFIXES) or (path.startswith("/data/") and not _spore_data_page(path))): continue
         day=time.strftime("%Y-%m-%d",time.gmtime(os.path.getmtime(os.path.join(folder,"index.html"))))
         rows.append("<url><loc>https://sporeprint.primals.eco%s</loc><lastmod>%s</lastmod></url>"%(urllib.parse.quote(path,safe="/"),day))
     body=('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+"\n".join(rows)+"\n</urlset>\n").encode()
@@ -1204,7 +1214,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if self.path.startswith("/static/"): self._serve_static(self.path[8:]); return
         if self.path.startswith("/nucleus-aarch64/"): self._serve_file(self.path[1:], "/tmp"); return
         if self.path.startswith("/nucleus/"): self._serve_file("nucleus-aarch64/"+self.path[9:], "/tmp"); return
-        if self.path.startswith("/data/"): self._serve_file(self.path[1:]); return
+        if self.path.startswith("/data/"):
+            if host in _SPORE_HOSTS and _spore_data_page(self.path):      # a page of the sporePrint site, not a file of the store
+                self._serve_file(self.path.lstrip("/"), os.path.join(_REPO,"sporePrint","public")); return
+            self._serve_file(self.path[1:]); return
         if self.path.startswith("/videos/"): self._serve_file(self.path[1:]); return
         if self.path in ("/gaiau","/university","/classes","/videos"):
             self._json(self._catalog("gaiau")); return
