@@ -380,7 +380,11 @@ nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 --family-id
 echo $! > run/beardog.pid
 sleep 2
 export SONGBIRD_FEDERATION_BIND=127.0.0.1 SONGBIRD_PRODUCTION_BIND_ADDRESS=127.0.0.1
-export SONGBIRD_SECURITY_PROVIDER=beardog BEARDOG_SOCKET=@biomeos_beardog BEARDOG_MODE=direct
+# bearDog listens on the abstract socket @ecosystem_beardog_<family> (Android allows no socket files).
+# Every songBird client that talks to it is pointed at that one name.
+BD=@ecosystem_beardog_$FAMILY_ID
+export SECURITY_ENDPOINT=unix://$BD SECURITY_PROVIDER_SOCKET=$BD CRYPTO_PROVIDER_SOCKET=$BD BEARDOG_SOCKET=$BD
+export SECURITY_PROVIDER_MODE=direct BEARDOG_MODE=direct
 nohup $D/bin/songbird server --federation-port 7700 --bind 127.0.0.1 --listen 127.0.0.1:9200 --node-id $NODE_ID \
   --state-dir $D/run/songbird --pid-dir $D/run > run/songbird.log 2>&1 < /dev/null &
 echo $! > run/songbird.pid
