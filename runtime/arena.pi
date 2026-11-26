@@ -1,211 +1,344 @@
 #!/usr/bin/env python3
 """
-arena.py — The Arena where Gaia's models fight it out.
+arena.pi — the Arena, the Hippodrome: where Gaia's models are found, carded and set
+against each other. eastGate is the arena; the stables are the Ollama servers that
+answer on the house network. Nothing is assumed: who stands in a stable is asked of
+the stable every time, so a model that is gone is never called and a new one is seen.
 
-EastGate is the arena. The RTX 5090 is the blender and generator.
-Models compete on tasks. Winners inform Gaia's next generation.
-Losers become genetic material for the sourdough.
+  python3 arena.pi --census               which stables answer, what each holds
+  python3 arena.pi --card                 card every model: where, what, how fast, what it can do
+  python3 arena.pi "question"             fight: one model per distinct weight answers, one judges
+  python3 arena.pi --fast  "question"     tiers: --fast --deep --code --tissue --all
+  python3 arena.pi --stable northGate ... keep to one stable
+  python3 arena.pi --judge qwen2.5:7b ... name the judge (default: best carded 7B+ on eastGate)
 
-Usage:
-  python arena.py "What is Anderson localization?"     # all models compete
-  python arena.py --code "Write fizzbuzz in Rust"      # code specialists compete
-  python arena.py --legal "Anti-SLAPP standing"        # legal specialists compete
-  python arena.py --math "Prove sqrt(2) is irrational" # math specialists compete
-  python arena.py --quick "hello"                      # fast scouts only
+The cards are written to data/arena-cards.json (and copied to the served store).
+Every number on a card was measured by this file at the time on the card; the five
+tasks are checked by rule, not by another model's opinion.
 """
 
-import json
-import sys
-import time
+import base64, json, os, re, shutil, struct, sys, time, zlib
 import urllib.request
-import concurrent.futures
 from pathlib import Path
 
-OLLAMA = "http://127.0.0.1:11434"
+REPO = Path(__file__).resolve().parent.parent
 ARENA_LOG = Path(__file__).parent / "sourdough" / "arena.jsonl"
+CARDS = REPO / "data" / "arena-cards.json"
+SERVED = Path.home() / ".local/share/gaia/data"
 
-# Model tiers — who competes in which arena
-TIERS = {
-    "all": [
-        "gaia-cortex:latest", "gaia-oracle:latest", "gaia-nucleus:latest",
-        "gaia-dream:latest", "gaia-heart:latest", "deepseek-r1:8b",
-        "wizardlm2:7b", "mistral:7b",
-    ],
-    "code": [
-        "gaia-code:latest", "codellama:7b", "starcoder2:3b",
-        "qwen2.5-coder:7b", "deepseek-r1:8b",
-    ],
-    "math": [
-        "mathstral:7b", "deepseek-r1:8b", "gaia-nucleus:latest",
-        "granite3.1-moe:3b", "gaia-cortex:latest",
-    ],
-    "legal": [
-        "gaia-case4349:latest", "gaia-oracle:latest", "gaia-sentinel:latest",
-        "wizardlm2:7b", "gaia-cortex:latest",
-    ],
-    "creative": [
-        "gaia-dream:latest", "gaia-heart:latest", "gaia-chroma:latest",
-        "gaia-resonance:latest", "dolphin-phi:2.7b",
-    ],
-    "quick": [
-        "tinyllama:1.1b", "dolphin-phi:2.7b", "granite3.1-moe:3b",
-        "phi4-mini:latest", "starcoder2:3b",
-    ],
-    "reasoning": [
-        "deepseek-r1:8b", "wizardlm2:7b", "gaia-cortex:latest",
-        "gaia-turtle:latest", "granite3.1-moe:3b",
-    ],
+# The stables. Port 11434 on eastGate is the inference gateway (OpenAI routes only);
+# eastGate's own Ollama is on 11436. A stable that does not answer is reported silent.
+STABLES = {
+    "eastGate":  {"url": "http://127.0.0.1:11436",     "gpu": "RTX 4070 12GB"},
+    "northGate": {"url": "http://192.168.4.147:11434", "gpu": "RTX 5090 32GB"},
+    "ironGate":  {"url": "http://192.168.4.237:11434", "gpu": "RTX 5070 12GB"},
+    "southGate": {"url": "http://192.168.4.148:11434", "gpu": "RTX 4060 8GB"},
+    "graftGate": {"url": "http://192.168.4.107:11434", "gpu": "M4 16GB"},
 }
 
 
-def query_model(model, prompt, timeout=60):
-    """Query a model and return response + timing."""
+def _call(url, payload=None, timeout=8):
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read())
+
+
+def census(only=None):
+    """Ask every stable who it is and what it holds."""
+    out = {}
+    for name, st in STABLES.items():
+        if only and name != only:
+            continue
+        try:
+            ver = _call(st["url"] + "/api/version", timeout=3).get("version")
+            tags = _call(st["url"] + "/api/tags").get("models", [])
+            loaded = [m["name"] for m in _call(st["url"] + "/api/ps").get("models", [])]
+            out[name] = {**st, "answers": True, "ollama": ver, "models": tags, "loaded": loaded}
+        except Exception as e:
+            out[name] = {**st, "answers": False, "why": str(e)[:60], "models": [], "loaded": []}
+    return out
+
+
+def chat(url, model, prompt, num_predict=80, images=None, think=None, timeout=180):
+    """One turn, temperature 0. Returns the text and what Ollama measured."""
+    msg = {"role": "user", "content": prompt}
+    if images:
+        msg["images"] = images
+    payload = {"model": model, "messages": [msg], "stream": False,
+               "options": {"temperature": 0, "seed": 1, "num_predict": num_predict}}
+    if think is not None:
+        payload["think"] = think
     t0 = time.time()
-    data = json.dumps({
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "stream": False,
-    }).encode()
-    
-    req = urllib.request.Request(
-        f"{OLLAMA}/api/chat", data=data,
-        headers={"Content-Type": "application/json"}
-    )
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            result = json.loads(resp.read())
-            elapsed = time.time() - t0
-            content = result.get("message", {}).get("content", "")
-            tokens = result.get("eval_count", len(content.split()))
-            return {
-                "model": model,
-                "content": content,
-                "elapsed": elapsed,
-                "tokens": tokens,
-                "tok_per_sec": tokens / max(elapsed, 0.01),
-                "status": "ok",
-            }
+        r = _call(url + "/api/chat", payload, timeout=timeout)
+        n, d = r.get("eval_count", 0), r.get("eval_duration", 0)
+        return {"ok": True, "text": (r.get("message", {}).get("content") or "").strip(),
+                "tokens": n, "tps": round(n / (d / 1e9), 1) if d else 0.0,
+                "load_s": round(r.get("load_duration", 0) / 1e9, 2), "wall_s": round(time.time() - t0, 2)}
     except Exception as e:
-        return {
-            "model": model,
-            "content": "",
-            "elapsed": time.time() - t0,
-            "tokens": 0,
-            "tok_per_sec": 0,
-            "status": f"error: {str(e)[:50]}",
-        }
+        return {"ok": False, "text": "", "tokens": 0, "tps": 0.0, "load_s": 0.0,
+                "wall_s": round(time.time() - t0, 2), "err": str(e)[:80]}
 
 
-def run_arena(prompt, tier="all", max_workers=2):
-    """Run all models in a tier against the same prompt. FIGHT!"""
-    models = TIERS.get(tier, TIERS["all"])
-    
-    print(f"\n{'═' * 60}")
-    print(f"  ARENA — {tier.upper()} TIER")
-    print(f"  Prompt: {prompt[:60]}{'...' if len(prompt) > 60 else ''}")
-    print(f"  Combatants: {len(models)}")
-    print(f"{'═' * 60}\n")
-    
+# ── the five tasks: each has one right answer and a rule that checks it ──────────────
+
+def _answers(text, n):
+    """The reply's first or last whole number is n: a bare answer passes, and so does one that
+    reasons aloud and ends on it. A reply that opens with a wrong number does not."""
+    nums = [int(x) for x in re.findall(r"-?\d+", text.replace(",", ""))]
+    return bool(nums) and n in (nums[0], nums[-1])
+
+def _check_json(text):
+    m = re.search(r"\{.*?\}", text, re.S)
+    try:
+        d = json.loads(m.group(0))
+        return d.get("gate") == "eastGate" and d.get("ip") == "192.168.4.245"
+    except Exception:
+        return False
+
+MAIL = ("Failed after boot, left for you: dnsmasq (exits 'invalid argument'), postfix@-, and "
+        "NetworkManager-wait-online, which waits on the Bluetooth network link.")
+
+TASKS = [
+    ("math",    "What is 17 times 23? Reply with the number only.",
+                lambda t: _answers(t, 391)),
+    ("json",    "Reply with only a JSON object with the keys \"gate\" and \"ip\" for this sentence: "
+                "eastGate lives at 192.168.4.245.",
+                _check_json),
+    ("trace",   "What does this Python program print?\n\nxs = [3, 1, 2]\nxs.sort()\nprint(xs[0] + xs[-1] * 2)\n\n"
+                "Reply with the number only.",
+                lambda t: _answers(t, 7)),
+    ("extract", "From this message, list the three unit names that failed, separated by commas, and nothing else.\n\n" + MAIL,
+                lambda t: len(t) < 200 and all(w in t.lower() for w in ("dnsmasq", "postfix", "wait-online"))),
+    ("oneword", "Which is larger, a kilobyte or a megabyte? Answer with one word.",
+                lambda t: re.sub(r"[^a-z]", "", t.lower()) == "megabyte"),
+]
+
+def _red_png(n=64):
+    """A plain red square, built by hand so no image library is needed."""
+    raw = b"".join(b"\x00" + b"\xff\x00\x00" * n for _ in range(n))
+    def chunk(kind, body):
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", zlib.crc32(kind + body) & 0xffffffff)
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", n, n, 8, 2, 0, 0, 0)) \
+        + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b"")
+    return base64.b64encode(png).decode()
+
+def _cos(a, b):
+    dot = sum(x * y for x, y in zip(a, b))
+    return dot / ((sum(x * x for x in a) ** 0.5) * (sum(y * y for y in b) ** 0.5) or 1)
+
+
+def _role(system):
+    """What the model is told it is: its mode line if it has one, else its first sentence."""
+    if not system:
+        return ""
+    m = re.search(r"You are in ([A-Z]+ mode\.[^\n]*)", system)
+    if m:
+        return m.group(1).strip()[:160]
+    return re.split(r"(?<=[.!?])\s", system.strip().replace("\n", " "), 1)[0][:160]
+
+
+def card_model(gate, st, tag):
+    """Everything one card says, asked of the stable and measured now."""
+    url, name = st["url"], tag["name"]
+    det = tag.get("details", {})
+    card = {"id": f"{name}@{gate}", "model": name, "gate": gate, "endpoint": url, "gpu": st["gpu"],
+            "family": det.get("family"), "params": det.get("parameter_size"),
+            "quant": det.get("quantization_level"), "size_gb": round(tag.get("size", 0) / 1e9, 2)}
+    try:
+        show = _call(url + "/api/show", {"model": name}, timeout=20)
+    except Exception as e:
+        card["error"] = f"show: {str(e)[:60]}"
+        return card
+    caps = show.get("capabilities") or ["completion"]
+    info = show.get("model_info") or {}
+    froms = [l.split()[-1] for l in (show.get("modelfile") or "").splitlines() if l.startswith("FROM ")]
+    num_ctx = re.search(r"num_ctx\s+(\d+)", show.get("parameters") or "")
+    card.update({
+        "capabilities": caps,
+        "weights": froms[0][-12:] if froms else None,          # same value = same weights on disk
+        "grown_from": show.get("details", {}).get("parent_model") or None,
+        "context_trained": max([v for k, v in info.items() if k.endswith("context_length")] or [0]) or None,
+        "context_set": int(num_ctx.group(1)) if num_ctx else None,
+        "role": _role(show.get("system")),
+    })
+    think = False if "thinking" in caps else None
+
+    if "completion" in caps:
+        speed = chat(url, name, "Count from 1 to 30, the numbers separated by spaces.", 96, think=think)
+        card["load_s"], card["tokens_per_s"] = speed["load_s"], speed["tps"]
+        if not speed["ok"]:
+            card["error"] = speed.get("err")
+            return card
+        passed, said = [], {}
+        for key, prompt, rule in TASKS:
+            r = chat(url, name, prompt, 200, think=think)       # room to reason aloud and still land
+            said[key] = r["text"][:160]
+            if r["ok"] and rule(r["text"]):
+                passed.append(key)
+        card["tasks_passed"], card["score"], card["said"] = passed, f"{len(passed)}/{len(TASKS)}", said
+        if "vision" in caps:
+            r = chat(url, name, "What color is this image?", 24, images=[_red_png(256)], think=think)
+            card["vision_red_square"] = {"said": r["text"][:80], "pass": "red" in r["text"].lower()}
+            if not card["tokens_per_s"]:                         # a captioner may say nothing without an image
+                card["tokens_per_s"] = r["tps"]
+    if "embedding" in caps:
+        try:
+            t0 = time.time()
+            e = _call(url + "/api/embed", {"model": name, "input": [
+                "The router hands out addresses to the house.", "DHCP gives every device its address.",
+                "Sourdough needs flour, water and time."]}, timeout=60)["embeddings"]
+            near, far = _cos(e[0], e[1]), _cos(e[0], e[2])
+            card["embedding"] = {"dim": len(e[0]), "near": round(near, 3), "far": round(far, 3),
+                                 "pass": near > far, "wall_s": round(time.time() - t0, 2)}
+        except Exception as ex:
+            card["embedding"] = {"pass": False, "err": str(ex)[:60]}
+    return card
+
+
+def card_all(only=None):
+    stables = census(only)
+    cards, started = [], time.strftime("%Y-%m-%dT%H:%M:%S%z")
+    for gate, st in stables.items():
+        if not st["answers"]:
+            print(f"  {gate:10s} silent ({st['why']})")
+            continue
+        # models that share weights are carded one after another, so the weights load once
+        tags = sorted(st["models"], key=lambda m: (m.get("details", {}).get("family", ""), m.get("size", 0), m["name"]))
+        print(f"  {gate:10s} {len(tags)} models on {st['gpu']} (ollama {st['ollama']})")
+        for tag in tags:
+            c = card_model(gate, st, tag)
+            cards.append(c)
+            print(f"    {c['model']:34s} {c.get('params') or '':>6s} {c.get('tokens_per_s', 0):6.1f} tok/s  "
+                  f"{c.get('score', '-'):>4s}  {','.join(c.get('capabilities', []))}  {c.get('error', '')}", flush=True)
+    doc = {
+        "ts": started, "finished": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "type": "arena-cards",
+        "title": "The Hippodrome — every model that answers on the house network, carded",
+        "how": "runtime/arena.pi --card, run on eastGate. Speeds are tokens per second as Ollama reports them, "
+               "measured while the body's own crons were also using the GPU. The five tasks are checked by rule: "
+               "math and trace pass when the reply's first or last number is right; json when the object parses "
+               "with both values; extract when all three unit names are there; oneword only when the reply is "
+               "that one word, so it measures obedience as much as knowledge. A tissue answers through its own "
+               "system prompt. Five tasks are a first sorting, not a verdict.",
+        "stables": {g: {k: s.get(k) for k in ("url", "gpu", "answers", "ollama", "why", "loaded")} |
+                    {"models": len(s["models"]),
+                     "distinct_weights": len({c.get("weights") for c in cards if c["gate"] == g and c.get("weights")}),
+                     "disk_gb": round(sum(m.get("size", 0) for m in s["models"]) / 1e9, 1)}
+                    for g, s in stables.items()},
+        "cards": cards,
+    }
+    old = json.loads(CARDS.read_text()) if CARDS.exists() else {}
+    if only and old:                                # one stable re-carded: the others' cards are kept
+        doc["cards"] = [c for c in old.get("cards", []) if c["gate"] != only] + cards
+        doc["stables"] = {**old.get("stables", {}), **doc["stables"]}
+    if "also_here" in old:                          # the doors, agents and others, written by hand
+        doc["also_here"] = old["also_here"]
+    CARDS.write_text(json.dumps(doc, indent=1, ensure_ascii=False) + "\n")
+    if SERVED.is_dir():
+        shutil.copyfile(CARDS, SERVED / CARDS.name)
+    print(f"\n  {len(cards)} cards written to {CARDS}")
+    return doc
+
+
+# ── the fight ──────────────────────────────────────────────────────────────────────────
+
+def _load_cards():
+    if not CARDS.exists():
+        sys.exit("No cards yet. Run:  python3 arena.pi --card")
+    return [c for c in json.loads(CARDS.read_text())["cards"]
+            if "completion" in c.get("capabilities", []) and not c.get("error")]
+
+def _billions(c):
+    m = re.match(r"([\d.]+)([BM])", c.get("params") or "")
+    return float(m.group(1)) * (1 if m.group(2) == "B" else 0.001) if m else 0.0
+
+def _score(c):
+    return int((c.get("score") or "0/5").split("/")[0])
+
+def pick(tier, only=None):
+    """Who fights. Except in the tissue tier, each distinct set of weights sends one fighter per stable."""
+    cards = [c for c in _load_cards() if not only or c["gate"] == only]
+    if tier == "tissue":
+        return [c for c in cards if c["model"].startswith("gaia-tissue-")]
+    seen, one_each = set(), []
+    for c in sorted(cards, key=lambda c: (c.get("grown_from") is not None, len(c["model"]))):
+        if (c["gate"], c.get("weights")) not in seen:
+            seen.add((c["gate"], c.get("weights")))
+            one_each.append(c)
+    return {"fast": [c for c in one_each if _billions(c) < 3],
+            "deep": [c for c in one_each if _billions(c) >= 7],
+            "code": [c for c in one_each if c.get("family") == "deepseek2" or "code" in c["model"]],
+            }.get(tier, one_each)
+
+def run_arena(prompt, tier="all", only=None, judge_name=None):
+    fighters = pick(tier, only)
+    if not fighters:
+        sys.exit(f"No carded model stands in the {tier} tier.")
+    print(f"\n{'═' * 64}\n  ARENA — {tier.upper()} — {len(fighters)} fighters\n  {prompt[:70]}\n{'═' * 64}")
     results = []
-    
-    # Run models (sequentially to not overload VRAM)
-    for i, model in enumerate(models):
-        print(f"  [{i+1}/{len(models)}] {model}...", end=" ", flush=True)
-        result = query_model(model, prompt)
-        results.append(result)
-        
-        if result["status"] == "ok":
-            tps = result["tok_per_sec"]
-            length = len(result["content"])
-            print(f"✅ {result['elapsed']:.1f}s  {tps:.1f} tok/s  {length} chars")
-        else:
-            print(f"❌ {result['status']}")
-    
-    # JUDGE — the meta-brain evaluates all responses
-    print(f"\n{'─' * 60}")
-    print(f"  JUDGING — phi4-mini evaluates all responses")
-    print(f"{'─' * 60}\n")
-    
-    ok_results = [r for r in results if r["status"] == "ok"]
-    if len(ok_results) < 2:
-        print("  Not enough responses to judge.")
-        return results
-    
-    # Build judge prompt
-    judge_prompt = f"""You are a judge evaluating AI model responses. Rate each response on quality (1-10).
-    
-TASK: {prompt}
+    for c in fighters:
+        think = False if "thinking" in c["capabilities"] else None
+        r = chat(c["endpoint"], c["model"], prompt, 300, think=think)
+        r.update(id=c["id"])
+        results.append(r)
+        print(f"  {c['id']:44s} " + (f"{r['wall_s']:5.1f}s {r['tps']:6.1f} tok/s" if r["ok"] else f"failed: {r.get('err')}"), flush=True)
+    ok = [r for r in results if r["ok"] and r["text"]]
 
-"""
-    for i, r in enumerate(ok_results):
-        preview = r["content"][:300]
-        judge_prompt += f"RESPONSE {i+1} (model: {r['model']}):\n{preview}\n\n"
-    
-    judge_prompt += """Rate each response 1-10. Pick the WINNER. Format:
-SCORES: model1=N, model2=N, ...
-WINNER: model_name
-REASON: why"""
-
-    judge = query_model("phi4-mini:latest", judge_prompt, timeout=30)
-    
-    if judge["status"] == "ok":
-        print(f"  Judge says:\n")
-        for line in judge["content"].split("\n"):
+    deep = [c for c in _load_cards() if c["gate"] == "eastGate" and _billions(c) >= 7 and not c.get("grown_from")]
+    judge = next((c for c in _load_cards() if judge_name and c["model"] == judge_name), None) \
+        or (max(deep, key=lambda c: (_score(c), c.get("tokens_per_s", 0))) if deep else None)
+    verdict = "no judge"
+    if judge and len(ok) >= 2:
+        ask = f"You are judging answers to one task. Rate each answer 1-10 for being correct and clear.\n\nTASK: {prompt}\n\n"
+        for i, r in enumerate(ok):
+            ask += f"ANSWER {i + 1}:\n{r['text'][:400]}\n\n"
+        ask += "Reply in this form and nothing else:\nSCORES: 1=N, 2=N, ...\nWINNER: number\nREASON: one sentence"
+        j = chat(judge["endpoint"], judge["model"], ask, 160)
+        verdict = j["text"] if j["ok"] else f"judge failed: {j.get('err')}"
+        print(f"\n  Judge {judge['id']} (answers shown to it by number, not by name):")
+        for line in verdict.splitlines():
             if line.strip():
                 print(f"    {line.strip()}")
-    
-    # Log the arena battle
-    battle = {
-        "ts": time.time(),
-        "prompt": prompt,
-        "tier": tier,
-        "results": [{
-            "model": r["model"],
-            "elapsed": r["elapsed"],
-            "tokens": r["tokens"],
-            "tok_per_sec": r["tok_per_sec"],
-            "status": r["status"],
-            "content_preview": r["content"][:200],
-        } for r in results],
-        "judgment": judge["content"][:500] if judge["status"] == "ok" else "judge failed",
-    }
-    
+        w = re.search(r"WINNER:\s*(\d+)", verdict)
+        if w and 0 < int(w.group(1)) <= len(ok):
+            print(f"    → answer {w.group(1)} is {ok[int(w.group(1)) - 1]['id']}")
+
     ARENA_LOG.parent.mkdir(parents=True, exist_ok=True)
     with open(ARENA_LOG, "a", encoding="utf-8") as f:
-        f.write(json.dumps(battle, default=str) + "\n")
-    
-    # Print scoreboard
-    print(f"\n{'═' * 60}")
-    print(f"  SCOREBOARD")
-    print(f"{'═' * 60}")
-    for r in sorted(ok_results, key=lambda x: x["tok_per_sec"], reverse=True):
-        bar = "█" * min(int(r["tok_per_sec"]), 40)
-        print(f"  {r['model']:35s} {r['tok_per_sec']:6.1f} tok/s {bar}")
-    print(f"\n  Battle logged to arena.jsonl")
-    print(f"  Winners inform gaia's next generation.")
-    print(f"{'═' * 60}")
-    
+        f.write(json.dumps({"ts": time.time(), "prompt": prompt, "tier": tier,
+                            "judge": judge["id"] if judge else None,
+                            "order_shown_to_judge": [r["id"] for r in ok],
+                            "results": [{"model": r["id"], "elapsed": r["wall_s"], "tokens": r["tokens"],
+                                         "tok_per_sec": r["tps"], "status": "ok" if r["ok"] else r.get("err"),
+                                         "content_preview": r["text"][:200]} for r in results],
+                            "judgment": verdict[:500]}) + "\n")
+    print(f"\n  Logged to {ARENA_LOG}")
     return results
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python arena.py [--tier] 'prompt'")
-        print("Tiers: --all --code --math --legal --creative --quick --reasoning")
+    args, only, judge, tier = sys.argv[1:], None, None, "all"
+    if "--stable" in args:
+        i = args.index("--stable"); only = args[i + 1]; del args[i:i + 2]
+    if "--judge" in args:
+        i = args.index("--judge"); judge = args[i + 1]; del args[i:i + 2]
+    if not args:
+        print(__doc__); return
+    if args[0] == "--census":
+        for gate, st in census(only).items():
+            if st["answers"]:
+                gb = sum(m.get("size", 0) for m in st["models"]) / 1e9
+                print(f"  {gate:10s} {st['url']:28s} {st['gpu']:14s} ollama {st['ollama']:8s} "
+                      f"{len(st['models']):3d} models {gb:6.1f} GB  loaded: {', '.join(st['loaded']) or '-'}")
+            else:
+                print(f"  {gate:10s} {st['url']:28s} {st['gpu']:14s} silent ({st['why']})")
         return
-    
-    tier = "all"
-    prompt_start = 1
-    
-    if sys.argv[1].startswith("--"):
-        tier = sys.argv[1][2:]
-        prompt_start = 2
-    
-    prompt = " ".join(sys.argv[prompt_start:])
-    if not prompt:
-        prompt = "Explain the significance of Anderson localization in condensed matter physics."
-    
-    run_arena(prompt, tier)
+    if args[0] == "--card":
+        card_all(only); return
+    if args[0].startswith("--"):
+        tier, args = args[0][2:], args[1:]
+    run_arena(" ".join(args) or "Explain Anderson localization in three sentences.", tier, only, judge)
 
 
 if __name__ == "__main__":
