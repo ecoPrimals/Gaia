@@ -15,10 +15,17 @@ Two rules for the table:
   - places are good to about a kilometre. They were set from the street address or the town, not surveyed.
 
 Run (the inputs are checkouts that already exist on this gate):
-  python tools/atlas_build.py --earth <folder of Natural Earth geojson> --tuebor <tuebor>/site/content
+  python tools/atlas_build.py --earth <folder of Natural Earth geojson: 110m land, lakes, borders, state lines; 50m land, lakes>
+                              --tuebor <tuebor>/site/content
                               --catalog gardens/alexandria/catalog.json [--sporeprint <hud>/site/public/sporeprint] [--check]
   python tools/atlas_build.py --sporeprint <hud>/site/public/sporeprint [--check]
       on its own: only sporePrint's pins (SPORE_PLACES) are made again; every other pin in the file stays as it is.
+  python tools/atlas_build.py --detroit <publicRecord>/site/public [--check]
+      the same for the Detroit site (detroit.primals.eco, DETROIT_PLACES): the county seat, the halls and the courts
+      its pages name, and the two far marks in Ireland. The built site lives on eastGate; a copy of its pages will do.
+
+The file also carries THE TRIANGLE (TRIANGLE below): three pins to measure from and the far marks to sight on.
+It names pins by id and adds no place of its own. The home corner is the Lansing shelf - the town, nothing finer.
   --check asks the live site for every link once and reports the ones that do not answer.
 
 Natural Earth is public domain (naturalearthdata.com). Only the outlines are kept, thinned to what a globe needs.
@@ -37,6 +44,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 LIVE = 'https://amicuscontra.github.io/tuebor'
 LAKES_BOX = (-93.0, 41.0, -75.0, 50.0)          # the Great Lakes: taken from the finer map so Michigan has its shape
+LAND_BOXES = [(-11.2, 51.0, -5.42, 55.8)]      # Ireland: the island from the finer map, so Dublin stands on its bay and Kerry has its headlands
 
 # id, name, where it stands, lat, lon, kind, the words that name it in a page, its own pages (first = the card)
 PLACES = [
@@ -131,6 +139,52 @@ SPORE_PLACES = [
      r'\bGLERL\b|Lake Erie|Great Lakes HAB', ['science/09-field-genomics']),
 ]
 
+# The Detroit site (detroit.primals.eco): Detroit and Wayne County, and the far body in Ireland.
+# Same two rules. Where the pages give a street address themselves, that is the address used.
+# A page in these sections is a list the site makes by itself ("all pages referencing ..."); such a page can be
+# a place's own card, but it is not counted as a page that names the place and it does not speak for it.
+DETROIT_LIVE = 'https://detroit.primals.eco'
+DETROIT_LISTS = ('tags/', 'connections/', 'entities/', 'actors/', 'counties/', 'courts/')
+DETROIT_PLACES = [
+    ('wayne', 'Wayne County — the county seat', 'Guardian Building, 500 Griswold St, Detroit — the county’s offices', 42.3296, -83.0461, 'civic',
+     r'Wayne County', ['network/entities/wayne-county', 'entities/wayne-county']),
+    ('caymc', 'Coleman A. Young Municipal Center — Detroit City Council, the City Clerk and the Wayne County Probate Court',
+     '2 Woodward Ave, Detroit', 42.3295, -83.0437, 'civic',
+     r'City Council|City Clerk|Probate Court|Municipal Center',
+     ['entities/detroit-city-council', 'entities/wayne-county-probate-court']),
+    ('murphy', 'Wayne County Prosecutor', 'Frank Murphy Hall of Justice, 1441 St. Antoine, Detroit — the address the pages give', 42.3365, -83.0420, 'civic',
+     r'Wayne County Prosecutor|Frank Murphy', ['entities/wayne-county-prosecutor']),
+    ('edmi', 'U.S. District Court — Eastern District of Michigan', 'Theodore Levin U.S. Courthouse, 231 W Lafayette Blvd, Detroit', 42.3298, -83.0494, 'court',
+     r'Eastern District of Michigan|E\.D\. Mich', ['courts/eastern-district-of-michigan']),
+    ('fbi', 'FBI Detroit — the federal building', 'Patrick V. McNamara Federal Building, 477 Michigan Ave, Detroit', 42.3316, -83.0530, 'state',
+     r'FBI Detroit|McNamara Federal|477 Michigan', ['entities/fbi']),
+    ('dpd', 'Detroit Police Department', 'Detroit Public Safety Headquarters, 1301 Third Ave, Detroit', 42.3325, -83.0577, 'civic',
+     r'Detroit Police Department|\bDPD\b', ['network/entities/detroit-police-department', 'entities/dpd']),
+    ('adb', 'Attorney Discipline Board', '333 W Fort St, Detroit', 42.3290, -83.0515, 'law',
+     r'Attorney Discipline Board', ['entities/attorney-discipline-board']),
+    # the far body
+    ('meta-dublin', 'Meta — the Dublin office', 'Meta Platforms Ireland, Merrion Road, Ballsbridge, Dublin 4, Ireland', 53.3270, -6.2280, 'media',
+     r'\bDublin\b|Meta Ireland|Meta Platforms Ireland', ['entities/meta-ireland', 'entities/dublin-datacenter']),
+    ('skellig', 'Skellig Michael — Sceilg Mhichíl', 'the monks’ rock in the Atlantic, 12 km off the coast of Kerry, Ireland', 51.7711, -10.5406, 'mark',
+     r'Skellig|Sceilg', []),
+]
+# a mark the pages do not write about yet still has ground to stand on: one public page about the place itself
+DETROIT_OUTSIDE = {'skellig': [['Sceilg Mhichíl — UNESCO World Heritage List', 'https://whc.unesco.org/en/list/757/', 'outside']]}
+
+# The triangle. Each corner and each far mark is a pin that already stands (by id); `short` is the word drawn on
+# the globe, `as` is what the mark is in the triangle.
+TRIANGLE = {
+    'corners': [
+        {'pin': 'shelf-lansing', 'short': 'home', 'as': 'home — the two houses, held at the town of Lansing'},
+        {'pin': 'msu', 'short': 'Olympus', 'as': 'Mount Olympus — Michigan State, the alma mater'},
+        {'pin': 'wayne', 'short': 'Wayne', 'as': 'Detroit and Wayne County'},
+    ],
+    'far': [
+        {'pin': 'meta-dublin', 'short': 'Dublin', 'as': 'Meta in Dublin'},
+        {'pin': 'skellig', 'short': 'Skellig', 'as': 'the monks’ rock — the old way of the sun'},
+    ],
+}
+
 # the four places the library's own catalog sorts works into; the count and the works come from the catalog
 SHELVES = {
     'library':  ('The Library — sporePrint, the heart and the soul', 'in HUD space above the Library of Congress, Washington DC', 'library'),
@@ -154,6 +208,10 @@ def rings(geom):
 def bbox(ring):
     xs = [p[0] for p in ring]; ys = [p[1] for p in ring]
     return min(xs), min(ys), max(xs), max(ys)
+
+
+def within(b, box):
+    return b[0] >= box[0] and b[1] >= box[1] and b[2] <= box[2] and b[3] <= box[3]
 
 
 def meets(b, box):
@@ -183,7 +241,11 @@ def load(folder, name):
 
 
 def build_earth(folder):
-    land = [pack(r) for f in load(folder, 'ne_110m_land') for r in rings(f['geometry'])]
+    land = [pack(r) for f in load(folder, 'ne_110m_land') for r in rings(f['geometry'])
+            if not any(within(bbox(r), box) for box in LAND_BOXES)]
+    for f in load(folder, 'ne_50m_land'):
+        for r in rings(f['geometry']):
+            if len(r) > 12 and any(within(bbox(r), box) for box in LAND_BOXES): land.append(pack(thin(r, 0.02)))
     lakes = []
     for f in load(folder, 'ne_110m_lakes'):
         for r in rings(f['geometry']):
@@ -328,6 +390,39 @@ def build_spore_pins(folder):
     return pins, missing
 
 
+def build_detroit_pins(folder):
+    pages = read_built(folder)
+    for p in pages.values(): p['title'] = p['title'].split(' — Cash for Kids 2')[0]
+    written = {k: p for k, p in pages.items() if not p['index'] and not k.startswith(DETROIT_LISTS) and k != 'site-index'}
+    pins, missing = [], []
+    for pid, name, where, lat, lon, kind, words, own in DETROIT_PLACES:
+        rx = re.compile(words)
+        hits = sorted(((len(rx.findall(p['title'] + '\n' + p['body'])), key) for key, p in written.items()
+                       if rx.search(p['title'] + '\n' + p['body'])), key=lambda h: (-h[0], h[1]))
+        links, seen, say = [], set(), ''
+        for key in own:
+            if key not in pages: missing.append((pid, key)); continue
+            if not say and key in written and len(pages[key]['say']) >= 30 and rx.search(pages[key]['say']): say = pages[key]['say']
+            links.append([pages[key]['title'], '%s/%s/' % (DETROIT_LIVE, key), 'card']); seen.add(key)
+        links += DETROIT_OUTSIDE.get(pid, [])
+        own_n = len(links)
+        for n, key in hits:
+            if len(links) >= own_n + 8: break
+            if key in seen or key.startswith('network/'): continue
+            links.append([pages[key]['title'], '%s/%s/' % (DETROIT_LIVE, key), 'page']); seen.add(key)
+        pins.append({'id': pid, 'name': name, 'where': where, 'lat': lat, 'lon': lon, 'kind': kind,
+                     'say': say, 'n': len(hits), 'links': links, 'from': 'detroit'})
+    return pins, missing
+
+
+def triangle(pins):
+    """The triangle as the page reads it; a corner whose pin does not stand is reported, and the triangle is left out."""
+    have = {p['id'] for p in pins}
+    gone = [m['pin'] for part in TRIANGLE.values() for m in part if m['pin'] not in have]
+    for g in gone: print('   the triangle names a pin that does not stand: %s' % g)
+    return None if gone else TRIANGLE
+
+
 def check(pins):
     urls = sorted({l[1] for p in pins['pins'] for l in p['links']})
 
@@ -348,34 +443,47 @@ def check(pins):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--earth'); ap.add_argument('--tuebor'); ap.add_argument('--catalog'); ap.add_argument('--sporeprint')
+    ap.add_argument('--detroit')
     ap.add_argument('--check', action='store_true')
     a = ap.parse_args()
     out = os.path.join(REPO, 'static')
-    if a.sporeprint and not (a.tuebor and a.catalog):
-        # sporePrint's pins on their own: the pins file as it stands keeps every other pin, these are replaced
-        path = os.path.join(out, 'atlas-pins.json')
-        with open(path, encoding='utf-8') as f: pins = json.load(f)
-        new, missing = build_spore_pins(a.sporeprint)
-        pins['pins'] = [p for p in pins['pins'] if p.get('from') != 'sporePrint'] + new
-        pins['made'] = datetime.date.today().isoformat()
-        with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
-        print('sporePrint pins: %d   links: %d   all pins now: %d   %d KB' % (
-            len(new), sum(len(p['links']) for p in new), len(pins['pins']), os.path.getsize(path) // 1024))
-        for pid, key in missing: print('   no such page for %s: %s' % (pid, key))
-        for p in new: print('   %-10s named on %3d pages, %2d links   %s' % (p['id'], p['n'], len(p['links']), p['name'][:60]))
-        if a.check and check({'pins': new}): sys.exit(1)
-        return
     if a.earth:
         earth = build_earth(a.earth)
         path = os.path.join(out, 'atlas-earth.json')
         with open(path, 'w', encoding='utf-8') as f: json.dump(earth, f, separators=(',', ':'))
         print('earth: %d land, %d lake, %d state, %d border lines   %d KB' % (
             len(earth['land']), len(earth['lakes']), len(earth['states']), len(earth['borders']), os.path.getsize(path) // 1024))
+    if (a.sporeprint or a.detroit) and not (a.tuebor and a.catalog):
+        # one site's pins on their own: the pins file as it stands keeps every other pin, these are replaced
+        path = os.path.join(out, 'atlas-pins.json')
+        with open(path, encoding='utf-8') as f: pins = json.load(f)
+        new, missing = [], []
+        for label, folder, build in (('sporePrint', a.sporeprint, build_spore_pins), ('detroit', a.detroit, build_detroit_pins)):
+            if not folder: continue
+            made, gone = build(folder)
+            pins['pins'] = [p for p in pins['pins'] if p.get('from') != label] + made
+            new += made; missing += gone
+            print('%s pins: %d   links: %d' % (label, len(made), sum(len(p['links']) for p in made)))
+        pins['made'] = datetime.date.today().isoformat()
+        tri = triangle(pins['pins'])
+        if tri: pins['triangle'] = tri
+        else: pins.pop('triangle', None)
+        with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
+        print('all pins now: %d   %d KB   triangle: %s' % (len(pins['pins']), os.path.getsize(path) // 1024, 'yes' if tri else 'no'))
+        for pid, key in missing: print('   no such page for %s: %s' % (pid, key))
+        for p in new: print('   %-12s named on %3d pages, %2d links   %s' % (p['id'], p['n'], len(p['links']), p['name'][:60]))
+        if a.check and check({'pins': new}): sys.exit(1)
+        return
     if a.tuebor and a.catalog:
         pins, missing = build_pins(a.tuebor, a.catalog)
         if a.sporeprint:
             more, gone = build_spore_pins(a.sporeprint)
             pins['pins'] += more; missing += gone
+        if a.detroit:
+            more, gone = build_detroit_pins(a.detroit)
+            pins['pins'] += more; missing += gone
+        tri = triangle(pins['pins'])
+        if tri: pins['triangle'] = tri
         path = os.path.join(out, 'atlas-pins.json')
         with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
         kinds = collections.Counter(p['kind'] for p in pins['pins'])

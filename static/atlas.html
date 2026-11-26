@@ -27,7 +27,14 @@
   WHERE YOU STAND is yours. It is asked of your own device only when you press the key, it is used on this page
   only, and it is not sent, logged or stored anywhere. You can also just point at the globe.
 
-  The address carries the pin (#pin=dykema) so a place can be linked.
+  THE TRIANGLE. Three pins to measure from - home (the Lansing shelf: the town, nothing finer), Michigan State,
+  and Wayne County's seat in Detroit - and a far body to sight on: Meta's office in Dublin and the monks' rock of
+  Skellig Michael. Which pins they are is said in atlas-pins.json (triangle); every number shown is worked out here
+  from where the pins stand: the sides and the long lines as the shortest way over the ground, the angle each line
+  opens at the core, the way each line sets out, how high the sun stands over each mark now, and when it next
+  stands due south of each.
+
+  The address carries the pin (#pin=dykema), a view (#go=wayne) or the triangle (#tri), so a place can be linked.
 -->
 <style>
 :root{--ink:#c8d6e5;--dim:#8395a7;--low:#576574;--bg:#06080b;--line:#1c242d;--green:#2ecc71;--gold:#d4af37}
@@ -47,6 +54,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 #top .what{color:var(--low);font-size:11px;margin-right:6px}
 #top .gap{flex:1 1 20px;pointer-events:none}
 .framed #top h1,.framed #top .what,.framed #home{display:none}
+@media (max-width:1500px){#top .what{display:none}}
 #panel{position:fixed;right:10px;top:44px;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 96px);overflow:auto;background:rgba(8,11,15,.93);border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px}
 #panel h2{font:bold 13px 'Courier New',monospace;margin:0 0 2px;color:#f5f6fa;line-height:1.35}
 #panel .where{color:var(--dim);font-size:11px;margin:0 0 6px}
@@ -65,6 +73,13 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 #panel .idx .n{margin-left:auto;color:var(--low);font-size:11px}
 #panel .lead{color:var(--dim);font-size:12px;margin:0 0 8px}
 #panel .note{color:var(--low);font-size:10.5px;margin:8px 0 0}
+#panel .tri h2{color:var(--gold)}
+#panel .tri h3{font:bold 11px 'Courier New',monospace;letter-spacing:.08em;color:var(--dim);margin:10px 0 2px;text-transform:uppercase}
+#panel .tri li{display:flex;gap:8px;align-items:baseline}
+#panel .tri li .v{margin-left:auto;color:var(--ink);text-align:right;white-space:nowrap}
+#panel .tri li .k{color:var(--dim)}
+#panel .tri li.in{border-top:0;padding:0 0 3px 12px}
+#panel .tri .idx .n{color:var(--dim)}
 #sky{position:fixed;left:10px;bottom:8px;right:10px;margin:0;color:var(--dim);font-size:11px;pointer-events:none;text-shadow:0 0 4px #000,0 0 2px #000}
 #sky b{color:var(--ink);font-weight:normal}
 #sky .g{color:var(--green)}
@@ -92,8 +107,11 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   <button type="button" data-go="michigan">Michigan</button>
   <button type="button" data-go="lansing">Lansing</button>
   <button type="button" data-go="detroit">Detroit</button>
+  <button type="button" data-go="wayne">Wayne County</button>
+  <button type="button" data-go="ireland">Ireland</button>
   <button type="button" data-go="library">the Library</button>
   <span class="gap"></span>
+  <button type="button" id="k-tri" aria-pressed="false" title="the triangle: home, Michigan State and Wayne County, with the far body in Ireland — measured">triangle</button>
   <button type="button" id="k-core" aria-pressed="false" title="see through to the core: the three plumb lines, the axis, and the one unit">core</button>
   <button type="button" id="k-day" aria-pressed="false" title="let a day pass in a minute, to watch the night go round">a day a minute</button>
 </div>
@@ -103,22 +121,24 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 (function () {
   'use strict';
   var DEG = Math.PI / 180, KM = 6371;
-  var KIND = {law: '#ff5c6c', state: '#ffd93d', court: '#ff9f43', school: '#f78fb3', money: '#2ecc71', media: '#c56cf0', library: '#f5f6fa', place: '#48dbfb', maker: '#badc58', lab: '#54a0ff'};
-  var KIND_SAY = {law: 'law', state: 'state office', court: 'court', school: 'school', money: 'money', media: 'media', library: 'the library', place: 'a shelf of the library', maker: 'maker', lab: 'laboratory'};
-  var GO = {world: [38, -88, 1], michigan: [44.2, -85.4, 6.5], lansing: [42.7325, -84.5585, 2600], detroit: [42.375, -83.07, 420], library: [38.8887, -77.0047, 60]};
+  var KIND = {law: '#ff5c6c', state: '#ffd93d', court: '#ff9f43', school: '#f78fb3', money: '#2ecc71', media: '#c56cf0', library: '#f5f6fa', place: '#48dbfb', maker: '#badc58', lab: '#54a0ff', civic: '#e0a36b', mark: '#d4af37'};
+  var KIND_SAY = {law: 'law', state: 'state office', court: 'court', school: 'school', money: 'money', media: 'media', library: 'the library', place: 'a shelf of the library', maker: 'maker', lab: 'laboratory', civic: 'city or county office', mark: 'a mark to measure from'};
+  var GO = {world: [38, -88, 1], michigan: [44.2, -85.4, 6.5], lansing: [42.7325, -84.5585, 2600], detroit: [42.375, -83.07, 420], wayne: [42.27, -83.24, 150], ireland: [53.2, -8.3, 10], library: [38.8887, -77.0047, 60]};
+  var GOLD = '#d4af37';
   var CORE_OUT = 3480 / KM, CORE_IN = 1221 / KM;      // where the outer and the inner core begin, in earth radii
   var TOWNS = [['Lansing', 42.7325, -84.5555], ['Detroit', 42.3314, -83.0458], ['Grand Rapids', 42.9634, -85.6681], ['Ann Arbor', 42.2808, -83.7430],
     ['Flint', 43.0125, -83.6875], ['Kalamazoo', 42.2917, -85.5872], ['Saginaw', 43.4195, -83.9508], ['Traverse City', 44.7631, -85.6206],
     ['Marquette', 46.5436, -87.3954], ['Mount Pleasant', 43.5978, -84.7675], ['Midland', 43.6156, -84.2472], ['East Lansing', 42.7370, -84.4839],
     ['Southfield', 42.4734, -83.2219], ['Troy', 42.6064, -83.1498], ['Dearborn', 42.3223, -83.1763], ['Pontiac', 42.6389, -83.2910], ['Warren', 42.5145, -83.0147],
     ['Windsor', 42.3149, -83.0364], ['Toledo', 41.6528, -83.5379], ['Chicago', 41.8781, -87.6298], ['Milwaukee', 43.0389, -87.9065], ['Cleveland', 41.4993, -81.6944],
-    ['Toronto', 43.6532, -79.3832], ['Washington', 38.9072, -77.0369], ['New York', 40.7128, -74.0060], ['Bentonville', 36.3729, -94.2088], ['Menlo Park', 37.4530, -122.1817]];
+    ['Toronto', 43.6532, -79.3832], ['Washington', 38.9072, -77.0369], ['New York', 40.7128, -74.0060], ['Bentonville', 36.3729, -94.2088], ['Menlo Park', 37.4530, -122.1817],
+    ['Dublin', 53.3498, -6.2603], ['Belfast', 54.5973, -5.9301], ['Galway', 53.2707, -9.0568], ['Limerick', 52.6638, -8.6267], ['Cork', 51.8985, -8.4756], ['Portmagee', 51.8856, -10.3661]];
   var cv = document.getElementById('globe'), ctx = cv.getContext('2d'), panel = document.getElementById('panel'), skyEl = document.getElementById('sky'),
-      kCore = document.getElementById('k-core'), kDay = document.getElementById('k-day');
+      kCore = document.getElementById('k-core'), kDay = document.getElementById('k-day'), kTri = document.getElementById('k-tri'), topEl = document.getElementById('top');
   var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var W = 0, H = 0, cx = 0, cy = 0, R = 1, base = 1;
   var view = {lat: GO.world[0], lon: GO.world[1], k: GO.world[2]}, fly = null;
-  var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true;
+  var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true, tri = false, T = null;
   if (window.top !== window) document.documentElement.classList.add('framed');
 
   // ---------------------------------------------------------------- the sky, from the clock
@@ -155,6 +175,55 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     var c = Math.sin(p.lat * DEG) * Math.sin(q.lat * DEG) + Math.cos(p.lat * DEG) * Math.cos(q.lat * DEG) * Math.cos((p.lon - q.lon) * DEG);
     return Math.acos(Math.max(-1, Math.min(1, c))) / DEG;
   }
+  function bearing(p, q) {                                            // the way the shortest line from p to q sets out, in degrees round from north
+    var a = p.lat * DEG, b = q.lat * DEG, d = (q.lon - p.lon) * DEG;
+    var t = Math.atan2(Math.sin(d) * Math.cos(b), Math.cos(a) * Math.sin(b) - Math.sin(a) * Math.cos(b) * Math.cos(d)) / DEG;
+    return (t + 360) % 360;
+  }
+  function wind(b) { return ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(b / 45) % 8]; }
+  function vec(p) { var a = p.lat * DEG, o = p.lon * DEG; return [Math.cos(a) * Math.cos(o), Math.cos(a) * Math.sin(o), Math.sin(a)]; }
+  function spot(v) { var n = Math.hypot(v[0], v[1], v[2]); return {lat: Math.asin(v[2] / n) / DEG, lon: Math.atan2(v[1], v[0]) / DEG}; }
+  function middle(list) { var s = [0, 0, 0]; list.forEach(function (p) { var v = vec(p); s[0] += v[0]; s[1] += v[1]; s[2] += v[2]; }); return spot(s); }
+  function along(p, q, n) {                                           // n + 1 places on the shortest line from p to q
+    var a = vec(p), b = vec(q), w = apart(p, q) * DEG, out = [], sw = Math.sin(w);
+    for (var i = 0; i <= n; i++) {
+      var t = i / n, fa = sw > 1e-9 ? Math.sin((1 - t) * w) / sw : 1 - t, fb = sw > 1e-9 ? Math.sin(t * w) / sw : t;
+      out.push(spot([a[0] * fa + b[0] * fb, a[1] * fa + b[1] * fb, a[2] * fa + b[2] * fb]));
+    }
+    return out;
+  }
+  function noon(p, ms) {                                              // when the sun next stands over p's meridian: due south of it, at its highest
+    var s = sky(ms).sun, h = (((s.lon - p.lon) / 15) % 24 + 24) % 24, t = ms + h * 3600000, d;
+    for (var i = 0; i < 3; i++) { d = sky(t).sun.lon - p.lon; d -= Math.round(d / 360) * 360; t += d / 15 * 3600000; }
+    return t;
+  }
+  function clock(ms) { return new Date(ms).toISOString().slice(11, 16); }
+  function span(min) { min = Math.round(Math.abs(min)); return (min >= 60 ? Math.floor(min / 60) + ' h ' : '') + (min % 60) + ' min'; }
+  function km(deg) { var k = deg * DEG * KM; return (k < 100 ? k.toFixed(1) : Math.round(k).toLocaleString()) + ' km'; }
+  function radii(deg) { var r = deg * DEG; return r < 0.1 ? r.toFixed(4) : r.toFixed(3); }
+  function setTriangle() {                                            // the triangle names pins; it stands only if every one of them does
+    var t = meta.triangle; T = null; if (!t) return;
+    function find(m) { var p = pins.filter(function (q) { return q.id === m.pin; })[0]; return p ? {p: p, short: m.short, as: m.as} : null; }
+    var c = t.corners.map(find), f = t.far.map(find);
+    if (c.length !== 3 || c.concat(f).some(function (m) { return !m; })) return;
+    T = {corners: c, far: f, all: c.concat(f), mid: middle(c.map(function (m) { return m.p; }))};
+  }
+  function measure() {                                                // every number of the triangle, from where the pins stand
+    if (!T) return null;
+    var c = T.corners, home = c[0].p, out = {sides: [], angles: [], far: [], mid: T.mid};
+    for (var i = 0; i < 3; i++) {
+      var a = c[i], b = c[(i + 1) % 3], o = c[(i + 2) % 3], w = Math.abs(bearing(a.p, b.p) - bearing(a.p, o.p));
+      out.sides.push({a: a.short, b: b.short, deg: apart(a.p, b.p)});
+      out.angles.push({at: a.short, deg: w > 180 ? 360 - w : w});
+    }
+    T.far.forEach(function (f) {
+      var lon = f.p.lon - home.lon; lon -= Math.round(lon / 360) * 360;
+      out.far.push({name: f.short, deg: apart(T.mid, f.p), bearing: bearing(T.mid, f.p), back: bearing(f.p, T.mid), noonAhead: lon * 4});
+    });
+    if (T.far.length === 2) out.base = {a: T.far[0].short, b: T.far[1].short, deg: apart(T.far[0].p, T.far[1].p),
+      opens: (function (w) { return w > 180 ? 360 - w : w; })(Math.abs(bearing(T.mid, T.far[0].p) - bearing(T.mid, T.far[1].p)))};
+    return out;
+  }
   function place(p) { return Math.abs(p.lat).toFixed(1) + '°' + (p.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(p.lon).toFixed(1) + '°' + (p.lon < 0 ? 'W' : 'E'); }
   function now() { return Date.now() + ahead; }
 
@@ -177,6 +246,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     cx = wide ? (W - 380) / 2 : W / 2; cy = wide ? H / 2 + 8 : (H - H * 0.44) / 2 + 34;
     if (document.documentElement.classList.contains('framed') && !wide) cy = H * 0.3 + 20;
     if (W < 280) { base = Math.min(W, H) * 0.42; cx = W / 2; cy = H / 2; }     // a watch face: the globe alone, in the middle
+    panel.style.top = wide ? Math.max(44, topEl.offsetHeight + 16) + 'px' : '';  // the panel begins under the keys, however many rows they take
     dirty = true;
   }
   function lines(set, colour, width) {
@@ -262,6 +332,38 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     }
     ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 7); ctx.fillStyle = '#2ecc71'; ctx.fill();
   }
+  function line(list, colour, width, dash) {
+    ctx.save(); ctx.strokeStyle = colour; ctx.lineWidth = width; if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); var pen = false;
+    list.forEach(function (p) { var q = proj(p.lat, p.lon); if (q.z < 0) { pen = false; return; } if (pen) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); pen = true; });
+    ctx.stroke(); ctx.restore();
+  }
+  function drawTriangle(names) {                                    // the lines lie under the pins; the rings and the names go over them
+    var c = T.corners, at = T.all.map(function (m) { return proj(m.p.lat, m.p.lon); }), i, wide = 0, m;
+    if (!names) {
+      T.far.forEach(function (f) { line(along(T.mid, f.p, 48), 'rgba(212,175,55,.85)', 1.2, [7, 5]); });
+      if (T.far.length === 2) line(along(T.far[0].p, T.far[1].p, 12), 'rgba(212,175,55,.85)', 1.2, [2, 4]);
+      for (i = 0; i < 3; i++) line(along(c[i].p, c[(i + 1) % 3].p, 8), GOLD, 1.8);
+      return;
+    }
+    for (i = 0; i < 3; i++) wide = Math.max(wide, Math.hypot(at[i].x - at[(i + 1) % 3].x, at[i].y - at[(i + 1) % 3].y));
+    ctx.save(); ctx.strokeStyle = GOLD; ctx.lineWidth = 1.4;
+    function ring(q, r) { ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 7); ctx.stroke(); }
+    if (wide < 70) {                                                  // from far off the three corners are one mark
+      m = proj(T.mid.lat, T.mid.lon); if (m.z > 0) { ring(m, 10); word('the triangle', m.x, m.y + 21, GOLD, 'center', 10); }
+    } else {
+      var close = Math.hypot(at[0].x - at[1].x, at[0].y - at[1].y) < 90, left = at[0].x <= at[1].x;
+      for (i = 0; i < 3; i++) {
+        if (at[i].z < 0) continue; ring(at[i], 8);
+        if (i < 2 && close) word(c[i].short, at[i].x + ((i === 0) === left ? -13 : 13), at[i].y + 9, GOLD, (i === 0) === left ? 'right' : 'left', 10);
+        else word(c[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10);
+      }
+    }
+    if (T.far.length === 2 && Math.hypot(at[3].x - at[4].x, at[3].y - at[4].y) < 70) {      // and so are the two far marks
+      var fm = middle([T.far[0].p, T.far[1].p]); m = proj(fm.lat, fm.lon); if (m.z > 0) { ring(m, 10); word('the far body', m.x, m.y + 21, GOLD, 'center', 10); }
+    } else for (i = 3; i < at.length; i++) if (at[i].z > 0) { ring(at[i], 8); word(T.all[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10); }
+    ctx.restore();
+  }
   function body(p, what, s) {                                        // the sun or the moon, at the place it stands over
     var q = proj(p.lat, p.lon); if (q.z < 0 && !core) return;
     ctx.save(); if (q.z < 0) ctx.globalAlpha = 0.45;
@@ -344,13 +446,16 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     var anchor = you || chosen[0] || pins.filter(function (p) { return p.id === 'shelf-lansing'; })[0] || {lat: 42.7336, lon: -84.5555};
     if (core) drawCore(s, anchor);
     body(s.sun, 'sun', s); body(s.moon, 'moon', s);
+    if (tri && T) drawTriangle(false);
     gather(); drawPins();
+    if (tri && T) drawTriangle(true);
     if (you) { var q = proj(you.lat, you.lon); if (q.z > 0 || core) { ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, 7); ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.stroke(); word('you', q.x + 9, q.y, '#2ecc71', 'left', 11); } }
     scale();
     var t = new Date(now()), parts = ['<b>' + t.toISOString().slice(0, 16).replace('T', ' ') + ' UT</b>' + (fast ? ' (running fast)' : ''),
       'sun overhead at <b>' + place(s.sun) + '</b>', 'moon overhead at <b>' + place(s.moon) + '</b>, ' + moonName(s.elong) + ' ' + Math.round(s.lit * 100) + '%, ' + s.far.toFixed(1) + ' radii off'];
     if (you) parts.push('<span class="g">you</span>: sun ' + Math.round(90 - apart(you, s.sun)) + '° ' + (apart(you, s.sun) < 90 ? 'up' : 'down') + ', moon ' + Math.round(90 - apart(you, s.moon)) + '°');
     if (core) parts.push('at the core: ' + (you ? 'you' : short(anchor.name || 'the anchor')) + '–sun ' + Math.round(apart(anchor, s.sun)) + '°, –moon ' + Math.round(apart(anchor, s.moon)) + '°, sun–moon ' + Math.round(apart(s.sun, s.moon)) + '° · <span class="g">1.00</span> = ' + KM.toLocaleString() + ' km');
+    if (tri && T) parts.push('<span style="color:' + GOLD + '">sun</span> ' + T.all.map(function (m) { var h = Math.round(90 - apart(m.p, s.sun)); return m.short + ' ' + Math.abs(h) + '° ' + (h >= 0 ? 'up' : 'down'); }).join(', '));
     skyEl.innerHTML = parts.join(' · ');
   }
 
@@ -416,7 +521,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function choose(list) {
     chosen = list.slice(); fill(); dirty = true;
-    var want = chosen.length === 1 ? '#pin=' + chosen[0].id : '';
+    var want = chosen.length === 1 ? '#pin=' + chosen[0].id : tri && T ? '#tri' : '';
     if (location.hash !== want) try { history.replaceState(null, '', location.pathname + location.search + want); } catch (e) {}
   }
   function fill() {
@@ -437,6 +542,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       row.appendChild(b1); row.appendChild(b2);
       if (you) { var b3 = el('button', null, 'forget'); b3.type = 'button'; b3.addEventListener('click', function () { you = null; fill(); dirty = true; }); row.appendChild(b3); }
       panel.appendChild(row);
+      if (tri && T) { fillTriangle(); return; }
       var idx = el('div', 'idx');
       pins.slice().sort(function (a, b) { return b.n - a.n; }).forEach(function (p) {
         var b = el('button'), d = el('span', 'dot'); b.type = 'button'; d.style.background = KIND[p.kind] || '#c8d6e5';
@@ -454,11 +560,12 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       var box = el('div', 'pin'), h = el('h2', null, p.name); h.style.color = KIND[p.kind] || '#f5f6fa';
       box.appendChild(h); box.appendChild(el('p', 'where', (KIND_SAY[p.kind] || p.kind) + ' · ' + p.where));
       if (p.say) box.appendChild(el('p', 'say', p.say));
-      box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : 'named on ' + p.n + ' published pages — start with these'));
+      box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : p.n ? 'named on ' + p.n + ' published pages — start with these' : 'no published page names it yet'));
       var ul = el('ul');
       p.links.forEach(function (l) {
         var li = el('li'), a = el('a', null, l[0]); a.href = l[1]; a.target = '_blank'; a.rel = 'noopener';
         li.appendChild(a); if (l[2] === 'card' || l[2] === 'soul' || l[2] === 'heart') li.appendChild(el('span', 'tag', l[2] === 'card' ? 'its own page' : l[2]));
+        else if (l[2] === 'outside') li.appendChild(el('span', 'tag', 'not ours — the place’s own record'));
         ul.appendChild(li);
       });
       box.appendChild(ul);
@@ -467,6 +574,51 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     });
     panel.scrollTop = 0;
   }
+  function fillTriangle() {
+    var m = measure(), box = el('div', 'tri'), t0 = now();
+    function rows(title, list) {
+      box.appendChild(el('h3', null, title)); var ul = el('ul');
+      list.forEach(function (r) { var li = el('li', r[0].charAt(0) === ' ' ? 'in' : null); li.appendChild(el('span', 'k', r[0].trim())); li.appendChild(el('span', 'v', r[1])); ul.appendChild(li); });
+      box.appendChild(ul);
+    }
+    box.appendChild(el('h2', null, 'The triangle'));
+    box.appendChild(el('p', 'lead', 'Three marks to measure from, and a far body to sight on. Every length is the shortest way over the ground; the second number is the same length in earth radii.'));
+    var idx = el('div', 'idx');
+    T.all.forEach(function (c, i) {
+      var b = el('button'), d = el('span', 'dot'); b.type = 'button'; d.style.background = GOLD; if (i > 2) d.style.borderRadius = '0';
+      b.appendChild(d); b.appendChild(el('span', null, c.as)); b.appendChild(el('span', 'n', place(c.p)));
+      b.title = c.p.name + ' — ' + c.p.where; b.addEventListener('click', function () { show(c.p); }); idx.appendChild(b);
+    });
+    box.appendChild(idx);
+    rows('the three sides', m.sides.map(function (s) { return [s.a + ' – ' + s.b, km(s.deg) + ' · ' + radii(s.deg)]; }));
+    rows('the angle at each corner', m.angles.map(function (a) { return [a.at, a.deg.toFixed(1) + '°']; }));
+    var far = [];
+    m.far.forEach(function (f) {
+      far.push([f.name + ', from the middle', km(f.deg) + ' · ' + radii(f.deg)]);
+      far.push(['  opens at the core', f.deg.toFixed(1) + '°']);
+      far.push(['  sets out toward', Math.round(f.bearing) + '° ' + wind(f.bearing)]);
+      far.push(['  its noon comes', span(f.noonAhead) + (f.noonAhead >= 0 ? ' before' : ' after') + ' home’s']);
+    });
+    if (m.base) { far.push([m.base.a + ' – ' + m.base.b, km(m.base.deg) + ' · ' + radii(m.base.deg)]); far.push(['  seen from the middle, they stand', m.base.opens.toFixed(1) + '° apart']); }
+    rows('the far body', far);
+    rows('the sun next due south (UT)', T.all.map(function (c) { return [c.short, clock(noon(c.p, t0))]; }));
+    if (you) rows('from where you stand', T.all.map(function (c) { var d = apart(you, c.p), b = bearing(you, c.p); return [c.short, km(d) + ' · ' + Math.round(b) + '° ' + wind(b)]; }));
+    var row = el('div', 'row'), b1 = el('button', null, 'the triangle, close'), b2 = el('button', null, 'the far body'); b1.type = b2.type = 'button'; row.style.marginTop = '10px';
+    b1.addEventListener('click', function () { frame(false); }); b2.addEventListener('click', function () { frame(true); });
+    row.appendChild(b1); row.appendChild(b2); box.appendChild(row);
+    box.appendChild(el('p', 'note', 'Home is held at the town: the Lansing shelf, above the Capitol, and nothing finer. The marks are public buildings and a rock in the sea, placed to about a kilometre, so the short side is good to about that. How high the sun stands over each mark right now is on the line at the foot of the page.'));
+    panel.appendChild(box);
+  }
+  function frame(far) {                                               // stand back far enough to see the triangle, or the triangle and its far body
+    var all = (far ? T.all : T.corners).map(function (c) { return c.p; }), mid = middle(all), wide = 0;
+    all.forEach(function (p) { wide = Math.max(wide, apart(mid, p)); });
+    goTo(mid.lat, mid.lon, Math.max(0.9, Math.min(5000, 0.62 / Math.sin(Math.min(89, wide) * DEG))));
+  }
+  function setTri(on, stay) {
+    tri = !!on && !!T; kTri.setAttribute('aria-pressed', tri ? 'true' : 'false');
+    if (tri) { chosen = []; if (!stay) frame(true); }
+    choose(chosen);
+  }
   function show(p) {
     choose([p]);
     var near = pins.reduce(function (m, q) { return q === p ? m : Math.min(m, apart(p, q)); }, 180);
@@ -474,7 +626,10 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   }
   function fromHash() {
     var m = /^#pin=([\w-]+)/.exec(location.hash), p = m && pins.filter(function (q) { return q.id === m[1]; })[0];
-    if (p) show(p); return !!p;
+    if (p) { show(p); return true; }
+    if (/^#tri\b/.test(location.hash) && T) { if (!tri) setTri(true); return true; }
+    m = /^#go=(\w+)/.exec(location.hash); if (m && GO.hasOwnProperty(m[1])) { goTo(GO[m[1]][0], GO[m[1]][1], GO[m[1]][2]); return true; }
+    return false;
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) {
@@ -487,6 +642,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       goTo(a.lat * 0.35, a.lon + 52, 1);
     }
   });
+  kTri.addEventListener('click', function () { if (T) setTri(!tri); });
   kDay.addEventListener('click', function () { fast = !fast; if (!fast) ahead = 0; kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; });
   window.addEventListener('resize', size); window.addEventListener('hashchange', fromHash);
   setInterval(function () { dirty = true; }, 20000);                  // the sun moves a quarter of a degree a minute
@@ -496,9 +652,10 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   size(); fill(); requestAnimationFrame(step);
   get('/static/atlas-earth.json').then(function (e) { earth = {land: ready(e.land), lakes: ready(e.lakes), states: ready(e.states), borders: ready(e.borders)}; dirty = true; })
     .catch(function () { skyEl.textContent = 'the outlines did not load — the pins still work'; });
-  get('/static/atlas-pins.json').then(function (d) { pins = d.pins; meta = d; fill(); dirty = true; if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700); })
+  get('/static/atlas-pins.json').then(function (d) { pins = d.pins; meta = d; setTriangle(); kTri.hidden = !T; fill(); dirty = true; if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700); })
     .catch(function () { panel.textContent = 'The pins did not load.'; });
-  window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { ahead = ms - Date.now(); dirty = true; }};
+  window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { ahead = ms - Date.now(); dirty = true; },
+    tri: function (on, stay) { setTri(on, stay); }, measure: measure, noon: function (id, ms) { var p = pins.filter(function (q) { return q.id === id; })[0]; return p ? noon(p, ms == null ? now() : ms) : null; }};
 })();
 </script>
 </body>
