@@ -1769,15 +1769,37 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                 finally: self._hand_done()
             else: self._json({"error":"compiler organ not loaded"})
             return
-        # NEUTRON
+        # NEUTRON — one line of mail. Who carried it is written by the gate, never by the sender:
+        #   self  — a program on this machine (loopback, no proxy hop)
+        #   house — another body on the home network talking to the gate directly; "from" is its name in the table
+        #   door  — everyone else (the front door, Tor, the world). Their lines go to door.jsonl whatever channel
+        #           they ask for, so a stranger cannot put a letter in the inbox under a house name.
+        # The channel is a file name, so it is one plain word.
         if self.path in ("/api/discuss","/neutron","/api/neutron"):
             try:
-                j=json.loads(body) if body else {}; ch=j.get("channel","inbox"); author=j.get("author","unknown")
-                msg=j.get("body",j.get("message","")); nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
-                with open(os.path.join(nd,f"{ch}.jsonl"),"a") as f:
-                    f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"author":author,"body":msg,"channel":ch})+"\n")
-                self._json({"ok":True,"channel":ch})
-            except Exception as e: self._json({"error":str(e)}); return
+                j=json.loads(body) if body else {}
+                if not isinstance(j,dict): raise ValueError("not an object")
+            except Exception: self._json({"error":"the body is one JSON object"},400); return
+            ch=j.get("channel","inbox")
+            if not isinstance(ch,str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,39}",ch):
+                self._json({"error":"channel is one plain word: a-z, 0-9, hyphen"},400); return
+            peer=self.client_address[0]
+            hop=any(self.headers.get(h) for h in ("X-Forwarded-For","X-Real-IP","Forwarded"))
+            via="house" if _proximate(self) else "self" if peer in ("127.0.0.1","::1") and not hop else "door"
+            line={"ts":time.strftime("%Y-%m-%dT%H:%M:%S%z"),"author":str(j.get("author","unknown"))[:80],
+                  "body":j.get("body",j.get("message","")),"channel":ch,"via":via}
+            if via=="house": line["from"]=_MESH_BODIES.get(peer) or KNOWN_GATES.get(peer) or peer
+            try:
+                nd=os.path.join(_REPO,"data","neutron"); os.makedirs(nd,exist_ok=True)
+                if via=="door":
+                    line["asked"]=ch; line["channel"]=ch="door"; dp=os.path.join(nd,"door.jsonl")
+                    # the door's pile is bounded: a short line each, and the file stops growing at 2 MB
+                    if len(json.dumps(line["body"]))>4000: self._json({"error":"4000 characters at the door"},413); return
+                    if os.path.exists(dp) and os.path.getsize(dp)>2*1024*1024: self._json({"error":"the door's box is full"},507); return
+                with open(os.path.join(nd,f"{ch}.jsonl"),"a") as f: f.write(json.dumps(line)+"\n")
+                self._json({"ok":True,"channel":ch,"via":via})
+            except Exception as e: self._json({"error":str(e)},500)
+            return
         # INFERENCE — route to correct GPU based on model location
         if body and self.path.endswith("/chat/completions"):
             if CORTEX_ACTIVE:
