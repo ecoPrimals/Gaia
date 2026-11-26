@@ -366,17 +366,22 @@ D=/data/local/tmp/gaia-chimera
 cd $D || exit 1
 umask 077
 mkdir -p run/songbird
-[ -f run/family.seed ] || head -c 32 /dev/urandom > run/family.seed
-export FAMILY_ID=gaia-chimera-dev NODE_ID=chimera1
-export BEARDOG_FAMILY_SEED=$D/run/family.seed
+# Which family: run/family.id and run/node.id say so (put there from eastGate). Without them the
+# phone is a family of its own, for development.
+# run/family.seed is this device's own seed as hex text - never the family key. bearDog takes the
+# seed itself from its environment (not a path), and it is handed to bearDog alone.
+[ -s run/family.seed ] || head -c 32 /dev/urandom | od -An -v -tx1 | tr -d ' \n' > run/family.seed
+FAMILY_ID=gaia-chimera-dev; [ -s run/family.id ] && FAMILY_ID=$(cat run/family.id)
+NODE_ID=chimera1; [ -s run/node.id ] && NODE_ID=$(cat run/node.id)
+export FAMILY_ID NODE_ID SONGBIRD_FAMILY_ID=$FAMILY_ID
 export HOME=$D/run TMPDIR=$D/run XDG_RUNTIME_DIR=$D/run
 
 # stop any previous chimera processes (only ours, by path)
 for p in beardog songbird skunkbat; do pkill -f "$D/bin/$p" 2>/dev/null; done
 sleep 1
 
-nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 --family-id $FAMILY_ID \
-  > run/beardog.log 2>&1 < /dev/null &
+BEARDOG_FAMILY_SEED=$(cat run/family.seed) nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 \
+  --family-id $FAMILY_ID > run/beardog.log 2>&1 < /dev/null &
 echo $! > run/beardog.pid
 sleep 2
 export SONGBIRD_FEDERATION_BIND=127.0.0.1 SONGBIRD_PRODUCTION_BIND_ADDRESS=127.0.0.1
