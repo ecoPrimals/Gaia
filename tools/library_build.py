@@ -12,10 +12,10 @@ Run:
   python tools/library_build.py --catalog gardens/alexandria/catalog.json
                                 [--pages defendDetroit/publicRecord=<file>] [--pages ecoPrimals/sporePrint=<file>]
 
-  --pages <site>=<file>   that site's pages, one path per line ("science/01-anderson-qs"), instead of its sitemap.
-                          The Detroit site is built on eastGate and the house's sitemap for it is short, so give
-                          its list: in <publicRecord>/site/public,  find . -name index.html
+  --pages <site>=<file>   that site's pages, one path per line ("science/01-anderson-qs"), instead of its sitemap
+                          (for a site whose sitemap is short or cannot be reached).
   --sample N              ask N live addresses (spread over the sites) whether they answer, and report.
+  --all                   ask every live address the catalog gives, and fail if one does not answer.
 
 The same file is the agents' face of the library: it says how to read itself in "how".
 """
@@ -29,10 +29,10 @@ import urllib.request
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Where each site is read, and where its own list of pages is published. sporePrint's sitemap on GitHub Pages
-# names its pages under sporeprint.primals.eco, which is where the house serves the same built site.
+# Where each site is read, and where its own list of pages is published. Each list is asked of the same
+# address the works are read at, so a work is never linked to a page its site does not have.
 SITES = {
-    'ecoPrimals/sporePrint': {'live': 'https://sporeprint.primals.eco/', 'sitemap': 'https://ecoprimals.github.io/sporePrint/sitemap.xml'},
+    'ecoPrimals/sporePrint': {'live': 'https://sporeprint.primals.eco/', 'sitemap': 'https://sporeprint.primals.eco/sitemap.xml'},
     'amicusContra/tuebor': {'live': 'https://amicuscontra.github.io/tuebor/', 'sitemap': 'https://amicuscontra.github.io/tuebor/sitemap.xml'},
     'amicusContra/lansing': {'live': 'https://amicuscontra.github.io/lansing/', 'sitemap': 'https://amicuscontra.github.io/lansing/sitemap.xml'},
     'defendDetroit/publicRecord': {'live': 'https://detroit.primals.eco/', 'sitemap': 'https://detroit.primals.eco/sitemap.xml'},
@@ -84,6 +84,7 @@ def main():
     ap.add_argument('--catalog', required=True)
     ap.add_argument('--pages', action='append', default=[], help='site=file with that site\'s page paths, one per line')
     ap.add_argument('--sample', type=int, default=0)
+    ap.add_argument('--all', action='store_true', help='ask every live address the catalog gives')
     a = ap.parse_args()
     given = dict(p.split('=', 1) for p in a.pages)
     folder = os.path.dirname(os.path.abspath(a.catalog))
@@ -112,6 +113,8 @@ def main():
     for c in cards:
         i = index[c['source']]
         key = slug(c['path'])
+        if c.get('slug'):   # the page names its own last step on the site
+            key = '/'.join(key.split('/')[:-1] + [slug(c['slug'])])
         live = (key + '/' if key else '') if key in pages[c['source']] else None
         if live is None: no_live.append(c['source'] + ':' + c['path'])
         also = [index[o] for o in c.get('also_in', []) if o in index and key in pages[o]]
@@ -143,19 +146,31 @@ def main():
         print('source only (no live page listed):')
         for x in no_live: print('   ' + x)
 
-    if a.sample:
+    if a.sample or a.all:
         import random
-        rnd, bad = random.Random(7), 0
+        import time
+        import urllib.error
+        rnd, bad = random.Random(7), []
         picks = []
         for i, s in enumerate(sites):
             mine = [r for r in rows if (r[1] == i and r[3] is not None) or i in r[4]]
-            picks += [(s['live'] + r[3], r[0]) for r in rnd.sample(mine, min(len(mine), max(1, a.sample // len(sites))))]
-        for url, title in picks:
-            try: status = get(url, 20)[0]
-            except Exception as e: status = str(e)[:60]
-            bad += status != 200
-            print('   %s  %s' % (status, url))
-        print('sample: %d asked, %d did not answer 200' % (len(picks), bad))
+            if not a.all: mine = rnd.sample(mine, min(len(mine), max(1, a.sample // len(sites))))
+            picks += [(s['live'] + r[3], r[0]) for r in mine]
+        for n, (url, title) in enumerate(picks):
+            status = None
+            for attempt in range(4):
+                try: status = get(url, 30)[0]
+                except urllib.error.HTTPError as e:
+                    status = e.code
+                    if e.code == 429:                      # the house asks a fast reader to wait: wait, and ask again
+                        time.sleep(min(30, int(e.headers.get('Retry-After') or 4) + 1)); continue
+                except Exception as e: status = str(e)[:60]
+                break
+            if status != 200: bad.append((status, url))
+            if not a.all: print('   %s  %s' % (status, url))
+            elif n and n % 250 == 0: print('   ... %d asked, %d did not answer' % (n, len(bad)))
+        for status, url in bad[:40]: print('   NO ANSWER  %s  %s' % (status, url))
+        print('%s: %d asked, %d did not answer 200' % ('every live address' if a.all else 'sample', len(picks), len(bad)))
         if bad: sys.exit(1)
 
 
