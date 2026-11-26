@@ -328,13 +328,14 @@ def build_pins(content, catalog_path):
             soul = [c for c in here if c.get('organ') == 'soul']; heart = [c for c in cards if c.get('organ') == 'heart']
             say = ('The nucleus: %d works of the soul (the science) and %d of the heart (the hardware and the Lansing Scuffle), '
                    'with %d more that belong to no one place. Open to everyone.' % (len(soul), len(heart), len(here) - len(soul)))
-            links = [['sporePrint — the science, as a site', 'https://ecoprimals.github.io/sporePrint/', 'card'],
+            links = [['The card catalog — find any work on this shelf', '/library#place=library', 'card'],
+                     ['sporePrint — the science, as a site', 'https://ecoprimals.github.io/sporePrint/', 'card'],
                      ['The catalog — every work, by shelf', 'https://github.com/protoKarya/alexandria/blob/main/shelves.md', 'card'],
                      ['The library itself', 'https://github.com/protoKarya/alexandria', 'card']]
             links += [[c['title'], c['url'], 'soul'] for c in soul[:5]] + [[c['title'], c['url'], 'heart'] for c in sorted(heart, key=lambda c: -(c.get('words') or 0))[:4]]
         else:
             say = '%d works in the library are shelved here.' % len(here)
-            links = []
+            links = [['The card catalog — find any work on this shelf', '/library#place=' + place, 'card']]   # the house's own page, on whichever name serves the atlas
             if place == 'detroit': links.append(['The Detroit network — every node', url_of('network'), 'card'])
             if place == 'lansing': links.append(['Tuebor — I will defend', url_of(''), 'card'])
             for c in here[:9]:
@@ -429,7 +430,8 @@ def check(pins):
 
     def ask(u):
         try:
-            with urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': 'atlas-build'}), timeout=25) as r:
+            full = u if '://' in u else 'https://primals.eco' + u     # a link to the house's own page is asked of the house
+            with urllib.request.urlopen(urllib.request.Request(full, headers={'User-Agent': 'atlas-build'}), timeout=25) as r:
                 return u, r.status
         except Exception as e:                      # noqa: BLE001 - any failure is a link that did not answer
             return u, getattr(e, 'code', str(e)[:60])

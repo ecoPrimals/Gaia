@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Alexandria — Gaia University & Library</title>
+<link rel="alternate" type="application/json" href="/static/alexandria-catalog.json" title="The card catalog of the library, for programs">
 <style>
 /* GAIA UNIFIED DESIGN SYSTEM — Organic Dark
    The living organism. Dark with warm accents.
@@ -205,6 +206,28 @@ main.gaia-shell .lazy-river{background:linear-gradient(135deg,#0a1a0a,#0a0a1a);b
 main.gaia-shell .lazy-river h3{color:#00ff88;font-size:1.1rem;margin-bottom:0.5rem}
 main.gaia-shell .lazy-river p{color:#667;font-size:0.8rem;line-height:1.6}
 @media (prefers-reduced-motion: reduce){main.gaia-shell *,main.gaia-shell *::before,main.gaia-shell *::after{animation:none!important;transition:none!important}}
+/* THE CARD CATALOG (tools/library_build.py makes the file it reads) */
+main.gaia-shell #catalog .say{color:#9ab;font-size:0.85rem;line-height:1.6;margin-bottom:1rem}
+main.gaia-shell #catalog label{display:block;color:#9ab;font-size:0.75rem;margin-bottom:0.3rem}
+main.gaia-shell #cat-q{width:100%;background:#0f0f1a;border:1px solid #2a2a40;border-radius:6px;color:#e0e8f0;font:inherit;font-size:1rem;padding:0.7rem 0.9rem}
+main.gaia-shell #cat-q:focus,main.gaia-shell #catalog select:focus,main.gaia-shell #catalog button:focus-visible{outline:2px solid #00ff88;outline-offset:2px}
+main.gaia-shell #catalog .row{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.8rem;align-items:flex-end}
+main.gaia-shell #catalog .row > div{flex:1 1 220px}
+main.gaia-shell #catalog button{background:#0f0f1a;border:1px solid #2a2a40;border-radius:99px;color:#c0d0e0;font:inherit;font-size:0.8rem;padding:0.4rem 0.9rem;cursor:pointer}
+main.gaia-shell #catalog button:hover{border-color:#00ff88}
+main.gaia-shell #catalog button[aria-pressed="true"]{background:#0a2a1a;border-color:#00ff88;color:#fff}
+main.gaia-shell #catalog button b{color:#ffcc00;font-weight:normal;margin-left:0.35rem}
+main.gaia-shell #catalog select{width:100%;background:#0f0f1a;border:1px solid #2a2a40;border-radius:6px;color:#e0e8f0;font:inherit;font-size:0.85rem;padding:0.5rem}
+main.gaia-shell #cat-count{color:#ffcc00;font-size:0.85rem;margin:1.2rem 0 0.6rem}
+main.gaia-shell #cat-count a,main.gaia-shell #cat-count button{margin-left:0.8rem;font-size:0.8rem}
+main.gaia-shell #cat-list{list-style:none}
+main.gaia-shell #cat-list li{border-top:1px solid #1a1a2a;padding:0.7rem 0.2rem}
+main.gaia-shell #cat-list .t{color:#e8f0f8;font-size:0.95rem;line-height:1.4}
+main.gaia-shell #cat-list .t:hover{color:#00ff88}
+main.gaia-shell #cat-list .m{color:#9ab;font-size:0.78rem;margin-top:0.25rem;line-height:1.5}
+main.gaia-shell #cat-list .l{font-size:0.75rem;margin-top:0.15rem;color:#778}
+main.gaia-shell #cat-more{margin-top:1rem}
+main.gaia-shell #catalog .for-programs{color:#778;font-size:0.75rem;margin-top:1.2rem;line-height:1.6}
 </style>
 </head>
 <body>
@@ -222,6 +245,26 @@ All output is PUBLIC. All input is PRIVATE. The Klein fold.</p>
 <span class="stat">🧠 88 AI models</span>
 <span class="stat">🫀 π cron rings</span>
 </div>
+
+<section id="catalog" aria-labelledby="catalog-h">
+<h2 id="catalog-h"><span class="section-icon">🗂️</span>The Card Catalog — every work, and where to read it</h2>
+<p class="say" id="cat-say">Every work of the library has one card: the science, the investigations, the letters, the people and the evidence.
+Type a word, or pick a shelf, a subject or a kind. Each title opens the work where it is published.</p>
+<label for="cat-q">Find a work by a word in its title</label>
+<input id="cat-q" type="search" autocomplete="off" spellcheck="false" placeholder="einstein, anderson, charter, scuffle …">
+<div class="row" id="cat-shelves" role="group" aria-label="Shelf: where the work lives on the globe"></div>
+<div class="row" id="cat-organs" role="group" aria-label="Part of the body"></div>
+<div class="row">
+<div><label for="cat-class">Subject</label><select id="cat-class"><option value="">every subject</option></select></div>
+<div><label for="cat-kind">Kind of work</label><select id="cat-kind"><option value="">every kind</option></select></div>
+</div>
+<p id="cat-count" role="status" aria-live="polite">Opening the catalog …</p>
+<ul id="cat-list"></ul>
+<button id="cat-more" type="button" hidden>Show more</button>
+<p class="for-programs">For programs: the same catalog is one file, <a href="/static/alexandria-catalog.json">/static/alexandria-catalog.json</a>, and it says how to read itself.
+The shelves are places on <a href="/atlas">the atlas</a>. The cards are kept in <a href="https://github.com/protoKarya/alexandria">the library's own repository</a>.</p>
+<noscript><p class="say">This list needs JavaScript. The same catalog can be read as <a href="https://github.com/protoKarya/alexandria/blob/main/shelves.md">one long page of shelves</a>.</p></noscript>
+</section>
 
 <h2><span class="section-icon">🎨</span>Gallery — Gaia Paints the 4th Seat</h2>
 <p style="color:#889;font-size:0.85rem;margin-bottom:1rem">
@@ -376,5 +419,150 @@ All output is PUBLIC · All input is PRIVATE · The Klein fold<br>
 </footer>
 </main>
 <footer class="gaia-footer"><div class="gaia-shell"><div class="gaia-footer-bottom"><p><a href="/">Gaia</a> &mdash; sovereign living digital organism &mdash; <a href="https://primals.eco">primals.eco</a></p></div></div></footer>
+<script>
+/* The card catalog. Reads /static/alexandria-catalog.json (made by tools/library_build.py) and nothing else.
+   The address keeps what is chosen: /library#q=anderson&place=detroit&class=530&kind=paper&organ=soul */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  if (!$('catalog')) return;
+  var STEP = 60, KEYS = ['q', 'place', 'organ', 'class', 'kind'];
+  var cat = null, col = {}, works = [], state = { q: '', place: '', organ: '', 'class': '', kind: '' }, shown = STEP;
+
+  function el(tag, props, kids) {
+    var e = document.createElement(tag), k;
+    for (k in props || {}) { if (k === 'text') e.textContent = props[k]; else e.setAttribute(k, props[k]); }
+    (kids || []).forEach(function (c) { e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+    return e;
+  }
+  function plain(s) { return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+  function short(place) { return cat.places[place].name.split(',')[0].split(' - ')[0]; }
+  function num(n) { return String(n).replace(/\B(?=(\d{3})+$)/g, ','); }
+  function host(u) { return u.replace(/^https?:\/\//, '').replace(/\/$/, ''); }
+
+  function readHash() {
+    var got = {};
+    location.hash.replace(/^#/, '').split('&').forEach(function (p) {
+      var i = p.indexOf('='); if (i < 1) return;
+      try { got[p.slice(0, i)] = decodeURIComponent(p.slice(i + 1).replace(/\+/g, ' ')); } catch (e) {}
+    });
+    KEYS.forEach(function (k) { state[k] = got[k] || ''; });
+    if (state.place && !cat.places[state.place]) state.place = '';
+    if (state.organ && !cat.organs[state.organ]) state.organ = '';
+    if (state['class'] && !cat.classes[state['class']]) state['class'] = '';
+    if (state.kind && cat.kinds.indexOf(state.kind) < 0) state.kind = '';
+  }
+  function writeHash() {
+    var parts = KEYS.filter(function (k) { return state[k]; }).map(function (k) { return k + '=' + encodeURIComponent(state[k]); });
+    var want = parts.length ? '#' + parts.join('&') : '';
+    if (want !== location.hash) history.replaceState(null, '', location.pathname + location.search + want);
+  }
+
+  function matches() {
+    var words = plain(state.q).split(/\s+/).filter(Boolean);
+    return works.filter(function (w) {
+      if (state.place && w.r[col.place] !== state.place) return false;
+      if (state.organ && w.r[col.organ] !== state.organ) return false;
+      if (state['class'] && w.r[col['class']] !== state['class'] && w.r[col.also_class] !== state['class']) return false;
+      if (state.kind && w.r[col.kind] !== state.kind) return false;
+      for (var i = 0; i < words.length; i++) if (w.hay.indexOf(words[i]) < 0) return false;
+      return true;
+    });
+  }
+
+  function card(w) {
+    var r = w.r, site = cat.sites[r[col.site]], live = r[col.live], isLive = live !== null;   // '' is a site's front page; null is no live page
+    var source = site.source + r[col.path];
+    var meta = [r[col.kind], r[col['class']] + ' ' + cat.classes[r[col['class']]], short(r[col.place])];
+    if (r[col.organ]) meta.push(r[col.organ] === 'soul' ? 'soul' : 'heart');
+    if (r[col.words]) meta.push(num(r[col.words]) + ' words');
+    if (r[col.date]) meta.push(r[col.date]);
+    var links = [];
+    if (isLive) {
+      links.push(el('a', { href: source, text: 'source' }));
+      r[col.also].forEach(function (n) { links.push(' · '); links.push(el('a', { href: cat.sites[n].live + live, text: 'also at ' + host(cat.sites[n].live) })); });
+    } else {
+      links.push('not on a live site yet; the title opens its source');
+    }
+    return el('li', {}, [
+      el('a', { 'class': 't', href: isLive ? site.live + live : source, text: r[col.title] }),
+      el('div', { 'class': 'm', text: meta.join(' · ') }),
+      el('div', { 'class': 'l' }, links)
+    ]);
+  }
+
+  function draw() {
+    var hit = matches(), list = $('cat-list'), count = $('cat-count');
+    list.textContent = '';
+    hit.slice(0, shown).forEach(function (w) { list.appendChild(card(w)); });
+    var chosen = KEYS.some(function (k) { return state[k]; });
+    var say = !hit.length ? 'No work matches. Try one word, or clear what is chosen.'
+      : chosen ? num(hit.length) + (hit.length === 1 ? ' work' : ' works') + (state.place ? ' on the ' + short(state.place) + ' shelf' : '') + (hit.length > shown ? ', the first ' + shown + ' shown' : '')
+      : 'All ' + num(hit.length) + ' works, by subject' + (hit.length > shown ? '; the first ' + shown + ' shown' : '');
+    count.textContent = say;
+    if (state.place && cat.places[state.place].atlas) count.appendChild(el('a', { href: cat.places[state.place].atlas, text: 'this shelf on the atlas →' }));
+    if (chosen) {
+      var clear = el('button', { type: 'button', text: 'clear' });
+      clear.addEventListener('click', function () { KEYS.forEach(function (k) { state[k] = ''; }); sync(); });
+      count.appendChild(clear);
+    }
+    var more = $('cat-more'), left = hit.length - shown;
+    more.hidden = left <= 0;
+    if (left > 0) more.textContent = 'Show ' + Math.min(STEP, left) + ' more (' + num(left) + ' left)';
+  }
+
+  function sync() {
+    shown = STEP;
+    $('cat-q').value = state.q; $('cat-class').value = state['class']; $('cat-kind').value = state.kind;
+    [].forEach.call(document.querySelectorAll('#cat-shelves button, #cat-organs button'), function (b) {
+      b.setAttribute('aria-pressed', String(state[b.dataset.key] === b.dataset.value));
+    });
+    writeHash(); draw();
+  }
+
+  function chip(into, key, value, label, n) {
+    var b = el('button', { type: 'button', 'data-key': key, 'data-value': value, 'aria-pressed': 'false' }, [label, el('b', { text: num(n) })]);
+    b.addEventListener('click', function () { state[key] = state[key] === value ? '' : value; sync(); });
+    $(into).appendChild(b);
+  }
+
+  function build() {
+    cat.columns.forEach(function (c, i) { col[c] = i; });
+    works = cat.rows.map(function (r) {
+      return { r: r, hay: plain(r[col.title] + ' ' + r[col.path] + ' ' + r[col.kind] + ' ' + cat.classes[r[col['class']]]) };
+    });
+    var live = works.filter(function (w) { return w.r[col.live] !== null; }).length;
+    $('cat-say').textContent = 'Every work of the library has one card: ' + num(cat.works) + ' works, the science, the investigations, the letters, the people and the evidence. '
+      + 'Type a word, or pick a shelf, a subject or a kind. Each title opens the work where it is published (' + num(live) + ' are on a live site; the other ' + num(cat.works - live) + ' open their source).';
+    Object.keys(cat.places).forEach(function (p) { chip('cat-shelves', 'place', p, short(p), cat.places[p].works); });
+    var organs = { soul: 'Soul — the science', heart: 'Heart — the hardware and the Lansing Scuffle' };
+    Object.keys(cat.organs).forEach(function (o) {
+      chip('cat-organs', 'organ', o, organs[o] || o, works.filter(function (w) { return w.r[col.organ] === o; }).length);
+    });
+    Object.keys(cat.classes).sort().forEach(function (code) {
+      var n = works.filter(function (w) { return w.r[col['class']] === code || w.r[col.also_class] === code; }).length;
+      $('cat-class').appendChild(el('option', { value: code, text: code + ' ' + cat.classes[code] + ' (' + n + ')' }));
+    });
+    cat.kinds.forEach(function (k) {
+      var n = works.filter(function (w) { return w.r[col.kind] === k; }).length;
+      $('cat-kind').appendChild(el('option', { value: k, text: k + ' (' + n + ')' }));
+    });
+    var wait = null;
+    $('cat-q').addEventListener('input', function () { clearTimeout(wait); var v = this.value; wait = setTimeout(function () { state.q = v.trim(); shown = STEP; writeHash(); draw(); }, 120); });
+    $('cat-class').addEventListener('change', function () { state['class'] = this.value; sync(); });
+    $('cat-kind').addEventListener('change', function () { state.kind = this.value; sync(); });
+    $('cat-more').addEventListener('click', function () { shown += STEP; draw(); });
+    window.addEventListener('hashchange', function () { readHash(); sync(); });
+    readHash(); sync();
+    window.library = { catalog: cat, state: state, matches: function () { return matches().map(function (w) { return w.r; }); } };
+  }
+
+  fetch('/static/alexandria-catalog.json').then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (j) { cat = j; build(); })
+    .catch(function () {
+      var c = $('cat-count'); c.textContent = 'The catalog did not open. It can also be read as ';
+      c.appendChild(el('a', { href: 'https://github.com/protoKarya/alexandria/blob/main/shelves.md', text: 'one long page of shelves' })); c.appendChild(document.createTextNode('.'));
+    });
+})();
+</script>
 </body>
 </html>
