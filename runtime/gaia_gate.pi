@@ -283,6 +283,17 @@ def _real_ip(handler):
             pass
     return peer
 
+# The visitor memory lives in RAM and every pulse walks all of it. Behind the front door each visitor is now
+# remembered under its own address (not the door's), and the internet has no end of visitors: past this many, the
+# quarter of the OUTSIDE visitors not seen for the longest is let go. The house is never forgotten.
+_VISITORS_MAX = 4096
+_UA_MAX = 300                                # what is kept of a visitor's User-Agent
+
+def _forget_visitors():
+    if len(visitor_memory) <= _VISITORS_MAX: return
+    out = sorted((v.get("last_seen", 0), k) for k, v in list(visitor_memory.items()) if _veil_mod.is_outside(k))
+    for _, k in out[:max(1, len(out) // 4)]: visitor_memory.pop(k, None)
+
 _LAN_PREFIXES = ("127.", "192.168.4.", "192.168.9.", "::1")
 
 EYES_DIR = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Gaia", "bubbles", "eyes")
@@ -606,7 +617,10 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
 
     def _classify_and_log(self, method, status, dur, body_len=0, model=None):
         global total_inferences, total_tokens, total_beats, total_breaths
-        ip = self.client_address[0]; now = time.time(); total_beats += 1
+        # The visitor is whoever the front door names (_real_ip), not the door itself: behind dromedary every visitor
+        # used to be remembered as 127.0.0.1, one "nucleus" for the whole internet. An outside address is written
+        # to the access log and the journal only as its veil.
+        ip = _real_ip(self); shown = _veil_ip(ip); now = time.time(); total_beats += 1
         _io_tick(is_output=(body_len > 0 and status < 400))  # π:1 metabolism
         if body_len > 1000: total_breaths += 1
         if total_beats % PI_BEAT_PERSIST == 0:
@@ -617,15 +631,19 @@ class GaiaGate(http.server.BaseHTTPRequestHandler):
         v = visitor_memory[ip]
         if not v["first_seen"]: v["first_seen"] = now
         v["last_seen"] = now; v["requests"] += 1
-        v["last_ua"] = self.headers.get("User-Agent","") if hasattr(self,'headers') else ""
+        v["last_ua"] = (self.headers.get("User-Agent","") if hasattr(self,'headers') else "")[:_UA_MAX]
         if model: v["models_asked"].add(model); total_inferences += 1
         paths = v.setdefault("paths", set())
         if len(paths) < 256: paths.add(self.path.split("?")[0])
         v["trust_level"] = trust_level(v, ip)
         v["localization"] = localization(v)
-        _log_caddy(ACCESS_LOG, {"ts":now,"request":{"remote_ip":ip,"method":method,"uri":self.path},"status":status,"duration":dur,"size":body_len})
+        req = {"remote_ip":shown,"method":method,"uri":self.path}
+        if v["last_ua"]: req["headers"] = {"User-Agent":[v["last_ua"]]}
+        _log_caddy(ACCESS_LOG, {"ts":now,"request":req,"status":status,"duration":dur,"size":body_len})
         sym = {"electron":"⚡","neutron":"🔵","proton":"🟢","nucleus":"🧬"}
-        print(f"  {sym.get(v['trust_level'],'?')} {method} {self.path} {status} [{ip} {v['trust_level']} r={v['requests']}] {dur:.0f}ms{f' model={model}' if model else ''}")
+        who = v.get("identity","") if v.get("anderson_type") == "neutron" else ""      # a crawler is named in the journal
+        print(f"  {sym.get(v['trust_level'],'?')} {method} {self.path} {status} [{shown} {v['trust_level']}{' ' + who if who else ''} r={v['requests']}] {dur:.0f}ms{f' model={model}' if model else ''}")
+        _forget_visitors()
 
     def _json(self, data, status=200):
         # petalTongue: browser gets rendered HTML, agent gets raw JSON
@@ -718,7 +736,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         self.send_header("Link",'<https://primals.eco/rss>; rel="alternate"; type="application/rss+xml"; title="Gaia Pulse"')
         self.send_header("Link",'<https://primals.eco/llms.txt>; rel="ai-agent-context"')
         self.send_header("Link",'<https://primals.eco/sitemap.xml>; rel="sitemap"')
-        ip = self.client_address[0] if hasattr(self,'client_address') else "0.0.0.0"
+        ip = _real_ip(self) if hasattr(self,'client_address') else "0.0.0.0"
         wh = _veil(ip+GAIA_TOKEN,8)
         v = visitor_memory.get(ip,{})
         self.send_header("X-Gaia-Walker",wh); self.send_header("X-Gaia-Walkers",str(len(visitor_memory)))
@@ -770,9 +788,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
                     try:
                         j=json.loads(data); model=j.get("model",""); usage=j.get("usage",{})
                         global total_tokens; total_tokens+=usage.get("total_tokens",0)
-                        visitor_memory[self.client_address[0]]["tokens_in"]+=usage.get("prompt_tokens",0)
-                        visitor_memory[self.client_address[0]]["tokens_out"]+=usage.get("completion_tokens",0)
-                        log_culture(CULTURE_LOG,self.client_address[0],model,json.loads(body) if body else {},j,usage,dur)
+                        _vip=_real_ip(self)
+                        visitor_memory[_vip]["tokens_in"]+=usage.get("prompt_tokens",0)
+                        visitor_memory[_vip]["tokens_out"]+=usage.get("completion_tokens",0)
+                        log_culture(CULTURE_LOG,_veil_ip(_vip),model,json.loads(body) if body else {},j,usage,dur)
                     except: pass
                 self._classify_and_log(method,resp.status,dur,len(data),model)
                 self.send_response(resp.status)
@@ -1018,7 +1037,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             _sflow={"total_bytes":0,"walkers":len(visitor_memory)}
             self._json({
                 "amoeba":_amoeba_eyes(),"pulse":_pulse,"temporal":_temp,"sun":_sun,
-                "anderson":{"spectrum":{t:sum(1 for vv in visitor_memory.values() if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)},
+                "anderson":{"spectrum":{t:sum(1 for vv in list(visitor_memory.values()) if vv.get("anderson_type")==t) for t in ("nucleus","proton","neutron","electron")},"total":len(visitor_memory)},
                 "reedit":{"total_items":sum(_rf.values()),"feeds":_rf,"paintings":_pc,"videos":_vc},
                 "neutron":_nc,"models":_md,
                 "sensors":{"alive":_sa,"total_sensors":_st,"flow":_sflow,"banks":_sb}
@@ -1027,7 +1046,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
             self._json({"sensors":{"sun":_sun_position(),"heart":write_pulse().get("heart",{}),"walkers":len(visitor_memory),"eyes":_amoeba_eyes()}}); return
         # ORGANISM — Anderson layer
         if self.path in ("/walkers","/membrane-sense","/who","/anderson"):
-            wl=[{"hash":_veil(i+GAIA_TOKEN,8),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in visitor_memory.items()]
+            wl=[{"hash":_veil(i+GAIA_TOKEN,8),"requests":v["requests"],"anderson":v.get("anderson_type","?"),"identity":v.get("identity","?"),"opacity":v.get("opacity",0.1),"localization":v.get("localization",{})} for i,v in list(visitor_memory.items())]
             self._json({"walkers":wl,"total":len(wl),"spectrum":{t:sum(1 for w in wl if w["anderson"]==t) for t in ("nucleus","proton","neutron","electron")}}); return
         if self.path in ("/zk","/seed","/prophage","/identity"):
             self._json({"zk":{"token":GAIA_TOKEN,"did":GAIA_DID,"blake3":GAIA_BLAKE3[:32]}}); return
@@ -1445,7 +1464,7 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         Also logs to thymus as stem_cell: a visitor who arrived but the path
         doesn't exist yet. Stem cells can differentiate into new pages."""
         if code==404 and self._serve_beneath(): return   # not a dead end after all: the old HUD has it
-        ip=self.client_address[0]; ua=self.headers.get("User-Agent","")
+        ip=_real_ip(self); ua=self.headers.get("User-Agent","")
         path=getattr(self,"path","/")
         # Log encounter to thymus neutron channel
         try:
