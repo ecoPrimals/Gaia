@@ -818,8 +818,10 @@ li{{padding:1px 0;border-left:1px solid #1a2a3a;padding-left:8px;margin:1px 0}}
         if rule and b"\0" not in data[:4096]:
             data=_beneath_pass(data,True)
             if data is None: self._encounter(404); return
-        # Inject synapse.js into HTML pages — the interaction layer
-        if ct == "text/html" and b"</body>" in data:
+        # Inject synapse.js into HTML pages — the interaction layer. Not into a file of the commons: those are
+        # held by hash (static/commons/manifest.json), and one added line makes the served copy a different file.
+        _kept=relpath.replace("\\","/").lstrip("/"); _kept=_kept.startswith("commons/") and _kept not in ("commons/","commons/index.html")
+        if ct == "text/html" and b"</body>" in data and not _kept:
             data = data.replace(b"</body>", self._SYNAPSE_TAG + b"\n</body>")
         sz = len(data); self.send_response(200)
         self.send_header("Content-Type",ct); self.send_header("Content-Length",str(sz))
