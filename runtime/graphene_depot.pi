@@ -380,8 +380,13 @@ export HOME=$D/run TMPDIR=$D/run XDG_RUNTIME_DIR=$D/run
 for p in beardog songbird skunkbat; do pkill -f "$D/bin/$p" 2>/dev/null; done
 sleep 1
 
-BEARDOG_FAMILY_SEED=$(cat run/family.seed) nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 \
+# bearDog signs lineage proofs with a device key it derives from BEARDOG_MASTER_KEY. That value is
+# worked out here from this device's own seed, so it is the same at every start and needs no
+# further secret on the phone. (Same rule as family-mitobeacon/enroll.py on eastGate.)
+MASTER=$(printf 'beardog-master-key-v1:%s' "$(cat run/family.seed)" | sha256sum | cut -d' ' -f1)
+BEARDOG_MASTER_KEY=$MASTER BEARDOG_FAMILY_SEED=$(cat run/family.seed) nohup $D/bin/beardog server --bind-mode auto --listen 127.0.0.1:9100 \
   --family-id $FAMILY_ID > run/beardog.log 2>&1 < /dev/null &
+MASTER=
 echo $! > run/beardog.pid
 sleep 2
 export SONGBIRD_FEDERATION_BIND=127.0.0.1 SONGBIRD_PRODUCTION_BIND_ADDRESS=127.0.0.1
@@ -390,9 +395,18 @@ export SONGBIRD_FEDERATION_BIND=127.0.0.1 SONGBIRD_PRODUCTION_BIND_ADDRESS=127.0
 BD=@ecosystem_beardog_$FAMILY_ID
 export SECURITY_ENDPOINT=unix://$BD SECURITY_PROVIDER_SOCKET=$BD CRYPTO_PROVIDER_SOCKET=$BD BEARDOG_SOCKET=$BD
 export SECURITY_PROVIDER_MODE=direct BEARDOG_MODE=direct
+# Lineage proof. run/anchor.pub is the family's public key and run/lineage.cert.json the family's
+# signature over this device's key; both are public and put there from eastGate. With them the
+# tower proves its family to peers and asks the same of any caller that is not on the phone itself.
+# Without them nothing changes.
+if [ -s run/anchor.pub ] && [ -s run/lineage.cert.json ]; then
+  export SONGBIRD_LINEAGE_ANCHOR=$D/run/anchor.pub SONGBIRD_LINEAGE_CERT=$D/run/lineage.cert.json
+  export RUST_LOG=error,songbird_orchestrator::app::http_server::lineage_door=info,songbird_orchestrator::trust::peer_trust=info
+fi
 nohup $D/bin/songbird server --federation-port 7700 --bind 127.0.0.1 --listen 127.0.0.1:9200 --node-id $NODE_ID \
   --state-dir $D/run/songbird --pid-dir $D/run > run/songbird.log 2>&1 < /dev/null &
 echo $! > run/songbird.pid
+unset RUST_LOG
 nohup $D/bin/skunkbat server --bind-mode tcp-only --bind 127.0.0.1 --port 9140 \
   > run/skunkbat.log 2>&1 < /dev/null &
 echo $! > run/skunkbat.pid
