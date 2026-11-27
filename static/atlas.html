@@ -58,6 +58,14 @@
   a pin's graph, and graph.lines for the lines whose two ends hang on different pins). The backscatter is the path
   through the pins that sporePrint's backscatter page gives, year by year.
 
+  THE HOUSE stands at the home corner of the triangle, held at the town and nothing finer. Its gates, and how each
+  stands in the mesh now, come from /static/house.js - the file the HUD's mesh view and the MERCATOR page read too -
+  so a primal of the spore graph says which gate runs it, and the engine's last picture of the house is a moment.
+
+  ONE SYSTEM. This page is one face of the HUD. /static/one.js keeps the clock and the place stood on between every
+  face open on this device: travel in time here and the HUD follows; press a pin here and the HUD's night sky is the
+  sky from that pin. Where a visitor stands is never told to it.
+
   The address carries the pin (#pin=dykema), a view (#go=wayne, #go=clock), the triangle (#tri), a moment (#m=easter-824)
   and the time (&t=0824-04-24T05:31), so a place at a time can be linked.
   /static/atlas.html?face is the globe alone, as a clock face, for the middle of the HUD: no keys, no panel. A pressed
@@ -122,6 +130,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 #panel .hung h3{font:bold 11px 'Courier New',monospace;letter-spacing:.08em;color:var(--dim);margin:8px 0 2px;text-transform:uppercase}
 #panel .hung li{display:flex;gap:8px;align-items:baseline}
 #panel .hung li .n{margin-left:auto;color:var(--low);font-size:11px;white-space:nowrap}
+#panel li .tag.run{color:#5aad72}
+#panel .house{margin:0 0 8px;padding:2px 8px 8px;border:1px solid var(--line);border-radius:8px}
+#panel .house .stood{margin:2px 0 4px}
 #foot{position:fixed;left:10px;bottom:8px;right:10px;pointer-events:none}
 #time{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 4px;max-width:calc(100vw - 410px)}
 #time>*{pointer-events:auto}
@@ -194,7 +205,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   </div>
   <p id="sky"></p>
 </div>
-<script src="/static/sky.js?v=2"></script>
+<script src="/static/sky.js?v=3"></script>
+<script src="/static/one.js?v=1"></script>
+<script src="/static/house.js?v=1"></script>
 <script>
 (function () {
   'use strict';
@@ -217,7 +230,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   var W = 0, H = 0, cx = 0, cy = 0, R = 1, base = 1;
   var view = {lat: GO.world[0], lon: GO.world[1], k: GO.world[2]}, fly = null;
   var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true, tri = false, T = null;
-  var dial = false, graphOn = false, scrollTime = false, held = null, here = null, starCat = null, starShown = 0;
+  var dial = false, graphOn = false, scrollTime = false, held = null, here = null, starCat = null, starShown = 0, house = null, homeId = null, houseAsked = 0, wantDrawn = /[#&]m=house-drawn\b/.test(location.hash);
   var face = /[?&]face\b/.test(location.search);                    // the globe alone, as a clock face, for the middle of the HUD
   var kClock = document.getElementById('k-clock'), kGraph = document.getElementById('k-graph'), tNow = document.getElementById('t-now'), tUnit = document.getElementById('t-unit'),
       footEl = document.getElementById('foot'), tAt = document.getElementById('t-at'), tMoment = document.getElementById('t-moment'), tScroll = document.getElementById('t-scroll'), tAway = document.getElementById('t-away');
@@ -294,14 +307,14 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   // ---------------------------------------------------------------- the clock: travelling in time
   // `ahead` is how far the page's clock stands from the real one. Every open atlas, and the HUD, share it over one
   // channel on this device: travel in one and the others follow. Nothing of it leaves the device.
-  var chan = null, me = Math.random().toString(36).slice(2), tellWait = 0, sayWait = 0;
-  function tell() { tellWait = 0; if (chan && !fast) try { chan.postMessage({from: me, ahead: ahead}); } catch (e) {} }
+  // The channel is /static/one.js, which also carries the place stood on: the one pin pressed here.
+  var one = window.gaiaOne || null, sayWait = 0;
   function setAhead(a, heard) {
     var t = Date.now();
     ahead = Math.max(sky.FIRST - t, Math.min(sky.LAST - t, a)); if (Math.abs(ahead) < 1000) ahead = 0;
     dirty = true; tNow.setAttribute('aria-pressed', ahead ? 'false' : 'true');
     if (document.activeElement !== tAt) { tAt.value = ahead ? sky.mark(now()).replace('T', ' ') : ''; tAt.classList.remove('no'); }
-    if (!heard && !tellWait) tellWait = setTimeout(tell, 80);
+    if (!heard && !fast && one) one.set({ahead: ahead});
     clearTimeout(sayWait); sayWait = setTimeout(say, 350);
   }
   function stepTime(n) { if (fast) setFast(false, true); here = null; setAhead(ahead + n * (+tUnit.value)); }
@@ -318,7 +331,8 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     if (m.year != null && !m.when) return sky.of(m.year, 6, 21, 12, 0);          // a year alone: midsummer noon of it
     return sky.read(m.when);
   }
-  function moments() { return (meta.moments || []).concat(((meta.backscatter || {}).eras || []).map(function (e, i) { return {id: 'back-' + i, at: e.at, year: e.year, name: e.span + ' · ' + e.name, say: e.place, era: e}; })); }
+  function houseMoment() { return house && homeId ? [{id: 'house-drawn', at: homeId, when: sky.mark(house.taken), name: 'The house, as the engine last drew it', say: 'When the picture was drawn, ' + window.gaiaHouse.drawn(house) + '.'}] : []; }
+  function moments() { return (meta.moments || []).concat(houseMoment(), ((meta.backscatter || {}).eras || []).map(function (e, i) { return {id: 'back-' + i, at: e.at, year: e.year, name: e.span + ' · ' + e.name, say: e.place, era: e}; })); }
   function moment(id) {                                               // go to a moment: its time, and its pin to stand on
     var m = moments().filter(function (q) { return q.id === id; })[0], p = m && pinOf(m.at), ms = m && whenOf(m);
     if (!m || !p || ms == null) return false;
@@ -575,7 +589,6 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   // THE STARS. Behind the globe: the half of the sky that stands over the earth's far side, as it would be seen past
   // the earth from where the globe is looked at. Every star is at its real place for the page's time, so the sky
   // wheels when the clock is turned and when the globe is. Close in, the earth fills the view and hides them all.
-  function tint(bv) { return bv < 0 ? '#b9ccff' : bv < 0.3 ? '#dbe6ff' : bv < 0.62 ? '#fbf6ee' : bv < 1 ? '#ffe7bf' : bv < 1.4 ? '#ffd29a' : '#ffbc84'; }
   function drawStars() {
     starShown = 0;
     if (!starCat || face || W < 280) return;
@@ -588,51 +601,12 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       var x = Rs * cp * Math.sin(l), y = -Rs * (c0 * sp - s0 * cp * cl);
       if (x * x + y * y < R2) continue;                               // behind the earth
       var m = k.mag[i];
-      ctx.globalAlpha = Math.max(0.45, Math.min(1, 1.1 - 0.13 * m)); ctx.fillStyle = tint(k.bv[i]);
+      ctx.globalAlpha = Math.max(0.45, Math.min(1, 1.1 - 0.13 * m)); ctx.fillStyle = sky.tint(k.bv[i]);
       ctx.beginPath(); ctx.arc(cx + x, cy + y, Math.max(0.7, 2.7 - 0.41 * m), 0, 7); ctx.fill();
       starShown++;
       if (m <= 1 && starCat.names[i]) { ctx.globalAlpha = 0.6; ctx.font = "9px 'Courier New',monospace"; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#8395a7'; ctx.fillText(starCat.names[i], cx + x + 6, cy + y); }
     }
     ctx.globalAlpha = 1;
-  }
-  // The whole sky from a place: straight overhead in the middle, the horizon round the rim, north at the top and east
-  // on the left - the way it is seen lying on your back with your head to the north. The sky is as light as the sun
-  // makes it, and only the stars that light leaves to the eye are drawn. The moon is drawn larger than it is.
-  function drawDome(g, size, at, l) {
-    var u = size / 300, c = size / 2, Rd = 132 * u, sunUp = l.sun.up, f = Math.max(0, Math.min(1, (sunUp + 12) / 12)), out = {stars: 0, pole: null, light: sunUp > -1 ? 'day' : sunUp > -12 ? 'twilight' : 'night'};
-    function spot(up, way) { var r = Rd * (90 - Math.max(0, up)) / 90; return {x: c - r * Math.sin(way * DEG), y: c - r * Math.cos(way * DEG)}; }
-    g.clearRect(0, 0, size, size);
-    g.beginPath(); g.arc(c, c, Rd, 0, 7);
-    g.fillStyle = 'rgb(' + Math.round(7 + 45 * f * f) + ',' + Math.round(11 + 87 * f * f) + ',' + Math.round(18 + 132 * f * f) + ')'; g.fill();
-    var lim = sunUp > -1 ? -9 : Math.min(5, 1.5 + (-sunUp - 6) * 0.5), named = 0, q, i;
-    if (starCat) {
-      var k = sky.stars(starCat, now());
-      g.font = Math.round(10 * u) + "px 'Courier New',monospace"; g.textBaseline = 'middle';
-      for (i = 0; i < k.n && k.mag[i] <= lim; i++) {                   // brightest first: stop at the faintest the light leaves
-        var st = {lat: k.lat[i], lon: k.lon[i]}, up = 90 - sky.apart(at, st);
-        if (up < 0) continue;
-        q = spot(up, sky.bearing(at, st)); out.stars++;
-        g.globalAlpha = Math.max(0.35, Math.min(1, 1.05 - 0.15 * k.mag[i])); g.fillStyle = tint(k.bv[i]);
-        g.beginPath(); g.arc(q.x, q.y, Math.max(0.7, 2.7 - 0.42 * k.mag[i]) * u, 0, 7); g.fill();
-        if (starCat.names[i] && named < 5 && up > 8) { named++; g.globalAlpha = 0.75; g.fillStyle = '#8395a7'; g.textAlign = q.x > c ? 'right' : 'left'; g.fillText(starCat.names[i], q.x + (q.x > c ? -5 : 5) * u, q.y); }
-      }
-      g.globalAlpha = 1;
-      if (at.lat > 0) {                                               // the pole of the sky stands as high as the place is far north, due north
-        q = spot(at.lat, 0); g.strokeStyle = 'rgba(46,204,113,.8)'; g.lineWidth = u;
-        g.beginPath(); g.moveTo(q.x - 5 * u, q.y); g.lineTo(q.x + 5 * u, q.y); g.moveTo(q.x, q.y - 5 * u); g.lineTo(q.x, q.y + 5 * u); g.stroke();
-        Object.keys(starCat.names).forEach(function (j) { var off = 90 - k.lat[+j]; if (!out.pole || off < out.pole.off) out.pole = {name: starCat.names[j], off: off}; });
-      }
-    }
-    if (sunUp > -0.9) {
-      q = spot(sunUp, l.sun.way);
-      g.beginPath(); g.arc(q.x, q.y, 14 * u, 0, 7); g.fillStyle = 'rgba(255,214,102,.25)'; g.fill();
-      g.beginPath(); g.arc(q.x, q.y, 6.5 * u, 0, 7); g.fillStyle = '#ffd666'; g.fill();
-    }
-    if (l.moon.up > -0.5) { q = spot(l.moon.up, l.moon.way); sky.moonFace(g, q.x, q.y, 8 * u, l.lit, l.moon.tilt + 180 - l.moon.way, '#2a323d', '#eef1f5'); }
-    g.beginPath(); g.arc(c, c, Rd, 0, 7); g.strokeStyle = 'rgba(131,149,167,.6)'; g.lineWidth = u; g.stroke();
-    g.fillStyle = '#8395a7'; g.font = Math.round(11 * u) + "px 'Courier New',monospace"; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText('N', c, c - Rd - 9 * u); g.fillText('S', c, c + Rd + 9 * u); g.fillText('E', c - Rd - 9 * u, c); g.fillText('W', c + Rd + 9 * u, c);
-    return out;
   }
   function draw() {
     s0 = Math.sin(view.lat * DEG); c0 = Math.cos(view.lat * DEG); R = base * view.k;
@@ -686,7 +660,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     held.text.innerHTML = 'the sky from here · moon ' + high(l.moon) + ' · ' + moonName(l.elong) + ', <b>' + Math.round(l.lit * 100) + '%</b> lit, drawn as it stands' + (l.moon.up < 0 ? ' (it is down)' : '') + ' · ' + nextTurn('moon') +
       '<br>sun ' + high(l.sun) + ' · ' + nextTurn('sun');
     if (!held.dome) return;
-    var d = drawDome(held.dome.getContext('2d'), held.dome.width, held.place, l); held.said = d;
+    var d = sky.dome(held.dome.getContext('2d'), held.dome.width, held.place, t, starCat); held.said = {stars: d.stars, pole: d.pole, light: d.light};
     held.domeText.innerHTML = 'the whole sky from here · ' + (!starCat ? 'the stars did not load' : d.light === 'day' ? 'the sun is up: <b>no star is seen</b>' : d.light === 'twilight' ? '<b>' + d.stars + '</b> of the brightest stars show in the twilight' : '<b>' + d.stars.toLocaleString() + '</b> stars up') +
       ' · overhead in the middle, the horizon round the rim, north at the top, east on the left' +
       (d.pole ? ' · the green cross is the pole of the sky: of the named stars <b>' + d.pole.name + '</b> stands nearest it, <b>' + (d.pole.off < 10 ? d.pole.off.toFixed(1) : Math.round(d.pole.off)) + '°</b> off' : '');
@@ -696,7 +670,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     if (dial && !stay) goTo(GO.clock[0], GO.clock[1], GO.clock[2]);
     if (!stay) say();
   }
-  function setFast(on, keep) { fast = !!on; if (!fast && !keep) setAhead(0); kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; }
+  function setFast(on, keep) { fast = !!on; if (one) one.hush(fast); if (!fast && !keep) setAhead(0); kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; }
 
   // ---------------------------------------------------------------- moving
   function goTo(lat, lon, k) {
@@ -788,6 +762,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   }
   function choose(list) {
     chosen = list.slice();
+    if (one && !face && chosen.length === 1) one.set({place: chosen[0]});      // the one pin pressed is where every face stands. Where a visitor stands is never told.
     if (here && !(chosen.length === 1 && chosen[0].id === here.at)) here = null;       // a moment holds only while its pin is the one stood on
     fill(); dirty = true; say();
   }
@@ -836,6 +811,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       var box = el('div', 'pin'), h = el('h2', null, p.name); h.style.color = KIND[p.kind] || '#f5f6fa';
       box.appendChild(h); box.appendChild(el('p', 'where', (KIND_SAY[p.kind] || p.kind) + ' · ' + p.where));
       if (p.stands) box.appendChild(el('p', 'stood', 'The house stands ' + p.stands + ' here. The pages name the project: ' + (p.n_place ? p.n_place + ' of them name this ground itself.' : 'none of them names this ground itself yet.')));
+      if (p.id === homeId && window.gaiaHouse) box.appendChild(houseBox());   // at home the house comes first, then its sky
       if (i === 0) box.appendChild(skyBox(p));
       if (p.say) box.appendChild(el('p', 'say', p.say));
       box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : p.stands ? p.n + ' published pages name ' + p.stands + ' or the place — start with these' : p.n ? 'named on ' + p.n + ' published pages — start with these' : 'no published page names it yet'));
@@ -863,6 +839,41 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     held = {place: p, canvas: c, text: t, dome: dc, domeText: dt, said: null}; dirty = true;
     return both;
   }
+  // THE HOUSE stands at the home corner of the triangle, held at the town. What is said of it comes from
+  // /static/house.js, the file the HUD's mesh view and the MERCATOR page read too.
+  function askHouse() {
+    if (!window.gaiaHouse || Date.now() - houseAsked < 30000) return;
+    houseAsked = Date.now();
+    window.gaiaHouse.load().then(function (h) {
+      var first = !house; house = h;
+      if (first) { fillMoments(); if (wantDrawn) { wantDrawn = false; moment('house-drawn'); } }   // the address asked for the moment the picture was drawn, which is known only now
+      if (graphOn || chosen.some(function (p) { return p.id === homeId || (p.graph && p.graph.length); })) fill();
+    }).catch(function () {});
+  }
+  function houseBox() {
+    var H = window.gaiaHouse, h = house, box = el('div', 'hung house'), ul = el('ul');
+    box.appendChild(el('h3', null, 'the house · held here at the town'));
+    askHouse();
+    if (!h) { box.appendChild(el('p', 'stood', 'asking the house')); return box; }
+    var houses = h.zones.filter(function (z) { return /^House /.test(z); }).length, said = H.now(h), outside = [];
+    box.appendChild(el('p', 'stood', h.gates.length + ' gates in ' + houses + (houses === 1 ? ' house' : ' houses') + ', pinned to the town and nothing finer. ' + said.charAt(0).toUpperCase() + said.slice(1) + '.'));
+    h.gates.concat(h.extra).forEach(function (g) {
+      var st = g.now || g.drawn;
+      if (st === 'outside') { outside.push(g.name); return; }
+      var li = el('li'); li.appendChild(el('span', null, g.name)); li.appendChild(el('span', 'tag' + (st === 'answers' ? ' run' : ''), H.WORDS[st] || st));
+      li.appendChild(el('span', 'n', g.pi ? g.up.length + ' primals up' + (g.down.length ? ', ' + g.down.length + ' down' : '') : g.tip ? 'on ' + g.tip : '')); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    if (outside.length) box.appendChild(el('p', 'stood', 'Not bodies of the mesh: ' + outside.join(', ') + '.'));
+    var go = el('button', null, 'the house drawn as a world'); go.type = 'button';
+    go.title = 'MERCATOR: the engine’s picture of the gates, drawn ' + H.ago((Date.now() - h.taken) / 1000);
+    go.addEventListener('click', function () {                        // inside the HUD its mesh view shows the picture; alone, the picture has a page of its own
+      if (window.top !== window) try { window.parent.postMessage({gaiaAtlas: 'view', view: 'mesh'}, location.origin); return; } catch (e) {}
+      window.open('/static/mercator.html', '_blank', 'noopener');
+    });
+    box.appendChild(go);
+    return box;
+  }
   function hung(p) {                                                  // the nodes of the spore graph that hang on this pin
     var box = el('div', 'hung'), ul = el('ul'), all = p.graph, few = 10;
     box.appendChild(el('h3', null, 'hung here from the spore graph · ' + all.length));
@@ -870,7 +881,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       list.forEach(function (g) {
         var li = el('li'), name = g[3] ? el('a', null, g[0]) : el('span', null, g[0]);
         if (g[3]) { name.href = g[3]; name.target = '_blank'; name.rel = 'noopener'; }
-        li.appendChild(name); li.appendChild(el('span', 'tag', g[1])); li.appendChild(el('span', 'n', g[2] ? 'named on ' + g[2] + (g[2] === 1 ? ' page' : ' pages') : 'not named on a page')); ul.appendChild(li);
+        li.appendChild(name); li.appendChild(el('span', 'tag', g[1]));
+        if (house && g[1] === 'primal') { var on = window.gaiaHouse.runs(house, g[0]); if (on.length) li.appendChild(el('span', 'tag run', 'up on ' + on.join(', '))); }   // the mesh says which gate runs it now
+        li.appendChild(el('span', 'n', g[2] ? 'named on ' + g[2] + (g[2] === 1 ? ' page' : ' pages') : 'not named on a page')); ul.appendChild(li);
       });
     }
     rows(all.slice(0, few)); box.appendChild(ul);
@@ -1006,7 +1019,8 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   tMoment.addEventListener('change', function () { var id = tMoment.value; tMoment.value = ''; if (id) moment(id); });
   document.getElementById('time').addEventListener('wheel', function (e) { e.preventDefault(); stepTime((e.deltaY || e.deltaX) > 0 ? 1 : -1); }, {passive: false});
   function fillMoments() {                                            // the moments to travel to, by where they are taken from
-    var b = meta.backscatter, groups = [['the old sky', (meta.moments || [])], [b ? 'the backscatter — ' + b.title : '', b ? b.eras.map(function (e, i) { return {id: 'back-' + i, name: e.span + ' · ' + e.name}; }) : []]];
+    Array.prototype.slice.call(tMoment.querySelectorAll('optgroup')).forEach(function (o) { o.remove(); });
+    var b = meta.backscatter, groups = [['the old sky', (meta.moments || [])], ['the house', houseMoment()], [b ? 'the backscatter — ' + b.title : '', b ? b.eras.map(function (e, i) { return {id: 'back-' + i, name: e.span + ' · ' + e.name}; }) : []]];
     groups.forEach(function (g) {
       if (!g[1].length) return;
       var og = document.createElement('optgroup'); og.label = g[0];
@@ -1015,15 +1029,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     });
     tMoment.hidden = tMoment.options.length < 2;
   }
-  try {                                                               // one clock between every open atlas and the HUD, on this device only
-    chan = new BroadcastChannel('gaia-atlas');
-    chan.onmessage = function (e) {
-      var d = e.data || {}; if (d.from === me) return;
-      if (d.ask) { if (ahead && !fast) tell(); return; }
-      if (typeof d.ahead === 'number' && !fast && Math.abs(d.ahead - ahead) > 500) { here = null; setAhead(d.ahead, true); if (chosen.length || you) dirty = true; }
-    };
-    chan.postMessage({from: me, ask: 1});
-  } catch (e) { chan = null; }
+  if (one) one.on(function (st, changed, heard) {                     // another face moved the clock: follow it. A place set elsewhere does not turn this globe.
+    if (heard && changed.ahead && !fast && Math.abs(st.ahead - ahead) > 500) { here = null; setAhead(st.ahead, true); if (chosen.length || you) dirty = true; }
+  });
   kCore.addEventListener('click', function () {
     core = !core; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true;
     if (core) {                                                       // step back and to one side, so the plumb line is seen along its length and not end-on
@@ -1043,17 +1051,19 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     .catch(function () { skyEl.textContent = 'the outlines did not load — the pins still work'; });
   if (sky.stars) get('/static/atlas-stars.json').then(function (c) { starCat = c; dirty = true; }).catch(function () {});   // without them the globe stands in an empty sky
   get('/static/atlas-pins.json').then(function (d) {
-    pins = d.pins; meta = d; setTriangle(); kTri.hidden = !T; kGraph.hidden = !(d.graph || d.backscatter); fillMoments(); fill(); dirty = true;
+    pins = d.pins; meta = d; homeId = d.triangle && d.triangle.corners && d.triangle.corners[0] ? d.triangle.corners[0].pin : null; setTriangle(); kTri.hidden = !T; kGraph.hidden = !(d.graph || d.backscatter); fillMoments(); fill(); dirty = true;
     if (face) {                                                       // the HUD's face: the dial, the triangle with its far body and its widening, and whatever time the address names
       view.lat = GO.clock[0]; view.lon = GO.clock[1]; view.k = GO.clock[2]; dial = true; tri = !!T; fromHash(); dirty = true;
       return;
     }
+    askHouse();
     if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700);
   }).catch(function (e) { panel.textContent = 'The pins did not load.'; if (window.console) console.error(e); });
   window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { here = null; setAhead(ms - Date.now()); },
     tri: function (on, stay) { setTri(on, stay); }, measure: measure, noon: function (id, ms) { var p = pins.filter(function (q) { return q.id === id; })[0]; return p ? noon(p, ms == null ? now() : ms) : null; },
     now: now, moment: moment, moments: function () { return moments().map(function (m) { var t = whenOf(m); return {id: m.id, at: m.at, name: m.name, ms: t, stamp: t == null ? null : sky.stamp(t)}; }); },
     dial: function (on) { setDial(on); }, graph: function (on) { setGraph(on); }, look: function (id, ms) { var p = pinOf(id); return p ? sky.look(p, ms == null ? now() : ms) : null; }, address: address, ahead: function () { return ahead; },
+    house: function () { return house; },
     stars: function () { return {kept: starCat ? starCat.n : 0, behind: starShown, dome: held ? held.said : null}; }};
 })();
 </script>

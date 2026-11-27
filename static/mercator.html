@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MERCATOR — the house as a world</title>
 <meta name="description" content="The gates of the house drawn as a world by the kenshi.reborn engine, lit by how each one stands in the mesh.">
+<!--
+  MERCATOR, on its own page. Everything this page knows about the house comes from /static/house.js - the same file
+  the HUD's mesh view and the atlas's home corner read - so the three never disagree: the picture and its names
+  (/static/mercator.png, /static/mercator.json) and the mesh as it is now (/api/mesh).
+-->
 <style>
 :root{--bg:#08090b;--card:#141719;--border:#1e2228;--text:#e0dcd6;--muted:#8a857e;--dim:#5a5650;--bright:#f5f0e8;--amber:#d4a574;--green:#5aad72;--red:#d45b5b;--mono:'JetBrains Mono','Fira Code','Cascadia Code',monospace}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -17,52 +22,35 @@ main{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
 h1{font-size:1.7rem;font-weight:500;color:var(--bright);letter-spacing:-.02em}
 h2{font-size:1.05rem;font-weight:500;color:var(--bright);margin:28px 0 10px}
 p{margin:6px 0 10px}.lede{color:var(--muted);max-width:70ch}
-#stage{position:relative;margin-top:18px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#1a1a2e}
-#stage img{display:block;width:100%;height:auto}
-#stage svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-#stage svg line{stroke:#ffffff55;stroke-width:1;vector-effect:non-scaling-stroke}
-.name{position:absolute;font:500 11px/1.25 var(--mono);padding:1px 5px;border-radius:3px;background:#08090bcc;border:1px solid #ffffff22;color:var(--text);white-space:nowrap}
-.name.answers{color:var(--bright);border-color:var(--green)}
-.name.silent{color:#ffb4b4;border-color:var(--red)}
-.name.outside,.name.unknown{color:var(--muted)}
-.name.machine{color:var(--dim);border-color:transparent;background:#08090b99}
-.zone{position:absolute;transform:translate(-50%,-50%);font:500 12px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:#ffffff66;white-space:nowrap}
-.dot{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#ffffffaa}
+#stage{margin-top:18px}
 #when{color:var(--muted);font-size:.9rem;margin-top:10px}
 #moved{display:none;margin-top:10px;padding:8px 12px;border:1px solid var(--amber);border-radius:6px;color:var(--amber);font-size:.9rem}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th{text-align:left;white-space:nowrap;font-weight:400;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--border)}
-td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top;white-space:nowrap}
-td.mono,.mono{font-family:var(--mono);font-size:.85rem}
-.s-answers{color:var(--green)}.s-silent{color:var(--red)}.s-outside,.s-unknown{color:var(--muted)}
+#rows{font-size:.9rem}
+#rows td{white-space:nowrap}#rows td:last-child{white-space:normal}
+.mono{font-family:var(--mono);font-size:.85rem}
 .key{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 24px;color:var(--muted);font-size:.9rem;list-style:none}
 .key b{color:var(--text);font-weight:500}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:baseline}
 pre{background:#0f1114;border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto;font:0.85rem var(--mono);color:var(--amber)}
 .wrap{overflow-x:auto}
-@media (max-width:640px){.name.machine,.name.outside{display:none}h1{font-size:1.4rem}}
+@media (max-width:640px){h1{font-size:1.4rem}}
 </style>
 </head>
 <body>
-<nav><div><a href="/" class="brand">gaia</a><a href="/kenshi">kenshi.reborn</a><a href="/static/mercator.html">MERCATOR</a><a href="/static/commons.html">commons</a></div></nav>
+<nav><div><a href="/" class="brand">gaia</a><a href="/kenshi">kenshi.reborn</a><a href="/static/mercator.html">MERCATOR</a><a href="/atlas#tri">atlas</a><a href="/static/commons.html">commons</a></div></nav>
 <main>
 <h1>MERCATOR — the house as a world</h1>
 <p class="lede">The kenshi.reborn engine draws the gates of the house as a world: two houses, the machines between them, the wires. It does not carry a list of who is alive. It asks the mesh, and lights each gate by how it stands there.</p>
 
-<div id="stage">
-  <img id="shot" src="/static/mercator.png" width="1600" height="900" alt="The gates of the house drawn as a world by the kenshi.reborn engine.">
-  <svg id="leads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
-</div>
+<div id="stage"></div>
 <p id="when">The names for this picture are loading.</p>
 <p id="moved"></p>
 
 <h2>The gates</h2>
-<div class="wrap">
-<table>
-  <thead><tr><th>Gate</th><th>Where</th><th>In the picture</th><th>In the mesh now</th><th>Commit</th><th>Primals</th></tr></thead>
-  <tbody id="rows"><tr><td colspan="6" class="s-outside">Loading.</td></tr></tbody>
-</table>
-</div>
+<div class="wrap" id="rows"></div>
+
+<h2>Where it stands</h2>
+<p class="lede">On the <a href="/atlas#tri">atlas</a> the house is the home corner of the triangle, held at the town and nothing finer. On the <a href="/hud#mesh">HUD</a> this picture is the mesh view. All three read the same file about the house, so they say the same thing.</p>
 
 <h2>How to read it</h2>
 <ul class="key">
@@ -79,136 +67,28 @@ pre{background:#0f1114;border:1px solid var(--border);border-radius:6px;padding:
 <pre>kenshi-reborn --mercator --snapshot static/mercator.png</pre>
 <p class="lede">With <span class="mono">--mercator</span> alone the engine opens the map in a window and follows the mesh while it is open.</p>
 </main>
+<script src="/static/house.js?v=1"></script>
 <script>
 'use strict';
 (function () {
-  var stage = document.getElementById('stage'), shot = document.getElementById('shot');
-  var leads = document.getElementById('leads'), when = document.getElementById('when');
-  var moved = document.getElementById('moved'), rows = document.getElementById('rows');
-  var names = null, now = null, nowFailed = false;
-  var WORDS = { answers: 'answers', silent: 'silent', outside: 'not a body of the mesh', unknown: 'unknown', machine: 'machine' };
-
-  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-
-  function ago(secs) {
-    if (secs < 90) return 'a moment ago';
-    if (secs < 5400) return Math.round(secs / 60) + ' minutes ago';
-    if (secs < 129600) return Math.round(secs / 3600) + ' hours ago';
-    return Math.round(secs / 86400) + ' days ago';
-  }
-
-  // Lay the names over the picture: each just above its point, moved up or down when it would cover another.
-  function layNames() {
-    if (!names) return;
-    Array.prototype.slice.call(stage.querySelectorAll('.name,.zone,.dot')).forEach(function (e) { e.remove(); });
-    while (leads.firstChild) leads.removeChild(leads.firstChild);
-    var W = stage.clientWidth, H = stage.clientHeight, placed = [];
-    (names.zones || []).forEach(function (z) {
-      if (!z.at) return;
-      var e = el('div', 'zone', z.name); e.style.left = (z.at[0] * 100) + '%'; e.style.top = (z.at[1] * 100 + 9) + '%'; stage.appendChild(e);
-    });
-    var order = { answers: 0, silent: 0, outside: 1, unknown: 1, machine: 2 };
-    var nodes = (names.nodes || []).filter(function (n) { return n.at; }).sort(function (a, b) { return order[a.standing] - order[b.standing] || a.at[1] - b.at[1]; });
-    nodes.forEach(function (n) {
-      var x = n.at[0] * W, y = n.at[1] * H;
-      var d = el('div', 'dot'); d.style.left = x + 'px'; d.style.top = y + 'px'; stage.appendChild(d);
-      var e = el('div', 'name ' + n.standing, n.name); stage.appendChild(e);
-      if (getComputedStyle(e).display === 'none') { d.remove(); return; }
-      var w = e.offsetWidth, h = e.offsetHeight, box = null;
-      for (var k = 0; k < 14 && !box; k++) {
-        var step = Math.ceil(k / 2) * (h + 3), top = (k % 2 === 0) ? y - 8 - h - step : y + 8 + step;
-        var left = Math.min(Math.max(x - w / 2, 2), W - w - 2);
-        if (top < 2 || top + h > H - 2) continue;
-        var c = { l: left - 2, t: top - 1, r: left + w + 2, b: top + h + 1 };
-        if (!placed.some(function (p) { return c.l < p.r && c.r > p.l && c.t < p.b && c.b > p.t; })) box = c;
-      }
-      if (!box) { e.remove(); return; }
-      placed.push(box);
-      e.style.left = (box.l + 2) + 'px'; e.style.top = (box.t + 1) + 'px';
-      var ly = (box.t + 1 < y) ? box.b - 1 : box.t + 1;
-      var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('x1', x / W * 100); line.setAttribute('y1', y / H * 100);
-      line.setAttribute('x2', (box.l + box.r) / 2 / W * 100); line.setAttribute('y2', ly / H * 100);
-      leads.appendChild(line);
-    });
-  }
-
-  // What the mesh says now, by gate name. Addresses in the answer are not read.
-  function bodiesNow(m) {
-    var out = {};
-    function take(b, answers) {
-      if (!b || !b.name) return;
-      var pi = b.pi_body || {};
-      out[b.name] = { answers: answers, tip: answers ? (b.tip || '') : '', up: (pi.up || []).length, down: (pi.down || []).length, hasPi: !!b.pi_body };
-    }
-    take(m.self, true);
-    (m.peers || []).forEach(function (p) { take(p, !!p.answers); });
-    return out;
-  }
-
-  function primals(up, down, known) {
-    if (!known) return '';
-    return up + ' up' + (down ? ', ' + down + ' down' : '');
-  }
-
-  function fill() {
-    if (!names) return;
-    var gates = names.nodes.filter(function (n) { return n.kind === 'gate'; });
-    var changed = [];
-    rows.textContent = '';
-    gates.forEach(function (n) {
-      var tr = el('tr');
-      tr.appendChild(el('td', 'mono', n.name));
-      tr.appendChild(el('td', '', n.zone || 'roaming'));
-      tr.appendChild(el('td', 's-' + n.standing, WORDS[n.standing] || n.standing));
-      var live = null, word = '', cls = 's-outside';
-      if (now) {
-        live = now[n.name];
-        var standing = !live ? 'outside' : (live.answers ? 'answers' : 'silent');
-        word = WORDS[standing]; cls = 's-' + standing;
-        if (standing !== n.standing) changed.push(n.name);
-      } else { word = nowFailed ? 'the mesh did not answer this page' : 'asking'; }
-      tr.appendChild(el('td', cls, word));
-      tr.appendChild(el('td', 'mono', live ? live.tip : (now ? '' : n.tip)));
-      tr.appendChild(el('td', '', live ? primals(live.up, live.down, live.hasPi) : (now ? '' : primals(n.primals_up.length, n.primals_down.length, n.primals_up.length + n.primals_down.length > 0))));
-      rows.appendChild(tr);
-    });
-    if (now) {
-      Object.keys(now).forEach(function (name) {
-        if (gates.some(function (g) { return g.name === name; })) return;
-        var b = now[name], tr = el('tr'), standing = b.answers ? 'answers' : 'silent';
-        tr.appendChild(el('td', 'mono', name)); tr.appendChild(el('td', '', ''));
-        tr.appendChild(el('td', 's-outside', 'not in the picture'));
-        tr.appendChild(el('td', 's-' + standing, WORDS[standing])); tr.appendChild(el('td', 'mono', b.tip));
-        tr.appendChild(el('td', '', primals(b.up, b.down, b.hasPi))); rows.appendChild(tr); changed.push(name);
-      });
-    }
-    if (changed.length) {
+  var H = window.gaiaHouse, stage = document.getElementById('stage'), when = document.getElementById('when');
+  var moved = document.getElementById('moved'), rows = document.getElementById('rows'), pages = null;
+  function link(primal) { var g = pages && pages[primal.toLowerCase()]; return g && g.page ? g.page : null; }
+  function fill(h) {
+    H.picture(stage, h);
+    when.textContent = 'Drawn ' + new Date(h.taken).toLocaleString(undefined, {dateStyle: 'medium', timeStyle: 'short'}) + ' (' + H.ago((Date.now() - h.taken) / 1000) + '): ' + H.drawn(h) + '. Now: ' + H.now(h) + '.';
+    H.table(rows, h, link);
+    if (h.moved.length) {
       moved.style.display = 'block';
-      moved.textContent = 'The mesh has moved since this picture was drawn: ' + changed.join(', ') + (changed.length === 1 ? ' stands' : ' stand') + ' differently now. The table is the mesh as it is; the picture is as it was.';
-    } else { moved.style.display = 'none'; }
+      moved.textContent = 'The mesh has moved since this picture was drawn: ' + h.moved.join(', ') + (h.moved.length === 1 ? ' stands' : ' stand') + ' differently now. The table is the mesh as it is; the picture is as it was.';
+    } else moved.style.display = 'none';
   }
-
-  function caption() {
-    var m = names.mesh, t = new Date(names.taken_unix * 1000);
-    var said = !m.answered ? 'no gate answered about the mesh, so every gate is unlit'
-      : m.answering + ' of ' + m.gates + ' gates answered in the mesh' + (m.silent ? ', ' + m.silent + ' silent' : '')
-        + (m.level === true ? ', level' : m.level === false ? ', not level' : '')
-        + ', ' + m.primals_up + ' primals up' + (m.primals_down ? ', ' + m.primals_down + ' down' : '');
-    when.textContent = 'Drawn ' + t.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) + ' (' + ago(Date.now() / 1000 - names.taken_unix) + '): ' + said + '.';
-    shot.alt = 'The gates of the house drawn as a world. When it was drawn, ' + said + '.';
+  function ask() {
+    H.load().then(fill).catch(function () { when.textContent = 'The names for this picture could not be read.'; });
   }
-
-  fetch('/static/mercator.json', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (j) { names = j; shot.src = '/static/mercator.png?t=' + j.taken_unix; caption(); layNames(); fill(); })
-    .catch(function () { when.textContent = 'The names for this picture could not be read; the picture stands without them.'; rows.textContent = ''; });
-
-  fetch('/api/mesh', { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function (m) { now = bodiesNow(m); fill(); })
-    .catch(function () { nowFailed = true; fill(); });
-
-  shot.addEventListener('load', layNames);
-  window.addEventListener('resize', layNames);
+  ask(); setInterval(ask, 60000);
+  // a primal a gate runs links to its own page, where the spore graph has one
+  fetch('/static/atlas-pins.json').then(function (r) { return r.json(); }).then(function (p) { pages = H.graph(p); ask(); }).catch(function () {});
 })();
 </script>
 </body>

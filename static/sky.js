@@ -10,6 +10,10 @@
    gaiaSky.moonFace(ctx, x, y, r, lit, tilt)             draws the moon as it is seen.
    gaiaSky.stars(catalogue, ms)  the place on earth every star of /static/atlas-stars.json stands straight over at that
                                time. That file is the one thing read from outside this one, and the page hands it in.
+   gaiaSky.dome(ctx, size, place, ms, catalogue)         draws the whole sky from a place as a round chart: overhead in
+                               the middle, the horizon the rim, north at the top, east on the left.
+   gaiaSky.round(ctx, w, h, place, ms, catalogue)        draws the same sky as a strip all the way round the horizon:
+                               north at both ends, east, south in the middle, west; the foot is the horizon.
    gaiaSky.stamp(ms) / .read(text) / .of(y, m, d, h, min)   dates. Before 15 October 1582 they are in the old (Julian)
                                calendar, the one the annals count in; from that day on, the calendar in use now.
    gaiaSky.easter(year)        Easter Sunday by the Alexandrian table (the old calendar's until 1582, today's after).
@@ -178,6 +182,118 @@
     return k;
   }
 
+  // ---------------------------------------------------------------- the sky drawn, from a place
+  // Both drawings show what the eye is left: the sky is as light as the sun makes it, no star by day, the brightest
+  // in twilight, all of them once the sun is twelve degrees down. Both say what they drew: how many stars, whether it
+  // is day, twilight or night, and - north of the equator - which named star stands nearest the pole of the sky.
+  function tint(bv) { return bv < 0 ? '#b9ccff' : bv < 0.3 ? '#dbe6ff' : bv < 0.62 ? '#fbf6ee' : bv < 1 ? '#ffe7bf' : bv < 1.4 ? '#ffd29a' : '#ffbc84'; }
+  function faintest(sunUp) { return sunUp > -1 ? -9 : Math.min(5, 1.5 + (-sunUp - 6) * 0.5); }
+  function light(sunUp) { return sunUp > -1 ? 'day' : sunUp > -12 ? 'twilight' : 'night'; }
+  function nearPole(cat, k) {
+    var best = null;
+    Object.keys(cat.names).forEach(function (j) { var off = 90 - k.lat[+j]; if (!best || off < best.off) best = {name: cat.names[j], off: off}; });
+    return best;
+  }
+  function blue(f, a, b) { return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * f) + ',' + Math.round(a[1] + (b[1] - a[1]) * f) + ',' + Math.round(a[2] + (b[2] - a[2]) * f) + ')'; }
+
+  // The whole sky as a round chart - the way it is seen lying on your back with your head to the north. size is the
+  // canvas's own width. The moon is drawn larger than it is.
+  function dome(g, size, at, ms, cat) {
+    var l = look(at, ms), u = size / 300, c = size / 2, Rd = 132 * u, sunUp = l.sun.up, f = Math.max(0, Math.min(1, (sunUp + 12) / 12));
+    var out = {stars: 0, pole: null, light: light(sunUp), look: l}, lim = faintest(sunUp), named = 0, q, i;
+    function spot(up, way) { var r = Rd * (90 - Math.max(0, up)) / 90; return {x: c - r * Math.sin(way * DEG), y: c - r * Math.cos(way * DEG)}; }
+    g.clearRect(0, 0, size, size);
+    g.beginPath(); g.arc(c, c, Rd, 0, 7); g.fillStyle = blue(f * f, [7, 11, 18], [52, 98, 150]); g.fill();
+    if (cat) {
+      var k = stars(cat, ms);
+      g.font = Math.round(10 * u) + "px 'Courier New',monospace"; g.textBaseline = 'middle';
+      for (i = 0; i < k.n && k.mag[i] <= lim; i++) {                   // brightest first: stop at the faintest the light leaves
+        var st = {lat: k.lat[i], lon: k.lon[i]}, up = 90 - apart(at, st);
+        if (up < 0) continue;
+        q = spot(up, bearing(at, st)); out.stars++;
+        g.globalAlpha = Math.max(0.35, Math.min(1, 1.05 - 0.15 * k.mag[i])); g.fillStyle = tint(k.bv[i]);
+        g.beginPath(); g.arc(q.x, q.y, Math.max(0.7, 2.7 - 0.42 * k.mag[i]) * u, 0, 7); g.fill();
+        if (cat.names[i] && named < 5 && up > 8) { named++; g.globalAlpha = 0.75; g.fillStyle = '#8395a7'; g.textAlign = q.x > c ? 'right' : 'left'; g.fillText(cat.names[i], q.x + (q.x > c ? -5 : 5) * u, q.y); }
+      }
+      g.globalAlpha = 1;
+      if (at.lat > 0) {                                               // the pole of the sky stands as high as the place is far north, due north
+        q = spot(at.lat, 0); g.strokeStyle = 'rgba(46,204,113,.8)'; g.lineWidth = u;
+        g.beginPath(); g.moveTo(q.x - 5 * u, q.y); g.lineTo(q.x + 5 * u, q.y); g.moveTo(q.x, q.y - 5 * u); g.lineTo(q.x, q.y + 5 * u); g.stroke();
+        out.pole = nearPole(cat, k);
+      }
+    }
+    if (sunUp > -0.9) {
+      q = spot(sunUp, l.sun.way);
+      g.beginPath(); g.arc(q.x, q.y, 14 * u, 0, 7); g.fillStyle = 'rgba(255,214,102,.25)'; g.fill();
+      g.beginPath(); g.arc(q.x, q.y, 6.5 * u, 0, 7); g.fillStyle = '#ffd666'; g.fill();
+    }
+    if (l.moon.up > -0.5) { q = spot(l.moon.up, l.moon.way); moonFace(g, q.x, q.y, 8 * u, l.lit, l.moon.tilt + 180 - l.moon.way, '#2a323d', '#eef1f5'); }
+    g.beginPath(); g.arc(c, c, Rd, 0, 7); g.strokeStyle = 'rgba(131,149,167,.6)'; g.lineWidth = u; g.stroke();
+    g.fillStyle = '#8395a7'; g.font = Math.round(11 * u) + "px 'Courier New',monospace"; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('N', c, c - Rd - 9 * u); g.fillText('S', c, c + Rd + 9 * u); g.fillText('E', c - Rd - 9 * u, c); g.fillText('W', c + Rd + 9 * u, c);
+    return out;
+  }
+
+  // The same sky as a strip all the way round: north at the left edge, then east, south in the middle, west, and
+  // north again at the right edge - what is seen turning once round on the spot, facing south at the start. The
+  // horizon is `ground` pixels above the foot of the picture and the top edge is straight overhead. w and h are in
+  // the units the context draws in. With opt.moon false the moon is left out, and where it stands is given back so
+  // the page can put its own moon there. opt.letters 'above' writes N E S W over the horizon instead of under it.
+  // opt.dark takes the daylight away: every star that is up is drawn whatever the hour, the sun among them, and what
+  // is given back still says whether it is day - a night sky is there all day, behind the light.
+  function round(g, w, h, at, ms, cat, opt) {
+    opt = opt || {};
+    var l = look(at, ms), ground = opt.ground == null ? 26 : opt.ground, floor = h - ground, sunUp = l.sun.up, f = opt.dark ? 0 : Math.max(0, Math.min(1, (sunUp + 12) / 12));
+    var out = {stars: 0, pole: null, light: light(sunUp), look: l, sun: null, moon: null, floor: floor}, lim = opt.dark ? 5 : faintest(sunUp), named = 0, q, i;
+    function spot(up, way) { return {x: ((way % 360) + 360) % 360 / 360 * w, y: floor - Math.max(0, up) / 90 * floor}; }
+    g.clearRect(0, 0, w, h);
+    var sk = g.createLinearGradient(0, 0, 0, floor);
+    sk.addColorStop(0, blue(f * f, [2, 3, 5], [38, 84, 140])); sk.addColorStop(1, blue(f * f, [11, 21, 34], [96, 146, 196]));
+    g.fillStyle = sk; g.fillRect(0, 0, w, floor);
+    if (!opt.dark && sunUp > -14 && sunUp < 4) {                      // the glow over where the sun is, at dawn and at dusk
+      q = spot(0, l.sun.way);
+      [q.x - w, q.x, q.x + w].forEach(function (x) {
+        var gl = g.createRadialGradient(x, floor, 0, x, floor, w * 0.22);
+        gl.addColorStop(0, 'rgba(255,170,96,' + (0.5 * (1 - Math.abs(sunUp + 3) / 11)).toFixed(3) + ')'); gl.addColorStop(1, 'rgba(255,170,96,0)');
+        g.fillStyle = gl; g.fillRect(0, 0, w, floor);
+      });
+    }
+    if (cat) {
+      var k = stars(cat, ms);
+      g.font = "10px 'Courier New',monospace"; g.textBaseline = 'middle';
+      for (i = 0; i < k.n && k.mag[i] <= lim; i++) {
+        var st = {lat: k.lat[i], lon: k.lon[i]}, up = 90 - apart(at, st);
+        if (up < 0) continue;
+        q = spot(up, bearing(at, st)); out.stars++;
+        g.globalAlpha = Math.max(0.35, Math.min(1, 1.05 - 0.15 * k.mag[i])); g.fillStyle = tint(k.bv[i]);
+        g.beginPath(); g.arc(q.x, q.y, Math.max(0.6, 2.4 - 0.38 * k.mag[i]), 0, 7); g.fill();
+        if (cat.names[i] && named < 7 && up > 6 && up < 80 && q.x > 30 && q.x < w - 70) { named++; g.globalAlpha = 0.7; g.fillStyle = '#8395a7'; g.textAlign = 'left'; g.fillText(cat.names[i], q.x + 6, q.y); }
+      }
+      g.globalAlpha = 1;
+      if (at.lat > 0) {
+        out.pole = nearPole(cat, k); q = spot(at.lat, 0);
+        g.strokeStyle = 'rgba(46,204,113,.8)'; g.lineWidth = 1;
+        [q.x + 6, w - 6].forEach(function (x) { g.beginPath(); g.moveTo(x - 5, q.y); g.lineTo(x + 5, q.y); g.moveTo(x, q.y - 5); g.lineTo(x, q.y + 5); g.stroke(); });
+      }
+    }
+    if (sunUp > -0.9) {
+      q = out.sun = spot(sunUp, l.sun.way);
+      g.beginPath(); g.arc(q.x, q.y, 20, 0, 7); g.fillStyle = 'rgba(255,214,102,.25)'; g.fill();
+      g.beginPath(); g.arc(q.x, q.y, 9, 0, 7); g.fillStyle = '#ffd666'; g.fill();
+    }
+    if (l.moon.up > -0.5) {
+      q = out.moon = spot(l.moon.up, l.moon.way);
+      if (opt.moon !== false) moonFace(g, q.x, q.y, 11, l.lit, l.moon.tilt, '#2a323d', '#eef1f5');
+    }
+    g.fillStyle = 'rgba(4,6,9,.92)'; g.fillRect(0, floor, w, ground);                  // the ground
+    g.strokeStyle = 'rgba(131,149,167,.45)'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, floor + 0.5); g.lineTo(w, floor + 0.5); g.stroke();
+    if (ground >= 14 || opt.letters === 'above') {
+      g.fillStyle = '#8395a7'; g.font = "10px 'Courier New',monospace"; g.textBaseline = 'middle';
+      [['N', 0, 'left'], ['E', 0.25, 'center'], ['S', 0.5, 'center'], ['W', 0.75, 'center'], ['N', 1, 'right']].forEach(function (c) { g.textAlign = c[2]; g.fillText(c[0], c[1] * w + (c[1] === 0 ? 6 : c[1] === 1 ? -6 : 0), opt.letters === 'above' ? floor - 9 : floor + Math.min(ground, 26) / 2 + 1); });
+    }
+    return out;
+  }
+
   // ---------------------------------------------------------------- dates
   function jdn(y, m, d, old) {                                        // the day number at noon of a calendar day
     var a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3;
@@ -223,7 +339,7 @@
   }
 
   sky.look = look; sky.next = next; sky.moonFace = moonFace; sky.moonName = moonName; sky.apart = apart; sky.bearing = bearing;
-  sky.stars = stars; sky.turn = turn;
+  sky.stars = stars; sky.turn = turn; sky.dome = dome; sky.round = round; sky.tint = tint;
   sky.deltaT = deltaT; sky.of = of; sky.cal = cal; sky.stamp = stamp; sky.mark = mark; sky.read = read; sky.easter = easter;
   sky.FIRST = of(-2999, 1, 1, 0, 0); sky.LAST = of(2999, 12, 31, 0, 0);     // as far as the fit for the earth's turning is given
   root.gaiaSky = sky;
