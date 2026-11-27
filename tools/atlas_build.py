@@ -25,8 +25,11 @@ Run (the inputs are checkouts that already exist on this gate):
       the same for the Detroit site (detroit.primals.eco, DETROIT_PLACES): the county seat, the halls and the courts
       its pages name, and the two far marks in Ireland. The built site lives on eastGate; a copy of its pages will do.
 
-The file also carries THE TRIANGLE (TRIANGLE below): three pins to measure from and the far marks to sight on.
-It names pins by id and adds no place of its own. The home corner is the Lansing shelf - the town, nothing finer.
+The file also carries THE TRIANGLE (TRIANGLE below): three pins to measure from, the far marks to sight on, and the
+triangle widened by three more marks. It names pins by id and adds no place of its own. The home corner is the Lansing
+shelf - the town, nothing finer.
+With --sporeprint it also carries THE SPORE GRAPH (sporePrint's own graph/entity-graph.json, every node hung on a pin)
+and it always carries the MOMENTS: times to travel to, each with the pin to stand on.
   --check asks the live site for every link once and reports the ones that do not answer.
 
 Natural Earth is public domain (naturalearthdata.com). Only the outlines are kept, thinned to what a globe needs.
@@ -138,6 +141,59 @@ SPORE_PLACES = [
      r'\bCarleton\b', []),
     ('glerl', 'NOAA Great Lakes Environmental Research Laboratory', '4840 S State Rd, Ann Arbor', 42.2225, -83.7405, 'lab',
      r'\bGLERL\b|Lake Erie|Great Lakes HAB', ['science/09-field-genomics']),
+    ('schofield', 'Schofield Barracks — 25th Infantry Division', 'the Army post on Oʻahu, Hawaii, as the backscatter page names it', 21.4959, -158.0623, 'mark',
+     r'Schofield|25th Infantry', ['outreach/backscatter']),
+    # the wide triangle: three projects, each stood by the house at a place on the ground (see SPORE_STANDS)
+    ('pictured-rocks', 'Pictured Rocks — blueFish', 'Miners Castle, Pictured Rocks National Lakeshore, on Lake Superior, Michigan', 46.4908, -86.5492, 'mark',
+     r'Pictured Rocks|blueFish', ['products/bluefish']),
+    ('yellowstone', 'Yellowstone — wetSpring', 'Lower Geyser Basin, Yellowstone National Park, Wyoming — the hot springs Thermus aquaticus was found in', 44.5387, -110.7980, 'mark',
+     r'Yellowstone|wetSpring', ['springs/wetspring', 'thesis/10-results-wetspring', 'thesis/01-introduction']),
+    ('alexandria', 'Alexandria — hotSpring and lattice QCD', 'Bibliotheca Alexandrina, by the old harbour of Alexandria, Egypt — the city Ptolemy watched the sky from', 31.2089, 29.9092, 'mark',
+     r'Alexandria|Ptolem|hotSpring|lattice QCD', ['springs/hotspring', 'products/lattice-qcd', 'thesis/08-results-hotspring', 'pseudospore/hotspring-qcd-sun']),
+]
+# A project the house stands at a place. The pages mostly name the project, not the ground, and the pin says so:
+# id -> (the project as the pages write it, the words that name the place itself)
+SPORE_STANDS = {
+    'pictured-rocks': ('blueFish', r'Pictured Rocks'),
+    'yellowstone': ('wetSpring', r'Yellowstone'),
+    'alexandria': ('hotSpring and lattice QCD', r'Alexandria|Ptolem'),
+}
+
+# THE SPORE GRAPH. sporePrint serves its own graph of what it is made of (graph/entity-graph.json: primals, springs,
+# products, concepts, and the lines between them). Every node of it is hung on a pin: the ones the house has stood at
+# a place on the ground hang there, the rest hang at the Library shelf, which is where sporePrint itself is pinned.
+# A line of the graph whose two ends hang on different pins is a line over the ground.
+GRAPH_FILE = 'graph/entity-graph.json'
+GRAPH_AT = {'bluefish': 'pictured-rocks', 'wetspring': 'yellowstone', 'hotspring': 'alexandria'}
+GRAPH_HOME = 'shelf-library'
+GRAPH_PAGES = ('primals', 'springs', 'products', 'architecture', 'methodology', 'glossary')   # where a node's own page is looked for
+
+# THE BACKSCATTER. sporePrint's backscatter page is a timeline: a span of years, what it was, and where. Each span is
+# hung on the pin its place names (first match below, tried against the place and then the heading), so the atlas's
+# clock can go to the year and its globe to the place. Nothing is added to what the page itself says; a span whose
+# place has no pin is reported and listed as not yet placed.
+BACKSCATTER_PAGE = 'outreach/backscatter'
+BACKSCATTER_AT = [
+    (r'Schofield', 'schofield'),
+    (r'Albuquerque|Sandia', 'sandia'),
+    (r'East Lansing|Michigan State|\bMSU\b', 'msu'),
+    (r'\bLansing\b', 'shelf-lansing'),
+]
+
+# MOMENTS to travel to. Each is a time and the pin to stand on. `when` is UT, written in the calendar of its day (the
+# old calendar before 15 October 1582); a `rule` is worked out by the page from its own sky (static/sky.js).
+# Nothing here is quoted from a book. The years are the ones the sources are known to give; the sky is worked out.
+MOMENTS = [
+    {'id': 'easter-588', 'at': 'skellig', 'rule': 'easter-sunrise', 'year': 588, 'name': 'Easter sunrise from the rock, AD 588',
+     'say': 'The year the house’s record of Moorhouse’s Sun Dancing gives for the first monks on the rock. The old belief of the Gaelic west is that the sun dances as it rises on Easter morning. Easter is by the Alexandrian table; in 588 the Irish still kept an older table of their own, which in some years gave another Sunday.'},
+    {'id': 'eclipse-664', 'at': 'skellig', 'when': '0664-05-01T15:56', 'name': 'The sun goes dark over Ireland, 1 May 664',
+     'say': 'The Irish annals: darkness on the first of May, at the ninth hour. Worked out here, the moon crosses the sun that afternoon.'},
+    {'id': 'easter-824', 'at': 'skellig', 'rule': 'easter-sunrise', 'year': 824, 'name': 'Easter sunrise from the rock, AD 824',
+     'say': 'The year the Irish annals give for the Viking raid on the rock.'},
+    {'id': 'easter-1222', 'at': 'skellig', 'rule': 'easter-sunrise', 'year': 1222, 'name': 'Easter sunrise from the rock, 1222',
+     'say': 'The year the house’s record of Sun Dancing gives for the last monks rowing back to the mainland.'},
+    {'id': 'ptolemy-133', 'at': 'alexandria', 'when': '0133-05-06T20:40', 'name': 'Ptolemy’s eclipse of the moon, Alexandria, 6 May 133',
+     'say': 'One of three eclipses of the moon Ptolemy records watching from Alexandria (Almagest, book IV). Worked out here, the moon stands opposite the sun that night, on the sun’s path.'},
 ]
 
 # The Detroit site (detroit.primals.eco): Detroit and Wayne County, and the far body in Ireland.
@@ -183,6 +239,12 @@ TRIANGLE = {
     'far': [
         {'pin': 'meta-dublin', 'short': 'Dublin', 'as': 'Meta in Dublin'},
         {'pin': 'skellig', 'short': 'Skellig', 'as': 'the monks’ rock — the old way of the sun'},
+    ],
+    # the triangle, widened: three more marks, far enough apart that the earth's curve shows between them
+    'wide': [
+        {'pin': 'pictured-rocks', 'short': 'Pictured Rocks', 'as': 'Pictured Rocks on Lake Superior — blueFish'},
+        {'pin': 'yellowstone', 'short': 'Yellowstone', 'as': 'Yellowstone — wetSpring'},
+        {'pin': 'alexandria', 'short': 'Alexandria', 'as': 'Egypt of the ancients, Ptolemy’s Alexandria — hotSpring and lattice QCD, to backscatter the stars'},
     ],
 }
 
@@ -387,9 +449,77 @@ def build_spore_pins(folder):
             if len(links) >= len(seen & set(own)) + 8: break
             if key in seen or pages[key]['index'] or key == 'site-index': continue
             links.append([pages[key]['title'], '%s/%s/' % (SPORE_LIVE, key), 'page']); seen.add(key)
-        pins.append({'id': pid, 'name': name, 'where': where, 'lat': lat, 'lon': lon, 'kind': kind,
-                     'say': say, 'n': len(hits), 'links': links, 'from': 'sporePrint'})
+        pin = {'id': pid, 'name': name, 'where': where, 'lat': lat, 'lon': lon, 'kind': kind,
+               'say': say, 'n': len(hits), 'links': links, 'from': 'sporePrint'}
+        if pid in SPORE_STANDS:                     # the pages name the project; how many name the ground itself is said apart
+            project, ground = SPORE_STANDS[pid]
+            rg = re.compile(ground)
+            pin['stands'] = project
+            pin['n_place'] = sum(1 for p in pages.values() if rg.search(p['title'] + '\n' + p['body']))
+        pins.append(pin)
     return pins, missing
+
+
+def build_graph(folder, pins):
+    """Hang every node of sporePrint's own graph on a pin. -> the summary for the file, or None if the graph is not there."""
+    path = os.path.join(folder, *GRAPH_FILE.split('/'))
+    if not os.path.exists(path):
+        print('   the spore graph is not in %s (%s) - the pins keep the graph they have' % (folder, GRAPH_FILE))
+        return None
+    with open(path, encoding='utf-8') as f: graph = json.load(f)
+    pages = read_built(folder)
+    by_id = {p['id']: p for p in pins}
+    for p in pins: p.pop('graph', None)
+    at = {}
+    for node in graph['nodes']:
+        pin = by_id.get(GRAPH_AT.get(node['id'], GRAPH_HOME))
+        if not pin: continue
+        rx = re.compile(r'(?<![A-Za-z])' + re.escape(node['display']) + r'(?![A-Za-z])')
+        named = sum(1 for k, p in pages.items() if not p['index'] and k != 'site-index' and rx.search(p['title'] + '\n' + p['body']))
+        own = next(('%s/%s' % (s, node['id']) for s in GRAPH_PAGES if '%s/%s' % (s, node['id']) in pages), '')
+        pin.setdefault('graph', []).append([node['display'], node['kind'], named, '%s/%s/' % (SPORE_LIVE, own) if own else ''])
+        at[node['id']] = (pin['id'], node['display'])
+    for p in pins:
+        if 'graph' in p: p['graph'].sort(key=lambda g: (-g[2], g[0].lower()))
+    lines = sorted({(at[e['source']][0], at[e['target']][0], '%s — %s — %s' % (at[e['source']][1], e['relation'], at[e['target']][1]))
+                    for e in graph['edges'] if not e.get('inverse') and e['source'] in at and e['target'] in at
+                    and at[e['source']][0] != at[e['target']][0]})
+    return {'from': '%s/%s' % (SPORE_LIVE, GRAPH_FILE), 'nodes': len(graph['nodes']), 'edges': sum(1 for e in graph['edges'] if not e.get('inverse')),
+            'hung': len(at), 'on_the_ground': sorted(k for k in at if k in GRAPH_AT), 'lines': [list(l) for l in lines]}
+
+
+def build_backscatter(folder, pins):
+    """The backscatter page's own timeline, each span hung on a pin. -> the summary for the file, or None if the page is not there."""
+    import html
+    path = os.path.join(folder, *BACKSCATTER_PAGE.split('/'), 'index.html')
+    if not os.path.exists(path):
+        print('   the backscatter page is not in %s - the file keeps the timeline it has' % folder)
+        return None
+    with open(path, encoding='utf-8', errors='replace') as f: text = f.read()
+
+    def said(part, rx):
+        m = re.search(rx, part, re.S)
+        return ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', m.group(1))).split()) if m else ''
+    have = {p['id'] for p in pins}
+    title = said(text, r'<title>(.*?)</title>').split(' | ')[0] or said(text, r'<h1[^>]*>(.*?)</h1>')
+    eras, unplaced = [], []
+    for part in re.split(r'<div class="?era"?[^>]*>', text)[1:]:
+        span, name, place = said(part, r'class="?date"?[^>]*>(.*?)</div>'), said(part, r'<h3[^>]*>(.*?)</h3>'), said(part, r'class="?place"?[^>]*>(.*?)</div>')
+        year = re.search(r'\b(1[89]\d\d|20\d\d)\b', span)
+        at = next((pin for src in (place, name) for rx, pin in BACKSCATTER_AT if re.search(rx, src)), None)
+        if not (year and name and at in have):
+            unplaced.append('%s %s (%s)' % (span, name, place)); continue
+        eras.append({'span': span, 'year': int(year.group(1)), 'name': name, 'place': place, 'at': at})
+    for u in unplaced: print('   a span of the backscatter has no pin: %s' % u)
+    return {'page': '%s/%s/' % (SPORE_LIVE, BACKSCATTER_PAGE), 'title': title, 'eras': eras, 'unplaced': unplaced}
+
+
+def moments(pins):
+    """The moments whose pin stands."""
+    have = {p['id'] for p in pins}
+    for m in MOMENTS:
+        if m['at'] not in have: print('   a moment names a pin that does not stand: %s at %s' % (m['id'], m['at']))
+    return [m for m in MOMENTS if m['at'] in have]
 
 
 def build_detroit_pins(folder):
@@ -471,8 +601,19 @@ def main():
         tri = triangle(pins['pins'])
         if tri: pins['triangle'] = tri
         else: pins.pop('triangle', None)
+        if a.sporeprint:
+            graph = build_graph(a.sporeprint, pins['pins'])
+            if graph:
+                pins['graph'] = graph
+                print('spore graph: %d nodes hung (%d on the ground: %s; the rest at %s)   %d lines over the ground' % (
+                    graph['hung'], len(graph['on_the_ground']), ' '.join(graph['on_the_ground']), GRAPH_HOME, len(graph['lines'])))
+            back = build_backscatter(a.sporeprint, pins['pins'])
+            if back:
+                pins['backscatter'] = back
+                print('backscatter: %d spans on pins (%s)   not placed: %d' % (len(back['eras']), ' '.join('%d:%s' % (e['year'], e['at']) for e in back['eras']), len(back['unplaced'])))
+        pins['moments'] = moments(pins['pins'])
         with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
-        print('all pins now: %d   %d KB   triangle: %s' % (len(pins['pins']), os.path.getsize(path) // 1024, 'yes' if tri else 'no'))
+        print('all pins now: %d   %d KB   triangle: %s   moments: %d' % (len(pins['pins']), os.path.getsize(path) // 1024, 'yes' if tri else 'no', len(pins['moments'])))
         for pid, key in missing: print('   no such page for %s: %s' % (pid, key))
         for p in new: print('   %-12s named on %3d pages, %2d links   %s' % (p['id'], p['n'], len(p['links']), p['name'][:60]))
         if a.check and check({'pins': new}): sys.exit(1)
@@ -494,6 +635,19 @@ def main():
             pins['pins'] += more
         tri = triangle(pins['pins'])
         if tri: pins['triangle'] = tri
+        graph = build_graph(a.sporeprint, pins['pins']) if a.sporeprint else None
+        back = build_backscatter(a.sporeprint, pins['pins']) if a.sporeprint else None
+        if os.path.exists(path) and not (graph and back):   # what this run did not make again stays as the file has it
+            with open(path, encoding='utf-8') as f: was = json.load(f)
+            if not graph:
+                graph = was.get('graph')
+                hung = {p['id']: p['graph'] for p in was.get('pins', []) if 'graph' in p}
+                for p in pins['pins']:
+                    if p['id'] in hung: p['graph'] = hung[p['id']]
+            back = back or was.get('backscatter')
+        if graph: pins['graph'] = graph
+        if back: pins['backscatter'] = back
+        pins['moments'] = moments(pins['pins'])
         with open(path, 'w', encoding='utf-8') as f: json.dump(pins, f, ensure_ascii=False, indent=1)
         kinds = collections.Counter(p['kind'] for p in pins['pins'])
         print('pins: %d   links: %d   %s   %d KB' % (len(pins['pins']), sum(len(p['links']) for p in pins['pins']),

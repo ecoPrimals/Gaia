@@ -16,8 +16,21 @@
   Each pin floats above its place. Pins that stand too close to tell apart are drawn as one mark with a count;
   pressing it goes closer until they come apart.
 
-  THE SKY is worked out here from the clock alone (Paul Schlyter's method; sun to a hundredth of a degree, moon to
-  about a third): the place the sun stands straight over, the place the moon stands straight over, and the night.
+  THE SKY is worked out from the clock alone, in /static/sky.js (the HUD reads the same file, so both show one sky):
+  the place the sun stands straight over, the place the moon stands straight over, and the night. It is held against an
+  independent ephemeris from 700 BC to now - how closely is said at the top of that file.
+
+  TIME is travelled like the ground is. The keys at the foot step the clock by a minute, an hour, a day, a moon, a year
+  or a century; a date can be typed; "scroll = time" (or Shift held) makes the wheel turn the clock instead of coming
+  closer. Dates before 15 October 1582 are in the old calendar, the one the annals count in. A pressed pin shows the
+  sky from that place at that time: how high the sun and the moon stand, and the moon drawn as it is seen from there.
+  MOMENTS (atlas-pins.json: moments, backscatter) are times with a pin to stand on - Easter sunrise from the monks'
+  rock, the eclipses the annals and Ptolemy record, and the years of sporePrint's own backscatter timeline.
+
+  THE CLOCK. Looking straight down on the north pole the earth is a 24-hour dial: midnight UT at the top, noon at the
+  foot. The green mark is the UTC clock; the gold hand is the sun itself, on the meridian it stands over (through the
+  year it runs up to 16 minutes ahead of the clock or behind it); the edge of the night is square to it. The silver
+  hand is the moon. Every open atlas, and the HUD, keep one clock between them: travel in one and the others follow.
 
   THE CORE. Three plumb lines - straight down from where you stand, straight down from under the sun, straight down
   from under the moon - meet in one point: the centre of the earth. The length of any one of them is the unit this
@@ -32,9 +45,18 @@
   Skellig Michael. Which pins they are is said in atlas-pins.json (triangle); every number shown is worked out here
   from where the pins stand: the sides and the long lines as the shortest way over the ground, the angle each line
   opens at the core, the way each line sets out, how high the sun stands over each mark now, and when it next
-  stands due south of each.
+  stands due south of each. THE TRIANGLE, WIDENED (triangle.wide) is three more marks - Pictured Rocks, Yellowstone,
+  Alexandria - each a project the house stands at that place. Its three angles add to more than 180 degrees: the
+  ground is round, and that sum says by how much.
 
-  The address carries the pin (#pin=dykema), a view (#go=wayne) or the triangle (#tri), so a place can be linked.
+  THE GRAPH. sporePrint serves its own graph of what it is made of. Every node of it hangs on a pin (atlas-pins.json:
+  a pin's graph, and graph.lines for the lines whose two ends hang on different pins). The backscatter is the path
+  through the pins that sporePrint's backscatter page gives, year by year.
+
+  The address carries the pin (#pin=dykema), a view (#go=wayne, #go=clock), the triangle (#tri), a moment (#m=easter-824)
+  and the time (&t=0824-04-24T05:31), so a place at a time can be linked.
+  /static/atlas.html?face is the globe alone, as a clock face, for the middle of the HUD: no keys, no panel. A pressed
+  pin is told to the page that holds the frame; the wheel turns the clock.
 -->
 <style>
 :root{--ink:#c8d6e5;--dim:#8395a7;--low:#576574;--bg:#06080b;--line:#1c242d;--green:#2ecc71;--gold:#d4af37}
@@ -55,7 +77,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 #top .gap{flex:1 1 20px;pointer-events:none}
 .framed #top h1,.framed #top .what,.framed #home{display:none}
 @media (max-width:1500px){#top .what{display:none}}
-#panel{position:fixed;right:10px;top:44px;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 96px);overflow:auto;background:rgba(8,11,15,.93);border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px}
+#panel{position:fixed;right:10px;top:44px;width:min(370px,calc(100vw - 20px));max-height:calc(100vh - 132px);overflow:auto;background:rgba(8,11,15,.93);border:1px solid var(--line);border-radius:10px;padding:10px 12px 12px}
 #panel h2{font:bold 13px 'Courier New',monospace;margin:0 0 2px;color:#f5f6fa;line-height:1.35}
 #panel .where{color:var(--dim);font-size:11px;margin:0 0 6px}
 #panel .say{margin:0 0 8px;font-size:12px}
@@ -80,18 +102,47 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 #panel .tri li .k{color:var(--dim)}
 #panel .tri li.in{border-top:0;padding:0 0 3px 12px}
 #panel .tri .idx .n{color:var(--dim)}
-#sky{position:fixed;left:10px;bottom:8px;right:10px;margin:0;color:var(--dim);font-size:11px;pointer-events:none;text-shadow:0 0 4px #000,0 0 2px #000}
+#panel .stood{color:var(--dim);font-size:11px;margin:0 0 6px}
+#panel .skybox{display:flex;gap:10px;align-items:center;margin:0 0 8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+#panel .skybox canvas{flex:0 0 56px;width:56px;height:56px}
+#panel .skybox p{margin:0;font-size:11px;color:var(--dim)}
+#panel .skybox b{color:var(--ink);font-weight:normal}
+#panel .moment{margin:0 0 10px;padding:6px 8px;border:1px solid rgba(212,175,55,.45);border-radius:8px}
+#panel .moment h3{font:bold 12px 'Courier New',monospace;color:var(--gold);margin:0 0 2px}
+#panel .moment p{margin:0;font-size:11px;color:var(--dim)}
+#panel .hung h3{font:bold 11px 'Courier New',monospace;letter-spacing:.08em;color:var(--dim);margin:8px 0 2px;text-transform:uppercase}
+#panel .hung li{display:flex;gap:8px;align-items:baseline}
+#panel .hung li .n{margin-left:auto;color:var(--low);font-size:11px;white-space:nowrap}
+#foot{position:fixed;left:10px;bottom:8px;right:10px;pointer-events:none}
+#time{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:0 0 4px;max-width:calc(100vw - 410px)}
+#time>*{pointer-events:auto}
+#time select,#time input{font:inherit;color:var(--ink);background:rgba(10,14,18,.86);border:1px solid var(--line);border-radius:99px;padding:3px 9px;max-width:100%}
+#time select:hover,#time input:hover,#time select:focus-visible,#time input:focus-visible{border-color:var(--dim);outline:none}
+#time input{width:15em}
+#time #t-moment{max-width:11em}
+#time input.no{border-color:#ff5c6c}
+#time .away{color:var(--gold);font-size:11px;text-shadow:0 0 4px #000,0 0 2px #000;pointer-events:none}
+#sky{margin:0;color:var(--dim);font-size:11px;pointer-events:none;text-shadow:0 0 4px #000,0 0 2px #000}
 #sky b{color:var(--ink);font-weight:normal}
 #sky .g{color:var(--green)}
+#sky .o{color:var(--gold)}
+/* the face: the globe alone, for the middle of the HUD */
+.face,.face body{background:transparent}
+.face #top,.face #panel,.face #foot{display:none}
+.face #globe:focus-visible{outline:none}
 @media (max-width:720px){
-  #panel{left:10px;right:10px;top:auto;bottom:62px;width:auto;max-height:42vh}
+  #panel{left:10px;right:10px;top:auto;bottom:98px;width:auto;max-height:40vh}
   #top .what{display:none}
-  #sky{bottom:4px;max-height:52px;overflow:hidden;font-size:10px;line-height:1.3;background:rgba(6,8,11,.9);border-radius:6px;padding:2px 6px;left:6px;right:6px}
+  #foot{bottom:4px;left:6px;right:6px}
+  #time{flex-wrap:nowrap;overflow-x:auto;max-width:none;scrollbar-width:none}
+  #time::-webkit-scrollbar{display:none}
+  #time>*{flex:0 0 auto}
+  #sky{max-height:52px;overflow:hidden;font-size:10px;line-height:1.3;background:rgba(6,8,11,.9);border-radius:6px;padding:2px 6px}
 }
 /* a watch face (the same line the HUD draws: narrower than 280): the globe alone in the middle. The keys and the
    sky line are put away; the panel stays away until a pin is pressed, then it rises over the lower half. */
 @media (max-width:279px){
-  #top,#sky{display:none}
+  #top,#foot{display:none}
   #panel{display:none;left:9%;right:9%;bottom:9%;top:auto;width:auto;max-height:52vh;padding:6px 8px;font-size:10px}
   .picked #panel{display:block}
   #panel h2{font-size:11px} #panel li,#panel .say{font-size:10px}
@@ -113,10 +164,28 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   <span class="gap"></span>
   <button type="button" id="k-tri" aria-pressed="false" title="the triangle: home, Michigan State and Wayne County, with the far body in Ireland — measured">triangle</button>
   <button type="button" id="k-core" aria-pressed="false" title="see through to the core: the three plumb lines, the axis, and the one unit">core</button>
+  <button type="button" id="k-clock" aria-pressed="false" title="look straight down on the north pole: the earth as a 24-hour dial, the sun its hand, the edge of the night square to it">clock</button>
+  <button type="button" id="k-graph" aria-pressed="false" title="sporePrint’s own graph, hung on the pins, and the backscatter’s path through them">graph</button>
   <button type="button" id="k-day" aria-pressed="false" title="let a day pass in a minute, to watch the night go round">a day a minute</button>
 </div>
 <aside id="panel" aria-live="polite"></aside>
-<p id="sky"></p>
+<div id="foot">
+  <div id="time" role="group" aria-label="the clock: travel in time">
+    <button type="button" id="t-now" aria-pressed="true" title="the clock as it stands now (key: n)">now</button>
+    <button type="button" id="t-back" title="one step back (key: ,)" aria-label="one step back">◀</button>
+    <select id="t-unit" title="how long one step is" aria-label="how long one step is">
+      <option value="60000">a minute</option><option value="3600000" selected>an hour</option><option value="86400000">a day</option>
+      <option value="2551442878">a moon</option><option value="31556952000">a year</option><option value="3155695200000">a century</option>
+    </select>
+    <button type="button" id="t-fwd" title="one step on (key: .)" aria-label="one step on">▶</button>
+    <input id="t-at" type="text" spellcheck="false" autocomplete="off" placeholder="go to: 824-04-24 05:30" title="a date to go to, in UT: year-month-day hour:minute. Before 15 October 1582 it is read in the old calendar. A year alone will do." aria-label="a date to go to">
+    <select id="t-moment" title="moments to travel to: a time, and a pin to stand on" aria-label="moments to travel to"><option value="">a moment…</option></select>
+    <button type="button" id="t-scroll" aria-pressed="false" title="let the wheel turn the clock instead of coming closer (holding Shift does the same)">scroll = time</button>
+    <span class="away" id="t-away"></span>
+  </div>
+  <p id="sky"></p>
+</div>
+<script src="/static/sky.js?v=1"></script>
 <script>
 (function () {
   'use strict';
@@ -139,38 +208,17 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   var W = 0, H = 0, cx = 0, cy = 0, R = 1, base = 1;
   var view = {lat: GO.world[0], lon: GO.world[1], k: GO.world[2]}, fly = null;
   var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true, tri = false, T = null;
+  var dial = false, graphOn = false, scrollTime = false, held = null, here = null;
+  var face = /[?&]face\b/.test(location.search);                    // the globe alone, as a clock face, for the middle of the HUD
+  var kClock = document.getElementById('k-clock'), kGraph = document.getElementById('k-graph'), tNow = document.getElementById('t-now'), tUnit = document.getElementById('t-unit'),
+      footEl = document.getElementById('foot'), tAt = document.getElementById('t-at'), tMoment = document.getElementById('t-moment'), tScroll = document.getElementById('t-scroll'), tAway = document.getElementById('t-away');
   if (window.top !== window) document.documentElement.classList.add('framed');
+  if (face) document.documentElement.classList.add('face');
+  GO.clock = [90, 0, 1];
 
-  // ---------------------------------------------------------------- the sky, from the clock
-  function sky(ms) {
-    var d = ms / 86400000 - 10956;                                    // days from 1999 Dec 31, 0h UT
-    function rev(x) { return x - Math.floor(x / 360) * 360; }
-    function kepler(M, e) { var E = M + e * Math.sin(M) * (1 + e * Math.cos(M)), k = 0, dE; do { dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; } while (Math.abs(dE) > 1e-9 && ++k < 30); return E; }
-    var ws = 282.9404 + 4.70935e-5 * d, es = 0.016709 - 1.151e-9 * d, Ms = rev(356.0470 + 0.9856002585 * d), ecl = (23.4393 - 3.563e-7 * d) * DEG;
-    var E = kepler(Ms * DEG, es), lonS = Math.atan2(Math.sqrt(1 - es * es) * Math.sin(E), Math.cos(E) - es) + ws * DEG;
-    var Ls = rev(Ms + ws), ut = ((ms / 3600000) % 24 + 24) % 24, gmst = rev(Ls + 180 + ut * 15);
-    function over(lon, lat) {                                         // ecliptic place in the sky -> the place on earth it stands straight over
-      var x = Math.cos(lat) * Math.cos(lon), y = Math.cos(lat) * Math.sin(lon), z = Math.sin(lat);
-      var ye = y * Math.cos(ecl) - z * Math.sin(ecl), ze = y * Math.sin(ecl) + z * Math.cos(ecl);
-      return {lat: Math.asin(ze) / DEG, lon: rev(Math.atan2(ye, x) / DEG - gmst + 180) - 180};
-    }
-    var Nm = (125.1228 - 0.0529538083 * d) * DEG, im = 5.1454 * DEG, wm = (318.0634 + 0.1643573223 * d), Mm = rev(115.3654 + 13.0649929509 * d), em = 0.0549;
-    var Em = kepler(Mm * DEG, em), xv = 60.2666 * (Math.cos(Em) - em), yv = 60.2666 * Math.sqrt(1 - em * em) * Math.sin(Em);
-    var r = Math.sqrt(xv * xv + yv * yv), u = Math.atan2(yv, xv) + wm * DEG;
-    var xh = r * (Math.cos(Nm) * Math.cos(u) - Math.sin(Nm) * Math.sin(u) * Math.cos(im)),
-        yh = r * (Math.sin(Nm) * Math.cos(u) + Math.cos(Nm) * Math.sin(u) * Math.cos(im)), zh = r * Math.sin(u) * Math.sin(im);
-    var lonM = Math.atan2(yh, xh) / DEG, latM = Math.atan2(zh, Math.sqrt(xh * xh + yh * yh)) / DEG;
-    var Lm = rev(Nm / DEG + wm + Mm), D = (Lm - Ls) * DEG, F = (Lm - Nm / DEG) * DEG, a = Mm * DEG, b = Ms * DEG;
-    lonM += -1.274 * Math.sin(a - 2 * D) + 0.658 * Math.sin(2 * D) - 0.186 * Math.sin(b) - 0.059 * Math.sin(2 * a - 2 * D)
-      - 0.057 * Math.sin(a - 2 * D + b) + 0.053 * Math.sin(a + 2 * D) + 0.046 * Math.sin(2 * D - b) + 0.041 * Math.sin(a - b)
-      - 0.035 * Math.sin(D) - 0.031 * Math.sin(a + b) - 0.015 * Math.sin(2 * F - 2 * D) + 0.011 * Math.sin(a - 4 * D);
-    latM += -0.173 * Math.sin(F - 2 * D) - 0.055 * Math.sin(a - F - 2 * D) - 0.046 * Math.sin(a + F - 2 * D) + 0.033 * Math.sin(F + 2 * D) + 0.017 * Math.sin(2 * a + F);
-    r += -0.58 * Math.cos(a - 2 * D) - 0.46 * Math.cos(2 * D);
-    var elong = rev(lonM - lonS / DEG);
-    return {sun: over(lonS, 0), moon: over(lonM * DEG, latM * DEG), far: r, elong: elong, lit: (1 - Math.cos(elong * DEG)) / 2};
-  }
+  // ---------------------------------------------------------------- the sky, from the clock: /static/sky.js
+  var sky = window.gaiaSky, moonName = sky.moonName;
   window.atlasSky = sky;                                              // so the numbers can be checked from outside
-  function moonName(e) { return ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'][Math.floor(((e + 22.5) % 360) / 45)]; }
   function apart(p, q) {                                              // degrees between two places, measured at the core
     var c = Math.sin(p.lat * DEG) * Math.sin(q.lat * DEG) + Math.cos(p.lat * DEG) * Math.cos(q.lat * DEG) * Math.cos((p.lon - q.lon) * DEG);
     return Math.acos(Math.max(-1, Math.min(1, c))) / DEG;
@@ -204,18 +252,24 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   function setTriangle() {                                            // the triangle names pins; it stands only if every one of them does
     var t = meta.triangle; T = null; if (!t) return;
     function find(m) { var p = pins.filter(function (q) { return q.id === m.pin; })[0]; return p ? {p: p, short: m.short, as: m.as} : null; }
-    var c = t.corners.map(find), f = t.far.map(find);
+    var c = t.corners.map(find), f = t.far.map(find), w = (t.wide || []).map(find);
     if (c.length !== 3 || c.concat(f).some(function (m) { return !m; })) return;
-    T = {corners: c, far: f, all: c.concat(f), mid: middle(c.map(function (m) { return m.p; }))};
+    if (w.length !== 3 || w.some(function (m) { return !m; })) w = [];        // the triangle stands without its widening
+    T = {corners: c, far: f, all: c.concat(f), wide: w, every: c.concat(f, w), mid: middle(c.map(function (m) { return m.p; }))};
+  }
+  function three(c) {                                                 // the sides and the corner angles of three marks
+    var out = {sides: [], angles: [], sum: 0};
+    for (var i = 0; i < 3; i++) {
+      var a = c[i], b = c[(i + 1) % 3], o = c[(i + 2) % 3], w = Math.abs(bearing(a.p, b.p) - bearing(a.p, o.p));
+      if (w > 180) w = 360 - w;
+      out.sides.push({a: a.short, b: b.short, deg: apart(a.p, b.p)}); out.angles.push({at: a.short, deg: w}); out.sum += w;
+    }
+    return out;
   }
   function measure() {                                                // every number of the triangle, from where the pins stand
     if (!T) return null;
-    var c = T.corners, home = c[0].p, out = {sides: [], angles: [], far: [], mid: T.mid};
-    for (var i = 0; i < 3; i++) {
-      var a = c[i], b = c[(i + 1) % 3], o = c[(i + 2) % 3], w = Math.abs(bearing(a.p, b.p) - bearing(a.p, o.p));
-      out.sides.push({a: a.short, b: b.short, deg: apart(a.p, b.p)});
-      out.angles.push({at: a.short, deg: w > 180 ? 360 - w : w});
-    }
+    var c = T.corners, home = c[0].p, near = three(c), out = {sides: near.sides, angles: near.angles, far: [], mid: T.mid};
+    if (T.wide.length) out.wide = three(T.wide);
     T.far.forEach(function (f) {
       var lon = f.p.lon - home.lon; lon -= Math.round(lon / 360) * 360;
       out.far.push({name: f.short, deg: apart(T.mid, f.p), bearing: bearing(T.mid, f.p), back: bearing(f.p, T.mid), noonAhead: lon * 4});
@@ -226,6 +280,44 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   }
   function place(p) { return Math.abs(p.lat).toFixed(1) + '°' + (p.lat < 0 ? 'S' : 'N') + ' ' + Math.abs(p.lon).toFixed(1) + '°' + (p.lon < 0 ? 'W' : 'E'); }
   function now() { return Date.now() + ahead; }
+  function pinOf(id) { return pins.filter(function (q) { return q.id === id; })[0] || null; }
+
+  // ---------------------------------------------------------------- the clock: travelling in time
+  // `ahead` is how far the page's clock stands from the real one. Every open atlas, and the HUD, share it over one
+  // channel on this device: travel in one and the others follow. Nothing of it leaves the device.
+  var chan = null, me = Math.random().toString(36).slice(2), tellWait = 0, sayWait = 0;
+  function tell() { tellWait = 0; if (chan && !fast) try { chan.postMessage({from: me, ahead: ahead}); } catch (e) {} }
+  function setAhead(a, heard) {
+    var t = Date.now();
+    ahead = Math.max(sky.FIRST - t, Math.min(sky.LAST - t, a)); if (Math.abs(ahead) < 1000) ahead = 0;
+    dirty = true; tNow.setAttribute('aria-pressed', ahead ? 'false' : 'true');
+    if (document.activeElement !== tAt) { tAt.value = ahead ? sky.mark(now()).replace('T', ' ') : ''; tAt.classList.remove('no'); }
+    if (!heard && !tellWait) tellWait = setTimeout(tell, 80);
+    clearTimeout(sayWait); sayWait = setTimeout(say, 350);
+  }
+  function stepTime(n) { if (fast) setFast(false, true); here = null; setAhead(ahead + n * (+tUnit.value)); }
+  function away() {                                                   // how far the page's clock stands from the real one, in words
+    var d = Math.abs(ahead) / 86400000, n, w;
+    if (!ahead) return '';
+    if (d >= 365.2425) { n = d / 365.2425; w = 'year'; } else if (d >= 1) { n = d; w = 'day'; } else if (d * 24 >= 1) { n = d * 24; w = 'hour'; } else { n = d * 1440; w = 'minute'; }
+    n = n >= 100 ? Math.round(n) : Math.round(n * 10) / 10;
+    return n.toLocaleString() + ' ' + w + (n === 1 ? '' : 's') + (ahead < 0 ? ' back' : ' on');
+  }
+  function whenOf(m) {                                                // the time of a moment, worked out from this page's own sky
+    var p = pinOf(m.at);
+    if (m.rule === 'easter-sunrise') return p ? sky.next(p, sky.easter(m.year), 'sun', 'rise') : null;
+    if (m.year != null && !m.when) return sky.of(m.year, 6, 21, 12, 0);          // a year alone: midsummer noon of it
+    return sky.read(m.when);
+  }
+  function moments() { return (meta.moments || []).concat(((meta.backscatter || {}).eras || []).map(function (e, i) { return {id: 'back-' + i, at: e.at, year: e.year, name: e.span + ' · ' + e.name, say: e.place, era: e}; })); }
+  function moment(id) {                                               // go to a moment: its time, and its pin to stand on
+    var m = moments().filter(function (q) { return q.id === id; })[0], p = m && pinOf(m.at), ms = m && whenOf(m);
+    if (!m || !p || ms == null) return false;
+    if (fast) setFast(false, true);
+    here = m; setAhead(ms - Date.now()); choose([p]);
+    if (!face) goTo(p.lat, p.lon, m.era ? 3 : 1.5);
+    return true;
+  }
 
   // ---------------------------------------------------------------- the globe
   var s0 = 0, c0 = 1;
@@ -246,6 +338,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     cx = wide ? (W - 380) / 2 : W / 2; cy = wide ? H / 2 + 8 : (H - H * 0.44) / 2 + 34;
     if (document.documentElement.classList.contains('framed') && !wide) cy = H * 0.3 + 20;
     if (W < 280) { base = Math.min(W, H) * 0.42; cx = W / 2; cy = H / 2; }     // a watch face: the globe alone, in the middle
+    if (face) { base = Math.max(40, Math.min(W, H) / 2 - 44); cx = W / 2; cy = H / 2; }   // the HUD's face: 44 px left round the rim for the hours, so the globe covers the HUD's black spot exactly
     panel.style.top = wide ? Math.max(44, topEl.offsetHeight + 16) + 'px' : '';  // the panel begins under the keys, however many rows they take
     dirty = true;
   }
@@ -339,29 +432,36 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     ctx.stroke(); ctx.restore();
   }
   function drawTriangle(names) {                                    // the lines lie under the pins; the rings and the names go over them
+    var tiny = face && R < 100, label = tiny ? function () {} : word, rs = tiny ? 0.6 : 1;   // on a very small face: smaller rings, and no names (pointing at a mark says it)
     var c = T.corners, at = T.all.map(function (m) { return proj(m.p.lat, m.p.lon); }), i, wide = 0, m;
     if (!names) {
       T.far.forEach(function (f) { line(along(T.mid, f.p, 48), 'rgba(212,175,55,.85)', 1.2, [7, 5]); });
       if (T.far.length === 2) line(along(T.far[0].p, T.far[1].p, 12), 'rgba(212,175,55,.85)', 1.2, [2, 4]);
+      for (i = 0; i < T.wide.length; i++) line(along(T.wide[i].p, T.wide[(i + 1) % 3].p, 64), 'rgba(212,175,55,.9)', 1.4, [12, 4]);
       for (i = 0; i < 3; i++) line(along(c[i].p, c[(i + 1) % 3].p, 8), GOLD, 1.8);
       return;
     }
+    T.wide.forEach(function (w) {                                    // the widened corners: a ring each; their names are the pins' own, written only where the pins' names are not
+      var q = proj(w.p.lat, w.p.lon); if (q.z < 0) return;
+      ctx.save(); ctx.strokeStyle = GOLD; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(q.x, q.y, 8 * rs, 0, 7); ctx.stroke(); ctx.restore();
+      if (face) label(w.short, q.x, q.y + 17, GOLD, 'center', 9);
+    });
     for (i = 0; i < 3; i++) wide = Math.max(wide, Math.hypot(at[i].x - at[(i + 1) % 3].x, at[i].y - at[(i + 1) % 3].y));
     ctx.save(); ctx.strokeStyle = GOLD; ctx.lineWidth = 1.4;
-    function ring(q, r) { ctx.beginPath(); ctx.arc(q.x, q.y, r, 0, 7); ctx.stroke(); }
+    function ring(q, r) { ctx.beginPath(); ctx.arc(q.x, q.y, r * rs, 0, 7); ctx.stroke(); }
     if (wide < 70) {                                                  // from far off the three corners are one mark
-      m = proj(T.mid.lat, T.mid.lon); if (m.z > 0) { ring(m, 10); word('the triangle', m.x, m.y + 21, GOLD, 'center', 10); }
+      m = proj(T.mid.lat, T.mid.lon); if (m.z > 0) { ring(m, 10); label('the triangle', m.x, m.y + 21, GOLD, 'center', 10); }
     } else {
       var close = Math.hypot(at[0].x - at[1].x, at[0].y - at[1].y) < 90, left = at[0].x <= at[1].x;
       for (i = 0; i < 3; i++) {
         if (at[i].z < 0) continue; ring(at[i], 8);
-        if (i < 2 && close) word(c[i].short, at[i].x + ((i === 0) === left ? -13 : 13), at[i].y + 9, GOLD, (i === 0) === left ? 'right' : 'left', 10);
-        else word(c[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10);
+        if (i < 2 && close) label(c[i].short, at[i].x + ((i === 0) === left ? -13 : 13), at[i].y + 9, GOLD, (i === 0) === left ? 'right' : 'left', 10);
+        else label(c[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10);
       }
     }
     if (T.far.length === 2 && Math.hypot(at[3].x - at[4].x, at[3].y - at[4].y) < 70) {      // and so are the two far marks
-      var fm = middle([T.far[0].p, T.far[1].p]); m = proj(fm.lat, fm.lon); if (m.z > 0) { ring(m, 10); word('the far body', m.x, m.y + 21, GOLD, 'center', 10); }
-    } else for (i = 3; i < at.length; i++) if (at[i].z > 0) { ring(at[i], 8); word(T.all[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10); }
+      var fm = middle([T.far[0].p, T.far[1].p]); m = proj(fm.lat, fm.lon); if (m.z > 0) { ring(m, 10); label('the far body', m.x, m.y + 21, GOLD, 'center', 10); }
+    } else for (i = 3; i < at.length; i++) if (at[i].z > 0) { ring(at[i], 8); label(T.all[i].short, at[i].x, at[i].y + 18, GOLD, 'center', 10); }
     ctx.restore();
   }
   function body(p, what, s) {                                        // the sun or the moon, at the place it stands over
@@ -371,18 +471,53 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 1.2; ctx.beginPath();
       for (var i = 0; i < 8; i++) { var t = i * Math.PI / 4; ctx.moveTo(q.x + 9 * Math.cos(t), q.y + 9 * Math.sin(t)); ctx.lineTo(q.x + 13 * Math.cos(t), q.y + 13 * Math.sin(t)); }
       ctx.stroke(); ctx.beginPath(); ctx.arc(q.x, q.y, 6, 0, 7); ctx.fillStyle = '#ffd93d'; ctx.fill();
-      word('sun overhead', q.x + 17, q.y, '#ffd93d', 'left', 10);
+      if (!face) word('sun overhead', q.x + 17, q.y, '#ffd93d', 'left', 10);
     } else {
       ctx.beginPath(); ctx.arc(q.x, q.y, 6, 0, 7); ctx.fillStyle = 'rgba(200,214,229,' + (0.25 + 0.75 * s.lit).toFixed(2) + ')'; ctx.fill();
       ctx.strokeStyle = '#c8d6e5'; ctx.lineWidth = 1; ctx.stroke();
-      word('moon overhead', q.x + 12, q.y, '#c8d6e5', 'left', 10);
+      if (!face) word('moon overhead', q.x + 12, q.y, '#c8d6e5', 'left', 10);
     }
     ctx.restore();
   }
+  // the earth as a 24-hour dial, seen straight down on the north pole: midnight UT at the top, noon at the foot. The
+  // sun stands over longitude 180 at midnight and goes 15 degrees west an hour, so each hour has its meridian.
+  function drawDial(s) {
+    var small = R < 170, ms = now(), h, d, a, b, hour = (ms % 86400000 + 86400000) % 86400000 / 3600000;
+    function dir(lon) { var q = proj(0, lon), dx = q.x - cx, dy = q.y - cy, n = Math.hypot(dx, dy) || 1; return [dx / n, dy / n]; }
+    ctx.save(); ctx.lineCap = 'round';
+    for (h = 0; h < 24; h++) {
+      d = dir(180 - 15 * h); a = R + 4; b = R + (h % 6 === 0 ? 12 : h % 3 === 0 ? 10 : 7);
+      ctx.beginPath(); ctx.moveTo(cx + d[0] * a, cy + d[1] * a); ctx.lineTo(cx + d[0] * b, cy + d[1] * b);
+      ctx.strokeStyle = h % 3 === 0 ? 'rgba(200,214,229,.85)' : 'rgba(131,149,167,.6)'; ctx.lineWidth = h % 6 === 0 ? 1.6 : 1; ctx.stroke();
+      if (h % 3 === 0 || !small) word(String(h), cx + d[0] * (R + (small ? 20 : 23)), cy + d[1] * (R + (small ? 20 : 23)), h % 3 === 0 ? '#c8d6e5' : '#576574', 'center', small ? 9 : h % 3 === 0 ? 11 : 9);
+    }
+    d = dir(s.moon.lon); a = dir(s.sun.lon);                          // the silver hand: the meridian the moon stands over; its lit edge is turned to the sun's hand
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + d[0] * (R + 2), cy + d[1] * (R + 2)); ctx.strokeStyle = 'rgba(200,214,229,.7)'; ctx.lineWidth = 1.1; ctx.stroke();
+    sky.moonFace(ctx, cx + d[0] * (R + (small ? 33 : 40)), cy + d[1] * (R + (small ? 33 : 40)), small ? 5.5 : 7, s.lit, Math.atan2(a[0] - d[0], d[1] - a[1]) / DEG);
+    d = a;                                                            // the gold hand: the meridian the sun stands over
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + d[0] * (R + 13), cy + d[1] * (R + 13)); ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 1.8; ctx.stroke();
+    a = R + (small ? 33 : 40); ctx.beginPath(); ctx.arc(cx + d[0] * a, cy + d[1] * a, small ? 4.5 : 6, 0, 7); ctx.fillStyle = '#ffd93d'; ctx.fill();
+    ctx.strokeStyle = '#ffd93d'; ctx.lineWidth = 1.1; ctx.beginPath();
+    for (h = 0; h < 8; h++) { b = h * Math.PI / 4; ctx.moveTo(cx + d[0] * a + (small ? 6.5 : 9) * Math.cos(b), cy + d[1] * a + (small ? 6.5 : 9) * Math.sin(b)); ctx.lineTo(cx + d[0] * a + (small ? 9 : 12.5) * Math.cos(b), cy + d[1] * a + (small ? 9 : 12.5) * Math.sin(b)); }
+    ctx.stroke();
+    d = dir(180 - 15 * hour);                                         // the green mark: the UTC clock itself
+    ctx.beginPath(); ctx.moveTo(cx + d[0] * (R + 1), cy + d[1] * (R + 1)); ctx.lineTo(cx + d[0] * (R + 13), cy + d[1] * (R + 13)); ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2.6; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, 7); ctx.fillStyle = '#ffd93d'; ctx.fill();
+    ctx.restore();
+  }
+  function sunAhead(s, ms) {                                          // minutes the sun itself runs ahead of the UTC clock (behind, if less than nothing)
+    var hour = (ms % 86400000 + 86400000) % 86400000 / 3600000, d = (180 - 15 * hour) - s.sun.lon;
+    return (d - Math.round(d / 360) * 360) * 4;
+  }
+  function drawGraph() {                                              // the spore graph's lines over the ground, and the backscatter's path
+    ((meta.graph || {}).lines || []).forEach(function (l) { var a = pinOf(l[0]), b = pinOf(l[1]); if (a && b) line(along(a, b, 48), 'rgba(127,219,218,.8)', 1.2, [3, 4]); });
+    var last = null;
+    ((meta.backscatter || {}).eras || []).forEach(function (e) { var p = pinOf(e.at); if (p && last && last !== p) line(along(last, p, 48), 'rgba(247,143,179,.8)', 1.2, [1, 4]); if (p) last = p; });
+  }
   function scale() {
-    if (W < 280) return;                                             // no room for a ruler on a watch face
+    if (W < 280 || face) return;                                     // no room for a ruler on a watch face
     var kmPerPx = KM / R, want = 110 * kmPerPx, pow = Math.pow(10, Math.floor(Math.log(want) / Math.LN10)), nice = [1, 2, 5, 10].filter(function (m) { return m * pow <= want; }).pop() * pow;
-    var w = nice / kmPerPx, x = cx - R > 30 ? cx - Math.min(R, cx - 14) : 14, y = H - 34;
+    var w = nice / kmPerPx, x = cx - R > 30 ? cx - Math.min(R, cx - 14) : 14, y = H - Math.max(34, footEl.offsetHeight + 22);   // above the clock's keys and the sky line
     if (W <= 720) y = Math.min(H * 0.56 - 16, cy + R + 18);
     ctx.strokeStyle = 'rgba(131,149,167,.8)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y - 4); ctx.stroke();
     word(nice >= 1 ? nice.toLocaleString() + ' km' : Math.round(nice * 1000) + ' m', x + w + 6, y - 2, '#8395a7', 'left', 10);
@@ -391,23 +526,24 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     marks = [];
     pins.slice().sort(function (a, b) { return (b.kind === 'place' || b.kind === 'library' ? 1e6 : 0) + b.n - (a.kind === 'place' || a.kind === 'library' ? 1e6 : 0) - a.n; }).forEach(function (p) {
       var q = proj(p.lat, p.lon); if (q.z < 0.02) return;
-      for (var i = 0; i < marks.length; i++) if (Math.abs(marks[i].x - q.x) < 22 && Math.abs(marks[i].y - q.y) < 22) { marks[i].pins.push(p); return; }
+      for (var i = 0; i < marks.length; i++) if (Math.abs(marks[i].x - q.x) < (face ? 11 : 22) && Math.abs(marks[i].y - q.y) < (face ? 11 : 22)) { marks[i].pins.push(p); return; }
       marks.push({x: q.x, y: q.y, pins: [p]});
     });
   }
   function drawPins() {
-    var taken = [], lift = 17;
+    var taken = [], lift = face ? 9 : 17;
     marks.forEach(function (m) {
       var p = m.pins[0], colour = KIND[p.kind] || '#c8d6e5', on = m.pins.some(function (q) { return chosen.indexOf(q) >= 0; }), many = m.pins.length > 1;
-      var r = many ? 8 : p.kind === 'library' || p.kind === 'place' ? 6.5 : 5;
+      var r = face ? (many ? 4.5 : 3) : many ? 8 : p.kind === 'library' || p.kind === 'place' ? 6.5 : 5;
       ctx.strokeStyle = colour; ctx.lineWidth = 1; ctx.globalAlpha = 0.8;
       ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x, m.y - lift + r); ctx.stroke();
       ctx.beginPath(); ctx.arc(m.x, m.y, 1.6, 0, 7); ctx.fillStyle = colour; ctx.fill(); ctx.globalAlpha = 1;
       ctx.beginPath(); ctx.arc(m.x, m.y - lift, r, 0, 7); ctx.fillStyle = many ? '#06080b' : colour; ctx.fill(); ctx.lineWidth = many ? 1.8 : 1; ctx.stroke();
       if (on) { ctx.beginPath(); ctx.arc(m.x, m.y - lift, r + 4, 0, 7); ctx.strokeStyle = '#f5f6fa'; ctx.lineWidth = 1.4; ctx.stroke(); }
-      if (many) { ctx.font = "bold 10px 'Courier New',monospace"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = colour; ctx.fillText(String(m.pins.length), m.x, m.y - lift + 0.5); }
+      if (many && !face) { ctx.font = "bold 10px 'Courier New',monospace"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = colour; ctx.fillText(String(m.pins.length), m.x, m.y - lift + 0.5); }
       m.hx = m.x; m.hy = m.y - lift; m.r = r;
     });
+    if (face) return;                                                // on the HUD's face the pins stand without their names; pointing at one says it
     marks.slice().sort(function (a, b) { return picked(b) - picked(a); }).forEach(function (m) {
       var p = m.pins.filter(function (q) { return chosen.indexOf(q) >= 0; })[0] || m.pins[0], text = short(p.name) + (m.pins.length > 1 ? '  +' + (m.pins.length - 1) : '');
       ctx.font = "11px 'Courier New',monospace"; var w = ctx.measureText(text).width;
@@ -444,20 +580,45 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     ctx.restore();
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.strokeStyle = 'rgba(90,173,114,.55)'; ctx.lineWidth = 1.2; ctx.stroke();
     var anchor = you || chosen[0] || pins.filter(function (p) { return p.id === 'shelf-lansing'; })[0] || {lat: 42.7336, lon: -84.5555};
+    if (dial && !fly && view.lat < 84) setDial(false, true);          // turned away from the pole: it is a globe again, not a dial
     if (core) drawCore(s, anchor);
+    if (dial) drawDial(s);
     body(s.sun, 'sun', s); body(s.moon, 'moon', s);
+    if (graphOn) drawGraph();
     if (tri && T) drawTriangle(false);
     gather(); drawPins();
     if (tri && T) drawTriangle(true);
     if (you) { var q = proj(you.lat, you.lon); if (q.z > 0 || core) { ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, 7); ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.stroke(); word('you', q.x + 9, q.y, '#2ecc71', 'left', 11); } }
-    scale();
-    var t = new Date(now()), parts = ['<b>' + t.toISOString().slice(0, 16).replace('T', ' ') + ' UT</b>' + (fast ? ' (running fast)' : ''),
+    scale(); paintSky(s);
+    if (face) return;
+    var parts = ['<b>' + sky.stamp(now()) + '</b>' + (fast ? ' (running fast)' : ''),
       'sun overhead at <b>' + place(s.sun) + '</b>', 'moon overhead at <b>' + place(s.moon) + '</b>, ' + moonName(s.elong) + ' ' + Math.round(s.lit * 100) + '%, ' + s.far.toFixed(1) + ' radii off'];
     if (you) parts.push('<span class="g">you</span>: sun ' + Math.round(90 - apart(you, s.sun)) + '° ' + (apart(you, s.sun) < 90 ? 'up' : 'down') + ', moon ' + Math.round(90 - apart(you, s.moon)) + '°');
     if (core) parts.push('at the core: ' + (you ? 'you' : short(anchor.name || 'the anchor')) + '–sun ' + Math.round(apart(anchor, s.sun)) + '°, –moon ' + Math.round(apart(anchor, s.moon)) + '°, sun–moon ' + Math.round(apart(s.sun, s.moon)) + '° · <span class="g">1.00</span> = ' + KM.toLocaleString() + ' km');
-    if (tri && T) parts.push('<span style="color:' + GOLD + '">sun</span> ' + T.all.map(function (m) { var h = Math.round(90 - apart(m.p, s.sun)); return m.short + ' ' + Math.abs(h) + '° ' + (h >= 0 ? 'up' : 'down'); }).join(', '));
+    if (dial) { var ea = sunAhead(s, now()); parts.push('the dial: midnight UT at the top, noon at the foot · <span class="g">green</span> the UTC clock · <span class="o">gold</span> the sun itself, ' + (Math.abs(ea) < 0.5 ? 'on the clock' : Math.round(Math.abs(ea)) + ' min ' + (ea > 0 ? 'ahead of' : 'behind') + ' the clock') + ' · silver the moon'); }
+    if (tri && T) parts.push('<span style="color:' + GOLD + '">sun</span> ' + T.every.map(function (m) { var h = Math.round(90 - apart(m.p, s.sun)); return m.short + ' ' + Math.abs(h) + '° ' + (h >= 0 ? 'up' : 'down'); }).join(', '));
     skyEl.innerHTML = parts.join(' · ');
+    tAway.textContent = fast ? '' : away();
   }
+  // the sky from the pressed pin (or from where you stand), at the page's time: drawn into the panel's small box
+  function paintSky(s) {
+    if (!held || !held.canvas.isConnected) return;
+    var l = sky.look(held.place, now(), s), g = held.canvas.getContext('2d'), t = now();
+    g.clearRect(0, 0, 112, 112); sky.moonFace(g, 56, 56, 50, l.lit, l.moon.tilt);
+    function high(b) { var h = Math.round(b.up); return Math.abs(b.up) < 0.9 ? '<b>on the horizon</b>, to the ' + wind(b.way) : h > 0 ? '<b>' + h + '° up</b>, to the ' + wind(b.way) : Math.abs(h) + '° under the horizon'; }
+    function nextTurn(body) {
+      var up = l[body].up > (body === 'sun' ? -0.833 : 0.125), n = sky.next(held.place, t, body, up ? 'set' : 'rise');
+      return n == null ? (up ? 'does not set' : 'does not rise') + ' in the next two days' : (up ? 'sets ' : 'rises ') + clock(n) + ' UT';
+    }
+    held.text.innerHTML = 'the sky from here · moon ' + high(l.moon) + ' · ' + moonName(l.elong) + ', <b>' + Math.round(l.lit * 100) + '%</b> lit, drawn as it stands' + (l.moon.up < 0 ? ' (it is down)' : '') + ' · ' + nextTurn('moon') +
+      '<br>sun ' + high(l.sun) + ' · ' + nextTurn('sun');
+  }
+  function setDial(on, stay) {
+    dial = !!on; kClock.setAttribute('aria-pressed', dial ? 'true' : 'false'); dirty = true;
+    if (dial && !stay) goTo(GO.clock[0], GO.clock[1], GO.clock[2]);
+    if (!stay) say();
+  }
+  function setFast(on, keep) { fast = !!on; if (!fast && !keep) setAhead(0); kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; }
 
   // ---------------------------------------------------------------- moving
   function goTo(lat, lon, k) {
@@ -497,18 +658,36 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     if (e.type === 'pointerup' && moved < 6) press(e.clientX, e.clientY);
   }
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-  cv.addEventListener('wheel', function (e) { e.preventDefault(); zoom(Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0016))); }, {passive: false});
+  cv.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var dy = e.deltaY || e.deltaX;                                   // with Shift held some browsers hand the wheel over as sideways
+    if (face) { here = null; setAhead(ahead + dy * (e.deltaMode ? 0.33 : 0.01) * (e.shiftKey ? 86400000 : 3600000)); }      // on the HUD's face the wheel is the clock: an hour a notch, a day with Shift
+    else if (scrollTime || e.shiftKey) stepTime(dy * (e.deltaMode ? 0.33 : 0.01));
+    else zoom(Math.exp(-dy * (e.deltaMode ? 0.05 : 0.0016)));
+  }, {passive: false});
+  cv.addEventListener('dblclick', function () { if (face) { here = null; setAhead(0); setDial(true); } });
   cv.addEventListener('keydown', function (e) {
     var s = 40;
     if (e.key === 'ArrowLeft') turn(s, 0); else if (e.key === 'ArrowRight') turn(-s, 0); else if (e.key === 'ArrowUp') turn(0, s); else if (e.key === 'ArrowDown') turn(0, -s);
-    else if (e.key === '+' || e.key === '=') zoom(1.4); else if (e.key === '-' || e.key === '_') zoom(1 / 1.4); else if (e.key === 'Escape') choose([]); else return;
+    else if (e.key === '+' || e.key === '=') zoom(1.4); else if (e.key === '-' || e.key === '_') zoom(1 / 1.4); else if (e.key === 'Escape') choose([]);
+    else if (e.key === ',' || e.key === '<') stepTime(-1); else if (e.key === '.' || e.key === '>') stepTime(1); else if (e.key === 'n' || e.key === 'N') { here = null; setFast(false, true); setAhead(0); }
+    else return;
     e.preventDefault();
   });
   function markAt(x, y) { var best = null, bd = 16; marks.forEach(function (m) { var d = Math.min(Math.hypot(m.hx - x, m.hy - y), Math.hypot(m.x - x, m.y - y) + 4); if (d < bd) { bd = d; best = m; } }); return best; }
-  function hover(e) { if (!pointing) cv.style.cursor = markAt(e.clientX, e.clientY) ? 'pointer' : ''; }
+  function hover(e) {
+    if (pointing) return;
+    var m = markAt(e.clientX, e.clientY); cv.style.cursor = m ? 'pointer' : '';
+    if (face) cv.title = m ? m.pins.slice(0, 4).map(function (p) { return short(p.name); }).join(' · ') + (m.pins.length > 4 ? ' · +' + (m.pins.length - 4) : '') : '';
+  }
   function press(x, y) {
     if (pointing) { var p = unproj(x, y); if (p) { you = p; pointing = false; cv.classList.remove('point'); fill(); dirty = true; } return; }
     var m = markAt(x, y); if (!m) return;
+    if (face) {                                                      // the face has no panel: the page that holds it is told, and opens the atlas at the pin
+      if (window.parent !== window) window.parent.postMessage({gaiaAtlas: 'pin', id: m.pins[0].id, ids: m.pins.map(function (p) { return p.id; })}, location.origin);
+      else location.href = location.pathname + '#pin=' + m.pins[0].id;
+      return;
+    }
     choose(m.pins);
     if (m.pins.length > 1) {                                         // go closer until they come apart
       var far = 0, la = 0, lo = 0;
@@ -519,10 +698,20 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
 
   // ---------------------------------------------------------------- the panel
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-  function choose(list) {
-    chosen = list.slice(); fill(); dirty = true;
-    var want = chosen.length === 1 ? '#pin=' + chosen[0].id : tri && T ? '#tri' : '';
+  function address() {                                                // what the address carries: the moment or the pin, else the view; and the time, if it is not now
+    var a = here ? 'm=' + here.id : chosen.length === 1 ? 'pin=' + chosen[0].id : tri && T ? 'tri' : dial ? 'go=clock' : '';
+    if (ahead && !fast && !here) a += (a ? '&' : '') + 't=' + sky.mark(now());
+    return a ? '#' + a : '';
+  }
+  function say() {
+    if (face) return;
+    var want = address();
     if (location.hash !== want) try { history.replaceState(null, '', location.pathname + location.search + want); } catch (e) {}
+  }
+  function choose(list) {
+    chosen = list.slice();
+    if (here && !(chosen.length === 1 && chosen[0].id === here.at)) here = null;       // a moment holds only while its pin is the one stood on
+    fill(); dirty = true; say();
   }
   function fill() {
     panel.textContent = '';
@@ -542,7 +731,10 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       row.appendChild(b1); row.appendChild(b2);
       if (you) { var b3 = el('button', null, 'forget'); b3.type = 'button'; b3.addEventListener('click', function () { you = null; fill(); dirty = true; }); row.appendChild(b3); }
       panel.appendChild(row);
+      held = null;
+      if (you) panel.appendChild(skyBox(you));
       if (tri && T) { fillTriangle(); return; }
+      if (graphOn) { fillGraph(); return; }
       var idx = el('div', 'idx');
       pins.slice().sort(function (a, b) { return b.n - a.n; }).forEach(function (p) {
         var b = el('button'), d = el('span', 'dot'); b.type = 'button'; d.style.background = KIND[p.kind] || '#c8d6e5';
@@ -556,11 +748,19 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     }
     var back = el('button', null, '← all places'); back.type = 'button'; back.addEventListener('click', function () { choose([]); });
     var row2 = el('div', 'row'); row2.appendChild(back); panel.appendChild(row2);
-    chosen.forEach(function (p) {
+    held = null;
+    if (here) {                                                       // the moment travelled to: what it is, and where it is taken from
+      var mo = el('div', 'moment'); mo.appendChild(el('h3', null, here.name)); mo.appendChild(el('p', null, here.say));
+      if (here.era && meta.backscatter) { var src = el('p'), sa = el('a', null, 'from the backscatter — ' + meta.backscatter.title); sa.href = meta.backscatter.page; sa.target = '_blank'; sa.rel = 'noopener'; src.appendChild(sa); src.appendChild(document.createTextNode(' · the page gives years, not days: this is midsummer noon of ' + here.year)); mo.appendChild(src); }
+      panel.appendChild(mo);
+    }
+    chosen.forEach(function (p, i) {
       var box = el('div', 'pin'), h = el('h2', null, p.name); h.style.color = KIND[p.kind] || '#f5f6fa';
       box.appendChild(h); box.appendChild(el('p', 'where', (KIND_SAY[p.kind] || p.kind) + ' · ' + p.where));
+      if (p.stands) box.appendChild(el('p', 'stood', 'The house stands ' + p.stands + ' here. The pages name the project: ' + (p.n_place ? p.n_place + ' of them name this ground itself.' : 'none of them names this ground itself yet.')));
+      if (i === 0) box.appendChild(skyBox(p));
       if (p.say) box.appendChild(el('p', 'say', p.say));
-      box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : p.n ? 'named on ' + p.n + ' published pages — start with these' : 'no published page names it yet'));
+      box.appendChild(el('p', 'count', p.kind === 'place' || p.kind === 'library' ? p.n.toLocaleString() + ' works shelved here' : p.stands ? p.n + ' published pages name ' + p.stands + ' or the place — start with these' : p.n ? 'named on ' + p.n + ' published pages — start with these' : 'no published page names it yet'));
       var ul = el('ul');
       p.links.forEach(function (l) {
         var li = el('li'), a = el('a', null, l[0]); a.href = l[1]; a.target = '_blank'; a.rel = 'noopener';
@@ -569,11 +769,64 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
         ul.appendChild(li);
       });
       box.appendChild(ul);
+      if (p.graph && p.graph.length) box.appendChild(hung(p));
       if (chosen.length > 1) { var only = el('button', null, 'only this one'); only.type = 'button'; only.addEventListener('click', function () { show(p); }); box.appendChild(only); }
       panel.appendChild(box);
     });
     panel.scrollTop = 0;
   }
+  function skyBox(p) {                                                // a small box in the panel: the sky from a place; draw() fills it
+    var box = el('div', 'skybox'), c = document.createElement('canvas'), t = el('p');
+    c.width = c.height = 112; c.setAttribute('role', 'img'); c.setAttribute('aria-label', 'the moon as it is seen from here');
+    box.appendChild(c); box.appendChild(t); held = {place: p, canvas: c, text: t}; dirty = true;
+    return box;
+  }
+  function hung(p) {                                                  // the nodes of the spore graph that hang on this pin
+    var box = el('div', 'hung'), ul = el('ul'), all = p.graph, few = 10;
+    box.appendChild(el('h3', null, 'hung here from the spore graph · ' + all.length));
+    function rows(list) {
+      list.forEach(function (g) {
+        var li = el('li'), name = g[3] ? el('a', null, g[0]) : el('span', null, g[0]);
+        if (g[3]) { name.href = g[3]; name.target = '_blank'; name.rel = 'noopener'; }
+        li.appendChild(name); li.appendChild(el('span', 'tag', g[1])); li.appendChild(el('span', 'n', g[2] ? 'named on ' + g[2] + (g[2] === 1 ? ' page' : ' pages') : 'not named on a page')); ul.appendChild(li);
+      });
+    }
+    rows(all.slice(0, few)); box.appendChild(ul);
+    if (all.length > few) { var more = el('button', null, 'all ' + all.length); more.type = 'button'; more.addEventListener('click', function () { rows(all.slice(few)); more.remove(); }); box.appendChild(more); }
+    return box;
+  }
+  function fillGraph() {
+    var g = meta.graph, b = meta.backscatter, box = el('div', 'tri');
+    box.appendChild(el('h2', null, 'The graph, over the ground'));
+    if (g) {
+      box.appendChild(el('p', 'lead', 'sporePrint serves its own graph of what it is made of: ' + g.nodes + ' nodes and ' + g.edges + ' lines. Every node hangs on a pin — ' + g.on_the_ground.length + ' at places the house has stood them, the rest at the Library, where sporePrint itself is pinned. A line whose two ends hang on different pins is drawn over the ground.'));
+      var idx = el('div', 'idx');
+      pins.filter(function (p) { return p.graph && p.graph.length; }).sort(function (a, b2) { return a.graph.length - b2.graph.length; }).forEach(function (p) {
+        var bt = el('button'), d = el('span', 'dot'); bt.type = 'button'; d.style.background = KIND[p.kind] || '#c8d6e5';
+        bt.appendChild(d); bt.appendChild(el('span', null, short(p.name) + ' — ' + (p.graph.length > 3 ? p.graph.length + ' nodes' : p.graph.map(function (x) { return x[0]; }).join(', ')))); bt.addEventListener('click', function () { show(p); }); idx.appendChild(bt);
+      });
+      box.appendChild(idx);
+      var h = el('h3', null, 'lines over the ground'), ul = el('ul'); box.appendChild(h);
+      g.lines.forEach(function (l) { var li = el('li'), a = pinOf(l[0]), c = pinOf(l[1]); li.appendChild(el('span', 'k', l[2])); li.appendChild(el('span', 'v', a && c ? km(apart(a, c)) : '')); ul.appendChild(li); });
+      box.appendChild(ul);
+      var src = el('p', 'note'), sa = el('a', null, 'the graph as sporePrint serves it'); sa.href = g.from; sa.target = '_blank'; sa.rel = 'noopener'; src.appendChild(sa); box.appendChild(src);
+    }
+    if (b && b.eras.length) {
+      box.appendChild(el('h3', null, 'the backscatter — year by year'));
+      box.appendChild(el('p', 'lead', 'The path sporePrint’s backscatter page gives. Press a year to go to it: the clock goes to that year, and the globe to the place.'));
+      var idx2 = el('div', 'idx');
+      b.eras.forEach(function (e, i) {
+        var bt = el('button'), d = el('span', 'dot'); bt.type = 'button'; d.style.background = '#f78fb3';
+        bt.appendChild(d); bt.appendChild(el('span', null, e.span + ' · ' + e.name)); bt.title = e.place; bt.addEventListener('click', function () { moment('back-' + i); }); idx2.appendChild(bt);
+      });
+      box.appendChild(idx2);
+      var src2 = el('p', 'note'), sb = el('a', null, b.title); sb.href = b.page; sb.target = '_blank'; sb.rel = 'noopener'; src2.appendChild(sb);
+      if (b.unplaced && b.unplaced.length) src2.appendChild(document.createTextNode(' · not yet on a pin: ' + b.unplaced.join('; ')));
+      box.appendChild(src2);
+    }
+    panel.appendChild(box);
+  }
+  function setGraph(on) { graphOn = !!on; kGraph.setAttribute('aria-pressed', graphOn ? 'true' : 'false'); if (graphOn && tri) setTri(false); else { fill(); dirty = true; } }
   function fillTriangle() {
     var m = measure(), box = el('div', 'tri'), t0 = now();
     function rows(title, list) {
@@ -589,9 +842,23 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
       b.appendChild(d); b.appendChild(el('span', null, c.as)); b.appendChild(el('span', 'n', place(c.p)));
       b.title = c.p.name + ' — ' + c.p.where; b.addEventListener('click', function () { show(c.p); }); idx.appendChild(b);
     });
+    T.wide.forEach(function (c) {
+      var b = el('button'), d = el('span', 'dot'); b.type = 'button'; d.style.background = 'none'; d.style.border = '1.5px solid ' + GOLD;
+      b.appendChild(d); b.appendChild(el('span', null, c.as)); b.appendChild(el('span', 'n', place(c.p)));
+      b.title = c.p.name + ' — ' + c.p.where; b.addEventListener('click', function () { show(c.p); }); idx.appendChild(b);
+    });
     box.appendChild(idx);
     rows('the three sides', m.sides.map(function (s) { return [s.a + ' – ' + s.b, km(s.deg) + ' · ' + radii(s.deg)]; }));
     rows('the angle at each corner', m.angles.map(function (a) { return [a.at, a.deg.toFixed(1) + '°']; }));
+    if (m.wide) {
+      var wide = [];
+      m.wide.sides.forEach(function (s) { wide.push([s.a + ' – ' + s.b, km(s.deg) + ' · ' + radii(s.deg)]); wide.push(['  opens at the core', s.deg.toFixed(1) + '°']); });
+      m.wide.angles.forEach(function (a) { wide.push(['the angle at ' + a.at, a.deg.toFixed(1) + '°']); });
+      wide.push(['the three angles together', m.wide.sum.toFixed(1) + '°']);
+      wide.push(['  over 180° because the ground is round, by', (m.wide.sum - 180).toFixed(1) + '°']);
+      wide.push(['  which is this share of the whole earth', ((m.wide.sum - 180) / 720 * 100).toFixed(1) + '%']);
+      rows('the triangle, widened', wide);
+    }
     var far = [];
     m.far.forEach(function (f) {
       far.push([f.name + ', from the middle', km(f.deg) + ' · ' + radii(f.deg)]);
@@ -601,22 +868,24 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     });
     if (m.base) { far.push([m.base.a + ' – ' + m.base.b, km(m.base.deg) + ' · ' + radii(m.base.deg)]); far.push(['  seen from the middle, they stand', m.base.opens.toFixed(1) + '° apart']); }
     rows('the far body', far);
-    rows('the sun next due south (UT)', T.all.map(function (c) { return [c.short, clock(noon(c.p, t0))]; }));
-    if (you) rows('from where you stand', T.all.map(function (c) { var d = apart(you, c.p), b = bearing(you, c.p); return [c.short, km(d) + ' · ' + Math.round(b) + '° ' + wind(b)]; }));
+    rows('the sun next due south (UT)', T.every.map(function (c) { return [c.short, clock(noon(c.p, t0))]; }));
+    if (you) rows('from where you stand', T.every.map(function (c) { var d = apart(you, c.p), b = bearing(you, c.p); return [c.short, km(d) + ' · ' + Math.round(b) + '° ' + wind(b)]; }));
     var row = el('div', 'row'), b1 = el('button', null, 'the triangle, close'), b2 = el('button', null, 'the far body'); b1.type = b2.type = 'button'; row.style.marginTop = '10px';
     b1.addEventListener('click', function () { frame(false); }); b2.addEventListener('click', function () { frame(true); });
-    row.appendChild(b1); row.appendChild(b2); box.appendChild(row);
-    box.appendChild(el('p', 'note', 'Home is held at the town: the Lansing shelf, above the Capitol, and nothing finer. The marks are public buildings and a rock in the sea, placed to about a kilometre, so the short side is good to about that. How high the sun stands over each mark right now is on the line at the foot of the page.'));
+    row.appendChild(b1); row.appendChild(b2);
+    if (T.wide.length) { var b3 = el('button', null, 'the triangle, widened'); b3.type = 'button'; b3.addEventListener('click', function () { frame('wide'); }); row.appendChild(b3); }
+    box.appendChild(row);
+    box.appendChild(el('p', 'note', 'Home is held at the town: the Lansing shelf, above the Capitol, and nothing finer. The marks are public buildings, public land and a rock in the sea, placed to about a kilometre, so the short side is good to about that. How high the sun stands over each mark at the page’s time is on the line at the foot of the page. The widened corners are projects the house stands at those places; the pages name the projects.'));
     panel.appendChild(box);
   }
-  function frame(far) {                                               // stand back far enough to see the triangle, or the triangle and its far body
-    var all = (far ? T.all : T.corners).map(function (c) { return c.p; }), mid = middle(all), wide = 0;
+  function frame(far) {                                               // stand back far enough to see the triangle, the triangle and its far body, or the triangle widened
+    var all = (far === 'wide' ? T.corners.concat(T.wide) : far ? T.all : T.corners).map(function (c) { return c.p; }), mid = middle(all), wide = 0;
     all.forEach(function (p) { wide = Math.max(wide, apart(mid, p)); });
     goTo(mid.lat, mid.lon, Math.max(0.9, Math.min(5000, 0.62 / Math.sin(Math.min(89, wide) * DEG))));
   }
   function setTri(on, stay) {
     tri = !!on && !!T; kTri.setAttribute('aria-pressed', tri ? 'true' : 'false');
-    if (tri) { chosen = []; if (!stay) frame(true); }
+    if (tri) { chosen = []; if (graphOn) { graphOn = false; kGraph.setAttribute('aria-pressed', 'false'); } if (!stay) frame(true); }
     choose(chosen);
   }
   function show(p) {
@@ -624,17 +893,55 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     var near = pins.reduce(function (m, q) { return q === p ? m : Math.min(m, apart(p, q)); }, 180);
     goTo(p.lat, p.lon, Math.min(5000, Math.max(3, 0.28 / Math.max(near * DEG, 1e-5))));
   }
-  function fromHash() {
-    var m = /^#pin=([\w-]+)/.exec(location.hash), p = m && pins.filter(function (q) { return q.id === m[1]; })[0];
-    if (p) { show(p); return true; }
-    if (/^#tri\b/.test(location.hash) && T) { if (!tri) setTri(true); return true; }
-    m = /^#go=(\w+)/.exec(location.hash); if (m && GO.hasOwnProperty(m[1])) { goTo(GO[m[1]][0], GO[m[1]][1], GO[m[1]][2]); return true; }
-    return false;
+  function fromHash() {                                               // the address: parts joined by "&" - a time, and a moment, a pin, the triangle or a view
+    var did = false;
+    location.hash.replace(/^#/, '').split('&').forEach(function (part) {
+      var m, p, ms;
+      if ((m = /^t=(.+)$/.exec(part))) { ms = sky.read(decodeURIComponent(m[1])); if (ms != null) setAhead(ms - Date.now()); }
+      else if ((m = /^m=([\w-]+)$/.exec(part))) did = moment(m[1]) || did;
+      else if ((m = /^pin=([\w-]+)/.exec(part)) && (p = pinOf(m[1]))) { show(p); did = true; }
+      else if (/^tri\b/.test(part) && T) { if (!tri) setTri(true); did = true; }
+      else if ((m = /^go=(\w+)/.exec(part)) && GO.hasOwnProperty(m[1])) { if (m[1] === 'clock') setDial(true); else goTo(GO[m[1]][0], GO[m[1]][1], GO[m[1]][2]); did = true; }
+    });
+    return did;
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) {
     b.addEventListener('click', function () { var g = GO[b.getAttribute('data-go')]; goTo(g[0], g[1], g[2]); });
   });
+  kClock.addEventListener('click', function () { setDial(!dial); });
+  kGraph.addEventListener('click', function () { setGraph(!graphOn); });
+  tNow.addEventListener('click', function () { here = null; setFast(false, true); setAhead(0); fill(); });
+  document.getElementById('t-back').addEventListener('click', function () { stepTime(-1); });
+  document.getElementById('t-fwd').addEventListener('click', function () { stepTime(1); });
+  tScroll.addEventListener('click', function () { scrollTime = !scrollTime; tScroll.setAttribute('aria-pressed', scrollTime ? 'true' : 'false'); });
+  tAt.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') { tAt.classList.remove('no'); return; }
+    var ms = sky.read(tAt.value);
+    if (ms == null) { tAt.classList.add('no'); return; }
+    here = null; setFast(false, true); tAt.blur(); setAhead(ms - Date.now()); fill();
+  });
+  tMoment.addEventListener('change', function () { var id = tMoment.value; tMoment.value = ''; if (id) moment(id); });
+  document.getElementById('time').addEventListener('wheel', function (e) { e.preventDefault(); stepTime((e.deltaY || e.deltaX) > 0 ? 1 : -1); }, {passive: false});
+  function fillMoments() {                                            // the moments to travel to, by where they are taken from
+    var b = meta.backscatter, groups = [['the old sky', (meta.moments || [])], [b ? 'the backscatter — ' + b.title : '', b ? b.eras.map(function (e, i) { return {id: 'back-' + i, name: e.span + ' · ' + e.name}; }) : []]];
+    groups.forEach(function (g) {
+      if (!g[1].length) return;
+      var og = document.createElement('optgroup'); og.label = g[0];
+      g[1].forEach(function (m) { var o = document.createElement('option'); o.value = m.id; o.textContent = m.name; og.appendChild(o); });
+      tMoment.appendChild(og);
+    });
+    tMoment.hidden = tMoment.options.length < 2;
+  }
+  try {                                                               // one clock between every open atlas and the HUD, on this device only
+    chan = new BroadcastChannel('gaia-atlas');
+    chan.onmessage = function (e) {
+      var d = e.data || {}; if (d.from === me) return;
+      if (d.ask) { if (ahead && !fast) tell(); return; }
+      if (typeof d.ahead === 'number' && !fast && Math.abs(d.ahead - ahead) > 500) { here = null; setAhead(d.ahead, true); if (chosen.length || you) dirty = true; }
+    };
+    chan.postMessage({from: me, ask: 1});
+  } catch (e) { chan = null; }
   kCore.addEventListener('click', function () {
     core = !core; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true;
     if (core) {                                                       // step back and to one side, so the plumb line is seen along its length and not end-on
@@ -643,7 +950,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     }
   });
   kTri.addEventListener('click', function () { if (T) setTri(!tri); });
-  kDay.addEventListener('click', function () { fast = !fast; if (!fast) ahead = 0; kDay.setAttribute('aria-pressed', fast ? 'true' : 'false'); dirty = true; });
+  kDay.addEventListener('click', function () { here = null; setFast(!fast); });
   window.addEventListener('resize', size); window.addEventListener('hashchange', fromHash);
   setInterval(function () { dirty = true; }, 20000);                  // the sun moves a quarter of a degree a minute
 
@@ -652,10 +959,18 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   size(); fill(); requestAnimationFrame(step);
   get('/static/atlas-earth.json').then(function (e) { earth = {land: ready(e.land), lakes: ready(e.lakes), states: ready(e.states), borders: ready(e.borders)}; dirty = true; })
     .catch(function () { skyEl.textContent = 'the outlines did not load — the pins still work'; });
-  get('/static/atlas-pins.json').then(function (d) { pins = d.pins; meta = d; setTriangle(); kTri.hidden = !T; fill(); dirty = true; if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700); })
-    .catch(function () { panel.textContent = 'The pins did not load.'; });
-  window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { ahead = ms - Date.now(); dirty = true; },
-    tri: function (on, stay) { setTri(on, stay); }, measure: measure, noon: function (id, ms) { var p = pins.filter(function (q) { return q.id === id; })[0]; return p ? noon(p, ms == null ? now() : ms) : null; }};
+  get('/static/atlas-pins.json').then(function (d) {
+    pins = d.pins; meta = d; setTriangle(); kTri.hidden = !T; kGraph.hidden = !(d.graph || d.backscatter); fillMoments(); fill(); dirty = true;
+    if (face) {                                                       // the HUD's face: the dial, the triangle with its far body and its widening, and whatever time the address names
+      view.lat = GO.clock[0]; view.lon = GO.clock[1]; view.k = GO.clock[2]; dial = true; tri = !!T; fromHash(); dirty = true;
+      return;
+    }
+    if (!fromHash() && !/[?&]stay\b/.test(location.search)) setTimeout(function () { goTo(GO.michigan[0], GO.michigan[1], GO.michigan[2]); }, 700);
+  }).catch(function (e) { panel.textContent = 'The pins did not load.'; if (window.console) console.error(e); });
+  window.atlas = {go: goTo, view: view, core: function (on) { core = !!on; kCore.setAttribute('aria-pressed', core ? 'true' : 'false'); dirty = true; }, stand: function (lat, lon) { you = lat == null ? null : {lat: lat, lon: lon}; fill(); dirty = true; }, marks: function () { return marks; }, pick: function (id) { var p = pins.filter(function (q) { return q.id === id; })[0]; if (p) show(p); return !!p; }, at: function (ms) { here = null; setAhead(ms - Date.now()); },
+    tri: function (on, stay) { setTri(on, stay); }, measure: measure, noon: function (id, ms) { var p = pins.filter(function (q) { return q.id === id; })[0]; return p ? noon(p, ms == null ? now() : ms) : null; },
+    now: now, moment: moment, moments: function () { return moments().map(function (m) { var t = whenOf(m); return {id: m.id, at: m.at, name: m.name, ms: t, stamp: t == null ? null : sky.stamp(t)}; }); },
+    dial: function (on) { setDial(on); }, graph: function (on) { setGraph(on); }, look: function (id, ms) { var p = pinOf(id); return p ? sky.look(p, ms == null ? now() : ms) : null; }, address: address, ahead: function () { return ahead; }};
 })();
 </script>
 </body>

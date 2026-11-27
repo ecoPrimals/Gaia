@@ -3104,11 +3104,37 @@ body { padding-bottom: 76px !important; }
     box-shadow: 0 0 0 1px rgba(240, 136, 62, .40), 0 0 34px 4px rgba(240, 136, 62, .16), 0 0 90px 12px rgba(240, 230, 140, .05);
   }
   #hud-centre .words {
-    position: absolute; left: 0; top: calc(var(--hud-globe) * .43 - 10px); transform: translateX(-50%); z-index: 3; white-space: nowrap;
+    position: absolute; left: 0; top: calc(var(--hud-globe) * .43 + 48px); transform: translateX(-50%); z-index: 3; white-space: nowrap;
     padding: 1px 10px; border-radius: 999px; border: 1px solid rgba(86, 182, 194, .35); background: rgba(5, 8, 13, .92);
     color: #56b6c2; font-size: 11px; text-decoration: none;
   }
   #hud-centre .words:hover { border-color: rgba(86, 182, 194, .8); }
+  /* THE CLOCK AT THE CENTRE (2026-11-27). The globe on the black spot is the atlas's own face (/static/atlas.html?face):
+     the earth seen straight down on the north pole, which makes it a 24-hour dial - midnight UTC at the top, the gold
+     hand the sun, the edge of the night square to it. The HUD's time is UTC and that shadow line is it, drawn.
+     The frame is the spot plus 44 px all round for the hours; the atlas draws its globe exactly over the spot.
+     The older globe of the tools is still here: "tools" under the spot brings it back, "earth" returns to this one. */
+  #hud-face {
+    position: absolute; left: calc(var(--hud-globe) * -.43 - 44px); top: calc(var(--hud-globe) * -.43 - 44px);
+    width: calc(var(--hud-globe) * .86 + 88px); height: calc(var(--hud-globe) * .86 + 88px); border: 0; background: transparent; z-index: 2;
+  }
+  #hud-centre .pick { position: absolute; left: 0; top: calc(var(--hud-globe) * .43 + 72px); transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; white-space: nowrap; }
+  #hud-centre .pick button {
+    font: inherit; font-size: 10px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .12);
+    background: rgba(5, 8, 13, .92); color: #6e7681; cursor: pointer;
+  }
+  #hud-centre .pick button[aria-pressed="true"] { color: #e6edf3; border-color: rgba(88, 166, 255, .55); }
+  body[data-hud-globe="earth"] #desk-globe-wrap.hud-pinned { display: none !important; }
+  body[data-hud-globe="tools"] #hud-face { display: none; }
+  body:not([data-hud-view="centre"]) #hud-centre .pick { display: none; }
+  #hud-stage > #hud-atlas iframe { height: min(80vh, 920px, max(380px, calc(100vh - 270px))); }   /* the atlas keeps its time keys at its foot: the frame ends above the HUD's own bar */
+  #hud-utc {
+    font: inherit; font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .10);
+    background: transparent; color: #8b949e; cursor: pointer; white-space: nowrap;
+  }
+  #hud-utc:hover { color: #c9d1d9; }
+  #hud-utc.away { color: #d4af37; border-color: rgba(212, 175, 55, .55); }
+  html[data-regime="watch"] #hud-utc, html[data-regime="watch"] #hud-centre .pick { display: none !important; }
   #desk-globe-wrap.hud-pinned {
     display: block !important; left: 50% !important; top: 50% !important; width: var(--hud-globe) !important; height: var(--hud-globe) !important;
     transform: translate(-50%, -50%); background: transparent !important; z-index: -1 !important; opacity: .3; transition: opacity .5s; pointer-events: none;
@@ -3183,6 +3209,7 @@ body { padding-bottom: 76px !important; }
 <div id="hud-one" role="navigation" aria-label="HUD viewpoints">
   <span class="hud-name">HUD<small>one display · many viewpoints</small></span>
   <span id="hud-regime" data-regime-say title="how this display is read: its shape (width over height), the slope of its diagonal, the layout that follows from them, and its size. The same reading the tuebor desk makes."></span>
+  <button id="hud-utc" type="button" title="the HUD’s clock is UTC: the line of the shadow on the globe at the centre">UTC</button>
   <a id="hud-entrance" href="/water" title="the watering hole is the entrance - the HUD is where it leads">≈ water · the entrance</a>
   <div id="hud-tabs" role="tablist"></div>
   <div id="hud-hint" aria-live="polite"></div>
@@ -3190,7 +3217,12 @@ body { padding-bottom: 76px !important; }
 <div id="hud-stage"></div>
 <div id="hud-centre" aria-label="the centre: the black spot is the water">
   <a class="spot" href="/water" title="the black spot is the water - step through" aria-label="water, the entrance"></a>
+  <iframe id="hud-face" title="The earth as the HUD’s clock: seen from above the north pole, midnight UTC at the top, the gold hand the sun, the edge of the night square to it. The pins are the atlas’s." data-src="/static/atlas.html?face" allowtransparency="true"></iframe>
   <a class="words" href="/water" title="the black spot is the water - everything on this display is cast out from it">≈ water</a>
+  <span class="pick" role="group" aria-label="which globe sits on the spot">
+    <button type="button" data-globe="earth" aria-pressed="true" title="the earth as the HUD’s clock, with the atlas’s pins">earth</button>
+    <button type="button" data-globe="tools" aria-pressed="false" title="the older globe: the HUD’s tools, set round a turning ball">tools</button>
+  </span>
 </div>
 <div id="hud-focal" aria-hidden="true"></div>
 <section id="hud-atlas" class="hud-frame hud-masked" aria-label="atlas">
@@ -3207,12 +3239,13 @@ body { padding-bottom: 76px !important; }
 </section>
 <section id="hud-sky" class="hud-masked" aria-label="night sky">
   <a class="moon" data-path="/luna" href="/luna" title="LUNA - the moon is the white paper" aria-label="Luna"></a>
-  <div class="moon-words"><a data-path="/luna" href="/luna">LUNA</a><small>the moon is the white paper</small><a data-path="/whitePaper" href="/whitePaper">white paper</a></div>
+  <div class="moon-words"><a data-path="/luna" href="/luna">LUNA</a><small>the moon is the white paper</small><small id="hud-moon-now"></small><a data-path="/whitePaper" href="/whitePaper">white paper</a></div>
   <div class="star-words"><a data-path="/sporeprint" href="/sporeprint">sporePrint</a><small>the stars are the spore print - white dust on the dark</small></div>
   <div class="horizon">the bottom of the internet is a night sky · <a data-path="/rss" href="/rss" style="color:inherit">rss</a> carries it to the old web</div>
 </section>
 
 <script src="/static/regime.js"></script>
+<script src="/static/sky.js?v=1"></script>
 <script id="hud-one-js">
 (function () {
   var D = document, main = D.querySelector('main.gaia-shell') || D.body;
@@ -3243,8 +3276,8 @@ body { padding-bottom: 76px !important; }
   });
 
   var VIEWS = [
-    { key: 'centre', label: 'centre', hint: 'the black spot is the water · everything here is cast out from it · the globe sits on top (drag · F flips)', always: true },
-    { key: 'atlas', label: 'atlas', hint: 'the stories, pinned above the places they are about · the sun and the moon where they stand · \u201ccore\u201d shows the three plumb lines and the one unit', take: [D.getElementById('hud-atlas')] },
+    { key: 'centre', label: 'centre', hint: 'the black spot is the water · the globe on it is the earth as the HUD\u2019s clock: midnight UTC at the top, the gold hand the sun, the edge of the shadow the hour · drag turns it · the wheel travels in time · a pin opens the atlas there', always: true },
+    { key: 'atlas', label: 'atlas', hint: 'the stories, pinned above the places they are about · the sun and the moon where they stand, at any time: the keys at the foot travel · \u201ccore\u201d shows the three plumb lines and the one unit', take: [D.getElementById('hud-atlas')] },
     { key: 'orrery', label: 'orrery \u00b7 trans', hint: 'the trans face: one body, eight rings, the sky where it stands now · the green 1.00 is one earth radius, split at its two gold core rings', take: [D.getElementById('hud-orrery')] },
     { key: 'surfaces', label: 'surfaces', hint: 'every surface on one map - where we can go', take: [one('#nav-ring')] },
     { key: 'eyes', label: 'eyes', hint: 'gaia · player · user - three eyes, one focus', take: [one('#triInfo')], show: [one('#triOverlay')] },
@@ -3388,6 +3421,69 @@ body { padding-bottom: 76px !important; }
   D.addEventListener('hud-one-view', castSoon);
   window.addEventListener('resize', castSoon);
   window.addEventListener('scroll', castSoon, { passive: true });
+
+  // THE CLOCK (2026-11-27). The HUD's time is UTC. It is shown three ways from the one sky (/static/sky.js): the globe at
+  // the centre (the atlas's own face - its shadow line is the time), the readout in the bar, and the moon of the night
+  // sky, drawn in its real phase. Every atlas on this device and this page share one clock over one channel: travel in
+  // any of them and the rest follow; the readout turns gold while away, and pressing it comes back to now. Nothing of
+  // it leaves the device.
+  var faceEl = D.getElementById('hud-face'), utc = D.getElementById('hud-utc'), aheadMs = 0, clockChan = null;
+  var moonA = sky && sky.querySelector('.moon'), moonSay = D.getElementById('hud-moon-now'), moonC = null;
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function paintMoon(ms) {
+    var S = window.gaiaSky; if (!S || !moonA) return;
+    if (!moonC) {
+      moonC = D.createElement('canvas'); moonC.width = moonC.height = 232; moonC.style.cssText = 'display:block;width:100%;height:100%';
+      moonA.appendChild(moonC); moonA.style.background = 'none';
+    }
+    var s = S(ms), g = moonC.getContext('2d'), say = S.moonName(s.elong) + ', ' + Math.round(s.lit * 100) + '% lit';
+    g.clearRect(0, 0, 232, 232); S.moonFace(g, 116, 116, 114, s.lit, s.elong < 180 ? 90 : 270, '#10151c', '#d3d8df');
+    moonA.title = 'LUNA - the moon as it stands ' + (aheadMs ? 'then' : 'now') + ': ' + say;
+    if (moonSay) moonSay.textContent = say + (aheadMs ? ' \u00b7 ' + S.stamp(ms, true) : '');
+  }
+  function paintClock() {
+    var ms = Date.now() + aheadMs, d = new Date(ms), S = window.gaiaSky;
+    if (utc) {
+      utc.textContent = aheadMs && S ? S.stamp(ms, true) : 'UTC ' + two(d.getUTCHours()) + ':' + two(d.getUTCMinutes());
+      utc.classList.toggle('away', !!aheadMs);
+      utc.title = aheadMs ? 'the HUD has travelled in time - press to come back to now' : 'the HUD\u2019s clock is UTC: the line of the shadow on the globe at the centre. The wheel over that globe travels in time.';
+    }
+    paintMoon(ms);
+  }
+  try {
+    clockChan = new BroadcastChannel('gaia-atlas');
+    clockChan.onmessage = function (e) {
+      var d = e.data || {};
+      if (d.from !== 'hud' && typeof d.ahead === 'number') { aheadMs = Math.abs(d.ahead) < 1000 ? 0 : d.ahead; paintClock(); }
+    };
+  } catch (e) { clockChan = null; }
+  if (utc) utc.onclick = function () { aheadMs = 0; if (clockChan) clockChan.postMessage({ from: 'hud', ahead: 0 }); paintClock(); };
+  setInterval(paintClock, 5000); paintClock();
+
+  // which globe sits on the spot: the earth (the atlas's face) or the older globe of the tools
+  function loadFace() { if (faceEl && !faceEl.getAttribute('src')) faceEl.setAttribute('src', faceEl.getAttribute('data-src')); }
+  function setGlobe(g, keep) {
+    g = g === 'tools' ? 'tools' : 'earth';
+    D.body.setAttribute('data-hud-globe', g);
+    all('#hud-centre .pick button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-globe') === g ? 'true' : 'false'); });
+    if (g === 'earth' && current === 'centre') loadFace();
+    if (!keep) { try { localStorage.setItem('hud_globe', g); } catch (e) {} }
+  }
+  all('#hud-centre .pick button').forEach(function (b) { b.onclick = function () { setGlobe(b.getAttribute('data-globe')); }; });
+  D.addEventListener('hud-one-view', function (e) { if (e.detail === 'centre' && D.body.getAttribute('data-hud-globe') === 'earth') loadFace(); });
+  var globe0 = 'earth'; try { globe0 = localStorage.getItem('hud_globe') || 'earth'; } catch (e) {}
+  setGlobe(globe0, true);
+  setTimeout(function () { if (D.body.getAttribute('data-hud-globe') === 'earth') loadFace(); }, 4000);   // behind the other views the spot still carries its globe
+
+  // a pin pressed on the face: the atlas view opens at that pin
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.gaiaAtlas !== 'pin' || !/^[\w-]+$/.test(e.data.id || '')) return;
+    var sec = D.getElementById('hud-atlas'), f = sec && sec.querySelector('iframe'); if (!f) return;
+    var to = f.getAttribute('data-src').split('#')[0] + '#pin=' + e.data.id;
+    if (f.getAttribute('src')) { try { f.contentWindow.location.replace(to); } catch (x) { f.setAttribute('src', to); } }
+    else f.setAttribute('data-src', to);
+    show('atlas');
+  });
 
   var first = (location.hash || '').replace('#', '');
   if (!byKey[first]) { try { first = localStorage.getItem('hud_view_c'); } catch (e) { first = null; } }
