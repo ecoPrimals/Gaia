@@ -106,6 +106,32 @@ now hold all 370. That is a copy made by a third party, and the record says "car
 was done by what did it. If the thing you were asked to test failed and you reached the goal another
 way, report the failure first and the other way second.
 
+**The house had already written the answer.** Two gates could not pass files between their stores.
+The plan was to teach the store a second transport and to switch on the store's own login. Kevin said
+no: the store goes through the Tower. The house's own papers said the same, in plain words, and nobody
+had opened them: the deployment graph reads "Tower mediates ALL inter-atomic bonding", the store's
+security is listed as "tower_delegated", and the store's code already has an address type for "reach
+that gate through the mesh". *Do:* before you design a fix where two parts meet, look for where the
+house wrote down how they are meant to meet: the deployment graphs, the standards folder, the type
+names in the code. A plan that adds a second way in is usually a sign that the first was not read.
+
+**A number is not a process.** After a reboot one gate's songBird would not start: "another instance
+is running (PID 2070)". Nothing called songBird was running. The lock file had survived the reboot,
+and the number in it now belonged to a thread of a different program; the check only asked whether
+anything had that number. It failed 46 times in ten minutes, and again after the next reboot.
+*Do:* when a file says "this is running", check what is running under that number (`/proc/<n>/comm`,
+and whether the number is a process or only a thread: `Tgid` in `/proc/<n>/status`). When a program
+keeps such a file, it must ask "is that me?", not "is that anyone?".
+
+**Ask the door from the outside.** One gate's notes said its network door now refuses callers that
+cannot prove they are family. Reading the notes, or asking the door from the gate itself, shows
+nothing: callers on the same machine are always served. From the other gate, over the house network:
+a protected call without a proof was refused; then the door was sent a fresh random number and asked
+to prove itself, and its answer was checked here with nothing but the family's public key (signed
+over that number, naming the address that was dialled, clock within five minutes, certificate signed
+by the family). *Do:* test a door from the side strangers come from, and check a proof yourself with
+the public half instead of trusting the word "verified" in a log.
+
 ## What may be public
 
 **The owner asks for what the rule forbids.** Kevin may give you a street address and ask for it on a
