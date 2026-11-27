@@ -3633,10 +3633,9 @@ body { padding-bottom: 76px !important; }
     var pair = D.getElementById('hud-mesh-pair'), seam = D.getElementById('hud-mesh-seam'), timer = null;
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function dur(s) { s = +s || 0; return s >= 86400 ? Math.floor(s / 86400) + 'd ' + Math.floor(s % 86400 / 3600) + 'h' : s >= 3600 ? Math.floor(s / 3600) + 'h ' + Math.floor(s % 3600 / 60) + 'm' : Math.floor(s / 60) + 'm'; }
-    function card(b, role) {
-      if (b.answers === false) return '<div class="body"><h3>' + esc(b.name) + '<small>' + role + '</small></h3><dl><dt>address</dt><dd>' + esc(b.ip) + '</dd><dt>state</dt><dd class="gray">GRAY - no answer on :8443 from here</dd></dl></div>';
+    function card(b, role) {                                           // a body is shown by its name and how it stands - not by where it sits on the house network
+      if (b.answers === false) return '<div class="body"><h3>' + esc(b.name) + '<small>' + role + '</small></h3><dl><dt>state</dt><dd class="gray">GRAY - no answer from here</dd></dl></div>';
       var pi = b.pi_body, rows = [
-        ['address', esc(b.ip || '-')], ['host', esc(b.host || '-')],
         ['repo tip', esc(b.tip || '-') + ' <span class="gray">' + esc(b.tip_when || '') + '</span>'],
         ['two holes', b.holes ? '<span class="' + (b.holes === 'level' ? 'ok' : 'warn') + '">' + esc(b.holes) + '</span>' : '<span class="gray">not looked yet</span>'],
         ['gate up', dur(b.gate_up_secs)],
