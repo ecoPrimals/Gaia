@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The commons — who holds the files the pages name</title>
+<meta name="description" content="The data files, scripts and feeds the sporePrint pages name, and every place that holds a copy of them, checked by hash.">
+<style>
+:root{--bg:#08090b;--card:#141719;--border:#1e2228;--text:#e0dcd6;--muted:#8a857e;--dim:#5a5650;--bright:#f5f0e8;--amber:#d4a574;--green:#5aad72;--red:#d45b5b;--mono:'JetBrains Mono','Fira Code','Cascadia Code',monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg)}
+a{color:var(--amber);text-decoration:none}a:hover{color:var(--bright)}
+nav{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+nav div{max-width:1200px;margin:0 auto;padding:0 16px;height:52px;display:flex;align-items:center;gap:16px;overflow-x:auto;white-space:nowrap}
+nav a{color:var(--muted);font-size:.88rem}nav a.brand{color:var(--amber);font-size:1.1rem;font-weight:500}
+main{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.7rem;font-weight:500;color:var(--bright);letter-spacing:-.02em}
+h2{font-size:1.05rem;font-weight:500;color:var(--bright);margin:28px 0 10px}
+p{margin:6px 0 10px}.lede{color:var(--muted);max-width:72ch}
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0 6px}
+.count{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px}
+.count b{display:block;font-size:1.6rem;font-weight:500;color:var(--bright);font-variant-numeric:tabular-nums}
+.count span{color:var(--muted);font-size:.85rem}
+#when{color:var(--muted);font-size:.9rem}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{text-align:left;white-space:nowrap;font-weight:400;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;padding:6px 10px;border-bottom:1px solid var(--border)}
+td{padding:6px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:var(--mono);font-size:.85rem;word-break:break-all}
+.ok{color:var(--green)}.bad{color:var(--red)}.quiet{color:var(--muted)}
+.small{color:var(--muted);font-size:.82rem}
+.when{white-space:nowrap}
+.wrap table{min-width:680px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 10px}
+.tools input,.tools select{font:inherit;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px}
+.tools input{flex:1 1 260px;min-width:160px}
+.wrap{overflow-x:auto}
+pre{background:#0f1114;border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto;font:0.85rem var(--mono);color:var(--amber)}
+@media (max-width:640px){h1{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<nav><div><a href="/" class="brand">gaia</a><a href="/library">library</a><a href="/static/mercator.html">MERCATOR</a><a href="/static/commons.html">commons</a></div></nav>
+<main>
+<h1>The commons</h1>
+<p class="lede">The pages of the sporePrint name data files, scripts and feeds. They are gathered into the sporePrint itself, each with its hash. A file that lives in one place is gone when that place sleeps, so this page shows every place that holds a copy and whether the copy is the same, byte for byte.</p>
+
+<div class="counts" id="counts"></div>
+<p id="when">Loading.</p>
+
+<h2>Who holds it</h2>
+<div class="wrap">
+<table>
+  <thead><tr><th>Holder</th><th>What was asked</th><th>The same</th><th>Differ</th><th>Missing</th><th>Checked</th></tr></thead>
+  <tbody id="holders"><tr><td colspan="6" class="quiet">Loading.</td></tr></tbody>
+</table>
+</div>
+<p class="small">Each holder was asked for every held file; what came back was hashed and compared with the manifest. This is a check someone runs, not a watch: the time says how old it is.</p>
+
+<h2>From gate to gate</h2>
+<p class="small">Each gate runs nestgate, a store that names a file by the hash of its bytes. These are the attempts to pass the commons from one gate's store to another, as they went.</p>
+<div class="wrap">
+<table>
+  <thead><tr><th>When</th><th>From</th><th>To</th><th>How</th><th>Passed</th><th>Already there</th><th>Failed</th></tr></thead>
+  <tbody id="passing"><tr><td colspan="7" class="quiet">No attempt is on record.</td></tr></tbody>
+</table>
+</div>
+
+<h2>The files</h2>
+<div class="tools">
+  <input id="q" type="search" placeholder="Filter by file, repository or page" aria-label="Filter by file, repository or page">
+  <select id="state" aria-label="Standing">
+    <option value="">Every standing</option><option value="held">Held</option><option value="held back">Held back</option>
+    <option value="undecided">Undecided</option><option value="not found">Not found</option>
+  </select>
+  <span class="small" id="shown"></span>
+</div>
+<div class="wrap">
+<table>
+  <thead><tr><th>File</th><th>Standing</th><th>Bytes</th><th>From</th><th>Named by</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+</div>
+
+<h2>Check it yourself</h2>
+<pre>git clone https://github.com/ecoPrimals/sporePrint
+python sporePrint/scripts/commons.py check                                  # your copy
+python sporePrint/scripts/commons.py check https://primals.eco/sporeprint             # what the house serves
+python sporePrint/scripts/commons.py check https://ecoprimals.github.io/sporePrint   # the copy outside the house</pre>
+</main>
+
+<script>
+(function () {
+  var SITE = "https://sporeprint.primals.eco";
+  var blobs = [], rows = document.getElementById("rows");
+  var q = document.getElementById("q"), state = document.getElementById("state");
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function ago(iso) {
+    var t = Date.parse(iso.replace(/([+-]\d\d)(\d\d)$/, "$1:$2"));
+    if (isNaN(t)) return iso;
+    var m = Math.round((Date.now() - t) / 60000);
+    var d = new Date(t).toLocaleString([], {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"});
+    return d + " (" + (m < 2 ? "a moment ago" : m < 120 ? m + " minutes ago" : m < 2880 ? Math.round(m / 60) + " hours ago" : Math.round(m / 1440) + " days ago") + ")";
+  }
+  function pageAddress(page) {
+    var p = page.replace(/^content\//, "").replace(/\.md$/, "").replace(/\/?_index$/, "");
+    return SITE + "/" + p.replace(/[_\s]+/g, "-").toLowerCase() + (p ? "/" : "");
+  }
+  function row(b) {
+    var tr = el("tr"), name = el("td", "mono");
+    if (b.address) { var a = el("a", "", b.name); a.href = b.address; name.appendChild(a); } else name.textContent = b.name;
+    tr.appendChild(name);
+    var st = el("td");
+    st.appendChild(el("span", b.state === "held" ? "ok" : "quiet", b.state));
+    if (b.why) st.appendChild(el("div", "small", b.why));
+    tr.appendChild(st);
+    tr.appendChild(el("td", "num", b.bytes !== undefined ? b.bytes.toLocaleString() : ""));
+    tr.appendChild(el("td", "", b.repo || ""));
+    var pages = el("td");
+    b.pages.slice(0, 2).forEach(function (p) {
+      var a = el("a", "", p.replace(/^content\//, "").replace(/\.md$/, "")); a.href = pageAddress(p);
+      var d = el("div"); d.appendChild(a); pages.appendChild(d);
+    });
+    if (b.pages.length > 2) pages.appendChild(el("div", "small", "and " + (b.pages.length - 2) + " more"));
+    tr.appendChild(pages);
+    return tr;
+  }
+  function draw() {
+    var words = q.value.trim().toLowerCase(), n = 0, frag = document.createDocumentFragment();
+    blobs.forEach(function (b) {
+      if (state.value && b.state !== state.value) return;
+      if (words && b._text.indexOf(words) < 0) return;
+      n++; if (n <= 400) frag.appendChild(row(b));
+    });
+    rows.textContent = ""; rows.appendChild(frag);
+    document.getElementById("shown").textContent = n + " of " + blobs.length + (n > 400 ? ", first 400 shown" : " shown");
+  }
+
+  fetch("/static/commons.json", {cache: "no-store"}).then(function (r) {
+    if (!r.ok) throw new Error("the record answered " + r.status);
+    return r.json();
+  }).then(function (d) {
+    var c = d.counts, counts = document.getElementById("counts");
+    [["named", "files the pages name"], ["held", "held in the sporePrint"], ["held back", "found, held back"],
+     ["undecided", "undecided"], ["not found", "not found"]].forEach(function (p) {
+      var box = el("div", "count"); box.appendChild(el("b", "", String(c[p[0]]))); box.appendChild(el("span", "", p[1]));
+      counts.appendChild(box);
+    });
+    document.getElementById("when").textContent = "Gathered " + ago(d.manifest_made) + "; holders asked " + ago(d.made) +
+      ". " + (c.bytes_held / 1e6).toFixed(1) + " MB held.";
+
+    var hb = document.getElementById("holders"); hb.textContent = "";
+    d.holders.forEach(function (h) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "", h.name));
+      tr.appendChild(el("td", "small", h.what));
+      if (!h.answered) {
+        var td = el("td", "bad", "did not answer"); td.colSpan = 4; tr.appendChild(td);
+      } else {
+        tr.appendChild(el("td", "num " + (h.same === h.of ? "ok" : "bad"), h.same + " of " + h.of));
+        tr.appendChild(el("td", "num " + (h.differs ? "bad" : "quiet"), String(h.differs)));
+        tr.appendChild(el("td", "num " + (h.missing ? "bad" : "quiet"), String(h.missing)));
+        tr.appendChild(el("td", "small when", ago(h.checked)));
+      }
+      hb.appendChild(tr);
+    });
+
+    var pb = document.getElementById("passing");
+    if (d.passing && d.passing.length) pb.textContent = "";
+    (d.passing || []).forEach(function (m) {
+      var tr = el("tr");
+      tr.appendChild(el("td", "small when", ago(m.when)));
+      tr.appendChild(el("td", "", m.from)); tr.appendChild(el("td", "", m.to));
+      var how = el("td"); how.appendChild(el("span", "mono", m.how));
+      (m.why || []).forEach(function (w) { how.appendChild(el("div", "small", w)); });
+      tr.appendChild(how);
+      tr.appendChild(el("td", "num " + (m.passed ? "ok" : "quiet"), m.passed + " of " + m.ids));
+      tr.appendChild(el("td", "num quiet", String(m.already_there)));
+      tr.appendChild(el("td", "num " + (m.failed ? "bad" : "quiet"), String(m.failed)));
+      pb.appendChild(tr);
+    });
+
+    blobs = d.blobs;
+    blobs.forEach(function (b) { b._text = [b.name, b.state, b.repo || "", b.why || "", b.pages.join(" ")].join(" ").toLowerCase(); });
+    draw();
+  }).catch(function (e) {
+    document.getElementById("when").textContent = "The record of holders could not be read (" + e.message + "). Run tools/commons_holders.py to make it.";
+    document.getElementById("holders").textContent = "";
+  });
+  [q, state].forEach(function (x) { x.addEventListener("input", draw); });
+})();
+</script>
+</body>
+</html>
