@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fit Lenski's long-term evolution experiment in your browser &mdash; ecoPrimals</title>
+<meta name="description" content="Twelve populations of E. coli, 50,000 generations, the published colony counts. Does fitness level off or keep rising? Fit both answers to the real measurements in your browser tab and compare them.">
+<style>
+:root {
+  --bg: #08090b; --card: #111417; --line: #232830;
+  --text: #e0dcd6; --muted: #9a958d; --bright: #f5f0e8;
+  --amber: #d4a574; --green: #5aad72; --blue: #7ea6dc; --red: #e07a6a;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; color: var(--text); font: 16px/1.55 var(--font); }
+main { max-width: 980px; margin: 0 auto; padding: 36px 24px 64px; }
+a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; color: var(--bright); }
+h2 { font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+     margin: 38px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+p { margin: 0 0 12px; max-width: 50em; }
+.crumb { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
+.lead { font-size: 1.15rem; color: var(--bright); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin: 0 0 16px; }
+.controls { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 12px 18px; align-items: end; }
+label { display: block; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+select, input[type=number] { width: 100%; font: inherit; color: var(--bright); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; }
+input[type=range] { width: 100%; accent-color: var(--green); margin: 8px 0 3px; }
+select:focus, input:focus, button:focus { outline: 1px solid var(--amber); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+button { font: inherit; font-size: 0.92rem; color: var(--bright); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--amber); }
+button.go { background: var(--green); border-color: var(--green); color: #06120a; font-weight: 600; }
+button:disabled { opacity: 0.45; cursor: default; }
+.est { color: var(--muted); font-size: 0.9rem; }
+#status { color: var(--muted); font-size: 0.9rem; margin: 12px 0 0; min-height: 1.4em; }
+#verdict { font-size: 1.05rem; color: var(--bright); margin: 0; max-width: none; }
+#verdict small { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+.plots { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-bottom: 16px; }
+.plots .card { margin: 0; padding: 14px 14px 10px; }
+.plots h3, h3.sub { font-size: 0.95rem; margin: 0 0 6px; color: var(--bright); font-weight: 600; }
+p.cap { font-size: 0.82rem; color: var(--muted); margin: 6px 0 0; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--font); }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--mono); } td:first-child, td.t { font-family: var(--font); }
+td.win { color: var(--green); } td.lose { color: var(--amber); } td.even { color: var(--muted); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 0.85rem; min-height: 1.4em; margin-bottom: 4px; }
+.scroll { overflow-x: auto; }
+ul.checks { list-style: none; margin: 0; padding: 0; }
+ul.checks li { padding: 5px 0 5px 1.7em; position: relative; border-bottom: 1px solid var(--line); }
+ul.checks li:last-child { border-bottom: 0; }
+ul.checks li::before { position: absolute; left: 0; font-weight: 700; }
+ul.checks li.pass::before { content: "\2713"; color: var(--green); }
+ul.checks li.fail::before { content: "\2717"; color: var(--red); }
+ul.checks small { color: var(--muted); display: block; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+.resample { display: grid; grid-template-columns: 3fr 2fr; gap: 8px 24px; align-items: start; }
+code { font-family: var(--mono); font-size: 0.9em; color: var(--bright); white-space: nowrap; }
+.note { color: var(--muted); font-size: 0.88rem; }
+@media (max-width: 760px) { .plots, .two, .controls, .resample { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+
+<p class="crumb"><a href="/static/resume.html">Kevin Mok &mdash; portfolio</a> &nbsp;/&nbsp; run it yourself</p>
+<h1>Fit Lenski's long-term experiment in your browser</h1>
+<p class="lead">Twelve populations of <i>E. coli</i> have been evolving in identical flasks since 1988. Does their fitness level off, or does it keep rising? The measurements are public. This page fits both answers to them, on your machine.</p>
+<p>Nothing here is simulated. The page loads the data file the authors deposited, confirms it is that file, recomputes every fitness value from the colony counts, and fits two curves. Nothing is sent anywhere.</p>
+
+<h2>The comparison</h2>
+<div class="card">
+  <div class="controls">
+    <div><label for="which">Populations</label>
+      <select id="which">
+        <option value="all" selected>All twelve</option>
+        <option value="complete">The nine measured to the end</option>
+        <option value="nonmutator">The six that kept the ancestral mutation rate</option>
+        <option value="mutator">The six that became mutators</option>
+      </select></div>
+    <div><label for="unit">Points the curves are fitted to</label>
+      <select id="unit">
+        <option value="pop" selected>Each population at each time (as published)</option>
+        <option value="grand">One average per time</option>
+      </select></div>
+    <div><label for="cut">Fit using generations up to <span id="cutv" style="color:var(--bright)"></span></label>
+      <input id="cut" type="range" min="4" max="40" step="1" value="40"></div>
+  </div>
+  <div class="row">
+    <span class="est">Ready-made:</span>
+    <button class="go" id="p1">The published comparison</button>
+    <button id="p2">Forecast from the first 5,000 generations</button>
+    <button id="p3">Forecast from the first 20,000</button>
+  </div>
+  <p id="status">Loading the data and checking the code on your machine&hellip;</p>
+</div>
+
+<div class="card"><p id="verdict">&nbsp;</p></div>
+
+<div class="plots">
+  <div class="card">
+    <h3>Fitness against generations</h3>
+    <div class="legend" id="legend"></div>
+    <div id="plot"></div>
+    <p class="cap">Fitness 1 is the ancestor. Bright points: the average over populations, with one standard error. Faint points: single populations. Where a curve is dashed, it is a forecast: those points were not used to fit it.</p>
+  </div>
+  <div class="card">
+    <h3>What each curve misses</h3>
+    <div id="resid"></div>
+    <p class="cap">Measured average minus curve, at each time. A curve with the right shape leaves points scattered evenly about zero. A curve with the wrong shape leaves runs of points on one side.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Curve</th><th>a</th><th>b</th><th>Squared error</th><th>BIC score</th><th>Levels off at</th><th id="hEnd">At 50,000</th><th>At 100,000</th></tr></thead>
+      <tbody id="fits"><tr><td colspan="8" style="color:var(--muted)">&nbsp;</td></tr></tbody>
+    </table>
+  </div>
+  <div class="row">
+    <button id="dljson" disabled>Download these results as JSON</button>
+    <button id="dlcsv" disabled>Download the averages and curves as CSV</button>
+    <a class="est" href="/static/ltee-data/Concatenated.LTEE.data.all.csv" download>the data file itself</a>
+  </div>
+</div>
+
+<h2>Each population by itself</h2>
+<div class="card">
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Population</th><th>Mutator</th><th>Measured to</th><th>Points</th><th>Hyperbolic ceiling</th><th>Power-law exponent</th><th>Score gap</th><th>Better fit</th></tr></thead>
+      <tbody id="pops"><tr><td colspan="8" style="color:var(--muted)">&nbsp;</td></tr></tbody>
+    </table>
+  </div>
+  <p class="cap">Each population's whole record, fitted alone. &ldquo;Mutator&rdquo; marks the populations that evolved a raised mutation rate at some point. The score gap is the hyperbolic curve's BIC minus the power law's: positive favours the power law, and a gap under 2 either way is too close to call.</p>
+</div>
+
+<h2>Would another draw of populations say the same?</h2>
+<div class="card">
+  <div class="resample">
+    <div>
+      <p>The twelve populations are twelve runs of the same experiment. Draw twelve from them at random, allowing repeats, and fit both curves again. If the answer depended on one or two unusual populations, it would change from draw to draw.</p>
+      <div class="row" style="margin-top:0">
+        <button class="go" id="rs">Draw 200 times</button>
+        <label for="seed" style="margin:0">Seed</label><input id="seed" type="number" min="0" max="4294967295" step="1" value="2026" style="width:7.5em">
+      </div>
+      <p id="rsout" style="margin-top:12px;color:var(--bright)">&nbsp;</p>
+    </div>
+    <div>
+      <h3 class="sub">Score gap in each draw</h3>
+      <div id="rshist"></div>
+      <p class="cap">Right of zero, the power law fitted better in that draw.</p>
+    </div>
+  </div>
+</div>
+
+<h2>What you are looking at</h2>
+<div class="two">
+  <div>
+    <p>Richard Lenski started twelve populations of <i>E. coli</i> from one ancestor in 1988. They have grown in the same sugar-limited medium ever since, diluted into fresh medium every day, with a sample frozen every 500 generations.</p>
+    <p>Fitness is measured by competition. A sample of an evolved population is mixed with the ancestor, which carries a marker that gives its colonies a different colour on an indicator plate. The two grow together for a day, and colonies of each colour are counted at the start and at the end. Fitness is the evolved population's growth rate divided by the ancestor's: 1.5 means it grows half as fast again. The file holds those colony counts for 928 competitions.</p>
+  </div>
+  <div>
+    <p>Both curves slow down as time goes on. The hyperbolic curve, <code>w = 1 + a t / (t + b)</code>, approaches a ceiling at <code>1 + a</code> and stops there. The power law, <code>w = (b t + 1)^a</code>, never stops: each tenfold stretch of time adds about the same factor. Each has two adjustable numbers, so neither wins by being more flexible.</p>
+    <p>Wiser, Ribeck and Lenski reported in 2013 that the power law fits better, and that when both curves are fitted to the early generations only, the hyperbolic curve forecasts too little later improvement while the power law forecasts it well. Both findings can be repeated above from the raw file.</p>
+  </div>
+</div>
+
+<h2>What this page can and cannot show</h2>
+<p>It repeats a published analysis. It is not a new result. What it adds is that you can watch the published curves come out of the published counts on your own machine, with every step open to inspection.</p>
+<p>The &ldquo;odds&rdquo; come from a score, BIC, that treats every point as a separate measurement with the same scatter. They are not separate: a population's fitness at one time is tied to its fitness at the next, and the populations differ from one another. So read large odds as &ldquo;clearly better&rdquo;, not as a literal probability. The resampling is the rougher and more honest guide, and with twelve populations it is coarse.</p>
+<p>Taken one at a time the populations are much less decisive, as the table shows. One population's record is noisy; the strength of the result is in the twelve together.</p>
+<p>The file stops at generation 50,000. The experiment has run on well past that, and the authors tested the forecast on later generations in a second paper, which found the power law still fitting better. Those later measurements are not in this file and not on this page. Three populations also leave this record early, after 4,000, 30,000 and 32,000 generations, because their colonies could no longer be counted reliably by this method; from then on the average is over fewer populations.</p>
+
+<h2>Why this is here</h2>
+<p>The thesis I want to write claims that evolution under tight constraint leaves the same signatures in living systems and in computational ones. One of those signatures is the one on this page: improvement that slows down but does not stop. <a href="/sporeprint/thesis/14-biological-validation/">Chapter 14</a> proposes to look for the others in the frozen record of this same experiment. This page is the first and smallest step: the published fitness record, taken from raw counts to a comparison of models, with each step checked.</p>
+<p>More: <a href="/static/anderson.html">a physics experiment you can run the same way</a> &middot; <a href="/sporeprint/lab/lithospore/">lithoSpore, the offline package this is headed for</a> &middot; <a href="/static/resume.html">the portfolio</a></p>
+
+<h2>Check the code yourself</h2>
+<div class="card">
+  <p>These checks ran on your machine when the page opened. If any fails, the page says so at the top and the numbers should not be trusted.</p>
+  <ul class="checks" id="checks"><li style="padding-left:0;color:var(--muted)">Running&hellip;</li></ul>
+</div>
+<p class="note">Data: Wiser MJ, Ribeck N, Lenski RE (2013), Long-term dynamics of adaptation in asexual populations, <i>Science</i> 342:1364&ndash;1367, <a href="https://doi.org/10.1126/science.1243357">doi:10.1126/science.1243357</a>; deposited at Dryad, <a href="https://doi.org/10.5061/dryad.0hc2m">doi:10.5061/dryad.0hc2m</a>, public domain (CC0). The fitted curves as printed, and the later test: Lenski RE and others (2015), <i>Proc. R. Soc. B</i> 282:20152292, <a href="https://doi.org/10.1098/rspb.2015.2292">doi:10.1098/rspb.2015.2292</a>, open access.</p>
+<p class="note">The whole calculation is one short file you can read: <a href="/static/ltee-core.js">ltee-core.js</a>. Written by Kevin Mok for ecoPrimals; AGPL-3.0. The experiment and its data are the work of the Lenski laboratory.</p>
+
+</main>
+<script src="/static/ltee-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var C = window.LteeCore, DATA = '/static/ltee-data/Concatenated.LTEE.data.all.csv';
+  var COL = { hyperbolic: '#d4a574', power: '#5aad72', data: '#f5f0e8', faint: '#9a958d' };
+  var rows = null, gens = [], state = null, perPop = null, draws = null, drawsFor = null, ok = false;
+
+  function fmtInt(n) { return Math.round(n).toLocaleString('en'); }
+  function sig(x, n) { return Number(x).toPrecision(n).replace(/e\+?(-?\d+)/, ' \u00d7 10^$1'); }
+  function oddsText(d) {
+    var o = Math.exp(Math.abs(d) / 2);
+    if (Math.abs(d) < 2) return 'too close to call';
+    if (o >= 1e9) return 'more than a billion to one';
+    if (o >= 1e6) return 'about ' + (o / 1e6).toPrecision(2).replace(/\.0$/, '') + ' million to one';
+    if (o >= 1e4) return 'about ' + fmtInt(Math.round(o / 1000) * 1000) + ' to one';
+    return 'about ' + fmtInt(Number(o.toPrecision(2))) + ' to one';
+  }
+  function whichLabel(w) { var s = $('which'); for (var i = 0; i < s.options.length; i++) if (s.options[i].value === w) return s.options[i].textContent; return w; }
+
+  function fillPopulations() {
+    var g = document.createElement('optgroup'); g.label = 'One population alone';
+    C.populations(rows).forEach(function (p) { var o = document.createElement('option'); o.value = p.name; o.textContent = p.name.replace(' - ', '\u2212').replace(' + ', '+'); g.appendChild(o); });
+    $('which').appendChild(g);
+  }
+  function single(w) { return ['all', 'complete', 'nonmutator', 'mutator'].indexOf(w) < 0; }
+
+  function compute() {
+    if (!ok) return;
+    var which = $('which').value, unit = single(which) ? 'grand' : $('unit').value, T = gens[+$('cut').value], last = gens[gens.length - 1];
+    $('unit').disabled = single(which);
+    $('cutv').textContent = fmtInt(T) + (T === last ? ' (the whole record)' : '');
+    var grand = C.series(rows, which), pts = unit === 'grand' ? grand : C.popPoints(rows, which);
+    var used = pts.filter(function (q) { return q.t <= T; }), late = grand.filter(function (q) { return q.t > T; });
+    var endT = grand[grand.length - 1].t;
+    var s = { which: which, unit: unit, upTo: T, endT: endT, grand: grand, pts: pts, nUsed: used.length, late: late.length, forecast: null, cmp: null };
+    if (used.length < 5) { state = s; render(); return; }
+    s.cmp = C.compare(used);
+    if (late.length) {
+      s.forecast = {};
+      ['hyperbolic', 'power'].forEach(function (m) {
+        var f = s.cmp[m], sq = 0, bias = 0;
+        late.forEach(function (q) { var d = C.MODELS[m].f(q.t, [f.a, f.b]) - q.w; sq += d * d; bias += d; });
+        s.forecast[m] = { rms: Math.sqrt(sq / late.length), bias: bias / late.length, atEnd: C.MODELS[m].f(endT, [f.a, f.b]) };
+      });
+      s.forecast.measured = grand[grand.length - 1].w; s.forecast.se = grand[grand.length - 1].se;
+    }
+    state = s; render();
+  }
+
+  /* ---- drawing ---- */
+  function el(tag, attrs, text) {
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag), k;
+    for (k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text; return e;
+  }
+  function curvePath(svg, m, f, X, Y, from, to, dashed) {
+    var p = [], n = 160, i, t;
+    for (i = 0; i <= n; i++) { t = from + (to - from) * i / n; p.push(X(t) + ',' + Y(C.MODELS[m].f(t, [f.a, f.b]))); }
+    var a = { points: p.join(' '), fill: 'none', stroke: COL[m], 'stroke-width': 2 };
+    if (dashed) a['stroke-dasharray'] = '6 5';
+    svg.appendChild(el('polyline', a));
+  }
+  function drawPlot() {
+    var s = state, W = 640, H = 400, ml = 46, mr = 14, mt = 14, mb = 42, svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Fitness against generations' });
+    var x1 = s.endT, ylo = 0.9, yhi = 1.9, t;
+    s.grand.forEach(function (q) { yhi = Math.max(yhi, q.w + (q.se || 0) + 0.03); ylo = Math.min(ylo, q.w - (q.se || 0) - 0.03); });
+    if (s.unit === 'pop') s.pts.forEach(function (q) { yhi = Math.max(yhi, q.w + 0.03); ylo = Math.min(ylo, q.w - 0.03); });
+    yhi = Math.ceil(yhi * 10) / 10; ylo = Math.floor(ylo * 10) / 10;
+    var X = function (g) { return ml + g / x1 * (W - ml - mr); }, Y = function (w) { return mt + (yhi - w) / (yhi - ylo) * (H - mt - mb); };
+    for (t = 0; t <= x1; t += 10000) {
+      svg.appendChild(el('line', { x1: X(t), x2: X(t), y1: mt, y2: H - mb, stroke: '#232830' }));
+      svg.appendChild(el('text', { x: X(t), y: H - mb + 16, 'text-anchor': t === 0 ? 'start' : t + 10000 > x1 ? 'end' : 'middle' }, fmtInt(t)));
+    }
+    var ystep = (yhi - ylo) > 1.6 ? 0.4 : 0.2;
+    for (t = ylo; t <= yhi + 1e-9; t += ystep) {
+      svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: '#232830' }));
+      svg.appendChild(el('text', { x: ml - 8, y: Y(t) + 4, 'text-anchor': 'end' }, t.toFixed(1)));
+    }
+    svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: H - 6, 'text-anchor': 'middle' }, 'generations'));
+    svg.appendChild(el('text', { x: 12, y: (mt + H - mb) / 2, 'text-anchor': 'middle', transform: 'rotate(-90 12 ' + (mt + H - mb) / 2 + ')' }, 'fitness relative to the ancestor'));
+    if (s.upTo < s.endT) {
+      svg.appendChild(el('rect', { x: X(s.upTo), y: mt, width: X(s.endT) - X(s.upTo), height: H - mt - mb, fill: '#ffffff', opacity: 0.035 }));
+      svg.appendChild(el('line', { x1: X(s.upTo), x2: X(s.upTo), y1: mt, y2: H - mb, stroke: '#9a958d', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(el('text', { x: X(s.upTo) + 5, y: H - mb - 6 }, 'not used in the fit \u2192'));
+    }
+    if (s.unit === 'pop') s.pts.forEach(function (q) { svg.appendChild(el('circle', { cx: X(q.t), cy: Y(q.w), r: 1.6, fill: COL.faint, opacity: 0.38 })); });
+    if (s.cmp) {
+      var hc = 1 + s.cmp.hyperbolic.a;
+      if (hc < yhi) {
+        svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(hc), y2: Y(hc), stroke: COL.hyperbolic, 'stroke-dasharray': '1 5', 'stroke-width': 1 }));
+        svg.appendChild(el('text', { x: ml + 6, y: Y(hc) - 5, style: 'fill:' + COL.hyperbolic }, 'hyperbolic ceiling, ' + hc.toFixed(2)));
+      }
+      ['hyperbolic', 'power'].forEach(function (m) {
+        curvePath(svg, m, s.cmp[m], X, Y, 0, s.upTo, false);
+        if (s.upTo < s.endT) curvePath(svg, m, s.cmp[m], X, Y, s.upTo, s.endT, true);
+      });
+    }
+    s.grand.forEach(function (q) {
+      var held = q.t > s.upTo;
+      if (q.se) svg.appendChild(el('line', { x1: X(q.t), x2: X(q.t), y1: Y(q.w - q.se), y2: Y(q.w + q.se), stroke: COL.data, 'stroke-width': 1.1, opacity: 0.7 }));
+      svg.appendChild(el('circle', { cx: X(q.t), cy: Y(q.w), r: 3.3, fill: held ? '#08090b' : COL.data, stroke: COL.data, 'stroke-width': 1.3 }));
+    });
+    $('plot').innerHTML = ''; $('plot').appendChild(svg);
+    var lg = $('legend'); lg.innerHTML = '';
+    [[COL.data, single(s.which) ? 'measured' : 'measured average'], [COL.hyperbolic, 'hyperbolic (levels off)'], [COL.power, 'power law (keeps rising)']].forEach(function (x) {
+      var sp = document.createElement('span'), d = document.createElement('span'); d.className = 'swatch'; d.style.background = x[0];
+      sp.appendChild(d); sp.appendChild(document.createTextNode(x[1])); lg.appendChild(sp); });
+  }
+  function drawResid() {
+    var s = state, W = 420, H = 400, ml = 46, mr = 12, mt = 14, mb = 42, svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Measured average minus each curve' });
+    var lim = 0.1, t, res = { hyperbolic: [], power: [] };
+    if (s.cmp) ['hyperbolic', 'power'].forEach(function (m) { s.grand.forEach(function (q) {
+      var d = q.w - C.MODELS[m].f(q.t, [s.cmp[m].a, s.cmp[m].b]); res[m].push({ t: q.t, d: d }); lim = Math.max(lim, Math.abs(d) + 0.02); }); });
+    lim = Math.ceil(lim * 10) / 10;
+    var X = function (g) { return ml + g / s.endT * (W - ml - mr); }, Y = function (d) { return mt + (lim - d) / (2 * lim) * (H - mt - mb); };
+    var st = lim > 0.25 ? 0.1 : 0.05;
+    for (t = -lim; t <= lim + 1e-9; t += st) {
+      svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: Math.abs(t) < 1e-9 ? '#5a5f68' : '#232830' }));
+      svg.appendChild(el('text', { x: ml - 6, y: Y(t) + 4, 'text-anchor': 'end' }, (t > 1e-9 ? '+' : '') + (Math.abs(t) < 1e-9 ? '0' : t.toFixed(2))));
+    }
+    for (t = 0; t <= s.endT; t += 10000) svg.appendChild(el('text', { x: X(t), y: H - mb + 16, 'text-anchor': t === 0 ? 'start' : 'middle' }, t === 0 ? '0' : (t / 1000) + 'k'));
+    svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: H - 6, 'text-anchor': 'middle' }, 'generations'));
+    if (s.upTo < s.endT) svg.appendChild(el('line', { x1: X(s.upTo), x2: X(s.upTo), y1: mt, y2: H - mb, stroke: '#9a958d', 'stroke-dasharray': '2 4' }));
+    ['hyperbolic', 'power'].forEach(function (m) {
+      if (!res[m].length) return;
+      svg.appendChild(el('polyline', { points: res[m].map(function (r) { return X(r.t) + ',' + Y(r.d); }).join(' '), fill: 'none', stroke: COL[m], 'stroke-width': 1, opacity: 0.55 }));
+      res[m].forEach(function (r) { svg.appendChild(el('circle', { cx: X(r.t), cy: Y(r.d), r: 2.8, fill: r.t > s.upTo ? '#08090b' : COL[m], stroke: COL[m], 'stroke-width': 1.2 })); });
+    });
+    $('resid').innerHTML = ''; $('resid').appendChild(svg);
+    s.resid = res;
+  }
+  function drawFits() {
+    var s = state, tb = $('fits'); tb.innerHTML = '';
+    $('hEnd').textContent = 'At ' + fmtInt(s.endT);
+    if (!s.cmp) { tb.innerHTML = '<tr><td colspan="8" style="color:var(--muted)">Too few points to fit: move the slider to the right.</td></tr>'; return; }
+    ['hyperbolic', 'power'].forEach(function (m) {
+      var f = s.cmp[m], tr = document.createElement('tr'), M = C.MODELS[m];
+      [null, sig(f.a, 4), sig(f.b, 4), sig(f.rss, 4), f.bic.toFixed(1), M.bounded ? (1 + f.a).toFixed(3) : 'never',
+       M.f(s.endT, [f.a, f.b]).toFixed(3), M.f(100000, [f.a, f.b]).toFixed(3)].forEach(function (v, k) {
+        var td = document.createElement('td');
+        if (k === 0) { var sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = COL[m]; td.appendChild(sw); td.appendChild(document.createTextNode(M.label + ', ' + M.formula)); }
+        else td.textContent = v;
+        tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+  function drawVerdict() {
+    var s = state, v = $('verdict'), sm = document.createElement('small'), c = s.cmp;
+    v.innerHTML = '';
+    if (!c) { v.textContent = 'Only ' + s.nUsed + ' points up to generation ' + fmtInt(s.upTo) + ': too few to fit.'; return; }
+    var name = { power: 'power law', hyperbolic: 'hyperbolic curve' }, lose = c.better === 'power' ? 'hyperbolic' : 'power', txt;
+    var close = Math.abs(c.dBIC) < 2;
+    if (!s.forecast) {
+      txt = close ? 'On these points the two curves cannot be told apart.'
+                  : 'On these points the ' + name[c.better] + ' fits better: squared error ' + sig(c[c.better].rss, 3) + ' against ' + sig(c[lose].rss, 3) + '.';
+      sm.textContent = whichLabel(s.which) + ', ' + fmtInt(s.nUsed) + ' points, whole record. Score gap (BIC) ' + Math.abs(c.dBIC).toFixed(1) +
+        (close ? ': under 2 is too close to call.' : ' in favour of the ' + name[c.better] + ': on the usual reading, odds of ' + oddsText(c.dBIC) + '. See below for how far to trust that figure.');
+    } else {
+      var f = s.forecast, miss = function (m) { var b = f[m].bias; return (b < 0 ? 'low' : 'high') + ' by ' + Math.abs(b).toFixed(3); };
+      txt = 'Fitted to the first ' + fmtInt(s.upTo) + ' generations only, the hyperbolic curve forecasts fitness ' + f.hyperbolic.atEnd.toFixed(2) + ' at generation ' + fmtInt(s.endT) +
+            ' and the power law ' + f.power.atEnd.toFixed(2) + '. Measured: ' + f.measured.toFixed(2) + (isFinite(f.se) ? ' \u00b1 ' + f.se.toFixed(2) : '') + '.';
+      sm.textContent = whichLabel(s.which) + ', ' + fmtInt(s.nUsed) + ' points used. Averaged over the ' + s.late + ' later time points the fit never saw, the hyperbolic forecast is ' + miss('hyperbolic') +
+        ' and the power-law forecast is ' + miss('power') + '. On the points that were used, the ' + (close ? 'two curves cannot be told apart' : name[c.better] + ' fits better') + ' (score gap ' + Math.abs(c.dBIC).toFixed(1) + ').';
+    }
+    v.appendChild(document.createTextNode(txt)); v.appendChild(sm);
+  }
+  function drawPops() {
+    var tb = $('pops'); tb.innerHTML = '';
+    if (!perPop) perPop = C.populations(rows).map(function (p) { var pts = C.series(rows, p.name); return { p: p, n: pts.length, c: C.compare(pts) }; });
+    perPop.forEach(function (x) {
+      var tr = document.createElement('tr'), d = x.c.dBIC, cls = Math.abs(d) < 2 ? 'even' : d > 0 ? 'win' : 'lose';
+      [x.p.name.replace(' - ', '\u2212').replace(' + ', '+'), x.p.mutator ? 'yes' : 'no', fmtInt(x.p.last), String(x.n), (1 + x.c.hyperbolic.a).toFixed(2), x.c.power.a.toFixed(3),
+       (d > 0 ? '+' : '\u2212') + Math.abs(d).toFixed(1), Math.abs(d) < 2 ? 'too close to call' : d > 0 ? 'power law' : 'hyperbolic'].forEach(function (v, k) {
+        var td = document.createElement('td'); td.textContent = v; if (k === 1 || k === 7) td.className = 't' + (k === 7 ? ' ' + cls : ''); tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+  }
+  function pct(a, q) { var s = a.slice().sort(function (x, y) { return x - y; }); return s[Math.min(s.length - 1, Math.max(0, Math.round(q * (s.length - 1))))]; }
+  function drawDraws() {
+    var W = 420, H = 230, ml = 34, mr = 12, mt = 10, mb = 38, svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Score gap in each draw' });
+    var out = $('rsout'), i, t;
+    if (!draws) {
+      svg.appendChild(el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle' }, 'Press the button to draw.'));
+      $('rshist').innerHTML = ''; $('rshist').appendChild(svg); out.innerHTML = '&nbsp;'; return;
+    }
+    var g = draws.map(function (d) { return d.dBIC; }), lo = Math.min(0, Math.min.apply(null, g)), hi = Math.max(0, Math.max.apply(null, g));
+    var bw = (hi - lo) > 120 ? 10 : (hi - lo) > 50 ? 5 : 2; lo = Math.floor(lo / bw) * bw - bw; hi = Math.ceil(hi / bw) * bw + bw;
+    var nb = Math.round((hi - lo) / bw), bins = new Array(nb).fill(0), top = 1;
+    g.forEach(function (v) { var k = Math.min(nb - 1, Math.floor((v - lo) / bw)); bins[k]++; });
+    bins.forEach(function (b) { top = Math.max(top, b); });
+    var X = function (v) { return ml + (v - lo) / (hi - lo) * (W - ml - mr); }, Y = function (c) { return mt + (top - c) / top * (H - mt - mb); };
+    for (i = 0; i < nb; i++) if (bins[i]) { var mid = lo + (i + 0.5) * bw;
+      svg.appendChild(el('rect', { x: X(lo + i * bw) + 1, y: Y(bins[i]), width: Math.max(1, X(lo + (i + 1) * bw) - X(lo + i * bw) - 2), height: Y(0) - Y(bins[i]), fill: mid > 0 ? COL.power : COL.hyperbolic, opacity: 0.7 })); }
+    svg.appendChild(el('line', { x1: X(0), x2: X(0), y1: mt, y2: H - mb, stroke: '#f5f0e8', 'stroke-dasharray': '3 4' }));
+    var ts = (hi - lo) > 120 ? 40 : (hi - lo) > 50 ? 20 : 10;
+    for (t = Math.ceil(lo / ts) * ts; t <= hi; t += ts) svg.appendChild(el('text', { x: X(t), y: H - mb + 15, 'text-anchor': 'middle' }, String(t)));
+    svg.appendChild(el('text', { x: ml - 6, y: Y(top) + 8, 'text-anchor': 'end' }, String(top)));
+    svg.appendChild(el('text', { x: ml - 6, y: Y(0), 'text-anchor': 'end' }, '0'));
+    svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: H - 5, 'text-anchor': 'middle' }, 'score gap (hyperbolic minus power law)'));
+    $('rshist').innerHTML = ''; $('rshist').appendChild(svg);
+    var win = g.filter(function (v) { return v > 0; }).length, clear = g.filter(function (v) { return v > 2; }).length;
+    var pa = draws.map(function (d) { return d.pa; }), hc = draws.map(function (d) { return 1 + d.ha; });
+    out.textContent = 'In ' + win + ' of ' + g.length + ' draws the power law fitted better (' + clear + ' by a clear margin). Middle 95% of draws: score gap ' +
+      pct(g, 0.025).toFixed(0) + ' to ' + pct(g, 0.975).toFixed(0) + '; power-law exponent ' + pct(pa, 0.025).toFixed(3) + ' to ' + pct(pa, 0.975).toFixed(3) +
+      '; hyperbolic ceiling ' + pct(hc, 0.025).toFixed(2) + ' to ' + pct(hc, 0.975).toFixed(2) + '. ' + whichLabel(drawsFor.which) + ', whole record, seed ' + drawsFor.seed + '.';
+  }
+  function render() {
+    drawPlot(); drawResid(); drawFits(); drawVerdict(); drawPops(); drawDraws();
+    $('dljson').disabled = $('dlcsv').disabled = !state.cmp;
+    $('rs').disabled = single(state.which);
+  }
+
+  /* ---- saving ---- */
+  function save(name, type, text) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type })); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function asJson() {
+    var s = state, o = {
+      what: 'Hyperbolic and power-law fits to the LTEE fitness record (Wiser, Ribeck and Lenski 2013)',
+      data: { file: 'Concatenated.LTEE.data.all.csv', source: 'https://doi.org/10.5061/dryad.0hc2m', licence: 'CC0', md5: C.DATA_MD5 },
+      code: C.VERSION, source: '/static/ltee-core.js',
+      settings: { populations: s.which, fitted_to: s.unit === 'pop' ? 'each population mean at each time' : 'one average per time', generations_up_to: s.upTo, points_used: s.nUsed },
+      fits: {}, score_gap_bic: s.cmp.dBIC, better: s.cmp.better
+    };
+    ['hyperbolic', 'power'].forEach(function (m) { var f = s.cmp[m];
+      o.fits[m] = { formula: C.MODELS[m].formula, a: f.a, b: f.b, squared_error: f.rss, r_squared: f.r2, aic: f.aic, bic: f.bic }; });
+    if (s.forecast) o.forecast = { scored_on: 'the averages after generation ' + s.upTo, time_points: s.late, at_generation: s.endT, measured: s.forecast.measured, std_error: s.forecast.se,
+      hyperbolic: s.forecast.hyperbolic, power: s.forecast.power, note: 'bias below zero means the curve forecast too little fitness' };
+    o.each_population = perPop.map(function (x) { return { population: x.p.name, mutator: x.p.mutator, measured_to: x.p.last, time_points: x.n,
+      hyperbolic: { a: x.c.hyperbolic.a, b: x.c.hyperbolic.b }, power: { a: x.c.power.a, b: x.c.power.b }, score_gap_bic: x.c.dBIC }; });
+    if (draws) o.resampling = { populations: drawsFor.which, seed: drawsFor.seed, draws: draws,
+      note: 'Repeat with LteeCore.resample(rows, populations, ' + draws.length + ', seed).' };
+    return JSON.stringify(o, null, 1);
+  }
+  function asCsv() {
+    var s = state, out = ['generation,mean_fitness,std_error,populations,used_in_fit,hyperbolic,power_law'];
+    s.grand.forEach(function (q) { out.push([q.t, q.w, isFinite(q.se) ? q.se : '', q.pops, q.t <= s.upTo ? 'yes' : 'no',
+      C.MODELS.hyperbolic.f(q.t, [s.cmp.hyperbolic.a, s.cmp.hyperbolic.b]), C.MODELS.power.f(q.t, [s.cmp.power.a, s.cmp.power.b])].join(',')); });
+    return out.join('\n') + '\n';
+  }
+
+  /* ---- wiring ---- */
+  function setCut(T) { var i = gens.indexOf(T); $('cut').value = i < 0 ? gens.length - 1 : i; }
+  $('which').onchange = compute; $('unit').onchange = compute; $('cut').oninput = compute;
+  $('p1').onclick = function () { $('which').value = 'all'; $('unit').value = 'pop'; setCut(50000); compute(); };
+  $('p2').onclick = function () { $('which').value = 'all'; $('unit').value = 'pop'; setCut(5000); compute(); };
+  $('p3').onclick = function () { $('which').value = 'all'; $('unit').value = 'pop'; setCut(20000); compute(); };
+  $('rs').onclick = function () {
+    var which = $('which').value, seed = (Math.abs(Math.round(+$('seed').value)) || 0) >>> 0;
+    $('rs').disabled = true; $('rsout').textContent = 'Drawing and fitting\u2026';
+    setTimeout(function () { draws = C.resample(rows, which, 200, seed); drawsFor = { which: which, seed: seed }; drawDraws(); $('rs').disabled = single($('which').value); }, 40);
+  };
+  $('dljson').onclick = function () { save('ltee-fit.json', 'application/json', asJson()); };
+  $('dlcsv').onclick = function () { save('ltee-fit.csv', 'text/csv', asCsv()); };
+
+  function showChecks(results) {
+    var ul = $('checks'), n = 0; ul.innerHTML = '';
+    results.forEach(function (r) { var li = document.createElement('li'), sm = document.createElement('small');
+      li.className = r.pass ? 'pass' : 'fail'; li.textContent = r.what; sm.textContent = r.detail; li.appendChild(sm); ul.appendChild(li); if (r.pass) n++; });
+    ok = n === results.length;
+    $('status').textContent = ok ? 'All ' + n + ' checks passed on your machine. Change anything above and the fit is redone at once.'
+      : (results.length - n) + ' of ' + results.length + ' checks FAILED on your machine: do not trust the numbers on this page. See the list at the foot.';
+    $('status').style.color = ok ? '' : 'var(--red)';
+  }
+  function fail(msg) { $('status').textContent = msg; $('status').style.color = 'var(--red)'; $('checks').innerHTML = '<li class="fail">' + msg + '</li>'; }
+
+  window.__ltee = { state: function () { return state; }, ready: function () { return ok; }, perPop: function () { return perPop; }, draws: function () { return draws; }, json: asJson, csv: asCsv };   /* for automated checks of this page */
+  if (!window.fetch || !C) { fail('This browser cannot load the data file, so the comparison is not available here.'); return; }
+  fetch(DATA).then(function (r) { if (!r.ok) throw new Error('the data file answered ' + r.status); return r.arrayBuffer(); }).then(function (buf) {
+    var chk = C.selfCheck(new Uint8Array(buf));
+    rows = chk.rows; gens = C.series(rows, 'all').map(function (q) { return q.t; });
+    $('cut').max = gens.length - 1; $('cut').value = gens.length - 1;
+    fillPopulations(); showChecks(chk.results);
+    if (!ok) { ok = true; compute(); ok = false; return; }             /* still draw, under the warning */
+    if (location.hash === '#forecast') $('p2').click(); else compute();
+  }).catch(function (e) { fail('The data file could not be loaded (' + (e && e.message || e) + ').'); });
+})();
+</script>
+</body>
+</html>
