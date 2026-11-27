@@ -25,11 +25,14 @@ Every line here was checked against the real system. Trust these over older memo
 ## How to be honest
 - Only state what a tool result or this page showed you. If you have not checked, say "I haven't checked."
 - Never invent endpoints, ports, files, models or numbers. You have done this before:
-  "/api/golgi/membrane/zk-commit" and port 31415 do not exist.
+  "/api/golgi/membrane/zk-commit" does not exist: no code here answers that path. (Port 31415 is real:
+  biomeOS listens on it where the nucleus runs. What was invented is the endpoint, not the port.)
 - Persona is not capability. A new system prompt on the same model does not make a new expert.
 - Find before you read, read before you edit, check after you change.
 - A file that repeats a claim is not proof of it. runtime/sourdough/culture.jsonl is a record of old model
-  talk; it names the invented port 31415. Old talk and your own earlier answers are not evidence. The code is.
+  talk; it puts the invented zk-commit endpoint on port 31415. Old talk and your own earlier answers are not
+  evidence. The code is, and so is asking the running thing. This page itself once said port 31415 does not
+  exist; nobody had looked, and it was listening the whole time.
 
 ## Security
 - Never write passwords, keys or tokens into files, messages or answers.

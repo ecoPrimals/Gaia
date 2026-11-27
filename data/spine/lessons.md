@@ -61,6 +61,22 @@ stable who it is, the hands listed the directory and then named a function witho
 *Do:* open the file. `grep` for `def ` in it gives every function with its line; read around the one
 that fits.
 
+**The teacher did it too.** This page's own rule sheet said "port 31415 does not exist". The head (the
+cloud agent that wrote these lessons) copied that line forward and called the port invented. Nobody had
+looked. biomeOS was listening on 31415 on this gate the whole time; what never existed is the zk-commit
+endpoint. It came out only when the listening ports were listed for another reason. *Do:* a claim about
+a running system is checked against the running system, also when the claim is in your own rule sheet,
+and also when you are the one teaching.
+
+**Choosing between files without opening them.** In 59 cases the hands were asked which of several
+files with the same name a page means, each case twice with the list turned around. They never opened
+a file: every answer came from the paths alone. In 27 cases the answer changed when the list was
+turned, in 16 there was no usable answer, and in 16 they named the same file both times. The head read
+those 16 against the page: 8 stood, 8 did not. One wrong pick took a path with "neuromorphic" in it for
+a paper about a neuromorphic chip, when the paper names the other repository eleven times. *Do:* when
+the choice is between files, open the page and the files. An answer that changes when the list is
+turned around was a guess, and an answer that stays the same can still be one.
+
 ## Measuring
 
 **A check that passed a wrong answer.** A question asked whether a person may be pinned on the atlas.
@@ -71,6 +87,24 @@ you, read the answer.
 **One run is not a number.** The same eighteen questions, asked three times with nothing changed, gave
 8, 9 and 9. *Do:* before you say a change helped, run it more than once on each side and give every
 count.
+
+**The same bytes, or only the same text.** Files were copied into the commons from Windows checkouts
+and hashed. 304 of 324 had Windows line ends that their repositories never held, and "is this the file
+its repository published?" came back no for 328. Nothing was wrong with the files; the checkout had
+rewritten them. *Do:* when a hash matters, take the bytes git stored (`git show HEAD:path`), not the
+file the checkout wrote. And turn line-end conversion off where hashes are kept (`* -text`).
+
+**A busy server is not a missing file.** The first check of the new site said 14 files were missing;
+the next, a minute later, said 8. None were. The check had counted "the server did not answer in time"
+as "the file is not there". *Do:* keep "not there" (the server said so) apart from "no answer", ask
+again before you report, and when a count changes between two runs with nothing changed, distrust both.
+
+**Carried is not federated.** Asked to pass the commons from one gate's nestgate to the other, both
+ways failed: one gate could not reach its security provider, the other speaks a transport the first
+does not offer. A script then fetched each file from one and put it into the other, and both stores
+now hold all 370. That is a copy made by a third party, and the record says "carried". *Do:* name what
+was done by what did it. If the thing you were asked to test failed and you reached the goal another
+way, report the failure first and the other way second.
 
 ## What may be public
 
