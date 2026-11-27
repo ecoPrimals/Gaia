@@ -1,4 +1,4 @@
-/* sky.js - the sun and the moon from the clock alone. One file, read by the atlas and by the HUD, so both show the
+/* sky.js - the sun, the moon and the fixed stars from the clock alone. One file, read by the atlas and by the HUD, so both show the
    same sky. Nothing is fetched: every number is worked out here from the moment asked.
 
    gaiaSky(ms)                 the place on earth the sun stands straight over, the same for the moon, how far the moon
@@ -8,6 +8,8 @@
                                and how the lit edge of the moon is turned as seen from there.
    gaiaSky.next(place, ms, 'sun'|'moon', 'rise'|'set')   the next rising or setting seen from a place.
    gaiaSky.moonFace(ctx, x, y, r, lit, tilt)             draws the moon as it is seen.
+   gaiaSky.stars(catalogue, ms)  the place on earth every star of /static/atlas-stars.json stands straight over at that
+                               time. That file is the one thing read from outside this one, and the page hands it in.
    gaiaSky.stamp(ms) / .read(text) / .of(y, m, d, h, min)   dates. Before 15 October 1582 they are in the old (Julian)
                                calendar, the one the annals count in; from that day on, the calendar in use now.
    gaiaSky.easter(year)        Easter Sunday by the Alexandrian table (the old calendar's until 1582, today's after).
@@ -21,7 +23,15 @@
    (AD 133, 134, 136) and the eclipse of the sun in the Irish annals (1 May 664) on their nights.
    That agreement does not cover how much the earth's turning has slowed: both reckonings take it from much the same
    fit, and long ago it is known only to a few minutes - a degree or so of longitude for where a body stood overhead,
-   a few minutes for a rising or a setting. Phases and dates do not depend on it. */
+   a few minutes for a rising or a setting. Phases and dates do not depend on it.
+
+   THE STARS are moved from where the catalogue has them in the year 2000 by their own drift and by the slow turning
+   of the earth's axis. Held against PyEphem for 122 stars at 160 moments from 2999 BC to now, the places agree to
+   0.02 of a degree. PyEphem turns the axis by the same formula, so that agreement checks the arithmetic and not
+   the formula, which is fitted to the present and is trusted less the further back it is taken. Two things written
+   down by others stand with it: the pole star comes nearest the pole in 2102, 0.46 of a degree off (the almanacs
+   say about 2100, 0.45), and Regulus and Spica stand here, for AD 137, 1.5 and 1.3 degrees further along the sun's
+   path than Ptolemy's own catalogue has them - about the error that catalogue is known for, a degree and more. */
 (function (root) {
   'use strict';
   var DEG = Math.PI / 180, DAY = 86400000;
@@ -50,6 +60,11 @@
     u = (y - 1820) / 100; return -20 + 32 * u * u;
   }
 
+  function turn(ms) {                                                 // how far the earth has turned against the stars (Greenwich sidereal time, degrees), from the ordinary clock
+    var du = ms / DAY - 10957.5, Tu = du / 36525;
+    return rev(280.46061837 + 360.98564736629 * du + 0.000387933 * Tu * Tu - Tu * Tu * Tu / 38710000);
+  }
+
   function sky(ms) {
     var dt = deltaT(2000 + (ms - 946684800000) / (365.2425 * DAY));
     var d = (ms + dt * 1000) / DAY - 10956;                           // days from 1999 Dec 31, 0h, on the even clock
@@ -57,8 +72,7 @@
     var ws = 282.9404 + 4.70935e-5 * d + 0.0004569 * T2, es = 0.016709 - 1.151e-9 * d, Ms = rev(356.0470 + 0.9856002585 * d - 0.0001537 * T2), ecl = (23.4393 - 3.563e-7 * d) * DEG;
     var E = kepler(Ms * DEG, es), lonS = Math.atan2(Math.sqrt(1 - es * es) * Math.sin(E), Math.cos(E) - es) + ws * DEG;
     var Ls = rev(Ms + ws);
-    var du = ms / DAY - 10957.5, Tu = du / 36525;                     // the earth's own turning, from the ordinary clock
-    var gmst = rev(280.46061837 + 360.98564736629 * du + 0.000387933 * Tu * Tu - Tu * Tu * Tu / 38710000);
+    var gmst = turn(ms);
     function over(lon, lat) {                                         // ecliptic place in the sky -> the place on earth it stands straight over
       var x = Math.cos(lat) * Math.cos(lon), y = Math.cos(lat) * Math.sin(lon), z = Math.sin(lat);
       var ye = y * Math.cos(ecl) - z * Math.sin(ecl), ze = y * Math.sin(ecl) + z * Math.cos(ecl);
@@ -132,6 +146,38 @@
   }
   function moonName(e) { return ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'][Math.floor(((e + 22.5) % 360) / 45)]; }
 
+  // ---------------------------------------------------------------- the fixed stars
+  // cat is /static/atlas-stars.json: six numbers a star, as that file says. Given a time this fills, for every star,
+  // the place on earth it stands straight over (lat is its declination at that time; lon is its right ascension less
+  // the turn of the earth), with its brightness and colour. Two things move a star between the year 2000 and the time
+  // asked: its own drift, taken as steady, and the slow turning of the earth's axis (precession, by the angles of
+  // Lieske 1976 as Meeus gives them), which carries the pole round the sky in some 26,000 years. The small nodding of
+  // the axis and the bending of starlight by the earth's motion (a third of a minute of arc each) are left out.
+  // The arrays are kept on the catalogue and filled again when another time is asked.
+  function stars(cat, ms) {
+    var n = cat.n, s = cat.s, k = cat._k, i, j;
+    if (!k) {
+      k = cat._k = {n: n, lat: new Float32Array(n), lon: new Float32Array(n), ra: new Float32Array(n), mag: new Float32Array(n), bv: new Float32Array(n), at: null};
+      for (i = 0; i < n; i++) { k.mag[i] = s[i * 6 + 2] / 100; k.bv[i] = s[i * 6 + 3] / 100; }
+    }
+    if (k.at == null || Math.abs(ms - k.at) > 30 * DAY) {             // the axis turns 50 seconds of arc a year: a month is nothing
+      var yrs = (ms - 946728000000) / (365.25 * DAY), T = yrs / 100, AS = DEG / 3600;
+      var zeta = (2306.2181 * T + 0.30188 * T * T + 0.017998 * T * T * T) * AS, z = (2306.2181 * T + 1.09468 * T * T + 0.018203 * T * T * T) * AS,
+          th = (2004.3109 * T - 0.42665 * T * T - 0.041833 * T * T * T) * AS, ct = Math.cos(th), st = Math.sin(th);
+      for (i = 0; i < n; i++) {
+        j = i * 6;
+        var d0 = s[j + 1] / 1000 * DEG, d = Math.max(-89.9999, Math.min(89.9999, s[j + 1] / 1000 + s[j + 5] / 3600000 * yrs)) * DEG;
+        var a = (s[j] / 1000 + s[j + 4] / 3600000 * yrs / Math.cos(d0)) * DEG + zeta, cd = Math.cos(d);
+        var A = cd * Math.sin(a), B = ct * cd * Math.cos(a) - st * Math.sin(d), C = st * cd * Math.cos(a) + ct * Math.sin(d);
+        k.ra[i] = rev((Math.atan2(A, B) + z) / DEG); k.lat[i] = Math.asin(Math.max(-1, Math.min(1, C))) / DEG;
+      }
+      k.at = ms;
+    }
+    var g = turn(ms);
+    for (i = 0; i < n; i++) k.lon[i] = rev(k.ra[i] - g + 180) - 180;
+    return k;
+  }
+
   // ---------------------------------------------------------------- dates
   function jdn(y, m, d, old) {                                        // the day number at noon of a calendar day
     var a = Math.floor((14 - m) / 12), yy = y + 4800 - a, mm = m + 12 * a - 3;
@@ -177,6 +223,7 @@
   }
 
   sky.look = look; sky.next = next; sky.moonFace = moonFace; sky.moonName = moonName; sky.apart = apart; sky.bearing = bearing;
+  sky.stars = stars; sky.turn = turn;
   sky.deltaT = deltaT; sky.of = of; sky.cal = cal; sky.stamp = stamp; sky.mark = mark; sky.read = read; sky.easter = easter;
   sky.FIRST = of(-2999, 1, 1, 0, 0); sky.LAST = of(2999, 12, 31, 0, 0);     // as far as the fit for the earth's turning is given
   root.gaiaSky = sky;
