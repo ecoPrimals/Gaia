@@ -3166,6 +3166,14 @@ body { padding-bottom: 76px !important; }
   }
   #hud-utc:hover { color: #c9d1d9; }
   #hud-utc.away { color: #d4af37; border-color: rgba(212, 175, 55, .55); }
+  /* the gut: an organism of the thymus that is a node of the spore graph is hung on it - its page, its pin, its gate */
+  #thymus-grid .hud-hang { margin-top: 2px; font-size: 9px; color: #6e7681; display: flex; flex-wrap: wrap; gap: 0 7px; }
+  #thymus-grid .hud-hang a, #thymus-grid .hud-hang button {
+    font: inherit; color: #8b949e; background: none; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .18); padding: 0; cursor: pointer; text-decoration: none;
+  }
+  #thymus-grid .hud-hang a:hover, #thymus-grid .hud-hang button:hover { color: #e6edf3; }
+  #thymus-grid .hud-hang .run { color: #5ab87a; }
+  #hud-gut-hang { margin-top: 6px; font-size: 10px; color: #6e7681; }
   /* the place every face stands on: home, until a pin is pressed on the atlas */
   #hud-place {
     font: inherit; font-size: 11px; padding: 2px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .10);
@@ -3295,8 +3303,8 @@ body { padding-bottom: 76px !important; }
 </section>
 
 <script src="/static/regime.js"></script>
-<script src="/static/sky.js?v=3"></script>
-<script src="/static/one.js?v=1"></script>
+<script src="/static/sky.js?v=4"></script>
+<script src="/static/one.js?v=2"></script>
 <script src="/static/house.js?v=1"></script>
 <script id="hud-one-js">
 (function () {
@@ -3330,11 +3338,11 @@ body { padding-bottom: 76px !important; }
   var VIEWS = [
     { key: 'centre', label: 'centre', hint: 'the black spot is the water · the globe on it is the earth as the HUD\u2019s clock: midnight UTC at the top, the gold hand the sun, the edge of the shadow the hour · drag turns it · the wheel travels in time · a pin opens the atlas there', always: true },
     { key: 'atlas', label: 'atlas', hint: 'the stories, pinned above the places they are about · the sun and the moon where they stand, at any time: the keys at the foot travel · \u201ccore\u201d shows the three plumb lines and the one unit', take: [D.getElementById('hud-atlas')] },
-    { key: 'orrery', label: 'orrery \u00b7 trans', hint: 'the trans face: one body, eight rings, the sky where it stands now · the green 1.00 is one earth radius, split at its two gold core rings', take: [D.getElementById('hud-orrery')] },
+    { key: 'orrery', label: 'orrery \u00b7 trans', hint: 'the trans face: one body, eight rings, and on the outermost the sun, the moon and the planets where they stand at the HUD\u2019s time, the meridian of the place stood on up · the green 1.00 is one earth radius, split at its two gold core rings', take: [D.getElementById('hud-orrery')] },
     { key: 'surfaces', label: 'surfaces', hint: 'every surface on one map - where we can go', take: [one('#nav-ring')] },
     { key: 'eyes', label: 'eyes', hint: 'gaia · player · user - three eyes, one focus', take: [one('#triInfo')], show: [one('#triOverlay')] },
     { key: 'body', label: 'body', hint: 'head · torso · arms · legs · faces - the gate\u2019s paths by region', take: [one('#gate-endpoints')], show: [one('#axial-indicator')] },
-    { key: 'gut', label: 'gut', hint: 'thymus · ecosystem · the record', show: gut.concat(all('.hud-footer')) },
+    { key: 'gut', label: 'gut', hint: 'thymus · ecosystem · the record · an organism that is a node of the spore graph is hung on it: its page, its pin on the atlas, the gate that runs it now', show: gut.concat(all('.hud-footer')) },
     { key: 'tube', label: 'tube', hint: 'telescope \u2194 microscope - 4422 \u2194 641', show: [tube] },
     { key: 'membrane', label: 'membrane', hint: 'the first HUD\u2019s controls - asleep until her scripts are served from this gate', show: membrane },
     { key: 'mesh', label: 'mesh \u00b7 house', hint: 'this body and the other - each reflects what it sees · under them the whole house, drawn as a world by the engine, and how each gate stands now', take: [D.getElementById('hud-mesh')] },
@@ -3514,6 +3522,9 @@ body { padding-bottom: 76px !important; }
     show('atlas');
   }
   if (placeEl) placeEl.onclick = function () { if (O && O.state.place) O.set({ place: null }); else show('atlas'); };
+  // the orrery's frame is under another name of the site when the HUD is on its own name, out of the channel's reach:
+  // the clock and the place are carried in to it
+  var orreryFrame = one('#hud-orrery iframe'); if (O && O.carry && orreryFrame) O.carry(orreryFrame);
 
   var faceEl = D.getElementById('hud-face'), utc = D.getElementById('hud-utc'), aheadMs = O ? O.state.ahead : 0;
   var moonA = sky && sky.querySelector('.moon'), moonWords = sky && sky.querySelector('.moon-words'), moonSay = D.getElementById('hud-moon-now'), moonC = null, moonMore = '';
@@ -3610,6 +3621,41 @@ body { padding-bottom: 76px !important; }
   var globe0 = 'earth'; try { globe0 = localStorage.getItem('hud_globe') || 'earth'; } catch (e) {}
   setGlobe(globe0, true);
   setTimeout(function () { if (D.body.getAttribute('data-hud-globe') === 'earth') loadFace(); }, 4000);   // behind the other views the spot still carries its globe
+
+  // THE GUT (2026-11-28). The thymus card lists the organisms on the gate's disk; its own script fills it, every
+  // minute. Each organism that is a node of the spore graph is hung on the graph here: its page in sporePrint, the pin
+  // it hangs on (the atlas opens there), and the gates that run it now, which the mesh says. Nothing is placed that
+  // the atlas's own file does not place; an organism the graph does not know gets no line.
+  var thymus = D.getElementById('thymus-grid'), hangNote = null;
+  function hangGut() {
+    var H = window.gaiaHouse;
+    if (!thymus || !H || current !== 'gut') return;
+    Promise.all([theGround(), H.load().catch(function () { return null; })]).then(function (got) {
+      var g = got[0], house = got[1], nodes = g.nodes || (g.nodes = H.graph(g.pins)), pinName = {}, boxes = 0, hung = 0;
+      (g.pins.pins || []).forEach(function (p) { pinName[p.id] = p.name; });
+      Array.prototype.forEach.call(thymus.children, function (box) {
+        var name = box.firstElementChild && !box.firstElementChild.classList.contains('hud-hang') ? box.firstElementChild.textContent.trim() : '';
+        if (!name) return;
+        boxes++;
+        all('.hud-hang', box).forEach(function (old) { old.remove(); });
+        var n = nodes[name.toLowerCase()]; if (!n) return;
+        hung++;
+        var line = D.createElement('div'); line.className = 'hud-hang';
+        if (n.page) { var a = D.createElement('a'); a.href = n.page; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'page'; a.title = n.name + ' in sporePrint'; line.appendChild(a); }
+        var b = D.createElement('button'); b.type = 'button'; b.textContent = 'atlas'; b.title = 'hangs on the atlas at ' + (pinName[n.pin] || n.pin);
+        b.onclick = function () { atlasAt(n.pin); }; line.appendChild(b);
+        var on = house ? H.runs(house, name) : [];
+        if (on.length) { var r = D.createElement('span'); r.className = 'run'; r.textContent = 'up on ' + on.join(', '); r.title = 'the mesh says it runs there now'; line.appendChild(r); }
+        box.appendChild(line);
+      });
+      if (!boxes) return;
+      if (!hangNote) { hangNote = D.createElement('div'); hangNote.id = 'hud-gut-hang'; thymus.parentNode.appendChild(hangNote); }
+      hangNote.textContent = hung + ' of ' + boxes + ' are nodes of the spore graph \u00b7 page: its page in sporePrint \u00b7 atlas: the pin it hangs on \u00b7 up on: the gate that runs it now, as the mesh says'
+        + (house && house.asked ? '' : ' (the mesh did not answer)');
+    }).catch(function () {});
+  }
+  if (thymus && window.MutationObserver) new MutationObserver(hangGut).observe(thymus, { childList: true });   // the card was filled again: hang it again
+  D.addEventListener('hud-one-view', function (e) { if (e.detail === 'gut') hangGut(); });
 
   // a pin pressed on the face: the atlas view opens at that pin. The atlas, in its frame, may ask for a view by its
   // name: its house box asks for the mesh view, where the house is drawn.

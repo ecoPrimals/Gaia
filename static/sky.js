@@ -1,5 +1,5 @@
-/* sky.js - the sun, the moon and the fixed stars from the clock alone. One file, read by the atlas and by the HUD, so both show the
-   same sky. Nothing is fetched: every number is worked out here from the moment asked.
+/* sky.js - the sun, the moon, the planets and the fixed stars from the clock alone. One file, read by the atlas, the HUD
+   and the orrery, so all show the same sky. Nothing is fetched: every number is worked out here from the moment asked.
 
    gaiaSky(ms)                 the place on earth the sun stands straight over, the same for the moon, how far the moon
                                is (earth radii), how far round from the sun it has gone (elong, degrees) and how much of
@@ -14,6 +14,8 @@
                                the middle, the horizon the rim, north at the top, east on the left.
    gaiaSky.round(ctx, w, h, place, ms, catalogue)        draws the same sky as a strip all the way round the horizon:
                                north at both ends, east, south in the middle, west; the foot is the horizon.
+   gaiaSky.wander(ms, lonEast) how far round the sun's path the sun, the moon and the seven planets stand, seen from
+                               the earth, and the point of that path on the meridian lonEast degrees east of Greenwich.
    gaiaSky.stamp(ms) / .read(text) / .of(y, m, d, h, min)   dates. Before 15 October 1582 they are in the old (Julian)
                                calendar, the one the annals count in; from that day on, the calendar in use now.
    gaiaSky.easter(year)        Easter Sunday by the Alexandrian table (the old calendar's until 1582, today's after).
@@ -35,7 +37,12 @@
    the formula, which is fitted to the present and is trusted less the further back it is taken. Two things written
    down by others stand with it: the pole star comes nearest the pole in 2102, 0.46 of a degree off (the almanacs
    say about 2100, 0.45), and Regulus and Spica stand here, for AD 137, 1.5 and 1.3 degrees further along the sun's
-   path than Ptolemy's own catalogue has them - about the error that catalogue is known for, a degree and more. */
+   path than Ptolemy's own catalogue has them - about the error that catalogue is known for, a degree and more.
+
+   THE PLANETS go round on Schlyter's orbits. Held against PyEphem at 840 moments, the worst difference along the
+   sun's path: since 1600, 0.04 of a degree for the five the eye can see; AD 560 to 1225, 0.4; 700 BC to AD 150, 0.9;
+   2900 BC to 900 BC, 2.7 (Mars; the others 1.5 or less). Uranus and Neptune, which no one saw then, drift further:
+   2 degrees and 1 by the monks' centuries, up to 4.6 and 2 before that. */
 (function (root) {
   'use strict';
   var DEG = Math.PI / 180, DAY = 86400000;
@@ -96,7 +103,45 @@
     r += -0.58 * Math.cos(a - 2 * D) - 0.46 * Math.cos(2 * D);
     var elong = rev(lonM - lonS / DEG);
     return {sun: over(lonS, 0), moon: over(lonM * DEG, latM * DEG), far: r, elong: elong, lit: (1 - Math.cos(elong * DEG)) / 2,
-            moonLat: latM, deltaT: dt};
+            moonLat: latM, deltaT: dt, sunLon: rev(lonS / DEG), moonLon: rev(lonM),
+            sunFar: Math.sqrt(Math.pow(Math.cos(E) - es, 2) + (1 - es * es) * Math.pow(Math.sin(E), 2))};
+  }
+
+  // THE WANDERERS: how far round the sun's path the sun, the moon and the seven planets stand, seen from the earth
+  // (ecliptic longitude of the date, degrees), and the point of that path that stands on the meridian of a place
+  // lonEast degrees east of Greenwich. The sun and the moon are the ones above. The planets go round on Schlyter's
+  // orbits, each a plain ellipse that turns slowly; Jupiter, Saturn and Uranus carry his largest pulls on one another.
+  var ORBITS = {   // for d days from 1999 Dec 31: node, tilt, the near point's place, size (earth = 1), how far from round, how far along
+    mercury: function (d) { return [48.3313 + 3.24587e-5 * d, 7.0047 + 5.00e-8 * d, 29.1241 + 1.01444e-5 * d, 0.387098, 0.205635 + 5.59e-10 * d, 168.6562 + 4.0923344368 * d]; },
+    venus:   function (d) { return [76.6799 + 2.46590e-5 * d, 3.3946 + 2.75e-8 * d, 54.8910 + 1.38374e-5 * d, 0.723330, 0.006773 - 1.302e-9 * d, 48.0052 + 1.6021302244 * d]; },
+    mars:    function (d) { return [49.5574 + 2.11081e-5 * d, 1.8497 - 1.78e-8 * d, 286.5016 + 2.92961e-5 * d, 1.523688, 0.093405 + 2.516e-9 * d, 18.6021 + 0.5240207766 * d]; },
+    jupiter: function (d) { return [100.4542 + 2.76854e-5 * d, 1.3030 - 1.557e-7 * d, 273.8777 + 1.64505e-5 * d, 5.20256, 0.048498 + 4.469e-9 * d, 19.8950 + 0.0830853001 * d]; },
+    saturn:  function (d) { return [113.6634 + 2.38980e-5 * d, 2.4886 - 1.081e-7 * d, 339.3939 + 2.97661e-5 * d, 9.55475, 0.055546 - 9.499e-9 * d, 316.9670 + 0.0334442282 * d]; },
+    uranus:  function (d) { return [74.0005 + 1.3978e-5 * d, 0.7733 + 1.9e-8 * d, 96.6612 + 3.0565e-5 * d, 19.18171 - 1.55e-8 * d, 0.047318 + 7.45e-9 * d, 142.5905 + 0.011725806 * d]; },
+    neptune: function (d) { return [131.7806 + 3.0173e-5 * d, 1.7700 - 2.55e-7 * d, 272.8461 - 6.027e-6 * d, 30.05826 + 3.313e-8 * d, 0.008606 + 2.15e-9 * d, 260.2471 + 0.005995147 * d]; }
+  };
+  function wander(ms, lonEast) {
+    var s = sky(ms), d = (ms + s.deltaT * 1000) / DAY - 10956, ecl = (23.4393 - 3.563e-7 * d) * DEG;
+    var xs = s.sunFar * Math.cos(s.sunLon * DEG), ys = s.sunFar * Math.sin(s.sunLon * DEG);
+    var Mj = ORBITS.jupiter(d)[5] * DEG, Mt = ORBITS.saturn(d)[5] * DEG, Mu = ORBITS.uranus(d)[5] * DEG;
+    var pull = {                                                      // degrees along its own path that the others pull each one
+      jupiter: -0.332 * Math.sin(2 * Mj - 5 * Mt - 67.6 * DEG) - 0.056 * Math.sin(2 * Mj - 2 * Mt + 21 * DEG) + 0.042 * Math.sin(3 * Mj - 5 * Mt + 21 * DEG)
+        - 0.036 * Math.sin(Mj - 2 * Mt) + 0.022 * Math.cos(Mj - Mt) + 0.023 * Math.sin(2 * Mj - 3 * Mt + 52 * DEG) - 0.016 * Math.sin(Mj - 5 * Mt - 69 * DEG),
+      saturn: 0.812 * Math.sin(2 * Mj - 5 * Mt - 67.6 * DEG) - 0.229 * Math.cos(2 * Mj - 4 * Mt - 2 * DEG) + 0.119 * Math.sin(Mj - 2 * Mt - 3 * DEG)
+        + 0.046 * Math.sin(2 * Mj - 6 * Mt - 69 * DEG) + 0.014 * Math.sin(Mj - 3 * Mt + 32 * DEG),
+      uranus: 0.040 * Math.sin(Mt - 2 * Mu + 6 * DEG) + 0.035 * Math.sin(Mt - 3 * Mu + 33 * DEG) - 0.015 * Math.sin(Mj - Mu + 20 * DEG)
+    };
+    var out = {sun: s.sunLon, moon: s.moonLon, elong: s.elong, lit: s.lit};
+    Object.keys(ORBITS).forEach(function (n) {
+      var q = ORBITS[n](d), e = q[4], E = kepler(rev(q[5]) * DEG, e), xv = q[3] * (Math.cos(E) - e), yv = q[3] * Math.sqrt(1 - e * e) * Math.sin(E);
+      var r = Math.sqrt(xv * xv + yv * yv), u = Math.atan2(yv, xv) + q[2] * DEG, N = q[0] * DEG, i = q[1] * DEG;
+      var x = r * (Math.cos(N) * Math.cos(u) - Math.sin(N) * Math.sin(u) * Math.cos(i)), y = r * (Math.sin(N) * Math.cos(u) + Math.cos(N) * Math.sin(u) * Math.cos(i));
+      if (pull[n]) { var flat = Math.sqrt(x * x + y * y), lon = Math.atan2(y, x) + pull[n] * DEG; x = flat * Math.cos(lon); y = flat * Math.sin(lon); }
+      out[n] = rev(Math.atan2(y + ys, x + xs) / DEG);               // seen from the earth: the sun's place added
+    });
+    var lst = (turn(ms) + (lonEast || 0)) * DEG;
+    out.meridian = rev(Math.atan2(Math.sin(lst), Math.cos(lst) * Math.cos(ecl)) / DEG);
+    return out;
   }
 
   function apart(p, q) {                                              // degrees between two places, measured at the core
@@ -339,7 +384,7 @@
   }
 
   sky.look = look; sky.next = next; sky.moonFace = moonFace; sky.moonName = moonName; sky.apart = apart; sky.bearing = bearing;
-  sky.stars = stars; sky.turn = turn; sky.dome = dome; sky.round = round; sky.tint = tint;
+  sky.stars = stars; sky.turn = turn; sky.dome = dome; sky.round = round; sky.tint = tint; sky.wander = wander;
   sky.deltaT = deltaT; sky.of = of; sky.cal = cal; sky.stamp = stamp; sky.mark = mark; sky.read = read; sky.easter = easter;
   sky.FIRST = of(-2999, 1, 1, 0, 0); sky.LAST = of(2999, 12, 31, 0, 0);     // as far as the fit for the earth's turning is given
   root.gaiaSky = sky;

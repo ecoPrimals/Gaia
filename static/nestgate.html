@@ -710,8 +710,11 @@ setInterval(rotatePainting, 20000);
      heart, guts, metabolism, muscle, ground) and a face (cis = what comes in, trans = what goes out).
      On the corona every layer is a ring round the one body and every organ rides its ring, so all of them share one
      centre and none lies over another; lines run between the organs that are awake. Outside the skin is the ring the
-     body rides in with the turning earth (geosync), and outside that the sky: sun, moon and planets where they stand
-     right now, the meridian up, worked out here from the clock. Ring distances are not to scale; the angles are real.
+     body rides in with the turning earth (geosync), and outside that the sky: sun, moon and planets where they
+     stand, the meridian up. Ring distances are not to scale; the angles are real.
+     ONE SYSTEM: this page is a face of the HUD. The sky is not worked out here - /static/sky.js is the one sky every
+     face reads - and the time and the place are the ones every face shares (/static/one.js): travel in time on the
+     atlas or the HUD and this ring turns with it; press a pin there and its meridian is the one that stands up here.
        asleep  a disc with its name on its ring          (and one line in its layer below)
        see     the disc is a round live window on the middle of its HUD; it grows under the pointer
        touch   the HUD comes to the front, full size, and takes the mouse; Esc or "back to the body" returns it
@@ -731,6 +734,8 @@ setInterval(rotatePainting, 20000);
 #body-back:focus-visible{outline:2px solid #e0dcd6;outline-offset:2px}
 </style>
 <button id="body-back" type="button" hidden>◉ back to the body</button>
+<script src="/static/sky.js?v=4"></script>
+<script src="/static/one.js?v=2"></script>
 <script>
 (function(){
   // On GitHub Pages the gate's pages are copies; the all-senses HUD and the older pane live on the hud site there.
@@ -758,56 +763,10 @@ setInterval(rotatePainting, 20000);
     ['sun',13,'#ffd93d'], ['moon',9,'#c8d6e5'], ['mercury',4,'#a8a8a8'], ['venus',5.5,'#f5e6c8'], ['mars',4.5,'#ff6b6b'],
     ['jupiter',7,'#d4a574'], ['saturn',6.5,'#e8d090'], ['uranus',5,'#7fdbda'], ['neptune',5,'#4d96ff']];
 
-  // THE SKY, worked out here from the clock alone - nothing is asked of anyone. Orbital elements and the method are
-  // Paul Schlyter's ("How to compute planetary positions"); the moon carries its twelve largest terms, the outer
-  // planets carry none, so: sun to a hundredth of a degree, moon to about a fifth, planets to about one degree.
-  // skyAt(ms, lonEast) -> geocentric ecliptic longitudes in degrees, the longitude standing on the meridian at
-  // lonEast (degrees east of Greenwich), and the moon's elongation from the sun and lit part.
-  function skyAt(ms, lonEast) {
-    var R = Math.PI / 180, d = ms / 86400000 - 10956;          // days from 1999 Dec 31, 0h UT
-    function rev(x) { return x - Math.floor(x / 360) * 360; }
-    function helio(N, i, w, a, e, M) {                         // one orbit -> ecliptic x, y, z
-      M = rev(M) * R; var E = M + e * Math.sin(M) * (1 + e * Math.cos(M)), k = 0, dE;
-      do { dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; } while (Math.abs(dE) > 1e-9 && ++k < 30);
-      var xv = a * (Math.cos(E) - e), yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
-      var v = Math.atan2(yv, xv), r = Math.sqrt(xv * xv + yv * yv), u = v + w * R; N *= R; i *= R;
-      return [r * (Math.cos(N) * Math.cos(u) - Math.sin(N) * Math.sin(u) * Math.cos(i)),
-              r * (Math.sin(N) * Math.cos(u) + Math.cos(N) * Math.sin(u) * Math.cos(i)),
-              r * Math.sin(u) * Math.sin(i)];
-    }
-    var ws = 282.9404 + 4.70935e-5 * d, Ms = rev(356.0470 + 0.9856002585 * d);
-    var s = helio(0, 0, ws, 1, 0.016709 - 1.151e-9 * d, Ms), out = {sun: rev(Math.atan2(s[1], s[0]) / R)};
-    var P = {
-      mercury: [48.3313 + 3.24587e-5 * d, 7.0047 + 5.00e-8 * d, 29.1241 + 1.01444e-5 * d, 0.387098, 0.205635 + 5.59e-10 * d, 168.6562 + 4.0923344368 * d],
-      venus:   [76.6799 + 2.46590e-5 * d, 3.3946 + 2.75e-8 * d, 54.8910 + 1.38374e-5 * d, 0.723330, 0.006773 - 1.302e-9 * d, 48.0052 + 1.6021302244 * d],
-      mars:    [49.5574 + 2.11081e-5 * d, 1.8497 - 1.78e-8 * d, 286.5016 + 2.92961e-5 * d, 1.523688, 0.093405 + 2.516e-9 * d, 18.6021 + 0.5240207766 * d],
-      jupiter: [100.4542 + 2.76854e-5 * d, 1.3030 - 1.557e-7 * d, 273.8777 + 1.64505e-5 * d, 5.20256, 0.048498 + 4.469e-9 * d, 19.8950 + 0.0830853001 * d],
-      saturn:  [113.6634 + 2.38980e-5 * d, 2.4886 - 1.081e-7 * d, 339.3939 + 2.97661e-5 * d, 9.55475, 0.055546 - 9.499e-9 * d, 316.9670 + 0.0334442282 * d],
-      uranus:  [74.0005 + 1.3978e-5 * d, 0.7733 + 1.9e-8 * d, 96.6612 + 3.0565e-5 * d, 19.18171 - 1.55e-8 * d, 0.047318 + 7.45e-9 * d, 142.5905 + 0.011725806 * d],
-      neptune: [131.7806 + 3.0173e-5 * d, 1.7700 - 2.55e-7 * d, 272.8461 - 6.027e-6 * d, 30.05826 + 3.313e-8 * d, 0.008606 + 2.15e-9 * d, 260.2471 + 0.005995147 * d]
-    };
-    out.helio = {};
-    Object.keys(P).forEach(function (n) {
-      var p = helio.apply(null, P[n]);
-      out.helio[n] = rev(Math.atan2(p[1], p[0]) / R);
-      out[n] = rev(Math.atan2(p[1] + s[1], p[0] + s[0]) / R);  // seen from the earth: add the sun's place
-    });
-    var Nm = 125.1228 - 0.0529538083 * d, wm = 318.0634 + 0.1643573223 * d, Mm = rev(115.3654 + 13.0649929509 * d);
-    var m = helio(Nm, 5.1454, wm, 60.2666, 0.054900, Mm), moon0 = Math.atan2(m[1], m[0]) / R;
-    var Ls = rev(Ms + ws), Lm = rev(Nm + wm + Mm), D = (Lm - Ls) * R, F = (Lm - Nm) * R, a = Mm * R, b = Ms * R;
-    out.moon0 = rev(moon0);
-    out.moon = rev(moon0 - 1.274 * Math.sin(a - 2 * D) + 0.658 * Math.sin(2 * D) - 0.186 * Math.sin(b)
-      - 0.059 * Math.sin(2 * a - 2 * D) - 0.057 * Math.sin(a - 2 * D + b) + 0.053 * Math.sin(a + 2 * D)
-      + 0.046 * Math.sin(2 * D - b) + 0.041 * Math.sin(a - b) - 0.035 * Math.sin(D) - 0.031 * Math.sin(a + b)
-      - 0.015 * Math.sin(2 * F - 2 * D) + 0.011 * Math.sin(a - 4 * D));
-    out.elong = rev(out.moon - out.sun);
-    out.lit = (1 - Math.cos(out.elong * R)) / 2;
-    var ut = (ms / 3600000) % 24; if (ut < 0) ut += 24;
-    out.lst = rev(Ls + 180 + ut * 15 + (lonEast || 0));        // local sidereal time, degrees
-    var ecl = (23.4393 - 3.563e-7 * d) * R;
-    out.meridian = rev(Math.atan2(Math.sin(out.lst * R), Math.cos(out.lst * R) * Math.cos(ecl)) / R);
-    return out;
-  }
+  // THE SKY is not worked out here. /static/sky.js is the one sky every face reads: gaiaSky.wander(ms, lonEast)
+  // gives how far round the sun's path the sun, the moon and the planets stand (ecliptic longitude, degrees, seen
+  // from the earth), the point of that path on the meridian at lonEast, and the moon's elongation and lit part.
+  // How good it is, and how it was checked, is written at the top of that file.
 
   var NS = 'http://www.w3.org/2000/svg', C = 500, SHELL0 = 132, STEP = 37, GAP = 10, SPAN = 168 * Math.PI / 180, VIRTUAL_W = 1280, VIRTUAL_H = 800;
   var board = document.getElementById('body-board'), back = document.getElementById('body-back'), say = document.getElementById('sphere-say'),
@@ -891,9 +850,6 @@ setInterval(rotatePainting, 20000);
     var t = (sky.meridian - lon) * Math.PI / 180;  // (inverted: seen from outside, east to the right)
     return [C + (klein ? -1 : 1) * r * Math.sin(t), C - r * Math.cos(t)];
   }
-  function moonName(e){
-    return ['new', 'waxing crescent', 'first quarter', 'waxing gibbous', 'full', 'waning gibbous', 'last quarter', 'waning crescent'][Math.floor(((e + 22.5) % 360) / 45)];
-  }
   function drawBody(){
     var awake = [];
     clear(gHalves); clear(gRings); clear(gTri); clear(gDots);
@@ -945,11 +901,18 @@ setInterval(rotatePainting, 20000);
       if (awake.length > 1 && (awake.length > 2 || n === 0)) gTri.appendChild(svg('line', {'class': 'tri', x1: i.x, y1: i.y, x2: o.x, y2: o.y}));
     });
   }
-  function drawSky(){                             // the sky ring: where sun, moon and planets stand this minute
-    var sky = skyAt(Date.now(), anchorLon || 0), rs = shell('sky');
+  function drawSky(){                             // the sky ring: where sun, moon and planets stand at the shared time
+    var S0 = window.gaiaSky, O = window.gaiaOne, rs = shell('sky');
     var awake = HUDS.filter(function(h){ return h.state > 0; });
     clear(gSky);
     gSky.appendChild(svg('circle', {'class': 'skyring', cx: C, cy: C, r: rs}));
+    if (!S0 || !S0.wander) {                       // the one sky did not load: the ring stands empty and says so
+      rest = (awake.length ? awake.length + ' awake \u00b7 ' : 'one body \u00b7 eight layers \u00b7 ') + 'the sky is not here: /static/sky.js did not load \u00b7 rings not to scale';
+      if (!told) say.textContent = rest;
+      return;
+    }
+    var ahead = O ? O.state.ahead : 0, place = O && O.state.place, ms = Date.now() + ahead, moonName = S0.moonName;
+    var sky = S0.wander(ms, place ? place.lon : anchorLon || 0);   // the meridian of the pin every face stands on, or of the gate's anchor
     for (var t = 0; t < 360; t += 30) {
       var p = onSky(t, rs - 5, sky), q = onSky(t, rs + 5, sky);
       gSky.appendChild(svg('line', {'class': 'tick', x1: p[0], y1: p[1], x2: q[0], y2: q[1]}));
@@ -971,7 +934,8 @@ setInterval(rotatePainting, 20000);
       });
     rest = (awake.length ? awake.length + ' awake \u00b7 ' : 'one body \u00b7 eight layers \u00b7 ') +
       'sun ' + Math.round(sky.sun) + '\u00b0 \u00b7 moon ' + moonName(sky.elong) + ' ' + Math.round(sky.lit * 100) + '% \u00b7 ' +
-      (anchorLon == null ? 'Greenwich meridian up' : 'the meridian over the anchor up') + (klein ? ' \u00b7 inverted' : '') + ' \u00b7 rings not to scale';
+      (place ? 'the meridian over ' + String(place.name).split(' \u2014 ')[0] + ' up' : anchorLon == null ? 'Greenwich meridian up' : 'the meridian over the anchor up') +
+      (ahead ? ' \u00b7 ' + S0.stamp(ms, true) : '') + (klein ? ' \u00b7 inverted' : '') + ' \u00b7 rings not to scale';
     if (!told) say.textContent = rest;
   }
   function draw(){ drawBody(); drawSky(); }
@@ -1096,6 +1060,7 @@ setInterval(rotatePainting, 20000);
     ro.observe(board); ro.observe(stage); HUDS.forEach(function(h){ if (h.disc) ro.observe(h.disc); });
   } else window.addEventListener('resize', function(){ HUDS.forEach(fit); });
   setInterval(drawSky, 60000);                        // the sky moves a quarter of a degree a minute
+  if (window.gaiaOne) window.gaiaOne.on(function(){ drawSky(); });   // another face moved the clock or the place: the ring follows
   if (!fromHash()) paint();
 })();
 </script>

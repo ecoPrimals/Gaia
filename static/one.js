@@ -14,6 +14,10 @@
    it is sent anywhere, and nothing is stored. A place is always a pin of the atlas - a public building or a town.
    Where a visitor stands is never put here.
 
+   A face in a frame under another name of this site (the orrery inside the HUD, when the HUD is on its own name) is
+   out of that channel's reach. The page that holds the frame carries the state in to it: gaiaOne.carry(frame).
+   That goes one way, inward, and only between names of this site; such a face follows.
+
    The shared pieces every face reads, each the one place its subject is worked out:
      /static/sky.js          the sun, the moon, the fixed stars, the calendar
      /static/house.js        the gates of the house, how each stands in the mesh, the engine's picture of them
@@ -21,7 +25,8 @@
      /static/one.js          this: the clock and the place */
 (function (root) {
   'use strict';
-  var me = Math.random().toString(36).slice(2), chan = null, hushed = false, wait = 0, heard = [], pending = {};
+  var me = Math.random().toString(36).slice(2), chan = null, hushed = false, wait = 0, heard = [], pending = {}, carried = [];
+  var KIN = /^https:\/\/([\w-]+\.)*(primals\.eco|nestgate\.io)$/;      // the names this site answers to
   var state = {ahead: 0, place: null};
   function same(a, b) { return a === b || (!!a && !!b && a.id === b.id); }
   function clean(p) {                                                 // a place is four plain things, nothing more
@@ -37,6 +42,13 @@
     pending = {};
     try { chan.postMessage(m); } catch (e) {}
   }
+  function kin(origin) { return origin === root.location.origin || KIN.test(origin); }
+  function hand(f) {                                                  // the state, handed to one frame - only if the frame holds a page of this site
+    try {
+      var to = new URL(f.getAttribute('src') || '', root.location.href).origin;
+      if (f.getAttribute('src') && kin(to) && f.contentWindow) f.contentWindow.postMessage({gaiaOne: {ahead: state.ahead, place: state.place}}, to);
+    } catch (e) {}
+  }
   function fire(changed, wasHeard) { heard.forEach(function (fn) { try { fn(state, changed, !!wasHeard); } catch (e) { if (root.console) console.error(e); } }); }
   function set(part, opts) {
     var changed = {}, any = false, quiet = opts && opts.heard;
@@ -51,6 +63,7 @@
     if (!any) return false;
     if (!quiet) { for (var k in changed) pending[k] = true; if (!wait) wait = setTimeout(tell, 80); }
     fire(changed, quiet);
+    carried.forEach(hand);
     return true;
   }
   try {
@@ -66,10 +79,18 @@
     };
     chan.postMessage({from: me, ask: 1});
   } catch (e) { chan = null; }
+  if (root.addEventListener && root.parent && root.parent !== root) root.addEventListener('message', function (e) {   // in a frame: the page that holds it hands the state in
+    var d = e.data && e.data.gaiaOne, part = {};
+    if (e.source !== root.parent || !kin(e.origin) || !d || typeof d !== 'object') return;
+    if (typeof d.ahead === 'number') part.ahead = d.ahead;
+    if ('place' in d) part.place = d.place;
+    set(part, {heard: true});
+  });
   root.gaiaOne = {
     id: me, state: state, set: set,
     on: function (fn) { heard.push(fn); },
     hush: function (on) { hushed = !!on; },
+    carry: function (f) { if (carried.indexOf(f) < 0) { carried.push(f); f.addEventListener('load', function () { hand(f); }); } hand(f); },
     now: function () { return Date.now() + state.ahead; }
   };
 })(typeof window !== 'undefined' ? window : globalThis);
