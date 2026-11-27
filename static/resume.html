@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kevin Mok &mdash; r&eacute;sum&eacute; and project portfolio</title>
+<meta name="description" content="Kevin Mok: microbiologist and data scientist. I rebuild published science as software that runs anywhere and checks itself. Three working systems: a drug-screening platform, a physics model of biological signalling, and lattice QCD on consumer graphics cards.">
+<style>
+:root {
+  --bg: #08090b; --card: #111417; --line: #232830;
+  --text: #e0dcd6; --muted: #9a958d; --bright: #f5f0e8;
+  --amber: #d4a574; --green: #5aad72; --blue: #7ea6dc;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; color: var(--text); font: 16px/1.55 var(--font); }
+main { max-width: 900px; margin: 0 auto; padding: 40px 24px 64px; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 2.3rem; line-height: 1.15; margin: 0 0 6px; color: var(--bright); letter-spacing: -0.01em; }
+h2 { font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+     margin: 44px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+h3 { font-size: 1.18rem; margin: 0 0 2px; color: var(--bright); }
+p { margin: 0 0 12px; }
+.lead { font-size: 1.2rem; color: var(--bright); margin: 0 0 14px; max-width: 46em; }
+.contact { color: var(--muted); font-size: 0.95rem; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+button.print { font: inherit; font-size: 0.85rem; color: var(--text); background: var(--card);
+               border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+button.print:hover { border-color: var(--amber); }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 18px 0 6px; }
+.fact { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.fact b { display: block; font-size: 1.35rem; color: var(--bright); line-height: 1.2; }
+.fact span { color: var(--muted); font-size: 0.85rem; }
+.work { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--green);
+        border-radius: 8px; padding: 20px 22px; margin: 0 0 16px; }
+.work .for { color: var(--amber); font-size: 0.92rem; margin: 0 0 12px; }
+.work dl { margin: 0; display: grid; grid-template-columns: 8.5em 1fr; gap: 8px 16px; }
+.work dt { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; padding-top: 3px; }
+.work dd { margin: 0; }
+.tag { display: inline-block; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase;
+       border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; color: var(--muted); margin-left: 8px; vertical-align: 3px; }
+ol.steps { margin: 0 0 12px; padding-left: 1.3em; }
+ol.steps li { margin: 0 0 7px; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; }
+td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--mono); font-size: 0.9rem; width: 13.5em; }
+.job { display: grid; grid-template-columns: 1fr auto; gap: 0 16px; margin: 0 0 14px; }
+.job .when { color: var(--muted); font-size: 0.9rem; white-space: nowrap; text-align: right; }
+.job .role { color: var(--amber); font-size: 0.95rem; }
+.job p { grid-column: 1 / -1; margin: 4px 0 0; color: var(--text); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+.note { color: var(--muted); font-size: 0.85rem; margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); }
+@media (max-width: 700px) {
+  .facts { grid-template-columns: repeat(2, 1fr); }
+  .work dl { grid-template-columns: 1fr; gap: 2px 0; } .work dd { margin-bottom: 8px; }
+  .two { grid-template-columns: 1fr; } td:first-child { width: auto; white-space: normal; }
+  .job { grid-template-columns: 1fr; } .job .when { text-align: left; }
+}
+@media print {
+  :root { --bg: #fff; --card: #fff; --line: #c9c9c9; --text: #111; --muted: #444; --bright: #000;
+          --amber: #7a4a12; --green: #2d6b3f; --blue: #1a3f7a; }
+  html, body { background: #fff; }
+  body { font-size: 10.5pt; line-height: 1.4; }
+  main { max-width: none; padding: 0; }
+  button.print, .screen { display: none; }
+  h1 { font-size: 20pt; } h2 { margin: 16pt 0 7pt; } .lead { font-size: 12pt; }
+  .work, .job, .fact, tr { break-inside: avoid; }
+  .work { padding: 10pt 12pt; margin-bottom: 9pt; }
+  a { color: inherit; }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 8pt; color: #444; word-break: break-all; }
+  .contact a::after, a.plain::after { content: ""; }
+  @page { margin: 16mm 15mm; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<div class="top">
+  <div>
+    <h1>Kevin Mok</h1>
+    <p class="lead">Microbiologist and data scientist. I rebuild published science as software that runs on any machine and checks its own answers.</p>
+  </div>
+  <button class="print" onclick="window.print()">Print / save as PDF</button>
+</div>
+<div class="contact">
+  <span>Lansing, Michigan</span>
+  <a href="mailto:eco.primal@pm.me">eco.primal@pm.me</a>
+  <a href="https://primals.eco">primals.eco</a>
+  <a class="screen" href="/static/resume-short.html">One-page version</a>
+  <a href="https://github.com/syntheticChemistry">github.com/syntheticChemistry</a>
+  <a href="https://github.com/protoKarya">github.com/protoKarya</a>
+</div>
+
+<h2>What this is</h2>
+<p>ecoPrimals is a scientific computing system I designed and built on hardware I own. It takes a published paper, rebuilds the computation from the methods section and the original data, compares the rebuilt numbers with the published ones, and packages the result as a single program that anyone can run and that reports its own pass or fail.</p>
+<p>It is written in Rust and runs on eleven machines linked by an encrypted network that is part of the project. It needs no cloud account and no vendor-specific graphics toolkit. All of it is open source under AGPL-3.0.</p>
+<p>I am looking for research-computing and data roles, and for contract work: rebuilding a lab's ageing pipeline into something reproducible, reproducing a paper, or setting up computing a group owns outright.</p>
+<div class="facts">
+  <div class="fact"><b>175+</b><span>published papers reproduced with stated numerical tolerances</span></div>
+  <div class="fact"><b>93,700+</b><span>automated tests</span></div>
+  <div class="fact"><b>43</b><span>public repositories, Rust</span></div>
+  <div class="fact"><b>1</b><span>person, working with AI coding agents</span></div>
+</div>
+
+<h2>Three working systems</h2>
+
+<div class="work">
+  <h3>tideGlass <span class="tag">drug discovery</span></h3>
+  <p class="for">Task set by Andrea Gonzales, Pharmacology &amp; Toxicology, Michigan State University (June 2026). Original platform: GPS, Bin Chen Lab, MSU &mdash; published in <em>Cell</em>, 2026.</p>
+  <dl>
+    <dt>The problem</dt>
+    <dd>GPS predicts how a compound changes gene expression from its chemical structure alone, then searches compound libraries for ones that reverse a disease's expression signature. Behind it sit more than ten years of research code: Python 2, pinned dependencies, a web portal. The science is sound; the software is hard to hand to anyone else.</dd>
+    <dt>What I built</dt>
+    <dd>I traced the work back twenty years through its papers (Connectivity Map 2006, LINCS, RGES 2017, OCTAD 2021, GPS 2026) and rebuilt it from the published methods and primary data rather than porting the old code. The result is one Rust program with seven science modules: noise cleaning, expression prediction, reversal screening, lead optimisation by tree search, and parity with the earlier methods. Each paper's headline claim is a test target.</dd>
+    <dt>Where it stands</dt>
+    <dd>220 tests. Reconstruction, reproduction, validation and rebuild are complete (August 2026). In progress: packaging it as a self-verifying artifact, and extending the screen to neurofibromatosis (NF1) tumour signatures. Next: review by the Bin Chen lab.</dd>
+    <dt>Code</dt>
+    <dd><a href="https://github.com/protoKarya/tideGlass">github.com/protoKarya/tideGlass</a></dd>
+  </dl>
+</div>
+
+<div class="work">
+  <h3>Anderson-QS <span class="tag">biology &times; physics</span></h3>
+  <p class="for">One question, asked of bacteria and of skin: when does a chemical signal get through?</p>
+  <dl>
+    <dt>The idea</dt>
+    <dd>Bacteria coordinate by releasing signal molecules (quorum sensing). Immune cells do the same with cytokines. Whether such a signal spreads or stays local depends on how mixed the surrounding cells are and on the shape of the space. Physics has had the mathematics for this since Anderson's 1958 work on waves in disordered material. I use it as a working model: cell diversity is the disorder, and biofilm versus shaken flask, or intact versus scratched skin, is the geometry.</dd>
+    <dt>Evidence</dt>
+    <dd>Applied to Andrea Gonzales's published work on itch signalling (IL-31, oclacitinib): six papers reproduced from the published data, 359 of 359 checks passing (March 2026). The underlying mathematics is checked against eleven papers, from Anderson 1958 to Bourgain and Kachkovskiy 2018 (417+ checks). The same graphics-card eigenvalue code serves the lattice QCD work below.</dd>
+    <dt>Open questions</dt>
+    <dd>Two predictions are waiting for a bench test. Biofilm and shaken-flask cultures should fall into different signalling regimes; the test bed is Lenski's long-term <em>E. coli</em> experiment, packaged to run from a USB stick. And adding tissue geometry should change which existing drugs score well for repurposing.</dd>
+    <dt>Code</dt>
+    <dd><a href="https://github.com/syntheticChemistry/wetSpring">github.com/syntheticChemistry/wetSpring</a> &middot; <a href="https://github.com/sporeGarden/lithoSpore">github.com/sporeGarden/lithoSpore</a></dd>
+  </dl>
+</div>
+
+<div class="work">
+  <h3>hotSpring <span class="tag">plasma physics &middot; lattice QCD</span></h3>
+  <p class="for">Began as reproductions of plasma simulations from Michael Murillo's group (Computational Mathematics, Science &amp; Engineering, MSU), then extended to lattice QCD, starting from the papers of Thomas Chuna of that group.</p>
+  <dl>
+    <dt>The problem</dt>
+    <dd>This kind of physics normally needs a supercomputer allocation and NVIDIA's CUDA. I wanted to know whether graphics cards anyone can buy, from any maker, give the right physics.</dd>
+    <dt>Plasma</dt>
+    <dd>Nine of nine reference cases at 10,000 particles match the published Dense Plasma Properties Database, with energy drift at or below 0.002%, in 3.7 hours on one consumer card. Reproducing the original Python turned up five silent bugs in it.</dd>
+    <dt>Lattice QCD</dt>
+    <dd>SU(3) gauge theory with dynamical fermions, written as WGSL shaders over Vulkan. NVIDIA and AMD cards agree to 6 parts per million. Configurations are written in the MILC format that existing lattice codes read, and a round trip agrees to 3&times;10<sup>&minus;9</sup>. The simulation runs 40 to 53 times faster than on the processor. All checks against Chuna's three papers pass.</dd>
+    <dt>Where it stands</dt>
+    <dd>A preprint is written and not yet submitted (August 2026). Not done: the comparison against Kokkos that I promised. Early figures for neuromorphic chips came from a simulator and are being re-measured on the hardware.</dd>
+    <dt>Code</dt>
+    <dd><a href="https://github.com/syntheticChemistry/hotSpring">github.com/syntheticChemistry/hotSpring</a></dd>
+  </dl>
+</div>
+
+<p>All three are being brought up as running services on <a class="plain" href="https://nestgate.io">nestgate.io</a>, the project's data commons, so that a visitor can run the checks and read the result instead of downloading code.</p>
+
+<h2>How I built it</h2>
+<ol class="steps">
+  <li><strong>The paper is the specification.</strong> I read the methods, fetch the data from its original source, and write down each number the paper claims.</li>
+  <li><strong>Baseline first.</strong> I run the authors' own code where it still runs and record what it produces. This is where upstream bugs show up.</li>
+  <li><strong>Rebuild and compare.</strong> I rewrite the computation in Rust and compare it with the baseline under a named tolerance, each with its reason written down. hotSpring alone has 308 of them.</li>
+  <li><strong>Move to the graphics card and compare again,</strong> across makers, so that no result depends on one vendor's hardware.</li>
+  <li><strong>Package.</strong> The result is one static program that carries its own checks. It runs from a USB stick with no installation and no network, and exits with an error if its inputs were altered.</li>
+  <li><strong>Audit my own claims.</strong> I go back through what I have told people and mark each claim true, unverified or not done. The two gaps listed under hotSpring come from that audit.</li>
+</ol>
+<p>I work with AI coding agents. I set the constraints and the acceptance checks, the agents write most of the code, and nothing is kept unless it passes. Every commit is public.</p>
+
+<p>The system underneath, each part a separate program:</p>
+<table>
+  <tr><td>bearDog</td><td>Keys and signing. Secrets stay inside one process and never travel between machines.</td></tr>
+  <tr><td>songBird</td><td>Encrypted network between machines. A machine proves it belongs with a signed certificate, not a password.</td></tr>
+  <tr><td>nestGate</td><td>Storage in which every dataset is named by the hash of its contents.</td></tr>
+  <tr><td>barraCuda, toadStool</td><td>Mathematics on the graphics card through WGSL and Vulkan: NVIDIA, AMD and Intel alike, at double precision.</td></tr>
+  <tr><td>biomeOS</td><td>Starts and supervises the parts as one system on each machine.</td></tr>
+  <tr><td>rhizoCrypt, loamSpine, sweetGrass</td><td>The record of which data and which code produced which result.</td></tr>
+  <tr><td>Gaia</td><td>The self-hosted front: web, mail and a live dashboard, served from machines at home.</td></tr>
+</table>
+<p>Hardware (mid-2026): eleven machines running Linux, Windows and Android, with about 1 TB of memory, 248 GB of graphics memory across NVIDIA and AMD, 122 TB of storage and three neuromorphic chips.</p>
+
+<h2>Experience</h2>
+<div class="job">
+  <div><h3>ecoPrimals</h3><span class="role">Founder and lead architect</span></div>
+  <div class="when">2023 &ndash; present</div>
+  <p>Designed and built everything on this page.</p>
+</div>
+<div class="job">
+  <div><h3>PFAS Research Lab, Michigan State University</h3><span class="role">Research Specialist</span></div>
+  <div class="when">Oct 2024 &ndash; Oct 2025</div>
+  <p>Scaled the lab's capacity to measure &ldquo;forever chemicals&rdquo; in environmental samples. Put EPA methods and written operating procedures in place, and brought data science and molecular methods to detection and remediation work.</p>
+</div>
+<div class="job">
+  <div><h3>Sandia National Laboratories</h3><span class="role">Research Fellow</span></div>
+  <div class="when">Summer 2024</div>
+  <p>Studied the effect of bacterial toxins on algae grown in open raceway ponds, using high-throughput sequencing and bioinformatics. Designed and ran the experiments and the analysis.</p>
+</div>
+<div class="job">
+  <div><h3>MSU Bioeconomy Institute</h3><span class="role">Biotechnician</span></div>
+  <div class="when">Jan 2019 &ndash; May 2024</div>
+  <p>Contract fermentation lab, biosafety level 2: fungi, mycobacteria, anaerobes and engineered organisms, from bench reactors to pilot scale. Ran chemical assays (HPLC, mass spectrometry, enzyme kinetics) and microbial counts for client reports. Wrote the programs that controlled fermentation parameters and automated the lab's data processing. Trained every new hire.</p>
+</div>
+<div class="job">
+  <div><h3>Hausbeck Plant Pathology Lab and ROME Lab, MSU</h3><span class="role">Research Assistant</span></div>
+  <div class="when">Jan 2018 &ndash; Jan 2019</div>
+  <p>Ran spore traps on farms across Mid-Michigan and worked directly with growers. Isolated rumen bacteria and presented the results at the university's undergraduate research forum.</p>
+</div>
+<div class="job">
+  <div><h3>U.S. Army, 25th Infantry Division, Schofield Barracks</h3><span class="role">Infantryman</span></div>
+  <div class="when">2012 &ndash; 2015</div>
+  <p>Company intelligence support: produced intelligence reports and terrain models from maps and satellite imagery, and briefed 130 soldiers. Radio operator: responsible for $2 million of communications equipment with zero loss; managed and installed cryptographic keys for secure communications.</p>
+</div>
+
+<div class="two">
+  <div>
+    <h2>Education</h2>
+    <p><strong>M.S. Data Science</strong>, Michigan State University, 2023 &ndash; 2025<br>
+    <span style="color:var(--muted)">Completed while working full time in the lab.</span></p>
+    <p><strong>B.S. Microbiology</strong>, minor in Bioethics, Michigan State University, 2018</p>
+  </div>
+  <div>
+    <h2>Skills</h2>
+    <p><strong>Software:</strong> Rust, Python, R, SQL; graphics-card computing (WGSL, Vulkan); Linux administration, networking, applied cryptography.</p>
+    <p><strong>Analysis:</strong> bioinformatics (sequencing, metagenomics, gene expression), statistics, machine learning.</p>
+    <p><strong>Bench:</strong> aseptic technique, fermentation to pilot scale, HPLC, mass spectrometry, biosafety level 2.</p>
+  </div>
+</div>
+
+<p class="note">Figures come from each project's own validation records at the dates shown. The repositories are public, and each carries the checks that produce its numbers.</p>
+
+</main>
+</body>
+</html>
