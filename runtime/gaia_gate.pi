@@ -1955,19 +1955,23 @@ def _mesh_self():
             "gate_up_secs":int(time.time()-_MESH_T0),
             "pi_body":{"up":up,"down":down} if (up or down) else None,
             "ts":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime())}
+def _mesh_said(b):
+    """What a body says of itself to whoever asks: its name and how it stands. Where it sits on the house
+    network is used inside the gate to find the other bodies and is not part of the answer."""
+    return {k:v for k,v in b.items() if k not in ("ip","host")}
 def _mesh(with_peers=True):
     me=_mesh_self()
-    if not with_peers: return me
+    if not with_peers: return _mesh_said(me)
     if time.time()-_mesh_cache["t"]>30:
         peers=[]
         for ip,name in _MESH_BODIES.items():
             if ip==me["ip"]: continue
             try:
-                with urllib.request.urlopen("http://%s:8443/api/mesh/self"%ip,timeout=3) as r: p=json.loads(r.read()); p["answers"]=True
-            except Exception: p={"name":name,"ip":ip,"answers":False}
+                with urllib.request.urlopen("http://%s:8443/api/mesh/self"%ip,timeout=3) as r: p=_mesh_said(json.loads(r.read())); p["answers"]=True
+            except Exception: p={"name":name,"answers":False}
             peers.append(p)
         _mesh_cache.update(t=time.time(),peers=peers)
-    return {"self":me,"peers":_mesh_cache["peers"],"level":all(p.get("tip")==me["tip"] for p in _mesh_cache["peers"] if p.get("answers")) if any(p.get("answers") for p in _mesh_cache["peers"]) else None}
+    return {"self":_mesh_said(me),"peers":_mesh_cache["peers"],"level":all(p.get("tip")==me["tip"] for p in _mesh_cache["peers"] if p.get("answers")) if any(p.get("answers") for p in _mesh_cache["peers"]) else None}
 
 def _resync_holes():
     """Two watering holes, one drop. GitHub is the outer hole, the forge is the local one.
