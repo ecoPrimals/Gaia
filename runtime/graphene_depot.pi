@@ -10,7 +10,7 @@ USB_SERIAL = "44251JEKB04957"
 # DHCP has moved the Pixel before (.104 -> .249 -> .170). Last-known first.
 # A WiFi endpoint is accepted ONLY if its serial matches USB_SERIAL, so Gaia
 # never reads (or photographs) the wrong phone.
-WIFI_CANDIDATES = ["192.168.9.203:36135", "192.168.4.170", "192.168.4.249", "192.168.4.104"]
+WIFI_CANDIDATES = ["192.168.1.244", "192.168.9.203:36135", "192.168.4.170", "192.168.4.249", "192.168.4.104"]
 # Phone captures are private: gitignored, 700. NOT data/gut/images (tracked,
 # mirrored to public GitHub).
 IMAGE_DIR = "/opt/Gaia/data/optic"
@@ -402,6 +402,9 @@ export SECURITY_PROVIDER_MODE=direct BEARDOG_MODE=direct
 if [ -s run/anchor.pub ] && [ -s run/lineage.cert.json ]; then
   export SONGBIRD_LINEAGE_ANCHOR=$D/run/anchor.pub SONGBIRD_LINEAGE_CERT=$D/run/lineage.cert.json
   export RUST_LOG=error,songbird_orchestrator::app::http_server::lineage_door=info,songbird_orchestrator::trust::peer_trust=info
+  # run/lineage.enroller.cert.json (public, from eastGate, with an end date) lets this tower sign
+  # certificates for other devices. Only callers on the phone itself can ask it to.
+  [ -s run/lineage.enroller.cert.json ] && export SONGBIRD_LINEAGE_ENROLLER_CERT=$D/run/lineage.enroller.cert.json
 fi
 nohup $D/bin/songbird server --federation-port 7700 --bind 127.0.0.1 --listen 127.0.0.1:9200 --node-id $NODE_ID \
   --state-dir $D/run/songbird --pid-dir $D/run > run/songbird.log 2>&1 < /dev/null &
