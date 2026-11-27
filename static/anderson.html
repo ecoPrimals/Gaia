@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run the Anderson experiment in your browser &mdash; ecoPrimals</title>
+<meta name="description" content="A working physics experiment that runs in your browser tab: when does a wave spread through a disordered lattice, and when does it stay put? Choose the shape, the size and the disorder, run it, and download the numbers.">
+<style>
+:root {
+  --bg: #08090b; --card: #111417; --line: #232830;
+  --text: #e0dcd6; --muted: #9a958d; --bright: #f5f0e8;
+  --amber: #d4a574; --green: #5aad72; --blue: #7ea6dc; --red: #e07a6a;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; color: var(--text); font: 16px/1.55 var(--font); }
+main { max-width: 980px; margin: 0 auto; padding: 36px 24px 64px; }
+a { color: var(--blue); text-decoration: none; } a:hover { text-decoration: underline; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; color: var(--bright); }
+h2 { font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+     margin: 38px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+p { margin: 0 0 12px; max-width: 50em; }
+.crumb { color: var(--muted); font-size: 0.9rem; margin: 0 0 18px; }
+.lead { font-size: 1.15rem; color: var(--bright); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; margin: 0 0 16px; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 12px 16px; align-items: end; }
+label { display: block; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+select, input { width: 100%; font: inherit; color: var(--bright); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; }
+select:focus, input:focus, button:focus { outline: 1px solid var(--amber); }
+.row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+button { font: inherit; font-size: 0.92rem; color: var(--bright); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--amber); }
+button.go { background: var(--green); border-color: var(--green); color: #06120a; font-weight: 600; }
+button:disabled { opacity: 0.45; cursor: default; }
+.est { color: var(--muted); font-size: 0.9rem; }
+.bar { height: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin-top: 12px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--green); }
+#status { color: var(--muted); font-size: 0.9rem; margin: 8px 0 0; min-height: 1.4em; }
+.plots { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+.plots .card { margin: 0; padding: 14px 14px 10px; }
+.plots h3 { font-size: 0.95rem; margin: 0 0 6px; color: var(--bright); font-weight: 600; }
+.plots p.cap { font-size: 0.82rem; color: var(--muted); margin: 6px 0 0; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--font); }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--mono); } td:first-child { font-family: var(--font); }
+tbody tr { cursor: pointer; } tbody tr:hover td { color: var(--bright); } tbody tr.sel td { color: var(--amber); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 16px; font-size: 0.85rem; min-height: 1.4em; margin-bottom: 4px; }
+.scroll { overflow-x: auto; }
+ul.checks { list-style: none; margin: 0; padding: 0; }
+ul.checks li { padding: 5px 0 5px 1.7em; position: relative; border-bottom: 1px solid var(--line); }
+ul.checks li:last-child { border-bottom: 0; }
+ul.checks li::before { position: absolute; left: 0; font-weight: 700; }
+ul.checks li.pass::before { content: "\2713"; color: var(--green); }
+ul.checks li.fail::before { content: "\2717"; color: var(--red); }
+ul.checks small { color: var(--muted); display: block; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
+code { font-family: var(--mono); font-size: 0.9em; color: var(--bright); }
+.note { color: var(--muted); font-size: 0.88rem; }
+@media (max-width: 760px) { .plots, .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+
+<p class="crumb"><a href="/static/resume.html">Kevin Mok &mdash; portfolio</a> &nbsp;/&nbsp; run it yourself</p>
+<h1>Run the Anderson experiment in your browser</h1>
+<p class="lead">Does a wave spread through a disordered material, or does it stay where it started? Choose a shape, a size and an amount of disorder, and your own machine works out the answer.</p>
+<p>Nothing is installed and nothing is sent anywhere: the calculation runs in this tab, on your processor. It is the same model, and the same measurement, that the ecoPrimals project runs at full size on graphics cards.</p>
+
+<h2>The experiment</h2>
+<div class="card">
+  <div class="controls">
+    <div><label for="dim">Shape</label>
+      <select id="dim"><option value="1">Chain (1D)</option><option value="2">Sheet (2D)</option><option value="3" selected>Block (3D)</option></select></div>
+    <div><label for="size">Size</label><select id="size"></select></div>
+    <div><label for="w0">Disorder from</label><input id="w0" type="number" min="0" max="200" step="0.5" value="4"></div>
+    <div><label for="w1">Disorder to</label><input id="w1" type="number" min="0" max="200" step="0.5" value="32"></div>
+    <div><label for="steps">Points</label><input id="steps" type="number" min="1" max="30" step="1" value="8"></div>
+    <div><label for="reals">Lattices per point</label><input id="reals" type="number" min="2" max="400" step="1" value="16"></div>
+    <div><label for="seed">Seed</label><input id="seed" type="number" min="0" max="4294967295" step="1" value="2026"></div>
+  </div>
+  <div class="row">
+    <button class="go" id="run">Run this curve</button>
+    <button id="stop" disabled>Stop</button>
+    <button id="clear">Clear results</button>
+    <span class="est" id="est"></span>
+  </div>
+  <div class="row">
+    <span class="est">Or a ready-made experiment:</span>
+    <button id="p1">Three block sizes across the transition</button>
+    <button id="p2">Chain, sheet and block compared</button>
+  </div>
+  <div class="bar"><i id="bar"></i></div>
+  <p id="status">Checking the code on your machine&hellip;</p>
+</div>
+
+<div class="plots">
+  <div class="card">
+    <h3>Average spacing ratio against disorder</h3>
+    <div id="legend" class="legend"></div>
+    <div id="plot"></div>
+    <p class="cap">Upper dashed line, 0.5307: waves spread through the whole lattice. Lower dashed line, 0.3863: waves stay put. Bars are one standard error across lattices.</p>
+  </div>
+  <div class="card">
+    <h3 id="histtitle">Spacing ratios at one point</h3>
+    <div id="hist"></div>
+    <p class="cap">Bars: what your machine measured. Green curve: the prediction for spreading waves. Amber curve: the prediction for waves that stay put. Click a row in the table to see its point.</p>
+  </div>
+</div>
+
+<h2>Your results</h2>
+<div class="card">
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Curve</th><th>Disorder W</th><th>Average ratio</th><th>&plusmn;</th><th>Lattices</th><th>Ratios</th><th>Seconds</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="7" style="color:var(--muted);cursor:default">No runs yet.</td></tr></tbody>
+    </table>
+  </div>
+  <div class="row">
+    <button id="dljson" disabled>Download as JSON</button>
+    <button id="dlcsv" disabled>Download as CSV</button>
+    <span class="est">The file records the seed, so anyone can repeat your run and get the same digits.</span>
+  </div>
+</div>
+
+<h2>What you are looking at</h2>
+<div class="two">
+  <div>
+    <p>The lattice is a grid of sites. A wave can hop from a site to its neighbours. Each site is given a random energy between &minus;W/2 and +W/2; W is the disorder. This is the model Philip Anderson published in 1958.</p>
+    <p>The page builds the lattice, finds every allowed energy of the wave exactly, and looks at the gaps between neighbouring energies near the middle of the range. For each pair of neighbouring gaps it takes the smaller divided by the larger. That ratio is the measurement.</p>
+  </div>
+  <div>
+    <p>When waves spread through the whole lattice, their energies push each other apart, small gaps are rare, and the average ratio is about 0.5307. When each wave is stuck in its own corner, the energies ignore one another and the average falls to 2&nbsp;ln&nbsp;2&nbsp;&minus;&nbsp;1, about 0.3863.</p>
+    <p>In a chain, any disorder at all pins the waves. In a block there is a real transition: published work puts it at a disorder of about 16.5. Below it, larger blocks stay at 0.53. Above it, larger blocks fall towards 0.39 faster than small ones.</p>
+  </div>
+</div>
+
+<h2>What this page can and cannot show</h2>
+<p>It shows both regimes, with the right limiting values, and it shows the curves for different block sizes separating above the transition. With a few dozen lattices per point the bars are about &plusmn;0.005, so differences smaller than that are noise: run more lattices before reading anything into them. With fewer than about twenty lattices the bar itself is only a rough guide.</p>
+<p>Two things to expect at the weak end. Below a disorder of about 3 the lattice is nearly a perfect crystal, its energies bunch into groups, and the ratio dips for that reason, not because waves are pinned. And a wave that is pinned over a distance longer than the lattice looks free: a short chain at very weak disorder, or a sheet at moderate disorder, reads as &ldquo;spread&rdquo; until you make it bigger. Try it: the same disorder, a longer chain.</p>
+<p>It does not pin down where the transition is. That needs much larger blocks and a scaling analysis, which is what the full-size code in <a href="https://github.com/syntheticChemistry/wetSpring">wetSpring</a> does on a graphics card. The largest lattice here has about 1,000 sites, because a browser tab solves the whole problem exactly on one processor core.</p>
+
+<h2>Why a microbiologist built it</h2>
+<p>I use this model as a working hypothesis for chemical signalling between cells. Bacteria release signal molecules to coordinate; immune cells do the same. In the model, how mixed the neighbouring cells are plays the part of the disorder, and the shape of the space (a filament, a film on a surface, a solid mass) plays the part of chain, sheet and block. The prediction to test at the bench is that the shape decides whether a signal gets through. That it is a hypothesis is the point: the physics on this page is established, the biology is what the project is testing.</p>
+<p>More: <a href="/sporeprint/science/01-anderson-qs/">the signalling hypothesis</a> &middot; <a href="/sporeprint/science/12-immunological-anderson/">the same question in immune signalling</a> &middot; <a href="/sporeprint/lab/lithospore/">the same statistics applied to Lenski's long-term evolution experiment</a> &middot; <a href="/sporeprint/thesis/14-biological-validation/">the thesis chapter this leads to</a></p>
+
+<h2>Check the code yourself</h2>
+<div class="card">
+  <p>These checks ran on your machine when the page opened. The first three compare the code with answers known exactly. The fourth compares your machine's digits with the reference machine's. The last two compare with the two limiting values.</p>
+  <ul class="checks" id="checks"><li style="padding-left:0;color:var(--muted)">Running&hellip;</li></ul>
+</div>
+<p class="note">The whole calculation is two short files you can read: <a href="/static/anderson-core.js">anderson-core.js</a> (the model and the eigenvalue solver) and <a href="/static/anderson-worker.js">anderson-worker.js</a> (the checks). Written by Kevin Mok for ecoPrimals; AGPL-3.0.</p>
+
+</main>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var SIZES = { 1: [[200, '200 sites'], [400, '400 sites'], [800, '800 sites']],
+                2: [[12, '12 \u00d7 12'], [20, '20 \u00d7 20'], [28, '28 \u00d7 28']],
+                3: [[6, '6 \u00d7 6 \u00d7 6'], [8, '8 \u00d7 8 \u00d7 8'], [10, '10 \u00d7 10 \u00d7 10']] };
+  var SHAPE = { 1: 'Chain', 2: 'Sheet', 3: 'Block' };
+  var COLOURS = ['#5aad72', '#7ea6dc', '#d4a574', '#c98bd0', '#e07a6a', '#6fc7c0', '#b9c26a', '#9a958d'];
+  var R_GOE = 0.5307, R_POI = 2 * Math.LN2 - 1;
+  var worker = null, curves = [], queue = [], running = null, msPer216 = 6, selected = null, nextId = 1, version = '';
+
+  function sites(dim, L) { var n = 1; for (var d = 0; d < dim; d++) n *= L; return n; }
+  function label(dim, L) { var s = SIZES[dim].filter(function (x) { return x[0] === L; })[0]; return SHAPE[dim] + ' ' + (s ? s[1] : L); }
+  function suggestedReals(n) { return n <= 250 ? 40 : n <= 450 ? 24 : n <= 650 ? 16 : 8; }
+  function seconds(points) {                       /* cost of an exact solve grows as sites cubed */
+    var ms = 0; points.forEach(function (p) { var n = sites(p.dim, p.L); ms += p.reals * msPer216 * Math.pow(n / 216, 3); });
+    return ms / 1000;
+  }
+  function fmtSecs(s) { return s < 1.5 ? 'about a second' : s < 90 ? 'about ' + Math.round(s) + ' seconds' : 'about ' + (s / 60).toFixed(1) + ' minutes'; }
+
+  function fillSizes() {
+    var dim = +$('dim').value, sel = $('size'); sel.innerHTML = '';
+    SIZES[dim].forEach(function (s, i) { var o = document.createElement('option'); o.value = s[0]; o.textContent = s[1]; if (i === 1) o.selected = true; sel.appendChild(o); });
+    $('reals').value = suggestedReals(sites(dim, +sel.value)); estimate();
+  }
+  function readForm() {
+    var dim = +$('dim').value, L = +$('size').value, w0 = +$('w0').value, w1 = +$('w1').value;
+    var steps = Math.max(1, Math.min(30, Math.round(+$('steps').value) || 1)), reals = Math.max(2, Math.min(400, Math.round(+$('reals').value) || 2));
+    var seed = (Math.abs(Math.round(+$('seed').value)) || 0) >>> 0;
+    if (!(w0 >= 0) || !(w1 >= 0)) return null;
+    w0 = Math.min(w0, 200); w1 = Math.min(w1, 200);
+    return { dim: dim, L: L, w0: w0, w1: w1, steps: steps, reals: reals, seed: seed };
+  }
+  function pointsOf(c) {
+    var out = [], i, W;
+    for (i = 0; i < c.steps; i++) {
+      W = c.steps === 1 ? c.w0 : c.w0 + (c.w1 - c.w0) * i / (c.steps - 1);
+      /* each point gets its own lattices (its own seed), so neighbouring points are independent measurements */
+      out.push({ dim: c.dim, L: c.L, W: Math.round(W * 1000) / 1000, reals: c.reals, seed: (c.seed + 104729 * i) >>> 0 });
+    }
+    return out;
+  }
+  function estimate() {
+    var c = readForm(); if (!c) { $('est').textContent = ''; return; }
+    $('est').textContent = 'This curve: ' + fmtSecs(seconds(pointsOf(c))) + ' on this machine.';
+  }
+
+  function startWorker() {
+    worker = new Worker('/static/anderson-worker.js');
+    worker.onmessage = onMessage;
+    worker.onerror = function () { $('status').textContent = 'The calculation could not start in this browser.'; };
+  }
+  function onMessage(ev) {
+    var m = ev.data, c;
+    if (m.type === 'check') { showChecks(m); return; }
+    c = running;
+    if (!c || m.id !== c.id) return;
+    if (m.type === 'progress') {
+      $('bar').style.width = (100 * (m.i + m.k / m.of) / c.points.length) + '%';
+      $('status').textContent = c.name + ': point ' + (m.i + 1) + ' of ' + c.points.length + ' (disorder ' + c.points[m.i].W + '), lattice ' + m.k + ' of ' + m.of;
+    } else if (m.type === 'point') {
+      c.results.push(m.m); selected = { curve: c.id, i: c.results.length - 1 }; render();
+    } else if (m.type === 'done') {
+      running = null; next();
+    } else if (m.type === 'error') {
+      running = null; queue = []; $('status').textContent = 'Stopped: ' + m.message; setBusy(false);
+    }
+  }
+  function enqueue(c) {
+    var pts = pointsOf(c);
+    var curve = { id: nextId++, name: label(c.dim, c.L), dim: c.dim, L: c.L, seed: c.seed, reals: c.reals, points: pts, results: [], colour: COLOURS[curves.length % COLOURS.length] };
+    curves.push(curve); queue.push(curve);
+    if (!running) next();
+  }
+  function next() {
+    if (!queue.length) { setBusy(false); $('bar').style.width = '0'; $('status').textContent = curves.length ? 'Done. Click a row to see its distribution.' : ''; render(); return; }
+    running = queue.shift(); setBusy(true);
+    worker.postMessage({ cmd: 'run', id: running.id, points: running.points });
+  }
+  function setBusy(b) { $('run').disabled = b; $('p1').disabled = b; $('p2').disabled = b; $('stop').disabled = !b; }
+  function stop() {
+    if (worker) worker.terminate();
+    running = null; queue = []; startWorker(); setBusy(false); $('bar').style.width = '0';
+    $('status').textContent = 'Stopped. Finished points are kept.'; render();
+  }
+
+  function showChecks(m) {
+    var ul = $('checks'), ok = 0; ul.innerHTML = ''; version = m.version; msPer216 = Math.max(0.5, m.msPer216);
+    m.results.forEach(function (r) {
+      var li = document.createElement('li'), s = document.createElement('small');
+      li.className = r.pass ? 'pass' : 'fail'; li.textContent = r.what; s.textContent = r.detail; li.appendChild(s); ul.appendChild(li); if (r.pass) ok++;
+    });
+    $('status').textContent = ok === m.results.length
+      ? 'All ' + ok + ' checks passed on your machine. Ready.'
+      : (m.results.length - ok) + ' of ' + m.results.length + ' checks FAILED on your machine: do not trust the numbers below. See the list at the foot of the page.';
+    $('status').style.color = ok === m.results.length ? '' : 'var(--red)';
+    setBusy(false); estimate();
+    if (ok === m.results.length && location.hash === '#transition') $('p1').click();     /* a link can start a ready-made experiment */
+    if (ok === m.results.length && location.hash === '#shapes') $('p2').click();
+  }
+
+  /* ---- drawing ---- */
+  function el(tag, attrs, text) {
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag), k;
+    for (k in attrs) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text; return e;
+  }
+  function drawPlot() {
+    var W = 640, H = 380, ml = 52, mr = 14, mt = 14, mb = 42, svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Average spacing ratio against disorder' });
+    var xs = [], ylo = 0.37, yhi = 0.55, any3 = false;
+    curves.forEach(function (c) { if (c.dim === 3 && c.results.length) any3 = true;
+      c.results.forEach(function (m) { xs.push(m.W); ylo = Math.min(ylo, m.r - (m.err || 0) - 0.005); yhi = Math.max(yhi, m.r + (m.err || 0) + 0.005); }); });
+    var x0 = xs.length ? Math.min.apply(null, xs) : 0, x1 = xs.length ? Math.max.apply(null, xs) : 36;
+    if (x1 - x0 < 1) { x0 -= 1; x1 += 1; } var pad = (x1 - x0) * 0.04; x0 -= pad; x1 += pad;
+    var X = function (w) { return ml + (w - x0) / (x1 - x0) * (W - ml - mr); }, Y = function (r) { return mt + (yhi - r) / (yhi - ylo) * (H - mt - mb); };
+    var step = (x1 - x0) > 60 ? 20 : (x1 - x0) > 24 ? 4 : (x1 - x0) > 10 ? 2 : 1, t;
+    for (t = Math.ceil(x0 / step) * step; t <= x1; t += step) {
+      svg.appendChild(el('line', { x1: X(t), x2: X(t), y1: mt, y2: H - mb, stroke: '#232830' }));
+      svg.appendChild(el('text', { x: X(t), y: H - mb + 16, 'text-anchor': 'middle' }, String(Math.round(t * 10) / 10)));
+    }
+    for (t = Math.ceil(ylo / 0.02) * 0.02; t <= yhi + 1e-9; t += 0.02) {
+      svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: '#232830' }));
+      svg.appendChild(el('text', { x: ml - 8, y: Y(t) + 4, 'text-anchor': 'end' }, t.toFixed(2)));
+    }
+    [[R_GOE, '#5aad72', 'spread'], [R_POI, '#d4a574', 'stay put']].forEach(function (g) {
+      svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(g[0]), y2: Y(g[0]), stroke: g[1], 'stroke-dasharray': '6 5', 'stroke-width': 1.2 }));
+      svg.appendChild(el('text', { x: W - mr - 4, y: Y(g[0]) - 5, 'text-anchor': 'end', style: 'fill:' + g[1] }, g[2]));
+    });
+    if (any3 && x0 < 16.5 && x1 > 16.5) {
+      svg.appendChild(el('line', { x1: X(16.5), x2: X(16.5), y1: mt, y2: H - mb, stroke: '#9a958d', 'stroke-dasharray': '2 4' }));
+      svg.appendChild(el('text', { x: X(16.5) + 5, y: mt + 11 }, 'published transition for a block, 16.5'));
+    }
+    svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: H - 6, 'text-anchor': 'middle' }, 'disorder W'));
+    svg.appendChild(el('text', { x: 14, y: (mt + H - mb) / 2, 'text-anchor': 'middle', transform: 'rotate(-90 14 ' + (mt + H - mb) / 2 + ')' }, 'average ratio'));
+    curves.forEach(function (c) {
+      var pts = c.results.map(function (m) { return X(m.W) + ',' + Y(m.r); });
+      if (pts.length > 1) svg.appendChild(el('polyline', { points: pts.join(' '), fill: 'none', stroke: c.colour, 'stroke-width': 1.6 }));
+      c.results.forEach(function (m, i) {
+        if (m.err) svg.appendChild(el('line', { x1: X(m.W), x2: X(m.W), y1: Y(m.r - m.err), y2: Y(m.r + m.err), stroke: c.colour, 'stroke-width': 1.4 }));
+        var on = selected && selected.curve === c.id && selected.i === i;
+        svg.appendChild(el('circle', { cx: X(m.W), cy: Y(m.r), r: on ? 5.5 : 3.6, fill: c.colour, stroke: on ? '#f5f0e8' : 'none', 'stroke-width': 1.5 }));
+      });
+    });
+    var lg = $('legend'); lg.innerHTML = '';
+    curves.forEach(function (c) { if (!c.results.length) return;
+      var s = document.createElement('span'), d = document.createElement('span'); d.className = 'swatch'; d.style.background = c.colour;
+      s.appendChild(d); s.appendChild(document.createTextNode(c.name)); lg.appendChild(s); });
+    if (!xs.length) svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: (mt + H - mb) / 2, 'text-anchor': 'middle' }, 'Run a curve to see it here.'));
+    $('plot').innerHTML = ''; $('plot').appendChild(svg);
+  }
+  function drawHist() {
+    var W = 420, H = 380, ml = 40, mr = 12, mt = 14, mb = 42, ymax = 2.2, svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Distribution of spacing ratios' });
+    var X = function (r) { return ml + r * (W - ml - mr); }, Y = function (p) { return mt + (ymax - Math.min(p, ymax)) / ymax * (H - mt - mb); }, t, i, c = null, m = null;
+    for (t = 0; t <= 1.0001; t += 0.25) svg.appendChild(el('text', { x: X(t), y: H - mb + 16, 'text-anchor': 'middle' }, t.toFixed(2)));
+    for (t = 0; t <= ymax; t += 0.5) { svg.appendChild(el('line', { x1: ml, x2: W - mr, y1: Y(t), y2: Y(t), stroke: '#232830' })); svg.appendChild(el('text', { x: ml - 6, y: Y(t) + 4, 'text-anchor': 'end' }, t.toFixed(1))); }
+    svg.appendChild(el('text', { x: (ml + W - mr) / 2, y: H - 6, 'text-anchor': 'middle' }, 'ratio of neighbouring gaps'));
+    if (selected) { c = curves.filter(function (x) { return x.id === selected.curve; })[0]; m = c && c.results[selected.i]; }
+    if (m) {
+      for (i = 0; i < 20; i++) { var d = m.hist[i] / m.ratios / 0.05;
+        svg.appendChild(el('rect', { x: X(i / 20) + 1, y: Y(d), width: (W - ml - mr) / 20 - 2, height: Y(0) - Y(d), fill: c.colour, opacity: 0.55 })); }
+      $('histtitle').textContent = c.name + ' at disorder ' + m.W + ': ' + m.ratios.toLocaleString() + ' ratios';
+    } else $('histtitle').textContent = 'Spacing ratios at one point';
+    var goe = [], poi = [], r;
+    for (i = 0; i <= 100; i++) { r = i / 100;
+      goe.push(X(r) + ',' + Y(6.75 * (r + r * r) / Math.pow(1 + r + r * r, 2.5)));   /* Atas et al. 2013 */
+      poi.push(X(r) + ',' + Y(2 / ((1 + r) * (1 + r)))); }
+    svg.appendChild(el('polyline', { points: goe.join(' '), fill: 'none', stroke: '#5aad72', 'stroke-width': 2 }));
+    svg.appendChild(el('polyline', { points: poi.join(' '), fill: 'none', stroke: '#d4a574', 'stroke-width': 2 }));
+    $('hist').innerHTML = ''; $('hist').appendChild(svg);
+  }
+  function drawTable() {
+    var tb = $('rows'), n = 0; tb.innerHTML = '';
+    curves.forEach(function (c) { c.results.forEach(function (m, i) {
+      var tr = document.createElement('tr'); n++;
+      if (selected && selected.curve === c.id && selected.i === i) tr.className = 'sel';
+      [null, String(m.W), m.r.toFixed(4), m.err == null ? '' : m.err.toFixed(4), String(m.reals), String(m.ratios), (m.ms / 1000).toFixed(1)].forEach(function (v, k) {
+        var td = document.createElement('td');
+        if (k === 0) { var s = document.createElement('span'); s.className = 'swatch'; s.style.background = c.colour; td.appendChild(s); td.appendChild(document.createTextNode(c.name + ', seed ' + c.seed)); }
+        else td.textContent = v;
+        tr.appendChild(td); });
+      tr.onclick = function () { selected = { curve: c.id, i: i }; render(); };
+      tb.appendChild(tr); }); });
+    if (!n) tb.innerHTML = '<tr><td colspan="7" style="color:var(--muted);cursor:default">No runs yet.</td></tr>';
+    $('dljson').disabled = $('dlcsv').disabled = !n;
+  }
+  function render() { drawPlot(); drawHist(); drawTable(); }
+
+  /* ---- saving ---- */
+  function save(name, type, text) {
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type })); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function asJson() {
+    return JSON.stringify({ what: 'Anderson model, level-spacing ratio near the band centre', code: version, source: '/static/anderson-core.js',
+      reference: { spread: R_GOE, stay_put: R_POI }, note: 'Repeat any point with its own dim, L, W, reals and seed to get the same r: AndersonCore.measure({dim, L, W, reals, seed}).',
+      curves: curves.filter(function (c) { return c.results.length; }).map(function (c) { return { name: c.name, dim: c.dim, L: c.L, seed: c.seed,
+        points: c.results.map(function (m) { return { W: m.W, seed: m.seed, r: m.r, err: m.err, sites: m.sites, reals: m.reals, ratios: m.ratios, window: m.window, hist: m.hist, ms: m.ms }; }) }; }) }, null, 1);
+  }
+  function asCsv() {
+    var rows = ['shape,dim,L,sites,seed,W,r,std_error,lattices,ratios,seconds'];
+    curves.forEach(function (c) { c.results.forEach(function (m) {
+      rows.push([SHAPE[c.dim], c.dim, c.L, m.sites, m.seed, m.W, m.r, m.err == null ? '' : m.err, m.reals, m.ratios, (m.ms / 1000).toFixed(2)].join(',')); }); });
+    return rows.join('\n') + '\n';
+  }
+
+  /* ---- wiring ---- */
+  $('dim').onchange = fillSizes;
+  $('size').onchange = function () { $('reals').value = suggestedReals(sites(+$('dim').value, +$('size').value)); estimate(); };
+  ['w0', 'w1', 'steps', 'reals', 'seed'].forEach(function (id) { $(id).oninput = estimate; });
+  $('run').onclick = function () { var c = readForm(); if (c) enqueue(c); };
+  $('stop').onclick = stop;
+  $('clear').onclick = function () { if (running) stop(); curves = []; selected = null; $('status').textContent = ''; render(); };
+  $('p1').onclick = function () { var seed = readForm().seed;
+    [[6, 60], [8, 20], [10, 8]].forEach(function (s) { enqueue({ dim: 3, L: s[0], w0: 6, w1: 30, steps: 9, reals: s[1], seed: seed }); }); };
+  $('p2').onclick = function () { var seed = readForm().seed;
+    [[1, 400, 16], [2, 20, 16], [3, 8, 12]].forEach(function (s) { enqueue({ dim: s[0], L: s[1], w0: 2, w1: 26, steps: 9, reals: s[2], seed: seed }); }); };
+  $('dljson').onclick = function () { save('anderson-run.json', 'application/json', asJson()); };
+  $('dlcsv').onclick = function () { save('anderson-run.csv', 'text/csv', asCsv()); };
+
+  fillSizes(); render(); setBusy(true); $('stop').disabled = true;
+  if (!window.Worker) { $('status').textContent = 'This browser cannot run background calculations, so the experiment is not available here.'; return; }
+  startWorker(); worker.postMessage({ cmd: 'check' });
+  window.__anderson = { curves: function () { return curves; }, busy: function () { return !!running || queue.length > 0; } };   /* for automated checks of this page */
+})();
+</script>
+</body>
+</html>

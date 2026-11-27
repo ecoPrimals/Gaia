@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kevin Mok &mdash; r&eacute;sum&eacute; and project portfolio</title>
+<title>Kevin Mok &mdash; r&eacute;sum&eacute; and living portfolio</title>
 <meta name="description" content="Kevin Mok: microbiologist and data scientist. I rebuild published science as software that runs anywhere and checks itself. Three working systems: a drug-screening platform, a physics model of biological signalling, and lattice QCD on consumer graphics cards.">
 <style>
 :root {
@@ -53,11 +53,20 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
 .job p { grid-column: 1 / -1; margin: 4px 0 0; color: var(--text); }
 .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; }
 .note { color: var(--muted); font-size: 0.85rem; margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); }
+.live { color: var(--muted); font-size: 0.88rem; margin: 10px 0 0; }
+.live b { color: var(--green); font-weight: 600; }
+.live i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--green); margin-right: 7px; }
+.acts { display: flex; flex-direction: column; align-items: stretch; gap: 8px; text-align: center; white-space: nowrap; } .acts a.go { margin: 0; }
+.try { border-left-color: var(--amber); }
+.try ul { margin: 0; padding-left: 1.2em; } .try li { margin: 0 0 8px; } .try li:last-child { margin: 0; }
+a.go { display: inline-block; background: var(--green); color: #06120a; font-weight: 600; border-radius: 6px; padding: 8px 14px; margin: 2px 0 12px; }
+a.go:hover { text-decoration: none; filter: brightness(1.1); }
 @media (max-width: 700px) {
   .facts { grid-template-columns: repeat(2, 1fr); }
   .work dl { grid-template-columns: 1fr; gap: 2px 0; } .work dd { margin-bottom: 8px; }
   .two { grid-template-columns: 1fr; } td:first-child { width: auto; white-space: normal; }
   .job { grid-template-columns: 1fr; } .job .when { text-align: left; }
+  .top { flex-direction: column; gap: 4px; } .acts { flex-direction: row; margin-bottom: 12px; }
 }
 @media print {
   :root { --bg: #fff; --card: #fff; --line: #c9c9c9; --text: #111; --muted: #444; --bright: #000;
@@ -65,7 +74,8 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
   html, body { background: #fff; }
   body { font-size: 10.5pt; line-height: 1.4; }
   main { max-width: none; padding: 0; }
-  button.print, .screen { display: none; }
+  button.print, .screen { display: none !important; }
+  a.go { background: none; padding: 0; margin: 0 0 6pt; font-weight: 600; }
   h1 { font-size: 20pt; } h2 { margin: 16pt 0 7pt; } .lead { font-size: 12pt; }
   .work, .job, .fact, tr { break-inside: avoid; }
   .work { padding: 10pt 12pt; margin-bottom: 9pt; }
@@ -84,7 +94,7 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
     <h1>Kevin Mok</h1>
     <p class="lead">Microbiologist and data scientist. I rebuild published science as software that runs on any machine and checks its own answers.</p>
   </div>
-  <button class="print" onclick="window.print()">Print / save as PDF</button>
+  <div class="acts screen"><a class="go plain" href="/static/anderson.html#transition">Run an experiment &rarr;</a><button class="print" onclick="window.print()">Print / save as PDF</button></div>
 </div>
 <div class="contact">
   <span>Lansing, Michigan</span>
@@ -97,7 +107,7 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
 
 <h2>What this is</h2>
 <p>ecoPrimals is a scientific computing system I designed and built on hardware I own. It takes a published paper, rebuilds the computation from the methods section and the original data, compares the rebuilt numbers with the published ones, and packages the result as a single program that anyone can run and that reports its own pass or fail.</p>
-<p>It is written in Rust and runs on eleven machines linked by an encrypted network that is part of the project. It needs no cloud account and no vendor-specific graphics toolkit. All of it is open source under AGPL-3.0.</p>
+<p>It is written in Rust and runs on eleven machines linked by an encrypted network that is part of the project. It needs no cloud account and no vendor-specific graphics toolkit. All of it is open source under AGPL-3.0. I publish it as ecoPrimals; it is my work, and it carries my name.</p>
 <p>I am looking for research-computing and data roles, and for contract work: rebuilding a lab's ageing pipeline into something reproducible, reproducing a paper, or setting up computing a group owns outright.</p>
 <div class="facts">
   <div class="fact"><b>175+</b><span>published papers reproduced with stated numerical tolerances</span></div>
@@ -105,6 +115,7 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
   <div class="fact"><b>43</b><span>public repositories, Rust</span></div>
   <div class="fact"><b>1</b><span>person, working with AI coding agents</span></div>
 </div>
+<p class="live screen" id="live" hidden></p>
 
 <h2>Three working systems</h2>
 
@@ -133,6 +144,10 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
     <dd>Applied to Andrea Gonzales's published work on itch signalling (IL-31, oclacitinib): six papers reproduced from the published data, 359 of 359 checks passing (March 2026). The underlying mathematics is checked against eleven papers, from Anderson 1958 to Bourgain and Kachkovskiy 2018 (417+ checks). The same graphics-card eigenvalue code serves the lattice QCD work below.</dd>
     <dt>Open questions</dt>
     <dd>Two predictions are waiting for a bench test. Biofilm and shaken-flask cultures should fall into different signalling regimes; the test bed is Lenski's long-term <em>E. coli</em> experiment, packaged to run from a USB stick. And adding tissue geometry should change which existing drugs score well for repurposing.</dd>
+    <dt>Run it</dt>
+    <dd><a class="plain" href="/static/anderson.html">The model itself, in your browser</a>: choose the shape and the disorder and watch the two regimes appear.</dd>
+    <dt>Explore</dt>
+    <dd><a class="plain" href="/sporeprint/science/01-anderson-qs/">The hypothesis</a> &middot; <a class="plain" href="/sporeprint/science/12-immunological-anderson/">in immune signalling</a> &middot; worked notebooks: <a class="plain" href="/sporeprint/lab/notebooks/03-gonzales-deep-dive/">Gonzales's pharmacology</a>, <a class="plain" href="/sporeprint/lab/notebooks/05-soil-anderson-deep-dive/">soil</a>, <a class="plain" href="/sporeprint/lab/notebooks/13-ltee-anderson-fitness/">Lenski's experiment</a> &middot; <a class="plain" href="/sporeprint/lab/wetspring-validation-summary/">every check</a></dd>
     <dt>Code</dt>
     <dd><a href="https://github.com/syntheticChemistry/wetSpring">github.com/syntheticChemistry/wetSpring</a> &middot; <a href="https://github.com/sporeGarden/lithoSpore">github.com/sporeGarden/lithoSpore</a></dd>
   </dl>
@@ -150,12 +165,29 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
     <dd>SU(3) gauge theory with dynamical fermions, written as WGSL shaders over Vulkan. NVIDIA and AMD cards agree to 6 parts per million. Configurations are written in the MILC format that existing lattice codes read, and a round trip agrees to 3&times;10<sup>&minus;9</sup>. The simulation runs 40 to 53 times faster than on the processor. All checks against Chuna's three papers pass.</dd>
     <dt>Where it stands</dt>
     <dd>A preprint is written and not yet submitted (August 2026). Not done: the comparison against Kokkos that I promised. Early figures for neuromorphic chips came from a simulator and are being re-measured on the hardware.</dd>
+    <dt>Explore</dt>
+    <dd><a class="plain" href="/sporeprint/science/10-dynamical-qcd-production/">The lattice QCD production run</a> &middot; worked notebooks: <a class="plain" href="/sporeprint/lab/notebooks/03-sarkas-yukawa-md/">plasma molecular dynamics</a>, <a class="plain" href="/sporeprint/lab/notebooks/07-quenched-qcd/">quenched QCD</a> &middot; <a class="plain" href="/sporeprint/lab/hotspring-validation-summary/">every check</a></dd>
     <dt>Code</dt>
     <dd><a href="https://github.com/syntheticChemistry/hotSpring">github.com/syntheticChemistry/hotSpring</a></dd>
   </dl>
 </div>
 
 <p>All three are being brought up as running services on <a class="plain" href="https://nestgate.io">nestgate.io</a>, the project's data commons, so that a visitor can run the checks and read the result instead of downloading code.</p>
+
+<h2>Do the science yourself</h2>
+<div class="work try">
+  <a class="go plain" href="/static/anderson.html#transition">Run an experiment now &rarr;</a>
+  <ul>
+    <li><strong>In your browser, now.</strong> <a class="plain" href="/static/anderson.html">The Anderson experiment</a> runs on your own processor in under a minute. It checks itself against exact answers before it shows you anything, and you can download your numbers with the seed that reproduces them.</li>
+    <li><strong>Read the worked analyses.</strong> <a class="plain" href="/sporeprint/lab/notebooks/">Ninety-eight notebooks</a> are published with their outputs, and <a class="plain" href="/sporeprint/science/">the science pages</a> set out, study by study, what was reproduced and how it was checked.</li>
+    <li><strong>On your own machine.</strong> <a class="plain" href="/sporeprint/lab/reproduce/">Stand the whole system up</a> on a 64-bit Linux machine with 16 GB of memory and run the same workloads. The repositories build from source with the standard Rust toolchain.</li>
+  </ul>
+</div>
+
+<h2>The thesis I want to write</h2>
+<p><strong>Constrained evolution: where computation meets microbiology.</strong> The work above feeds one claim. Living systems and computing systems that evolve under tight constraint show the same statistical signatures: independent lines converge on the same solutions, gains follow a power law, specialists become narrow, passenger changes ride along with useful ones, and innovations depend on what came before.</p>
+<p>The test I propose is biological. <a class="plain" href="/sporeprint/thesis/14-biological-validation/">Chapter 14, Biological Validation</a>, sets it out: read those signatures in the frozen record of Richard Lenski's long-term evolution experiment, begun at Michigan State in 1988: twelve populations of <em>E. coli</em>, more than 75,000 generations, a sample frozen every 500. The first step is built. <a class="plain" href="/sporeprint/lab/lithospore/">lithoSpore</a> reproduces six published papers from that experiment, 75 of 75 checks, as one program that runs from a USB stick.</p>
+<p>This is the thesis I want to write as a doctoral student at Michigan State, between two departments: Computational Mathematics, Science and Engineering (CMSE), where the physics on this page comes from, and Microbiology, Genetics and Immunology (the department long known as MMG), where the experiment lives. <a class="plain" href="/sporeprint/thesis/">The full draft is public.</a></p>
 
 <h2>How I built it</h2>
 <ol class="steps">
@@ -230,5 +262,23 @@ td:first-child { white-space: nowrap; color: var(--bright); font-family: var(--m
 <p class="note">Figures come from each project's own validation records at the dates shown. The repositories are public, and each carries the checks that produce its numbers.</p>
 
 </main>
+<script>
+/* The live line: ask the machine that served this page about itself. Shown only if it answers. */
+(function () {
+  var el = document.getElementById('live'); if (!el || !window.fetch) return;
+  fetch('/api/mesh/self').then(function (r) { return r.ok ? r.json() : null; }).then(function (s) {
+    if (!s || typeof s.name !== 'string' || typeof s.gate_up_secs !== 'number') return;
+    var t = s.gate_up_secs, up = t < 5400 ? Math.max(1, Math.round(t / 60)) + ' minutes' : t < 172800 ? Math.round(t / 3600) + ' hours' : Math.round(t / 86400) + ' days';
+    var parts = s.pi_body && s.pi_body.up && s.pi_body.up.length;
+    el.textContent = '';
+    el.appendChild(document.createElement('i'));
+    var b = document.createElement('b'); b.textContent = 'Live. ';
+    el.appendChild(b);
+    el.appendChild(document.createTextNode('This page reached you from ' + s.name + ', one of the machines at home. Its web front has been up ' + up +
+      (parts ? ', and ' + parts + ' of the system\u2019s programs are running on it right now.' : '.')));
+    el.hidden = false;
+  }).catch(function () {});
+})();
+</script>
 </body>
 </html>
