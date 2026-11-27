@@ -3625,7 +3625,7 @@ body { padding-bottom: 76px !important; }
   // THE GUT (2026-11-28). The thymus card lists the organisms on the gate's disk; its own script fills it, every
   // minute. Each organism that is a node of the spore graph is hung on the graph here: its page in sporePrint, the pin
   // it hangs on (the atlas opens there), and the gates that run it now, which the mesh says. Nothing is placed that
-  // the atlas's own file does not place; an organism the graph does not know gets no line.
+  // the atlas's own file does not place; an organism the graph does not know says only which gate runs it, if one does.
   var thymus = D.getElementById('thymus-grid'), hangNote = null;
   function hangGut() {
     var H = window.gaiaHouse;
@@ -3638,13 +3638,15 @@ body { padding-bottom: 76px !important; }
         if (!name) return;
         boxes++;
         all('.hud-hang', box).forEach(function (old) { old.remove(); });
-        var n = nodes[name.toLowerCase()]; if (!n) return;
-        hung++;
+        var n = nodes[name.toLowerCase()], on = house ? H.runs(house, name) : [];
+        if (!n && !on.length) return;                               // not a node of the graph and no gate runs it: nothing to say
         var line = D.createElement('div'); line.className = 'hud-hang';
-        if (n.page) { var a = D.createElement('a'); a.href = n.page; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'page'; a.title = n.name + ' in sporePrint'; line.appendChild(a); }
-        var b = D.createElement('button'); b.type = 'button'; b.textContent = 'atlas'; b.title = 'hangs on the atlas at ' + (pinName[n.pin] || n.pin);
-        b.onclick = function () { atlasAt(n.pin); }; line.appendChild(b);
-        var on = house ? H.runs(house, name) : [];
+        if (n) hung++;
+        if (n && n.page) { var a = D.createElement('a'); a.href = n.page; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'page'; a.title = n.name + ' in sporePrint'; line.appendChild(a); }
+        if (n) {
+          var b = D.createElement('button'); b.type = 'button'; b.textContent = 'atlas'; b.title = 'hangs on the atlas at ' + (pinName[n.pin] || n.pin);
+          b.onclick = function () { atlasAt(n.pin); }; line.appendChild(b);
+        }
         if (on.length) { var r = D.createElement('span'); r.className = 'run'; r.textContent = 'up on ' + on.join(', '); r.title = 'the mesh says it runs there now'; line.appendChild(r); }
         box.appendChild(line);
       });
