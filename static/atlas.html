@@ -185,7 +185,10 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   <button type="button" id="k-tri" aria-pressed="false" title="the triangle: home, Michigan State and Wayne County, with the far body in Ireland — measured">triangle</button>
   <button type="button" id="k-core" aria-pressed="false" title="see through to the core: the three plumb lines, the axis, and the one unit">core</button>
   <button type="button" id="k-clock" aria-pressed="false" title="look straight down on the north pole: the earth as a 24-hour dial, the sun its hand, the edge of the night square to it">clock</button>
-  <button type="button" id="k-graph" aria-pressed="false" title="sporePrint’s own graph, hung on the pins, and the backscatter’s path through them">graph</button>
+  <button type="button" id="k-graph" aria-pressed="false" title="the signal, on the same earth: sporePrint’s graph and the backscatter’s path. skunkBat watches traffic; swarmVine carries it. The GIS page is the same flow drawn apart.">signal</button>
+  <button type="button" id="k-thymus" aria-pressed="false" title="the null eye. Thymus looks at the self, and the globe turns about where you stand.">thymus</button>
+  <button type="button" id="k-luna" aria-pressed="false" title="the inner eye. The globe turns about the moon, and the moon's phase is its beat.">luna</button>
+  <button type="button" id="k-apollo" aria-pressed="false" title="the outer eye. Apollo is the sun, and the globe turns about where the sun stands.">apollo</button>
   <button type="button" id="k-day" aria-pressed="false" title="let a day pass in a minute, to watch the night go round">a day a minute</button>
 </div>
 <aside id="panel" aria-live="polite"></aside>
@@ -205,7 +208,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   </div>
   <p id="sky"></p>
 </div>
-<script src="/static/sky.js?v=4"></script>
+<script src="/static/sky.js?v=5"></script>
 <script src="/static/one.js?v=2"></script>
 <script src="/static/house.js?v=1"></script>
 <script>
@@ -230,9 +233,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   var W = 0, H = 0, cx = 0, cy = 0, R = 1, base = 1;
   var view = {lat: GO.world[0], lon: GO.world[1], k: GO.world[2]}, fly = null;
   var earth = null, pins = [], meta = {}, marks = [], chosen = [], you = null, pointing = false, core = false, fast = false, ahead = 0, dirty = true, tri = false, T = null;
-  var dial = false, graphOn = false, scrollTime = false, held = null, here = null, starCat = null, starShown = 0, house = null, homeId = null, houseAsked = 0, wantDrawn = /[#&]m=house-drawn\b/.test(location.hash);
+  var dial = false, graphOn = false, eye = null, scrollTime = false, held = null, here = null, starCat = null, starShown = 0, house = null, homeId = null, houseAsked = 0, wantDrawn = /[#&]m=house-drawn\b/.test(location.hash);
   var face = /[?&]face\b/.test(location.search);                    // the globe alone, as a clock face, for the middle of the HUD
-  var kClock = document.getElementById('k-clock'), kGraph = document.getElementById('k-graph'), tNow = document.getElementById('t-now'), tUnit = document.getElementById('t-unit'),
+  var kClock = document.getElementById('k-clock'), kGraph = document.getElementById('k-graph'), kThymus = document.getElementById('k-thymus'), kLuna = document.getElementById('k-luna'), kApollo = document.getElementById('k-apollo'), tNow = document.getElementById('t-now'), tUnit = document.getElementById('t-unit'),
       footEl = document.getElementById('foot'), tAt = document.getElementById('t-at'), tMoment = document.getElementById('t-moment'), tScroll = document.getElementById('t-scroll'), tAway = document.getElementById('t-away');
   if (window.top !== window) document.documentElement.classList.add('framed');
   if (face) document.documentElement.classList.add('face');
@@ -502,6 +505,23 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     }
     ctx.restore();
   }
+  // The seven wanderers, superimposed on this earth and collapsed onto the eye's meridian. Each keeps only how far
+  // round the sun's path it stands; the part across that path is dropped (the waveform collapse: one axis remains).
+  function drawOrbs(s, anchor) {
+    var axis = eye === 'apollo' ? s.sun : eye === 'luna' ? s.moon : (you || anchor);
+    var ring = [], lat;
+    for (lat = -80; lat <= 80; lat += 8) ring.push({lat: lat, lon: axis.lon});
+    line(ring, 'rgba(200,214,229,.35)', 1);
+    if (!sky.collapse) return;
+    ctx.save();
+    sky.collapse(now(), axis.lon).forEach(function (o) {
+      var q = proj(o.lat, o.lon); if (q.z < 0 && !core) return;
+      ctx.globalAlpha = q.z < 0 ? 0.35 : 0.92;
+      ctx.beginPath(); ctx.arc(q.x, q.y, 3.2, 0, 7); ctx.fillStyle = '#eef1f5'; ctx.fill();
+      if (!face && q.z > 0) word(o.name, q.x + 6, q.y - 7, '#c8d6e5', 'left', 9);
+    });
+    ctx.restore();
+  }
   // the earth as a 24-hour dial, seen straight down on the north pole: midnight UT at the top, noon at the foot. The
   // sun stands over longitude 180 at midnight and goes 15 degrees west an hour, so each hour has its meridian.
   function drawDial(s) {
@@ -630,6 +650,7 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     if (core) drawCore(s, anchor);
     if (dial) drawDial(s);
     body(s.sun, 'sun', s); body(s.moon, 'moon', s);
+    if (eye) drawOrbs(s, anchor);
     if (graphOn) drawGraph();
     if (tri && T) drawTriangle(false);
     gather(); drawPins();
@@ -643,6 +664,8 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     if (core) parts.push('at the core: ' + (you ? 'you' : short(anchor.name || 'the anchor')) + '–sun ' + Math.round(apart(anchor, s.sun)) + '°, –moon ' + Math.round(apart(anchor, s.moon)) + '°, sun–moon ' + Math.round(apart(s.sun, s.moon)) + '° · <span class="g">1.00</span> = ' + KM.toLocaleString() + ' km');
     if (dial) { var ea = sunAhead(s, now()); parts.push('the dial: midnight UT at the top, noon at the foot · <span class="g">green</span> the UTC clock · <span class="o">gold</span> the sun itself, ' + (Math.abs(ea) < 0.5 ? 'on the clock' : Math.round(Math.abs(ea)) + ' min ' + (ea > 0 ? 'ahead of' : 'behind') + ' the clock') + ' · silver the moon'); }
     if (tri && T) parts.push('<span style="color:' + GOLD + '">sun</span> ' + T.every.map(function (m) { var h = Math.round(90 - apart(m.p, s.sun)); return m.short + ' ' + Math.abs(h) + '° ' + (h >= 0 ? 'up' : 'down'); }).join(', '));
+    if (eye) parts.push('the <b>' + eye + '</b> eye is the axis' + (eye === 'luna' ? ' · luna\'s beat: ' + moonName(s.elong) + ', ' + Math.round(s.lit * 100) + '% lit' : eye === 'apollo' ? ' · apollo is the sun' : ' · thymus looks at the self') + ' · the white orbs lie on it');
+    if (graphOn) parts.push('signal on this earth · <a href="/gis">the GIS</a> draws the same traffic apart · skunkBat watches it, swarmVine carries it');
     if (starShown && !dial && !core && !tri) parts.push('behind the earth, the ' + starShown.toLocaleString() + ' stars that stand over its far side');
     skyEl.innerHTML = parts.join(' · ');
     tAway.textContent = fast ? '' : away();
@@ -664,6 +687,17 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
     held.domeText.innerHTML = 'the whole sky from here · ' + (!starCat ? 'the stars did not load' : d.light === 'day' ? 'the sun is up: <b>no star is seen</b>' : d.light === 'twilight' ? '<b>' + d.stars + '</b> of the brightest stars show in the twilight' : '<b>' + d.stars.toLocaleString() + '</b> stars up') +
       ' · overhead in the middle, the horizon round the rim, north at the top, east on the left' +
       (d.pole ? ' · the green cross is the pole of the sky: of the named stars <b>' + d.pole.name + '</b> stands nearest it, <b>' + (d.pole.off < 10 ? d.pole.off.toFixed(1) : Math.round(d.pole.off)) + '°</b> off' : '');
+  }
+  function setEye(which) {
+    eye = eye === which ? null : which;
+    [kThymus, kLuna, kApollo].forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+    if (eye === 'thymus') kThymus.setAttribute('aria-pressed', 'true');
+    if (eye === 'luna') kLuna.setAttribute('aria-pressed', 'true');
+    if (eye === 'apollo') kApollo.setAttribute('aria-pressed', 'true');
+    dirty = true;
+    if (!eye) return;
+    var s = sky(now()), axis = eye === 'apollo' ? s.sun : eye === 'luna' ? s.moon : (you || chosen[0] || {lat: 42.7336, lon: -84.5555});
+    goTo(axis.lat, axis.lon, 2.2);
   }
   function setDial(on, stay) {
     dial = !!on; kClock.setAttribute('aria-pressed', dial ? 'true' : 'false'); dirty = true;
@@ -1006,6 +1040,9 @@ button[aria-pressed=true]{color:#06080b;background:var(--green);border-color:var
   });
   kClock.addEventListener('click', function () { setDial(!dial); });
   kGraph.addEventListener('click', function () { setGraph(!graphOn); });
+  kThymus.addEventListener('click', function () { setEye('thymus'); });
+  kLuna.addEventListener('click', function () { setEye('luna'); });
+  kApollo.addEventListener('click', function () { setEye('apollo'); });
   tNow.addEventListener('click', function () { here = null; setFast(false, true); setAhead(0); fill(); });
   document.getElementById('t-back').addEventListener('click', function () { stepTime(-1); });
   document.getElementById('t-fwd').addEventListener('click', function () { stepTime(1); });

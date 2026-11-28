@@ -383,7 +383,23 @@
     return of(y, Math.floor((h + l - 7 * m + 114) / 31), (h + l - 7 * m + 114) % 31 + 1, 0, 0, 'new');
   }
 
+  // The white orbs, collapsed onto one meridian. Each wanderer keeps only how far round the sun's path it stands
+  // from the sun; the part across that path is dropped, so the seven lie on the meridian `axisLon` (the eye's axis)
+  // instead of floating as seven separate spheres. Within 90 degrees they stand on that meridian; past it they
+  // stand on the far half, so the line is a circle and not a pile.
+  function collapse(ms, axisLon) {
+    var w = wander(ms, 0), names = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune'];
+    return names.map(function (n) {
+      var d = w[n] - w.sun; d -= Math.round(d / 360) * 360;
+      var lat = d, lon = axisLon;
+      if (Math.abs(d) > 90) { lat = (d > 0 ? 1 : -1) * (180 - Math.abs(d)); lon = axisLon + 180; }
+      lon -= Math.round(lon / 360) * 360;
+      return {name: n, lat: lat, lon: lon, along: d};
+    });
+  }
+
   sky.look = look; sky.next = next; sky.moonFace = moonFace; sky.moonName = moonName; sky.apart = apart; sky.bearing = bearing;
+  sky.collapse = collapse;
   sky.stars = stars; sky.turn = turn; sky.dome = dome; sky.round = round; sky.tint = tint; sky.wander = wander;
   sky.deltaT = deltaT; sky.of = of; sky.cal = cal; sky.stamp = stamp; sky.mark = mark; sky.read = read; sky.easter = easter;
   sky.FIRST = of(-2999, 1, 1, 0, 0); sky.LAST = of(2999, 12, 31, 0, 0);     // as far as the fit for the earth's turning is given
