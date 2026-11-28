@@ -375,7 +375,8 @@ CTYPES = {".html":"text/html",".js":"application/javascript",".css":"text/css",
 # name opens every layer. Where the site is read from, in order:
 #   1. a live working copy on this body (eastGate keeps one; GAIA_HUD_SITE can name another)
 #   2. the shared surface on the LAN: eastGate's data server, for a body that keeps no copy of its own
-#   3. this body's clone of the site, only when the shared surface cannot be reached
+#   3. this body's own copy of the site, only when the shared surface cannot be reached: the mesh copy if it keeps
+#      one (the site as a visitor from outside is given it, refreshed from eastGate), else its older clone
 # A text file that carries a credential shape or a list of the house's hardware addresses is not served this way
 # (the same rule the hoist to GitHub Pages uses); it stays where it is. The gate's token is cut out by exact value.
 # The live data store belongs to the mesh, not to the world. On eastGate the site's data/ folder and some loose
@@ -393,6 +394,7 @@ _SCAN_RES = ("75", "100", "150", "300", "600")
 _BENEATH_LIVE=[d for d in (os.environ.get("GAIA_HUD_SITE",""),os.path.expanduser("~/Development/ecoPrimals/infra/hud/site/public")) if d]
 _BENEATH_SHARED=["http://192.168.4.248:8080"]
 _BENEATH_CLONE=os.path.join(_REPO,"data","gut","forgejo-clones","ecoPrimals","infra-hud","site","public")
+_BENEATH_COPY=os.path.join(os.path.expanduser("~"),".local","share","gaia","mesh","hud-public")
 _BENEATH_MAX=64<<20
 _BENEATH_TEXT=(".html",".htm",".js",".mjs",".css",".json",".jsonl",".xml",".txt",".md",".csv",".svg",".webmanifest",".map")
 _BENEATH_GUARD=[re.compile(rb"gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}"),re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -558,7 +560,9 @@ def _beneath_find(raw,home=False):
             got=_beneath_from_door(base,p,home)
             if got: return got
         if ok is not None: reachable=True
-    if not reachable and os.path.isfile(os.path.join(_BENEATH_CLONE,"index.html")): return _beneath_from_dir(_BENEATH_CLONE,p.lstrip("/"))
+    if not reachable:
+        for d in (_BENEATH_COPY,_BENEATH_CLONE):
+            if os.path.isfile(os.path.join(d,"index.html")): return _beneath_from_dir(d,p.lstrip("/"))
     return None
 
 # sporePrint under its own name. Its /sitemap.xml used to be the gate's general one, which names primals.eco
