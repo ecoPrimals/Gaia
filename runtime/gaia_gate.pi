@@ -517,11 +517,15 @@ def _beneath_door_open(base):
 
 def _beneath_in_site(path):
     """Through the shared surface a link cannot be told from a file, so the live store is kept out by name:
-    nothing under data/, and a loose data file only if the site itself (this body's clone of it) has that file."""
+    nothing under data/, and a loose data file only if the site itself has that file. What the site itself has is
+    read from this body's mesh copy when it keeps one (the site as eastGate gives it to a visitor from outside,
+    links into the live store left behind), else from its older clone - which was taken before some of those
+    files became links, and so counts them as the site's own."""
     low=path.lower()
     if low.startswith("/data/") or low=="/data": return False
-    if low.endswith((".json",".jsonl",".sqlite",".db",".log",".sh",".plist")) and os.path.isdir(_BENEATH_CLONE):
-        fp=os.path.join(_BENEATH_CLONE,path.lstrip("/").replace("/",os.sep))
+    ref=next((d for d in (_BENEATH_COPY,_BENEATH_CLONE) if os.path.isfile(os.path.join(d,"index.html"))),None)
+    if low.endswith((".json",".jsonl",".sqlite",".db",".log",".sh",".plist")) and ref:
+        fp=os.path.join(ref,path.lstrip("/").replace("/",os.sep))
         if os.path.islink(fp) or not os.path.isfile(fp): return False
         if os.path.getsize(fp)<400:        # where links cannot be made, a clone holds a link as a one-line file naming its target
             with open(fp,"rb") as f: head=f.read(400)
