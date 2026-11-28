@@ -75,7 +75,7 @@ The **Oblique**: 3D factory + 2D belts → 1D scratch-and-catch board. Conveyors
 | gaia-tissue-fast | 0.59 GB | Quick triage |
 | qwen3:8b | 4.87 GB | Base model |
 
-The water lock protocol: OSINT pours in freely, I process on my own hardware, nothing seeps to a provider unless local can't handle it.
+The water lock protocol: OSINT pours in freely, and the work is done on our own hardware. A page stays with us. A copy may seep and travel, and the travel is traced, so we can see where it went.
 
 ## Data Pipes — 6 Belt Tiers
 
